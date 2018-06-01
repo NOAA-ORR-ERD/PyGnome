@@ -7,7 +7,7 @@ from gnome.gnomeobject import GnomeId
 
 class SubstanceSchema(ObjTypeSchema):
     standard_density = SchemaNode(
-        Float(), update=True, read=True
+        Float(), update=True, read_only=True
     )
 
 

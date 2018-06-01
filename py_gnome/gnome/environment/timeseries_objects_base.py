@@ -205,17 +205,6 @@ class TimeseriesData(GnomeId):
     def is_constant(self):
         return len(self.data) == 1
 
-    def __eq__(self, o):
-        t1 = (self.name == o.name and
-              self.units == o.units and
-              self.time == o.time)
-        t2 = all(np.isclose(self.data, o.data))
-
-        return t1 and t2
-
-    def __ne__(self, o):
-        return not self.__eq__(o)
-
 
 class TimeseriesVectorSchema(base_schema.ObjTypeSchema):
     units = SchemaNode(
@@ -384,14 +373,4 @@ class TimeseriesVector(GnomeId):
         '''
         return np.column_stack([var.at(*args, **kwargs)
                                 for var in self.variables])
-
-    def __eq__(self, o):
-        t1 = (self.name == o.name and
-              self.units == o.units and
-              self.time == o.time)
-        t2 = all([v == o.variables[idx] for idx, v in enumerate(self.variables)])
-        return t1 and t2
-
-    def __ne__(self, o):
-        return not self.__eq__(o)
 

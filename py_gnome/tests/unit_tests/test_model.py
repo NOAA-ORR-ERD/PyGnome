@@ -83,6 +83,18 @@ def test_init():
     model = Model()
 
 
+def test_update_model():
+    mdl = Model();
+    d = {'name': 'Model2'}
+    assert mdl.name == 'Model'
+    upd = mdl.update(d)
+    assert mdl.name == d['name']
+    assert upd == d
+    d['duration'] = 43200
+    upd = mdl.update(d)
+    assert mdl.duration.seconds == 43200
+
+
 def test_init_with_mode():
     model = Model()
     assert model.mode == 'gnome'

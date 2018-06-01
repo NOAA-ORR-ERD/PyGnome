@@ -44,7 +44,7 @@ class ElementTypeSchema(base_schema.ObjTypeSchema):
         save=True, update=True, save_reference=True
     )
     standard_density = SchemaNode(
-        Float(), read=True
+        Float(), read_only=True
     )
 
 

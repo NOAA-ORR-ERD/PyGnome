@@ -57,46 +57,29 @@ from gnome.persist import base_schema
 
 
 class GnomeMapSchema(base_schema.ObjTypeSchema):
-    map_bounds = base_schema.LongLatBounds(
-        missing=drop, save=True, update=True
-    )
-    spillable_area = base_schema.PolygonSet(
-        missing=drop, save=True, update=True, test_for_eq=False #.MetaDataList is not serialized at all
-    )
+    map_bounds = base_schema.LongLatBounds()
+    spillable_area = base_schema.PolygonSet(test_equal=False) #.MetaDataList is not serialized at all
     # land_polys = base_schema.PolygonSet(missing=drop)
 
 
 class ParamMapSchema(GnomeMapSchema):
-    center = base_schema.WorldPoint(
-        save=True, update=True
-    )
-    distance = SchemaNode(
-        Integer(), save=True, update=True,
-    )
-    bearing = SchemaNode(
-        Integer(), save=True, update=True
-    )
-    units = SchemaNode(
-        String(), save=True, update=True
-    )
+    center = base_schema.WorldPoint()
+    distance = SchemaNode(Integer())
+    bearing = SchemaNode(Integer())
+    units = SchemaNode(String())
 
 
 class MapFromBNASchema(GnomeMapSchema):
     filename = SchemaNode(
-        String(), save=True, update=True, isdatafile=True, test_for_eq=False
-    )
-    refloat_halflife = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
+        String(), isdatafile=True, test_equal=False)
+    refloat_halflife = SchemaNode(Float())
 
 
 class MapFromUGridSchema(GnomeMapSchema):
     filename = SchemaNode(
-        String(), save=True, read=True, isdatafile=True, test_for_eq=False
+        String(), read_only=True, isdatafile=True, test_equal=False
     )
-    refloat_halflife = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
+    refloat_halflife = SchemaNode(Float())
 
 
 class GnomeMap(GnomeId):

@@ -44,7 +44,7 @@ class RendererSchema(BaseOutputterSchema):
     # following are only used when creating objects, not updating -
     # so missing=drop
     map_filename = FilenameSchema(
-        missing=drop, save=True, update=True, isdatafile=True, test_for_eq=False
+        missing=drop, save=True, update=True, isdatafile=True, test_equal=False
     )
     projection = ProjectionSchema(
         missing=drop, save=True, update=True
@@ -53,7 +53,7 @@ class RendererSchema(BaseOutputterSchema):
         missing=drop, save=True, update=True
     )
     output_dir = SchemaNode(
-        String(), save=True, update=True, test_for_eq=False
+        String(), save=True, update=True, test_equal=False
     )
     draw_ontop = SchemaNode(
         String(), save=True, update=True

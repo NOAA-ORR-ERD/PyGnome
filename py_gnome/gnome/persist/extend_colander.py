@@ -225,8 +225,41 @@ class FilenameSchema(SequenceSchema):
         else:
             return rv
 
+'''
+np_array = NumpyArraySchema(
+    Float(), save=True
+)
+'''
+
+class NumpyArraySchema(SchemaNode):
+    '''
+    This schema cannot nest any further schemas inside since it does not follow
+    Colander convention for serializing and deserializing.
+
+    It will serialize a numpy array to nested lists of lists of numbers, using
+    array.tolist(). It will attempt to convert the array to the type specified
+    with the precision specified before doing so.
+
+    It deserializes lists of lists of numbers into a numpy array of dtype
+    specified with dtype length specified, if at all.
+    '''
+
+    def __init__(self, *args, **kwargs):
+        self.dtype = kwargs.pop('dtype', np.float32)
+        self.precision = kwargs.pop('precision', 8)
+
+    def serialize(self, appstruct):
+        if not isinstance(appstruct, np.array):
+            raise ValueError('Cannot serialize: {0} is not a numpy array'.format(appstruct))
+        return np.round(appstruct.astype(self.dtype), self.precision).tolist()
+
+    def deserialize(self, cstruct):
+        return np.array(cstruct, dtype = self.dtype)
+
+
 class OrderedCollectionSchema(SequenceSchema):
     schema_type = OrderedCollectionType
+
 
 class DefaultTupleSchema(TupleSchema):
     schema_type = DefaultTuple

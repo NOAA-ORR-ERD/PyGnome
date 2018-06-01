@@ -325,10 +325,10 @@ class GridWindMoverSchema(WindMoversBaseSchema):
         Similar to WindMover except it doesn't have wind_id
     """
     filename = FilenameSchema(
-        missing=drop, save=True, update=True, isdatafile=True, test_for_eq=False
+        missing=drop, save=True, update=True, isdatafile=True, test_equal=False
     )
     topology_file = FilenameSchema(
-        missing=drop, save=True, update=True, isdatafile=True, test_for_eq=False
+        missing=drop, save=True, update=True, isdatafile=True, test_equal=False
     )
     wind_scale = SchemaNode(
         Float(), missing=drop, save=True, update=True
@@ -504,10 +504,10 @@ class GridWindMover(WindMoversBase):
 
 class IceWindMoverSchema(WindMoversBaseSchema):
     filename = FilenameSchema(
-        missing=drop, save=True, read=True, isdatafile=True, test_for_eq=False
+        missing=drop, save=True, read_only=True, isdatafile=True, test_equal=False
     )
     topology_file = FilenameSchema(
-        missing=drop, save=True, read=True, isdatafile=True, test_for_eq=False
+        missing=drop, save=True, read_only=True, isdatafile=True, test_equal=False
     )
 
 

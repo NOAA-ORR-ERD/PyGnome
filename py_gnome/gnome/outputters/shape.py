@@ -15,7 +15,7 @@ from .outputter import Outputter, BaseOutputterSchema
 
 class ShapeSchema(BaseOutputterSchema):
     filename = FilenameSchema(
-        missing=drop, save=True, update=True, test_for_eq=False
+        missing=drop, save=True, update=True, test_equal=False
     )
     zip_output = SchemaNode(
         Boolean(), missing=drop, save=True, update=True

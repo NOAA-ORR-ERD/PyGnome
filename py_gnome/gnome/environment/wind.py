@@ -90,7 +90,7 @@ class WindSchema(base_schema.ObjTypeSchema):
         String(), missing=drop, save=True, update=True
     )
     filename = FilenameSchema(
-        missing=drop, save=True, update=True, isdatafile=True, test_for_eq=False
+        missing=drop, save=True, update=True, isdatafile=True, test_equal=False
     )
     updated_at = SchemaNode(
         LocalDateTime(), missing=drop, save=True, update=True
@@ -116,7 +116,7 @@ class WindSchema(base_schema.ObjTypeSchema):
         Float(), missing=drop, save=True, update=True
     )
     timeseries = WindTimeSeriesSchema(
-        missing=drop, save=True, update=True, test_for_eq=False #Because comparing datetimevalue2d arrays does not play nice
+        missing=drop, save=True, update=True, test_equal=False #Because comparing datetimevalue2d arrays does not play nice
     )
     extrapolation_is_allowed = SchemaNode(
         Boolean(), missing=drop, save=True, update=True

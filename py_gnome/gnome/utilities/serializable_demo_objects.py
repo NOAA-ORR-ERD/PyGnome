@@ -45,7 +45,7 @@ def series_data2():
 
 class DemoObjSchema(base_schema.ObjTypeSchema):
     filename = FilenameSchema(
-        save=True, update=True, isdatafile=False, test_for_eq=False,
+        save=True, update=True, isdatafile=False, test_equal=False,
     )
 
     foo_float = colander.SchemaNode(
@@ -56,7 +56,7 @@ class DemoObjSchema(base_schema.ObjTypeSchema):
         colander.SchemaNode(
             colander.Float()
         ),
-        read=True
+        read_only=True
     )
 
     timeseries = colander.SequenceSchema(
@@ -64,7 +64,7 @@ class DemoObjSchema(base_schema.ObjTypeSchema):
             children=[colander.SchemaNode(colander.DateTime(default_tzinfo=None)),
                       colander.SchemaNode(colander.Float())]
         ),
-        read=True
+        read_only=True
     )
 
     variable = base_schema.GeneralGnomeObjectSchema(

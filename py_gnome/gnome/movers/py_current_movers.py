@@ -27,7 +27,7 @@ class PyCurrentMoverSchema(base_schema.ObjTypeSchema):
         save=True, update=True, save_reference=True
     )
     filename = FilenameSchema(
-        missing=drop, save=True, read=True, isdatafile=True
+        missing=drop, save=True, read_only=True, isdatafile=True
     )
     current_scale = SchemaNode(
         Float(), missing=drop, save=True, update=True
@@ -54,12 +54,12 @@ class PyCurrentMoverSchema(base_schema.ObjTypeSchema):
     real_data_start = SchemaNode(
         LocalDateTime(), missing=drop,
         validator=convertible_to_seconds,
-        read=True
+        read_only=True
     )
     real_data_stop = SchemaNode(
         LocalDateTime(), missing=drop,
         validator=convertible_to_seconds,
-        read=True
+        read_only=True
     )
 
 
@@ -160,10 +160,6 @@ class PyCurrentMover(movers.PyMover):
         Function for specifically creating a PyCurrentMover from a file
         """
         current = GridCurrent.from_netCDF(filename, **kwargs)
-
-        if name is None:
-            name = cls.__name__ + str(cls._def_count)
-            cls._def_count += 1
 
         return cls(name=name,
                    current=current,

@@ -616,7 +616,7 @@ class DisperseSchema(ResponseSchema):
 #     )
     report = SequenceSchema(
         SchemaNode(String()),
-        read=True
+        read_only=True
     )
     wind = GeneralGnomeObjectSchema(
         acceptable_schemas=[WindSchema, VectorVariableSchema],

@@ -22,10 +22,10 @@ from gnome.movers import Mover, ProcessSchema
 
 class ShipDriftMoverSchema(ProcessSchema):
     wind_file = SchemaNode(
-        String(), missing=drop, save=True, read=True, isdatafile=True, test_for_eq=False
+        String(), missing=drop, save=True, read_only=True, isdatafile=True, test_equal=False
     )
     topology_file = SchemaNode(
-        String(), missing=drop, save=True, read=True, isdatafile=True, test_for_eq=False
+        String(), missing=drop, save=True, read_only=True, isdatafile=True, test_equal=False
     )
     wind_scale = SchemaNode(
         Float(), missing=drop, save=True, update=True

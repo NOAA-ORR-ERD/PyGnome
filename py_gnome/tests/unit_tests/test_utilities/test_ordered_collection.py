@@ -5,6 +5,7 @@ from gnome.movers.simple_mover import SimpleMover
 from gnome.movers import Mover, RandomMover
 
 from gnome.utilities.orderedcollection import OrderedCollection
+from gnome.utilities.serializable_demo_objects import DemoObj
 
 
 def s_id(val):
@@ -283,6 +284,31 @@ class TestOrderedCollection(object):
 
             assert toserial[i]['id'] == s_id(mv)
 
+    def test_update(self):
+        int_oc = OrderedCollection([1, 2, 3, 4, 5])
+        upd_cstruct = [2,3,4]
+        int_oc.update(upd_cstruct)
+        assert int_oc._elems == [2,3,4]
+
+        obj_oc = OrderedCollection([DemoObj.demo(), DemoObj.demo(), DemoObj.demo()])
+        obj0 = obj_oc[0]
+        obj1 = obj_oc[1]
+        assert obj_oc[0] is not obj_oc[1]
+        upd_list = [o.serialize() for o in obj_oc] #this is like the payload from the web client
+        upd_list[0]['name'] = '2nd DemoObj'
+        upd_list[1]['foo_float'] = 55
+        temp = upd_list[0]
+        upd_list[0] = upd_list[1]
+        upd_list[1] = temp
+        del upd_list[2]
+        obj_oc.update(upd_list)
+        assert obj_oc[0] is obj1
+        assert obj_oc[1] is obj0
+        assert obj_oc[0].foo_float == 55
+        assert obj_oc[0].id == upd_list[0]['id']
+        assert obj_oc[1].name == '2nd DemoObj'
+        assert obj_oc[1].id == upd_list[1]['id']
+        assert len(obj_oc) == 2
 
 class ObjToAdd:
     'Define a helper class (mutable object) for use in TestCallbacks'

@@ -17,67 +17,62 @@ from gnome.persist.base_schema import GeneralGnomeObjectSchema
 
 class TimeSchema(base_schema.ObjTypeSchema):
     filename = FilenameSchema(
-        default=[], missing=drop, save=True, update=True, isdatafile=True, test_for_eq=False
+        isdatafile=True, test_equal=False
     )
     varname = SchemaNode(
-        String(), missing=drop, read=True
+        String(), read_only=True
     )
     data = SequenceSchema(
         SchemaNode(
             DateTime(default_tzinfo=None)
-        ),
-        missing=drop, save=True, update=True
+        )
     )
 
 
 class GridSchema(base_schema.ObjTypeSchema):
     filename = FilenameSchema(
-        save=True, update=True, isdatafile=True, test_for_eq=False
+        isdatafile=True, test_equal=False
     )
 
 class DepthSchema(base_schema.ObjTypeSchema):
     filename = FilenameSchema(
-        save=True, update=True, isdatafile=True, test_for_eq=False
+        isdatafile=True, test_equal=False
     )
 
 
 class VariableSchemaBase(base_schema.ObjTypeSchema):
     #filename
     #data?
-    units = SchemaNode(
-        String(), missing=drop, save=True, update=True
-    )
+    units = SchemaNode(String())
     time = TimeSchema(
-        missing=drop, save=True, update=True, save_reference=True
+        save_reference=True
     )
     grid = GridSchema(
-        missing=drop, save=True, update=True, save_reference=True
+        save_reference=True
     )
     data_file = FilenameSchema(
-        save=True, update=True, isdatafile=True, test_for_eq=False
+        isdatafile=True, test_equal=False
     )
     grid_file = FilenameSchema(
-        save=True, update=True, isdatafile=True, test_for_eq=False
+        isdatafile=True, test_equal=False
     )
 
 
 class VariableSchema(VariableSchemaBase):
     varname = SchemaNode(
-        String(), missing=drop, read=True
+        String(), missing=drop, read_only=True
     )
 
 
 class VectorVariableSchema(VariableSchemaBase):
     varnames = SequenceSchema(
         SchemaNode(String()),
-        missing=drop,
-        read=True
+        read_only=True
     )
     variables = SequenceSchema(
         GeneralGnomeObjectSchema(
             acceptable_schemas=[VariableSchema]
-        ),
-        save=True, update=True, save_reference=True
+        ), save_reference=True
     )
 
 
@@ -346,6 +341,9 @@ class DepthBase(gridded.depth.DepthBase, GnomeId):
     def new_from_dict(cls, dict_):
         rv = cls.from_netCDF(**dict_)
         return rv
+
+    def interpolation_alphas(self, points, time, data_shape, _hash=None, **kwargs):
+        return (None, None)
 
 
 class L_Depth(gridded.depth.L_Depth, GnomeId):

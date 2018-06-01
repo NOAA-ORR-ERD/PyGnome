@@ -24,7 +24,7 @@ class KMZSchema(BaseOutputterSchema):
 #    round_data = SchemaNode(Bool(), missing=drop)
 #    round_to = SchemaNode(Int(), missing=drop)
     filename = FilenameSchema(
-        missing=drop, save=True, update=True, test_for_eq=False
+        missing=drop, save=True, update=True, test_equal=False
     )
 
 

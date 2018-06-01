@@ -126,7 +126,7 @@ class CurrentMoversBase(CyMover):
 class CatsMoverSchema(CurrentMoversBaseSchema):
     '''static schema for CatsMover'''
     filename = FilenameSchema(
-        save=True, update=True, isdatafile=True, test_for_eq=False
+        save=True, update=True, isdatafile=True, test_equal=False
     )
     scale = SchemaNode(
         Bool(), missing=drop, save=True, update=True
@@ -361,10 +361,10 @@ class CatsMover(CurrentMoversBase):
 
 class GridCurrentMoverSchema(CurrentMoversBaseSchema):
     filename = FilenameSchema(
-        missing=drop, save=True, update=True, isdatafile=True, test_for_eq=False
+        missing=drop, save=True, update=True, isdatafile=True, test_equal=False
     )
     topology_file = FilenameSchema(
-        missing=drop, save=True, read=True, isdatafile=True, test_for_eq=False
+        missing=drop, save=True, read_only=True, isdatafile=True, test_equal=False
     )
     current_scale = SchemaNode(
         Float(), missing=drop, save=True, update=True
@@ -382,7 +382,7 @@ class GridCurrentMoverSchema(CurrentMoversBaseSchema):
         Float(), missing=drop, save=True, update=True
     )
     is_data_on_cells = SchemaNode(
-        Bool(), missing=drop, read=True
+        Bool(), missing=drop, read_only=True
     )
 
 
@@ -617,10 +617,10 @@ class GridCurrentMover(CurrentMoversBase):
 
 class IceMoverSchema(CurrentMoversBaseSchema):
     filename = FilenameSchema(
-        missing=drop, save=True, read=True, isdatafile=True, test_for_eq=False
+        missing=drop, save=True, read_only=True, isdatafile=True, test_equal=False
     )
     topology_file = FilenameSchema(
-        missing=drop, save=True, read=True, isdatafile=True, test_for_eq=False
+        missing=drop, save=True, read_only=True, isdatafile=True, test_equal=False
     )
     current_scale = SchemaNode(
         Float(), missing=drop, save=True, update=True
@@ -896,10 +896,10 @@ class IceMover(CurrentMoversBase):
 
 class CurrentCycleMoverSchema(CurrentMoversBaseSchema):
     filename = FilenameSchema(
-        missing=drop, save=True, update=True, isdatafile=True, test_for_eq=False
+        missing=drop, save=True, update=True, isdatafile=True, test_equal=False
     )
     topology_file = FilenameSchema(
-        missing=drop, save=True, update=True, isdatafile=True, test_for_eq=False
+        missing=drop, save=True, update=True, isdatafile=True, test_equal=False
     )
     current_scale = SchemaNode(
         Float(), default=1, missing=drop, save=True, update=True
@@ -1021,11 +1021,11 @@ class ComponentMoverSchema(ProcessSchema):
     '''static schema for ComponentMover'''
     filename1 = SchemaNode(
         String(), missing=drop,
-        save=True, update=True, isdatafile=True, test_for_eq=False
+        save=True, update=True, isdatafile=True, test_equal=False
     )
     filename2 = SchemaNode(
         String(), missing=drop,
-        save=True, update=True, isdatafile=True, test_for_eq=False
+        save=True, update=True, isdatafile=True, test_equal=False
     )
     scale_refpoint = WorldPoint(
         missing=drop, save=True, update=True

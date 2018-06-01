@@ -541,7 +541,61 @@ class Serializable(GnomeId, Savable):
 
         return value
 
+    def update_from_dict(self, data):
+        """
+        Update the attributes of this object using the dictionary ``data`` by
+        looking up the value of each key in ``data``.
+        The fields in self._state that have update=True are modified. The
+        remaining keys in 'data' are ignored. The object's _state attribute
+        defines what fields can be updated
 
+        If an attribute has changed, then call 'update_attr' to update its
+        value.
+
+        :param data: dict containing state of object per the client
+        :type data: dict
+        :returns: True if something changed, False otherwise
+        :rtype: bool
+
+        .. note::
+
+            Does not do updates on nested objects. If the attribute references
+            another Serializable object, then the value is not a dict but
+            rather the updated object. For instance, WindMover will receive:
+
+              {..., 'wind': <Wind object>}
+
+            as opposed to a nested dict of the 'wind' object. It is expected
+            that the 'wind' object was updated by calling its own
+            update_from_dict then added to this dict as the updated object.
+        """
+        list_ = self._state.get_names('update')
+        updated = False
+
+        if ('active_start' in data and
+                'active_stop' in data and
+                'active_stop' in list_):
+            # special case: these attributes employ range checking,
+            # so we would like to make sure that we evaluate
+            # active_stop before active_start if we are setting the active
+            # range outside and above the original range,
+            # and we would like to evaluate active_start before active_stop
+            # if we are setting the active range outside and below the
+            # original range.
+            try:
+                self._check_active_startstop(data['active_start'],
+                                             self.active_stop)
+            except ValueError:
+                list_.insert(0, list_.pop(list_.index('active_stop')))
+
+        for key in list_:
+            if key not in data:
+                continue
+
+            if self.update_attr(key, data[key]):
+                updated = True
+
+        return updated
 
     def _attr_changed(self, current_value, received_value):
         '''

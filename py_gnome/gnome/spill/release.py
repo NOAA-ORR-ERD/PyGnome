@@ -26,14 +26,11 @@ from gnome.gnomeobject import GnomeId
 class BaseReleaseSchema(ObjTypeSchema):
     release_time = SchemaNode(
         LocalDateTime(), validator=convertible_to_seconds,
-        save=True, update=True
     )
-    start_time_invalid = SchemaNode(
-        Bool(), missing=drop, save=True, update=True
-    )
+    start_time_invalid = SchemaNode(Bool(), save=False, read_only=True)
 
     num_released = SchemaNode(
-        Int(), missing=drop, save=True, read=True
+        Int(), read_only=True
     )
 
 class PointLineReleaseSchema(BaseReleaseSchema):

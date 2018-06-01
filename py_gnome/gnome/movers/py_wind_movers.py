@@ -25,7 +25,7 @@ class PyWindMoverSchema(base_schema.ObjTypeSchema):
         save=True, update=True, save_reference=True
     )
     filename = FilenameSchema(
-        missing=drop, save=True, read=True, isdatafile=True
+        missing=drop, save=True, read_only=True, isdatafile=True
     )
     wind_scale = SchemaNode(
         Float(), missing=drop, save=True, update=True
@@ -52,12 +52,12 @@ class PyWindMoverSchema(base_schema.ObjTypeSchema):
     real_data_start = SchemaNode(
         LocalDateTime(), missing=drop,
         validator=convertible_to_seconds,
-        read=True
+        read_only=True
     )
     real_data_stop = SchemaNode(
         LocalDateTime(), missing=drop,
         validator=convertible_to_seconds,
-        read=True
+        read_only=True
     )
 
 

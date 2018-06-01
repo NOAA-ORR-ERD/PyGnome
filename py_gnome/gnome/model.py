@@ -44,76 +44,49 @@ from gnome.persist.extend_colander import OrderedCollectionSchema
 
 class ModelSchema(ObjTypeSchema):
     'Colander schema for Model object'
-    time_step = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
-    weathering_substeps = SchemaNode(
-        Int(), missing=drop, save=True, update=True
-    )
+    time_step = SchemaNode(Float())
+    weathering_substeps = SchemaNode(Int())
     start_time = SchemaNode(
         extend_colander.LocalDateTime(),
-        validator=validators.convertible_to_seconds, missing=drop,
-        save=True, update=True
+        validator=validators.convertible_to_seconds
     )
     duration = SchemaNode(
-        extend_colander.TimeDelta(), missing=drop,
-        save=True, update=True
+        extend_colander.TimeDelta()
     )
-    uncertain = SchemaNode(
-        Bool(), missing=drop, save=True, update=True
-    )
-    cache_enabled = SchemaNode(
-        Bool(), missing=drop, save=True, update=True
-    )
-    num_time_steps = SchemaNode(
-        Int(), missing=drop, save=True, update=True
-    )
-    make_default_refs = SchemaNode(
-        Bool(), missing=drop, save=True, update=True
-    )
+    uncertain = SchemaNode(Bool())
+    cache_enabled = SchemaNode(Bool())
+    num_time_steps = SchemaNode(Int())
+    make_default_refs = SchemaNode(Bool())
     mode = SchemaNode(
-        String(), validator=OneOf(['gnome', 'adios', 'roc']), missing=drop,
-        save=True, update=True
+        String(), validator=OneOf(['gnome', 'adios', 'roc'])
     )
     location = SchemaNode(
         List(), missing=drop,
-        save=True, update=True
+
     )
     spills = OrderedCollectionSchema(
-        GeneralGnomeObjectSchema(
-            acceptable_schemas=[SpillSchema]
-        ),
-        missing=drop, save=True, update=True, save_reference=True, test_for_eq=False
+        GeneralGnomeObjectSchema(acceptable_schemas=[SpillSchema]),
+        save_reference=True, test_equal=False
     )
     uncertain_spills = OrderedCollectionSchema(
-        GeneralGnomeObjectSchema(
-            acceptable_schemas=[SpillSchema]
-        ),
-        missing=drop, save=True, update=True, save_reference=True, test_for_eq=False
+        GeneralGnomeObjectSchema(acceptable_schemas=[SpillSchema]),
+        save_reference=True, test_equal=False
     )
     movers = OrderedCollectionSchema(
-        GeneralGnomeObjectSchema(
-            acceptable_schemas=gnome.movers.mover_schemas
-        ),
-        missing=drop, save=True, update=True, save_reference=True
+        GeneralGnomeObjectSchema(acceptable_schemas=gnome.movers.mover_schemas),
+        save_reference=True
     )
     weatherers = OrderedCollectionSchema(
-        GeneralGnomeObjectSchema(
-            acceptable_schemas=weatherer_schemas
-        ),
-        missing=drop, save=True, update=True, save_reference=True
+        GeneralGnomeObjectSchema(acceptable_schemas=weatherer_schemas),
+        save_reference=True
     )
     environment = OrderedCollectionSchema(
-        GeneralGnomeObjectSchema(
-            acceptable_schemas=gnome.environment.schemas
-        ),
-        missing=drop, save=True, update=True, save_reference=True
+        GeneralGnomeObjectSchema(acceptable_schemas=gnome.environment.schemas),
+        save_reference=True
     )
     outputters = OrderedCollectionSchema(
-        GeneralGnomeObjectSchema(
-            acceptable_schemas=gnome.outputters.schemas
-        ),
-        missing=drop, save=True, update=True, save_reference=True
+        GeneralGnomeObjectSchema(acceptable_schemas=gnome.outputters.schemas),
+        save_reference=True
     )
 
 

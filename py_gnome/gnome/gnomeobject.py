@@ -13,6 +13,7 @@ import six
 
 from gnome.exceptions import ReferencedObjectNotSet
 from gnome.utilities.orderedcollection import OrderedCollection
+from IPython.core.debugger import Pdb
 log = logging.getLogger(__name__)
 
 allowzip64=False
@@ -293,7 +294,7 @@ class GnomeId(AddLogger):
         This is base implementation and can be over-ridden by classes using
         this mixin
         """
-        read_only_attrs = cls._schema().get_nodes_by_attr('read')
+        read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
         map(lambda n: dict_.pop(n, None), read_only_attrs)
         new_obj = cls(**dict_)
 
@@ -316,19 +317,10 @@ class GnomeId(AddLogger):
 
         list_ = self._schema().get_nodes_by_attr('all')
 
-        value = None
         for key in list_:
-            if getattr(self, key) is not None:
-                data[key] = getattr(self, key)
+            data[key] = getattr(self, key)
 
         return data
-
-    def update(self, dict_):
-        """
-        Calls the schema_.update to update the object
-        Override this to add any special processing before the dict is applied
-        """
-        return self._schema()._update(self, copy.copy(dict_))
 
     def update_from_dict(self, dict_):
         """
@@ -338,13 +330,15 @@ class GnomeId(AddLogger):
         """
         updatable = self._schema().get_nodes_by_attr('update')
         attrs = copy.copy(dict_)
+        updated = {}
         for k in attrs.keys():
             if k not in updatable:
                 attrs.pop(k)
-        #incomplete implementation!
         for k, v in attrs.items():
             if hasattr(self, k):
+                updated[k] = v
                 setattr(self, k, v)
+        return updated
 
     def _check_type(self, other):
         'check basic type equality'
@@ -387,8 +381,8 @@ class GnomeId(AddLogger):
 
         for name in schema.get_nodes_by_attr('all'):
             subnode = schema.get(name)
-            if ((hasattr(subnode, 'test_for_eq') and
-                not subnode.test_for_eq) or
+            if ((hasattr(subnode, 'test_equal') and
+                not subnode.test_equal) or
                 subnode.name == 'id'):
                 continue
 
@@ -404,10 +398,12 @@ class GnomeId(AddLogger):
             else:
                 if not isinstance(self_attr, type(other_attr)):
                     return False
-
-                if not np.allclose(self_attr, other_attr,
-                                   rtol=1e-4, atol=1e-4):
-                    return False
+                try:
+                    if not np.allclose(self_attr, other_attr,
+                                       rtol=1e-4, atol=1e-4):
+                        return False
+                except TypeError: #compound types (such as old Timeseries) will break
+                    return all(self_attr == other_attr)
 
         return True
 
@@ -421,8 +417,8 @@ class GnomeId(AddLogger):
 
         for name in schema.get_nodes_by_attr('all'):
             subnode = schema.get(name)
-            if ((hasattr(subnode, 'test_for_eq') and
-                not subnode.test_for_eq) or
+            if ((hasattr(subnode, 'test_equal') and
+                not subnode.test_equal) or
                 subnode.name == 'id'):
                 continue
 
@@ -432,16 +428,16 @@ class GnomeId(AddLogger):
             if not isinstance(self_attr, np.ndarray):
                 if isinstance(self_attr, float):
                     if abs(self_attr - other_attr) > 1e-10:
-                        diffs.append('Different {0}: self={1}, other={2}'.format(name, self_attr, other_attr))
+                        diffs.append('Outside tolerance {0}: self={1}, other={2}'.format(name, self_attr, other_attr))
                 elif self_attr != other_attr:
-                    diffs.append('Different {0}: self={1}, other={2}'.format(name, self_attr, other_attr))
+                    diffs.append('!= {0}: self={1}, other={2}'.format(name, self_attr, other_attr))
             else:
                 if not isinstance(self_attr, type(other_attr)):
-                    return False
+                    diffs.append('Different Types {0}: self={1}, other={2}'.format(name, self_attr, other_attr))
 
                 if not np.allclose(self_attr, other_attr,
                                    rtol=1e-4, atol=1e-4):
-                    diffs.append('Different {0}: self={1}, other={2}'.format(name, self_attr, other_attr))
+                    diffs.append('Not allclose {0}: self={1}, other={2}'.format(name, self_attr, other_attr))
 
         return diffs
 
