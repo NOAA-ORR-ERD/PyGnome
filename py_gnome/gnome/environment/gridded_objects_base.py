@@ -4,7 +4,7 @@ import copy
 import numpy as np
 
 from colander import (SchemaNode, SequenceSchema,
-                      Sequence, String, DateTime,
+                      Sequence, String, Boolean, DateTime,
                       drop)
 
 import gridded
@@ -53,6 +53,7 @@ class VectorVariableSchema(VariableSchemaBase):
                            children=[SchemaNode(String())])
     grid_file = SchemaNode(typ=Sequence(accept_scalar=True),
                            children=[SchemaNode(String())])
+    extrapolation_is_allowed = SchemaNode(Boolean(), missing=drop)
 
 
 class Time(gridded.time.Time, serializable.Serializable):
@@ -151,9 +152,11 @@ class Grid_U(gridded.grids.Grid_U, serializable.Serializable):
         the grid.
         '''
         open_cells = self.nodes[self.faces]
-        closed_cells = np.concatenate((open_cells, open_cells[:,None,0]), axis=1)
+        closed_cells = np.concatenate((open_cells, open_cells[:, None, 0]),
+                                      axis=1)
         closed_cells = closed_cells.astype(np.float32, copy=False)
-        lengths = closed_cells.shape[1] * np.ones(closed_cells.shape[0], dtype=np.int32)
+        lengths = closed_cells.shape[1] * np.ones(closed_cells.shape[0],
+                                                  dtype=np.int32)
 
         return (lengths, [closed_cells])
 
@@ -161,7 +164,7 @@ class Grid_U(gridded.grids.Grid_U, serializable.Serializable):
         return self.nodes[:]
 
     def get_centers(self):
-        if self.face_coordinates == None:
+        if self.face_coordinates is None:
             self.build_face_coordinates()
         return self.face_coordinates
 
@@ -240,11 +243,11 @@ class Grid_S(gridded.grids.Grid_S, serializable.Serializable):
 
     def get_centers(self):
         if self.center_lon is None:
-            lons = (self.node_lon[0:-1, 0:-1] + self.node_lon[1:,1:]) /2
-            lats = (self.node_lat[0:-1, 0:-1] + self.node_lat[1:,1:]) /2
-            return np.stack((lons, lats), axis=-1).reshape(-1,2)
+            lons = (self.node_lon[0:-1, 0:-1] + self.node_lon[1:, 1:]) / 2
+            lats = (self.node_lat[0:-1, 0:-1] + self.node_lat[1:, 1:]) / 2
+            return np.stack((lons, lats), axis=-1).reshape(-1, 2)
         else:
-            return self.centers.reshape(-1,2)
+            return self.centers.reshape(-1, 2)
 
     def get_metadata(self):
         json_ = {}
@@ -261,11 +264,17 @@ class Grid_S(gridded.grids.Grid_S, serializable.Serializable):
         and the resulting lines are drawn, you should end up with a picture of
         the grid.
         '''
-        hor_lines = np.dstack((self.node_lon[:], self.node_lat[:])).astype(np.float32, copy=False)
-        ver_lines = hor_lines.transpose((1, 0, 2)).astype(np.float32, copy=True)
-        hor_lens = hor_lines.shape[1] * np.ones(hor_lines.shape[0], dtype=np.int32)
-        ver_lens = ver_lines.shape[1] * np.ones(ver_lines.shape[0], dtype=np.int32)
+        hor_lines = (np.dstack((self.node_lon[:], self.node_lat[:]))
+                     .astype(np.float32, copy=False))
+        ver_lines = (hor_lines.transpose((1, 0, 2))
+                     .astype(np.float32, copy=True))
+
+        hor_lens = hor_lines.shape[1] * np.ones(hor_lines.shape[0],
+                                                dtype=np.int32)
+        ver_lens = ver_lines.shape[1] * np.ones(ver_lines.shape[0],
+                                                dtype=np.int32)
         lens = np.concatenate((hor_lens, ver_lens))
+
         return (lens, [hor_lines, ver_lines])
 
 
@@ -289,28 +298,41 @@ class Grid_R(gridded.grids.Grid_R, serializable.Serializable):
         return rv
 
     def get_nodes(self):
-        return self.nodes.reshape(-1,2)
+        return self.nodes.reshape(-1, 2)
 
     def get_centers(self):
-        return self.centers.reshape(-1,2)
+        return self.centers.reshape(-1, 2)
 
     def get_cells(self):
         return np.concatenate(self.node_lon, self.node_lat)
 
     def get_lines(self):
 
-        lon_lines = np.array([[(lon, self.node_lat[0]), (lon, self.node_lat[len(self.node_lat)/2]), (lon, self.node_lat[-1])] for lon in self.node_lon], dtype=np.float32)
-        lat_lines = np.array([[(self.node_lon[0], lat), (self.node_lon[len(self.node_lon)/2], lat), (self.node_lon[-1], lat)] for lat in self.node_lat], dtype=np.float32)
-        lon_lens = lon_lines.shape[1] * np.ones(lon_lines.shape[0], dtype=np.int32)
-        lat_lens = lat_lines.shape[1] * np.ones(lat_lines.shape[0], dtype=np.int32)
+        lon_lines = np.array([[(lon, self.node_lat[0]),
+                               (lon, self.node_lat[len(self.node_lat) / 2]),
+                               (lon, self.node_lat[-1])]
+                              for lon in self.node_lon], dtype=np.float32)
+        lat_lines = np.array([[(self.node_lon[0], lat),
+                               (self.node_lon[len(self.node_lon) / 2], lat),
+                               (self.node_lon[-1], lat)]
+                              for lat in self.node_lat], dtype=np.float32)
+
+        lon_lens = lon_lines.shape[1] * np.ones(lon_lines.shape[0],
+                                                dtype=np.int32)
+        lat_lens = lat_lines.shape[1] * np.ones(lat_lines.shape[0],
+                                                dtype=np.int32)
         lens = np.concatenate((lon_lens, lat_lens))
+
         return (lens, [lon_lines, lat_lines])
+
 
 class PyGrid(gridded.grids.Grid):
 
     @staticmethod
     def from_netCDF(*args, **kwargs):
-        kwargs['_default_types'] = (('ugrid', Grid_U), ('sgrid', Grid_S), ('rgrid', Grid_R))
+        kwargs['_default_types'] = (('ugrid', Grid_U),
+                                    ('sgrid', Grid_S),
+                                    ('rgrid', Grid_R))
 
         return gridded.grids.Grid.from_netCDF(*args, **kwargs)
 
@@ -320,20 +342,27 @@ class PyGrid(gridded.grids.Grid):
 
     @staticmethod
     def _get_grid_type(*args, **kwargs):
-        kwargs['_default_types'] = (('ugrid', Grid_U), ('sgrid', Grid_S), ('rgrid', Grid_R))
+        kwargs['_default_types'] = (('ugrid', Grid_U),
+                                    ('sgrid', Grid_S),
+                                    ('rgrid', Grid_R))
 
         return gridded.grids.Grid._get_grid_type(*args, **kwargs)
+
 
 class Depth(gridded.depth.Depth):
     @staticmethod
     def from_netCDF(*args, **kwargs):
-        kwargs['_default_types'] = (('level', L_Depth), ('sigma', S_Depth), ('surface', DepthBase))
+        kwargs['_default_types'] = (('level', L_Depth),
+                                    ('sigma', S_Depth),
+                                    ('surface', DepthBase))
 
         return gridded.depth.Depth.from_netCDF(*args, **kwargs)
 
     @staticmethod
     def _get_depth_type(*args, **kwargs):
-        kwargs['_default_types'] = (('level', L_Depth), ('sigma', S_Depth), ('surface', DepthBase))
+        kwargs['_default_types'] = (('level', L_Depth),
+                                    ('sigma', S_Depth),
+                                    ('surface', DepthBase))
 
         return gridded.depth.Depth._get_depth_type(*args, **kwargs)
 
@@ -361,13 +390,16 @@ class Variable(gridded.Variable, serializable.Serializable):
                                      'grid': PyGrid,
                                      'depth': Depth})
 
-    def __init__(self, extrapolate=False, *args, **kwargs):
-        self.extrapolate = extrapolate
+    def __init__(self, extrapolation_is_allowed=False, *args, **kwargs):
+        self.extrapolation_is_allowed = extrapolation_is_allowed
         super(Variable, self).__init__(*args, **kwargs)
 
     def at(self, *args, **kwargs):
-        if ('extrapolate' not in kwargs):
-            kwargs['extrapolate'] = self.extrapolate
+        if self.extrapolation_is_allowed:
+            kwargs['extrapolate'] = True
+        else:
+            kwargs['extrapolate'] = False
+
         return super(Variable, self).at(*args, **kwargs)
 
     @classmethod
@@ -388,6 +420,7 @@ class DepthBase(gridded.depth.DepthBase):
     _default_component_types.update({'time': Time,
                                      'grid': PyGrid,
                                      'variable': Variable})
+
     @classmethod
     def new_from_dict(cls, dict_):
         dict_.pop('json_')
@@ -410,6 +443,7 @@ class L_Depth(gridded.depth.L_Depth):
     _default_component_types.update({'time': Time,
                                      'grid': PyGrid,
                                      'variable': Variable})
+
     @classmethod
     def new_from_dict(cls, dict_):
         dict_.pop('json_')
@@ -432,6 +466,7 @@ class S_Depth(gridded.depth.S_Depth):
     _default_component_types.update({'time': Time,
                                      'grid': PyGrid,
                                      'variable': Variable})
+
     @classmethod
     def new_from_dict(cls, dict_):
         dict_.pop('json_')
@@ -459,7 +494,9 @@ class VectorVariable(gridded.VectorVariable, serializable.Serializable):
                       serializable.Field('data_file', save=True, update=True,
                                          isdatafile=True),
                       serializable.Field('grid_file', save=True, update=True,
-                                         isdatafile=True)])
+                                         isdatafile=True),
+                      serializable.Field('extrapolation_is_allowed', save=True,
+                                         update=True)])
 
     _default_component_types = copy.deepcopy(gridded.VectorVariable
                                              ._default_component_types)
@@ -476,9 +513,13 @@ class VectorVariable(gridded.VectorVariable, serializable.Serializable):
                 if 'constant' in vn[-1]:
                     dict_['varnames'] = dict_['varnames'][0:2]
 
-            return cls.from_netCDF(**dict_)
+            obj = cls.from_netCDF(**dict_)
+        else:
+            obj = super(VectorVariable, cls).new_from_dict(dict_)
 
-        return super(VectorVariable, cls).new_from_dict(dict_)
+        obj.extrapolation_is_allowed = dict_.get('extrapolation_is_allowed',
+                                                 False)
+        return obj
 
     def get_data_vectors(self):
         '''

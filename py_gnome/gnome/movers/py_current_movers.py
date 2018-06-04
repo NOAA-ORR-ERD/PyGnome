@@ -258,26 +258,26 @@ class PyCurrentMover(PyMover, Serializable):
 
         All movers must implement get_move() since that's what the model calls
         """
-        method = None
-
-        if num_method is None:
-            method = self.num_methods[self.default_num_method]
-        else:
-            method = self.num_method[num_method]
-
-        status = sc['status_codes'] != oil_status.in_water
         positions = sc['positions']
-        pos = positions[:]
 
-        res = method(sc, time_step, model_time_datetime, pos, self.current)
+        if self.active and len(positions) > 0:
+            status = sc['status_codes'] != oil_status.in_water
+            pos = positions[:]
 
-        if res.shape[1] == 2:
-            deltas = np.zeros_like(positions)
-            deltas[:, 0:2] = res
+            res = self.delta_method(num_method)(sc, time_step,
+                                                model_time_datetime,
+                                                pos,
+                                                self.current)
+
+            if res.shape[1] == 2:
+                deltas = np.zeros_like(positions)
+                deltas[:, 0:2] = res
+            else:
+                deltas = res
+
+            deltas = FlatEarthProjection.meters_to_lonlat(deltas, positions)
+            deltas[status] = (0, 0, 0)
         else:
-            deltas = res
-
-        deltas = FlatEarthProjection.meters_to_lonlat(deltas, positions)
-        deltas[status] = (0, 0, 0)
+            deltas = np.zeros_like(positions)
 
         return deltas

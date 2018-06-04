@@ -486,7 +486,7 @@ class GridCurrent(VelocityGrid, Environment):
                 'v': ['northward_sea_water_velocity'],
                 'w': ['upward_sea_water_velocity']}
 
-    def at(self, points, time, units=None, extrapolate=False, **kwargs):
+    def at(self, points, time, units=None, **kwargs):
         '''
         Find the value of the property at positions P at time T
 
@@ -517,6 +517,8 @@ class GridCurrent(VelocityGrid, Environment):
             if res is not None:
                 return res
 
+        extrapolate = self.extrapolation_is_allowed
+
         value = super(GridCurrent, self).at(points, time, units,
                                             extrapolate=extrapolate,
                                             **kwargs)
@@ -545,7 +547,6 @@ class GridCurrent(VelocityGrid, Environment):
 
 
 class GridWind(VelocityGrid, Environment):
-
     _ref_as = 'wind'
 
     default_names = {'u': ['air_u', 'Air_U', 'air_ucmp', 'wind_u'],
@@ -554,8 +555,13 @@ class GridWind(VelocityGrid, Environment):
     cf_names = {'u': ['eastward_wind', 'eastward wind'],
                 'v': ['northward_wind', 'northward wind']}
 
-    def __init__(self, wet_dry_mask=None, *args, **kwargs):
+    def __init__(self,
+                 wet_dry_mask=None,
+                 extrapolation_is_allowed=False,
+                 *args, **kwargs):
         super(GridWind, self).__init__(*args, **kwargs)
+
+        self.extrapoation_is_allowed = extrapolation_is_allowed
 
         if wet_dry_mask is not None:
             if self.grid.infer_location(wet_dry_mask) != 'center':
@@ -566,7 +572,7 @@ class GridWind(VelocityGrid, Environment):
         if self.units is None:
             self.units = 'm/s'
 
-    def at(self, points, time, units=None, extrapolate=False,
+    def at(self, points, time, units=None,
            coord_sys='uv', _auto_align=True, **kwargs):
         '''
         Find the value of the property at positions P at time T
@@ -615,6 +621,7 @@ class GridWind(VelocityGrid, Environment):
                 return value
 
         if value is None:
+            extrapolate = self.extrapoation_is_allowed
             value = super(GridWind, self).at(pts, time, units,
                                              extrapolate=extrapolate,
                                              _auto_align=False, **kwargs)

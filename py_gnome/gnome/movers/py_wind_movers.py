@@ -204,25 +204,22 @@ class PyWindMover(PyMover, Serializable):
 
         All movers must implement get_move() since that's what the model calls
         """
-        method = None
         positions = sc['positions']
 
         if self.active and len(positions) > 0:
-            if num_method is None:
-                method = self.num_methods[self.default_num_method]
-            else:
-                method = self.num_method[num_method]
-
             status = sc['status_codes'] != oil_status.in_water
             pos = positions[:]
 
-            deltas = method(sc, time_step, model_time_datetime, pos, self.wind)
+            deltas = self.delta_method(num_method)(sc, time_step,
+                                                   model_time_datetime,
+                                                   pos,
+                                                   self.wind)
+
             deltas[:, 0] *= sc['windages']
             deltas[:, 1] *= sc['windages']
 
             deltas = FlatEarthProjection.meters_to_lonlat(deltas, positions)
             deltas[status] = (0, 0, 0)
-
         else:
             deltas = np.zeros_like(positions)
 

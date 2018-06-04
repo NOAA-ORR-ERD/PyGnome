@@ -189,8 +189,7 @@ class Mover(Process):
 
 
 class PyMover(Mover):
-    def __init__(self,
-                 default_num_method='RK2',
+    def __init__(self, default_num_method='RK2',
                  **kwargs):
         super(PyMover, self).__init__(**kwargs)
 
@@ -225,6 +224,20 @@ class PyMover(Mover):
     @property
     def is_data_on_cells(self):
         return self.data.grid.infer_location(self.data.u.data) != 'node'
+
+    def delta_method(self, method_name=None):
+        '''
+            Returns a delta function based on its registered name
+
+            Usage: delta = self.delta_method('RK2')(**kwargs)
+
+            Note: We do not handle any key errors resulting from passing in
+            a bad registered name.
+        '''
+        if method_name is None:
+            method_name = self.default_num_method
+
+        return self.num_method[method_name]
 
     def get_delta_Euler(self, sc, time_step, model_time, pos, vel_field):
         vels = vel_field.at(pos, model_time,
