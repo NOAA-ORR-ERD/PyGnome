@@ -410,6 +410,8 @@ class PointLineRelease(Release):
         '''
         if val is not None:
             val = np.array(val, dtype=world_point_type).reshape((3, ))
+        else:
+            val = self.start_position
 
         self._end_position = val
         self._delta_pos = None

@@ -263,7 +263,7 @@ class OrderedCollection(object):
     def __ne__(self, other):
         return not self == other
 
-    def update(self, cstruct):
+    def update(self, cstruct, refs):
         '''
         cstruct is meant to be a list of COMPLETE object serializations, or
         GnomeID appstructs (refs to existing objects).

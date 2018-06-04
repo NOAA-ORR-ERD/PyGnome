@@ -38,7 +38,7 @@ from gnome.persist.base_schema import (ObjTypeSchema,
     GeneralGnomeObjectSchema)
 from gnome.exceptions import ReferencedObjectNotSet, GnomeRuntimeError
 from gnome.spill.spill import SpillSchema
-from gnome.gnomeobject import GnomeId, allowzip64
+from gnome.gnomeobject import GnomeId, allowzip64, Refs
 from gnome.persist.extend_colander import OrderedCollectionSchema
 
 
@@ -70,7 +70,7 @@ class ModelSchema(ObjTypeSchema):
     )
     uncertain_spills = OrderedCollectionSchema(
         GeneralGnomeObjectSchema(acceptable_schemas=[SpillSchema]),
-        save_reference=True, test_equal=False
+        save_reference=True, test_equal=False, read=True, update=False
     )
     movers = OrderedCollectionSchema(
         GeneralGnomeObjectSchema(acceptable_schemas=gnome.movers.mover_schemas),
@@ -343,6 +343,42 @@ class Model(GnomeId):
 #        """
 #        write the already-cached data to an output files.
 #        """
+
+    def update_from_dict(self, dict_, refs=None):
+        """
+        functions in common_object.
+        """
+        if refs is None:
+            refs = Refs()
+        updatable = self._schema().get_nodes_by_attr('update')
+        attrs = copy.copy(dict_)
+        updated = {}
+        for k in attrs.keys():
+            if k not in updatable:
+                attrs.pop(k)
+
+        for name in updatable:
+            node = self._schema().get(name)
+            if name in attrs:
+                if name != 'spills':
+                    attrs[name] = self._schema.process_subnode(node, getattr(self, name), attrs, attrs[name], refs)
+                    if attrs[name] is drop:
+                        del attrs[name]
+                else:
+                    for s in self.spills._spill_container.spills:
+                        refs[s.id] = s
+                    new_certain_spills = ObjTypeSchema.process_subnode(node, self.spills._spill_container.spills, attrs, attrs[name], refs)
+                    import pdb
+                    pdb.set_trace()
+                    self.spills.update_from_dict({'spills':new_certain_spills})
+                    attrs.pop(name)
+
+
+        for k, v in attrs.items():
+            if hasattr(self, k):
+                updated[k] = v
+                setattr(self, k, v)
+        return updated
 
     @property
     def uncertain(self):

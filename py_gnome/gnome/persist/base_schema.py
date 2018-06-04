@@ -14,9 +14,8 @@ from colander import (SchemaNode, deferred, drop, required, Invalid, Unsupported
 
 from extend_colander import NumpyFixedLenSchema
 
-from gnome.gnomeobject import GnomeId, Refs, class_from_objtype
+from gnome.gnomeobject import Refs, class_from_objtype
 from gnome.persist.extend_colander import OrderedCollectionType
-
 
 @deferred
 def now(node, kw):
@@ -168,78 +167,6 @@ class ObjType(SchemaType):
 
         result = self._impl(node, cstruct, callback)
         return self._deser(node, result, refs)
-
-    def _upd(self, node, obj, dict_):
-        if hasattr(obj, 'update_from_dict'):
-            return obj.update_from_dict(dict_)
-        else:
-            raise TypeError('{0} does not have an update_from_dict'.format(obj))
-
-    def _update(self, node, appstruct=None, cstruct=None, refs=None):
-
-        def callback(subnode, subcstruct):
-            if subnode.typ.__class__ is self.__class__:
-                #subnode is schema for a gnome object
-                subnode._update(cstruct)
-                if ['obj_type'] in subcstruct:
-                if subappstruct is not None:
-                    if subcstruct is None:
-                        #trying to set this to None. return null so this can be detected
-                        #by the parent node
-                        return null
-                    else:
-                        subnode._update(subappstruct, subcstruct)
-                        return subappstruct
-                else:
-                    #updating a GnomeID variable that is set to None
-                    #Try to create a valid object from the cstruct
-                    return subnode.deserialize(subcstruct)
-
-            elif ((subnode.schema_type is Sequence) and
-                    isinstance(subnode.children[0], ObjTypeSchema)):
-                #subnode is List or OrderedCollection
-                scalar = hasattr(subnode.typ, 'accept_scalar') and subnode.typ.accept_scalar
-                while(len(subcstruct) < len(subappstruct)):
-                    subcstruct.append({})
-                rv = subnode.typ._impl(subnode, zip(subappstruct, subcstruct), callback, scalar)
-                for i, e in enumerate(rv):
-                    if e is null:
-                        rv[i] = None
-                return rv
-            elif (subnode.schema_type is OrderedCollectionType):
-                #OrderedCollections ordering can be updated using .update, so they
-                #need to be special cased. In essence, treat them as a 'primitive' type
-                #and let it handle all the changes internally.
-                #return None to cause the parent node to skip this subnode
-                subappstruct.update_from_dict(subcstruct)
-                return None
-            elif (subnode.schema_type is Tuple):
-                return subnode.typ._impl(subnode, zip(subappstruct, subcstruct), callback)
-            else:
-                #Float, String, etc
-                return subnode.deserialize(subcstruct)
-
-        result = self._upd_impl(node, cstruct, callback)
-        return self._upd(node, appstruct, result)
-
-    def _upd_impl(self, node, cstruct, callback):
-        #because update needs to handle 'sparse' dictionaries, it cannot raise
-        #errors on nodes that aren't present in the data and do not have
-        #missing=drop set
-        result = {}
-
-        for num, subnode in enumerate(node.children):
-            name = subnode.name
-            subcstr = cstruct.get(name, null) #update is where a destructive approach makes most sense
-            if subcstr == null: #attr is not present in cstruct dict, so skip
-                continue
-            elif subcstr == None:
-                result[name] = subcstr
-            else:
-                sub_result = callback(subnode, subcstr)
-                result[name] = sub_result
-
-        return result
 
     def flatten(self, node, appstruct, prefix='', listitem=False):
         result = {}
@@ -548,12 +475,6 @@ class ObjTypeSchema(MappingSchema):
             if c.read_only and c.update:
                 c.update=False
 
-    def _update(self, cstruct=None, refs=None):
-        if refs is None:
-            refs = Refs()
-        return self.typ._update(self,
-                               cstruct=cstruct)
-
     def deserialize(self, cstruct=None, refs=None):
         if refs is None:
             refs = Refs()
@@ -577,8 +498,6 @@ class ObjTypeSchema(MappingSchema):
         '''
         if obj is None:
             raise ValueError(self.__class__.__name__ + ': Cannot save a None')
-        if not issubclass(obj.__class__, GnomeId) and not isinstance(obj, GnomeId):
-            raise TypeError('This schema cannot save {0}, a non-GNOME object'.format(obj.__class__))
         if obj._schema is not self.__class__:
             raise TypeError('A {0} cannot save a {1}'.format(self.__class__.__name__, obj.__class__.__name__))
 
@@ -602,7 +521,6 @@ class ObjTypeSchema(MappingSchema):
         obj = self.typ.load(self, obj_json, saveloc, refs)
         return obj
 
-
     def get_nodes_by_attr(self, attr):
         '''
         Returns a list of child node names that have the specified attr set on them
@@ -619,6 +537,52 @@ class ObjTypeSchema(MappingSchema):
             #considered to always have 'save' and 'update' as true, read as false,
             return names
 
+    @staticmethod
+    def process_subnode(subnode, subappstruct, cstruct, subcstruct, refs):
+        if subnode.schema_type is ObjType:
+            if subcstruct is None:
+                return None
+            o = refs.get(subcstruct['id'], subappstruct)
+            if o is not None :
+                #existing object, so update using subdict (dict_[name])
+                #and set dict_[name] to object
+                if o.id not in refs:
+                    refs[o.id] = o
+                if 'id' in subcstruct and subcstruct['id'] != o.id:
+                    #obj exists, but should be replaced
+                    o = subnode.deserialize(subcstruct, refs=refs)
+                    refs[o.id] = o
+                    return o
+                else:
+                    o.update_from_dict(subcstruct, refs=refs)
+                    return o
+            else:
+                #object doesn't exist, so attempt to instantiate through
+                #deserialize, or use existing object if found in refs
+                o = subnode.deserialize(subcstruct, refs=refs)
+                refs[o.id] = o
+                return o
+        elif (subnode.schema_type is Sequence and
+                    isinstance(subnode.children[0], ObjTypeSchema)):
+            if subappstruct is not None:
+                #register existing objects, if any
+                for subitem in subappstruct:
+                    if subitem.id not in refs:
+                        refs[subitem.id] = subitem
+            return [ObjTypeSchema.process_subnode(subnode.children[0], subappstruct, cstruct, subitem, refs) for subitem in subcstruct]
+        elif (subnode.schema_type is OrderedCollectionType and
+                    isinstance(subnode.children[0], ObjTypeSchema)):
+            if subappstruct is not None:
+                #register existing objects, if any
+                for subitem in subappstruct:
+                    if subitem.id not in refs:
+                        refs[subitem.id] = subitem
+            subappstruct.clear()
+            subappstruct.add([ObjTypeSchema.process_subnode(subnode.children[0], subappstruct, cstruct, subitem, refs) for subitem in subcstruct])
+            return subappstruct
+
+        else:
+            return subnode.deserialize(subcstruct)
 
 class GeneralGnomeObjectSchema(ObjTypeSchema):
     '''
@@ -656,10 +620,6 @@ class GeneralGnomeObjectSchema(ObjTypeSchema):
                 return schema()
             else:
                 raise TypeError('This type of object is not supported')
-
-    def _update(self, appstruct=None, cstruct=None):
-        substitute_schema = self.validate_input_schema(appstruct)
-        return substitute_schema.typ._update(substitute_schema, appstruct, cstruct)
 
     def serialize(self, appstruct=None):
         substitute_schema = self.validate_input_schema(appstruct)

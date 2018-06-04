@@ -10,10 +10,8 @@ import glob
 import tempfile
 import gnome
 import six
+import colander
 
-from gnome.exceptions import ReferencedObjectNotSet
-from gnome.utilities.orderedcollection import OrderedCollection
-from IPython.core.debugger import Pdb
 log = logging.getLogger(__name__)
 
 allowzip64=False
@@ -322,18 +320,23 @@ class GnomeId(AddLogger):
 
         return data
 
-    def update_from_dict(self, dict_):
-        """
-        Updates this object's attributes from dict_. It does direct assignment
-        for each attribute. Override this function if any special processing
-        needs to happen AFTER the dict is prepared by the schema
-        """
+    def update_from_dict(self, dict_, refs=None):
+        if refs is None:
+            refs = Refs()
         updatable = self._schema().get_nodes_by_attr('update')
         attrs = copy.copy(dict_)
         updated = {}
         for k in attrs.keys():
             if k not in updatable:
                 attrs.pop(k)
+
+        for name in updatable:
+            node = self._schema().get(name)
+            if name in attrs:
+                attrs[name] = self._schema.process_subnode(node, getattr(self, name), attrs, attrs[name], refs)
+                if attrs[name] is colander.drop:
+                    del attrs[name]
+
         for k, v in attrs.items():
             if hasattr(self, k):
                 updated[k] = v
@@ -454,7 +457,7 @@ class GnomeId(AddLogger):
 
 
     @classmethod
-    def deserialize(cls, json_):
+    def deserialize(cls, json_, refs=None):
         """
             classmethod takes json structure as input, deserializes it using a
             colander schema then invokes the new_from_dict method to create an
@@ -463,7 +466,9 @@ class GnomeId(AddLogger):
             We also need to accept sparse json objects, in which case we will
             not treat them, but just send them back.
         """
-        return cls._schema().deserialize(json_)
+        if refs is None:
+            refs = Refs()
+        return cls._schema().deserialize(json_, refs=refs)
 
     def save(self, saveloc='.', refs=None, overwrite=True):
         """

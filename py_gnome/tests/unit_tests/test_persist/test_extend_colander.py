@@ -146,48 +146,6 @@ class TestDemoObj(object):
         loaded = DemoObj.load(zipfile_)
         assert inst == loaded
 
-    def test_update(self):
-        _t = Time(dates())
-        tsv = TimeseriesVector(
-            variables=[TimeseriesData(name='u', time=_t, data=series_data()),
-                       TimeseriesData(name='v', time=_t, data=series_data2())],
-            units='m/s'
-        )
-        filename = ['foo.nc', 'bar.nc']
-
-        inst = DemoObj(filename=filename, variable=tsv, variables=[tsv, tsv.variables[0]])
-        inst.update({})
-        assert inst
-        assert inst.filename == ['foo.nc', 'bar.nc']
-        update_dict = {
-            'foo_float': 55, #should succeed
-            'wrong_foo': 33, #should be ignored
-            'variable': {'name': 'updated1'}, #should succeed
-            'variables': [{}, {'name':'updated2'}] #should succeed, not affect item 1
-        }
-        inst.update(update_dict)
-        assert inst.variable.name == 'updated1'
-        assert inst.variables[0].name == 'updated1'
-        assert inst.variables[1].name == 'updated2'
-
-        assert inst.foo_float == 55
-        assert not hasattr(inst, 'wrong_foo')
-        update_dict2 = {
-            'foo_float_array' : [5], #should not be applied
-            'variables': [{'name': 'changed'}] #should not affect second object
-        }
-        inst.update(update_dict2)
-        assert inst.variable.name == 'changed'
-        assert inst.foo_float_array == [42, 84]
-        assert inst.variables[0].name == 'changed'
-        assert inst.variables[1].name == 'updated2'
-
-        update_dict3 = {
-            'variables': [{'variables':[{'name' : 'wow'}]}]
-        }
-        inst.update(update_dict3)
-        assert inst.variable.variables[0].name == 'wow'
-
 
 class TestObjType(object):
     _t = Time(dates())
