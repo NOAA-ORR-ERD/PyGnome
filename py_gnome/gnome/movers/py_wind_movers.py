@@ -27,7 +27,6 @@ class PyWindMoverSchema(ObjType):
                           children=[SchemaNode(String())],
                           missing=drop)
     wind_scale = SchemaNode(Float(), missing=drop)
-    extrapolate = SchemaNode(Bool(), missing=drop)
     time_offset = SchemaNode(Float(), missing=drop)
     wind = GridWind._schema(missing=drop)
     real_data_start = SchemaNode(DateTime(), missing=drop)
@@ -45,8 +44,7 @@ class PyWindMover(PyMover, Serializable):
 
     _state.add_field([Field('filename', save=True, read=True, isdatafile=True,
                             test_for_eq=False),
-                      Field('wind', read=True, save_reference=True),
-                      Field('extrapolate', read=True, save=True)])
+                      Field('wind', read=True, save_reference=True)])
     _state.add(update=['uncertain_duration', 'uncertain_time_delay'],
                save=['uncertain_duration', 'uncertain_time_delay'])
     _schema = PyWindMoverSchema
@@ -59,7 +57,6 @@ class PyWindMover(PyMover, Serializable):
     def __init__(self,
                  filename=None,
                  wind=None,
-                 extrapolate=False,
                  time_offset=0,
                  uncertain_duration=3,
                  uncertain_time_delay=0,
@@ -84,8 +81,6 @@ class PyWindMover(PyMover, Serializable):
         :param uncertain_time_delay: when does the uncertainly kick in.
         :param uncertain_cross: Scale for uncertainty perpendicular to the flow
         :param uncertain_along: Scale for uncertainty parallel to the flow
-        :param extrapolate: Allow wind data to be extrapolated
-                            before and after file data
         :param time_offset: Time zone shift if data is in GMT
         :param num_method: Numerical method for calculating movement delta.
                            Choices:('Euler', 'RK2', 'RK4')
@@ -110,7 +105,6 @@ class PyWindMover(PyMover, Serializable):
 
             self.__class__._def_count += 1
 
-        self.extrapolate = extrapolate
         self.uncertain_duration = uncertain_duration
         self.uncertain_time_delay = uncertain_time_delay
         self.uncertain_speed_scale = uncertain_speed_scale
@@ -128,7 +122,6 @@ class PyWindMover(PyMover, Serializable):
     @classmethod
     def from_netCDF(cls,
                     filename=None,
-                    extrapolate=False,
                     time_offset=0,
                     wind_scale=1,
                     uncertain_duration=24 * 3600,
@@ -143,7 +136,6 @@ class PyWindMover(PyMover, Serializable):
 
         return cls(wind=wind,
                    filename=filename,
-                   extrapolate=extrapolate,
                    time_offset=time_offset,
                    wind_scale=wind_scale,
                    uncertain_along=uncertain_along,
