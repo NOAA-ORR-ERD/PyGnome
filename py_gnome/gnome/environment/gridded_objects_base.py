@@ -395,9 +395,7 @@ class Variable(gridded.Variable, serializable.Serializable):
         super(Variable, self).__init__(*args, **kwargs)
 
     def at(self, *args, **kwargs):
-        if self.extrapolation_is_allowed:
-            kwargs['extrapolate'] = True
-        else:
+        if ('extrapolate' not in kwargs):
             kwargs['extrapolate'] = False
 
         return super(Variable, self).at(*args, **kwargs)

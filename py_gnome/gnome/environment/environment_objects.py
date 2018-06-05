@@ -561,7 +561,7 @@ class GridWind(VelocityGrid, Environment):
                  *args, **kwargs):
         super(GridWind, self).__init__(*args, **kwargs)
 
-        self.extrapoation_is_allowed = extrapolation_is_allowed
+        self.extrapolation_is_allowed = extrapolation_is_allowed
 
         if wet_dry_mask is not None:
             if self.grid.infer_location(wet_dry_mask) != 'center':
@@ -621,17 +621,20 @@ class GridWind(VelocityGrid, Environment):
                 return value
 
         if value is None:
-            extrapolate = self.extrapoation_is_allowed
+            extrapolate = self.extrapolation_is_allowed
+
             value = super(GridWind, self).at(pts, time, units,
                                              extrapolate=extrapolate,
                                              _auto_align=False, **kwargs)
+
             if has_depth:
                 value[pts[:, 2] > 0.0] = 0  # no wind underwater!
+
             if self.angle is not None:
-                angs = (self.angle
-                        .at(pts, time,
-                            extrapolate=extrapolate, _auto_align=False,
-                            **kwargs)
+                angs = (self.angle.at(pts, time,
+                                      extrapolate=extrapolate,
+                                      _auto_align=False,
+                                      **kwargs)
                         .reshape(-1))
 
                 x = value[:, 0] * np.cos(angs) - value[:, 1] * np.sin(angs)
