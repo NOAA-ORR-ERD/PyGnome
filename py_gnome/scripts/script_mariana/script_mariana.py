@@ -22,7 +22,7 @@ from gnome.outputters import (Renderer,
                               # NetCDFOutput
                               )
 
-NUM_ELEMENTS = 1e5
+NUM_ELEMENTS = 10000
 
 # define base directory
 base_dir = os.path.dirname(__file__)

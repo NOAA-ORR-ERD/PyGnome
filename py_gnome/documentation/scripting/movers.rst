@@ -169,7 +169,7 @@ PyMovers are built to work with the Property objects, and also provide multiple 
 There are three types of numerical methods currently supported.
 
 1. Euler method ('Euler')
-2. Trapezoidal/Heun's 2nd order method ('Trapezoid')
+2. Runge-Kutta 2nd order method ('RK2')
 3. Runge-Kutta 4th order method ('RK4')
 
 To use them, set the 'default_num_method' argument when constructing a mover. Alternatively, you may alter the mover as follows: ::
@@ -179,7 +179,7 @@ To use them, set the 'default_num_method' argument when constructing a mover. Al
     curr_mover = PyGridCurrentMover(current, default_num_method = 'RK4')
     
     #RK4 is too slow, so lets go to the 2nd order method.
-    curr_mover.default_num_method = 'Trapezoid'
+    curr_mover.default_num_method = 'RK2'
     
 The get_move function has the same interface as previous movers. You may also pass in a numerical method here and it will use it instead
 of the default. ::

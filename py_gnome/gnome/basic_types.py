@@ -80,7 +80,7 @@ fate = enum(non_weather=1,
             )
 
 numerical_methods = {'Euler': 0,
-                     'Trapezoid': 1,
+                     'RK2': 1,
                      'RK4': 2}
 
 # ----------------------------------------------------------------

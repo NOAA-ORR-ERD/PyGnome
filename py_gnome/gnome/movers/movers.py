@@ -189,8 +189,7 @@ class Mover(Process):
 
 
 class PyMover(Mover):
-    def __init__(self,
-                 default_num_method='RK2',
+    def __init__(self, default_num_method='RK2',
                  **kwargs):
         super(PyMover, self).__init__(**kwargs)
 
@@ -226,9 +225,22 @@ class PyMover(Mover):
     def is_data_on_cells(self):
         return self.data.grid.infer_location(self.data.u.data) != 'node'
 
+    def delta_method(self, method_name=None):
+        '''
+            Returns a delta function based on its registered name
+
+            Usage: delta = self.delta_method('RK2')(**kwargs)
+
+            Note: We do not handle any key errors resulting from passing in
+            a bad registered name.
+        '''
+        if method_name is None:
+            method_name = self.default_num_method
+
+        return self.num_methods[method_name]
+
     def get_delta_Euler(self, sc, time_step, model_time, pos, vel_field):
-        vels = vel_field.at(pos, model_time,
-                            extrapolate=self.extrapolate)
+        vels = vel_field.at(pos, model_time)
 
         return vels * time_step
 
@@ -237,12 +249,12 @@ class PyMover(Mover):
         dt_s = dt.seconds
         t = model_time
 
-        v0 = vel_field.at(pos, t, extrapolate=self.extrapolate)
+        v0 = vel_field.at(pos, t)
         d0 = FlatEarthProjection.meters_to_lonlat(v0 * dt_s, pos)
         p1 = pos.copy()
         p1 += d0
 
-        v1 = vel_field.at(p1, t + dt, extrapolate=self.extrapolate)
+        v1 = vel_field.at(p1, t + dt)
 
         return dt_s / 2 * (v0 + v1)
 
@@ -251,22 +263,22 @@ class PyMover(Mover):
         dt_s = dt.seconds
         t = model_time
 
-        v0 = vel_field.at(pos, t, extrapolate=self.extrapolate)
+        v0 = vel_field.at(pos, t)
         d0 = FlatEarthProjection.meters_to_lonlat(v0 * dt_s / 2, pos)
         p1 = pos.copy()
         p1 += d0
 
-        v1 = vel_field.at(p1, t + dt / 2, extrapolate=self.extrapolate)
+        v1 = vel_field.at(p1, t + dt / 2)
         d1 = FlatEarthProjection.meters_to_lonlat(v1 * dt_s / 2, pos)
         p2 = pos.copy()
         p2 += d1
 
-        v2 = vel_field.at(p2, t + dt / 2, extrapolate=self.extrapolate)
+        v2 = vel_field.at(p2, t + dt / 2)
         d2 = FlatEarthProjection.meters_to_lonlat(v2 * dt_s, pos)
         p3 = pos.copy()
         p3 += d2
 
-        v3 = vel_field.at(p3, t + dt, extrapolate=self.extrapolate)
+        v3 = vel_field.at(p3, t + dt)
 
         return dt_s / 6 * (v0 + 2 * v1 + 2 * v2 + v3)
 
