@@ -3,7 +3,7 @@ import copy
 import numpy as np
 
 from colander import (SchemaNode,
-                      Bool, Float, String, Sequence, DateTime,
+                      Bool, Float, String, Sequence,
                       drop)
 
 from gnome.basic_types import oil_status
@@ -30,17 +30,11 @@ class PyCurrentMoverSchema(ObjType):
     current_scale = SchemaNode(Float(), missing=drop)
     time_offset = SchemaNode(Float(), missing=drop)
     current = GridCurrent._schema(missing=drop)
-    real_data_start = SchemaNode(DateTime(), missing=drop)
-    real_data_stop = SchemaNode(DateTime(), missing=drop)
     on = SchemaNode(Bool(), missing=drop)
     active_start = SchemaNode(LocalDateTime(), missing=drop,
                               validator=convertible_to_seconds)
     active_stop = SchemaNode(LocalDateTime(), missing=drop,
                              validator=convertible_to_seconds)
-    real_data_start = SchemaNode(LocalDateTime(), missing=drop,
-                                 validator=convertible_to_seconds)
-    real_data_stop = SchemaNode(LocalDateTime(), missing=drop,
-                                validator=convertible_to_seconds)
 
 
 class PyCurrentMover(PyMover, Serializable):

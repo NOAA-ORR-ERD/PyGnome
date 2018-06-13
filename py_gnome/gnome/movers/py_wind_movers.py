@@ -29,8 +29,6 @@ class PyWindMoverSchema(ObjType):
     wind_scale = SchemaNode(Float(), missing=drop)
     time_offset = SchemaNode(Float(), missing=drop)
     wind = GridWind._schema(missing=drop)
-    real_data_start = SchemaNode(DateTime(), missing=drop)
-    real_data_stop = SchemaNode(DateTime(), missing=drop)
     on = SchemaNode(Bool(), missing=drop)
     active_start = SchemaNode(LocalDateTime(), missing=drop,
                               validator=convertible_to_seconds)
