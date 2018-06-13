@@ -10,10 +10,13 @@ from colander import (SchemaNode, SequenceSchema,
 import gridded
 
 from gnome.utilities import serializable
-from gnome.persist import base_schema
+
+from gnome.persist.base_schema import ObjType
+from gnome.persist.validators import convertible_to_seconds
+from gnome.persist.extend_colander import LocalDateTime
 
 
-class TimeSchema(base_schema.ObjType):
+class TimeSchema(ObjType):
     filename = SchemaNode(typ=Sequence(accept_scalar=True),
                           children=[SchemaNode(String())], missing=drop)
     varname = SchemaNode(String(), missing=drop)
@@ -21,17 +24,17 @@ class TimeSchema(base_schema.ObjType):
                       children=[SchemaNode(DateTime(None))], missing=drop)
 
 
-class GridSchema(base_schema.ObjType):
+class GridSchema(ObjType):
     filename = SchemaNode(typ=Sequence(accept_scalar=True),
                           children=[SchemaNode(String())])
 
 
-class DepthSchema(base_schema.ObjType):
+class DepthSchema(ObjType):
     filename = SchemaNode(typ=Sequence(accept_scalar=True),
                           children=[SchemaNode(String())])
 
 
-class VariableSchemaBase(base_schema.ObjType):
+class VariableSchemaBase(ObjType):
     name = SchemaNode(String(), missing=drop)
     units = SchemaNode(String(), missing=drop)
     time = TimeSchema(missing=drop)
@@ -54,6 +57,10 @@ class VectorVariableSchema(VariableSchemaBase):
     grid_file = SchemaNode(typ=Sequence(accept_scalar=True),
                            children=[SchemaNode(String())])
     extrapolation_is_allowed = SchemaNode(Boolean(), missing=drop)
+    data_start = SchemaNode(LocalDateTime(), missing=drop,
+                            validator=convertible_to_seconds)
+    data_stop = SchemaNode(LocalDateTime(), missing=drop,
+                           validator=convertible_to_seconds)
 
 
 class Time(gridded.time.Time, serializable.Serializable):
@@ -494,7 +501,10 @@ class VectorVariable(gridded.VectorVariable, serializable.Serializable):
                       serializable.Field('grid_file', save=True, update=True,
                                          isdatafile=True),
                       serializable.Field('extrapolation_is_allowed', save=True,
-                                         update=True)])
+                                         update=True),
+                      serializable.Field('data_start', save=True, update=True),
+                      serializable.Field('data_stop', save=True, update=True),
+                      ])
 
     _default_component_types = copy.deepcopy(gridded.VectorVariable
                                              ._default_component_types)
