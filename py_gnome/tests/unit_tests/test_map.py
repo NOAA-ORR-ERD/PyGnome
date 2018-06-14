@@ -23,6 +23,7 @@ from conftest import sample_sc_release
 basedir = os.path.dirname(__file__)
 datadir = os.path.normpath(os.path.join(basedir, "sample_data"))
 testbnamap = os.path.join(datadir, 'MapBounds_Island.bna')
+bna_with_lake = os.path.join(datadir, 'florida_with_lake_small.bna')
 test_tri_grid = os.path.join(datadir, 'small_trigrid_example.nc')
 
 
@@ -933,6 +934,34 @@ def test_bna_no_map_bounds():
                                          (6., 11.),
                                          (6., 10.),
                                          ])
+
+
+class Test_lake():
+    """
+    tests for handling a BNA with a lake
+
+    The code should now return a polygon with a hole for lakes.
+
+    And render properly both with the py_gnome renderer and the json output.
+
+    """
+    map = MapFromBNA(bna_with_lake)
+
+    def test_polys(self):
+        """
+        Once loaded, polygons should be there
+        """
+        print self.map.map_bounds
+
+        print self.map.spillable_area
+
+        print self.map.land_polys
+
+        print dir(self.map)
+
+        assert False
+
+
 
 
 if __name__ == '__main__':

@@ -46,7 +46,7 @@ def check_dependency_versions():
                    .format(name, version))
             sys.exit(1)
         if module.__version__ < version:
-            w = ('Version {0} of {1} package is reported, '
+            w = ('Version {0} of {1} package is required, '
                  'but actual version in module is {2}'
                  .format(version, name, module.__version__))
             warnings.warn(w)

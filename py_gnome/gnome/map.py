@@ -1162,7 +1162,11 @@ class MapFromBNA(RasterMap):
         return None
 
     def to_geojson(self):
+        """
+        Output the vector version of the map
 
+        This is what gets drawn in the WebGNOME client, for example
+        """
         map_file = ogr_open_file('BNA:' + self.filename)
         polys = []
         line_strings = []
