@@ -951,18 +951,39 @@ class Test_lake():
         """
         Once loaded, polygons should be there
         """
-        print self.map.map_bounds
+        assert self.map.map_bounds is not None
 
-        print self.map.spillable_area
+        assert self.map.spillable_area is not None
 
-        print self.map.land_polys
+        # NOTE: current version puts land and lakes in the land_polys set
+        assert len(self.map.land_polys) == 2
 
-        print dir(self.map)
+
+    def test_to_geojson(self):
+        """
+        make sure geojson is right
+        """
+
+        gj = self.map.to_geojson()
+
+        print gj.keys()
+
+        print gj['features'][0].keys()
+
+        print len(gj.features)
+
+        # has only the land polys in there.
+        assert len(gj['features']) == 1
+
+        land_polys = gj['features'][0]
+        assert land_polys['geometry']['type'] == "MultiPolygon"
+        assert land_polys["properties"]["name"] == "Shoreline Polys"
+
+        import json
+        with open("florida_geojson.json", 'w') as outfile:
+            json.dump(gj, outfile, indent=2)
 
         assert False
-
-
-
 
 if __name__ == '__main__':
 

@@ -1154,7 +1154,9 @@ class MapFromBNA(RasterMap):
         # get the basebitmap as a numpy array:
         bitmap_array = canvas.back_asarray()
 
-        RasterMap.__init__(self, bitmap_array, canvas.projection,
+        RasterMap.__init__(self,
+                           bitmap_array,
+                           canvas.projection,
                            map_bounds=map_bounds,
                            spillable_area=spillable_area,
                            land_polys=land_polys,
@@ -1233,9 +1235,9 @@ class MapFromUGrid(RasterMap):
     def __init__(self, filename, raster_size=1024 * 1024, **kwargs):
         """
         Creates a GnomeMap (specifically a RasterMap) from a netcdf
-        data file with a traingular mesh grid in it.
+        data file with a triangular mesh grid in it.
         The spillable area and map bounds need to be supplied -- there is
-        currenty no way to exprtes that in a netcdf file.
+        currently no way to express that in a netcdf file.
 
         Required arguments:
 
