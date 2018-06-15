@@ -486,6 +486,12 @@ class GridCurrent(VelocityGrid, Environment):
                 'v': ['northward_sea_water_velocity'],
                 'w': ['upward_sea_water_velocity']}
 
+    def __init__(self, extrapolation_is_allowed=False,
+                 *args, **kwargs):
+        super(GridCurrent, self).__init__(*args, **kwargs)
+
+        self.extrapolation_is_allowed = extrapolation_is_allowed
+
     def at(self, points, time, units=None, **kwargs):
         '''
         Find the value of the property at positions P at time T
