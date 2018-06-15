@@ -605,7 +605,7 @@ class Test_MapfromBNA:
         dict_['refloat_halflife'] = 2
         assert np.all(gmap.map_bounds != dict_['map_bounds'])
 
-        gmap.update(dict_)
+        gmap.update_from_dict(dict_)
         assert gmap.map_bounds is not dict_['map_bounds']
         assert np.all(gmap.map_bounds == dict_['map_bounds'])
 

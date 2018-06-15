@@ -6,6 +6,7 @@ import copy
 import inspect
 import zipfile
 import collections
+import pdb
 
 import numpy as np
 
@@ -350,9 +351,10 @@ class Model(GnomeId):
         """
         if refs is None:
             refs = Refs()
+            self._schema.register_refs(self._schema(), self, refs)
         updatable = self._schema().get_nodes_by_attr('update')
         attrs = copy.copy(dict_)
-        updated = {}
+        updated = False
         for k in attrs.keys():
             if k not in updatable:
                 attrs.pop(k)
@@ -361,22 +363,20 @@ class Model(GnomeId):
             node = self._schema().get(name)
             if name in attrs:
                 if name != 'spills':
-                    attrs[name] = self._schema.process_subnode(node, getattr(self, name), attrs, attrs[name], refs)
+                    attrs[name] = self._schema.process_subnode(node, self, getattr(self, name), name, attrs, attrs[name], refs)
                     if attrs[name] is drop:
                         del attrs[name]
                 else:
-                    for s in self.spills._spill_container.spills:
-                        refs[s.id] = s
-                    new_certain_spills = ObjTypeSchema.process_subnode(node, self.spills._spill_container.spills, attrs, attrs[name], refs)
-                    import pdb
-                    pdb.set_trace()
-                    self.spills.update_from_dict({'spills':new_certain_spills})
+                    oldspills = OrderedCollection(self.spills._spill_container.spills[:], dtype=self.spills._spill_container.spills.dtype)
+                    new_spills = ObjTypeSchema.process_subnode(node, self, self.spills._spill_container.spills, 'spills', attrs, attrs[name], refs)
+                    if not updated and self._attr_changed(oldspills, new_spills):
+                        updated = True
                     attrs.pop(name)
-
 
         for k, v in attrs.items():
             if hasattr(self, k):
-                updated[k] = v
+                if not updated and self._attr_changed(getattr(self, k), v):
+                    updated = True
                 setattr(self, k, v)
         return updated
 

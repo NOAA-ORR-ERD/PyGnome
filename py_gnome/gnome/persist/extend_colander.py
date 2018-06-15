@@ -89,7 +89,7 @@ class NumpyArray(List):
         if appstruct is null:  # colander.null
             return null
 
-        return super(NumpyArray, self).serialize(node, appstruct.tolist())
+        return super(NumpyArray, self).serialize(node, np.array(appstruct).tolist())
 
     def deserialize(self, node, cstruct):
         if cstruct is null:
@@ -245,13 +245,14 @@ class NumpyArraySchema(SchemaNode):
     '''
 
     def __init__(self, *args, **kwargs):
+        self.typ = np.float32
         self.dtype = kwargs.pop('dtype', np.float32)
         self.precision = kwargs.pop('precision', 8)
 
     def serialize(self, appstruct):
-        if not isinstance(appstruct, np.array):
+        if not isinstance(appstruct, (np.ndarray, list, tuple)):
             raise ValueError('Cannot serialize: {0} is not a numpy array'.format(appstruct))
-        return np.round(appstruct.astype(self.dtype), self.precision).tolist()
+        return np.round(np.array(appstruct).astype(self.dtype), self.precision).tolist()
 
     def deserialize(self, cstruct):
         return np.array(cstruct, dtype = self.dtype)

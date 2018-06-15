@@ -13,6 +13,7 @@ from gnome.persist import base_schema
 
 from gnome.environment.gridded_objects_base import Time, TimeSchema
 from gnome.gnomeobject import GnomeId
+from gnome.persist.extend_colander import NumpyArraySchema
 
 
 class TimeseriesDataSchema(base_schema.ObjTypeSchema):
@@ -22,8 +23,7 @@ class TimeseriesDataSchema(base_schema.ObjTypeSchema):
     time = TimeSchema(
         save=True, update=True, save_reference=True
     )
-    data = SequenceSchema(
-        SchemaNode(Float()),
+    data = NumpyArraySchema(
         missing=drop, save=True, update=True
     )
 

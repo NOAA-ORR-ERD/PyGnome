@@ -159,11 +159,11 @@ def test_Water_update_from_dict():
     w.wave_height = 1.0
     json_with_values = w.serialize()
 
-    w.update_from_dict(Water.deserialize(json_))
+    w.update_from_dict(json_)
     assert w.fetch is None
     assert w.wave_height is None
 
-    w.update_from_dict(Water.deserialize(json_with_values))
+    w.update_from_dict(json_with_values)
     assert w.fetch == 0.0
     assert w.wave_height == 1.0
 

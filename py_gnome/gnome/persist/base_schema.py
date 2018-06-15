@@ -7,6 +7,7 @@ import collections
 import os
 import json
 import tempfile
+import copy
 
 from colander import (SchemaNode, deferred, drop, required, Invalid, UnsupportedFields,
                       SequenceSchema, TupleSchema, MappingSchema,
@@ -135,8 +136,8 @@ class ObjType(SchemaType):
             if value is None:
                 return None
             if type(value) is dict and 'obj_type' in value:
-                id_ = value['id']
-                if value['id'] not in refs:
+                id_ = value.get('id', None)
+                if id_ not in refs:
                     obj_type = class_from_objtype(value['obj_type'])
                     refs[id_] = obj_type.new_from_dict(value)
                 return refs[id_]
@@ -412,7 +413,7 @@ class ObjType(SchemaType):
         else:
             fname = os.path.join(saveloc, fname)
             fp = saveloc.open(fp, 'rU')
-        return json.load(fp, parse_float=True, parse_int=True)
+        return json.load(fp)
 
 class ObjTypeSchema(MappingSchema):
     schema_type = ObjType
@@ -538,24 +539,30 @@ class ObjTypeSchema(MappingSchema):
             return names
 
     @staticmethod
-    def process_subnode(subnode, subappstruct, cstruct, subcstruct, refs):
+    def register_refs(node, subappstruct, refs):
+        if ((node.schema_type is Sequence or
+             node.schema_type is OrderedCollectionType) and
+             isinstance(node.children[0], ObjTypeSchema)):
+            [ObjTypeSchema.register_refs(node.children[0], subitem, refs) for subitem in subappstruct]
+        if not isinstance(node, ObjTypeSchema):
+            return
+        if subappstruct.id not in refs:
+            refs[subappstruct.id] = subappstruct
+        names = node.get_nodes_by_attr('all')
+        for n in names:
+            ObjTypeSchema.register_refs(node.get(n), getattr(subappstruct, n), refs)
+
+    @staticmethod
+    def process_subnode(subnode, appstruct, subappstruct, subname, cstruct, subcstruct, refs):
         if subnode.schema_type is ObjType:
             if subcstruct is None:
                 return None
-            o = refs.get(subcstruct['id'], subappstruct)
+            o = refs.get(subcstruct['id'], None)
             if o is not None :
                 #existing object, so update using subdict (dict_[name])
                 #and set dict_[name] to object
-                if o.id not in refs:
-                    refs[o.id] = o
-                if 'id' in subcstruct and subcstruct['id'] != o.id:
-                    #obj exists, but should be replaced
-                    o = subnode.deserialize(subcstruct, refs=refs)
-                    refs[o.id] = o
-                    return o
-                else:
-                    o.update_from_dict(subcstruct, refs=refs)
-                    return o
+                o.update_from_dict(subcstruct, refs=refs)
+                return o
             else:
                 #object doesn't exist, so attempt to instantiate through
                 #deserialize, or use existing object if found in refs
@@ -565,22 +572,21 @@ class ObjTypeSchema(MappingSchema):
         elif (subnode.schema_type is Sequence and
                     isinstance(subnode.children[0], ObjTypeSchema)):
             if subappstruct is not None:
-                #register existing objects, if any
-                for subitem in subappstruct:
-                    if subitem.id not in refs:
-                        refs[subitem.id] = subitem
-            return [ObjTypeSchema.process_subnode(subnode.children[0], subappstruct, cstruct, subitem, refs) for subitem in subcstruct]
+                subappstruct.clear()
+            else:
+                subappstruct = []
+            for subitem in subcstruct:
+                subappstruct.append(ObjTypeSchema.process_subnode(subnode.children[0], appstruct, subappstruct, subname, cstruct, subitem, refs))
+            return subappstruct
         elif (subnode.schema_type is OrderedCollectionType and
                     isinstance(subnode.children[0], ObjTypeSchema)):
             if subappstruct is not None:
-                #register existing objects, if any
-                for subitem in subappstruct:
-                    if subitem.id not in refs:
-                        refs[subitem.id] = subitem
-            subappstruct.clear()
-            subappstruct.add([ObjTypeSchema.process_subnode(subnode.children[0], subappstruct, cstruct, subitem, refs) for subitem in subcstruct])
+                subappstruct.clear()
+            else:
+                raise ValueError('why is this None????')
+            for subitem in subcstruct:
+                subappstruct.add(ObjTypeSchema.process_subnode(subnode.children[0],appstruct, subappstruct, subname, cstruct, subitem, refs))
             return subappstruct
-
         else:
             return subnode.deserialize(subcstruct)
 

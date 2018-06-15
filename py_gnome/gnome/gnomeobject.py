@@ -11,6 +11,7 @@ import tempfile
 import gnome
 import six
 import colander
+from gnome.utilities.orderedcollection import OrderedCollection
 
 log = logging.getLogger(__name__)
 
@@ -323,9 +324,10 @@ class GnomeId(AddLogger):
     def update_from_dict(self, dict_, refs=None):
         if refs is None:
             refs = Refs()
+            self._schema.register_refs(self._schema(), self, refs)
         updatable = self._schema().get_nodes_by_attr('update')
         attrs = copy.copy(dict_)
-        updated = {}
+        updated = False
         for k in attrs.keys():
             if k not in updatable:
                 attrs.pop(k)
@@ -333,16 +335,53 @@ class GnomeId(AddLogger):
         for name in updatable:
             node = self._schema().get(name)
             if name in attrs:
-                attrs[name] = self._schema.process_subnode(node, getattr(self, name), attrs, attrs[name], refs)
+                attrs[name] = self._schema.process_subnode(node, self, getattr(self, name), name, attrs, attrs[name], refs)
                 if attrs[name] is colander.drop:
                     del attrs[name]
 
         for k, v in attrs.items():
             if hasattr(self, k):
-                updated[k] = v
+                if not updated and self._attr_changed(getattr(self, k), v):
+                    updated = True
                 setattr(self, k, v)
         return updated
 
+    update = update_from_dict
+
+    def _attr_changed(self, current_value, received_value):
+        '''
+        Checks if an attribute passed back in a dict_ from client has changed.
+        Returns True if changed, else False
+        '''
+        # first, we normalize our left and right args
+        if (isinstance(current_value, np.ndarray) and
+                isinstance(received_value, (list, tuple))):
+            received_value = np.asarray(received_value)
+
+        # For a nested object, check if it data contains a new object. If
+        # object in data 'is' current_value then 'self' state has not
+        # changed. Even if current_value == data[key], we still must update
+        # it because it now references a new object
+        if isinstance(current_value, GnomeId):
+            if current_value is not received_value:
+                return True
+
+        elif isinstance(current_value, OrderedCollection):
+            if len(current_value) != len(received_value):
+                return True
+            for ix, item in enumerate(current_value):
+                if item is not received_value[ix]:
+                    return True
+        else:
+            try:
+                if current_value != received_value:
+                    return True
+            except ValueError:
+                # maybe an iterable - checking for
+                # isinstance(current_value, collections.Iterable) fails for
+                # string so just do a try/except
+                if np.any(current_value != received_value):
+                    return True
     def _check_type(self, other):
         'check basic type equality'
         if self is other:
@@ -570,12 +609,12 @@ class GnomeId(AddLogger):
             if os.path.isdir(saveloc):
                 if filename:
                     fn = os.path.join(saveloc, filename)
-                    json_ = json.load(fn, parse_float=True, parse_int=True)
+                    json_ = json.load(fn)
                     return cls._schema().load(json_, saveloc=saveloc, refs=refs)
                 else:
                     search = os.path.join(saveloc, '*.json')
                     for fn in glob.glob(search):
-                        json_ = json.load(fn, parse_float=True, parse_int=True)
+                        json_ = json.load(fn)
                         if 'obj_type' in json_:
                             if class_from_objtype(json_['obj_type']) is cls:
                                 return cls._schema().load(json_, saveloc=saveloc, refs=refs)
@@ -593,15 +632,16 @@ class GnomeId(AddLogger):
                     for fn in saveloc.namelist():
                         if fn.endswith('.json'):
                             fp = saveloc.open(fn, 'rU')
-                            json_ = json.load(fp, parse_float=True, parse_int=True)
+                            json_ = json.load(fp)
                             if 'obj_type' in json_:
                                 if class_from_objtype(json_['obj_type']) is cls:
                                     return cls._schema().load(json_, saveloc=saveloc, refs=refs)
                     raise ValueError('No .json file containing a {0} found in archive {1}'.format(cls.__name__, saveloc))
             else:
                 #saveloc is .json file
+                fp = open(saveloc, 'r')
 
-                json_ = json.load(saveloc, parse_float=True, parse_int=True)
+                json_ = json.load(fp)
                 if 'obj_type' in json:
                     if class_from_objtype(json_['obj_type']) is not cls:
                         raise ValueError("{1} does not contain a {0}".format(cls.__name__, saveloc))
@@ -611,14 +651,14 @@ class GnomeId(AddLogger):
         elif isinstance(saveloc, zipfile.ZipFile):
             if filename:
                 fp = saveloc.open(filename, 'rU')
-                json_ = json.load(fp, parse_float=True, parse_int=True)
+                json_ = json.load(fp)
                 return cls._schema().load(json_, saveloc=saveloc, refs=refs)
             else:
                 #no filename, so search archive
                 for fn in saveloc.namelist():
                     if fn.endswith('.json'):
                         fp = saveloc.open(fn, 'r')
-                        json_ = json.load(fp, parse_float=True, parse_int=True)
+                        json_ = json.load(fp)
                         if 'obj_type' in json_:
                             if class_from_objtype(json_['obj_type']) is cls:
                                 return cls._schema().load(json_, saveloc=saveloc, refs=refs)

@@ -5,7 +5,7 @@
 import copy
 
 from repoze.lru import lru_cache
-from colander import SchemaNode, MappingSchema, Float, String, drop, OneOf
+from colander import SchemaNode, MappingSchema, Float, String, drop, OneOf, required
 
 import gsw
 
@@ -66,8 +66,8 @@ class WaterSchema(base_schema.ObjTypeSchema):
     temperature = SchemaNode(Float())
     salinity = SchemaNode(Float())
     sediment = SchemaNode(Float(), missing=drop)
-    wave_height = SchemaNode(Float(), missing=drop)
-    fetch = SchemaNode(Float(), missing=drop)
+    wave_height = SchemaNode(Float(), missing=None)
+    fetch = SchemaNode(Float(), missing=None)
 
 
 class Water(Environment):

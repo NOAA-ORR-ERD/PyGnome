@@ -89,7 +89,7 @@ def test_update_model():
     assert mdl.name == 'Model'
     upd = mdl.update(d)
     assert mdl.name == d['name']
-    assert upd == d
+    assert upd == True
     d['duration'] = 43200
     upd = mdl.update(d)
     assert mdl.duration.seconds == 43200

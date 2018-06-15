@@ -18,7 +18,6 @@ from gnome.environment.timeseries_objects_base import (TimeseriesData,
                                                        TimeseriesVector)
 from gnome.environment.environment_objects import (Bathymetry,
                                                    S_Depth_T1)
-from gnome.persist.save_load import load
 
 from ..conftest import sample_sc_release, testdata
 
@@ -88,15 +87,15 @@ class TestTime:
 
     def test_serialize(self):
         t = self.test_class_instance
-        web_ser = t.serialize('webapi')
-        web_deser = self.test_class.deserialize(web_ser)
-        t2 = self.test_class.new_from_dict(web_deser)
+        web_ser = t.serialize()
+        t2 = self.test_class.deserialize(web_ser)
         assert t == t2
 
     def test_save_load(self):
         saveloc = tempfile.mkdtemp()
-        references = self.test_class_instance.save(saveloc, None, 'test.json')
-        new_instance = load(os.path.join(saveloc, 'test.json'), references)
+        saveloc = os.path.join(saveloc, 'test.zip')
+        references = self.test_class_instance.save(saveloc)
+        new_instance = self.test_class.load(saveloc)
         assert self.test_class_instance == new_instance
 
 
@@ -138,21 +137,21 @@ class TestTimeseriesData:
 
     def test_serialize(self):
         t = self.test_class_instance
-        web_ser = t.serialize('webapi')
-        web_deser = self.test_class.deserialize(web_ser)
-        t2 = self.test_class.new_from_dict(web_deser)
+        web_ser = t.serialize()
+        t2 = self.test_class.deserialize(web_ser)
         assert t == t2
 
     def test_save_load(self):
         saveloc = tempfile.mkdtemp()
-        references = self.test_class_instance.save(saveloc, None, 'test.json')
-        new_instance = load(os.path.join(saveloc, 'test.json'), references)
+        saveloc = os.path.join(saveloc, 'test.zip')
+        references = self.test_class_instance.save(saveloc)
+        new_instance = self.test_class.load(saveloc)
         assert self.test_class_instance == new_instance
 
 
 class TestTimeseriesVector:
     _t = Time(dates())
-    test_class = TimeseriesData
+    test_class = TimeseriesVector
     test_class_instance = TimeseriesVector(
         variables=[TimeseriesData(name='u', time=_t, data=series_data()),
                    TimeseriesData(name='v', time=_t, data=series_data2())],
@@ -189,15 +188,15 @@ class TestTimeseriesVector:
 
     def test_serialize(self):
         t = self.test_class_instance
-        web_ser = t.serialize('webapi')
-        web_deser = self.test_class.deserialize(web_ser)
-        t2 = self.test_class.new_from_dict(web_deser)
+        web_ser = t.serialize()
+        t2 = self.test_class.deserialize(web_ser)
         assert t == t2
 
     def test_save_load(self):
         saveloc = tempfile.mkdtemp()
-        references = self.test_class_instance.save(saveloc, None, 'test.json')
-        new_instance = load(os.path.join(saveloc, 'test.json'), references)
+        saveloc = os.path.join(saveloc, 'test.zip')
+        references = self.test_class_instance.save(saveloc)
+        new_instance = self.test_class.load(saveloc)
         assert self.test_class_instance == new_instance
 #
 # class TestGrid(TestBase):

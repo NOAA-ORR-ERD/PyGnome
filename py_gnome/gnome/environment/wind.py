@@ -86,12 +86,9 @@ class WindSchema(base_schema.ObjTypeSchema):
     validate data after deserialize, before it is given back to pyGnome's
     from_dict to set _state of object
     '''
-    description = SchemaNode(
-        String(), missing=drop, save=True, update=True
-    )
-    filename = FilenameSchema(
-        missing=drop, save=True, update=True, isdatafile=True, test_equal=False
-    )
+    name = SchemaNode(String(), test_equal=False)
+    description = SchemaNode(String())
+    filename = FilenameSchema(isdatafile=True, test_equal=False)
     updated_at = SchemaNode(
         LocalDateTime(), missing=drop, save=True, update=True
     )
@@ -121,7 +118,6 @@ class WindSchema(base_schema.ObjTypeSchema):
     extrapolation_is_allowed = SchemaNode(
         Boolean(), missing=drop, save=True, update=True
     )
-    name = 'wind'
 
 
 class Wind(Timeseries, Environment):
@@ -193,8 +189,6 @@ class Wind(Timeseries, Environment):
                     raise TypeError('Units must be provided with timeseries')
 
                 self.set_wind_data(timeseries, units, coord_sys)
-
-            self.name = kwargs.pop('name', self.__class__.__name__)
 
         self.extrapolation_is_allowed = extrapolation_is_allowed
 
@@ -369,19 +363,6 @@ class Wind(Timeseries, Environment):
                      .format(idt,
                              round(val[i, 0], 4),
                              round(val[i, 1], 4)))
-
-    def update_from_dict(self, data):
-        '''
-        update attributes from dict - override base class because we want to
-        set the units before updating the data so conversion is done correctly.
-        Internally all data is stored in SI units.
-        '''
-        updated = self.update_attr('units', data.pop('units', self.units))
-
-        if super(Wind, self).update_from_dict(data):
-            return True
-        else:
-            return updated
 
     def get_wind_data(self, datetime=None, units=None, coord_sys='r-theta'):
         """

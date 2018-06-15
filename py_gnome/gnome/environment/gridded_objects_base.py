@@ -30,6 +30,7 @@ class TimeSchema(base_schema.ObjTypeSchema):
 
 
 class GridSchema(base_schema.ObjTypeSchema):
+    name = SchemaNode(String(), test_equal=False) #remove this once gridded stops using _def_count
     filename = FilenameSchema(
         isdatafile=True, test_equal=False
     )
@@ -154,7 +155,7 @@ class Grid_U(gridded.grids.Grid_U, GnomeId):
         return json_
 
 
-class Grid_S(gridded.grids.Grid_S, GnomeId):
+class Grid_S(GnomeId, gridded.grids.Grid_S):
 
     _schema = GridSchema
 

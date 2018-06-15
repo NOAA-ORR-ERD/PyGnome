@@ -89,11 +89,11 @@ class TestPyGrid_S:
         assert sg.serialize()['filename'] == sg2.serialize()['filename']
 
     def test_deserialize(self, sg, sg_data, sg_topology):
-        d_sg = Grid_S.new_from_dict(sg.serialize())
+        d_sg = Grid_S.deserialize(sg.serialize())
 
         pp.pprint(sg.serialize())
         pp.pprint(d_sg.serialize())
-        assert sg.name == d_sg.name
+        assert sg == d_sg
 
 
 class TestPyGrid_U:
@@ -130,9 +130,9 @@ class TestPyGrid_U:
         assert ug.serialize()['filename'] == ug2.serialize()['filename']
 
     def test_deserialize(self, ug, ug_data, ug_topology):
-        d_ug = Grid_U.new_from_dict(ug.serialize())
+        d_ug = Grid_U.deserialize(ug.serialize())
 
         pp.pprint(ug.serialize())
         pp.pprint(d_ug.serialize())
 
-        assert ug.name == d_ug.name
+        assert ug == d_ug
