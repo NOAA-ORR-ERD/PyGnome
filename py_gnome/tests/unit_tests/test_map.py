@@ -22,6 +22,7 @@ from conftest import sample_sc_release
 
 basedir = os.path.dirname(__file__)
 datadir = os.path.normpath(os.path.join(basedir, "sample_data"))
+output_dir = os.path.normpath(os.path.join(basedir, "output_dir"))
 testbnamap = os.path.join(datadir, 'MapBounds_Island.bna')
 bna_with_lake = os.path.join(datadir, 'florida_with_lake_small.bna')
 test_tri_grid = os.path.join(datadir, 'small_trigrid_example.nc')
@@ -958,7 +959,6 @@ class Test_lake():
         # NOTE: current version puts land and lakes in the land_polys set
         assert len(self.map.land_polys) == 2
 
-
     def test_to_geojson(self):
         """
         make sure geojson is right
@@ -966,11 +966,9 @@ class Test_lake():
 
         gj = self.map.to_geojson()
 
-        print gj.keys()
-
-        print gj['features'][0].keys()
-
-        print len(gj.features)
+        # print gj.keys()
+        # print gj['features'][0].keys()
+        # print len(gj.features)
 
         # has only the land polys in there.
         assert len(gj['features']) == 1
@@ -980,10 +978,10 @@ class Test_lake():
         assert land_polys["properties"]["name"] == "Shoreline Polys"
 
         import json
-        with open("florida_geojson.json", 'w') as outfile:
+        outfilename = os.path.join(output_dir, "florida_geojson.json")
+        with open(outfilename, 'w') as outfile:
             json.dump(gj, outfile, indent=2)
 
-        assert False
 
 if __name__ == '__main__':
 
