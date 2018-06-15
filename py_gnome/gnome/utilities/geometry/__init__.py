@@ -1,7 +1,7 @@
 """
 geometry package
 
-This pacakge has:
+This package has:
 
 A few higher-level objects for geometry: a Bounding Box class and a Polygon class.
 

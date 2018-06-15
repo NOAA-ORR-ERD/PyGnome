@@ -982,6 +982,7 @@ class Test_lake():
         with open(outfilename, 'w') as outfile:
             json.dump(gj, outfile, indent=2)
 
+        assert False
 
 if __name__ == '__main__':
 

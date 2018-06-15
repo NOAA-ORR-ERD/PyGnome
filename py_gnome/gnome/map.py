@@ -40,12 +40,12 @@ from gnome.utilities.projections import (FlatEarthProjection,
 from gnome.utilities.map_canvas import MapCanvas
 from gnome.utilities.serializable import Serializable, Field
 from gnome.utilities.file_tools import haz_files
-from gnome.utilities.file_tools.osgeo_helpers import (ogr_layers)
-from gnome.utilities.file_tools.osgeo_helpers import (ogr_features)
-from gnome.utilities.file_tools.osgeo_helpers import (ogr_open_file)
+# from gnome.utilities.file_tools.osgeo_helpers import (ogr_layers)
+# from gnome.utilities.file_tools.osgeo_helpers import (ogr_features)
+# from gnome.utilities.file_tools.osgeo_helpers import (ogr_open_file)
 
 from gnome.utilities.geometry.polygons import PolygonSet
-from gnome.utilities.geometry import points_in_poly, point_in_poly
+from gnome.utilities.geometry import points_in_poly, point_in_poly, is_clockwise
 
 from gnome.cy_gnome.cy_land_check import check_land_layers, move_particles
 
@@ -1234,17 +1234,22 @@ class MapFromBNA(RasterMap):
         object -- keeping the door open to that data coming from something
         other than a bna file.
 
-        FIXME: technically, geojson requires
+        FIXME: Technically, geojson recommends ccw polygons -- but putting that
+               check in was pretty slow, so it's commented out.
 
-        FIXME: This really should export the map_bounds and spillable-area
+        FIXME: This really should export the map_bounds and spillable_area
         as well.
-
         """
         polys = []
 
         for poly in self.land_polys:
             p = poly.tolist()
             p.append(p[0])  # first and last points must match in geojson
+            # FIXME: this is a good idea, but really slow...
+            # the is_clockwise() code could be cythonized, maybe that would help?
+            # # geojson polygons should be counter-clockwise
+            # if is_clockwise(poly):
+            #     p.reverse()
             polys.append([p])
 
         features = []
