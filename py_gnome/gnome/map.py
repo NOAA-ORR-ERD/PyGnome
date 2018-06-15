@@ -45,8 +45,7 @@ from gnome.utilities.file_tools.osgeo_helpers import (ogr_features)
 from gnome.utilities.file_tools.osgeo_helpers import (ogr_open_file)
 
 from gnome.utilities.geometry.polygons import PolygonSet
-from gnome.utilities.geometry.cy_point_in_polygon import (points_in_poly,
-                                                          point_in_poly)
+from gnome.utilities.geometry import points_in_poly, point_in_poly
 
 from gnome.cy_gnome.cy_land_check import check_land_layers, move_particles
 

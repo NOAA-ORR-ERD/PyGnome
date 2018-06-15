@@ -3,11 +3,21 @@
 """
 Test code for the BBox Object
 
+FIXME: nice to make these plain pytests someday
+
 """
 
 import unittest
 
-from gnome.utilities.geometry.BBox import *
+from gnome.utilities.geometry.BBox import (BBox,
+                                           asBBox,
+                                           NullBBox,
+                                           InfBBox,
+                                           fromBBArray,
+                                           fromPoints,
+                                           )
+
+import numpy as np
 
 
 class testCreator(unittest.TestCase):
