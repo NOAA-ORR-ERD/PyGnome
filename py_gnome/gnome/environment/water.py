@@ -209,19 +209,6 @@ class Water(Environment):
         '''
         return self._get_density(self.salinity, self.temperature)
 
-    def update_from_dict(self, data):
-        '''
-        override base class:
-
-        'fetch' and 'wave_height' get dropped by colander if value is None.
-        In this case, toggle the values back to None.
-        '''
-        for attr in ('fetch', 'wave_height'):
-            if attr not in data:
-                setattr(self, attr, None)
-
-        super(Water, self).update_from_dict(data)
-
     @property
     def units(self):
         if not hasattr(self, '_units'):

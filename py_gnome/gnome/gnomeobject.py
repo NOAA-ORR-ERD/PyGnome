@@ -343,7 +343,10 @@ class GnomeId(AddLogger):
             if hasattr(self, k):
                 if not updated and self._attr_changed(getattr(self, k), v):
                     updated = True
-                setattr(self, k, v)
+                try:
+                    setattr(self, k, v)
+                except AttributeError:
+                    raise AttributeError('Failed to set {0} on {1} to {2}'.format(k, self, v))
         return updated
 
     update = update_from_dict

@@ -72,7 +72,7 @@ class VectorVariableSchema(VariableSchemaBase):
     )
     variables = SequenceSchema(
         GeneralGnomeObjectSchema(
-            acceptable_schemas=[VariableSchema]
+            acceptable_schemas=[VariableSchema, base_schema.ObjTypeSchema]
         ), save_reference=True
     )
 
@@ -413,3 +413,8 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
         json_ = {}
         json_['data_location'] = self.grid.infer_location(self.variables[0].data)
         return json_
+
+    @classmethod
+    def new_from_dict(cls, dict_):
+        rv = cls.from_netCDF(**dict_)
+        return rv

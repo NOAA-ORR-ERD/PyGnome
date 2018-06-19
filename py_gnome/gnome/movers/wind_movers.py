@@ -187,8 +187,6 @@ class WindMoverSchema(WindMoversBaseSchema):
     Contains properties required by UpdateWindMover and CreateWindMover
     """
     # 'wind' schema node added dynamically
-    name = 'WindMover'
-    description = 'wind mover properties'
     wind = GeneralGnomeObjectSchema(
         acceptable_schemas=[WindSchema],
         save=True, update=True, save_reference=True

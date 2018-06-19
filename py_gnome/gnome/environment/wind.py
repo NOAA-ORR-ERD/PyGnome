@@ -88,7 +88,7 @@ class WindSchema(base_schema.ObjTypeSchema):
     '''
     name = SchemaNode(String(), test_equal=False)
     description = SchemaNode(String())
-    filename = FilenameSchema(isdatafile=True, test_equal=False)
+    filename = FilenameSchema(isdatafile=True, test_equal=False, read_only=True)#Thanks to CyTimeseries
     updated_at = SchemaNode(
         LocalDateTime(), missing=drop, save=True, update=True
     )

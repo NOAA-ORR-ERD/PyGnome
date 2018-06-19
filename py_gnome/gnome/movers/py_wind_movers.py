@@ -78,6 +78,7 @@ class PyWindMover(movers.PyMover):
                  uncertain_time_delay=0,
                  uncertain_speed_scale=2.,
                  uncertain_angle_scale=0.4,
+                 wind_scale=1,
                  default_num_method='RK2',
                  **kwargs):
         """
@@ -121,6 +122,8 @@ class PyWindMover(movers.PyMover):
         self.uncertain_duration = uncertain_duration
         self.uncertain_time_delay = uncertain_time_delay
         self.uncertain_speed_scale = uncertain_speed_scale
+        self.wind_scale = wind_scale
+        self.time_offset = time_offset
 
         # also sets self._uncertain_angle_units
         self.uncertain_angle_scale = uncertain_angle_scale
@@ -233,8 +236,8 @@ class PyWindMover(movers.PyMover):
             pos = positions[:]
 
             deltas = method(sc, time_step, model_time_datetime, pos, self.wind)
-            deltas[:, 0] *= sc['windages']
-            deltas[:, 1] *= sc['windages']
+            deltas[:, 0] *= sc['windages'] * self.wind_scale
+            deltas[:, 1] *= sc['windages'] * self.wind_scale
 
             deltas = FlatEarthProjection.meters_to_lonlat(deltas, positions)
             deltas[status] = (0, 0, 0)

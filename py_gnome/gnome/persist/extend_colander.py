@@ -219,6 +219,8 @@ class FilenameSchema(SequenceSchema):
         super(FilenameSchema, self).__init__(SchemaNode(String()), *args, **kwargs)
 
     def deserialize(self, cstruct):
+        if cstruct is None or cstruct is null:
+            return None
         rv = super(FilenameSchema, self).deserialize(cstruct)
         if len(rv) == 1:
             return rv[0]

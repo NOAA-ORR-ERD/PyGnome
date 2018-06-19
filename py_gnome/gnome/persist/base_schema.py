@@ -137,9 +137,12 @@ class ObjType(SchemaType):
                 return None
             if type(value) is dict and 'obj_type' in value:
                 id_ = value.get('id', None)
-                if id_ not in refs:
+                if id_ not in refs or id_ is None:
                     obj_type = class_from_objtype(value['obj_type'])
-                    refs[id_] = obj_type.new_from_dict(value)
+                    obj = obj_type.new_from_dict(value)
+                    if id_ is None:
+                        id_ = obj.id
+                    refs[id_] = obj
                 return refs[id_]
             else:
                 raise TypeError('{0} is not dictionary, or does not have an obj_type'.format(value))
@@ -557,7 +560,7 @@ class ObjTypeSchema(MappingSchema):
         if subnode.schema_type is ObjType:
             if subcstruct is None:
                 return None
-            o = refs.get(subcstruct['id'], None)
+            o = refs.get(subcstruct.get('id', None), None)
             if o is not None :
                 #existing object, so update using subdict (dict_[name])
                 #and set dict_[name] to object
@@ -572,7 +575,7 @@ class ObjTypeSchema(MappingSchema):
         elif (subnode.schema_type is Sequence and
                     isinstance(subnode.children[0], ObjTypeSchema)):
             if subappstruct is not None:
-                subappstruct.clear()
+                del subappstruct[:] #list.clear()
             else:
                 subappstruct = []
             for subitem in subcstruct:
@@ -615,17 +618,19 @@ class GeneralGnomeObjectSchema(ObjTypeSchema):
         if type(obj_or_json) is dict:
             json_ = obj_or_json
             obj_type = class_from_objtype(json_['obj_type'])
-            if obj_type._schema in self.acceptable_schemas:
-                return obj_type._schema()
+            schema = obj_type._schema
+            for s in self.acceptable_schemas:
+                if schema is s or issubclass(schema, s):
+                    return schema()
             else:
-                raise TypeError('This type of json is not supported')
+                raise TypeError('This type of json is not supported {0}'.format(schema))
         else:
             obj = obj_or_json
             schema = obj.__class__._schema
-            if schema in self.acceptable_schemas:
-                return schema()
-            else:
-                raise TypeError('This type of object is not supported')
+            for s in self.acceptable_schemas:
+                if schema is s or issubclass(schema, s):
+                    return schema()
+            raise TypeError('This type of object {0} is not supported. Schema: {1}'.format(obj, schema))
 
     def serialize(self, appstruct=None):
         substitute_schema = self.validate_input_schema(appstruct)

@@ -56,7 +56,7 @@ class ModelSchema(ObjTypeSchema):
     )
     uncertain = SchemaNode(Bool())
     cache_enabled = SchemaNode(Bool())
-    num_time_steps = SchemaNode(Int())
+    num_time_steps = SchemaNode(Int(), read_only=True)
     make_default_refs = SchemaNode(Bool())
     mode = SchemaNode(
         String(), validator=OneOf(['gnome', 'adios', 'roc'])
