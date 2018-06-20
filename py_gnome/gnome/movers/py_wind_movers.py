@@ -46,7 +46,10 @@ class PyWindMover(PyMover, Serializable):
 
     _state.add_field([Field('filename', save=True, read=True, isdatafile=True,
                             test_for_eq=False),
-                      Field('wind', read=True, save_reference=True)])
+                      Field('wind', read=True, save_reference=True),
+                      Field('data_start', save=True, update=True),
+                      Field('data_stop', save=True, update=True),
+                      ])
     _state.add(update=['uncertain_duration', 'uncertain_time_delay'],
                save=['uncertain_duration', 'uncertain_time_delay'])
     _schema = PyWindMoverSchema
