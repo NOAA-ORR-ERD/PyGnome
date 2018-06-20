@@ -206,7 +206,7 @@ class PyMover(Mover):
                             setattr(self, k, o)
 
     @property
-    def real_data_start(self):
+    def data_start(self):
         '''
             Typically, a mover will have a linked Environment object, and
             if this object manages a time series of data points, it will have
@@ -218,7 +218,7 @@ class PyMover(Mover):
         raise NotImplementedError
 
     @property
-    def real_data_stop(self):
+    def data_stop(self):
         raise NotImplementedError
 
     @property

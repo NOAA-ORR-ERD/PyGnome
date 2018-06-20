@@ -26,6 +26,8 @@ from gnome.environment import Tide, TideSchema, Wind, WindSchema
 from gnome.movers import CyMover, ProcessSchema
 
 from gnome.persist.base_schema import ObjType, WorldPoint
+from gnome.persist.validators import convertible_to_seconds
+from gnome.persist.extend_colander import LocalDateTime
 
 
 class CurrentMoversBaseSchema(ObjType, ProcessSchema):
@@ -390,6 +392,10 @@ class GridCurrentMoverSchema(CurrentMoversBaseSchema):
     extrapolate = SchemaNode(Bool(), missing=drop)
     time_offset = SchemaNode(Float(), missing=drop)
     is_data_on_cells = SchemaNode(Bool(), missing=drop)
+    data_start = SchemaNode(LocalDateTime(), missing=drop,
+                            validator=convertible_to_seconds)
+    data_stop = SchemaNode(LocalDateTime(), missing=drop,
+                           validator=convertible_to_seconds)
 
 
 class GridCurrentMover(CurrentMoversBase, Serializable):
@@ -405,7 +411,10 @@ class GridCurrentMover(CurrentMoversBase, Serializable):
                             isdatafile=True, test_for_eq=False),
                       Field('topology_file', save=True, read=True,
                             isdatafile=True, test_for_eq=False),
-                      Field('is_data_on_cells', save=False, read=True)])
+                      Field('is_data_on_cells', save=False, read=True),
+                      Field('data_start', save=True, update=True),
+                      Field('data_stop', save=True, update=True),
+                      ])
 
     _schema = GridCurrentMoverSchema
 
@@ -530,6 +539,14 @@ class GridCurrentMover(CurrentMoversBase, Serializable):
                            lambda self, val: setattr(self.mover,
                                                      'time_offset',
                                                      val * 3600.))
+
+    @property
+    def data_start(self):
+        return sec_to_datetime(self.mover.get_start_time())
+
+    @property
+    def data_stop(self):
+        return sec_to_datetime(self.mover.get_end_time())
 
     @property
     def num_method(self):
