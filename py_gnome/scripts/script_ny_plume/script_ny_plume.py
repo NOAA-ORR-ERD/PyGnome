@@ -132,7 +132,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     url = ('http://geoport.whoi.edu/thredds/dodsC/clay/usgs/users/jcwarner/Projects/Sandy/triple_nest/00_dir_NYB05.ncml')
     gc = GridCurrent.from_netCDF(url)
-    u_mover = PyCurrentMover(gc, default_num_method='Trapezoid')
+    u_mover = PyCurrentMover(gc, default_num_method='RK2')
     model.movers += u_mover
     # print 'adding a wind mover:'
 
