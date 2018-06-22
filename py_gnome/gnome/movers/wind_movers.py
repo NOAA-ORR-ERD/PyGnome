@@ -29,6 +29,8 @@ from gnome.environment.wind import constant_wind
 from gnome.movers import CyMover, ProcessSchema
 
 from gnome.persist.base_schema import ObjType
+from gnome.persist.extend_colander import LocalDateTime
+from gnome.persist.validators import convertible_to_seconds
 
 
 class WindMoversBaseSchema(ObjType, ProcessSchema):
@@ -184,6 +186,10 @@ class WindMoverSchema(WindMoversBaseSchema):
     # 'wind' schema node added dynamically
     name = 'WindMover'
     description = 'wind mover properties'
+    data_start = SchemaNode(LocalDateTime(), missing=drop,
+                            validator=convertible_to_seconds)
+    data_stop = SchemaNode(LocalDateTime(), missing=drop,
+                           validator=convertible_to_seconds)
 
 
 class WindMover(WindMoversBase, Serializable):
@@ -195,8 +201,11 @@ class WindMover(WindMoversBase, Serializable):
     sets everything up that is common to all movers.
     """
     _state = copy.deepcopy(WindMoversBase._state)
-    _state.add_field(Field('wind', save=True, update=True,
-                           save_reference=True))
+    _state.add_field([Field('wind', save=True, update=True,
+                            save_reference=True),
+                      Field('data_start', read=True),
+                      Field('data_stop', read=True),
+                      ])
 
     _schema = WindMoverSchema
 
@@ -250,26 +259,12 @@ class WindMover(WindMoversBase, Serializable):
             self.mover.set_ossm(self._wind.ossm)
 
     @property
-    def real_data_start(self):
-        if self.wind is not None:
-            return self.wind.data_start
-        else:
-            return self._r_d_s
-
-    @real_data_start.setter
-    def real_data_start(self, value):
-        self._r_d_s = value
+    def data_start(self):
+        return self.wind.data_start
 
     @property
-    def real_data_stop(self):
-        if self.wind is not None:
-            return self.wind.data_stop
-        else:
-            return self._r_d_e
-
-    @real_data_stop.setter
-    def real_data_stop(self, value):
-        self._r_d_e = value
+    def data_stop(self):
+        return self.wind.data_stop
 
     def prepare_for_model_run(self):
         '''

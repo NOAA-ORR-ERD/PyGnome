@@ -503,8 +503,7 @@ class Serializable(GnomeId, Savable, SchemaType):
             try:
                 setattr(new_obj, key, dict_[key])
             except AttributeError:
-                print 'failed to set attribute {0}'.format(key)
-                raise
+                raise AttributeError('ailed to set attribute {0} on object {1}'.format(key, new_obj))
 
     @classmethod
     def new_from_dict(cls, dict_):
