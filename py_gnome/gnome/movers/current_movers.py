@@ -412,8 +412,8 @@ class GridCurrentMover(CurrentMoversBase, Serializable):
                       Field('topology_file', save=True, read=True,
                             isdatafile=True, test_for_eq=False),
                       Field('is_data_on_cells', save=False, read=True),
-                      Field('data_start', save=True, update=True),
-                      Field('data_stop', save=True, update=True),
+                      Field('data_start', read=True),
+                      Field('data_stop', read=True),
                       ])
 
     _schema = GridCurrentMoverSchema

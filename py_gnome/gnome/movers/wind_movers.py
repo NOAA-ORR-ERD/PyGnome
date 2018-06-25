@@ -203,8 +203,8 @@ class WindMover(WindMoversBase, Serializable):
     _state = copy.deepcopy(WindMoversBase._state)
     _state.add_field([Field('wind', save=True, update=True,
                             save_reference=True),
-                      Field('data_start', save=True, update=True),
-                      Field('data_stop', save=True, update=True),
+                      Field('data_start', read=True),
+                      Field('data_stop', read=True),
                       ])
 
     _schema = WindMoverSchema

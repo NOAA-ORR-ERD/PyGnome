@@ -142,8 +142,8 @@ class Wind(Serializable, Timeseries, Environment):
                       # test for equality of units a little differently
                       Field('units', save=True, update=True,
                             test_for_eq=False),
-                      Field('data_start', save=True, update=True),
-                      Field('data_stop', save=True, update=True),
+                      Field('data_start', read=True),
+                      Field('data_stop', read=True),
                       ])
     _state['name'].test_for_eq = False
 

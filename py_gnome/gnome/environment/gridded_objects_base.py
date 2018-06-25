@@ -502,8 +502,8 @@ class VectorVariable(gridded.VectorVariable, serializable.Serializable):
                                          isdatafile=True),
                       serializable.Field('extrapolation_is_allowed', save=True,
                                          update=True),
-                      serializable.Field('data_start', save=True, update=True),
-                      serializable.Field('data_stop', save=True, update=True),
+                      serializable.Field('data_start', read=True),
+                      serializable.Field('data_stop', read=True),
                       ])
 
     _default_component_types = copy.deepcopy(gridded.VectorVariable
