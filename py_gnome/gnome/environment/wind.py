@@ -22,10 +22,6 @@ from gnome.basic_types import wind_datasources
 
 from gnome.cy_gnome.cy_ossm_time import ossm_wind_units
 
-<<<<<<< HEAD
-=======
-from gnome.utilities.serializable import Serializable, Field
->>>>>>> refs/heads/develop
 from gnome.utilities.time_utils import sec_to_datetime
 from gnome.utilities.timeseries import Timeseries
 from gnome.utilities.inf_datetime import InfDateTime
@@ -33,13 +29,9 @@ from gnome.utilities.distributions import RayleighDistribution as rayleigh
 
 from gnome.persist.extend_colander import (DefaultTupleSchema,
                                            LocalDateTime,
-<<<<<<< HEAD
                                            DatetimeValue2dArraySchema,
                                            FilenameSchema)
-=======
-                                           DatetimeValue2dArraySchema)
 from gnome.persist.validators import convertible_to_seconds
->>>>>>> refs/heads/develop
 from gnome.persist import validators, base_schema
 
 from .environment import Environment

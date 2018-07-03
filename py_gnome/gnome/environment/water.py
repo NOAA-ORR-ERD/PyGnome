@@ -12,12 +12,8 @@ import gsw
 import unit_conversion as uc
 
 from gnome import constants
-<<<<<<< HEAD
-=======
-from gnome.utilities import serializable
 from gnome.utilities.inf_datetime import InfDateTime
 
->>>>>>> refs/heads/develop
 from gnome.persist import base_schema
 
 from .environment import Environment

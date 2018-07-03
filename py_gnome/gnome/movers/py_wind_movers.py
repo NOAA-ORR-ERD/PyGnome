@@ -211,19 +211,9 @@ class PyWindMover(movers.PyMover):
             status = sc['status_codes'] != oil_status.in_water
             pos = positions[:]
 
-<<<<<<< HEAD
             deltas = method(sc, time_step, model_time_datetime, pos, self.wind)
             deltas[:, 0] *= sc['windages'] * self.wind_scale
             deltas[:, 1] *= sc['windages'] * self.wind_scale
-=======
-            deltas = self.delta_method(num_method)(sc, time_step,
-                                                   model_time_datetime,
-                                                   pos,
-                                                   self.wind)
-
-            deltas[:, 0] *= sc['windages']
-            deltas[:, 1] *= sc['windages']
->>>>>>> refs/heads/develop
 
             deltas = FlatEarthProjection.meters_to_lonlat(deltas, positions)
             deltas[status] = (0, 0, 0)
