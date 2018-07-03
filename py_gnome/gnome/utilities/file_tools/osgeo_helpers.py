@@ -1,6 +1,9 @@
 '''
 Helper functions to make it a little easier to use the
 Geospatial Data Abstraction Libraries (GDAL/OGR).
+
+not sure any of these are needed now ...
+
 '''
 from osgeo import ogr
 

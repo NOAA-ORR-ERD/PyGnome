@@ -18,7 +18,7 @@ Features:
 import copy
 import os
 import math
-from osgeo import ogr
+# from osgeo import ogr
 
 import py_gd
 # import pyugrid
