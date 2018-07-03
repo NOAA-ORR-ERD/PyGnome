@@ -5,21 +5,22 @@ import numpy as np
 
 from colander import (SchemaNode, MappingSchema, Bool, drop)
 
-from gnome.persist.validators import convertible_to_seconds
-from gnome.persist.extend_colander import LocalDateTime
+from gnome import AddLogger
 
 from gnome.basic_types import (world_point,
                                world_point_type,
                                spill_type,
                                status_code_type)
 
-from gnome.utilities import inf_datetime
 from gnome.utilities import time_utils
 from gnome.persist.base_schema import ObjTypeSchema
 from gnome.cy_gnome.cy_rise_velocity_mover import CyRiseVelocityMover
 from gnome import GnomeId
-from gnome.utilities.inf_datetime import InfTime, MinusInfTime
 from gnome.utilities.projections import FlatEarthProjection
+from gnome.utilities.inf_datetime import InfDateTime, InfTime, MinusInfTime
+
+from gnome.persist.validators import convertible_to_seconds
+from gnome.persist.extend_colander import LocalDateTime
 
 
 class ProcessSchema(ObjTypeSchema):
@@ -62,13 +63,13 @@ class Process(GnomeId):
         :param active_start: datetime when the mover should be active
         :param active_stop: datetime after which the mover should be inactive
         """
+        self.name = kwargs.pop('name', self.__class__.__name__)
+
         self.on = kwargs.pop('on', True)  # turn the mover on / off for the run
         self._active = self.on  # initial value
 
-        active_start = kwargs.pop('active_start',
-                                  inf_datetime.InfDateTime('-inf'))
-        active_stop = kwargs.pop('active_stop',
-                                 inf_datetime.InfDateTime('inf'))
+        active_start = kwargs.pop('active_start', InfDateTime('-inf'))
+        active_stop = kwargs.pop('active_stop', InfDateTime('inf'))
 
         self._check_active_startstop(active_start, active_stop)
 
@@ -77,7 +78,6 @@ class Process(GnomeId):
 
         # empty dict since no array_types required for all movers at present
         self.array_types = set()
-        self.name = kwargs.pop('name', self.__class__.__name__)
         self.make_default_refs = kwargs.pop('make_default_refs', True)
 
     def _check_active_startstop(self, active_start, active_stop):
@@ -193,9 +193,10 @@ class Mover(Process):
 
 
 class PyMover(Mover):
-    def __init__(self,
-                 default_num_method='RK2',
+    def __init__(self, default_num_method='RK2',
                  **kwargs):
+        super(PyMover, self).__init__(**kwargs)
+
         self.num_methods = {'RK4': self.get_delta_RK4,
                             'Euler': self.get_delta_Euler,
                             'RK2': self.get_delta_RK2}
@@ -203,35 +204,47 @@ class PyMover(Mover):
 
         if 'env' in kwargs:
             if hasattr(self, '_req_refs'):
-                for k, v in self._req_refs.items():
+                for k, in self._req_refs:
                     for o in kwargs['env']:
                         if k in o._ref_as:
                             setattr(self, k, o)
-        Mover.__init__(self, **kwargs)
 
     @property
-    def real_data_start(self):
-        return self.data.time.min_time.replace(tzinfo=None)
-
-    @real_data_start.setter
-    def real_data_start(self, value):
-        self._r_d_s = value
+    def data_start(self):
+        '''
+            Typically, a mover will have a linked Environment object, and
+            if this object manages a time series of data points, it will have
+            a data_start and data_stop attribute which indicate the times
+            where the data points begin and end.
+            Since the Environment object should manage its own attributes,
+            this attribute will be read-only
+        '''
+        raise NotImplementedError
 
     @property
-    def real_data_stop(self):
-        return self.data.time.max_time.replace(tzinfo=None)
-
-    @real_data_stop.setter
-    def real_data_stop(self, value):
-        self._r_d_e = value
+    def data_stop(self):
+        raise NotImplementedError
 
     @property
     def is_data_on_cells(self):
         return self.data.grid.infer_location(self.data.u.data) != 'node'
 
+    def delta_method(self, method_name=None):
+        '''
+            Returns a delta function based on its registered name
+
+            Usage: delta = self.delta_method('RK2')(**kwargs)
+
+            Note: We do not handle any key errors resulting from passing in
+            a bad registered name.
+        '''
+        if method_name is None:
+            method_name = self.default_num_method
+
+        return self.num_methods[method_name]
+
     def get_delta_Euler(self, sc, time_step, model_time, pos, vel_field):
-        vels = vel_field.at(pos, model_time,
-                            extrapolate=self.extrapolate)
+        vels = vel_field.at(pos, model_time)
 
         return vels * time_step
 
@@ -240,12 +253,12 @@ class PyMover(Mover):
         dt_s = dt.seconds
         t = model_time
 
-        v0 = vel_field.at(pos, t, extrapolate=self.extrapolate)
+        v0 = vel_field.at(pos, t)
         d0 = FlatEarthProjection.meters_to_lonlat(v0 * dt_s, pos)
         p1 = pos.copy()
         p1 += d0
 
-        v1 = vel_field.at(p1, t + dt, extrapolate=self.extrapolate)
+        v1 = vel_field.at(p1, t + dt)
 
         return dt_s / 2 * (v0 + v1)
 
@@ -254,22 +267,22 @@ class PyMover(Mover):
         dt_s = dt.seconds
         t = model_time
 
-        v0 = vel_field.at(pos, t, extrapolate=self.extrapolate)
+        v0 = vel_field.at(pos, t)
         d0 = FlatEarthProjection.meters_to_lonlat(v0 * dt_s / 2, pos)
         p1 = pos.copy()
         p1 += d0
 
-        v1 = vel_field.at(p1, t + dt / 2, extrapolate=self.extrapolate)
+        v1 = vel_field.at(p1, t + dt / 2)
         d1 = FlatEarthProjection.meters_to_lonlat(v1 * dt_s / 2, pos)
         p2 = pos.copy()
         p2 += d1
 
-        v2 = vel_field.at(p2, t + dt / 2, extrapolate=self.extrapolate)
+        v2 = vel_field.at(p2, t + dt / 2)
         d2 = FlatEarthProjection.meters_to_lonlat(v2 * dt_s, pos)
         p3 = pos.copy()
         p3 += d2
 
-        v3 = vel_field.at(p3, t + dt, extrapolate=self.extrapolate)
+        v3 = vel_field.at(p3, t + dt)
 
         return dt_s / 6 * (v0 + 2 * v1 + 2 * v2 + v3)
 

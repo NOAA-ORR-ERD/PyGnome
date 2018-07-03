@@ -28,6 +28,9 @@ from gnome.environment.wind import constant_wind
 from gnome.movers import CyMover, ProcessSchema
 from gnome.persist.base_schema import GeneralGnomeObjectSchema
 from gnome.persist.extend_colander import FilenameSchema
+from gnome.persist.validators import convertible_to_seconds
+from gnome.persist.extend_colander import LocalDateTime
+from gnome.utilities.inf_datetime import InfTime, MinusInfTime
 
 
 
@@ -191,6 +194,12 @@ class WindMoverSchema(WindMoversBaseSchema):
         acceptable_schemas=[WindSchema],
         save=True, update=True, save_reference=True
     )
+    data_start = SchemaNode(
+        LocalDateTime(), validator=convertible_to_seconds, read_only=True
+    )
+    data_stop = SchemaNode(
+        LocalDateTime(), validator=convertible_to_seconds, read_only=True
+    )
 
 
 class WindMover(WindMoversBase):
@@ -253,26 +262,12 @@ class WindMover(WindMoversBase):
             self.mover.set_ossm(self._wind.ossm)
 
     @property
-    def real_data_start(self):
-        if self.wind is not None:
-            return self.wind.data_start
-        else:
-            return self._r_d_s
-
-    @real_data_start.setter
-    def real_data_start(self, value):
-        self._r_d_s = value
+    def data_start(self):
+        return self.wind.data_start
 
     @property
-    def real_data_stop(self):
-        if self.wind is not None:
-            return self.wind.data_stop
-        else:
-            return self._r_d_e
-
-    @real_data_stop.setter
-    def real_data_stop(self, value):
-        self._r_d_e = value
+    def data_stop(self):
+        return self.wind.data_stop
 
     def prepare_for_model_run(self):
         '''
@@ -365,15 +360,18 @@ class GridWindMover(WindMoversBase):
                 raise ValueError('Path for Topology file does not exist: {0}'
                                  .format(topology_file))
 
+        self.mover = CyGridWindMover(wind_scale=kwargs.pop('wind_scale', 1))
+        self.mover.text_read(filename, topology_file)
+
+        # Ideally, we would be able to run the base class initialization first
+        # because we designed the Movers well.  As it is, we inherit from the
+        # CyMover, and the CyMover needs to have a self.mover attribute.
+        super(GridWindMover, self).__init__(**kwargs)
+
         # is wind_file and topology_file is stored with cy_gridwind_mover?
         self.name = os.path.split(filename)[1]
         self.filename = filename
         self.topology_file = topology_file
-
-        self.mover = CyGridWindMover(wind_scale=kwargs.pop('wind_scale', 1))
-        self.mover.text_read(filename, topology_file)
-
-        super(GridWindMover, self).__init__(**kwargs)
 
         self.real_data_start = sec_to_datetime(self.mover.get_start_time())
         self.real_data_stop = sec_to_datetime(self.mover.get_end_time())

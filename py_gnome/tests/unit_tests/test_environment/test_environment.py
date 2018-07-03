@@ -5,6 +5,8 @@ import pytest
 from pytest import raises
 
 from unit_conversion import InvalidUnitError
+
+from gnome.utilities.inf_datetime import InfDateTime
 from gnome.environment import Environment, Water
 
 
@@ -79,6 +81,10 @@ def test_Water_init(attr, sub_attr, value):
 
 def check_water_defaults(water_obj):
     assert water_obj.name == 'Water'
+
+    assert water_obj.data_start == InfDateTime("-inf")
+    assert water_obj.data_stop == InfDateTime("inf")
+
     assert water_obj.temperature == 300.0
     assert water_obj.salinity == 35.0
     assert water_obj.sediment == .005
@@ -94,16 +100,30 @@ def check_water_defaults(water_obj):
     assert water_obj.units['kinematic_viscosity'] == 'm^2/s'
 
 
-# currently salinity only have psu in there since there is no conversion from
-# psu to ppt, though ppt is a valid unit - needs to be fixed
-# similarly, sediment only has mg/l as units - decide if we want more units
-# here
+def test_not_implemented_in_water():
+    sample_time = 60 * 60 * 24 * 365 * 30  # seconds
+    w = Water()
+
+    with raises(AttributeError):
+        w.data_start = sample_time
+
+    with raises(AttributeError):
+        w.data_stop = sample_time
+
+
 @pytest.mark.parametrize(("attr", "unit"), [('temperature', 'kg'),
                                             ('sediment', 'kg'),
                                             ('salinity', 'ppt'),
                                             ('wave_height', 'l'),
                                             ('fetch', 'ppt')])
-def test_exceptions(attr, unit):
+def test_unit_errors(attr, unit):
+    '''
+        - currently salinity only has psu in there since there is
+          no conversion from psu to ppt, though ppt is a valid unit.
+          This needs to be fixed
+        - similarly, sediment only has mg/l as units.  We need to decide
+          if we want more units here
+    '''
     w = Water()
 
     with pytest.raises(InvalidUnitError):

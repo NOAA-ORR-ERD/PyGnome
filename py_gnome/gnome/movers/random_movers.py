@@ -16,6 +16,9 @@ from gnome.environment.gridded_objects_base import VariableSchema
 
 from gnome.movers import CyMover, ProcessSchema
 from gnome.persist.base_schema import ObjTypeSchema
+from gnome.persist.validators import convertible_to_seconds
+from gnome.persist.extend_colander import LocalDateTime
+from gnome.utilities.inf_datetime import InfTime, MinusInfTime
 
 
 class RandomMoverSchema(ProcessSchema):
@@ -24,6 +27,12 @@ class RandomMoverSchema(ProcessSchema):
     )
     uncertain_factor = SchemaNode(
         Float(), missing=drop, save=True, update=True
+    )
+    data_start = SchemaNode(
+        LocalDateTime(), validator=convertible_to_seconds, read_only=True
+    )
+    data_stop = SchemaNode(
+        LocalDateTime(), validator=convertible_to_seconds, read_only=True
     )
 
 
@@ -56,6 +65,14 @@ class RandomMover(CyMover):
                                    uncertain_factor=uncertain_factor)
 
         super(RandomMover, self).__init__(**kwargs)
+
+    @property
+    def data_start(self):
+        return MinusInfTime()
+
+    @property
+    def data_stop(self):
+        return InfTime()
 
     @property
     def diffusion_coef(self):

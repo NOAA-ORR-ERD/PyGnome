@@ -12,7 +12,14 @@ import gsw
 import unit_conversion as uc
 
 from gnome import constants
+<<<<<<< HEAD
+=======
+from gnome.utilities import serializable
+from gnome.utilities.inf_datetime import InfDateTime
+
+>>>>>>> refs/heads/develop
 from gnome.persist import base_schema
+
 from .environment import Environment
 
 from .. import _valid_units
@@ -65,7 +72,7 @@ class WaterSchema(base_schema.ObjTypeSchema):
     units = UnitsSchema()
     temperature = SchemaNode(Float())
     salinity = SchemaNode(Float())
-    sediment = SchemaNode(Float(), missing=drop)
+    sediment = SchemaNode(Float())
     wave_height = SchemaNode(Float(), missing=None)
     fetch = SchemaNode(Float(), missing=None)
 
@@ -146,6 +153,19 @@ class Water(Environment):
         return info
 
     __str__ = __repr__
+
+    @property
+    def data_start(self):
+        '''
+            The Water object doesn't directly manage a time series of data,
+            so it will not have a data range.
+            We will just return an infinite range for Water.
+        '''
+        return InfDateTime("-inf")
+
+    @property
+    def data_stop(self):
+        return InfDateTime("inf")
 
     def get(self, attr, unit=None):
         '''

@@ -4,7 +4,7 @@ import copy
 import numpy as np
 
 from colander import (SchemaNode, SequenceSchema,
-                      Sequence, String, DateTime,
+                      Sequence, String, Boolean, DateTime,
                       drop)
 
 import gridded
@@ -13,6 +13,9 @@ from gnome.persist import base_schema
 from gnome.gnomeobject import GnomeId
 from gnome.persist.extend_colander import FilenameSchema
 from gnome.persist.base_schema import GeneralGnomeObjectSchema
+from gnome.persist.validators import convertible_to_seconds
+from gnome.persist.extend_colander import LocalDateTime
+from gnome.utilities.inf_datetime import InfDateTime
 
 
 class TimeSchema(base_schema.ObjTypeSchema):
@@ -57,6 +60,11 @@ class VariableSchemaBase(base_schema.ObjTypeSchema):
     grid_file = FilenameSchema(
         isdatafile=True, test_equal=False
     )
+    extrapolation_is_allowed = SchemaNode(Boolean())
+    data_start = SchemaNode(LocalDateTime(), read_only=True,
+                            validator=convertible_to_seconds)
+    data_stop = SchemaNode(LocalDateTime(), read_only=True,
+                           validator=convertible_to_seconds)
 
 
 class VariableSchema(VariableSchemaBase):
@@ -133,9 +141,11 @@ class Grid_U(gridded.grids.Grid_U, GnomeId):
         the grid.
         '''
         open_cells = self.nodes[self.faces]
-        closed_cells = np.concatenate((open_cells, open_cells[:,None,0]), axis=1)
+        closed_cells = np.concatenate((open_cells, open_cells[:, None, 0]),
+                                      axis=1)
         closed_cells = closed_cells.astype(np.float32, copy=False)
-        lengths = closed_cells.shape[1] * np.ones(closed_cells.shape[0], dtype=np.int32)
+        lengths = closed_cells.shape[1] * np.ones(closed_cells.shape[0],
+                                                  dtype=np.int32)
 
         return (lengths, [closed_cells])
 
@@ -143,7 +153,7 @@ class Grid_U(gridded.grids.Grid_U, GnomeId):
         return self.nodes[:]
 
     def get_centers(self):
-        if self.face_coordinates == None:
+        if self.face_coordinates is None:
             self.build_face_coordinates()
         return self.face_coordinates
 
@@ -212,11 +222,11 @@ class Grid_S(GnomeId, gridded.grids.Grid_S):
 
     def get_centers(self):
         if self.center_lon is None:
-            lons = (self.node_lon[0:-1, 0:-1] + self.node_lon[1:,1:]) /2
-            lats = (self.node_lat[0:-1, 0:-1] + self.node_lat[1:,1:]) /2
-            return np.stack((lons, lats), axis=-1).reshape(-1,2)
+            lons = (self.node_lon[0:-1, 0:-1] + self.node_lon[1:, 1:]) / 2
+            lats = (self.node_lat[0:-1, 0:-1] + self.node_lat[1:, 1:]) / 2
+            return np.stack((lons, lats), axis=-1).reshape(-1, 2)
         else:
-            return self.centers.reshape(-1,2)
+            return self.centers.reshape(-1, 2)
 
     def get_metadata(self):
         json_ = {}
@@ -233,11 +243,17 @@ class Grid_S(GnomeId, gridded.grids.Grid_S):
         and the resulting lines are drawn, you should end up with a picture of
         the grid.
         '''
-        hor_lines = np.dstack((self.node_lon[:], self.node_lat[:])).astype(np.float32, copy=False)
-        ver_lines = hor_lines.transpose((1, 0, 2)).astype(np.float32, copy=True)
-        hor_lens = hor_lines.shape[1] * np.ones(hor_lines.shape[0], dtype=np.int32)
-        ver_lens = ver_lines.shape[1] * np.ones(ver_lines.shape[0], dtype=np.int32)
+        hor_lines = (np.dstack((self.node_lon[:], self.node_lat[:]))
+                     .astype(np.float32, copy=False))
+        ver_lines = (hor_lines.transpose((1, 0, 2))
+                     .astype(np.float32, copy=True))
+
+        hor_lens = hor_lines.shape[1] * np.ones(hor_lines.shape[0],
+                                                dtype=np.int32)
+        ver_lens = ver_lines.shape[1] * np.ones(ver_lines.shape[0],
+                                                dtype=np.int32)
         lens = np.concatenate((hor_lens, ver_lens))
+
         return (lens, [hor_lines, ver_lines])
 
 
@@ -251,28 +267,41 @@ class Grid_R(gridded.grids.Grid_R, GnomeId):
         return rv
 
     def get_nodes(self):
-        return self.nodes.reshape(-1,2)
+        return self.nodes.reshape(-1, 2)
 
     def get_centers(self):
-        return self.centers.reshape(-1,2)
+        return self.centers.reshape(-1, 2)
 
     def get_cells(self):
         return np.concatenate(self.node_lon, self.node_lat)
 
     def get_lines(self):
 
-        lon_lines = np.array([[(lon, self.node_lat[0]), (lon, self.node_lat[len(self.node_lat)/2]), (lon, self.node_lat[-1])] for lon in self.node_lon], dtype=np.float32)
-        lat_lines = np.array([[(self.node_lon[0], lat), (self.node_lon[len(self.node_lon)/2], lat), (self.node_lon[-1], lat)] for lat in self.node_lat], dtype=np.float32)
-        lon_lens = lon_lines.shape[1] * np.ones(lon_lines.shape[0], dtype=np.int32)
-        lat_lens = lat_lines.shape[1] * np.ones(lat_lines.shape[0], dtype=np.int32)
+        lon_lines = np.array([[(lon, self.node_lat[0]),
+                               (lon, self.node_lat[len(self.node_lat) / 2]),
+                               (lon, self.node_lat[-1])]
+                              for lon in self.node_lon], dtype=np.float32)
+        lat_lines = np.array([[(self.node_lon[0], lat),
+                               (self.node_lon[len(self.node_lon) / 2], lat),
+                               (self.node_lon[-1], lat)]
+                              for lat in self.node_lat], dtype=np.float32)
+
+        lon_lens = lon_lines.shape[1] * np.ones(lon_lines.shape[0],
+                                                dtype=np.int32)
+        lat_lens = lat_lines.shape[1] * np.ones(lat_lines.shape[0],
+                                                dtype=np.int32)
         lens = np.concatenate((lon_lens, lat_lens))
+
         return (lens, [lon_lines, lat_lines])
+
 
 class PyGrid(gridded.grids.Grid):
 
     @staticmethod
     def from_netCDF(*args, **kwargs):
-        kwargs['_default_types'] = (('ugrid', Grid_U), ('sgrid', Grid_S), ('rgrid', Grid_R))
+        kwargs['_default_types'] = (('ugrid', Grid_U),
+                                    ('sgrid', Grid_S),
+                                    ('rgrid', Grid_R))
 
         return gridded.grids.Grid.from_netCDF(*args, **kwargs)
 
@@ -282,20 +311,27 @@ class PyGrid(gridded.grids.Grid):
 
     @staticmethod
     def _get_grid_type(*args, **kwargs):
-        kwargs['_default_types'] = (('ugrid', Grid_U), ('sgrid', Grid_S), ('rgrid', Grid_R))
+        kwargs['_default_types'] = (('ugrid', Grid_U),
+                                    ('sgrid', Grid_S),
+                                    ('rgrid', Grid_R))
 
         return gridded.grids.Grid._get_grid_type(*args, **kwargs)
+
 
 class Depth(gridded.depth.Depth):
     @staticmethod
     def from_netCDF(*args, **kwargs):
-        kwargs['_default_types'] = (('level', L_Depth), ('sigma', S_Depth), ('surface', DepthBase))
+        kwargs['_default_types'] = (('level', L_Depth),
+                                    ('sigma', S_Depth),
+                                    ('surface', DepthBase))
 
         return gridded.depth.Depth.from_netCDF(*args, **kwargs)
 
     @staticmethod
     def _get_depth_type(*args, **kwargs):
-        kwargs['_default_types'] = (('level', L_Depth), ('sigma', S_Depth), ('surface', DepthBase))
+        kwargs['_default_types'] = (('level', L_Depth),
+                                    ('sigma', S_Depth),
+                                    ('surface', DepthBase))
 
         return gridded.depth.Depth._get_depth_type(*args, **kwargs)
 
@@ -312,13 +348,14 @@ class Variable(gridded.Variable, GnomeId):
                                      'grid': PyGrid,
                                      'depth': Depth})
 
-    def __init__(self, extrapolate=False, *args, **kwargs):
-        self.extrapolate = extrapolate
+    def __init__(self, extrapolation_is_allowed=False, *args, **kwargs):
+        self.extrapolation_is_allowed = extrapolation_is_allowed
         super(Variable, self).__init__(*args, **kwargs)
 
     def at(self, *args, **kwargs):
         if ('extrapolate' not in kwargs):
-            kwargs['extrapolate'] = self.extrapolate
+            kwargs['extrapolate'] = False
+
         return super(Variable, self).at(*args, **kwargs)
 
     @classmethod
@@ -327,6 +364,28 @@ class Variable(gridded.Variable, GnomeId):
             return cls.from_netCDF(**dict_)
 
         return super(Variable, cls).new_from_dict(dict_)
+
+    @property
+    def extrapolation_is_allowed(self):
+        return self.time.min_time == self.time.max_time or self._extrapolation_is_allowed
+
+    @extrapolation_is_allowed.setter
+    def extrapolation_is_allowed(self, e):
+        self._extrapolation_is_allowed = e
+
+    @property
+    def data_start(self):
+        if self.time.min_time == self.time.max_time or self.extrapolation_is_allowed:
+            return InfDateTime("-inf")
+        else:
+            return self.time.min_time.replace(tzinfo=None)
+
+    @property
+    def data_stop(self):
+        if self.time.min_time == self.time.max_time or self.extrapolation_is_allowed:
+            return InfDateTime("inf")
+        else:
+            return self.time.min_time.replace(tzinfo=None)
 
 
 class DepthBase(gridded.depth.DepthBase, GnomeId):
@@ -338,6 +397,7 @@ class DepthBase(gridded.depth.DepthBase, GnomeId):
     _default_component_types.update({'time': Time,
                                      'grid': PyGrid,
                                      'variable': Variable})
+
     @classmethod
     def new_from_dict(cls, dict_):
         rv = cls.from_netCDF(**dict_)
@@ -355,6 +415,7 @@ class L_Depth(gridded.depth.L_Depth, GnomeId):
     _default_component_types.update({'time': Time,
                                      'grid': PyGrid,
                                      'variable': Variable})
+
     @classmethod
     def new_from_dict(cls, dict_):
         rv = cls.from_netCDF(**dict_)
@@ -370,6 +431,7 @@ class S_Depth(gridded.depth.S_Depth, GnomeId):
     _default_component_types.update({'time': Time,
                                      'grid': PyGrid,
                                      'variable': Variable})
+
     @classmethod
     def new_from_dict(cls, dict_):
         rv = cls.from_netCDF(**dict_)
@@ -418,3 +480,25 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
     def new_from_dict(cls, dict_):
         rv = cls.from_netCDF(**dict_)
         return rv
+
+    @property
+    def extrapolation_is_allowed(self):
+        return self.time.min_time == self.time.max_time or self._extrapolation_is_allowed
+
+    @extrapolation_is_allowed.setter
+    def extrapolation_is_allowed(self, e):
+        self._extrapolation_is_allowed = e
+
+    @property
+    def data_start(self):
+        if self.time.min_time == self.time.max_time or self.extrapolation_is_allowed:
+            return InfDateTime("-inf")
+        else:
+            return self.time.min_time.replace(tzinfo=None)
+
+    @property
+    def data_stop(self):
+        if self.time.min_time == self.time.max_time or self.extrapolation_is_allowed:
+            return InfDateTime("inf")
+        else:
+            return self.time.min_time.replace(tzinfo=None)

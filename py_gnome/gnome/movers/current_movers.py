@@ -20,6 +20,11 @@ from gnome.cy_gnome.cy_currentcycle_mover import CyCurrentCycleMover
 from gnome.cy_gnome.cy_component_mover import CyComponentMover
 
 from gnome.utilities.time_utils import sec_to_datetime
+from gnome.utilities.inf_datetime import InfTime, MinusInfTime
+
+from gnome.persist.base_schema import ObjType, WorldPoint
+from gnome.persist.validators import convertible_to_seconds
+from gnome.persist.extend_colander import LocalDateTime
 
 from gnome.environment import Tide, TideSchema, Wind, WindSchema
 from gnome.movers import CyMover, ProcessSchema
@@ -29,12 +34,12 @@ from gnome.persist.extend_colander import FilenameSchema
 
 
 class CurrentMoversBaseSchema(ProcessSchema):
-    uncertain_duration = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
-    uncertain_time_delay = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
+    uncertain_duration = SchemaNode(Float())
+    uncertain_time_delay = SchemaNode(Float())
+    data_start = SchemaNode(LocalDateTime(), read_only=True,
+                            validator=convertible_to_seconds)
+    data_stop = SchemaNode(LocalDateTime(), read_only=True,
+                           validator=convertible_to_seconds)
 
 
 class CurrentMoversBase(CyMover):
@@ -329,6 +334,20 @@ class CatsMover(CurrentMoversBase):
 
         self._tide = tide_obj
 
+    @property
+    def data_start(self):
+        if self.tide is not None:
+            return sec_to_datetime(self.tide.data_start)
+        else:
+            return MinusInfTime()
+
+    @property
+    def data_stop(self):
+        if self.tide is not None:
+            return sec_to_datetime(self.tide.data_stop)
+        else:
+            return InfTime()
+
     def get_grid_data(self):
         """
             Invokes the GetToplogyHdl method of TriGridVel_c object
@@ -384,6 +403,10 @@ class GridCurrentMoverSchema(CurrentMoversBaseSchema):
     is_data_on_cells = SchemaNode(
         Bool(), missing=drop, read_only=True
     )
+    data_start = SchemaNode(LocalDateTime(), read_only=True,
+                            validator=convertible_to_seconds)
+    data_stop = SchemaNode(LocalDateTime(), read_only=True,
+                           validator=convertible_to_seconds)
 
 
 class GridCurrentMover(CurrentMoversBase):
@@ -511,6 +534,14 @@ class GridCurrentMover(CurrentMoversBase):
                            lambda self, val: setattr(self.mover,
                                                      'time_offset',
                                                      val * 3600.))
+
+    @property
+    def data_start(self):
+        return sec_to_datetime(self.mover.get_start_time())
+
+    @property
+    def data_stop(self):
+        return sec_to_datetime(self.mover.get_end_time())
 
     @property
     def num_method(self):

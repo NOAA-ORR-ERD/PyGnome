@@ -22,6 +22,10 @@ from gnome.basic_types import wind_datasources
 
 from gnome.cy_gnome.cy_ossm_time import ossm_wind_units
 
+<<<<<<< HEAD
+=======
+from gnome.utilities.serializable import Serializable, Field
+>>>>>>> refs/heads/develop
 from gnome.utilities.time_utils import sec_to_datetime
 from gnome.utilities.timeseries import Timeseries
 from gnome.utilities.inf_datetime import InfDateTime
@@ -29,8 +33,13 @@ from gnome.utilities.distributions import RayleighDistribution as rayleigh
 
 from gnome.persist.extend_colander import (DefaultTupleSchema,
                                            LocalDateTime,
+<<<<<<< HEAD
                                            DatetimeValue2dArraySchema,
                                            FilenameSchema)
+=======
+                                           DatetimeValue2dArraySchema)
+from gnome.persist.validators import convertible_to_seconds
+>>>>>>> refs/heads/develop
 from gnome.persist import validators, base_schema
 
 from .environment import Environment
@@ -89,35 +98,23 @@ class WindSchema(base_schema.ObjTypeSchema):
     name = SchemaNode(String(), test_equal=False)
     description = SchemaNode(String())
     filename = FilenameSchema(isdatafile=True, test_equal=False, read_only=True)#Thanks to CyTimeseries
-    updated_at = SchemaNode(
-        LocalDateTime(), missing=drop, save=True, update=True
-    )
-    latitude = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
-    longitude = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
-    source_id = SchemaNode(
-        String(), missing=drop, save=True, update=True
-    )
+    updated_at = SchemaNode(LocalDateTime())
+    latitude = SchemaNode(Float())
+    longitude = SchemaNode(Float())
+    source_id = SchemaNode(String())
     source_type = SchemaNode(
         String(),
         validator=OneOf(wind_datasources._attr),
-        default='undefined', missing='undefined', save=True, update=True
+        default='undefined', missing='undefined'
     )
-    units = SchemaNode(
-        String(), default='m/s', save=True, update=True
-    )
-    speed_uncertainty_scale = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
-    timeseries = WindTimeSeriesSchema(
-        missing=drop, save=True, update=True, test_equal=False #Because comparing datetimevalue2d arrays does not play nice
-    )
-    extrapolation_is_allowed = SchemaNode(
-        Boolean(), missing=drop, save=True, update=True
-    )
+    units = SchemaNode(String(), default='m/s')
+    speed_uncertainty_scale = SchemaNode(Float())
+    timeseries = WindTimeSeriesSchema(test_equal=False) #Because comparing datetimevalue2d arrays does not play nice
+    extrapolation_is_allowed = SchemaNode(Boolean())
+    data_start = SchemaNode(LocalDateTime(), read_only=True,
+                            validator=convertible_to_seconds)
+    data_stop = SchemaNode(LocalDateTime(), read_only=True,
+                           validator=convertible_to_seconds)
 
 
 class Wind(Timeseries, Environment):
@@ -129,7 +126,6 @@ class Wind(Timeseries, Environment):
 
     # default units for input/output data
     _schema = WindSchema
-
 
     # list of valid velocity units for timeseries
     valid_vel_units = _valid_units('Velocity')
@@ -243,7 +239,8 @@ class Wind(Timeseries, Environment):
 
     @property
     def data_stop(self):
-        """The stop time of the valid data for this wind timeseries
+        """
+        The stop time of the valid data for this wind timeseries
 
         If there is one data point -- it's a constant wind
         so data_start is -InfDateTime

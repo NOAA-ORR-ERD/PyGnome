@@ -91,7 +91,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     # default is .4 radians
     w_mover = WindMover(wind, uncertain_angle_scale=0)
-    w_mover.extrapolate=True
+    wind.extrapolation_is_allowed=True
     model.movers += w_mover
 
     print 'adding a current mover:'

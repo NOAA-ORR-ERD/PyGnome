@@ -1,27 +1,26 @@
 import movers
 import numpy as np
 
-from colander import (SchemaNode,
-                      Bool, Float, String, Sequence, drop)
+from colander import (SchemaNode, Bool, Float, String, Sequence, drop)
 
 from gnome.basic_types import oil_status
-from gnome.basic_types import (world_point,
-                               world_point_type,
-                               spill_type,
+from gnome.basic_types import (world_point_type,
                                status_code_type)
+
 from gnome.utilities.projections import FlatEarthProjection
 
 from gnome.environment import GridCurrent
 from gnome.environment.gridded_objects_base import Grid_U, VectorVariableSchema
 
-from gnome.persist import base_schema
+from gnome.persist.base_schema import ObjTypeSchema
 from gnome.persist.validators import convertible_to_seconds
 from gnome.persist.extend_colander import LocalDateTime, FilenameSchema
 from gnome.persist.base_schema import GeneralGnomeObjectSchema
 from __builtin__ import property
 
 
-class PyCurrentMoverSchema(base_schema.ObjTypeSchema):
+
+class PyCurrentMoverSchema(ObjTypeSchema):
     current = GeneralGnomeObjectSchema(
         acceptable_schemas=[VectorVariableSchema, GridCurrent._schema],
         save=True, update=True, save_reference=True
@@ -32,7 +31,7 @@ class PyCurrentMoverSchema(base_schema.ObjTypeSchema):
     current_scale = SchemaNode(
         Float(), missing=drop, save=True, update=True
     )
-    extrapolate = SchemaNode(
+    extrapolation_is_allowed = SchemaNode(
         Bool(), missing=drop, save=True, update=True
     )
     time_offset = SchemaNode(
@@ -51,15 +50,11 @@ class PyCurrentMoverSchema(base_schema.ObjTypeSchema):
         validator=convertible_to_seconds,
         save=True, update=True
     )
-    real_data_start = SchemaNode(
-        LocalDateTime(), missing=drop,
-        validator=convertible_to_seconds,
-        read_only=True
+    data_start = SchemaNode(
+        LocalDateTime(), validator=convertible_to_seconds, read_only=True
     )
-    real_data_stop = SchemaNode(
-        LocalDateTime(), missing=drop,
-        validator=convertible_to_seconds,
-        read_only=True
+    data_stop = SchemaNode(
+        LocalDateTime(), validator=convertible_to_seconds, read_only=True
     )
 
 
@@ -74,7 +69,6 @@ class PyCurrentMover(movers.PyMover):
     def __init__(self,
                  filename=None,
                  current=None,
-                 extrapolate=False,
                  time_offset=0,
                  current_scale=1,
                  uncertain_duration=24 * 3600,
@@ -83,6 +77,7 @@ class PyCurrentMover(movers.PyMover):
                  uncertain_across=.25,
                  uncertain_cross=.25,
                  default_num_method='RK2',
+                 extrapolation_is_allowed=False,
                  **kwargs
                  ):
         """
@@ -102,13 +97,10 @@ class PyCurrentMover(movers.PyMover):
         :param uncertain_time_delay: when does the uncertainly kick in.
         :param uncertain_cross: Scale for uncertainty perpendicular to the flow
         :param uncertain_along: Scale for uncertainty parallel to the flow
-        :param extrapolate: Allow current data to be extrapolated
-                            before and after file data
         :param time_offset: Time zone shift if data is in GMT
         :param num_method: Numerical method for calculating movement delta.
                            Choices:('Euler', 'RK2', 'RK4')
                            Default: RK2
-
         """
         self.filename = filename
         self.current = current
@@ -120,7 +112,7 @@ class PyCurrentMover(movers.PyMover):
                 self.current = GridCurrent.from_netCDF(filename=self.filename,
                                                        **kwargs)
 
-        self.extrapolate = extrapolate
+        self.extrapolation_is_allowed = extrapolation_is_allowed
         self.current_scale = current_scale
 
         self.uncertain_along = uncertain_along
@@ -134,9 +126,6 @@ class PyCurrentMover(movers.PyMover):
         self.delta = np.zeros((0, 3), dtype=world_point_type)
         self.status_codes = np.zeros((0, 1), dtype=status_code_type)
 
-        if self.current.time is None or len(self.current.time.data) == 1:
-            self.extrapolate = True
-
         # either a 1, or 2 depending on whether spill is certain or not
         self.spill_type = 0
         (super(PyCurrentMover, self)
@@ -147,7 +136,6 @@ class PyCurrentMover(movers.PyMover):
     def from_netCDF(cls,
                     filename=None,
                     name=None,
-                    extrapolate=False,
                     time_offset=0,
                     current_scale=1,
                     uncertain_duration=24 * 3600,
@@ -164,7 +152,6 @@ class PyCurrentMover(movers.PyMover):
         return cls(name=name,
                    current=current,
                    filename=filename,
-                   extrapolate=extrapolate,
                    time_offset=time_offset,
                    current_scale=current_scale,
                    uncertain_along=uncertain_along,
@@ -187,20 +174,12 @@ class PyCurrentMover(movers.PyMover):
         self._filename = fn
 
     @property
-    def real_data_start(self):
-        return self.current.time.min_time.replace(tzinfo=None)
-
-    @real_data_start.setter
-    def real_data_start(self, value):
-        self._r_d_s = value
+    def data_start(self):
+        return self.current.data_start
 
     @property
-    def real_data_stop(self):
-        return self.current.time.max_time.replace(tzinfo=None)
-
-    @real_data_stop.setter
-    def real_data_stop(self, value):
-        self._r_d_e = value
+    def data_stop(self):
+        return self.current.data_stop
 
     @property
     def is_data_on_cells(self):
@@ -279,26 +258,26 @@ class PyCurrentMover(movers.PyMover):
 
         All movers must implement get_move() since that's what the model calls
         """
-        method = None
-
-        if num_method is None:
-            method = self.num_methods[self.default_num_method]
-        else:
-            method = self.num_method[num_method]
-
-        status = sc['status_codes'] != oil_status.in_water
         positions = sc['positions']
-        pos = positions[:]
 
-        res = method(sc, time_step, model_time_datetime, pos, self.current)
+        if self.active and len(positions) > 0:
+            status = sc['status_codes'] != oil_status.in_water
+            pos = positions[:]
 
-        if res.shape[1] == 2:
-            deltas = np.zeros_like(positions)
-            deltas[:, 0:2] = res
+            res = self.delta_method(num_method)(sc, time_step,
+                                                model_time_datetime,
+                                                pos,
+                                                self.current)
+
+            if res.shape[1] == 2:
+                deltas = np.zeros_like(positions)
+                deltas[:, 0:2] = res
+            else:
+                deltas = res
+
+            deltas = FlatEarthProjection.meters_to_lonlat(deltas, positions)
+            deltas[status] = (0, 0, 0)
         else:
-            deltas = res
-
-        deltas = FlatEarthProjection.meters_to_lonlat(deltas, positions)
-        deltas[status] = (0, 0, 0)
+            deltas = np.zeros_like(positions)
 
         return deltas

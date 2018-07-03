@@ -76,6 +76,21 @@ class Waves(Environment):
 
         super(Waves, self).__init__(**kwargs)
 
+    @property
+    def data_start(self):
+        '''
+            The Waves object doesn't directly manage a time series of data,
+            so it will not have a data range itself.  But it depends upon
+            a Wind and a Water object.  The Water won't have a data range
+            either, but the Wind will.
+            So its data range will be that of the Wind it is associated with.
+        '''
+        return self.wind.data_start
+
+    @property
+    def data_stop(self):
+        return self.wind.data_stop
+
     def get_value(self, points, time):
         """
         return the rms wave height, peak period and percent wave breaking

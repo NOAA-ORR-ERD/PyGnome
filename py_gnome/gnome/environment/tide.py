@@ -6,9 +6,12 @@ import string
 import os
 import copy
 
-from colander import SchemaNode, String, Float, drop
+from colander import SchemaNode, String, Float, drop, Boolean
 
 import gnome
+from gnome.utilities.inf_datetime import InfDateTime
+from gnome.persist.validators import convertible_to_seconds
+from gnome.persist.extend_colander import LocalDateTime
 
 from .environment import Environment
 from gnome.persist import base_schema
@@ -21,8 +24,6 @@ from gnome.persist.extend_colander import FilenameSchema
 #       CHB-- I don't think that's a problem -- that's what namespaces are for!
 
 from gnome.utilities.convert import tsformat
-
-
 from gnome.cy_gnome.cy_ossm_time import CyTimeseries
 from gnome.cy_gnome.cy_shio_time import CyShioTime
 
@@ -36,8 +37,11 @@ class TideSchema(base_schema.ObjTypeSchema):
     scale_factor = SchemaNode(
         Float(), missing=drop, save=True, update=True
     )
-
-    name = 'tide'
+    extrapolation_is_allowed = SchemaNode(Boolean(), missing=drop, read_only=True)
+    data_start = SchemaNode(LocalDateTime(), read_only=True,
+                            validator=convertible_to_seconds)
+    data_stop = SchemaNode(LocalDateTime(), read_only=True,
+                           validator=convertible_to_seconds)
 
 
 class Tide(Environment):
@@ -96,6 +100,18 @@ class Tide(Environment):
 
 
         kwargs.pop('scale_factor', None)
+
+    @property
+    def extrapolation_is_allowed(self):
+        return True
+
+    @property
+    def data_start(self):
+        return InfDateTime("-inf")
+
+    @property
+    def data_stop(self):
+        return InfDateTime("inf")
 
     @property
     def yeardata(self):
