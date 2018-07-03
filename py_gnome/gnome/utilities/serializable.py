@@ -503,8 +503,7 @@ class Serializable(GnomeId, Savable, SchemaType):
             try:
                 setattr(new_obj, key, dict_[key])
             except AttributeError:
-                print 'failed to set attribute {0}'.format(key)
-                raise
+                raise AttributeError('ailed to set attribute {0} on object {1}'.format(key, new_obj))
 
     @classmethod
     def new_from_dict(cls, dict_):
@@ -754,8 +753,11 @@ class Serializable(GnomeId, Savable, SchemaType):
             return getattr(self, from_dict_fn_name)(value)
 
         if self._attr_changed(current_value, value):
-            setattr(self, name, value)
-            return True
+            try:
+                setattr(self, name, value)
+                return True
+            except AttributeError:
+                raise AttributeError('failed to update attribute {0} to value {1} on object {2}'.format(name, value, self))
         else:
             return False
 

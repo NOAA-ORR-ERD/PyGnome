@@ -34,6 +34,10 @@ class PyWindMoverSchema(ObjType):
                               validator=convertible_to_seconds)
     active_stop = SchemaNode(LocalDateTime(), missing=drop,
                              validator=convertible_to_seconds)
+    data_start = SchemaNode(LocalDateTime(), missing=drop,
+                            validator=convertible_to_seconds)
+    data_stop = SchemaNode(LocalDateTime(), missing=drop,
+                           validator=convertible_to_seconds)
 
 
 class PyWindMover(PyMover, Serializable):
@@ -42,7 +46,10 @@ class PyWindMover(PyMover, Serializable):
 
     _state.add_field([Field('filename', save=True, read=True, isdatafile=True,
                             test_for_eq=False),
-                      Field('wind', read=True, save_reference=True)])
+                      Field('wind', read=True, save_reference=True),
+                      Field('data_start', read=True),
+                      Field('data_stop', read=True),
+                      ])
     _state.add(update=['uncertain_duration', 'uncertain_time_delay'],
                save=['uncertain_duration', 'uncertain_time_delay'])
     _schema = PyWindMoverSchema
@@ -142,11 +149,11 @@ class PyWindMover(PyMover, Serializable):
                    default_num_method=default_num_method)
 
     @property
-    def real_data_start(self):
+    def data_start(self):
         return self.wind.data_start
 
     @property
-    def real_data_stop(self):
+    def data_stop(self):
         return self.wind.data_stop
 
     @property

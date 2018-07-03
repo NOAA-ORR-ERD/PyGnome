@@ -22,7 +22,7 @@ from gnome.basic_types import wind_datasources
 
 from gnome.cy_gnome.cy_ossm_time import ossm_wind_units
 
-from gnome.utilities import serializable
+from gnome.utilities.serializable import Serializable, Field
 from gnome.utilities.time_utils import sec_to_datetime
 from gnome.utilities.timeseries import Timeseries
 from gnome.utilities.inf_datetime import InfDateTime
@@ -31,6 +31,7 @@ from gnome.utilities.distributions import RayleighDistribution as rayleigh
 from gnome.persist.extend_colander import (DefaultTupleSchema,
                                            LocalDateTime,
                                            DatetimeValue2dArraySchema)
+from gnome.persist.validators import convertible_to_seconds
 from gnome.persist import validators, base_schema
 
 from .environment import Environment
@@ -86,6 +87,7 @@ class WindSchema(base_schema.ObjType):
     validate data after deserialize, before it is given back to pyGnome's
     from_dict to set _state of object
     '''
+    name = 'wind'
     description = SchemaNode(String(), missing=drop)
     filename = SchemaNode(String(), missing=drop)
     updated_at = SchemaNode(LocalDateTime(), missing=drop)
@@ -101,10 +103,13 @@ class WindSchema(base_schema.ObjType):
 
     timeseries = WindTimeSeriesSchema(missing=drop)
     extrapolation_is_allowed = SchemaNode(Boolean(), missing=drop)
-    name = 'wind'
+    data_start = SchemaNode(LocalDateTime(), missing=drop,
+                            validator=convertible_to_seconds)
+    data_stop = SchemaNode(LocalDateTime(), missing=drop,
+                           validator=convertible_to_seconds)
 
 
-class Wind(serializable.Serializable, Timeseries, Environment):
+class Wind(Serializable, Timeseries, Environment):
     '''
     Defines the Wind conditions for a single point
     '''
@@ -129,16 +134,16 @@ class Wind(serializable.Serializable, Timeseries, Environment):
     _schema = WindSchema
 
     # add 'filename' as a Field object
-    _state.add_field([serializable.Field('filename', isdatafile=True,
-                                         save=True, read=True,
-                                         test_for_eq=False),
-                      serializable.Field('timeseries', save=False,
-                                         update=True),
-                      serializable.Field('extrapolation_is_allowed', save=True,
-                                         update=True),
+    _state.add_field([Field('filename', isdatafile=True, save=True, read=True,
+                            test_for_eq=False),
+                      Field('timeseries', save=False, update=True),
+                      Field('extrapolation_is_allowed', save=True,
+                            update=True),
                       # test for equality of units a little differently
-                      serializable.Field('units', save=True,
-                                         update=True, test_for_eq=False),
+                      Field('units', save=True, update=True,
+                            test_for_eq=False),
+                      Field('data_start', read=True),
+                      Field('data_stop', read=True),
                       ])
     _state['name'].test_for_eq = False
 
@@ -256,7 +261,8 @@ class Wind(serializable.Serializable, Timeseries, Environment):
 
     @property
     def data_stop(self):
-        """The stop time of the valid data for this wind timeseries
+        """
+        The stop time of the valid data for this wind timeseries
 
         If there is one data point -- it's a constant wind
         so data_start is -InfDateTime
