@@ -10,8 +10,8 @@ import datetime
 import numpy as np
 import pytest
 
-from gnome.basic_types import world_point, status_code_type, \
-    spill_type, oil_status
+from gnome.basic_types import (world_point, status_code_type, spill_type,
+                               oil_status)
 
 from gnome.cy_gnome.cy_gridcurrent_mover import CyGridCurrentMover
 
@@ -93,7 +93,7 @@ class TestGridCurrentMover:
         spill_size = np.zeros((1, ), dtype=np.int32)
 
         spill_size[0] = self.cm.num_le  # for uncertainty spills
-        start_pos = (-76.149368, 37.74496,0)
+        start_pos = (-76.149368, 37.74496, 0)
 
         print "Uncertain move"
         self.gcm.prepare_for_model_step(self.cm.model_time, self.cm.time_step,
