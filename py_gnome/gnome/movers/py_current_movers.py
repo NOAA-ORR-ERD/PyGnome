@@ -162,7 +162,7 @@ class PyCurrentMover(movers.PyMover):
     @property
     def filename(self):
         if hasattr(self, '_filename'):
-            if self._fillename is None and self.current is not None:
+            if self._filename is None and self.current is not None:
                 return self.current.data_file
             else:
                 return self._filename

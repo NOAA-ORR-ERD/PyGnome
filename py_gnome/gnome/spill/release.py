@@ -27,10 +27,9 @@ class BaseReleaseSchema(ObjTypeSchema):
     release_time = SchemaNode(
         LocalDateTime(), validator=convertible_to_seconds,
     )
-    start_time_invalid = SchemaNode(Bool(), save=False, read_only=True)
 
     num_released = SchemaNode(
-        Int(), read_only=True
+        Int(), read_only=True, test_equal=False
     )
 
 class PointLineReleaseSchema(BaseReleaseSchema):
@@ -49,7 +48,7 @@ class PointLineReleaseSchema(BaseReleaseSchema):
         missing=drop, save=True, update=True
     )
     _next_release_pos = WorldPointNumpy(
-        missing=drop, save=True,
+        missing=drop, save=True, read_only=True
     )
     end_release_time = SchemaNode(
         LocalDateTime(), missing=drop,
@@ -73,7 +72,7 @@ class ContinuousReleaseSchema(BaseReleaseSchema):
         missing=drop, save=True, update=True
     )
     _next_release_pos = WorldPointNumpy(
-        missing=drop, save=True,
+        missing=drop, save=True, read_only=True
     )
     end_release_time = SchemaNode(
         LocalDateTime(), missing=drop,
@@ -109,22 +108,27 @@ class Release(GnomeId):
     """
     _schema = BaseReleaseSchema
 
-    def __init__(self, release_time, num_elements=0, name=None):
+    def __init__(self,
+                 release_time=None,
+                 num_elements=0,
+                 num_released=0,
+                 start_time_invalid=None,
+                 **kwargs):
+
+        super(Release, self).__init__(**kwargs)
+
         self._num_elements = num_elements
         self.release_time = release_time
 
         # number of new particles released at each timestep
         # set/updated by the derived Release classes at each timestep
-        self.num_released = 0
+        self.num_released = num_released
 
         # flag determines if the first time is valid. If the first call to
         # self.num_elements_to_release(current_time, time_step) has
         # current_time > self.release_time, then no particles are ever released
         # model start time is valid
-        self.start_time_invalid = None
-
-        if name:
-            self.name = name
+        self.start_time_invalid = start_time_invalid
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
@@ -224,8 +228,8 @@ class PointLineRelease(Release):
     _schema = PointLineReleaseSchema
 
     def __init__(self,
-                 release_time,
-                 start_position,
+                 release_time=None,
+                 start_position=None,
                  num_elements=None,
                  num_per_timestep=None,
                  end_release_time=None,
@@ -265,6 +269,10 @@ class PointLineRelease(Release):
         num_elements and release_time passed to base class __init__ using super
         See base :class:`Release` documentation
         """
+
+        super(PointLineRelease, self).__init__(release_time=release_time,
+                                               num_elements=num_elements,
+                                               **kwargs)
         if num_elements is None and num_per_timestep is None:
             num_elements = 1000
 
@@ -272,10 +280,6 @@ class PointLineRelease(Release):
             msg = ('Either num_elements released or a release rate, defined by'
                    ' num_per_timestep must be given, not both')
             raise TypeError(msg)
-
-        super(PointLineRelease, self).__init__(release_time,
-                                               num_elements,
-                                               **kwargs)
         self._num_per_timestep = num_per_timestep
 
         # initializes internal variables: _end_release_time, _start_position,
@@ -410,8 +414,6 @@ class PointLineRelease(Release):
         '''
         if val is not None:
             val = np.array(val, dtype=world_point_type).reshape((3, ))
-        else:
-            val = self.start_position
 
         self._end_position = val
         self._delta_pos = None
@@ -642,8 +644,9 @@ class PointLineRelease(Release):
 class ContinuousRelease(Release):
     _schema = ContinuousReleaseSchema
 
-    def __init__(self, release_time,
-                 start_position,
+    def __init__(self,
+                 release_time=None,
+                 start_position=None,
                  num_elements=None,
                  num_per_timestep=None,
                  end_release_time=None,
@@ -651,14 +654,15 @@ class ContinuousRelease(Release):
                  initial_elements=None,
                  name=None):
 
-        self.initial_release = PointLineRelease(
-            release_time, start_position, initial_elements)
-        self.continuous = PointLineRelease(release_time,
-                                           start_position,
-                                           num_elements,
-                                           num_per_timestep,
-                                           end_release_time,
-                                           end_position)
+        self.initial_release = PointLineRelease(release_time=release_time,
+                                                start_position=start_position,
+                                                num_per_timestep=initial_elements)
+        self.continuous = PointLineRelease(release_time=release_time,
+                                           start_position=start_position,
+                                           num_elements=num_elements,
+                                           num_per_timestep=num_per_timestep,
+                                           end_release_time=end_release_time,
+                                           end_position=end_position)
 
         self._next_release_pos = self.start_position
 
@@ -824,7 +828,10 @@ class SpatialRelease(Release):
     """
     _schema = SpatialReleaseSchema
 
-    def __init__(self, release_time, start_position, name=None):
+    def __init__(self,
+                 release_time=None,
+                 start_position=None,
+                 **kwargs):
         """
         :param release_time: time the LEs are released
         :type release_time: datetime.datetime
@@ -836,12 +843,11 @@ class SpatialRelease(Release):
         num_elements and release_time passed to base class __init__ using super
         See base :class:`Release` documentation
         """
+        super(SpatialRelease, self).__init__(release_time=release_time,**kwargs)
         self.start_position = (np.asarray(start_position,
                                           dtype=world_point_type)
                                .reshape((-1, 3)))
-        super(SpatialRelease, self).__init__(release_time,
-                                             self.start_position.shape[0],
-                                             name)
+        self.num_elements = len(self.start_position)
 
     @classmethod
     def new_from_dict(cls, dict_):
@@ -901,7 +907,8 @@ def GridRelease(release_time, bounds, resolution):
     lon, lat = np.meshgrid(lon, lat)
     positions = np.c_[lon.flat, lat.flat, np.zeros((resolution * resolution),)]
 
-    return SpatialRelease(release_time, positions)
+    return SpatialRelease(release_time=release_time,
+                          start_position=positions)
 
 
 class ContinuousSpatialRelease(SpatialRelease):
@@ -941,12 +948,12 @@ class ContinuousSpatialRelease(SpatialRelease):
                                            dtype=world_point_type).reshape((-1, 3)))
 
 
-#     def num_elements_to_release(self, current_time, time_step):
-#         '''
-#         Return number of particles released in current_time + time_step
-#         '''
-#         return len([e for e in self._plume_elem_coords(current_time,
-#                                                        time_step)])
+    def num_elements_to_release(self, current_time, time_step):
+        '''
+        Return number of particles released in current_time + time_step
+        '''
+        return len([e for e in self._plume_elem_coords(current_time,
+                                                       time_step)])
 
     def num_elements_to_release(self, current_time, time_step):
         num = 0
@@ -987,8 +994,12 @@ class VerticalPlumeRelease(Release):
     flexible looping and list comprehension behavior.
     '''
 
-    def __init__(self, release_time, num_elements, start_position,
-                 plume_data, end_release_time, name=None):
+    def __init__(self,
+                 release_time=None,
+                 start_position=None,
+                 plume_data=None,
+                 end_release_time=None,
+                 **kwargs):
         '''
         :param num_elements: total number of elements to be released
         :type num_elements: integer
@@ -1003,8 +1014,7 @@ class VerticalPlumeRelease(Release):
         :type start_positions: (num_elements, 3) numpy array of float64
             -- (long, lat, z)
         '''
-        super(VerticalPlumeRelease, self).__init__(release_time,
-                                                   num_elements, name)
+        super(VerticalPlumeRelease, self).__init__(release_time=release_time, **kwargs)
 
         self.start_position = np.array(start_position,
                                        dtype=world_point_type).reshape((3, ))
@@ -1154,4 +1164,5 @@ def release_from_splot_data(release_time, filename):
     # 'loaded data, repeat positions for splots next'
     start_positions = np.repeat(pos, num_per_pos, axis=0)
 
-    return SpatialRelease(release_time, start_positions)
+    return SpatialRelease(release_time=release_time,
+                          start_position=start_positions)

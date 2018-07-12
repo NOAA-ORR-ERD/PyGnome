@@ -14,7 +14,6 @@ def test_environment_init():
     env = Environment()
     sample_time = 60 * 60 * 24 * 365 * 30  # seconds
 
-    assert env.name is None
     assert env._ref_as == 'environment'
 
     with raises(NotImplementedError):

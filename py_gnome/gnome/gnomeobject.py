@@ -479,10 +479,13 @@ class GnomeId(AddLogger):
             else:
                 if not isinstance(self_attr, type(other_attr)):
                     diffs.append('Different Types {0}: self={1}, other={2}'.format(name, self_attr, other_attr))
-
-                if not np.allclose(self_attr, other_attr,
-                                   rtol=1e-4, atol=1e-4):
-                    diffs.append('Not allclose {0}: self={1}, other={2}'.format(name, self_attr, other_attr))
+                try:
+                    if not np.allclose(self_attr, other_attr,
+                                       rtol=1e-4, atol=1e-4):
+                        diffs.append('Not allclose {0}: self={1}, other={2}'.format(name, self_attr, other_attr))
+                except TypeError: #compound types (such as old Timeseries) will break
+                    if not all((self_attr == other_attr).flatten()):
+                        diffs.append('Arrays are not allclose or all == {0}: self={1}, other={2}'.format(name, self_attr, other_attr))
 
         return diffs
 
@@ -557,10 +560,9 @@ class GnomeId(AddLogger):
             if os.path.exists(saveloc):
                 if not overwrite:
                     raise ValueError('{0} already exists and overwrite is False'.format(saveloc))
-            else:
-                zipfile_ = zipfile.ZipFile(saveloc, 'w',
-                                               compression=zipfile.ZIP_DEFLATED,
-                                               allowZip64=allowzip64)
+            zipfile_ = zipfile.ZipFile(saveloc, 'w',
+                                       compression=zipfile.ZIP_DEFLATED,
+                                       allowZip64=allowzip64)
         else:
             #saveloc is file path
             if not overwrite:
@@ -617,10 +619,11 @@ class GnomeId(AddLogger):
                 else:
                     search = os.path.join(saveloc, '*.json')
                     for fn in glob.glob(search):
-                        json_ = json.load(fn)
-                        if 'obj_type' in json_:
-                            if class_from_objtype(json_['obj_type']) is cls:
-                                return cls._schema().load(json_, saveloc=saveloc, refs=refs)
+                        with open(fn) as fp:
+                            json_ = json.load(fp)
+                            if 'obj_type' in json_:
+                                if class_from_objtype(json_['obj_type']) is cls:
+                                    return cls._schema().load(json_, saveloc=saveloc, refs=refs)
                     raise ValueError('No .json file containing a {0} found in folder {1}'.format(cls.__name__, saveloc))
             elif zipfile.is_zipfile(saveloc):
                 #saveloc is a zip archive

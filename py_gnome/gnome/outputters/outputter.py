@@ -268,6 +268,13 @@ class Outputter(GnomeId):
         '''
         pass
 
+    def post_model_run(self):
+        """
+        Override this method if a derived class needs to perform
+        any actions after a model run is complete (StopIteration triggered)
+        """
+        pass
+
     def write_output(self, step_num, islast_step=False):
         """
         called by the model at the end of each time step

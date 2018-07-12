@@ -198,10 +198,10 @@ class ElementType(GnomeId):
 
     @classmethod
     def deserialize(cls, json_):
-        if 'substance' in json_:
-            sub = json_['substance']
         obj = super(ElementType, cls).deserialize(json_)
-        obj.substance = sub['name']
+        if 'substance' in json_ and json_['substance'] is not None:
+            sub = json_['substance']
+            obj.substance = sub['name']
         return obj
 
     @classmethod

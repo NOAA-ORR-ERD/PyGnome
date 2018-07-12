@@ -176,9 +176,8 @@ for a file it works fine, no decimal places stored in file for magnitude
                          (environment.Wind(timeseries=(sec_to_date(24 * 3600),
                                                        (1, 30)),
                                            units='meters per second'),
-                          weatherers.Evaporation(environment.
-                                                 constant_wind(1., 30.),
-                                                 environment.Water(333.0)),)
+                          weatherers.Evaporation(wind=environment.constant_wind(1., 30.),
+                                                 water=environment.Water(333.0)),)
                          )
 def test_serialize_deserialize_wind_objs(saveloc_, obj):
     'test serialize/deserialize functionality'
@@ -191,9 +190,8 @@ def test_serialize_deserialize_wind_objs(saveloc_, obj):
                          (environment.Wind(timeseries=(sec_to_date(24 * 3600),
                                                        (1, 30)),
                                            units='meters per second'),
-                          weatherers.Evaporation(environment.
-                                                 constant_wind(1., 30.),
-                                                 environment.Water(333.0)),)
+                          weatherers.Evaporation(wind=environment.constant_wind(1., 30.),
+                                                 water=environment.Water(333.0)),)
                          )
 def test_save_load_wind_objs(saveloc_, obj):
     'test save/load functionality'

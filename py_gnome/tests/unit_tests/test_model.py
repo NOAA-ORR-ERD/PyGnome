@@ -1365,13 +1365,13 @@ class TestValidateModel():
         (msgs, isvalid) = model.check_inputs()
 
         assert len(msgs) == 1 and isvalid
-        assert ('Spill has release time after model start time' in msgs[0])
+        assert ('{0} has release time after model start time'.format(model.spills[0].name) in msgs[0])
 
         model.spills[0].release_time = self.start_time - timedelta(hours=1)
         (msgs, isvalid) = model.check_inputs()
 
         assert len(msgs) == 1 and not isvalid
-        assert ('Spill has release time before model start time' in msgs[0])
+        assert ('{0} has release time before model start time'.format(model.spills[0].name) in msgs[0])
 
     def make_model_incomplete_waves(self):
         '''

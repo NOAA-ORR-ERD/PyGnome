@@ -41,6 +41,7 @@ from gnome.exceptions import ReferencedObjectNotSet, GnomeRuntimeError
 from gnome.spill.spill import SpillSchema
 from gnome.gnomeobject import GnomeId, allowzip64, Refs
 from gnome.persist.extend_colander import OrderedCollectionSchema
+from gnome.map import GnomeMapSchema, MapFromBNASchema, ParamMapSchema, MapFromUGridSchema
 
 
 class ModelSchema(ObjTypeSchema):
@@ -65,14 +66,20 @@ class ModelSchema(ObjTypeSchema):
         List(), missing=drop,
 
     )
+    map = GeneralGnomeObjectSchema(
+        acceptable_schemas=(GnomeMapSchema,
+                            MapFromBNASchema,
+                            ParamMapSchema,
+                            MapFromUGridSchema)
+    )
     spills = OrderedCollectionSchema(
         GeneralGnomeObjectSchema(acceptable_schemas=[SpillSchema]),
         save_reference=True, test_equal=False
     )
-    uncertain_spills = OrderedCollectionSchema(
-        GeneralGnomeObjectSchema(acceptable_schemas=[SpillSchema]),
-        save_reference=True, test_equal=False, read=True, update=False
-    )
+#     uncertain_spills = OrderedCollectionSchema(
+#         GeneralGnomeObjectSchema(acceptable_schemas=[SpillSchema]),
+#         save_reference=True, test_equal=False
+#     )
     movers = OrderedCollectionSchema(
         GeneralGnomeObjectSchema(acceptable_schemas=gnome.movers.mover_schemas),
         save_reference=True
@@ -783,6 +790,23 @@ class Model(GnomeId):
         self.logger.debug("{0._pid} setup_model_run complete for: "
                           "{0.name}".format(self))
 
+    def post_model_run(self):
+        '''
+        A place where the model goes through all collections and calls
+        post_model_run if the object has it.
+        '''
+        for env in self.environment:
+            env.post_model_run()
+        for mov in self.movers:
+            if mov.on:
+                mov.post_model_run()
+        for out in self.outputters:
+            if out.on:
+                out.post_model_run()
+        for wea in self.weatherers:
+            if wea.on:
+                wea.post_model_run()
+
     def setup_time_step(self):
         '''
         sets up everything for the current time_step:
@@ -981,6 +1005,7 @@ class Model(GnomeId):
             # not specify time_step, then setup_model_run() automatically
             # initializes it. Thus, do StopIteration check after
             # setup_model_run() is invoked
+            self.post_model_run()
             raise StopIteration("Run complete for {0}".format(self.name))
 
         else:
@@ -1043,7 +1068,11 @@ class Model(GnomeId):
 
         :return: the step number
         '''
-        return self.step()
+        try:
+            return self.step()
+        except StopIteration:
+            self.post_model_run()
+            raise
 
     def full_run(self, rewind=True):
         '''
@@ -1065,6 +1094,7 @@ class Model(GnomeId):
 
                 output_data.append(results)
             except StopIteration:
+                self.post_model_run()
                 self.logger.info('Run Complete: Stop Iteration')
                 break
 
@@ -1263,6 +1293,7 @@ class Model(GnomeId):
         """
         load NetCDF file and add spill data back in - designed for savefiles
         """
+        spill_data = None
         if isinstance(saveloc, zipfile.ZipFile):
             #saveloc is an open zipfile instance
             if nc_file not in saveloc.namelist():
@@ -1275,16 +1306,19 @@ class Model(GnomeId):
                 u_spill_data = saveloc.extract(ufname)
         else:
             if os.path.isdir(saveloc):
-                saveloc = os.path.join(saveloc, filename)
-            with zipfile.ZipFile(saveloc, 'r') as z:
-                if nc_file not in z.namelist():
-                    return
-                spill_data = z.extract(nc_file)
-                if self.uncertain:
-                    spill_data_fname, ext = os.path.splitext(nc_file)
-                    fname = '{0}_uncertain{1}'.format(spill_data_fname, ext)
-                    u_spill_data = z.extract(fname)
+                if filename:
+                    saveloc = os.path.join(saveloc, nc_file)
+                    with zipfile.ZipFile(saveloc, 'r') as z:
+                        if nc_file not in z.namelist():
+                            return
+                        spill_data = z.extract(nc_file)
+                        if self.uncertain:
+                            spill_data_fname, ext = os.path.splitext(nc_file)
+                            fname = '{0}_uncertain{1}'.format(spill_data_fname, ext)
+                            u_spill_data = z.extract(fname)
 
+        if spill_data is None:
+            return
         array_types = set()
 
         for m in self.movers:

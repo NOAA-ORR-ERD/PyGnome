@@ -416,7 +416,7 @@ class BurnSchema(WeathererSchema):
         Float(), missing=drop, save=True, update=True
     )
     efficiency = SchemaNode(
-        Float(), missing=drop, save=True, update=True
+        Float(), missing=None, save=True, update=True
     )
     wind = GeneralGnomeObjectSchema(
         acceptable_schemas=[WindSchema, VectorVariableSchema],

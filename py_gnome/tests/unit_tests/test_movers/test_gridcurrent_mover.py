@@ -186,13 +186,8 @@ def test_serialize_deserialize():
     create a new grid_current object and make sure it has same properties
     """
 
-    import pdb
-    pdb.set_trace()
     c_grid = GridCurrentMover(curr_file, topology_file)
-    serial = c_grid.serialize('webapi')
-    dict_ = GridCurrentMover.deserialize(serial)
-    c2 = GridCurrentMover.new_from_dict(dict_)
+    serial = c_grid.serialize()
+    c2 = GridCurrentMover.deserialize(serial)
     assert c_grid == c2
-
-    c_grid.update_from_dict(dict_)  # tests no failures
 

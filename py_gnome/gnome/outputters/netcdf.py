@@ -168,10 +168,10 @@ class NetCDFOutputSchema(BaseOutputterSchema):
         Bool(), missing=drop, save=True, update=True
     )
     _start_idx = SchemaNode(
-        Int(), missing=drop, save=True, read_only=True
+        Int(), missing=drop, save=True, read_only=True, test_equal=False
     )
     _middle_of_run = SchemaNode(
-        Bool(), missing=drop, save=True, read_only=True
+        Bool(), missing=drop, save=True, read_only=True, test_equal=False
     )
 
 
@@ -271,6 +271,8 @@ class NetCDFOutput(Outputter):
                  # FIXME: this should not be default, but since we don't have a way for
                  #        WebGNOME to set it yet..
                  surface_conc="kde",
+                 _middle_of_run=False,
+                 _start_idx=0,
                  **kwargs):
         """
         Constructor for Net_CDFOutput object. It reads data from cache and
@@ -322,7 +324,7 @@ class NetCDFOutput(Outputter):
 
         # flag to keep track of _state of the object - is True after calling
         # prepare_for_model_run
-        self._middle_of_run = False
+        self._middle_of_run = _middle_of_run
 
         if which_data.lower() in self.which_data_lu:
             self._which_data = which_data.lower()
@@ -351,7 +353,7 @@ class NetCDFOutput(Outputter):
 
         # need to keep track of starting index for writing data since variable
         # number of particles are released
-        self._start_idx = 0
+        self._start_idx = _start_idx
 
         # define NetCDF variable attributes that are instance attributes here
         # It is set in prepare_for_model_run():

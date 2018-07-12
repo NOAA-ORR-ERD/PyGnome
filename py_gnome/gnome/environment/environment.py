@@ -45,14 +45,13 @@ class Environment(GnomeId):
 
     __metaclass__ = EnvironmentMeta
 
-    def __init__(self, name=None, make_default_refs=True):
+    def __init__(self, make_default_refs=True,**kwargs):
         '''
         base class for environment objects
 
         :param name=None:
         '''
-        self.name = None if name is None else name
-
+        super(Environment, self).__init__(**kwargs)
         self.make_default_refs = make_default_refs
 
     @property
@@ -85,6 +84,12 @@ class Environment(GnomeId):
         """
         pass
 
+    def post_model_run(self):
+        """
+        Override this method if a derived environment class needs to perform
+        any actions after a model run is complete (StopIteration triggered)
+        """
+        pass
 
 def env_from_netCDF(filename=None, dataset=None,
                     grid_file=None, data_file=None, _cls_list=None,

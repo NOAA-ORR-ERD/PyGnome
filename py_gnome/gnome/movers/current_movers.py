@@ -166,6 +166,10 @@ class CatsMoverSchema(CurrentMoversBaseSchema):
     tide = TideSchema(
         missing=drop, save=True, update=True, save_reference=True
     )
+    data_start = SchemaNode(LocalDateTime(), read_only=True,
+                            validator=convertible_to_seconds)
+    data_stop = SchemaNode(LocalDateTime(), read_only=True,
+                           validator=convertible_to_seconds)
 
 
 class CatsMover(CurrentMoversBase):
@@ -321,6 +325,9 @@ class CatsMover(CurrentMoversBase):
 
     @tide.setter
     def tide(self, tide_obj):
+        if tide_obj is None:
+            self._tide = tide_obj
+            return
         if not isinstance(tide_obj, Tide):
             raise TypeError('tide must be of type environment.Tide')
 
@@ -337,14 +344,14 @@ class CatsMover(CurrentMoversBase):
     @property
     def data_start(self):
         if self.tide is not None:
-            return sec_to_datetime(self.tide.data_start)
+            return self.tide.data_start
         else:
             return MinusInfTime()
 
     @property
     def data_stop(self):
         if self.tide is not None:
-            return sec_to_datetime(self.tide.data_stop)
+            return self.tide.data_stop
         else:
             return InfTime()
 
@@ -648,10 +655,10 @@ class GridCurrentMover(CurrentMoversBase):
 
 class IceMoverSchema(CurrentMoversBaseSchema):
     filename = FilenameSchema(
-        missing=drop, save=True, read_only=True, isdatafile=True, test_equal=False
+        missing=drop, save=True, isdatafile=True, test_equal=False
     )
     topology_file = FilenameSchema(
-        missing=drop, save=True, read_only=True, isdatafile=True, test_equal=False
+        missing=drop, save=True, isdatafile=True, test_equal=False
     )
     current_scale = SchemaNode(
         Float(), missing=drop, save=True, update=True
@@ -671,7 +678,8 @@ class IceMover(CurrentMoversBase):
 
     _schema = IceMoverSchema
 
-    def __init__(self, filename,
+    def __init__(self,
+                 filename=None,
                  topology_file=None,
                  extrapolate=False,
                  time_offset=0,
@@ -953,6 +961,10 @@ class CurrentCycleMoverSchema(CurrentMoversBaseSchema):
     tide = TideSchema(
         missing=drop, save=True, update=True, save_reference=True
     )
+    data_start = SchemaNode(LocalDateTime(), read_only=True,
+                            validator=convertible_to_seconds)
+    data_stop = SchemaNode(LocalDateTime(), read_only=True,
+                           validator=convertible_to_seconds)
 
 
 class CurrentCycleMover(GridCurrentMover):
@@ -1044,6 +1056,20 @@ class CurrentCycleMover(GridCurrentMover):
         self._tide = tide_obj
 
     @property
+    def data_start(self):
+        if self.tide is not None:
+            return self.tide.data_start
+        else:
+            return MinusInfTime()
+
+    @property
+    def data_stop(self):
+        if self.tide is not None:
+            return self.tide.data_stop
+        else:
+            return InfTime()
+
+    @property
     def is_data_on_cells(self):
         return None
 
@@ -1091,6 +1117,10 @@ class ComponentMoverSchema(ProcessSchema):
     wind = WindSchema(
         missing=drop, save=True, update=True, save_reference=True
     )
+    data_start = SchemaNode(LocalDateTime(), read_only=True,
+                            validator=convertible_to_seconds)
+    data_stop = SchemaNode(LocalDateTime(), read_only=True,
+                           validator=convertible_to_seconds)
 
 
 class ComponentMover(CurrentMoversBase):
@@ -1229,6 +1259,20 @@ class ComponentMover(CurrentMoversBase):
                                          lambda self, val: setattr(self.mover,
                                                                    'use_original_scale_factor',
                                                                    val))
+
+    @property
+    def data_start(self):
+        if self.wind is not None:
+            return self.wind.data_start
+        else:
+            return MinusInfTime()
+
+    @property
+    def data_stop(self):
+        if self.wind is not None:
+            return self.wind.data_stop
+        else:
+            return InfTime()
 
     @property
     def scale_refpoint(self):

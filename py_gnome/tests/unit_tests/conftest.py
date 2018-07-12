@@ -54,10 +54,10 @@ def validate_serialize_json(json_, orig_obj):
     assert class_from_objtype(json_['obj_type']) is orig_obj.__class__
 
     schema = orig_obj._schema()
-    potential_missing = schema.get_nodes_by_attr('missing')
-    for n in potential_missing:
-        if getattr(orig_obj,n) is None:
-            assert n not in json_
+#     potential_missing = schema.get_nodes_by_attr('missing')
+#     for n in potential_missing:
+#         if getattr(orig_obj,n) is None:
+#             assert n not in json_
 
     for v in json_.values():
         assert not issubclass(v.__class__, GnomeId)
@@ -98,10 +98,10 @@ def validate_save_json(json_, zipfile_, orig_obj):
                 assert json_[n] == ref.name + '.json'
                 assert json_[n] in zipfile_.namelist()
 
-    potential_missing = schema.get_nodes_by_attr('missing')
-    for n in potential_missing:
-        if getattr(orig_obj,n) is None:
-            assert n not in json_
+#     potential_missing = schema.get_nodes_by_attr('missing')
+#     for n in potential_missing:
+#         if getattr(orig_obj,n) is None:
+#             assert n not in json_
 
     for v in json_.values():
         assert not issubclass(v.__class__, GnomeId)

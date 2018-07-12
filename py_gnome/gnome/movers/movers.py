@@ -166,6 +166,21 @@ class Process(GnomeId):
         """
         pass
 
+    def post_model_run(self):
+        """
+        Override this method if a derived class needs to perform
+        any actions after a model run is complete (StopIteration triggered)
+        """
+        pass
+
+    @property
+    def data_start(self):
+        return MinusInfTime()
+
+    @property
+    def data_stop(self):
+        return InfTime()
+
 
 class Mover(Process):
     def get_move(self, sc, time_step, model_time_datetime):
@@ -208,22 +223,6 @@ class PyMover(Mover):
                     for o in kwargs['env']:
                         if k in o._ref_as:
                             setattr(self, k, o)
-
-    @property
-    def data_start(self):
-        '''
-            Typically, a mover will have a linked Environment object, and
-            if this object manages a time series of data points, it will have
-            a data_start and data_stop attribute which indicate the times
-            where the data points begin and end.
-            Since the Environment object should manage its own attributes,
-            this attribute will be read-only
-        '''
-        raise NotImplementedError
-
-    @property
-    def data_stop(self):
-        raise NotImplementedError
 
     @property
     def is_data_on_cells(self):
@@ -364,7 +363,7 @@ class CyMover(Mover):
                        '\tMover: {} of type {}\n'
                        '\tError: {}'
                        .format(model_time_datetime,
-                               self.real_data_start, self.real_data_stop,
+                               self.data_start, self.data_stop,
                                self.name, self.__class__,
                                str(e)))
 

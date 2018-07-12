@@ -231,6 +231,15 @@ class ObjType(SchemaType):
         return obj_json
 
     def _save(self, node, json_, zipfile_, refs):
+        if json_['id'] in refs:
+            fname = refs[json_['id']]
+        else:
+            fname = str(json_['name']) + '.json'
+            if fname in zipfile_.namelist():
+                #file already exists. This happens for example if a WindMover
+                #is named X, and it's wind is also named X.
+                fname = fname + json_['id'] #Add sub name to refs in case this object gets referenced elsewhere in future
+            refs[json_['id']] = fname
         #strips out any entries that do not need saving. They're still in refs,
         #but that shouldn't do any harm.
         savable_attrs = node.get_nodes_by_attr('save')
@@ -252,7 +261,13 @@ class ObjType(SchemaType):
                 elif isinstance(json_[n], list):
                     #this is a SequenceSchema or TupleSchema tagged with save_reference
                     for i, subjson in enumerate(json_[n]):
-                        json_[n][i] = subjson['name'] + '.json'
+                        refname = subjson['name'] + '.json'
+                        if subjson['id'] in refs:
+                            #this name has already been added somewhere else,
+                            #and MAY have a different name if there was a naming
+                            #conflict
+                            refname = refs[subjson['id']]
+                        json_[n][i] = refname
                 else:
                     #single reference
                     json_[n] = json_[n]['name'] + '.json'
@@ -271,8 +286,8 @@ class ObjType(SchemaType):
                         json_[d][i] = self._process_supporting_file(filename, zipfile_)
 
         #Finally, write the json itself to the zipfile, and return the json
-        if json_['name'] + '.json' not in zipfile_.namelist():
-            zipfile_.writestr(str(json_['name']) + '.json', json.dumps(json_, indent=True))
+        if fname not in zipfile_.namelist():
+            zipfile_.writestr(fname, json.dumps(json_, indent=True))
         return json_
 
     def save(self, node, appstruct, zipfile_, refs):
@@ -355,6 +370,8 @@ class ObjType(SchemaType):
                 if isinstance(cstruct[r], list):
                     #Need to turn this into a list of unhydrated object json
                     for i, fn in enumerate(cstruct[r]):
+                        if isinstance(fn, dict): #old-style ref
+                            fn = fn['id']
                         cstruct[r][i] = self._load_json_from_file(fn, saveloc)
                         cstruct[r][i]['id'] = fn
                 else:
@@ -415,7 +432,7 @@ class ObjType(SchemaType):
             fp = saveloc.open(fname, 'rU')
         else:
             fname = os.path.join(saveloc, fname)
-            fp = saveloc.open(fp, 'rU')
+            fp = open(fname, 'rU')
         return json.load(fp)
 
 class ObjTypeSchema(MappingSchema):
@@ -457,7 +474,7 @@ class ObjTypeSchema(MappingSchema):
     It also optionally stores the 'id' if present
     '''
     id = SchemaNode(
-        String(), save=False, read_only=True
+        String(), save=True, read_only=True
     )
     obj_type = SchemaNode(
         String(), missing=required, read_only=True

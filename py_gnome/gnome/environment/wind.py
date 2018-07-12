@@ -89,7 +89,7 @@ class WindSchema(base_schema.ObjTypeSchema):
     '''
     name = SchemaNode(String(), test_equal=False)
     description = SchemaNode(String())
-    filename = FilenameSchema(isdatafile=True, test_equal=False, read_only=True)#Thanks to CyTimeseries
+    filename = FilenameSchema(isdatafile=True, update=False, test_equal=False)#Thanks to CyTimeseries
     updated_at = SchemaNode(LocalDateTime())
     latitude = SchemaNode(Float())
     longitude = SchemaNode(Float())

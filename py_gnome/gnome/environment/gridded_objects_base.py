@@ -367,7 +367,10 @@ class Variable(gridded.Variable, GnomeId):
 
     @property
     def extrapolation_is_allowed(self):
-        return self.time.min_time == self.time.max_time or self._extrapolation_is_allowed
+        if self.time is not None:
+            return self.time.min_time == self.time.max_time or self._extrapolation_is_allowed
+        else:
+            return self._extrapolation_is_allowed
 
     @extrapolation_is_allowed.setter
     def extrapolation_is_allowed(self, e):
@@ -476,14 +479,12 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
         json_['data_location'] = self.grid.infer_location(self.variables[0].data)
         return json_
 
-    @classmethod
-    def new_from_dict(cls, dict_):
-        rv = cls.from_netCDF(**dict_)
-        return rv
-
     @property
     def extrapolation_is_allowed(self):
-        return self.time.min_time == self.time.max_time or self._extrapolation_is_allowed
+        if self.time is not None:
+            return self.time.min_time == self.time.max_time or self._extrapolation_is_allowed
+        else:
+            return self._extrapolation_is_allowed
 
     @extrapolation_is_allowed.setter
     def extrapolation_is_allowed(self, e):

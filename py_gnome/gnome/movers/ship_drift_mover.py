@@ -22,10 +22,10 @@ from gnome.movers import Mover, ProcessSchema
 
 class ShipDriftMoverSchema(ProcessSchema):
     wind_file = SchemaNode(
-        String(), missing=drop, save=True, read_only=True, isdatafile=True, test_equal=False
+        String(), missing=drop, save=True, isdatafile=True, test_equal=False
     )
     topology_file = SchemaNode(
-        String(), missing=drop, save=True, read_only=True, isdatafile=True, test_equal=False
+        String(), missing=drop, save=True, isdatafile=True, test_equal=False
     )
     wind_scale = SchemaNode(
         Float(), missing=drop, save=True, update=True
@@ -42,8 +42,13 @@ class ShipDriftMover(Mover):
 
     _schema = ShipDriftMoverSchema
 
-    def __init__(self, wind_file, topology_file=None, grid_type=1,
-                 drift_angle=0, extrapolate=False, time_offset=0,
+    def __init__(self,
+                 wind_file=None,
+                 topology_file=None,
+                 grid_type=1,
+                 drift_angle=0,
+                 extrapolation_is_allowed=False,
+                 time_offset=0,
                  **kwargs):
         """
         :param wind_file: file containing wind data on a grid

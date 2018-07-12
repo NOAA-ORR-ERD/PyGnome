@@ -37,11 +37,11 @@ class BaseSpill(GnomeId):
 
     and as a spec for the API.
     """
-    def __init__(self, release_time=None, name=""):
+    def __init__(self, **kwargs):
         """
         initialize -- sub-classes will probably have a lot more to do
         """
-        self.release_time = release_time
+        super(BaseSpill, self).__init__(**kwargs)
 
     @property
     def release_time(self):
@@ -178,7 +178,7 @@ class SpillSchema(ObjTypeSchema):
                             PointLineReleaseSchema,
                             ContinuousReleaseSchema,
                             SpatialReleaseSchema],
-        save=True, update=True
+        save=True, update=True, save_reference=True
     )
     amount = SchemaNode(
         Float(), missing=drop, save=True, update=True
@@ -215,7 +215,7 @@ class Spill(BaseSpill):
     # _name = 'Spill'
 
     def __init__(self,
-                 release,
+                 release=None,
                  water=None,
                  element_type=None,
                  substance=None,
@@ -223,7 +223,7 @@ class Spill(BaseSpill):
                  amount=None,  # could be volume or mass
                  units=None,
                  amount_uncertainty_scale=0.0,
-                 name='Spill'):
+                 **kwargs):
         """
         Spills used by the gnome model. It contains a release object, which
         releases elements. It also contains an element_type object which
@@ -262,6 +262,7 @@ class Spill(BaseSpill):
             If amount property is None, then just floating elements
             (ie. 'windages')
         """
+        super(Spill, self).__init__(**kwargs)
         self.water = water
         self.release = release
 
@@ -292,7 +293,6 @@ class Spill(BaseSpill):
         # fixme: why is fractional area part of spill???
         # fraction of area covered by oil
         self.frac_coverage = 1.0
-        self.name = name
 
 
 # fixme: a bunch of these properties should really be defined in subclasses
@@ -855,7 +855,7 @@ def surface_point_line_spill(num_elements,
                                      windage_persist=windage_persist,
                                      substance=substance)
 
-    return Spill(release,
+    return Spill(release=release,
                  element_type=element_type,
                  amount=amount,
                  units=units,
@@ -910,13 +910,15 @@ def grid_spill(bounds,
                                     randomly reset on this time scale
     :param str name='Surface Point/Line Release': a name for the spill
     '''
-    release = GridRelease(release_time, bounds, resolution)
+    release = GridRelease(release_time,
+                          bounds,
+                          resolution)
 
     element_type = elements.floating(windage_range=windage_range,
                                      windage_persist=windage_persist,
                                      substance=substance)
 
-    return Spill(release,
+    return Spill(release=release,
                  element_type=element_type,
                  amount=amount,
                  units=units,
@@ -1010,7 +1012,7 @@ def subsurface_plume_spill(num_elements,
                                   density=density,
                                   density_units=density_units)
 
-    return Spill(release,
+    return Spill(release=release,
                  element_type=element_type,
                  amount=amount,
                  units=units,
@@ -1093,10 +1095,10 @@ def spatial_release_spill(start_positions,
 
     A spatial release is a spill that releases elements at known locations.
     '''
-    release = SpatialRelease(release_time,
+    release = SpatialRelease(release_time=release_time,
                              start_position=start_positions,
                              name=name)
-    spill = Spill(release,
+    spill = Spill(release=release,
                   water=water,
                   element_type=element_type,
                   substance=substance,

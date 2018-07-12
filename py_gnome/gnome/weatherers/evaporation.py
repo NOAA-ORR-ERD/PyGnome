@@ -30,8 +30,8 @@ class Evaporation(Weatherer):
     _schema = EvaporationSchema
 
     def __init__(self,
-                 wind=None,
                  water=None,
+                 wind=None,
                  **kwargs):
         '''
         :param conditions: gnome.environment.Conditions object which contains

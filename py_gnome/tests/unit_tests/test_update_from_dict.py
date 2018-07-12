@@ -41,7 +41,6 @@ def define_mdl(test=0):
     '''
     def get_json(mdl):
         json_ = mdl.serialize()
-        json_['map'] = mdl.map
         return json_
 
     mdl = Model()

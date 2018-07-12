@@ -263,7 +263,7 @@ class OrderedCollection(object):
     def __ne__(self, other):
         return not self == other
 
-    def update(self, cstruct, refs):
+    def update(self, cstruct, refs=None):
         '''
         cstruct is meant to be a list of COMPLETE object serializations, or
         GnomeID appstructs (refs to existing objects).
@@ -280,7 +280,7 @@ class OrderedCollection(object):
                     raise ValueError('id of element in OC update dict is missing')
                 if id_ in self._d_index:
                     #obj currently exists in this collection
-                    obj = self.get(id)
+                    obj = self.get(id_)
                     obj.update(elem)
                 else:
                     raise ValueError('{0} is not an object contained by this OC'.format(id))

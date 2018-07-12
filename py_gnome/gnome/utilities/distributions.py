@@ -79,11 +79,13 @@ class UniformDistribution(GnomeId):
     _schema = UniformDistributionSchema
 
     'Uniform Probability Distribution'
-    def __init__(self, low=0., high=0.1):
+    def __init__(self, low=0., high=0.1, **kwargs):
         '''
         :param low: For the Uniform distribution, it is lower bound.
         :param high: For the Uniform distribution, it is upper bound.
         '''
+        super(UniformDistribution, self).__init__(**kwargs)
+
         self.low = low
         self.high = high
         self._check_uniform_args()
@@ -104,11 +106,12 @@ class NormalDistribution(GnomeId):
     _schema = NormalDistributionSchema
 
     'Normal Probability Distribution'
-    def __init__(self, mean=0., sigma=0.1):
+    def __init__(self, mean=0., sigma=0.1, **kwargs):
         '''
         :param mean: The mean of the normal distribution
         :param sigma: The standard deviation of normal distribution
         '''
+        super(NormalDistribution, self).__init__(**kwargs)
         self.mean = mean
         self.sigma = sigma
         self._check_normal_args()
@@ -129,11 +132,12 @@ class LogNormalDistribution(GnomeId):
     _schema = LogNormalDistributionSchema
 
     'Log Normal Probability Distribution'
-    def __init__(self, mean=0., sigma=0.1):
+    def __init__(self, mean=0., sigma=0.1, **kwargs):
         '''
         :param mean: The mean of the normal distribution
         :param sigma: The standard deviation of normal distribution
         '''
+        super(LogNormalDistribution, self).__init__(**kwargs)
         self.mean = mean
         self.sigma = sigma
         self._check_lognormal_args()
@@ -154,13 +158,14 @@ class WeibullDistribution(GnomeId):
     _schema = WeibullDistributionSchema
 
     'Log Normal Probability Distribution'
-    def __init__(self, alpha=None, lambda_=1.0, min_=None, max_=None):
+    def __init__(self, alpha=None, lambda_=1.0, min_=None, max_=None, **kwargs):
         '''
         :param alpha: The shape parameter 'alpha' - labeled as 'a' in
                       numpy.random.weibull distribution
         :param lambda_: The scale parameter for the distribution - required for
                         2-parameter weibull distribution (Rosin-Rammler).
         '''
+        super(WeibullDistribution, self).__init__(**kwargs)
         self.alpha = alpha
         self.lambda_ = lambda_
         self.min_ = min_

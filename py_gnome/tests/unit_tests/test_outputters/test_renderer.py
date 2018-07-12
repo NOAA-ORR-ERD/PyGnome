@@ -358,8 +358,7 @@ def test_draw_raster_map(output_dir):
     r.save_background(os.path.join(output_dir, 'raster_map_render.png'))
 
 
-@pytest.mark.parametrize(("json_"), ['save', 'webapi'])
-def test_serialize_deserialize(json_, output_dir):
+def test_serialize_deserialize(output_dir):
     # non-defaults to check properly..
     r = Renderer(map_filename=bna_sample,
                  output_dir=output_dir,
@@ -368,22 +367,10 @@ def test_serialize_deserialize(json_, output_dir):
                            (-126.0, 48.0)),
                  )
 
-    toserial = r.serialize(json_)
+    toserial = r.serialize()
     print "surface_conc:", toserial["surface_conc"]
 
-    dict_ = r.deserialize(toserial)
-
-    # check our Renderer attributes
-    if json_ == 'webapi':
-        assert toserial['map_filename'] == basename(toserial['map_filename'])
-    else:
-        # in save context, we expect a full path to file
-        assert toserial['map_filename'] != basename(toserial['map_filename'])
-
-    assert toserial['map_filename'] == dict_['map_filename']
-    dict_['map_filename'] = bna_sample  # put our full filename back in
-
-    r2 = Renderer.new_from_dict(dict_)
+    r2 = Renderer.deserialize(toserial)
 
     assert r == r2
 

@@ -373,11 +373,16 @@ class GridWindMover(WindMoversBase):
         self.filename = filename
         self.topology_file = topology_file
 
-        self.real_data_start = sec_to_datetime(self.mover.get_start_time())
-        self.real_data_stop = sec_to_datetime(self.mover.get_end_time())
-
         self.mover.extrapolate_in_time(extrapolate)
         self.mover.offset_time(time_offset * 3600.)
+
+    @property
+    def data_start(self):
+        return sec_to_datetime(self.mover.get_start_time())
+
+    @property
+    def data_stop(self):
+        return sec_to_datetime(self.mover.get_end_time())
 
     def __repr__(self):
         """
@@ -485,25 +490,13 @@ class GridWindMover(WindMoversBase):
         """
         self.mover.offset_time(time_offset * 3600.)
 
-    def get_start_time(self):
-        """
-        :this will be the real_data_start time (seconds).
-        """
-        return self.mover.get_start_time()
-
-    def get_end_time(self):
-        """
-        :this will be the real_data_stop time (seconds).
-        """
-        return self.mover.get_end_time()
-
 
 class IceWindMoverSchema(WindMoversBaseSchema):
     filename = FilenameSchema(
-        missing=drop, save=True, read_only=True, isdatafile=True, test_equal=False
+        missing=drop, save=True, isdatafile=True, test_equal=False
     )
     topology_file = FilenameSchema(
-        missing=drop, save=True, read_only=True, isdatafile=True, test_equal=False
+        missing=drop, save=True, isdatafile=True, test_equal=False
     )
 
 
@@ -511,7 +504,8 @@ class IceWindMover(WindMoversBase):
 
     _schema = IceWindMoverSchema
 
-    def __init__(self, filename,
+    def __init__(self,
+                 filename=None,
                  topology_file=None,
                  extrapolate=False,
                  time_offset=0,
