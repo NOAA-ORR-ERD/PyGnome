@@ -132,17 +132,17 @@ def test_properties(wind_circ):
     assert wm.uncertain_time_delay == 2
     assert wm.uncertain_speed_scale == 3
     assert wm.uncertain_angle_scale == 4
-    assert wm.real_data_start == datetime(2012, 11, 6, 20, 10)
-    assert wm.real_data_stop == datetime(2012, 11, 6, 20, 15)
+    assert wm.data_start == datetime(2012, 11, 6, 20, 10)
+    assert wm.data_stop == datetime(2012, 11, 6, 20, 15)
 
 
-def test_real_data(wind_circ):
+def test_data_start_stop(wind_circ):
     """
-    test real_data_start / stop properties
+    test data_start / stop properties
     """
     wm = WindMover(wind_circ['wind'])
-    assert wm.real_data_start == datetime(2012, 11, 6, 20, 10)
-    assert wm.real_data_stop == datetime(2012, 11, 6, 20, 15)
+    assert wm.data_start == datetime(2012, 11, 6, 20, 10)
+    assert wm.data_stop == datetime(2012, 11, 6, 20, 15)
 
 
 def test_update_wind(wind_circ):
@@ -640,9 +640,8 @@ def test_constant_wind_mover():
 def test_constant_wind_mover_bounds():
     wm = constant_wind_mover(10, 45, units='knots')
 
-    assert wm.real_data_start == InfDateTime("-inf")
-
-    assert wm.real_data_stop == InfDateTime("inf")
+    assert wm.data_start == InfDateTime("-inf")
+    assert wm.data_stop == InfDateTime("inf")
 
 
 def test_wind_mover_from_file():

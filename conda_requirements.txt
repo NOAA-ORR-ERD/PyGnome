@@ -26,7 +26,8 @@ colander>=1.4
 
 tblib>=1.3.*  # needed for child process exception handling.
 
-gdal=2.*
+# gdal=2.* # was only used for map output to geojson -- don't need it anymore.
+json-c=0.12.1
 netCDF4 # it should find one compatible with gdal
 awesome-slugify>=1.6.5
 regex>=2014.12
