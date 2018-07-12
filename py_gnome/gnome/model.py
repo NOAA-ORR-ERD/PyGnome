@@ -753,6 +753,23 @@ class Model(Serializable):
         self.logger.debug("{0._pid} setup_model_run complete for: "
                           "{0.name}".format(self))
 
+    def post_model_run(self):
+        '''
+        A place where the model goes through all collections and calls
+        post_model_run if the object has it.
+        '''
+        for env in self.environment:
+            env.post_model_run()
+        for mov in self.movers:
+            if mov.on:
+                mov.post_model_run()
+        for out in self.outputters:
+            if out.on:
+                out.post_model_run()
+        for wea in self.weatherers:
+            if wea.on:
+                wea.post_model_run()
+
     def setup_time_step(self):
         '''
         sets up everything for the current time_step:
@@ -951,6 +968,7 @@ class Model(Serializable):
             # not specify time_step, then setup_model_run() automatically
             # initializes it. Thus, do StopIteration check after
             # setup_model_run() is invoked
+            self.post_model_run()
             raise StopIteration("Run complete for {0}".format(self.name))
 
         else:
