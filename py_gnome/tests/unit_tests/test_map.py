@@ -22,7 +22,9 @@ from conftest import sample_sc_release
 
 basedir = os.path.dirname(__file__)
 datadir = os.path.normpath(os.path.join(basedir, "sample_data"))
+output_dir = os.path.normpath(os.path.join(basedir, "output_dir"))
 testbnamap = os.path.join(datadir, 'MapBounds_Island.bna')
+bna_with_lake = os.path.join(datadir, 'florida_with_lake_small.bna')
 test_tri_grid = os.path.join(datadir, 'small_trigrid_example.nc')
 
 
@@ -933,6 +935,52 @@ def test_bna_no_map_bounds():
                                          (6., 11.),
                                          (6., 10.),
                                          ])
+
+
+class Test_lake():
+    """
+    tests for handling a BNA with a lake
+
+    The code should now return a polygon with a hole for lakes.
+
+    And render properly both with the py_gnome renderer and the json output.
+
+    """
+    map = MapFromBNA(bna_with_lake)
+
+    def test_polys(self):
+        """
+        Once loaded, polygons should be there
+        """
+        assert self.map.map_bounds is not None
+
+        assert self.map.spillable_area is not None
+
+        # NOTE: current version puts land and lakes in the land_polys set
+        assert len(self.map.land_polys) == 2
+
+    def test_to_geojson(self):
+        """
+        make sure geojson is right
+        """
+
+        gj = self.map.to_geojson()
+
+        # print gj.keys()
+        # print gj['features'][0].keys()
+        # print len(gj.features)
+
+        # has only the land polys in there.
+        assert len(gj['features']) == 1
+
+        land_polys = gj['features'][0]
+        assert land_polys['geometry']['type'] == "MultiPolygon"
+        assert land_polys["properties"]["name"] == "Shoreline Polys"
+
+        import json
+        outfilename = os.path.join(output_dir, "florida_geojson.json")
+        with open(outfilename, 'w') as outfile:
+            json.dump(gj, outfile, indent=2)
 
 
 if __name__ == '__main__':

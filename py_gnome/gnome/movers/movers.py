@@ -366,7 +366,7 @@ class CyMover(Mover):
                        '\tMover: {} of type {}\n'
                        '\tError: {}'
                        .format(model_time_datetime,
-                               self.real_data_start, self.real_data_stop,
+                               self.data_start, self.data_stop,
                                self.name, self.__class__,
                                str(e)))
 
