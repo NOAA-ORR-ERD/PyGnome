@@ -13,6 +13,7 @@
 
 python=2.7.*
 setuptools>=23.0
+gitpython
 numpy>=1.13.*
 scipy>=0.18.*
 gsw=3.0.3

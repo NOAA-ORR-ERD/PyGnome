@@ -11,6 +11,7 @@ pytest
 pytest-timeout
 testfixtures
 
+gitpython
 psutil
 sphinx
 progressbar
