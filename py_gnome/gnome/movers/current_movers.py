@@ -333,14 +333,14 @@ class CatsMover(CurrentMoversBase, Serializable):
     @property
     def data_start(self):
         if self.tide is not None:
-            return sec_to_datetime(self.tide.data_start)
+            return self.tide.data_start
         else:
             return MinusInfTime()
 
     @property
     def data_stop(self):
         if self.tide is not None:
-            return sec_to_datetime(self.tide.data_stop)
+            return self.tide.data_stop
         else:
             return InfTime()
 
@@ -502,10 +502,6 @@ class GridCurrentMover(CurrentMoversBase, Serializable):
         self.mover.text_read(filename, topology_file)
         self.mover.extrapolate_in_time(extrapolate)
         self.mover.offset_time(time_offset * 3600.)
-
-        if type(self) != CurrentCycleMover:
-            self.real_data_start = sec_to_datetime(self.mover.get_start_time())
-            self.real_data_stop = sec_to_datetime(self.mover.get_end_time())
 
         self.num_method = num_method
 

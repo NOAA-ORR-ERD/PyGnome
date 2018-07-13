@@ -162,6 +162,12 @@ class Process(AddLogger):
         """
         pass
 
+    def post_model_run(self):
+        """
+        Override this method if a derived class needs to perform
+        any actions after a model run is complete (StopIteration triggered)
+        """
+        pass
 
 class Mover(Process):
     def get_move(self, sc, time_step, model_time_datetime):
@@ -360,7 +366,7 @@ class CyMover(Mover):
                        '\tMover: {} of type {}\n'
                        '\tError: {}'
                        .format(model_time_datetime,
-                               self.real_data_start, self.real_data_stop,
+                               self.data_start, self.data_stop,
                                self.name, self.__class__,
                                str(e)))
 

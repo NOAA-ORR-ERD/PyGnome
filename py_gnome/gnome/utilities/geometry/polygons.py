@@ -2,6 +2,9 @@
 Polygon module, part of the geometry package
 
 Assorted stuff for working with polygons
+
+FIXME: should this support polygons with holes??? (i.e multiple rings?)
+
 """
 
 import copy
@@ -179,6 +182,9 @@ class PolygonSet:
     """
     A set of polygons (or polylines) stored as a single array of vertex data,
     and indexes into that array.
+
+    ##Fixme: maybe this should be a MultiPolygon -- maybe just a name change,
+             but could make for different functionality
     """
 
     def __init__(self, data=None, dtype=np.float64):
