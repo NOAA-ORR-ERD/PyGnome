@@ -37,7 +37,7 @@ SETUP_PATH = os.path.dirname(os.path.abspath(__file__))
 CWD = os.getcwd()
 os.chdir(SETUP_PATH)
 
-repo = Repo('.')
+repo = Repo('../.')
 
 try:
     branch_name = repo.active_branch.name
