@@ -37,7 +37,14 @@ SETUP_PATH = os.path.dirname(os.path.abspath(__file__))
 CWD = os.getcwd()
 os.chdir(SETUP_PATH)
 
-repo_head = Repo('../.').head
+repo = Repo('.')
+
+try:
+    branch_name = repo.active_branch.name
+except TypeError:
+    branch_name = 'no-branch'
+
+last_update = repo.iter_commits().next().committed_datetime.isoformat(),
 
 
 def target_dir(name):
@@ -542,9 +549,7 @@ setup(name='pyGnome',
                    "tracking code.\n"
                    "Branch: {}\n"
                    "LastUpdate: {}"
-                   .format(repo_head.ref.name,
-                           repo_head.commit.committed_datetime.isoformat(),
-                           )),
+                   .format(branch_name, last_update)),
       license="Public Domain",
       keywords="oilspill modeling particle_tracking",
       url="https://github.com/NOAA-ORR-ERD/PyGnome"
