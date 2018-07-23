@@ -273,10 +273,8 @@ class Grid_S(gridded.grids.Grid_S, serializable.Serializable):
         and the resulting lines are drawn, you should end up with a picture of
         the grid.
         '''
-        hor_lines = (np.dstack((self.node_lon[:], self.node_lat[:]))
-                     .astype(np.float32, copy=False))
-        ver_lines = (hor_lines.transpose((1, 0, 2))
-                     .astype(np.float32, copy=True))
+        hor_lines = (np.dstack((self.node_lon[:], self.node_lat[:])).astype(np.float32))
+        ver_lines = (hor_lines.transpose((1, 0, 2)).astype(np.float32))
 
         hor_lens = hor_lines.shape[1] * np.ones(hor_lines.shape[0],
                                                 dtype=np.int32)
