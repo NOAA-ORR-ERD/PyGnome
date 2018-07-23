@@ -257,6 +257,8 @@ class Grid_S(gridded.grids.Grid_S, serializable.Serializable):
             return self.centers.reshape(-1, 2)
 
     def get_metadata(self):
+        if not hasattr(self, '_cell_trees'):
+            self.build_celltree()
         json_ = {}
         json_['nodes_shape'] = self.nodes.shape
         json_['num_nodes'] = self.nodes.shape[0] * self.nodes.shape[1]
