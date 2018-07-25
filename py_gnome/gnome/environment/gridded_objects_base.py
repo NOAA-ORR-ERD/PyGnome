@@ -404,6 +404,8 @@ class Variable(gridded.Variable, serializable.Serializable):
     def at(self, *args, **kwargs):
         if ('extrapolate' not in kwargs):
             kwargs['extrapolate'] = False
+        if ('unmask' not in kwargs):
+            kwargs['unmask'] = True
 
         return super(Variable, self).at(*args, **kwargs)
 
