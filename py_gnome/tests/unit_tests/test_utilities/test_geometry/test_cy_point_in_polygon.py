@@ -11,10 +11,8 @@ import pytest
 
 import numpy as np
 
-## the Cython version:
 
-from gnome.utilities.geometry.cy_point_in_polygon import point_in_poly, \
-    points_in_poly
+from gnome.utilities.geometry import point_in_poly, points_in_poly
 
 poly1_ccw = np.array((
     (-5, -2),
@@ -31,16 +29,15 @@ poly1_cw = poly1_ccw[::-1].copy()
 
 # shares part of the boundary with poly1_ccw
 
-poly2_ccw = np.array((
-    poly1_ccw[3],
-    poly1_ccw[4],
-    poly1_ccw[5],
-    poly1_ccw[6],
-    poly1_ccw[7],
-    (-3, 5),
-    (1, 4),
-    (4, 6),
-    ))
+poly2_ccw = np.array((poly1_ccw[3],
+                      poly1_ccw[4],
+                      poly1_ccw[5],
+                      poly1_ccw[6],
+                      poly1_ccw[7],
+                      (-3, 5),
+                      (1, 4),
+                      (4, 6),
+                      ))
 
 poly2_cw = poly2_ccw[::-1].copy()
 
@@ -59,15 +56,14 @@ points_in_poly1 = [((-3.0, 0.0), ), ((4.0, 0.0), ), ((4.5, 2.5), )]
 
 points_in_poly2 = [((2.0, 3.0), ), ((-3.0, 2.1), ), ((4.0, 5.0), )]
 
-points_on_boundaries = [
-    ((4.0, 2.0), ),
-    ((3.25, 0.5), ),
-    ((1.5, 0.0), ),
-    ((-1.0, 1.0), ),
-    ((-0.5, 0.5), ),
-    ((-0.1, 0.1), ),
-    ((-3.0, 2.0), ),
-    ]
+points_on_boundaries = [((4.0, 2.0), ),
+                        ((3.25, 0.5), ),
+                        ((1.5, 0.0), ),
+                        ((-1.0, 1.0), ),
+                        ((-0.5, 0.5), ),
+                        ((-0.1, 0.1), ),
+                        ((-3.0, 2.0), ),
+                        ]
 
 points_on_vertices = [(poly1_ccw[4], ), (poly1_ccw[5], ),
                       (poly1_ccw[6], )]  # the shared vertices

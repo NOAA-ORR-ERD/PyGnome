@@ -483,10 +483,6 @@ class GridCurrentMover(CurrentMoversBase):
         self.mover.extrapolate_in_time(extrapolate)
         self.mover.offset_time(time_offset * 3600.)
 
-        if type(self) != CurrentCycleMover:
-            self.real_data_start = sec_to_datetime(self.mover.get_start_time())
-            self.real_data_stop = sec_to_datetime(self.mover.get_end_time())
-
         self.num_method = num_method
 
         if self.topology_file is None:

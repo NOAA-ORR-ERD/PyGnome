@@ -229,6 +229,8 @@ class Grid_S(GnomeId, gridded.grids.Grid_S):
             return self.centers.reshape(-1, 2)
 
     def get_metadata(self):
+        if not hasattr(self, '_cell_trees'):
+            self.build_celltree()
         json_ = {}
         json_['nodes_shape'] = self.nodes.shape
         json_['num_nodes'] = self.nodes.shape[0] * self.nodes.shape[1]
@@ -243,10 +245,8 @@ class Grid_S(GnomeId, gridded.grids.Grid_S):
         and the resulting lines are drawn, you should end up with a picture of
         the grid.
         '''
-        hor_lines = (np.dstack((self.node_lon[:], self.node_lat[:]))
-                     .astype(np.float32, copy=False))
-        ver_lines = (hor_lines.transpose((1, 0, 2))
-                     .astype(np.float32, copy=True))
+        hor_lines = (np.dstack((self.node_lon[:], self.node_lat[:])).astype(np.float32))
+        ver_lines = (hor_lines.transpose((1, 0, 2)).astype(np.float32))
 
         hor_lens = hor_lines.shape[1] * np.ones(hor_lines.shape[0],
                                                 dtype=np.int32)
@@ -355,6 +355,8 @@ class Variable(gridded.Variable, GnomeId):
     def at(self, *args, **kwargs):
         if ('extrapolate' not in kwargs):
             kwargs['extrapolate'] = False
+        if ('unmask' not in kwargs):
+            kwargs['unmask'] = True
 
         return super(Variable, self).at(*args, **kwargs)
 

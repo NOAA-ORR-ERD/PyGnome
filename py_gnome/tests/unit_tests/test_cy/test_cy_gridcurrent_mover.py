@@ -10,8 +10,8 @@ import datetime
 import numpy as np
 import pytest
 
-from gnome.basic_types import world_point, status_code_type, \
-    spill_type, oil_status
+from gnome.basic_types import (world_point, status_code_type, spill_type,
+                               oil_status)
 
 from gnome.cy_gnome.cy_gridcurrent_mover import CyGridCurrentMover
 
@@ -76,8 +76,7 @@ class TestGridCurrentMover:
         self.gcm.prepare_for_model_run()
 
         print "Certain move"
-        self.gcm.prepare_for_model_step(self.cm.model_time,
-                self.cm.time_step)
+        self.gcm.prepare_for_model_step(self.cm.model_time, self.cm.time_step)
         self.gcm.get_move(
             self.cm.model_time,
             self.cm.time_step,
@@ -89,21 +88,23 @@ class TestGridCurrentMover:
 
     def move_uncertain(self):
         self.gcm.prepare_for_model_run()
-        spill_size = np.zeros((1, ), dtype=np.int32)  # number of LEs in 1 uncertainty spill - simple test   
+
+        # number of LEs in 1 uncertainty spill - simple test
+        spill_size = np.zeros((1, ), dtype=np.int32)
+
         spill_size[0] = self.cm.num_le  # for uncertainty spills
-        start_pos=(-76.149368,37.74496,0)
+        start_pos = (-76.149368, 37.74496, 0)
 
         print "Uncertain move"
-        self.gcm.prepare_for_model_step(self.cm.model_time,
-                self.cm.time_step, 1, spill_size)
-        self.gcm.get_move(
-            self.cm.model_time,
-            self.cm.time_step,
-            self.cm.ref,
-            self.cm.delta_uncertainty,
-            self.cm.status,
-            spill_type.uncertainty,
-            )
+        self.gcm.prepare_for_model_step(self.cm.model_time, self.cm.time_step,
+                                        1, spill_size)
+
+        self.gcm.get_move(self.cm.model_time,
+                          self.cm.time_step,
+                          self.cm.ref,
+                          self.cm.delta_uncertainty,
+                          self.cm.status,
+                          spill_type.uncertainty)
 
     def check_move(self):
         self.move()
@@ -117,31 +118,28 @@ class TestGridCurrentMover:
         assert np.all(self.cm.delta_uncertainty['lat'] != 0)
         assert np.all(self.cm.delta_uncertainty['long'] != 0)
 
-    def check_move_certain_uncertain(self,uncertain_time_delay=0):
+    def check_move_certain_uncertain(self, uncertain_time_delay=0):
         self.check_move()
         self.check_move_uncertain()
         tol = 1e-5
         msg = r"{0} move is not within a tolerance of {1}"
+
         if uncertain_time_delay == 0:
             assert np.all(self.cm.delta_uncertainty['lat'] != self.cm.delta['lat'])
             assert np.all(self.cm.delta_uncertainty['long'] != self.cm.delta['long'])
+
         if uncertain_time_delay > 0:
-            np.testing.assert_allclose(
-            self.cm.delta['lat'],
-            self.cm.delta_uncertainty['lat'],
-            tol,
-            tol,
-            msg.format('grid_current.nc', tol),
-            0,
-            )
-            np.testing.assert_allclose(
-            self.cm.delta['long'],
-            self.cm.delta_uncertainty['long'],
-            tol,
-            tol,
-            msg.format('grid_current.nc', tol),
-            0,
-            )
+            np.testing.assert_allclose(self.cm.delta['lat'],
+                                       self.cm.delta_uncertainty['lat'],
+                                       tol, tol,
+                                       msg.format('grid_current.nc', tol),
+                                       0)
+
+            np.testing.assert_allclose(self.cm.delta['long'],
+                                       self.cm.delta_uncertainty['long'],
+                                       tol, tol,
+                                       msg.format('grid_current.nc', tol),
+                                       0)
 
     def test_move_reg(self):
         """
@@ -165,22 +163,15 @@ class TestGridCurrentMover:
         tol = 1e-5
 
         msg = r"{0} move is not within a tolerance of {1}"
-        np.testing.assert_allclose(
-            self.cm.delta['lat'],
-            actual['lat'],
-            tol,
-            tol,
-            msg.format('test.cdf', tol),
-            0,
-            )
-        np.testing.assert_allclose(
-            self.cm.delta['long'],
-            actual['long'],
-            tol,
-            tol,
-            msg.format('test.cdf', tol),
-            0,
-            )
+        np.testing.assert_allclose(self.cm.delta['lat'], actual['lat'],
+                                   tol, tol,
+                                   msg.format('test.cdf', tol),
+                                   0)
+
+        np.testing.assert_allclose(self.cm.delta['long'], actual['long'],
+                                   tol, tol,
+                                   msg.format('test.cdf', tol),
+                                   0)
 
         # np.testing.assert_equal(self.cm.delta['z'], actual['z'],
         #                        "test_move_reg() failed", 0)
@@ -197,7 +188,7 @@ class TestGridCurrentMover:
 
         time_grid_file = testdata['GridCurrentMover']['curr_curv']
         topology_file = testdata['GridCurrentMover']['top_curv']
-        
+
         self.gcm.text_read(time_grid_file, topology_file)
 
         # self.gcm.export_topology(topology_file2)
@@ -212,22 +203,15 @@ class TestGridCurrentMover:
         tol = 1e-5
 
         msg = r"{0} move is not within a tolerance of {1}"
-        np.testing.assert_allclose(
-            self.cm.delta['lat'],
-            actual['lat'],
-            tol,
-            tol,
-            msg.format('ny_cg.nc', tol),
-            0,
-            )
-        np.testing.assert_allclose(
-            self.cm.delta['long'],
-            actual['long'],
-            tol,
-            tol,
-            msg.format('ny_cg.nc', tol),
-            0,
-            )
+        np.testing.assert_allclose(self.cm.delta['lat'], actual['lat'],
+                                   tol, tol,
+                                   msg.format('ny_cg.nc', tol),
+                                   0)
+
+        np.testing.assert_allclose(self.cm.delta['long'], actual['long'],
+                                   tol, tol,
+                                   msg.format('ny_cg.nc', tol),
+                                   0)
 
     def test_move_curv_no_top(self):
         """
@@ -242,6 +226,7 @@ class TestGridCurrentMover:
 
         topology_file2 = os.path.join(os.path.split(time_grid_file)[0],
                                       'NYTopologyNew.dat')
+
         self.gcm.export_topology(topology_file2)
         self.cm.ref[:]['long'] = -74.03988  # for NY
         self.cm.ref[:]['lat'] = 40.536092
@@ -253,22 +238,15 @@ class TestGridCurrentMover:
         tol = 1e-5
 
         msg = r"{0} move is not within a tolerance of {1}"
-        np.testing.assert_allclose(
-            self.cm.delta['lat'],
-            actual['lat'],
-            tol,
-            tol,
-            msg.format('ny_cg.nc', tol),
-            0,
-            )
-        np.testing.assert_allclose(
-            self.cm.delta['long'],
-            actual['long'],
-            tol,
-            tol,
-            msg.format('ny_cg.nc', tol),
-            0,
-            )
+        np.testing.assert_allclose(self.cm.delta['lat'], actual['lat'],
+                                   tol, tol,
+                                   msg.format('ny_cg.nc', tol),
+                                   0)
+
+        np.testing.assert_allclose(self.cm.delta['long'], actual['long'],
+                                   tol, tol,
+                                   msg.format('ny_cg.nc', tol),
+                                   0)
 
     def test_move_curv_series(self):
         """
@@ -291,30 +269,24 @@ class TestGridCurrentMover:
         self.check_move()
 
         actual = np.empty((self.cm.num_le, ), dtype=world_point)
-        #actual[:]['lat'] = -.003850193  # file 2
-        #actual[:]['long'] = .000152012
+        # actual[:]['lat'] = -.003850193  # file 2
+        # actual[:]['long'] = .000152012
+
         # updated to new curvilinear algorithm
         actual[:]['lat'] = .00292  # file 2
         actual[:]['long'] = .00051458
         tol = 1e-5
 
         msg = r"{0} move is not within a tolerance of {1}"
-        np.testing.assert_allclose(
-            self.cm.delta['lat'],
-            actual['lat'],
-            tol,
-            tol,
-            msg.format('HiROMS', tol),
-            0,
-            )
-        np.testing.assert_allclose(
-            self.cm.delta['long'],
-            actual['long'],
-            tol,
-            tol,
-            msg.format('HiROMS', tol),
-            0,
-            )
+        np.testing.assert_allclose(self.cm.delta['lat'], actual['lat'],
+                                   tol, tol,
+                                   msg.format('HiROMS', tol),
+                                   0)
+
+        np.testing.assert_allclose(self.cm.delta['long'], actual['long'],
+                                   tol, tol,
+                                   msg.format('HiROMS', tol),
+                                   0)
 
     def test_move_tri(self):
         """
@@ -331,7 +303,8 @@ class TestGridCurrentMover:
         self.gcm.text_read(time_grid_file, topology_file)
         self.cm.ref[:]['long'] = -76.149368  # for ChesBay
         self.cm.ref[:]['lat'] = 37.74496
-        #self.check_move()
+
+        # self.check_move()
         self.check_move_certain_uncertain(self.gcm.uncertain_time_delay)
 
         actual = np.empty((self.cm.num_le, ), dtype=world_point)
@@ -340,25 +313,23 @@ class TestGridCurrentMover:
         tol = 1e-5
 
         msg = r"{0} move is not within a tolerance of {1}"
-        np.testing.assert_allclose(
-            self.cm.delta['lat'],
-            actual['lat'],
-            tol,
-            tol,
-            msg.format('ches_bay', tol),
-            0,
-            )
-        np.testing.assert_allclose(
-            self.cm.delta['long'],
-            actual['long'],
-            tol,
-            tol,
-            msg.format('ches_bay', tol),
-            0,
-            )
-        #check that certain and uncertain are the same if uncertainty is time delayed
-        #self.gcm.uncertain_time_delay = 3
-        self.gcm.uncertain_time_delay = 10800 # cython expects time_delay in seconds
+        np.testing.assert_allclose(self.cm.delta['lat'], actual['lat'],
+                                   tol, tol,
+                                   msg.format('ches_bay', tol),
+                                   0)
+
+        np.testing.assert_allclose(self.cm.delta['long'], actual['long'],
+                                   tol, tol,
+                                   msg.format('ches_bay', tol),
+                                   0)
+
+        # check that certain and uncertain are the same
+        # if uncertainty is time delayed
+        # self.gcm.uncertain_time_delay = 3
+
+        # cython expects time_delay in seconds
+        self.gcm.uncertain_time_delay = 10800
+
         self.check_move_certain_uncertain(self.gcm.uncertain_time_delay)
 
     def test_move_ptcur(self):
@@ -382,36 +353,32 @@ class TestGridCurrentMover:
         tol = 1e-5
 
         msg = r"{0} move is not within a tolerance of {1}"
-        np.testing.assert_allclose(
-            self.cm.delta['lat'],
-            actual['lat'],
-            tol,
-            tol,
-            msg.format('ptcur', tol),
-            0,
-            )
-        np.testing.assert_allclose(
-            self.cm.delta['long'],
-            actual['long'],
-            tol,
-            tol,
-            msg.format('ptcur', tol),
-            0,
-            )
+        np.testing.assert_allclose(self.cm.delta['lat'], actual['lat'],
+                                   tol, tol,
+                                   msg.format('ptcur', tol),
+                                   0)
+
+        np.testing.assert_allclose(self.cm.delta['long'], actual['long'],
+                                   tol, tol,
+                                   msg.format('ptcur', tol),
+                                   0)
 
     def test_move_ptcur_extrapolate(self):
         """
         test move for a ptCur grid (first time in file)
         """
 
-        time = datetime.datetime(2000, 2, 14, 8)	# time before first time in file
+        # time before first time in file
+        time = datetime.datetime(2000, 2, 14, 8)
         self.cm.model_time = time_utils.date_to_sec(time)
 
         time_grid_file = testdata['GridCurrentMover']['ptCur']
 
         self.gcm.text_read(time_grid_file)
-        self.gcm.extrapolate_in_time(True)	# result of move should be same as first step
-        self.cm.ref[:]['long'] = -124.686928  # for ptCur test
+
+        # result of move should be same as first step for ptCur test
+        self.gcm.extrapolate_in_time(True)
+        self.cm.ref[:]['long'] = -124.686928
         self.cm.ref[:]['lat'] = 48.401124
         self.check_move()
 
@@ -421,22 +388,15 @@ class TestGridCurrentMover:
         tol = 1e-5
 
         msg = r"{0} move is not within a tolerance of {1}"
-        np.testing.assert_allclose(
-            self.cm.delta['lat'],
-            actual['lat'],
-            tol,
-            tol,
-            msg.format('ptcur', tol),
-            0,
-            )
-        np.testing.assert_allclose(
-            self.cm.delta['long'],
-            actual['long'],
-            tol,
-            tol,
-            msg.format('ptcur', tol),
-            0,
-            )
+        np.testing.assert_allclose(self.cm.delta['lat'], actual['lat'],
+                                   tol, tol,
+                                   msg.format('ptcur', tol),
+                                   0)
+
+        np.testing.assert_allclose(self.cm.delta['long'], actual['long'],
+                                   tol, tol,
+                                   msg.format('ptcur', tol),
+                                   0)
 
     def test_move_gridcurtime(self):
         """
@@ -449,8 +409,9 @@ class TestGridCurrentMover:
 
         time_grid_file = testdata['GridCurrentMover']['grid_ts']
 
+        # for gridCur test
         self.gcm.text_read(time_grid_file)
-        self.cm.ref[:]['long'] = -119.933264  # for gridCur test
+        self.cm.ref[:]['long'] = -119.933264
         self.cm.ref[:]['lat'] = 34.138736
         self.check_move()
 
@@ -461,22 +422,15 @@ class TestGridCurrentMover:
         tol = 1e-5
 
         msg = r"{0} move is not within a tolerance of {1}"
-        np.testing.assert_allclose(
-            self.cm.delta['lat'],
-            actual['lat'],
-            tol,
-            tol,
-            msg.format('gridcurtime', tol),
-            0,
-            )
-        np.testing.assert_allclose(
-            self.cm.delta['long'],
-            actual['long'],
-            tol,
-            tol,
-            msg.format('gridcurtime', tol),
-            0,
-            )
+        np.testing.assert_allclose(self.cm.delta['lat'], actual['lat'],
+                                   tol, tol,
+                                   msg.format('gridcurtime', tol),
+                                   0)
+
+        np.testing.assert_allclose(self.cm.delta['long'], actual['long'],
+                                   tol, tol,
+                                   msg.format('gridcurtime', tol),
+                                   0)
 
         # np.testing.assert_equal(self.cm.delta, actual,
         #                        "test_move_gridcurtime() failed", 0)
@@ -506,22 +460,15 @@ class TestGridCurrentMover:
         tol = 1e-5
 
         msg = r"{0} move is not within a tolerance of {1}"
-        np.testing.assert_allclose(
-            self.cm.delta['lat'],
-            actual['lat'],
-            tol,
-            tol,
-            msg.format('gridcur series', tol),
-            0,
-            )
-        np.testing.assert_allclose(
-            self.cm.delta['long'],
-            actual['long'],
-            tol,
-            tol,
-            msg.format('gridcur series', tol),
-            0,
-            )
+        np.testing.assert_allclose(self.cm.delta['lat'], actual['lat'],
+                                   tol, tol,
+                                   msg.format('gridcur series', tol),
+                                   0)
+
+        np.testing.assert_allclose(self.cm.delta['long'], actual['long'],
+                                   tol, tol,
+                                   msg.format('gridcur series', tol),
+                                   0)
 
         # np.testing.assert_equal(self.cm.delta, actual,
         #                        "test_move_gridcur_series() failed", 0)

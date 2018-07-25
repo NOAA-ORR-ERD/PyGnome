@@ -136,7 +136,7 @@ def test_properties(wind_circ):
     assert wm.data_stop == datetime(2012, 11, 6, 20, 15)
 
 
-def test_data(wind_circ):
+def test_data_start_stop(wind_circ):
     """
     test data_start / stop properties
     """
@@ -641,7 +641,6 @@ def test_constant_wind_mover_bounds():
     wm = constant_wind_mover(10, 45, units='knots')
 
     assert wm.data_start == InfDateTime("-inf")
-
     assert wm.data_stop == InfDateTime("inf")
 
 

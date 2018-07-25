@@ -20,7 +20,7 @@ Features:
 import copy
 import os
 import math
-from osgeo import ogr
+# from osgeo import ogr
 
 import py_gd
 # import pyugrid
@@ -41,13 +41,12 @@ from gnome.utilities.projections import (FlatEarthProjection,
                                          RegularGridProjection)
 from gnome.utilities.map_canvas import MapCanvas
 from gnome.utilities.file_tools import haz_files
-from gnome.utilities.file_tools.osgeo_helpers import (ogr_layers)
-from gnome.utilities.file_tools.osgeo_helpers import (ogr_features)
-from gnome.utilities.file_tools.osgeo_helpers import (ogr_open_file)
+# from gnome.utilities.file_tools.osgeo_helpers import (ogr_layers)
+# from gnome.utilities.file_tools.osgeo_helpers import (ogr_features)
+# from gnome.utilities.file_tools.osgeo_helpers import (ogr_open_file)
 
 from gnome.utilities.geometry.polygons import PolygonSet
-from gnome.utilities.geometry.cy_point_in_polygon import (points_in_poly,
-                                                          point_in_poly)
+from gnome.utilities.geometry import points_in_poly, point_in_poly, is_clockwise
 
 from gnome.cy_gnome.cy_land_check import check_land_layers, move_particles
 
@@ -1130,51 +1129,104 @@ class MapFromBNA(RasterMap):
         # get the basebitmap as a numpy array:
         bitmap_array = canvas.back_asarray()
 
-        RasterMap.__init__(self, bitmap_array, canvas.projection,
+        RasterMap.__init__(self,
+                           bitmap_array,
+                           canvas.projection,
                            map_bounds=map_bounds,
                            spillable_area=spillable_area,
                            land_polys=land_polys,
                            **kwargs)
         return None
 
+    # # keeping this around just in case, but this method is deprecated
+    # # writing the geojson directly from polygons is faster and less
+    # # requiremetns on a complex dependency.
+    # def to_geojson(self):
+    #     """
+    #     Output the vector version of the map
+
+    #     This is what gets drawn in the WebGNOME client, for example
+    #     """
+    #     map_file = ogr_open_file('BNA:' + self.filename)
+    #     polys = []
+
+    #     line_strings = []
+
+    #     for layer in ogr_layers(map_file):
+    #         for f in ogr_features(layer):
+    #             primary_id = f.GetFieldAsString('Primary ID')
+
+    #             # robust but slow solution ~ 1 second processing time
+    #             # if primary_id == 'SpillableArea':
+    #             #     spillarea_features.append(json.loads(f.ExportToJson()))
+    #             # elif primary_id == 'Map Bounds':
+    #             #     bounds_features.append(json.loads(f.ExportToJson()))
+    #             # else:
+    #             #     shoreline_features.append(json.loads(f.ExportToJson()))
+    #             #     shoreline_geo.append(json.loads(f.GetGeometryRef().ExportToJson())['coordinates'][0])
+
+    #             # only doing what we need at the moment
+    #             # in the future we might need the other layers
+    #             if primary_id not in ('SpillableArea', 'Map Bounds'):
+    #                 # apparently this is how you get to the actual
+    #                 # map coordinates using OGR.  It seems a bit brittle.
+    #                 # But this is much more efficient than exporting
+    #                 # to json.
+    #                 geom = f.GetGeometryRef()
+    #                 geo_type = geom.GetGeometryName()
+
+    #                 if geo_type == 'MULTIPOLYGON':
+    #                     poly = geom.GetGeometryRef(0)
+    #                     ring = poly.GetGeometryRef(0)
+
+    #                     polys.append([ring.GetPoints()])
+    #                 elif geo_type == 'LINESTRING':
+    #                     line_strings.append(geom.GetPoints())
+    #                 else:
+    #                     print 'unknown type: ', geo_type
+
+    #     features = []
+
+    #     if polys:
+    #         f = Feature(id="1",
+    #                     properties={'name': 'Shoreline Polys'},
+    #                     geometry=MultiPolygon(coordinates=polys))
+    #         features.append(f)
+    #     if line_strings:
+    #         f = Feature(id="2",
+    #                     properties={'name': 'Shoreline Lines'},
+    #                     geometry=MultiLineString(coordinates=line_strings))
+    #         features.append(f)
+
+    #     return FeatureCollection(features)
+
     def to_geojson(self):
+        """
+        Output the vector version of the shoreline polygons.
 
-        map_file = ogr_open_file('BNA:' + self.filename)
+        This is what gets drawn in the WebGNOME client, for example
+
+        This version directly writes the polygons already stored in the map
+        object -- keeping the door open to that data coming from something
+        other than a bna file.
+
+        FIXME: Technically, geojson recommends ccw polygons -- but putting that
+               check in was pretty slow, so it's commented out.
+
+        FIXME: This really should export the map_bounds and spillable_area
+        as well.
+        """
         polys = []
-        line_strings = []
 
-        for layer in ogr_layers(map_file):
-            for f in ogr_features(layer):
-                primary_id = f.GetFieldAsString('Primary ID')
-
-                # robust but slow solution ~ 1 second processing time
-                # if primary_id == 'SpillableArea':
-                #     spillarea_features.append(json.loads(f.ExportToJson()))
-                # elif primary_id == 'Map Bounds':
-                #     bounds_features.append(json.loads(f.ExportToJson()))
-                # else:
-                #     shoreline_features.append(json.loads(f.ExportToJson()))
-                #     shoreline_geo.append(json.loads(f.GetGeometryRef().ExportToJson())['coordinates'][0])
-
-                # only doing what we need at the moment
-                # in the future we might need the other layers
-                if primary_id not in ('SpillableArea', 'Map Bounds'):
-                    # apparently this is how you get to the actual
-                    # map coordinates using OGR.  It seems a bit brittle.
-                    # But this is much more efficient than exporting
-                    # to json.
-                    geom = f.GetGeometryRef()
-                    geo_type = geom.GetGeometryName()
-
-                    if geo_type == 'MULTIPOLYGON':
-                        poly = geom.GetGeometryRef(0)
-                        ring = poly.GetGeometryRef(0)
-
-                        polys.append([ring.GetPoints()])
-                    elif geo_type == 'LINESTRING':
-                        line_strings.append(geom.GetPoints())
-                    else:
-                        print 'unknown type: ', geo_type
+        for poly in self.land_polys:
+            p = poly.tolist()
+            p.append(p[0])  # first and last points must match in geojson
+            # FIXME: this is a good idea, but really slow...
+            # the is_clockwise() code could be cythonized, maybe that would help?
+            # # geojson polygons should be counter-clockwise
+            # if is_clockwise(poly):
+            #     p.reverse()
+            polys.append([p])
 
         features = []
         if polys:
@@ -1182,12 +1234,6 @@ class MapFromBNA(RasterMap):
                         properties={'name': 'Shoreline Polys'},
                         geometry=MultiPolygon(coordinates=polys))
             features.append(f)
-        if line_strings:
-            f = Feature(id="2",
-                        properties={'name': 'Shoreline Lines'},
-                        geometry=MultiLineString(coordinates=line_strings))
-            features.append(f)
-
         return FeatureCollection(features)
 
 
@@ -1200,9 +1246,9 @@ class MapFromUGrid(RasterMap):
     def __init__(self, filename, raster_size=1024 * 1024, **kwargs):
         """
         Creates a GnomeMap (specifically a RasterMap) from a netcdf
-        data file with a traingular mesh grid in it.
+        data file with a triangular mesh grid in it.
         The spillable area and map bounds need to be supplied -- there is
-        currenty no way to exprtes that in a netcdf file.
+        currently no way to express that in a netcdf file.
 
         Required arguments:
 
