@@ -641,10 +641,17 @@ OSErr ComponentMover_c::SetOptimizeVariables (char *errmsg, const Seconds& model
 			if (bUseAveragedWinds)
 			{
 				err = CalculateAveragedWindsVelocity(model_time,errmsg);
+				if (err) 
+					return err;
 				wVel = fAveragedWindVelocity;	// don't need to store?
 			}
 			else
-				timeFile->GetTimeValue(model_time, &wVel);	// this needs to be defined
+				err = timeFile->GetTimeValue(model_time, &wVel);	// this needs to be defined
+				if (err)
+				{
+					strcpy(errmsg,"Time outside of interval being modeled");
+					return err;
+				}
 		}	
 	//}
 #endif	

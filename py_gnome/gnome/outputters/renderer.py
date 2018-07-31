@@ -650,9 +650,12 @@ class Renderer(Outputter, MapCanvas):
         return {'image_filename': image_filename,
                 'time_stamp': time_stamp}
 
-    def write_output_post_run(self, **kwargs):
-        super(Renderer, **kwargs)
-        if '.gif' in self.formats:
+    def post_model_run(self):
+        """
+        Override this method if a derived class needs to perform
+        any actions after a model run is complete (StopIteration triggered)
+        """
+        if 'gif' in self.formats:
             self.animation.close_anim()
 
     def _draw(self, step_num):

@@ -209,6 +209,22 @@ cdef class CyCurrentCycleMover(CyMover):
     def get_offset_time(self):
         return self.current_cycle.GetTimeShift()
 
+    def get_start_time(self):
+        cdef OSErr err
+        cdef Seconds start_time
+
+        err = self.current_cycle.GetDataStartTime(&start_time)
+
+        return start_time
+
+    def get_end_time(self):
+        cdef OSErr err
+        cdef Seconds end_time
+
+        err = self.current_cycle.GetDataEndTime(&end_time)
+
+        return end_time
+
     def set_shio(self, CyShioTime cy_shio):
         """
         Takes a CyShioTime object as input and sets C++ CurrentCycle

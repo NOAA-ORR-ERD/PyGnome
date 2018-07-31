@@ -26,6 +26,8 @@ from distutils.command.clean import clean
 from distutils.extension import Extension
 from Cython.Distutils import build_ext
 
+from git import Repo
+
 import numpy as np
 
 # could run setup from anywhere
@@ -34,6 +36,15 @@ SETUP_PATH = os.path.dirname(os.path.abspath(__file__))
 # cd to SETUP_PATH, run develop or install, then cd back
 CWD = os.getcwd()
 os.chdir(SETUP_PATH)
+
+repo = Repo('../.')
+
+try:
+    branch_name = repo.active_branch.name
+except TypeError:
+    branch_name = 'no-branch'
+
+last_update = repo.iter_commits().next().committed_datetime.isoformat(),
 
 
 def target_dir(name):
@@ -112,6 +123,7 @@ class cleanall(clean):
                   .format(filepath, err))
             # raise
 
+
 # setup our environment and architecture
 # These should be properties that are used by all Extensions
 libfile = ''
@@ -165,7 +177,8 @@ def get_netcdf_libs():
         print libs
         print include_dir
     except OSError:
-        raise NotImplementedError("this setup.py needs nc-config to find netcdf libs")
+        raise NotImplementedError("this setup.py needs nc-config "
+                                  "to find netcdf libs")
 
 get_netcdf_libs()
 '''
@@ -515,7 +528,8 @@ setup(name='pyGnome',
                               'outputters/sample.b64',
                               'weatherers/platforms.json'
                               ]},
-      # you are not going to be able to "pip install" this anyway -- no need for requirements
+      # you are not going to be able to "pip install" this anyway
+      # -- no need for requirements
       requires=[],   # want other packages here?
       cmdclass={'build_ext': build_ext,
                 'cleanall': cleanall},
@@ -525,13 +539,17 @@ setup(name='pyGnome',
       # metadata for upload to PyPI
       author="Gnome team at NOAA ORR ERD",
       author_email="orr.gnome@noaa.gov",
-      description=("GNOME (General NOAA Operational Modeling Environment) is "
-                   "the modeling tool the Office of Response and "
+      description=("GNOME (General NOAA Operational Modeling Environment) "
+                   "is the modeling tool the Office of Response and "
                    "Restoration's (OR&R) Emergency Response Division uses to "
                    "predict the possible route, or trajectory, a pollutant "
                    "might follow in or on a body of water, such as in an "
-                   "oil spill.\n\n"
-                   "It can also be used as a customizable general particle tracking code"),
+                   "oil spill.  "
+                   "It can also be used as a customizable general particle "
+                   "tracking code.\n"
+                   "Branch: {}\n"
+                   "LastUpdate: {}"
+                   .format(branch_name, last_update)),
       license="Public Domain",
       keywords="oilspill modeling particle_tracking",
       url="https://github.com/NOAA-ORR-ERD/PyGnome"
