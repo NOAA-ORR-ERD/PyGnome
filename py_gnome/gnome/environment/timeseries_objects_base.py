@@ -205,6 +205,7 @@ class TimeseriesData(GnomeId):
     def is_constant(self):
         return len(self.data) == 1
 
+TimeSeriesProp = TimeseriesData
 
 class TimeseriesVectorSchema(base_schema.ObjTypeSchema):
     units = SchemaNode(

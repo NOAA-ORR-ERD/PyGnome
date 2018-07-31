@@ -59,6 +59,9 @@ class AddLogger(object):
 
 
     def __init__(self, *args, **kwargs):
+        if ('json_' in kwargs):
+            #because old save files
+            kwargs.pop('json_')
         super(AddLogger, self).__init__(*args, **kwargs)
 
     @property
@@ -492,12 +495,14 @@ class GnomeId(AddLogger):
     def __ne__(self, other):
         return not self == other
 
-    def serialize(self):
+    def serialize(self, options={}):
         """
         Returns a json serialization of this object ("webapi" mode only)
         """
+        if 'raw_paths' not in options:
+            options['raw_paths'] = True
         schema = self.__class__._schema()
-        serial = schema.serialize(self)
+        serial = schema.serialize(self, options=options)
         return serial
 
 
@@ -614,7 +619,8 @@ class GnomeId(AddLogger):
             if os.path.isdir(saveloc):
                 if filename:
                     fn = os.path.join(saveloc, filename)
-                    json_ = json.load(fn)
+                    with open(fn) as fp:
+                        json_ = json.load(fp)
                     return cls._schema().load(json_, saveloc=saveloc, refs=refs)
                 else:
                     search = os.path.join(saveloc, '*.json')
@@ -630,24 +636,23 @@ class GnomeId(AddLogger):
                 #get json from the file to start the process
                 saveloc = zipfile.ZipFile(saveloc, 'r')
                 if filename:
-                    fp = saveloc.open(filename, 'rU')
-                    json_ = json.load(fp, parse_float=True, parse_int=True)
+                    with saveloc.open(filename, 'rU') as fp:
+                        json_ = json.load(fp, parse_float=True, parse_int=True)
                     return cls._schema().load(json_, saveloc=saveloc, refs=refs)
                 else:
                     #no filename, so search archive
                     for fn in saveloc.namelist():
                         if fn.endswith('.json'):
-                            fp = saveloc.open(fn, 'rU')
-                            json_ = json.load(fp)
+                            with saveloc.open(filename, 'rU') as fp:
+                                json_ = json.load(fp)
                             if 'obj_type' in json_:
                                 if class_from_objtype(json_['obj_type']) is cls:
                                     return cls._schema().load(json_, saveloc=saveloc, refs=refs)
                     raise ValueError('No .json file containing a {0} found in archive {1}'.format(cls.__name__, saveloc))
             else:
                 #saveloc is .json file
-                fp = open(saveloc, 'r')
-
-                json_ = json.load(fp)
+                with open(saveloc, 'r') as fp:
+                    json_ = json.load(fp)
                 if 'obj_type' in json:
                     if class_from_objtype(json_['obj_type']) is not cls:
                         raise ValueError("{1} does not contain a {0}".format(cls.__name__, saveloc))

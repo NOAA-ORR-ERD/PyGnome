@@ -142,10 +142,31 @@ class TestDemoObj(object):
         assert deser.variable == inst.variable
         assert deser.variables == inst.variables
         assert deser.filename == 'foo.nc'
+
+
+    def test_save_load(self):
+        _t = Time(dates())
+        tsv = TimeseriesVector(
+            variables=[TimeseriesData(name='u', time=_t, data=series_data()),
+                       TimeseriesData(name='v', time=_t, data=series_data2())],
+            units='m/s'
+        )
+        inst = DemoObj(filename=None, variable=tsv, variables=[tsv, tsv.variables[0]])
         json_, zipfile_, refs = inst.save(saveloc=None)
         loaded = DemoObj.load(zipfile_)
         assert inst == loaded
 
+    def test_serialization_options(self):
+        _t = Time(dates())
+        tsv = TimeseriesVector(
+            variables=[TimeseriesData(name='u', time=_t, data=series_data()),
+                       TimeseriesData(name='v', time=_t, data=series_data2())],
+            units='m/s'
+        )
+        filename = 'C:\\foo.nc'
+        inst = DemoObj(filename=filename, variable=tsv, variables=[tsv, tsv.variables[0]])
+        serial = inst.serialize(options={'raw_paths': False})
+        assert serial['filename'] == ['foo.nc']
 
 class TestObjType(object):
     _t = Time(dates())

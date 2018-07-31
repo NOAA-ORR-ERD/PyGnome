@@ -70,7 +70,8 @@ class ModelSchema(ObjTypeSchema):
         acceptable_schemas=(GnomeMapSchema,
                             MapFromBNASchema,
                             ParamMapSchema,
-                            MapFromUGridSchema)
+                            MapFromUGridSchema),
+        save_reference=True
     )
     spills = OrderedCollectionSchema(
         GeneralGnomeObjectSchema(acceptable_schemas=[SpillSchema]),
@@ -1285,7 +1286,7 @@ class Model(GnomeId):
 
         new_model = super(Model, cls).load(saveloc=saveloc, filename=filename, refs=refs)
         #Since the model may have saved mid-run, need to try and load spill data
-        new_model._load_spill_data(saveloc, filename, 'spills_data_arrays.nc')
+        #new_model._load_spill_data(saveloc, filename, 'spills_data_arrays.nc')
 
         return new_model
 
@@ -1307,7 +1308,7 @@ class Model(GnomeId):
         else:
             if os.path.isdir(saveloc):
                 if filename:
-                    saveloc = os.path.join(saveloc, nc_file)
+                    saveloc = os.path.join(saveloc, filename)
                     with zipfile.ZipFile(saveloc, 'r') as z:
                         if nc_file not in z.namelist():
                             return

@@ -28,7 +28,10 @@ from gridded_objects_base import (PyGrid,
                                   GridSchema,
                                   VectorVariable,
                                   Variable)
+
 from grid import Grid
+
+import timeseries_objects_base
 # from gnome.environment.environment_objects import IceAwareCurrentSchema
 
 base_classes = [Environment,
@@ -61,6 +64,13 @@ for cls in env_objs:
     if hasattr(cls, '_schema'):
         schemas.add(cls._schema)
 schemas = list(schemas)
+
+#This hack is for backwards compat on save files...should probably
+#remove at some point
+import sys
+if ('gnome.environment.ts_property' not in sys.modules):
+    sys.modules['gnome.environment.ts_property'] = timeseries_objects_base
+ts_property = timeseries_objects_base
 
 __all__ = [cls.__name__ for cls in base_classes]
 __all__.extend([cls.__name__ for cls in env_objs])

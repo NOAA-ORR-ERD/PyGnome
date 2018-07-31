@@ -1292,7 +1292,8 @@ class ComponentMover(CurrentMoversBase):
     @wind.setter
     def wind(self, wind_obj):
         if not isinstance(wind_obj, Wind):
-            raise TypeError('wind must be of type environment.Wind')
+            self._wind = None
+            return
 
         self.mover.set_ossm(wind_obj.ossm)
         self._wind = wind_obj

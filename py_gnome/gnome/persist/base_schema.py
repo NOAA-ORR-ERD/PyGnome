@@ -17,6 +17,7 @@ from extend_colander import NumpyFixedLenSchema
 
 from gnome.gnomeobject import Refs, class_from_objtype
 from gnome.persist.extend_colander import OrderedCollectionType
+from gnome.utilities.geometry.polygons import PolygonSet
 
 @deferred
 def now(node, kw):
@@ -106,29 +107,55 @@ class ObjType(SchemaType):
 
         return result
 
-    def _ser(self, node, value):
+    def _ser(self, node, value, options=None):
+        dict_ = None
         try:
             if hasattr(value, 'to_dict'):
                 dict_ = value.to_dict('webapi')
                 for k in dict_.keys():
                     if dict_[k] is None:
                         dict_[k] = null
-                return dict_
-
             else:
                 raise TypeError('Object does not have a to_dict function')
         except Exception as e:
             raise e
             raise Invalid(node, '{0}" does not implement GnomeObj functionality: {1}'.format(value, e))
+        if options is not None:
+            if not options.get('raw_paths', True):
+                datafiles = node.get_nodes_by_attr('isdatafile')
+                for d in datafiles:
+                    if d in dict_:
+                        if dict_[d] is None:
+                            continue
+                        elif isinstance(dict_[d], six.string_types):
+                            dict_[d] = os.path.split(dict_[d])[1]
+                        elif isinstance(dict_[d], collections.Iterable):
+                            #List, tuple, etc
+                            for i, filename in enumerate(dict_[d]):
+                                dict_[d][i] = os.path.split(filename)[1]
+        return dict_
 
-    def serialize(self, node, appstruct):
+    def serialize(self, node, appstruct, options=None):
 #         if appstruct is None:
 #             appstruct = None
 
         def callback(subnode, subappstruct):
-            return subnode.serialize(subappstruct)
+            try:
+                if subnode.schema_type is Sequence or subnode.schema_type is OrderedCollectionType:
+                    scalar = hasattr(subnode.typ, 'accept_scalar') and subnode.typ.accept_scalar
+                    return subnode.typ._impl(subnode, subappstruct, callback, scalar)
+                else:
+                    return subnode.serialize(subappstruct, options=options)
+            except TypeError as e:
+                if 'unexpected keyword argument' in e.message:
+                    if isinstance(subnode, ObjTypeSchema):
+                        import pdb
+                        pdb.set_trace()
+                    return subnode.serialize(subappstruct)
+                else:
+                    raise e
 
-        value = self._ser(node, appstruct)
+        value = self._ser(node, appstruct, options=options)
         return self._impl(node, value, callback)
 
     def _deser(self, node, value, refs):
@@ -371,12 +398,27 @@ class ObjType(SchemaType):
                     #Need to turn this into a list of unhydrated object json
                     for i, fn in enumerate(cstruct[r]):
                         if isinstance(fn, dict): #old-style ref
-                            fn = fn['id']
-                        cstruct[r][i] = self._load_json_from_file(fn, saveloc)
-                        cstruct[r][i]['id'] = fn
+                            if 'id' in fn:
+                                fn = fn['id']
+                                cstruct[r][i] = self._load_json_from_file(fn, saveloc)
+                                cstruct[r][i]['id'] = fn
+                            else:
+                                #old-style obj-in-list (spill.initializers)
+                                #do nothing
+                                pass
+                        else:
+                            cstruct[r][i] = self._load_json_from_file(fn, saveloc)
+                            cstruct[r][i]['id'] = fn
+
                 else:
                     fn = cstruct[r]
-                    if fn is not None:
+                    if isinstance(fn, dict):
+                        #compatibility
+                        #this case occurs if loading an old save file where an
+                        #attribute that is now save_reference=True (such as model.map)
+                        #is not a filename reference, but already a json structure
+                        cstruct[r]['id'] = cstruct.get('name', cstruct.get('json_')) + '.' + r
+                    elif fn is not None:
                         cstruct[r] = self._load_json_from_file(fn, saveloc)
                         cstruct[r]['id'] = fn
                 #since object id is not saved, but we need a means to ID this object
@@ -495,6 +537,10 @@ class ObjTypeSchema(MappingSchema):
                     setattr(c, k, v)
             if c.read_only and c.update:
                 c.update=False
+
+    def serialize(self, appstruct=None, options={}):
+
+        return self.typ.serialize(self, appstruct, options=options)
 
     def deserialize(self, cstruct=None, refs=None):
         if refs is None:
@@ -649,9 +695,9 @@ class GeneralGnomeObjectSchema(ObjTypeSchema):
                     return schema()
             raise TypeError('This type of object {0} is not supported. Schema: {1}'.format(obj, schema))
 
-    def serialize(self, appstruct=None):
+    def serialize(self, appstruct=None, options=None):
         substitute_schema = self.validate_input_schema(appstruct)
-        return substitute_schema.typ.serialize(substitute_schema, appstruct)
+        return substitute_schema.typ.serialize(substitute_schema, appstruct, options=options)
 
     def deserialize(self, cstruct=None, refs=None):
         if refs is None:
@@ -698,9 +744,21 @@ class LongLatBounds(SequenceSchema):
 Polygon = LongLatBounds
 
 
-class PolygonSet(SequenceSchema):
+class PolygonSetSchema(SequenceSchema):
     polygonset = Polygon()
+    def serialize(self, appstruct):
+        appstruct = [poly.tolist() for poly in appstruct]
+        return super(PolygonSetSchema, self).serialize( appstruct)
 
+    def deserialize(self, cstruct):
+        appstruct = super(PolygonSetSchema, self).deserialize(cstruct)
+        if len(appstruct) == 0:
+            appstruct = [(-360, -90), (-360, 90),
+                         (360, 90), (360, -90)]
+        ps = PolygonSet()
+        for poly in appstruct:
+            ps.append(poly)
+        return ps
 
 class WorldPoint(LongLat):
     'Used to define reference points. 3D positions (long,lat,z)'

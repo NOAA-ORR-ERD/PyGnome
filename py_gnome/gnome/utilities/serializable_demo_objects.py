@@ -45,7 +45,7 @@ def series_data2():
 
 class DemoObjSchema(base_schema.ObjTypeSchema):
     filename = FilenameSchema(
-        save=True, update=True, isdatafile=False, test_equal=False,
+        save=True, update=True, isdatafile=True, test_equal=False,
     )
 
     foo_float = colander.SchemaNode(

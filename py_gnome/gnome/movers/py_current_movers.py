@@ -34,9 +34,9 @@ class PyCurrentMoverSchema(ObjTypeSchema):
     extrapolation_is_allowed = SchemaNode(
         Bool(), missing=drop, save=True, update=True
     )
-    time_offset = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
+#    time_offset = SchemaNode(
+#        Float(), missing=drop, save=True, update=True
+#    )
     on = SchemaNode(
         Bool(), missing=drop, save=True, update=True
     )

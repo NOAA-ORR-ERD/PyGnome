@@ -3,6 +3,7 @@
 #    It makes for a little less computation at every step.
 from gnome.gnomeobject import GnomeId
 from gnome.environment.gridded_objects_base import PyGrid
+from __builtin__ import property
 
 """
 An implementation of the GNOME land-water map.
@@ -51,13 +52,12 @@ from gnome.utilities.geometry import points_in_poly, point_in_poly, is_clockwise
 from gnome.cy_gnome.cy_land_check import check_land_layers, move_particles
 
 
-import gnome.map
 from gnome.persist import base_schema
 
 
 class GnomeMapSchema(base_schema.ObjTypeSchema):
-    map_bounds = base_schema.LongLatBounds()
-    spillable_area = base_schema.PolygonSet(test_equal=False) #.MetaDataList is not serialized at all
+    map_bounds = base_schema.LongLatBounds(save_reference=False)
+    spillable_area = base_schema.PolygonSetSchema(save_reference=False, test_equal=False) #.MetaDataList is not serialized at all
     # land_polys = base_schema.PolygonSet(missing=drop)
 
 
@@ -128,14 +128,7 @@ class GnomeMap(GnomeId):
                                         (360, 90), (360, -90)),
                                        dtype=np.float64)
 
-        if spillable_area is None or len(spillable_area) == 0:
-            self.spillable_area = PolygonSet()
-            self.spillable_area.append(self.map_bounds)
-        else:
-            if not isinstance(spillable_area, PolygonSet):
-                spillable_area = self._polygon_set_from_points(spillable_area)
-
-            self.spillable_area = spillable_area
+        self.spillable_area = spillable_area
 
         if land_polys is None:
             # empty set, no land
@@ -150,10 +143,10 @@ class GnomeMap(GnomeId):
         polys['land_polys'] = self.land_polys
         return polys
 
-    def to_dict(self, json_=None):
-        dict_ = super(GnomeMap, self).to_dict(json_=json_)
-        dict_['spillable_area'] = [poly.points.tolist() for poly in self.spillable_area]
-        return dict_
+#     def to_dict(self, json_=None):
+#         dict_ = super(GnomeMap, self).to_dict(json_=json_)
+#         dict_['spillable_area'] = [poly.points.tolist() for poly in self.spillable_area]
+#         return dict_
 
     def _polygon_set_from_points(self, poly):
         '''
@@ -210,6 +203,24 @@ class GnomeMap(GnomeId):
             return True
 
         return False
+
+    @property
+    def spillable_area(self):
+        return self._spillable_area
+
+    @spillable_area.setter
+    def spillable_area(self, sa):
+        if sa is None or (isinstance(sa, list) and sa.length == 0):
+            sa = np.array(((-360, -90), (-360, 90),
+                           (360, 90), (360, -90)),
+                           dtype=np.float64)
+        if isinstance(sa, PolygonSet):
+            self._spillable_area = sa
+            return
+        ps = PolygonSet()
+        for poly in sa:
+            ps.append(poly)
+        self._spillable_area = ps
 
     def on_map(self, coords):
         """
@@ -1075,8 +1086,7 @@ class MapFromBNA(RasterMap):
             else:
                 map_bounds = BB.AsPoly()
 
-        if spillable_area is None:
-            spillable_area = PolygonSet()
+        if len(spillable_area) == 0:
             spillable_area.append(map_bounds)
 
 
@@ -1405,7 +1415,7 @@ def map_from_rectangular_grid(mask, lon, lat, refine=1, **kwargs):
     # generating projection for raster map
     proj = RectangularGridProjection(lon, lat)
 
-    return gnome.map.RasterMap(grid, proj,
+    return RasterMap(grid, proj,
                                map_bounds=map_bounds,
                                **kwargs)
 
@@ -1522,5 +1532,5 @@ def map_from_regular_grid(grid_mask, lon, lat, refine=4, refloat_halflife=1,
     proj = RegularGridProjection(bounding_box,
                                  image_size=bitmap_array.shape)
 
-    return gnome.map.RasterMap(bitmap_array, proj,
+    return RasterMap(bitmap_array, proj,
                                refloat_halflife=refloat_halflife)
