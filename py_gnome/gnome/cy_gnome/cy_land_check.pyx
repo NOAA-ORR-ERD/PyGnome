@@ -62,8 +62,7 @@ cdef int32_t c_overlap_grid(int32_t m,
         return 1
 
 
-@cython.boundscheck(False)
-cdef bool c_find_first_pixel( uint8_t* grid,
+cdef bool c_find_first_pixel(uint8_t* grid,
                              int32_t m,
                              int32_t n,
                              int32_t x0,
@@ -77,7 +76,7 @@ cdef bool c_find_first_pixel( uint8_t* grid,
                              ):
     """
     Marches along the grid to see if the LE movement crosses land
-    
+
     returns False if no land is encountered
 
     returns True is a land pixel is hit.
@@ -111,7 +110,7 @@ cdef bool c_find_first_pixel( uint8_t* grid,
     if not (x0 < 0 or x0 >= m or y0 < 0 or y0 >= n):#  is the point off the grid? if so, it's not land!
         ##fixme: we should never be starting on land!
         ## should this raise an Error instead ?
-        if grid[x0 * n + y0] == 1: #we've hit "land"
+        if grid[x0 * n + y0] != 0: #we've hit "land"
             prev_x[0] = x0
             prev_y[0] = y0
             hit_x[0] = x0
@@ -135,7 +134,8 @@ cdef bool c_find_first_pixel( uint8_t* grid,
             y0 = y0 + sy
 
         # check for land hit
-        if x0 < 0 or x0 >= m or y0 < 0 or y0 >= n:# is the point off the grid? if so, it's not land!
+        if x0 < 0 or x0 >= m or y0 < 0 or y0 >= n:
+            # is the point off the grid? if so, it's not land!
             ## if we've moved off the grid for good, no need to keep going.
             ## but can only do this if we've crossed the grid.
             if was_on_grid:
@@ -144,29 +144,27 @@ cdef bool c_find_first_pixel( uint8_t* grid,
                 # haven't hit the grid yet -- keep going
                 continue
         else:
-            was_on_grid = True
-            if grid[x0 * n + y0] == 1:
+            if grid[x0 * n + y0] != 0:
                 hit_x[0] = x0
                 hit_y[0] = y0
-                # return (*prev_x, *prev_y), (*hit_x, *hit_y)
                 return True
             else:
-                if (e2 > -dy) and (e2 < dx): # there is a diagonal move -- test adjacent points also
-                    ## only call it a hit if BOTH adjacent points are land.
+                # there is a diagonal move -- test adjacent points also
+                # but only if we're already on the grid
+                if was_on_grid and (e2 > -dy) and (e2 < dx):
+                    # only call it a hit if BOTH adjacent points are land.
                     pt1_x = x0
                     pt1_y = y0-sy
                     pt2_x = x0-sx
                     pt2_y = y0
-                    try: # replace with real check???
-                        if ( (grid[pt1_x * n + pt1_y] == 1) and #is the y-adjacent point on land?
-                             (grid[pt2_x * n + pt2_y] == 1)     #is the x-adjacent point on land?
-                            ):
-                            hit_x[0] = pt1_x # we have to pick one -- this is arbitrary
-                            hit_y[0] = pt1_y # we have to pick one -- this is arbitrary
-                            #return (*prev_x, *prev_y), (*hit_x, *hit_y)
-                            return True
-                    except IndexError:
-                        pass
+                    if ( (grid[pt1_x * n + pt1_y] != 0) and #is the y-adjacent point on land?
+                         (grid[pt2_x * n + pt2_y] != 0)     #is the x-adjacent point on land?
+                        ):
+                        hit_x[0] = pt1_x # we have to pick one -- this is arbitrary
+                        hit_y[0] = pt1_y # we have to pick one -- this is arbitrary
+                        #return (*prev_x, *prev_y), (*hit_x, *hit_y)
+                        return True
+            was_on_grid = True
 
     # if we get here, no hit
     return False
@@ -175,24 +173,24 @@ cdef bool c_find_first_pixel( uint8_t* grid,
 
 def find_first_pixel(grid, pt1, pt2):
     """
-    This finds the first non-zero pixel that is is encountered when following
+    This finds the first non-zero pixel that is encountered when following
     a line from pt1 to pt2.
 
     param: grid  -- a numpy integer array -- the raster we're working with
            zero everywhere there is not considered a "hit"
-    param: pt1 -- the start point -- an integer (i,j) tuple
-    param: pt2 -- the end point   -- an integer (i,j) tuple
+    param: pt1 -- the start point -- an integer (i, j) tuple
+    param: pt2 -- the end point   -- an integer (i, j) tuple
 
     return: None if land is not hit
             (previous_pt, hit_point) if land is hit
 
     This is an adaptation of "Bresenham's line algorithm":
 
-   (http://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm)
+    (http://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm)
 
     Usually used for drawing lines in graphics.  It's been adapted to do an
     extra check when the algorithm puts two points diagonal to each-other, so
-    as to avoid an exact match with a diagonal line of land skipping thorough.
+    as to avoid an exact match with a diagonal line of land skipping through.
     If _both_ the points diagonal to the move are land, it is considered a hit.
 
     """
@@ -231,6 +229,7 @@ def find_first_pixel(grid, pt1, pt2):
     else:
         return None
 
+
 ## called by a method in gnome.map.RasterMap class
 from gnome.basic_types import world_point_type, oil_status
 @cython.boundscheck(False)
@@ -240,12 +239,11 @@ def check_land(cnp.ndarray[uint8_t, ndim=2, mode='c'] grid not None,
                cnp.ndarray[int16_t, ndim=1, mode='c'] status_codes not None,
                cnp.ndarray[int32_t, ndim=2, mode='c'] last_water_positions not None):
         """
-        do the actual land-checking
+        Do the actual land-checking
 
         status_codes, positions and last_water_positions are altered in place.
 
         NOTE: these are the integer versions -- having already have been projected to the raster coordinates
-
         """
         cdef int32_t  prev_x, prev_y, hit_x, hit_y
         cdef uint32_t i, num_le
@@ -286,6 +284,7 @@ def check_land(cnp.ndarray[uint8_t, ndim=2, mode='c'] grid not None,
                 positions[i, 1] = end_positions[i, 1]
         return None
 
+
 ## called by a method in gnome.map.RasterMap class
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -296,12 +295,12 @@ def check_land_layers(grid_layers,
                 cnp.ndarray[int16_t, ndim=1, mode='c'] status_codes,
                 cnp.ndarray[int32_t, ndim=2, mode='c'] last_water_positions):
         """
-        do the actual land-checking
+        Do the actual land-checking
 
         status_codes, positions and last_water_positions are altered in place.
 
         NOTE: these are the integer versions -- having already have been projected to the raster coordinates
-        
+
         This version will look through multiple layers of raster map
 
         """
@@ -379,14 +378,14 @@ def check_land_layers(grid_layers,
         PyMem_Free(dataptrs)
         PyMem_Free(widths)
         PyMem_Free(heights)
-        
-        
+
+
 def move_particles(cnp.ndarray[cnp.float64_t, ndim=2, mode='c'] positions not None,
                  cnp.ndarray[cnp.float64_t, ndim=2, mode='c'] end_positions not None,
                  cnp.ndarray[int16_t, ndim=1, mode='c'] status_codes not None,
                  cnp.ndarray[cnp.float64_t, ndim=2, mode='c'] last_water_positions not None,
                  cnp.ndarray[cnp.float64_t, ndim=2, mode='c'] land_points not None):
-    
+
     """
     This land checking algorithm is for use with the parameterized map, a long, straight shoreline.
     """
@@ -395,9 +394,9 @@ def move_particles(cnp.ndarray[cnp.float64_t, ndim=2, mode='c'] positions not No
     cdef cnp.float64_t x1,y1,x2,y2, x3, y3, x4, y4, a1, a2, b1, b2, x, y, u
     [x1, y1], [x2, y2] = shoreline[0], shoreline[1]
     [a1,a2] = shoreline[1] - shoreline[0]
-    
+
     beaching = points_in_poly(land_points, end_positions)
-    
+
     for i in range(positions.shape[0]):
         #skip if already landed
         if (status_codes[i] == type_defs.OILSTAT_ONLAND):
@@ -424,4 +423,4 @@ def move_particles(cnp.ndarray[cnp.float64_t, ndim=2, mode='c'] positions not No
         else:
             positions[i, 0] = end_positions[i, 0]
             positions[i, 1] = end_positions[i, 1]
-        
+
