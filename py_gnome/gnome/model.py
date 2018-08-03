@@ -835,6 +835,17 @@ class Model(Serializable):
             non_w_mask = sc['status_codes'] == oil_status.on_land
             sc['fate_status'][non_w_mask] = fate.non_weather
 
+            w_mask = ((sc['status_codes'] == oil_status.in_water)
+                 & ~(sc['fate_status'] & fate.skim == fate.skim)
+                 & ~(sc['fate_status'] & fate.burn == fate.burn)
+                 & ~(sc['fate_status'] & fate.disperse == fate.disperse))
+
+            surf_mask = np.logical_and(w_mask, sc['positions'][:, 2] == 0)
+            subs_mask = np.logical_and(w_mask, sc['positions'][:, 2] > 0)
+
+            sc['fate_status'][surf_mask] = fate.surface_weather
+            sc['fate_status'][subs_mask] = fate.subsurf_weather
+
     def weather_elements(self):
         '''
         Weathers elements:
