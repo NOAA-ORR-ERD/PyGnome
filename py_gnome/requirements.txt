@@ -11,6 +11,7 @@ pytest
 pytest-timeout
 testfixtures
 
+gitpython
 psutil
 sphinx
 progressbar
@@ -52,6 +53,6 @@ git+https://github.com/NOAA-ORR-ERD/py_gd.git@v0.1.6#egg=py_gd
 ##    NOTE: these come with conda and EPD, for isntance.
 
 netCDF4>=1.1.0            # requires netcdf-4 binaries and hdf5
-gdal
+# gdal
 
 

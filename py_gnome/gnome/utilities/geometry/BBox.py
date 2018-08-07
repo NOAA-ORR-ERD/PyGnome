@@ -1,6 +1,9 @@
 """
 A Bounding Box object and assorted utilities , subclassed from a numpy array
 
+FIXME: The constructor functions should be class methods.
+       It would be good to PEP8 the method names.
+
 """
 import numpy as np
 

@@ -5,20 +5,22 @@ import numpy as np
 
 from colander import (SchemaNode, MappingSchema, Bool, drop)
 
-from gnome.persist.validators import convertible_to_seconds
-from gnome.persist.extend_colander import LocalDateTime
+from gnome import AddLogger
 
 from gnome.basic_types import (world_point,
                                world_point_type,
                                spill_type,
                                status_code_type)
 
-from gnome.utilities import inf_datetime
-from gnome.utilities import time_utils, serializable
-from gnome.cy_gnome.cy_rise_velocity_mover import CyRiseVelocityMover
-from gnome import AddLogger
-from gnome.utilities.inf_datetime import InfTime, MinusInfTime
 from gnome.utilities.projections import FlatEarthProjection
+from gnome.utilities import time_utils, serializable
+from gnome.utilities.inf_datetime import InfDateTime, InfTime, MinusInfTime
+
+from gnome.persist.validators import convertible_to_seconds
+from gnome.persist.extend_colander import LocalDateTime
+
+
+from gnome.cy_gnome.cy_rise_velocity_mover import CyRiseVelocityMover
 
 
 class ProcessSchema(MappingSchema):
@@ -62,10 +64,8 @@ class Process(AddLogger):
         self.on = kwargs.pop('on', True)  # turn the mover on / off for the run
         self._active = self.on  # initial value
 
-        active_start = kwargs.pop('active_start',
-                                  inf_datetime.InfDateTime('-inf'))
-        active_stop = kwargs.pop('active_stop',
-                                 inf_datetime.InfDateTime('inf'))
+        active_start = kwargs.pop('active_start', InfDateTime('-inf'))
+        active_stop = kwargs.pop('active_stop', InfDateTime('inf'))
 
         self._check_active_startstop(active_start, active_stop)
 
@@ -162,6 +162,12 @@ class Process(AddLogger):
         """
         pass
 
+    def post_model_run(self):
+        """
+        Override this method if a derived class needs to perform
+        any actions after a model run is complete (StopIteration triggered)
+        """
+        pass
 
 class Mover(Process):
     def get_move(self, sc, time_step, model_time_datetime):
@@ -200,7 +206,7 @@ class PyMover(Mover):
 
         if 'env' in kwargs:
             if hasattr(self, '_req_refs'):
-                for k, v in self._req_refs.items():
+                for k, in self._req_refs:
                     for o in kwargs['env']:
                         if k in o._ref_as:
                             setattr(self, k, o)
@@ -360,7 +366,7 @@ class CyMover(Mover):
                        '\tMover: {} of type {}\n'
                        '\tError: {}'
                        .format(model_time_datetime,
-                               self.real_data_start, self.real_data_stop,
+                               self.data_start, self.data_stop,
                                self.name, self.__class__,
                                str(e)))
 

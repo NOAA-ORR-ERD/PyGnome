@@ -21,18 +21,23 @@ from gnome.cy_gnome.cy_component_mover import CyComponentMover
 
 from gnome.utilities.serializable import Serializable, Field
 from gnome.utilities.time_utils import sec_to_datetime
-
-from gnome.environment import Tide, TideSchema, Wind, WindSchema
-from gnome.movers import CyMover, ProcessSchema
+from gnome.utilities.inf_datetime import InfTime, MinusInfTime
 
 from gnome.persist.base_schema import ObjType, WorldPoint
 from gnome.persist.validators import convertible_to_seconds
 from gnome.persist.extend_colander import LocalDateTime
 
+from gnome.environment import Tide, TideSchema, Wind, WindSchema
+from gnome.movers import CyMover, ProcessSchema
+
 
 class CurrentMoversBaseSchema(ObjType, ProcessSchema):
     uncertain_duration = SchemaNode(Float(), missing=drop)
     uncertain_time_delay = SchemaNode(Float(), missing=drop)
+    data_start = SchemaNode(LocalDateTime(), missing=drop,
+                            validator=convertible_to_seconds)
+    data_stop = SchemaNode(LocalDateTime(), missing=drop,
+                           validator=convertible_to_seconds)
 
 
 class CurrentMoversBase(CyMover):
@@ -156,7 +161,10 @@ class CatsMover(CurrentMoversBase, Serializable):
     _state.add_field([Field('filename', save=True, read=True, isdatafile=True,
                             test_for_eq=False),
                       Field('tide', save=True, update=True,
-                            save_reference=True)])
+                            save_reference=True),
+                      Field('data_start', read=True),
+                      Field('data_stop', read=True),
+                      ])
 
     _schema = CatsMoverSchema
 
@@ -322,6 +330,20 @@ class CatsMover(CurrentMoversBase, Serializable):
 
         self._tide = tide_obj
 
+    @property
+    def data_start(self):
+        if self.tide is not None:
+            return self.tide.data_start
+        else:
+            return MinusInfTime()
+
+    @property
+    def data_stop(self):
+        if self.tide is not None:
+            return self.tide.data_stop
+        else:
+            return InfTime()
+
     def get_grid_data(self):
         """
             Invokes the GetToplogyHdl method of TriGridVel_c object
@@ -480,10 +502,6 @@ class GridCurrentMover(CurrentMoversBase, Serializable):
         self.mover.text_read(filename, topology_file)
         self.mover.extrapolate_in_time(extrapolate)
         self.mover.offset_time(time_offset * 3600.)
-
-        if type(self) != CurrentCycleMover:
-            self.real_data_start = sec_to_datetime(self.mover.get_start_time())
-            self.real_data_stop = sec_to_datetime(self.mover.get_end_time())
 
         self.num_method = num_method
 
