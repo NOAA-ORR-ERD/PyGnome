@@ -1072,12 +1072,12 @@ def test_staggered_spills_weathering(sample_model_fcn, delay):
     assert np.isclose(exp_total_mass, sc.mass_balance['amount_released'])
 
 
-@pytest.mark.parametrize(("s0", "s1"),
-                         [(test_oil, test_oil),
-                          (test_oil, "ARABIAN MEDIUM, EXXON")
-                          ])
-def test_two_substance_spills_weathering(sample_model_fcn, s0, s1):
+def test_two_substance_same(sample_model_fcn, s0=test_oil, s1=test_oil):
     '''
+    The model (SpillContainer) does not allow two different substances.
+
+    Keeping this test in case we do want to extend it some day.
+
     only tests data arrays are correct and we don't end up with stale data
     in substance_data structure of spill container. It models each substance
     independently
@@ -1100,7 +1100,14 @@ def test_two_substance_spills_weathering(sample_model_fcn, s0, s1):
                                   element_type=et,
                                   amount=1,
                                   units='tonnes')
-    model.spills += cs
+
+    if s0 == s1:
+        print "substances are the same -- it should work"
+        model.spills += cs
+    else:
+        print "two different substances -- expect an error"
+        with pytest.raises(ValueError):
+            model.spills += cs
 
     # ensure amount released is equal to exp_total_mass
     exp_total_mass = 0.0
@@ -1145,6 +1152,39 @@ def test_two_substance_spills_weathering(sample_model_fcn, s0, s1):
         print "completed step {0}".format(step)
 
     assert np.isclose(exp_total_mass, sc.mass_balance['amount_released'])
+
+
+def test_two_substance_different(sample_model_fcn, s0=test_oil, s1="ARABIAN MEDIUM, EXXON"):
+    '''
+    The model (SpillContainer) does not allow two different substances.
+
+    Keeping this test in case we do want to extend it some day.
+
+    only tests data arrays are correct and we don't end up with stale data
+    in substance_data structure of spill container. It models each substance
+    independently
+
+    We don't accurately model two oils at present. This is a basic test,
+    maybe a useful example when extending code to multiple oils. It is also
+    useful for catching bugs when doing a refactor so leave it in.
+    '''
+    model = sample_model_weathering(sample_model_fcn, s0)
+    model.map = gnome.map.GnomeMap()    # make it all water
+    model.uncertain = False
+    rel_time = model.spills[0].release_time
+    model.duration = timedelta(days=1)
+
+    et = floating(substance=s1)
+    cs = point_line_release_spill(500, (0, 0, 0),
+                                  rel_time,
+                                  end_release_time=(rel_time +
+                                                    timedelta(hours=1)),
+                                  element_type=et,
+                                  amount=1,
+                                  units='tonnes')
+
+    with pytest.raises(ValueError):
+        model.spills += cs
 
 
 def test_weathering_data_attr():
@@ -1254,8 +1294,10 @@ class TestMergeModels:
         m = Model()
         m.environment += [Water(), constant_wind(1., 0.)]
         m.weatherers += Evaporation(m.environment[0], m.environment[-1])
+        # has to have the same substance as the sample model
         m.spills += point_line_release_spill(10, (0, 0, 0),
-                                             datetime(2014, 1, 1, 12, 0))
+                                             datetime(2014, 1, 1, 12, 0),
+                                             substance=test_oil)
 
         # create save model
         sample_save_file = os.path.join(saveloc_, 'SampleSaveModel.zip')
