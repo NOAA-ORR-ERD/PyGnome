@@ -77,7 +77,7 @@ class WeatheringData(Weatherer, Serializable):
 
     def initialize_data(self, sc, num_released):
         '''
-        If on is False, then arrays should not be included - dont' initialize
+        If on is False, then arrays should not be included - don't initialize
 
         1. initialize all weathering data arrays
         2. update aggregated data in sc.mass_balance dict
@@ -86,7 +86,7 @@ class WeatheringData(Weatherer, Serializable):
             return
 
         for substance, data in sc.itersubstancedata(self.array_types,
-                                                    fate='all'):
+                                                    fate_status='all'):
             'update properties only if elements are released'
             if len(data['density']) == 0:
                 continue
@@ -100,7 +100,7 @@ class WeatheringData(Weatherer, Serializable):
             if np.any(new_LEs_mask):
                 self._init_new_particles(new_LEs_mask, data, substance)
 
-        sc.update_from_fatedataview(fate='all')
+        sc.update_from_fatedataview(fate_status='all')
 
         # also initialize/update aggregated data
         self._aggregated_data(sc, num_released)
@@ -119,7 +119,7 @@ class WeatheringData(Weatherer, Serializable):
         water_rho = self.water.get('density')
 
         for substance, data in sc.itersubstancedata(self.array_types,
-                                                    fate='all'):
+                                                    fate_status='all'):
             'update properties only if elements are released'
             if len(data['density']) == 0:
                 continue
@@ -170,7 +170,7 @@ class WeatheringData(Weatherer, Serializable):
                 data['oil_viscosity'] = (v0 *
                                      np.exp(kv1 * data['frac_lost']) )
 
-        sc.update_from_fatedataview(fate='all')
+        sc.update_from_fatedataview(fate_status='all')
 
         # also initialize/update aggregated data
         self._aggregated_data(sc, 0)

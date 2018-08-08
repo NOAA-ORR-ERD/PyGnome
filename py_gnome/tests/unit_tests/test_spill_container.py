@@ -198,6 +198,13 @@ def test_multiple_spills(uncertain):
     assert_dataarray_shape_size(sc)
 
 
+def test_no_spills():
+    """ if there are no spills, the substance should be None"""
+    sc = SpillContainer()
+    sc.prepare_for_model_run()
+    assert sc.substance is None
+
+
 def test_rewind():
     """
     Test rewinding spill containter rewinds the spills.
@@ -1127,7 +1134,8 @@ class TestSubstanceSpillsDataStructure():
         'test iterators work without any spills'
         sc = SpillContainer()
         assert len(sc.iterspillsbysubstance()) == 0
-        assert len(sc.get_substances()) == 0
+        assert len(sc.get_substances()) == 1
+        assert len(sc.get_substances(complete=False)) == 0
 
     def test_no_substance(self):
         '''
@@ -1142,7 +1150,8 @@ class TestSubstanceSpillsDataStructure():
                             element_type=floating(substance=None),
                             name='spill1')]
         assert len(sc.itersubstancedata('mass')) == 0
-        assert len(sc.get_substances()) == 0
+        assert len(sc.get_substances()) == 1
+        assert len(sc.get_substances(complete=False)) == 0
 
         # iterspillsbysubstance() iterates through all the spills associated
         # with each substance including the spills where substance is None

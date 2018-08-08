@@ -1259,6 +1259,7 @@ class TestMergeModels:
 
         # create save model
         sample_save_file = os.path.join(saveloc_, 'SampleSaveModel.zip')
+        print "save file in:", sample_save_file
         model.save(saveloc_, name='SampleSaveModel.zip')
 
         if os.path.exists(sample_save_file):

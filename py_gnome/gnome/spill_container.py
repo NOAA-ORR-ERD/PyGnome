@@ -417,6 +417,7 @@ class SpillContainer(AddLogger, SpillContainerData):
         self._array_types = default_array_types.copy()
         self._data_arrays = {}
 
+
     def _reset__substances_spills(self):
         ## Most of this not needed
         '''
@@ -431,7 +432,7 @@ class SpillContainer(AddLogger, SpillContainerData):
         '''
         # Initialize following either the first time it is used or in
         # prepare_for_model_run() -- it could change with each new spill
-        # self.substance = None
+        self.substance = None
 
         # self._substances_spills = None
         self._oil_comp_array_len = 1
@@ -441,7 +442,7 @@ class SpillContainer(AddLogger, SpillContainerData):
         # 'fate_status' is included if weathering is on
         self._fate_data_view = FateDataView()
 
-    def reset_fate_data_view(self):
+    def reset_fate_dataview(self):
         '''
         reset data arrays for each fate_dataviewer. Each substance that is not
         None has a fate_dataviewer object.
@@ -487,7 +488,8 @@ class SpillContainer(AddLogger, SpillContainerData):
             ## fixme -- is this needed for Non-substance?
             self._oil_comp_array_len = 1
 
-        self.substance = substance
+        # it will be False if there are no spills
+        self.substance = None if substance is False else substance
 
         #     new_subs = spill.substance
         #     if new_subs in subs:
@@ -690,8 +692,6 @@ class SpillContainer(AddLogger, SpillContainerData):
         substance, these will be returned
         '''
         # fixme -- totally unneccesary??
-        # print "in iterspillsbysubstance"
-        # print self._substances_spills
         # if self._substances_spills is None:
         #     self._set_substancespills()
         return self.spills
@@ -723,7 +723,7 @@ class SpillContainer(AddLogger, SpillContainerData):
             return []
         else:
             data = self._fate_data_view.get_data(self, array_types, fate_status)
-            return (self.substance, data)
+            return [(self.substance, data)]
 
         # if self._substances_spills is None:
         #     self._set_substancespills()
@@ -734,7 +734,7 @@ class SpillContainer(AddLogger, SpillContainerData):
 
     def update_from_fatedataview(self,
                                  # substance=None,
-                                 fate='surface_weather'):
+                                 fate_status='surface_weather'):
         '''
         let's only update the arrays that were changed
         only update if a copy of 'data' exists.
@@ -755,7 +755,7 @@ class SpillContainer(AddLogger, SpillContainerData):
         only one substance...
         """
         if self.substance is None:
-            return []
+            return [None] if complete else []
         else:
             return [self.substance]
 
@@ -823,12 +823,13 @@ class SpillContainer(AddLogger, SpillContainerData):
         for spill in self.spills:
             spill.rewind()
         # create a full set of zero-sized arrays. If we rewound, something
-        # must have changed so let's get back to default _array_types
+        # may have changed so let's get back to default _array_types
         self._reset_arrays()
         self._reset__substances_spills()
         self._reset__fate_data_view()
+        self._set_substancespills()
         self.initialize_data_arrays()
-        self.mass_balance = {}  # reset to empty array
+        self.mass_balance = {}  # reset to empty dict
 
     def get_spill_mask(self, spill):
         return self['spill_num'] == self.spills.index(spill)
@@ -897,12 +898,13 @@ class SpillContainer(AddLogger, SpillContainerData):
 
         # 'substance' data_array may have been added so initialize after
         # _set_substancespills() is invoked
-        self._set_substancespills
+        self._set_substancespills()
         self.initialize_data_arrays()
 
-        # todo: maybe better to let map do this, but it does not have a
-        # prepare_for_model_run() yet so can't do it there
-        # need 'amount_released' here as well
+        # fixme: maybe better to let map do this, but it does not have a
+        #       prepare_for_model_run() yet so can't do it there
+        #       need 'amount_released' here as well
+        #       better to have one place where mass_balance is initialized.
         self.mass_balance['beached'] = 0.0
         self.mass_balance['off_maps'] = 0.0
 
@@ -944,7 +946,6 @@ class SpillContainer(AddLogger, SpillContainerData):
                 continue
             num_rel = spill.num_elements_to_release(model_time, time_step)
             if num_rel > 0:
-                print "setting arrays"
                 # update 'spill_num' ArrayType's initial_value so it
                 # corresponds with spill number for this set of released
                 # particles - just another way to set value of spill_num
@@ -975,7 +976,7 @@ class SpillContainer(AddLogger, SpillContainerData):
                 total_rel += num_rel
 
         # reset fate_data_view at each step - do it after release elements
-        self.reset_fate_data_view()
+        self.reset_fate_dataview()
         return total_rel
 
         # substance index - used label elements from same substance
@@ -1025,7 +1026,7 @@ class SpillContainer(AddLogger, SpillContainerData):
         #     self._set_substance_array(ix, num_rel_by_substance)
 
         #     # reset fate_data_view at each step - do it after release elements
-        #     self.reset_fate_data_view()
+        #     self.reset_fate_dataview()
 
         #     # update total elements released for substance
         #     total_released += num_rel_by_substance

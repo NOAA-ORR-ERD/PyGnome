@@ -173,7 +173,9 @@ def assert_helper(sc, new_p):
     total_mass = sum([spill.get_mass('kg') for spill in sc.spills])
     arrays = {'evap_decay_constant', 'mass_components', 'mass', 'status_codes'}
 
-    for substance, data in sc.itersubstancedata(arrays):
+    substances_list = sc.itersubstancedata(arrays)
+    print substances_list
+    for substance, data in substances_list:
         if len(sc) > new_p:
             old_le = len(sc) - new_p
             inwater = data['status_codes'][:old_le] == oil_status.in_water
