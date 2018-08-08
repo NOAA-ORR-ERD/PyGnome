@@ -75,7 +75,7 @@ class OrderedCollection(object):
             return self._elems[self._d_index[ident]]
 
     def add(self, elem):
-        'Add an object to the collection '
+        'Add an object to the collection'
         if isinstance(elem, self.dtype):
             l__id = self._s_id(elem)
 
@@ -86,17 +86,24 @@ class OrderedCollection(object):
                 # fire add event only if elem is not already in the list
                 self.fire_event('add', elem)
         else:
-            # assume its an iterable list/tuple of items to be added
+            # assume it's an iterable of items to be added
             try:
                 for e in elem:
                     if not isinstance(e, self.dtype):
-                        raise
+                        raise TypeError('{0}:\n'
+                                        'Expected: {1!r}\n'
+                                        'Got: {2!r}\n of type: {3}'.format(self.__class__.__name__,
+                                                                           self.dtype,
+                                                                           e,
+                                                                           type(e)))
                     self.add(e)
-            except:
-                raise TypeError('{0}: expected {1!r}, '
-                                'got {2!r}'.format(self.__class__.__name__,
-                                                   self.dtype,
-                                                   elem))
+            except TypeError:
+                raise TypeError('{0}:\n'
+                                'Expected: {1!r} or an iterable of {1}.\n'
+                                'Got: {2!r}\n of type: {3}'.format(self.__class__.__name__,
+                                                                   self.dtype,
+                                                                   elem,
+                                                                   type(elem)))
 
     def append(self, elem):
         self.add(elem)
