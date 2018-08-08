@@ -42,7 +42,7 @@ class BaseOutputterSchema(base_schema.ObjTypeSchema):
         missing=drop , save=True, update=True
     )
     surface_conc = SchemaNode(
-        String(), missing=drop, save=True, update=True
+        String(allow_empty=True), save=True, update=True
     )
 
 

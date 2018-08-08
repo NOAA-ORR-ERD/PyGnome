@@ -147,7 +147,7 @@ class Test_GnomeMap:
                                (10, -10), (-10, -10)]}
         assert np.all(gmap.map_bounds != json_['map_bounds'])
         gmap.update_from_dict(json_)
-        assert gmap.map_bounds == json_['map_bounds']
+        assert np.all(gmap.map_bounds == json_['map_bounds'])
 
 
 class Test_ParamMap:

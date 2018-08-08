@@ -55,6 +55,7 @@ class PointLineReleaseSchema(BaseReleaseSchema):
         validator=convertible_to_seconds,
         save=True, update=True
     )
+    num_elements = SchemaNode(Int())
     num_per_timestep = SchemaNode(
         Int(), missing=drop, save=True, update=True
     )
@@ -79,6 +80,7 @@ class ContinuousReleaseSchema(BaseReleaseSchema):
         validator=convertible_to_seconds,
         save=True, update=True
     )
+    num_elements = SchemaNode(Int())
     num_per_timestep = SchemaNode(
         Int(), missing=drop, save=True, update=True
     )

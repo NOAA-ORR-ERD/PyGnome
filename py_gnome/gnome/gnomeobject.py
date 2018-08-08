@@ -352,7 +352,8 @@ class GnomeId(AddLogger):
                     raise AttributeError('Failed to set {0} on {1} to {2}'.format(k, self, v))
         return updated
 
-    update = update_from_dict
+    def update(self, *args, **kwargs): #name alias only, do not override!
+        return self.update_from_dict(*args, **kwargs)
 
     def _attr_changed(self, current_value, received_value):
         '''
@@ -643,7 +644,7 @@ class GnomeId(AddLogger):
                     #no filename, so search archive
                     for fn in saveloc.namelist():
                         if fn.endswith('.json'):
-                            with saveloc.open(filename, 'rU') as fp:
+                            with saveloc.open(fn, 'rU') as fp:
                                 json_ = json.load(fp)
                             if 'obj_type' in json_:
                                 if class_from_objtype(json_['obj_type']) is cls:
@@ -661,18 +662,18 @@ class GnomeId(AddLogger):
                         return cls._schema().load(json_, saveloc=dir, refs=refs)
         elif isinstance(saveloc, zipfile.ZipFile):
             if filename:
-                fp = saveloc.open(filename, 'rU')
-                json_ = json.load(fp)
-                return cls._schema().load(json_, saveloc=saveloc, refs=refs)
+                with saveloc.open(filename, 'rU') as fp:
+                    json_ = json.load(fp)
+                    return cls._schema().load(json_, saveloc=saveloc, refs=refs)
             else:
                 #no filename, so search archive
                 for fn in saveloc.namelist():
                     if fn.endswith('.json'):
-                        fp = saveloc.open(fn, 'r')
-                        json_ = json.load(fp)
-                        if 'obj_type' in json_:
-                            if class_from_objtype(json_['obj_type']) is cls:
-                                return cls._schema().load(json_, saveloc=saveloc, refs=refs)
+                        with saveloc.open(fn, 'r') as fp:
+                            json_ = json.load(fp)
+                            if 'obj_type' in json_:
+                                if class_from_objtype(json_['obj_type']) is cls:
+                                    return cls._schema().load(json_, saveloc=saveloc, refs=refs)
                 raise ValueError('No .json file containing a {0} found in archive {1}'.format(cls.__name__, saveloc))
         else:
             raise ValueError('saveloc was not a string path or an open zipfile.ZipFile object')

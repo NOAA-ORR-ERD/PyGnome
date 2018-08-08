@@ -112,9 +112,9 @@ class ObjType(SchemaType):
         try:
             if hasattr(value, 'to_dict'):
                 dict_ = value.to_dict('webapi')
-                for k in dict_.keys():
-                    if dict_[k] is None:
-                        dict_[k] = null
+#                 for k in dict_.keys():
+#                     if dict_[k] is None:
+#                         dict_[k] = null
             else:
                 raise TypeError('Object does not have a to_dict function')
         except Exception as e:
@@ -148,9 +148,6 @@ class ObjType(SchemaType):
                     return subnode.serialize(subappstruct, options=options)
             except TypeError as e:
                 if 'unexpected keyword argument' in e.message:
-                    if isinstance(subnode, ObjTypeSchema):
-                        import pdb
-                        pdb.set_trace()
                     return subnode.serialize(subappstruct)
                 else:
                     raise e
@@ -609,14 +606,14 @@ class ObjTypeSchema(MappingSchema):
         if ((node.schema_type is Sequence or
              node.schema_type is OrderedCollectionType) and
              isinstance(node.children[0], ObjTypeSchema)):
-            [ObjTypeSchema.register_refs(node.children[0], subitem, refs) for subitem in subappstruct]
-        if not isinstance(node, ObjTypeSchema):
+            [subitem._schema.register_refs(subitem._schema(), subitem, refs) for subitem in subappstruct]
+        if not isinstance(node, ObjTypeSchema) or subappstruct is None:
             return
         if subappstruct.id not in refs:
             refs[subappstruct.id] = subappstruct
         names = node.get_nodes_by_attr('all')
         for n in names:
-            ObjTypeSchema.register_refs(node.get(n), getattr(subappstruct, n), refs)
+            subappstruct._schema.register_refs(subappstruct._schema().get(n), getattr(subappstruct, n), refs)
 
     @staticmethod
     def process_subnode(subnode, appstruct, subappstruct, subname, cstruct, subcstruct, refs):

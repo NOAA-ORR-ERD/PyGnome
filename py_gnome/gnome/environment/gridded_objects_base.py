@@ -20,7 +20,7 @@ from gnome.utilities.inf_datetime import InfDateTime
 
 class TimeSchema(base_schema.ObjTypeSchema):
     filename = FilenameSchema(
-        isdatafile=True, test_equal=False
+        isdatafile=True, test_equal=False, update=False
     )
     varname = SchemaNode(
         String(), read_only=True
@@ -35,12 +35,12 @@ class TimeSchema(base_schema.ObjTypeSchema):
 class GridSchema(base_schema.ObjTypeSchema):
     name = SchemaNode(String(), test_equal=False) #remove this once gridded stops using _def_count
     filename = FilenameSchema(
-        isdatafile=True, test_equal=False
+        isdatafile=True, test_equal=False, update=False
     )
 
 class DepthSchema(base_schema.ObjTypeSchema):
     filename = FilenameSchema(
-        isdatafile=True, test_equal=False
+        isdatafile=True, test_equal=False, update=False
     )
 
 
@@ -55,10 +55,10 @@ class VariableSchemaBase(base_schema.ObjTypeSchema):
         save_reference=True
     )
     data_file = FilenameSchema(
-        isdatafile=True, test_equal=False
+        isdatafile=True, test_equal=False, update=False
     )
     grid_file = FilenameSchema(
-        isdatafile=True, test_equal=False
+        isdatafile=True, test_equal=False, update=False
     )
     extrapolation_is_allowed = SchemaNode(Boolean())
     data_start = SchemaNode(LocalDateTime(), read_only=True,

@@ -182,7 +182,7 @@ class PyWindMover(movers.PyMover):
             return
 
         if self.active:
-            random_with_persistance(sc['windage_range'][:, 0],
+            rand.random_with_persistance(sc['windage_range'][:, 0],
                                     sc['windage_range'][:, 1],
                                     sc['windages'],
                                     sc['windage_persist'],
@@ -211,7 +211,7 @@ class PyWindMover(movers.PyMover):
             status = sc['status_codes'] != oil_status.in_water
             pos = positions[:]
 
-            deltas = method(sc, time_step, model_time_datetime, pos, self.wind)
+            deltas = self.delta_method(num_method)(sc, time_step, model_time_datetime, pos, self.wind)
             deltas[:, 0] *= sc['windages'] * self.wind_scale
             deltas[:, 1] *= sc['windages'] * self.wind_scale
 

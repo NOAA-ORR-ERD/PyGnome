@@ -328,11 +328,11 @@ def test_serialize_deserialize():
 def test_standard_density():
     et = floating()
     dict_ = et.serialize()
-    assert dict_['standard_density'] == '1000.0'
+    assert dict_['standard_density'] == 1000.0
 
     et = floating(substance=oil)
     dict_ = et.serialize()
-    assert dict_['standard_density'] == "{:.1f}".format(et.substance.density_at_temp(288.15))
+    assert dict_['standard_density'] == et.substance.density_at_temp(288.15)
 
 
 @pytest.mark.parametrize(("test_obj"), test_l)

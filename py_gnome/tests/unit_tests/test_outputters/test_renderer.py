@@ -368,7 +368,6 @@ def test_serialize_deserialize(output_dir):
                  )
 
     toserial = r.serialize()
-    print "surface_conc:", toserial["surface_conc"]
 
     r2 = Renderer.deserialize(toserial)
 

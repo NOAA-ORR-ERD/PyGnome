@@ -28,9 +28,6 @@ def test_exceptions():
         'bad file'
         ComponentMover(os.path.join('./', 'NW30ktwinds.CURX'))
 
-    with pytest.raises(TypeError):
-        ComponentMover(curr1_file, wind=10)
-
 
 num_le = 3
 start_pos = (-75.262319, 39.142987, 0)

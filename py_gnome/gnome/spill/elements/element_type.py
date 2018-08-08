@@ -28,6 +28,7 @@ from gnome.gnomeobject import GnomeId
 from gnome.persist.base_schema import GeneralGnomeObjectSchema
 from gnome.spill.elements.initializers import (InitWindagesSchema,
                                                DistributionBaseSchema)
+from __builtin__ import True
 
 
 class ElementTypeSchema(base_schema.ObjTypeSchema):
@@ -185,28 +186,26 @@ class ElementType(GnomeId):
         dict_ = super(ElementType, self).to_dict(json_=json_)
         #append substance because no good schema exists for it
         if json_ != 'save':
-            dict_['substance'] = self.substance_to_dict()
+            if self.substance is None:
+                dict_['substance'] = None
+            else:
+                dict_['substance'] = self.substance_to_dict()
         else:
             if self.substance is not None:
                 dict_['substance'] = self.substance_to_dict()['name']
         return dict_
 
-    def serialize(self):
-        ser = GnomeId.serialize(self)
-        ser['substance'] = self.to_dict()['substance']
-        return ser
-
-    @classmethod
-    def deserialize(cls, json_):
-        obj = super(ElementType, cls).deserialize(json_)
-        if 'substance' in json_ and json_['substance'] is not None:
-            sub = json_['substance']
-            obj.substance = sub['name']
-        return obj
-
     @classmethod
     def load(cls, saveloc='.', filename=None, refs=None):
         return super(ElementType, cls).load(saveloc=saveloc, filename=filename, refs=refs)
+
+    def update_from_dict(self, dict_, refs=None):
+        rv = super(ElementType, self).update_from_dict(dict_, refs)
+        if 'substance' in dict_:
+            self.substance = dict_['substance']
+            rv = True
+        return rv
+
 
     def substance_to_dict(self):
         '''

@@ -171,38 +171,17 @@ class GnomeMap(GnomeId):
         '''
         return np.asarray(l_, dtype=np.float64).reshape(-1, 2)
 
-    def map_bounds_to_dict(self):
-        'convert numpy array to a list for serializing'
-        return self._attr_array_to_dict(self.map_bounds)
+    @property
+    def map_bounds(self):
+        return self._map_bounds
 
-    def map_bounds_update_from_dict(self, val):
-        'convert list of tuples back to numpy array'
-        new_arr = self._attr_from_list_to_array(val)
-
-        if np.any(self.map_bounds != new_arr):
-            self.map_bounds = new_arr
-            return True
-
-        return False
-
-    def spillable_area_to_dict(self):
-        'convert numpy array to a list for serializing'
-        return [poly.points.tolist() for poly in self.spillable_area]
-
-    def spillable_area_update_from_dict(self, poly_set):
-        'convert list of tuples back to numpy array'
-        # since metadata will not match, let's create a new PolygonSet,
-        # check equality on _PointsArray and update if not equal
-        ps = PolygonSet()
-        for poly in poly_set:
-            ps.append(poly)
-
-        if not np.array_equal(self.spillable_area._PointsArray,
-                              ps._PointsArray):
-            self.spillable_area = ps
-            return True
-
-        return False
+    @map_bounds.setter
+    def map_bounds(self, mb):
+        if mb is None:
+            mb = np.array(((-360, -90), (-360, 90),
+                           (360, 90), (360, -90)),
+                           dtype=np.float64)
+        self._map_bounds = np.array(mb)
 
     @property
     def spillable_area(self):
@@ -210,9 +189,9 @@ class GnomeMap(GnomeId):
 
     @spillable_area.setter
     def spillable_area(self, sa):
-        if sa is None or (isinstance(sa, list) and sa.length == 0):
-            sa = np.array(((-360, -90), (-360, 90),
-                           (360, 90), (360, -90)),
+        if sa is None or (isinstance(sa, list) and len(sa) == 0):
+            sa = np.array([[(-360, -90), (-360, 90),
+                           (360, 90), (360, -90)]],
                            dtype=np.float64)
         if isinstance(sa, PolygonSet):
             self._spillable_area = sa
