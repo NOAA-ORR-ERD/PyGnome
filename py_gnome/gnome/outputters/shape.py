@@ -31,7 +31,8 @@ class ShapeOutput(Outputter):
 
     time_formatter = '%m/%d/%Y %H:%M'
 
-    def __init__(self, filename, zip_output=True, surface_conc="kde", **kwargs):
+    def __init__(self, filename, zip_output=True, surface_conc="kde",
+                 **kwargs):
         '''
         :param str output_dir=None: output directory for shape files
 
@@ -47,7 +48,7 @@ class ShapeOutput(Outputter):
 
         self.zip_output = zip_output
 
-        super(ShapeOutput, self).__init__(surface_conc=surface_conc,**kwargs)
+        super(ShapeOutput, self).__init__(surface_conc=surface_conc, **kwargs)
 
     def prepare_for_model_run(self,
                               model_start_time,
@@ -112,7 +113,7 @@ class ShapeOutput(Outputter):
             w.field('Depth', 'N')
             w.field('Mass', 'N')
             w.field('Age', 'N')
-            w.field('Surf_Conc','F',10,5)
+            w.field('Surf_Conc', 'F', 10, 5)
             w.field('Status_Code', 'N')
 
             if sc.uncertain:
@@ -128,60 +129,11 @@ class ShapeOutput(Outputter):
         if not self.on or not self._write_step:
             return None
 
-        uncertain = False
-
         for sc in self.cache.load_timestep(step_num).items():
-            curr_time = sc.current_time_stamp
+            self._record_shape_entries(sc)
 
-            if sc.uncertain:
-                uncertain = True
-
-                for k, p in enumerate(sc['positions']):
-                    self.w_u.point(p[0], p[1])
-                    self.w_u.record(curr_time.strftime('%Y-%m-%dT%H:%M:%S'),
-                                    sc['id'][k],
-                                    p[2],
-                                    sc['mass'][k],
-                                    sc['age'][k],
-                                    0.0,
-                                    sc['status_codes'][k])
-            else:
-                for k, p in enumerate(sc['positions']):
-                    self.w.point(p[0], p[1])
-                    self.w.record(curr_time.strftime('%Y-%m-%dT%H:%M:%S'),
-                                  sc['id'][k],
-                                  p[2],
-                                  sc['mass'][k],
-                                  sc['age'][k],
-                                  sc['surface_concentration'][k],
-                                  sc['status_codes'][k])
-
-        if islast_step:  # now we really write the files:
-            if uncertain:
-                shapefilenames = [self.filename, self.filename + '_uncert']
-            else:
-                shapefilenames = [self.filename]
-
-            for fn in shapefilenames:
-                if uncertain:
-                    self.w_u.save(fn)
-                else:
-                    self.w.save(fn)
-
-                prj_file = open("%s.prj" % fn, "w")
-                prj_file.write(self.epsg)
-                prj_file.close()
-
-                if self.zip_output is True:
-                    zfilename = fn + '.zip'
-                    zipf = zipfile.ZipFile(zfilename, 'w')
-
-                    for suf in ['shp', 'prj', 'dbf', 'shx']:
-                        f = os.path.split(fn)[-1] + '.' + suf
-                        zipf.write(os.path.join(self.filedir, f), arcname=f)
-                        os.remove(fn + '.' + suf)
-
-                    zipf.close()
+            if islast_step:
+                self._save_and_archive_shapefiles(sc)
 
         if self.zip_output is True:
             output_filename = self.filename + '.zip'
@@ -192,6 +144,64 @@ class ShapeOutput(Outputter):
                        'output_filename': output_filename}
 
         return output_info
+
+    def _record_shape_entries(self, sc):
+        curr_time = sc.current_time_stamp
+        writer = self._get_shape_writer(sc)
+
+        for k, p in enumerate(sc['positions']):
+            writer.point(p[0], p[1])
+
+            if sc.uncertain:
+                writer.record(curr_time.strftime('%Y-%m-%dT%H:%M:%S'),
+                              sc['id'][k],
+                              p[2],
+                              sc['mass'][k],
+                              sc['age'][k],
+                              0.0,
+                              sc['status_codes'][k])
+            else:
+                writer.record(curr_time.strftime('%Y-%m-%dT%H:%M:%S'),
+                              sc['id'][k],
+                              p[2],
+                              sc['mass'][k],
+                              sc['age'][k],
+                              sc['surface_concentration'][k],
+                              sc['status_codes'][k])
+
+    def _get_shape_writer(self, spill_container):
+        if spill_container.uncertain:
+            return self.w_u
+        else:
+            return self.w
+
+    def _save_and_archive_shapefiles(self, sc):
+        writer = self._get_shape_writer(sc)
+
+        if sc.uncertain:
+            filename = self.filename + '_uncert'
+        else:
+            filename = self.filename
+
+        writer.save(filename)
+
+        prj_file = open('{}.prj'.format(filename), "w")
+        prj_file.write(self.epsg)
+        prj_file.close()
+
+        if self.zip_output is True:
+            zfilename = filename + '.zip'
+            zipf = zipfile.ZipFile(zfilename, 'w')
+
+            for suf in ['shp', 'prj', 'dbf', 'shx']:
+                file_to_zip = os.path.split(filename)[-1] + '.' + suf
+
+                zipf.write(os.path.join(self.filedir, file_to_zip),
+                           arcname=file_to_zip)
+
+                os.remove(filename + '.' + suf)
+
+            zipf.close()
 
     def rewind(self):
         '''

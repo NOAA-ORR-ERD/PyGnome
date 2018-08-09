@@ -58,7 +58,7 @@ def test_sort_order():
     assert weatherer_sort(diss) < weatherer_sort(weathering_data)
 
 @pytest.mark.skipif(reason="serialization for weatherers overall needs review")
-def test__deseriailize():
+def test__deserialize():
     'test serialize/deserialize for webapi'
     wind = constant_wind(15., 0)
     water = Water()
@@ -108,9 +108,12 @@ def test_dissolution_k_ow(oil, temp, num_elems, k_ow, on):
     '''
         Here we are testing that the molar averaged oil/water partition
         coefficient (K_ow) is getting calculated with reasonable values
+        Note: for now droplets are calculated in natural dispersion so 
+        natural dispersion is required for the dissolution algorithm
     '''
     et = floating(substance=oil)
     diss = Dissolution(waves, wind)
+    disp = NaturalDispersion(waves, water)
     (sc, time_step) = weathering_data_arrays(diss.array_types,
                                              water,
                                              element_type=et,
@@ -125,11 +128,16 @@ def test_dissolution_k_ow(oil, temp, num_elems, k_ow, on):
     model_time = (sc.spills[0].release_time +
                   timedelta(seconds=time_step))
 
+    disp.on = on
     diss.on = on
+    disp.prepare_for_model_run(sc)
     diss.prepare_for_model_run(sc)
+    disp.initialize_data(sc, sc.num_released)
     diss.initialize_data(sc, sc.num_released)
 
+    disp.prepare_for_model_step(sc, time_step, model_time)
     diss.prepare_for_model_step(sc, time_step, model_time)
+    disp.weather_elements(sc, time_step, model_time)
     diss.weather_elements(sc, time_step, model_time)
 
     assert all(np.isclose(sc._data_arrays['partition_coeff'], k_ow))
@@ -414,7 +422,7 @@ def test_full_run_no_evap(sample_model_fcn2, oil, temp, expected_balance):
 
 def test_full_run_dissolution_not_active(sample_model_fcn):
     'no water/wind/waves object and no evaporation'
-    model = sample_model_weathering(sample_model_fcn, 'oil_6')
+    model = sample_model_weathering(sample_model_fcn, 'oil_4')
     model.environment += [Water(288.7), wind,  waves]
     model.weatherers += Evaporation()
     model.weatherers += NaturalDispersion()

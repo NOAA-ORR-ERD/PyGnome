@@ -223,14 +223,20 @@ class WeatheringData(Weatherer):
         # todo: remove fate_status and add 'surface' to status_codes. LEs
         # marked to be skimmed, burned, dispersed will also be marked as
         # 'surface' so following can get cleaned up.
-        sc.mass_balance['floating'] = \
-            (sc['mass'][sc['fate_status'] == fate.surface_weather].sum() +
-             sc['mass'][sc['fate_status'] == fate.non_weather].sum() -
-             sc['mass'][sc['status_codes'] == oil_status.on_land].sum() -
-             sc['mass'][sc['status_codes'] == oil_status.to_be_removed].sum() +
-             sc['mass'][sc['fate_status'] & fate.skim == fate.skim].sum() +
-             sc['mass'][sc['fate_status'] & fate.burn == fate.burn].sum() +
-             sc['mass'][sc['fate_status'] & fate.disperse == fate.disperse].sum())
+        # fixme: refactor to build up the mask, and then apply it.
+        # sc.mass_balance['floating'] = \
+        #     (sc['mass'][sc['fate_status'] == fate.surface_weather].sum() +
+        #      sc['mass'][sc['fate_status'] == fate.non_weather].sum() -
+        #      sc['mass'][sc['status_codes'] == oil_status.on_land].sum() -
+        #      sc['mass'][sc['status_codes'] == oil_status.to_be_removed].sum() +
+        #      sc['mass'][sc['fate_status'] & fate.skim == fate.skim].sum() +
+        #      sc['mass'][sc['fate_status'] & fate.burn == fate.burn].sum() +
+        #      sc['mass'][sc['fate_status'] & fate.disperse == fate.disperse].sum())
+
+        on_surface = ((sc['status_codes'] == oil_status.in_water) &
+                      (sc['positions'][:,2] == 0.0))
+
+        sc.mass_balance['floating'] = sc['mass'][on_surface].sum()
 
         # add 'non_weathering' key if any mass is released for nonweathering
         # particles.
