@@ -6,6 +6,7 @@ import datetime
 
 import numpy as np
 import six
+import os
 
 from colander import (Float, DateTime, Sequence, Tuple, List,
                       TupleSchema, SequenceSchema, null, SchemaNode, String, Invalid)
@@ -217,6 +218,15 @@ class FilenameSchema(SequenceSchema):
     def __init__(self, *args, **kwargs):
         kwargs['typ'] = Sequence(accept_scalar=True)
         super(FilenameSchema, self).__init__(SchemaNode(String()), *args, **kwargs)
+
+    def serialize(self, appstruct, options=None):
+        rv = super(FilenameSchema, self).serialize(appstruct)
+        if rv and options is not None:
+            if not options.get('raw_paths', True):
+                for i, filename in enumerate(rv):
+                    rv[i] = os.path.split(filename)[1]
+        if rv and len(rv) == 1:
+            return rv[0]
 
     def deserialize(self, cstruct):
         if cstruct is None or cstruct is null:

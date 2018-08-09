@@ -120,19 +120,19 @@ class ObjType(SchemaType):
         except Exception as e:
             raise e
             raise Invalid(node, '{0}" does not implement GnomeObj functionality: {1}'.format(value, e))
-        if options is not None:
-            if not options.get('raw_paths', True):
-                datafiles = node.get_nodes_by_attr('isdatafile')
-                for d in datafiles:
-                    if d in dict_:
-                        if dict_[d] is None:
-                            continue
-                        elif isinstance(dict_[d], six.string_types):
-                            dict_[d] = os.path.split(dict_[d])[1]
-                        elif isinstance(dict_[d], collections.Iterable):
-                            #List, tuple, etc
-                            for i, filename in enumerate(dict_[d]):
-                                dict_[d][i] = os.path.split(filename)[1]
+#         if options is not None:
+#             if not options.get('raw_paths', True):
+#                 datafiles = node.get_nodes_by_attr('isdatafile')
+#                 for d in datafiles:
+#                     if d in dict_:
+#                         if dict_[d] is None:
+#                             continue
+#                         elif isinstance(dict_[d], six.string_types):
+#                             dict_[d] = os.path.split(dict_[d])[1]
+#                         elif isinstance(dict_[d], collections.Iterable):
+#                             #List, tuple, etc
+#                             for i, filename in enumerate(dict_[d]):
+#                                 dict_[d][i] = os.path.split(filename)[1]
         return dict_
 
     def serialize(self, node, appstruct, options=None):
@@ -141,7 +141,8 @@ class ObjType(SchemaType):
 
         def callback(subnode, subappstruct):
             try:
-                if subnode.schema_type is Sequence or subnode.schema_type is OrderedCollectionType:
+                if ((subnode.schema_type is Sequence or subnode.schema_type is OrderedCollectionType) and
+                    isinstance(subnode.children[0], ObjTypeSchema)):
                     scalar = hasattr(subnode.typ, 'accept_scalar') and subnode.typ.accept_scalar
                     return subnode.typ._impl(subnode, subappstruct, callback, scalar)
                 else:
@@ -164,6 +165,7 @@ class ObjType(SchemaType):
                 if id_ not in refs or id_ is None:
                     obj_type = class_from_objtype(value['obj_type'])
                     obj = obj_type.new_from_dict(value)
+                    node.register_refs(node, obj, refs)
                     if id_ is None:
                         id_ = obj.id
                     refs[id_] = obj

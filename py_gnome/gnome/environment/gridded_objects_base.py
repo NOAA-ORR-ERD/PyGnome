@@ -453,6 +453,13 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
                                      'depth': Depth,
                                      'variable': Variable})
 
+    @classmethod
+    def new_from_dict(cls, dict_, **kwargs):
+        if not dict_.get('variables', False):
+            return super(VectorVariable, cls).new_from_dict(cls.from_netCDF(**dict_).to_dict(), **kwargs)
+        else:
+            return super(VectorVariable, cls).new_from_dict(dict_, **kwargs)
+
     def get_data_vectors(self):
         '''
         return array of shape (time_slices, len_linearized_data,2)
