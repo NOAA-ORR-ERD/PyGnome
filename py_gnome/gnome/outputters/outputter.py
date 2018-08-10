@@ -151,7 +151,7 @@ class Outputter(GnomeId):
         if value is None:
             self._output_timestep = None
         else:
-            self._output_timestep = value.seconds
+            self._output_timestep = value.total_seconds()
 
     def prepare_for_model_run(self,
                               model_start_time=None,
@@ -303,15 +303,20 @@ class Outputter(GnomeId):
                              ' prior to calling write_output')
 
         # compute the surface_concentration if need be
-        # doing this here so that it will only happen if there is an output step
+        # doing this here so that it will only happen if there is an
+        # output step.
         # this updates the most recent one in the cache
-        if self._write_step and self.surface_conc and not self._surf_conc_computed:
+        if (self._write_step and
+                self.surface_conc and
+                not self._surf_conc_computed):
             # compute the surface concentration and put it in the cache
             try:
                 sc = self.cache.recent[step_num][0]  # only the certain one
-            except KeyError:  # not using the most recent one from cache
-                pass          # so no need to compute
-                              # fixme: it may not get into cache at all.
+            except KeyError:
+                # not using the most recent one from cache
+                # so no need to compute
+                # fixme: it may not get into cache at all.
+                pass
             else:
                 compute_surface_concentration(sc, self.surface_conc)
                 self._surf_conc_computed = True

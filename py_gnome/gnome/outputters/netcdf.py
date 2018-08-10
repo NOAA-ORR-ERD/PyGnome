@@ -268,8 +268,8 @@ class NetCDFOutput(Outputter):
                  netcdf_filename,
                  which_data='standard',
                  compress=True,
-                 # FIXME: this should not be default, but since we don't have a way for
-                 #        WebGNOME to set it yet..
+                 # FIXME: this should not be default, but since we don't have
+                 #        a way for WebGNOME to set it yet..
                  surface_conc="kde",
                  _middle_of_run=False,
                  _start_idx=0,
@@ -499,7 +499,8 @@ class NetCDFOutput(Outputter):
         # make sure they are all there
         to_remove = set()
         for var_name in self.arrays_to_output:
-            # fixme: -- is there a way to get the keys as a set so we don't have to loop?
+            # fixme: -- is there a way to get the keys as a set so we don't
+            # have to loop?
             if var_name not in sc and var_name not in self.special_arrays:
                 to_remove.add(var_name)
         self.arrays_to_output -= to_remove
@@ -609,7 +610,8 @@ class NetCDFOutput(Outputter):
                             else:
                                 y_sz = d_dims[sc[var_name].shape[1]]
                                 shape = ('data', y_sz)
-                                chunksz = (self._chunksize, sc[var_name].shape[1])
+                                chunksz = (self._chunksize,
+                                           sc[var_name].shape[1])
 
                     self._create_nc_var(rootgrp, var_name, dt, shape, chunksz)
 
@@ -773,7 +775,7 @@ class NetCDFOutput(Outputter):
         self._middle_of_run = False
         self._start_idx = 0
 
-    ##fixme: we should use the code in nc_particles for this!!!
+    # fixme: we should use the code in nc_particles for this!!!
     @classmethod
     def read_data(klass,
                   netcdf_file,
@@ -911,7 +913,8 @@ class NetCDFOutput(Outputter):
                     try:
                         arrays_dict[array_name] = data.variables[array_name][_start_ix:_stop_ix]
                     except KeyError:
-                        # it's OK if it's not there, not all standard_arrays will always be output
+                        # it's OK if it's not there, not all standard_arrays
+                        # will always be output
                         pass
 
             # get mass_balance

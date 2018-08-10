@@ -170,6 +170,7 @@ class TimeDelta(Float):
 
     def deserialize(self, *args, **kwargs):
         sec = super(TimeDelta, self).deserialize(*args, **kwargs)
+
         if sec is not null:
             return datetime.timedelta(seconds=sec)
         else:
