@@ -852,7 +852,11 @@ class ChemicalDispersion(CleanUpBase):
         self._set__timestep(time_step, model_time)
         if (sc['fate_status'] == bt_fate.disperse).sum() == 0:
             substance = self._get_substance(sc)
-            mass = sum([spill.get_mass() for spill in sc.spills])
+            #mass = sum([spill.get_mass() for spill in sc.spills])
+            mass = 0
+            for spill in sc.spills:
+                if spill.on:
+                    mass += spill.get_mass()
 
             # rm_total_mass_si = mass * self.fraction_sprayed
             rm_total_mass_si = mass * self.fraction_sprayed * self.efficiency

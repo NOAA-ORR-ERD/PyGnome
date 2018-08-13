@@ -119,6 +119,7 @@ class WeatheringData(Weatherer):
 
         water_rho = self.water.get('density')
 
+        #for substance, data in sc.itersubstancedata(self.array_types):
         for substance, data in sc.itersubstancedata(self.array_types,
                                                     fate='all'):
             'update properties only if elements are released'
@@ -171,6 +172,7 @@ class WeatheringData(Weatherer):
                 data['oil_viscosity'] = (v0 *
                                      np.exp(kv1 * data['frac_lost']) )
 
+        #sc.update_from_fatedataview()
         sc.update_from_fatedataview(fate='all')
 
         # also initialize/update aggregated data
