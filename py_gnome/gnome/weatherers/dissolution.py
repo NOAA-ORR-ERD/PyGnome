@@ -7,9 +7,7 @@ import contextlib
 
 import numpy as np
 
-import gnome  # required by deserialize
 
-from gnome.utilities.serializable import Serializable, Field
 from gnome.utilities.weathering import (BanerjeeHuibers, Stokes,
                                         DingFarmer, DelvigneSweeney,
                                         PiersonMoskowitz)
@@ -26,6 +24,10 @@ from .core import WeathererSchema
 from gnome.weatherers import Weatherer
 
 from pprint import PrettyPrinter
+from gnome.environment.waves import WavesSchema
+from gnome.persist.base_schema import GeneralGnomeObjectSchema
+from gnome.environment.wind import WindSchema
+from gnome.environment.gridded_objects_base import VectorVariableSchema
 pp = PrettyPrinter(indent=2, width=120)
 
 
@@ -37,12 +39,19 @@ def printoptions(*args, **kwargs):
     np.set_printoptions(**original)
 
 
-class Dissolution(Weatherer, Serializable):
-    _state = copy.deepcopy(Weatherer._state)
-    _state += [Field('waves', save=True, update=True, save_reference=True)]
-    _state += [Field('wind', save=True, update=True, save_reference=True)]
+class DissolutionSchema(WeathererSchema):
+    waves = WavesSchema(
+        save=True, update=True, save_reference=True
+    )
+    wind = GeneralGnomeObjectSchema(
+        acceptable_schemas=[WindSchema, VectorVariableSchema],
+        save=True, update=True, save_reference=True
+    )
 
-    _schema = WeathererSchema
+
+class Dissolution(Weatherer):
+
+    _schema = DissolutionSchema
 
     def __init__(self, waves=None, wind=None, **kwargs):
         '''

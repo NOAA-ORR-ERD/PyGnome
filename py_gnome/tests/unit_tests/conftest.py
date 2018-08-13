@@ -10,6 +10,7 @@ import os
 from datetime import datetime, timedelta
 import copy
 import shutil
+import collections
 
 import numpy as np
 
@@ -28,12 +29,84 @@ from gnome.movers import SimpleMover
 from gnome.environment import constant_wind, Water, Waves
 from gnome.utilities.remote_data import get_datafile
 import gnome.array_types as gat
+from gnome.gnomeobject import class_from_objtype, GnomeId
 
 
 base_dir = os.path.dirname(__file__)
 
 # test_oil = u'ALASKA NORTH SLOPE (MIDDLE PIPELINE)'
 test_oil = u'oil_ans_mp'
+
+def validate_serialize_json(json_, orig_obj):
+    '''
+    Takes the json_ from a gnome object's serialize function, and verifies that it
+    fits the schema. In particular:
+    class_from_objtype must return the original object's class when provided
+    json_['obj_type']
+    all schema nodes set to missing=drop and are None on the original object
+    do not appear in the json_
+    No GnomeId python objects exist in the json
+
+    Note that this should not be used to validate cases where the object may
+    be doing custom serialization or using a custom to_dict. If an object does
+    not do this however, it should be able to pass these tests
+    '''
+    assert class_from_objtype(json_['obj_type']) is orig_obj.__class__
+
+    schema = orig_obj._schema()
+#     potential_missing = schema.get_nodes_by_attr('missing')
+#     for n in potential_missing:
+#         if getattr(orig_obj,n) is None:
+#             assert n not in json_
+
+    for v in json_.values():
+        assert not issubclass(v.__class__, GnomeId)
+
+    return True
+
+
+def validate_save_json(json_, zipfile_, orig_obj):
+    '''
+    validates the json_ and zipfile_ of an object. In particular:
+
+    class_from_objtype must return the original object's class when provided
+    json_['obj_type']
+
+    All save_reference attributes have a .json file referenced, and
+    such files also exist in the zipfile_
+
+    All missing=drop attributes that are None on the original object do not appear
+    No GnomeId python objects exist in the json
+
+    Note that this should not be used to validate cases where the object may
+    be doing custom save or using a custom to_dict. If an object does
+    not do this however, it should be able to pass these tests
+    '''
+
+    assert class_from_objtype(json_['obj_type']) is orig_obj.__class__
+
+    schema = orig_obj._schema()
+    save_refs = schema.get_nodes_by_attr('save_reference')
+    for n in save_refs:
+        if getattr(orig_obj, n) is not None:
+            if isinstance(getattr(orig_obj, n), collections.Iterable):
+                for i, ref in enumerate(getattr(orig_obj, n)):
+                    assert json_[n][i] == ref.name + '.json'
+                    assert json_[n][i] in zipfile_.namelist()
+            else:
+                ref = getattr(orig_obj, n)
+                assert json_[n] == ref.name + '.json'
+                assert json_[n] in zipfile_.namelist()
+
+#     potential_missing = schema.get_nodes_by_attr('missing')
+#     for n in potential_missing:
+#         if getattr(orig_obj,n) is None:
+#             assert n not in json_
+
+    for v in json_.values():
+        assert not issubclass(v.__class__, GnomeId)
+
+    return True
 
 
 @pytest.fixture(scope="session")

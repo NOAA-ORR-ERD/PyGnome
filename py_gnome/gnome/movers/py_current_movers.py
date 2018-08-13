@@ -1,64 +1,70 @@
-import copy
-
+import movers
 import numpy as np
 
-from colander import (SchemaNode,
-                      Bool, Float, String, Sequence,
-                      drop)
+from colander import (SchemaNode, Bool, Float, String, Sequence, drop)
 
 from gnome.basic_types import oil_status
 from gnome.basic_types import (world_point_type,
                                status_code_type)
 
-from gnome.utilities.serializable import Serializable, Field
 from gnome.utilities.projections import FlatEarthProjection
 
 from gnome.environment import GridCurrent
-from gnome.environment.gridded_objects_base import Grid_U
+from gnome.environment.gridded_objects_base import Grid_U, VectorVariableSchema
 
-from gnome.persist.base_schema import ObjType
+from gnome.persist.base_schema import ObjTypeSchema
 from gnome.persist.validators import convertible_to_seconds
-from gnome.persist.extend_colander import LocalDateTime
-
-from .movers import PyMover
-
-
-class PyCurrentMoverSchema(ObjType):
-    filename = SchemaNode(typ=Sequence(accept_scalar=True),
-                          children=[SchemaNode(String())],
-                          missing=drop)
-    current_scale = SchemaNode(Float(), missing=drop)
-    time_offset = SchemaNode(Float(), missing=drop)
-    current = GridCurrent._schema(missing=drop)
-    on = SchemaNode(Bool(), missing=drop)
-    active_start = SchemaNode(LocalDateTime(), missing=drop,
-                              validator=convertible_to_seconds)
-    active_stop = SchemaNode(LocalDateTime(), missing=drop,
-                             validator=convertible_to_seconds)
-    data_start = SchemaNode(LocalDateTime(), missing=drop,
-                            validator=convertible_to_seconds)
-    data_stop = SchemaNode(LocalDateTime(), missing=drop,
-                           validator=convertible_to_seconds)
+from gnome.persist.extend_colander import LocalDateTime, FilenameSchema
+from gnome.persist.base_schema import GeneralGnomeObjectSchema
+from __builtin__ import property
 
 
-class PyCurrentMover(PyMover, Serializable):
 
-    _state = copy.deepcopy(PyMover._state)
+class PyCurrentMoverSchema(ObjTypeSchema):
+    current = GeneralGnomeObjectSchema(
+        acceptable_schemas=[VectorVariableSchema, GridCurrent._schema],
+        save=True, update=True, save_reference=True
+    )
+    filename = FilenameSchema(
+        missing=drop, save=True, read_only=True, isdatafile=True
+    )
+    current_scale = SchemaNode(
+        Float(), missing=drop, save=True, update=True
+    )
+    extrapolation_is_allowed = SchemaNode(
+        Bool(), missing=drop, save=True, update=True
+    )
+#    time_offset = SchemaNode(
+#        Float(), missing=drop, save=True, update=True
+#    )
+    on = SchemaNode(
+        Bool(), missing=drop, save=True, update=True
+    )
+    active_start = SchemaNode(
+        LocalDateTime(), missing=drop,
+        validator=convertible_to_seconds,
+        save=True, update=True
+    )
+    active_stop = SchemaNode(
+        LocalDateTime(), missing=drop,
+        validator=convertible_to_seconds,
+        save=True, update=True
+    )
+    data_start = SchemaNode(
+        LocalDateTime(), validator=convertible_to_seconds, read_only=True
+    )
+    data_stop = SchemaNode(
+        LocalDateTime(), validator=convertible_to_seconds, read_only=True
+    )
 
-    _state.add_field([Field('filename', save=True, read=True, isdatafile=True,
-                            test_for_eq=False),
-                      Field('current', read=True, save_reference=True),
-                      Field('data_start', read=True),
-                      Field('data_stop', read=True),
-                      ])
-    _state.add(update=['uncertain_duration', 'uncertain_time_delay'],
-               save=['uncertain_duration', 'uncertain_time_delay'])
+
+class PyCurrentMover(movers.PyMover):
+
     _schema = PyCurrentMoverSchema
 
     _ref_as = 'py_current_movers'
 
     _req_refs = {'current': GridCurrent}
-    _def_count = 0
 
     def __init__(self,
                  filename=None,
@@ -71,6 +77,7 @@ class PyCurrentMover(PyMover, Serializable):
                  uncertain_across=.25,
                  uncertain_cross=.25,
                  default_num_method='RK2',
+                 extrapolation_is_allowed=False,
                  **kwargs
                  ):
         """
@@ -105,11 +112,7 @@ class PyCurrentMover(PyMover, Serializable):
                 self.current = GridCurrent.from_netCDF(filename=self.filename,
                                                        **kwargs)
 
-        if 'name' not in kwargs:
-            kwargs['name'] = '{}{}'.format(self.__class__.__name__,
-                                           self.__class__._def_count)
-            self.__class__._def_count += 1
-
+        self.extrapolation_is_allowed = extrapolation_is_allowed
         self.current_scale = current_scale
 
         self.uncertain_along = uncertain_along
@@ -128,8 +131,6 @@ class PyCurrentMover(PyMover, Serializable):
         (super(PyCurrentMover, self)
          .__init__(default_num_method=default_num_method, **kwargs))
 
-    def _attach_default_refs(self, ref_dict):
-        return Serializable._attach_default_refs(self, ref_dict)
 
     @classmethod
     def from_netCDF(cls,
@@ -148,10 +149,6 @@ class PyCurrentMover(PyMover, Serializable):
         """
         current = GridCurrent.from_netCDF(filename, **kwargs)
 
-        if name is None:
-            name = cls.__name__ + str(cls._def_count)
-            cls._def_count += 1
-
         return cls(name=name,
                    current=current,
                    filename=filename,
@@ -161,6 +158,20 @@ class PyCurrentMover(PyMover, Serializable):
                    uncertain_across=uncertain_across,
                    uncertain_cross=uncertain_cross,
                    **kwargs)
+
+    @property
+    def filename(self):
+        if hasattr(self, '_filename'):
+            if self._filename is None and self.current is not None:
+                return self.current.data_file
+            else:
+                return self._filename
+        else:
+            return None
+
+    @filename.setter
+    def filename(self, fn):
+        self._filename = fn
 
     @property
     def data_start(self):

@@ -8,20 +8,26 @@ import os
 import copy
 import collections
 from tempfile import NamedTemporaryFile
+from colander import SequenceSchema
+from gnome.persist.base_schema import GeneralGnomeObjectSchema
 
 import numpy as np
 
-from gnome.utilities.serializable import Field
 from gnome.utilities.time_utils import date_to_sec
 
 from gnome.utilities.map_canvas import MapCanvas
 
-from gnome.persist import class_from_objtype
+from . import Outputter, BaseOutputterSchema
+from gnome.movers.current_movers import IceMoverSchema
 
-from . import Outputter, BaseSchema
 
-
-class IceImageSchema(BaseSchema):
+class IceImageSchema(BaseOutputterSchema):
+    ice_movers =  SequenceSchema(
+        GeneralGnomeObjectSchema(
+            acceptable_schemas=[IceMoverSchema]
+        ),
+        save=True, update=True, save_reference=True
+    )
     '''
     Nothing is required for initialization
     '''
@@ -34,13 +40,6 @@ class IceImageOutput(Outputter):
         The image is PNG encoded, then Base64 encoded to include in a
         JSON response.
     '''
-    _state = copy.deepcopy(Outputter._state)
-
-    # need a schema and also need to override save so output_dir
-    # is saved correctly - maybe point it to saveloc
-    _state.add_field(Field('ice_movers', save=True, update=True,
-                           iscollection=True))
-
     _schema = IceImageSchema
 
     def __init__(self, ice_movers=None,
@@ -301,21 +300,3 @@ class IceImageOutput(Outputter):
         '''
         return self._collection_to_dict(self.ice_movers)
 
-    @classmethod
-    def deserialize(cls, json_):
-        """
-        append correct schema for current mover
-        """
-        schema = cls._schema()
-        _to_dict = schema.deserialize(json_)
-
-        if 'ice_movers' in json_:
-            _to_dict['ice_movers'] = []
-
-            for i, cm in enumerate(json_['ice_movers']):
-                cm_cls = class_from_objtype(cm['obj_type'])
-                cm_dict = cm_cls.deserialize(json_['ice_movers'][i])
-
-                _to_dict['ice_movers'].append(cm_dict)
-
-        return _to_dict

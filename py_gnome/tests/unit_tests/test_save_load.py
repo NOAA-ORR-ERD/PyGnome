@@ -6,8 +6,8 @@ from datetime import datetime
 from zipfile import ZipFile, ZIP_DEFLATED
 
 from gnome.utilities.time_utils import sec_to_date
-from gnome.persist import (References, load,
-                           class_from_objtype, is_savezip_valid)
+from gnome.persist import (References, load, is_savezip_valid)
+from gnome.gnomeobject import class_from_objtype
 
 from gnome.movers import constant_wind_mover
 from gnome import movers, outputters, environment, map, spill, weatherers
@@ -29,7 +29,7 @@ def test_warning_logged():
         with pytest.raises(AttributeError):
             class_from_objtype('os.path')
 
-        lc.check(('gnome.persist.save_load',
+        lc.check(('gnome.gnomeobject',
                   'WARNING',
                   'os.path is not part of gnome namespace'))
 
@@ -105,53 +105,64 @@ base_dir = os.path.dirname(__file__)
 
 
 # For WindMover test_save_load in test_wind_mover
-g_objects = (environment.Tide(testdata['CatsMover']['tide']),
-             environment.Wind(filename=testdata['ComponentMover']['wind']),
-             environment.Wind(timeseries=(sec_to_date(24 * 60 * 60),
-                                          (0, 0)), units='mps'),
-             environment.Water(temperature=273),
-             movers.random_movers.RandomMover(),
-             movers.CatsMover(testdata['CatsMover']['curr']),
-             movers.CatsMover(testdata['CatsMover']['curr'],
-                              tide=environment.Tide(testdata['CatsMover']['tide'])),
-             movers.ComponentMover(testdata['ComponentMover']['curr']),
-             movers.ComponentMover(testdata['ComponentMover']['curr'],
-                                   wind=environment.Wind(filename=testdata['ComponentMover']['wind'])),
-             movers.RandomVerticalMover(),
-             movers.SimpleMover(velocity=(10.0, 10.0, 0.0)),
-             map.MapFromBNA(testdata['MapFromBNA']['testmap'], 6),
-             outputters.NetCDFOutput(os.path.join(base_dir, u'xtemp.nc')),
-             outputters.Renderer(testdata['Renderer']['bna_sample'],
-                                 os.path.join(base_dir, 'output_dir')),
-             outputters.WeatheringOutput(),
-             spill.PointLineRelease(release_time=datetime.now(),
-                                    num_elements=10,
-                                    start_position=(0, 0, 0)),
-             spill.point_line_release_spill(10, (0, 0, 0), datetime.now()),
-             spill.elements.ElementType(substance=test_oil),
-             weatherers.Skimmer(100, 'kg', 0.3, datetime(2014, 1, 1, 0, 0),
-                                datetime(2014, 1, 1, 4, 0)),
-             weatherers.Burn(100, 1, datetime(2014, 1, 1, 0, 0),
-                             efficiency=.9),
-             weatherers.ChemicalDispersion(.2, datetime(2014, 1, 1, 0, 0),
-                                           datetime(2014, 1, 1, 4, 0),
-                                           efficiency=.3),
-             # todo: ask Caitlin how to fix
-             # movers.RiseVelocityMover(),
-             # todo: This is incomplete - no _schema for
-             #       SpatialRelease, GeoJson
-             # spill.SpatialRelease(datetime.now(), ((0, 0, 0), (1, 2, 0))),
-             outputters.TrajectoryGeoJsonOutput(),
-             )
+g_objects = (
+    environment.environment_objects.GridCurrent.from_netCDF(testdata['GridCurrentMover']['curr_tri']),
+    environment.Tide(testdata['CatsMover']['tide']),
+    environment.Wind(filename=testdata['ComponentMover']['wind']),
+    environment.Wind(timeseries=(sec_to_date(24 * 60 * 60),
+                                 (0, 0)), units='mps'),
+    environment.Water(temperature=273),
+    movers.random_movers.RandomMover(),
+    movers.CatsMover(testdata['CatsMover']['curr']),
+    movers.CatsMover(testdata['CatsMover']['curr'],
+                     tide=environment.Tide(testdata['CatsMover']['tide'])),
+    movers.ComponentMover(testdata['ComponentMover']['curr']),
+    movers.ComponentMover(testdata['ComponentMover']['curr'],
+                          wind=environment.Wind(filename=testdata['ComponentMover']['wind'])),
+    movers.RandomVerticalMover(),
+    movers.SimpleMover(velocity=(10.0, 10.0, 0.0)),
+    map.MapFromBNA(testdata['MapFromBNA']['testmap'], 6),
+    outputters.NetCDFOutput(os.path.join(base_dir, u'xtemp.nc')),
+    outputters.Renderer(testdata['Renderer']['bna_sample'],
+                        os.path.join(base_dir, 'output_dir')),
+    outputters.WeatheringOutput(),
+    spill.PointLineRelease(release_time=datetime.now(),
+                           num_elements=10,
+                           start_position=(0, 0, 0)),
+    spill.point_line_release_spill(10, (0, 0, 0), datetime.now()),
+    spill.elements.ElementType(substance=test_oil),
+    weatherers.Skimmer(100, 'kg', 0.3, datetime(2014, 1, 1, 0, 0),
+                       datetime(2014, 1, 1, 4, 0)),
+    weatherers.Burn(100, 1, datetime(2014, 1, 1, 0, 0),
+                    efficiency=.9),
+    weatherers.ChemicalDispersion(.2, datetime(2014, 1, 1, 0, 0),
+                                  datetime(2014, 1, 1, 4, 0),
+                                  efficiency=.3),
+    # todo: ask Caitlin how to fix
+    # movers.RiseVelocityMover(),
+    # todo: This is incomplete - no _schema for
+    #       SpatialRelease, GeoJson
+    # spill.SpatialRelease(datetime.now(), ((0, 0, 0), (1, 2, 0))),
+    outputters.TrajectoryGeoJsonOutput(),
+)
+
+@pytest.mark.parametrize("obj", g_objects)
+def test_serial_deserial(saveloc_, obj):
+    'test save/load functionality'
+    json_ = obj.serialize()
+    obj2 = obj.__class__.deserialize(json_)
+
+    assert obj == obj2
 
 
 @pytest.mark.parametrize("obj", g_objects)
 def test_save_load(saveloc_, obj):
     'test save/load functionality'
-    refs = obj.save(saveloc_)
-    obj2 = load(os.path.join(saveloc_, refs.reference(obj)))
+    json_, zipfile_, refs = obj.save(saveloc_)
+    obj2 = obj.__class__.load(zipfile_)
 
     assert obj == obj2
+
 
 
 '''
@@ -161,22 +172,33 @@ mean the allclose() check on timeseries fails - xfail for now. When loading
 for a file it works fine, no decimal places stored in file for magnitude
 '''
 
+@pytest.mark.parametrize("obj",
+                         (environment.Wind(timeseries=(sec_to_date(24 * 3600),
+                                                       (1, 30)),
+                                           units='meters per second'),
+                          weatherers.Evaporation(wind=environment.constant_wind(1., 30.),
+                                                 water=environment.Water(333.0)),)
+                         )
+def test_serialize_deserialize_wind_objs(saveloc_, obj):
+    'test serialize/deserialize functionality'
+    json_ = obj.serialize()
+    obj2 = obj.__class__.deserialize(json_)
+
+    assert obj == obj2
 
 @pytest.mark.parametrize("obj",
                          (environment.Wind(timeseries=(sec_to_date(24 * 3600),
                                                        (1, 30)),
                                            units='meters per second'),
-                          weatherers.Evaporation(environment.
-                                                 constant_wind(1., 30.),
-                                                 environment.Water(333.0)),)
+                          weatherers.Evaporation(wind=environment.constant_wind(1., 30.),
+                                                 water=environment.Water(333.0)),)
                          )
 def test_save_load_wind_objs(saveloc_, obj):
     'test save/load functionality'
-    refs = obj.save(saveloc_)
-    obj2 = load(os.path.join(saveloc_, refs.reference(obj)))
+    json_, zipfile_, refs = obj.save(saveloc_,)
+    obj2 = obj.__class__.load(zipfile_)
 
     assert obj == obj2
-
 
 '''
 Following movers fail on windows with fixture. This is causing an issue in
@@ -195,12 +217,20 @@ l_movers2 = (movers.CurrentCycleMover(testdata['CurrentCycleMover']['curr'],
                                   testdata['GridWindMover']['top_curv']),
              )
 
+@pytest.mark.parametrize("obj", l_movers2)
+def test_serialize_deserialize_grids(saveloc_, obj):
+    'test serialize/deserialize functionality'
+    json_ = obj.serialize()
+    obj2 = obj.__class__.deserialize(json_)
+
+    assert obj == obj2
 
 @pytest.mark.parametrize("obj", l_movers2)
 def test_save_load_grids(saveloc_, obj):
     'test save/load functionality'
-    refs = obj.save(saveloc_)
-    obj2 = load(os.path.join(saveloc_, refs.reference(obj)))
+    json_, zipfile_, refs = obj.save(saveloc_,)
+    obj2 = obj.__class__.load(zipfile_)
+
     assert obj == obj2
     # ==========================================================================
     # temp = os.path.join(dump, 'temp')

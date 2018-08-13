@@ -4,18 +4,21 @@ from colander import (SchemaNode, Float)
 
 from gnome.basic_types import world_point, world_point_type
 from gnome.cy_gnome.cy_rise_velocity_mover import CyRiseVelocityMover
-from gnome.utilities import serializable
 
 from gnome.movers import CyMover, ProcessSchema
-from gnome.persist.base_schema import ObjType
+from gnome.persist.base_schema import ObjTypeSchema
 
 
-class RiseVelocityMoverSchema(ObjType, ProcessSchema):
-    water_density = SchemaNode(Float())
-    water_viscosity = SchemaNode(Float())
+class RiseVelocityMoverSchema(ProcessSchema):
+    water_density = SchemaNode(
+        Float(), save=True, update=True
+    )
+    water_viscosity = SchemaNode(
+        Float(), save=True, update=True
+    )
 
 
-class RiseVelocityMover(CyMover, serializable.Serializable):
+class RiseVelocityMover(CyMover):
 
     """
     This mover class inherits from CyMover and contains CyRiseVelocityMover
@@ -24,7 +27,6 @@ class RiseVelocityMover(CyMover, serializable.Serializable):
     CyMover sets everything up that is common to all movers.
     """
 
-    _state = copy.deepcopy(CyMover._state)
     _schema = RiseVelocityMoverSchema
 
     def __init__(self,

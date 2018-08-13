@@ -7,28 +7,26 @@ import zipfile
 
 from colander import SchemaNode, String, Boolean, drop
 import shapefile as shp
-
-from gnome.utilities.serializable import Serializable, Field
-
-from .outputter import Outputter, BaseSchema
+from gnome.persist.extend_colander import FilenameSchema
 
 
-class ShapeSchema(BaseSchema):
-    filename = SchemaNode(String(), missing=drop)
-    zip_output = SchemaNode(Boolean(), missing=drop)
+from .outputter import Outputter, BaseOutputterSchema
 
 
-class ShapeOutput(Outputter, Serializable):
+class ShapeSchema(BaseOutputterSchema):
+    filename = FilenameSchema(
+        missing=drop, save=True, update=True, test_equal=False
+    )
+    zip_output = SchemaNode(
+        Boolean(), missing=drop, save=True, update=True
+    )
+
+
+class ShapeOutput(Outputter):
     '''
     class that outputs GNOME results (particles) in a shapefile format.
 
     '''
-    _state = copy.deepcopy(Outputter._state)
-
-    # need a schema and also need to override save so output_dir
-    # is saved correctly - maybe point it to saveloc
-    _state += [Field('filename', update=True, save=True), ]
-    _state += [Field('zip_output', update=True, save=True), ]
     _schema = ShapeSchema
 
     time_formatter = '%m/%d/%Y %H:%M'

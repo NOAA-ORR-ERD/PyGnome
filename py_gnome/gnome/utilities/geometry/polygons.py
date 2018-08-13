@@ -177,7 +177,7 @@ class Polygon(np.ndarray):
             return Polygon((), metadata=orig_poly.metadata)
 
 
-class PolygonSet:
+class PolygonSet(object):
     # version that uses an Accumulator, rather than all that concatenating
     """
     A set of polygons (or polylines) stored as a single array of vertex data,
@@ -326,6 +326,10 @@ class PolygonSet:
     def __len__(self):
         # there is an extra index at the end, so that IndexArray[i+1] works
         return len(self._IndexArray) - 1
+
+    def __iter__(self):
+        for i in range(0, len(self._IndexArray) - 1):
+            yield self[i]
 
     def __bool__(self):
         return bool(len(self))

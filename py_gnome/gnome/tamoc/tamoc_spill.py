@@ -15,7 +15,6 @@ from netCDF4 import date2num, num2date
 from datetime import datetime
 
 import gnome
-from gnome.utilities import serializable
 from gnome.utilities.projections import FlatEarthProjection
 from gnome.cy_gnome.cy_rise_velocity_mover import rise_velocity_from_drop_size
 

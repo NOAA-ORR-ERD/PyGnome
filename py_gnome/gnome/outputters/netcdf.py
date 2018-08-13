@@ -13,10 +13,10 @@ from colander import SchemaNode, String, drop, Int, Bool
 
 from gnome import __version__
 from gnome.basic_types import oil_status, world_point_type
+from gnome.persist.extend_colander import FilenameSchema
 
-from gnome.utilities.serializable import Serializable, Field
 
-from . import Outputter, BaseSchema
+from . import Outputter, BaseOutputterSchema
 
 
 # Big dict that stores the attributes for the standard data arrays
@@ -156,16 +156,26 @@ var_attributes = {
 }
 
 
-class NetCDFOutputSchema(BaseSchema):
+class NetCDFOutputSchema(BaseOutputterSchema):
     'colander schema for serialize/deserialize object'
-    netcdf_filename = SchemaNode(String(), missing=drop)
-    all_data = SchemaNode(Bool(), missing=drop)
-    compress = SchemaNode(Bool(), missing=drop)
-    _start_idx = SchemaNode(Int(), missing=drop)
-    _middle_of_run = SchemaNode(Bool(), missing=drop)
+    netcdf_filename = FilenameSchema(
+        missing=drop, save=True, update=True, test_equal=False
+    )
+    which_data = SchemaNode(
+        String(), default='standard', missing=drop, save=True, update=True
+    )
+    compress = SchemaNode(
+        Bool(), missing=drop, save=True, update=True
+    )
+    _start_idx = SchemaNode(
+        Int(), missing=drop, save=True, read_only=True, test_equal=False
+    )
+    _middle_of_run = SchemaNode(
+        Bool(), missing=drop, save=True, read_only=True, test_equal=False
+    )
 
 
-class NetCDFOutput(Outputter, Serializable):
+class NetCDFOutput(Outputter):
     """
     A NetCDFOutput object is used to write the model's data to a NetCDF file.
     It inherits from Outputter class and implements the same interface.
@@ -252,27 +262,17 @@ class NetCDFOutput(Outputter, Serializable):
                               'evap_decay_constant',
                               ]
 
-    # define _state for serialization
-    _state = copy.deepcopy(Outputter._state)
-
-    # data file should not be moved to save file location!
-    _state.add_field([Field('netcdf_filename', save=True, update=True,
-                            test_for_eq=False),
-                      Field('which_data', save=True, update=True),
-                      # Field('netcdf_format', save=True, update=True),
-                      Field('compress', save=True, update=True),
-                      Field('_start_idx', save=True),
-                      Field('_middle_of_run', save=True),
-                      ])
     _schema = NetCDFOutputSchema
 
     def __init__(self,
                  netcdf_filename,
                  which_data='standard',
                  compress=True,
-                 # FIXME: this should not be default, but since we don't have a way for
-                 #        WebGNOME to set it yet..
+                 # FIXME: this should not be default, but since we don't have
+                 #        a way for WebGNOME to set it yet..
                  surface_conc="kde",
+                 _middle_of_run=False,
+                 _start_idx=0,
                  **kwargs):
         """
         Constructor for Net_CDFOutput object. It reads data from cache and
@@ -324,7 +324,7 @@ class NetCDFOutput(Outputter, Serializable):
 
         # flag to keep track of _state of the object - is True after calling
         # prepare_for_model_run
-        self._middle_of_run = False
+        self._middle_of_run = _middle_of_run
 
         if which_data.lower() in self.which_data_lu:
             self._which_data = which_data.lower()
@@ -353,7 +353,7 @@ class NetCDFOutput(Outputter, Serializable):
 
         # need to keep track of starting index for writing data since variable
         # number of particles are released
-        self._start_idx = 0
+        self._start_idx = _start_idx
 
         # define NetCDF variable attributes that are instance attributes here
         # It is set in prepare_for_model_run():
@@ -499,7 +499,8 @@ class NetCDFOutput(Outputter, Serializable):
         # make sure they are all there
         to_remove = set()
         for var_name in self.arrays_to_output:
-            # fixme: -- is there a way to get the keys as a set so we don't have to loop?
+            # fixme: -- is there a way to get the keys as a set so we don't
+            # have to loop?
             if var_name not in sc and var_name not in self.special_arrays:
                 to_remove.add(var_name)
         self.arrays_to_output -= to_remove
@@ -609,7 +610,8 @@ class NetCDFOutput(Outputter, Serializable):
                             else:
                                 y_sz = d_dims[sc[var_name].shape[1]]
                                 shape = ('data', y_sz)
-                                chunksz = (self._chunksize, sc[var_name].shape[1])
+                                chunksz = (self._chunksize,
+                                           sc[var_name].shape[1])
 
                     self._create_nc_var(rootgrp, var_name, dt, shape, chunksz)
 
@@ -773,7 +775,7 @@ class NetCDFOutput(Outputter, Serializable):
         self._middle_of_run = False
         self._start_idx = 0
 
-    ##fixme: we should use the code in nc_particles for this!!!
+    # fixme: we should use the code in nc_particles for this!!!
     @classmethod
     def read_data(klass,
                   netcdf_file,
@@ -911,7 +913,8 @@ class NetCDFOutput(Outputter, Serializable):
                     try:
                         arrays_dict[array_name] = data.variables[array_name][_start_ix:_stop_ix]
                     except KeyError:
-                        # it's OK if it's not there, not all standard_arrays will always be output
+                        # it's OK if it's not there, not all standard_arrays
+                        # will always be output
                         pass
 
             # get mass_balance
@@ -925,37 +928,8 @@ class NetCDFOutput(Outputter, Serializable):
 
         return (arrays_dict, weathering_data)
 
-    def save(self, saveloc, references=None, name=None):
-        '''
-        See baseclass :meth:`~gnome.persist.Savable.save`
-
-        update netcdf_filename to point to saveloc, then call base class save
-        using super
-        '''
-        json_ = self.serialize('save')
-        fname = os.path.split(json_['netcdf_filename'])[1]
-
-        json_['netcdf_filename'] = os.path.join('./', fname)
-
-        return self._json_to_saveloc(json_, saveloc, references, name)
-
-    @classmethod
-    def loads(cls, json_data, saveloc, references=None):
-        '''
-        loads object from json_data
-
-        update path to 'netcdf_filename' in json_data, then finish loading
-        by calling super class' load method
-
-        :param saveloc: location of data files. Setup path of netcdf_filename
-            to this location
-
-        Optional parameter
-
-        :param references: references object - if this is called by the Model,
-            it will pass a references object. It is not required.
-        '''
-        new_filename = os.path.join(saveloc, json_data['netcdf_filename'])
-        json_data['netcdf_filename'] = new_filename
-
-        return super(NetCDFOutput, cls).loads(json_data, saveloc, references)
+    def to_dict(self, json_=None):
+        dict_ = super(NetCDFOutput, self).to_dict(json_)
+        if json_ == 'save':
+            dict_['netcdf_filename'] = os.path.join('./', dict_['netcdf_filename'])
+        return dict_
