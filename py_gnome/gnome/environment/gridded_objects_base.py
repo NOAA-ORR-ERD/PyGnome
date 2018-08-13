@@ -479,9 +479,10 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
 
         raw_u = raw_u.reshape(raw_u.shape[0], -1)
         raw_v = raw_v.reshape(raw_v.shape[0], -1)
-        r = np.stack((raw_u, raw_v))
+        #r = np.ma.stack((raw_u, raw_v)) change to this when numpy 1.15 becomes norm.
+        r = np.ma.concatenate((raw_u[None,:], raw_v[None,:]))
 
-        return np.ascontiguousarray(r, np.float32)
+        return np.ascontiguousarray(r.filled(0), np.float32)
 
     def get_metadata(self):
         json_ = {}
