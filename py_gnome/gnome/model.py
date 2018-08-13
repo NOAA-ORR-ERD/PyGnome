@@ -856,7 +856,9 @@ class Model(GnomeId):
                 tbr_mask = sc['status_codes'] == oil_status.off_maps
                 sc['status_codes'][tbr_mask] = oil_status.to_be_removed
 
-                self._update_fate_status(sc)
+                substances = sc.get_substances(False)
+                if len(substances)>0:
+                    self._update_fate_status(sc)
 
                 # the final move to the new positions
                 (sc['positions'])[:] = sc['next_positions']
