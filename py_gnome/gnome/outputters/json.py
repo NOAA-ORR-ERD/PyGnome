@@ -82,8 +82,8 @@ class SpillJsonOutput(Outputter):
 
         for sc in self.cache.load_timestep(step_num).items():
             position = sc['positions']
-            longitude = np.around(position[:, 0], 4).tolist()
-            latitude = np.around(position[:, 1], 4).tolist()
+            longitude = np.around(position[:, 0], 5).tolist()
+            latitude = np.around(position[:, 1], 5).tolist()
             status = sc['status_codes'].tolist()
             mass = np.around(sc['mass'], 4).tolist()
             spill_num = sc['spill_num'].tolist()
