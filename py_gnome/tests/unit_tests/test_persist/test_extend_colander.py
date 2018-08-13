@@ -10,7 +10,7 @@ import datetime as dt
 import pytest
 import numpy as np
 from gnome.persist import extend_colander
-import pdb
+import os
 import pprint as pp
 
 from datetime import datetime
@@ -163,10 +163,10 @@ class TestDemoObj(object):
                        TimeseriesData(name='v', time=_t, data=series_data2())],
             units='m/s'
         )
-        filename = 'C:\\foo.nc'
+        filename = os.path.normpath('C:\\foo.nc')
         inst = DemoObj(filename=filename, variable=tsv, variables=[tsv, tsv.variables[0]])
         serial = inst.serialize(options={'raw_paths': False})
-        assert serial['filename'] == ['foo.nc']
+        assert serial['filename'] == 'foo.nc'
 
 class TestObjType(object):
     _t = Time(dates())
