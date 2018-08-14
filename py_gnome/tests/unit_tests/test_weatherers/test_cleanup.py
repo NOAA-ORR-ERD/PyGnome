@@ -562,39 +562,39 @@ class TestBurn(ObjForTests):
         assert burn1.active_start == burn2.active_start
         assert burn1.active_stop == burn2.active_stop
 
-    def test_update_from_dict(self):
-        '''
-        test that the update_from_dict correctly sets efficiency to None
-        if it is dropped from json payload if user chose compute from wind
-        '''
-        self.burn.wind = constant_wind(5, 0)
-        json_ = self.burn.serialize()
-        assert self.burn.efficiency is not None
-        del json_['efficiency']
-
-        dict_ = Burn.deserialize(json_)
-        dict_['wind'] = self.burn.wind
-        assert 'wind' in dict_
-        self.burn.update_from_dict(dict_)
-        assert self.burn.efficiency is None
-
-        json_['efficiency'] = .4
-
-        # make sure None for wind doesn't break it
-        dict_['wind'] = None
-        dict_ = Burn.deserialize(json_)
-        self.burn.update_from_dict(dict_)
-        assert self.burn.efficiency == json_['efficiency']
-
-        # update area/thickness
-        st = self.burn.active_stop
-        self.burn.thickness *= 2
-        assert self.burn.active_stop > st
-
-        # burn duration just depents on thickness - not area
-        st = self.burn.active_stop
-        self.burn.area *= 2
-        assert self.burn.active_stop == st
+#     def test_update_from_dict(self):
+#         '''
+#         test that the update_from_dict correctly sets efficiency to None
+#         if it is dropped from json payload if user chose compute from wind
+#         '''
+#         self.burn.wind = constant_wind(5, 0)
+#         json_ = self.burn.serialize()
+#         assert self.burn.efficiency is not None
+#         del json_['efficiency']
+#
+#         dict_ = Burn.deserialize(json_)
+#         dict_['wind'] = self.burn.wind
+#         assert 'wind' in dict_
+#         self.burn.update_from_dict(dict_)
+#         assert self.burn.efficiency is None
+#
+#         json_['efficiency'] = .4
+#
+#         # make sure None for wind doesn't break it
+#         dict_['wind'] = None
+#         dict_ = Burn.deserialize(json_)
+#         self.burn.update_from_dict(dict_)
+#         assert self.burn.efficiency == json_['efficiency']
+#
+#         # update area/thickness
+#         st = self.burn.active_stop
+#         self.burn.thickness *= 2
+#         assert self.burn.active_stop > st
+#
+#         # burn duration just depents on thickness - not area
+#         st = self.burn.active_stop
+#         self.burn.area *= 2
+#         assert self.burn.active_stop == st
 
 
 class TestChemicalDispersion(ObjForTests):

@@ -1,63 +1,68 @@
-import copy
+import movers
 
 import numpy as np
 
 from colander import (SchemaNode,
-                      Bool, Float, String, Sequence, DateTime,
-                      drop)
+                      Bool, Float, String, Sequence, drop)
 
 from gnome.basic_types import oil_status
 
-from gnome.utilities.rand import random_with_persistance
-from gnome.utilities.serializable import Serializable, Field
-
+from gnome.utilities import rand
 from gnome.utilities.projections import FlatEarthProjection
 
 from gnome.environment import GridWind
 
-from gnome.movers import PyMover
-
-from gnome.persist.base_schema import ObjType
+from gnome.persist.base_schema import ObjTypeSchema
 from gnome.persist.validators import convertible_to_seconds
-from gnome.persist.extend_colander import LocalDateTime
+from gnome.persist.extend_colander import LocalDateTime, FilenameSchema
+from gnome.persist.base_schema import GeneralGnomeObjectSchema
+from gnome.environment.gridded_objects_base import VectorVariableSchema
 
 
-class PyWindMoverSchema(ObjType):
-    filename = SchemaNode(typ=Sequence(accept_scalar=True),
-                          children=[SchemaNode(String())],
-                          missing=drop)
-    wind_scale = SchemaNode(Float(), missing=drop)
-    time_offset = SchemaNode(Float(), missing=drop)
-    wind = GridWind._schema(missing=drop)
-    on = SchemaNode(Bool(), missing=drop)
-    active_start = SchemaNode(LocalDateTime(), missing=drop,
-                              validator=convertible_to_seconds)
-    active_stop = SchemaNode(LocalDateTime(), missing=drop,
-                             validator=convertible_to_seconds)
-    data_start = SchemaNode(LocalDateTime(), missing=drop,
-                            validator=convertible_to_seconds)
-    data_stop = SchemaNode(LocalDateTime(), missing=drop,
-                           validator=convertible_to_seconds)
+class PyWindMoverSchema(ObjTypeSchema):
+    wind = GeneralGnomeObjectSchema(
+        acceptable_schemas=[VectorVariableSchema, GridWind._schema],
+        save=True, update=True, save_reference=True
+    )
+    filename = FilenameSchema(
+        missing=drop, save=True, read_only=True, isdatafile=True
+    )
+    wind_scale = SchemaNode(
+        Float(), missing=drop, save=True, update=True
+    )
+    extrapolation_is_allowed = SchemaNode(
+        Bool(), missing=drop, save=True, update=True
+    )
+    time_offset = SchemaNode(
+        Float(), missing=drop, save=True, update=True
+    )
+    on = SchemaNode(
+        Bool(), missing=drop, save=True, update=True
+    )
+    active_start = SchemaNode(
+        LocalDateTime(), missing=drop,
+        validator=convertible_to_seconds,
+        save=True, update=True
+    )
+    active_stop = SchemaNode(
+        LocalDateTime(), missing=drop,
+        validator=convertible_to_seconds,
+        save=True, update=True
+    )
+    data_start = SchemaNode(
+        LocalDateTime(), validator=convertible_to_seconds, read_only=True
+    )
+    data_stop = SchemaNode(
+        LocalDateTime(), validator=convertible_to_seconds, read_only=True
+    )
 
 
-class PyWindMover(PyMover, Serializable):
-
-    _state = copy.deepcopy(PyMover._state)
-
-    _state.add_field([Field('filename', save=True, read=True, isdatafile=True,
-                            test_for_eq=False),
-                      Field('wind', read=True, save_reference=True),
-                      Field('data_start', read=True),
-                      Field('data_stop', read=True),
-                      ])
-    _state.add(update=['uncertain_duration', 'uncertain_time_delay'],
-               save=['uncertain_duration', 'uncertain_time_delay'])
+class PyWindMover(movers.PyMover):
     _schema = PyWindMoverSchema
 
     _ref_as = 'py_wind_movers'
 
     _req_refs = {'wind': GridWind}
-    _def_count = 0
 
     def __init__(self,
                  filename=None,
@@ -67,7 +72,9 @@ class PyWindMover(PyMover, Serializable):
                  uncertain_time_delay=0,
                  uncertain_speed_scale=2.,
                  uncertain_angle_scale=0.4,
+                 wind_scale=1,
                  default_num_method='RK2',
+                 extrapolation_is_allowed=False,
                  **kwargs):
         """
         Initialize a PyWindMover
@@ -104,15 +111,12 @@ class PyWindMover(PyMover, Serializable):
                 self.wind = GridWind.from_netCDF(filename=self.filename,
                                                  **kwargs)
 
-        if 'name' not in kwargs:
-            kwargs['name'] = '{}{}'.format(self.__class__.__name__,
-                                           self.__class__._def_count)
-
-            self.__class__._def_count += 1
-
+        self.extrapolation_is_allowed = extrapolation_is_allowed
         self.uncertain_duration = uncertain_duration
         self.uncertain_time_delay = uncertain_time_delay
         self.uncertain_speed_scale = uncertain_speed_scale
+        self.wind_scale = wind_scale
+        self.time_offset = time_offset
 
         # also sets self._uncertain_angle_units
         self.uncertain_angle_scale = uncertain_angle_scale
@@ -178,7 +182,7 @@ class PyWindMover(PyMover, Serializable):
             return
 
         if self.active:
-            random_with_persistance(sc['windage_range'][:, 0],
+            rand.random_with_persistance(sc['windage_range'][:, 0],
                                     sc['windage_range'][:, 1],
                                     sc['windages'],
                                     sc['windage_persist'],
@@ -207,13 +211,9 @@ class PyWindMover(PyMover, Serializable):
             status = sc['status_codes'] != oil_status.in_water
             pos = positions[:]
 
-            deltas = self.delta_method(num_method)(sc, time_step,
-                                                   model_time_datetime,
-                                                   pos,
-                                                   self.wind)
-
-            deltas[:, 0] *= sc['windages']
-            deltas[:, 1] *= sc['windages']
+            deltas = self.delta_method(num_method)(sc, time_step, model_time_datetime, pos, self.wind)
+            deltas[:, 0] *= sc['windages'] * self.wind_scale
+            deltas[:, 1] *= sc['windages'] * self.wind_scale
 
             deltas = FlatEarthProjection.meters_to_lonlat(deltas, positions)
             deltas[status] = (0, 0, 0)

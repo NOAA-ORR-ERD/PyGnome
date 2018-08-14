@@ -200,10 +200,7 @@ def test_serialize_deserialize():
     """
 
     grid_wind = GridWindMover(wind_file, topology_file)
-    serial = grid_wind.serialize('webapi')
-    dict_ = GridWindMover.deserialize(serial)
-    gw2 = GridWindMover.new_from_dict(dict_)
+    serial = grid_wind.serialize()
+    gw2 = GridWindMover.deserialize(serial)
 
     assert grid_wind == gw2
-
-    grid_wind.update_from_dict(dict_)

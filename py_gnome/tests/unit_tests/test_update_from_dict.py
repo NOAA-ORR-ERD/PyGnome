@@ -40,8 +40,7 @@ def define_mdl(test=0):
     via json
     '''
     def get_json(mdl):
-        json_ = Model.deserialize(mdl.serialize('webapi'))
-        json_['map'] = mdl.map
+        json_ = mdl.serialize()
         return json_
 
     mdl = Model()
@@ -54,15 +53,15 @@ def define_mdl(test=0):
         mdl.movers += l_mv
         mdl.spills += l_spills
         json_ = get_json(mdl)
-        json_['movers'] = l_mv
-        json_['spills'] = l_spills
+        json_['movers'] = [mv.serialize() for mv in l_mv]
+        json_['spills'] = [s.serialize() for s in l_spills]
         return (mdl, json_, False)
 
     elif test == 2:
         'add l_mv, l_spills to empty model'
         json_ = get_json(mdl)
-        json_['movers'] = l_mv
-        json_['spills'] = l_spills
+        json_['movers'] = [mv.serialize() for mv in l_mv]
+        json_['spills'] = [s.serialize() for s in l_spills]
         return (mdl, json_, True)
 
     elif test == 3:
@@ -75,8 +74,8 @@ def define_mdl(test=0):
         del copy_l_spills[-2]
         del copy_l_spills[0]
         json_ = get_json(mdl)
-        json_['movers'] = copy_l_mv
-        json_['spills'] = copy_l_spills
+        json_['movers'] = [mv.serialize() for mv in copy_l_mv]
+        json_['spills'] = [s.serialize() for s in copy_l_spills]
         return (mdl, json_, True)
 
 
