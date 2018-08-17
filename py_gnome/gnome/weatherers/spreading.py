@@ -2,13 +2,16 @@
 objects used to model the spreading of oil
 Include the Langmuir process here as well
 '''
-import copy
 
 import numpy as np
-from repoze.lru import lru_cache
+try:
+    from functools import lru_cache  # it's built-in on py3
+except ImportError:
+    from backports.functools_lru_cache import lru_cache  # needs backports for py2
+
 from colander import SchemaNode, Float, drop
 
-from gnome.environment import constant_wind, WindSchema, WaterSchema
+from gnome.environment import WindSchema, WaterSchema
 from gnome.constants import gravity
 from gnome import constants
 from .core import Weatherer
