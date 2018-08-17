@@ -58,6 +58,7 @@ testfixtures
 # nice to have for development, not required to run
 matplotlib
 ipython
+jupyter
 
 # required to build docs
 sphinx
