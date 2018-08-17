@@ -11,18 +11,26 @@ from gnome.cy_gnome.cy_random_mover import CyRandomMover
 from gnome.cy_gnome.cy_random_vertical_mover import CyRandomVerticalMover
 
 from gnome.utilities.serializable import Serializable, Field
+from gnome.utilities.inf_datetime import InfTime, MinusInfTime
+
+from gnome.persist.base_schema import ObjType
+from gnome.persist.validators import convertible_to_seconds
+from gnome.persist.extend_colander import LocalDateTime
 
 from gnome.environment import IceConcentration
 from gnome.environment.gridded_objects_base import PyGrid
 from gnome.environment.gridded_objects_base import VariableSchema
 
 from gnome.movers import CyMover, ProcessSchema
-from gnome.persist.base_schema import ObjType
 
 
 class RandomMoverSchema(ObjType, ProcessSchema):
     diffusion_coef = SchemaNode(Float(), missing=drop)
     uncertain_factor = SchemaNode(Float(), missing=drop)
+    data_start = SchemaNode(LocalDateTime(), missing=drop,
+                            validator=convertible_to_seconds)
+    data_stop = SchemaNode(LocalDateTime(), missing=drop,
+                           validator=convertible_to_seconds)
 
 
 class RandomMover(CyMover, Serializable):
@@ -35,6 +43,10 @@ class RandomMover(CyMover, Serializable):
     _state = copy.deepcopy(CyMover._state)
     _state.add(update=['diffusion_coef', 'uncertain_factor'],
                save=['diffusion_coef', 'uncertain_factor'])
+    _state.add_field([Field('data_start', read=True),
+                      Field('data_stop', read=True),
+                      ])
+
     _schema = RandomMoverSchema
 
     def __init__(self, **kwargs):
@@ -57,6 +69,14 @@ class RandomMover(CyMover, Serializable):
                                    uncertain_factor=uncertain_factor)
 
         super(RandomMover, self).__init__(**kwargs)
+
+    @property
+    def data_start(self):
+        return MinusInfTime()
+
+    @property
+    def data_stop(self):
+        return InfTime()
 
     @property
     def diffusion_coef(self):

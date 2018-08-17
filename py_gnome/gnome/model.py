@@ -753,6 +753,23 @@ class Model(Serializable):
         self.logger.debug("{0._pid} setup_model_run complete for: "
                           "{0.name}".format(self))
 
+    def post_model_run(self):
+        '''
+        A place where the model goes through all collections and calls
+        post_model_run if the object has it.
+        '''
+        for env in self.environment:
+            env.post_model_run()
+        for mov in self.movers:
+            if mov.on:
+                mov.post_model_run()
+        for out in self.outputters:
+            if out.on:
+                out.post_model_run()
+        for wea in self.weatherers:
+            if wea.on:
+                wea.post_model_run()
+
     def setup_time_step(self):
         '''
         sets up everything for the current time_step:
@@ -817,6 +834,17 @@ class Model(Serializable):
         if 'fate_status' in sc:
             non_w_mask = sc['status_codes'] == oil_status.on_land
             sc['fate_status'][non_w_mask] = fate.non_weather
+
+            w_mask = ((sc['status_codes'] == oil_status.in_water)
+                 & ~(sc['fate_status'] & fate.skim == fate.skim)
+                 & ~(sc['fate_status'] & fate.burn == fate.burn)
+                 & ~(sc['fate_status'] & fate.disperse == fate.disperse))
+
+            surf_mask = np.logical_and(w_mask, sc['positions'][:, 2] == 0)
+            subs_mask = np.logical_and(w_mask, sc['positions'][:, 2] > 0)
+
+            sc['fate_status'][surf_mask] = fate.surface_weather
+            sc['fate_status'][subs_mask] = fate.subsurf_weather
 
     def weather_elements(self):
         '''
@@ -951,6 +979,7 @@ class Model(Serializable):
             # not specify time_step, then setup_model_run() automatically
             # initializes it. Thus, do StopIteration check after
             # setup_model_run() is invoked
+            self.post_model_run()
             raise StopIteration("Run complete for {0}".format(self.name))
 
         else:
