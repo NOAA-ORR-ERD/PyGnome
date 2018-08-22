@@ -26,6 +26,7 @@ test:
   tags:
     - test
     - docker
+    - oillibrary_base
 
 
 develop:
