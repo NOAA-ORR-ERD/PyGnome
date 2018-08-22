@@ -25,7 +25,7 @@ class PyWindMoverSchema(ObjTypeSchema):
         save=True, update=True, save_reference=True
     )
     filename = FilenameSchema(
-        missing=drop, save=True, read_only=True, isdatafile=True
+        missing=drop, save=True, update=False, isdatafile=True
     )
     wind_scale = SchemaNode(
         Float(), missing=drop, save=True, update=True

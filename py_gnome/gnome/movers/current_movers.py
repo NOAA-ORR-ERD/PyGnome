@@ -131,7 +131,7 @@ class CurrentMoversBase(CyMover):
 class CatsMoverSchema(CurrentMoversBaseSchema):
     '''static schema for CatsMover'''
     filename = FilenameSchema(
-        save=True, update=True, isdatafile=True, test_equal=False
+        save=True, isdatafile=True, test_equal=False, update=False
     )
     scale = SchemaNode(
         Bool(), missing=drop, save=True, update=True
@@ -387,10 +387,10 @@ class CatsMover(CurrentMoversBase):
 
 class GridCurrentMoverSchema(CurrentMoversBaseSchema):
     filename = FilenameSchema(
-        missing=drop, save=True, update=True, isdatafile=True, test_equal=False
+        missing=drop, save=True, update=False, isdatafile=True, test_equal=False
     )
     topology_file = FilenameSchema(
-        missing=drop, save=True, read_only=True, isdatafile=True, test_equal=False
+        missing=drop, save=True, update=False, isdatafile=True, test_equal=False
     )
     current_scale = SchemaNode(
         Float(), missing=drop, save=True, update=True
@@ -651,10 +651,10 @@ class GridCurrentMover(CurrentMoversBase):
 
 class IceMoverSchema(CurrentMoversBaseSchema):
     filename = FilenameSchema(
-        missing=drop, save=True, isdatafile=True, test_equal=False
+        missing=drop, save=True, isdatafile=True, test_equal=False, update=False
     )
     topology_file = FilenameSchema(
-        missing=drop, save=True, isdatafile=True, test_equal=False
+        missing=drop, save=True, isdatafile=True, test_equal=False, update=False
     )
     current_scale = SchemaNode(
         Float(), missing=drop, save=True, update=True
@@ -931,10 +931,10 @@ class IceMover(CurrentMoversBase):
 
 class CurrentCycleMoverSchema(CurrentMoversBaseSchema):
     filename = FilenameSchema(
-        missing=drop, save=True, update=True, isdatafile=True, test_equal=False
+        missing=drop, save=True, isdatafile=True, test_equal=False, update=False
     )
     topology_file = FilenameSchema(
-        missing=drop, save=True, update=True, isdatafile=True, test_equal=False
+        missing=drop, save=True, isdatafile=True, test_equal=False, update=False
     )
     current_scale = SchemaNode(
         Float(), default=1, missing=drop, save=True, update=True

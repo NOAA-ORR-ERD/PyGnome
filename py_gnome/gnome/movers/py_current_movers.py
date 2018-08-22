@@ -26,7 +26,7 @@ class PyCurrentMoverSchema(ObjTypeSchema):
         save=True, update=True, save_reference=True
     )
     filename = FilenameSchema(
-        missing=drop, save=True, read_only=True, isdatafile=True
+        missing=drop, save=True, update=False, isdatafile=True
     )
     current_scale = SchemaNode(
         Float(), missing=drop, save=True, update=True
