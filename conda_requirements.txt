@@ -22,7 +22,7 @@ progressbar>=2.3
 pyzmq>=16
 six>=1.10
 geojson>=1.3
-repoze.lru>=0.6
+backports.functools_lru_cache>=1.5
 colander>=1.4
 
 tblib>=1.3.*  # needed for child process exception handling.
@@ -33,7 +33,7 @@ netCDF4=1.3.* # set to 1.4.* as soon as cftime > 1.0.0
 awesome-slugify>=1.6.5
 regex>=2014.12
 unidecode>=0.04.19
-pyshp=1.2.10
+pyshp=1.2.12
 gridded=0.1.1
 
 # NOAA maintained packages
@@ -58,6 +58,7 @@ testfixtures
 # nice to have for development, not required to run
 matplotlib
 ipython
+jupyter
 
 # required to build docs
 sphinx

@@ -9,17 +9,19 @@ which is defined in a gnome model if there are weatherers defined.
 For now just define a FayGravityInertial class here
 It is only used by WeatheringData to update the 'area' and related arrays
 '''
-import copy
 
 import numpy as np
-from repoze.lru import lru_cache
 
-import gnome    # required by deserialize
+try:
+    from functools import lru_cache  # it's built-in on py3
+except ImportError:
+    from backports.functools_lru_cache import lru_cache  # needs backports for py2
 
 from gnome.basic_types import oil_status, fate
 
 from .core import Weatherer, WeathererSchema
 from gnome.environment.water import WaterSchema
+
 
 class WeatheringDataSchema(WeathererSchema):
     water = WaterSchema(
