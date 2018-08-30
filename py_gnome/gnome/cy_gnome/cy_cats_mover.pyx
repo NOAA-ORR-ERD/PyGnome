@@ -234,7 +234,7 @@ cdef class CyCatsMover(CyCurrentMover):
         err = self.cats.InitMover()
         if err is not False:
             raise ValueError('CATSMover.compute_velocity_scale(..) '
-                             'returned an error. OSErr: {0}'
+                             'returned an error. Reference point not valid. OSErr: {0}'
                              .format(err))
 
         return True
