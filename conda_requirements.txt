@@ -34,9 +34,10 @@ awesome-slugify>=1.6.5
 regex>=2014.12
 unidecode>=0.04.19
 pyshp=1.2.12
-gridded=0.1.1
+
 
 # NOAA maintained packages
+gridded=0.1.1
 unit_conversion=2.6.*
 cell_tree2d>=0.3.*
 py_gd=0.1.* # libgd should get brought in automatically

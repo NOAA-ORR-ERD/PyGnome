@@ -6,7 +6,7 @@ distribution that has most of the difficult-to-build packages that
 ``py_gnome`` needs already built in. Thus it's a nice target for running
 GNOME on your own system. "conda" is the pacakg manager used to manage the system.
 
-py_gnome CAN be used with any Python distribution, but you will need to find or build a number of pacakges that are not easy to manage. If you are familiar with complex python packaging, then you can probably make it work. But conda makes it much easier, and that's what we support.
+py_gnome CAN be used with any Python distribution, but you will need to find or build a number of pacakges that are not easy to manage. If you are familiar with complex python packaging, then you can probably make it work. But conda makes it much easier, and that's what we use ourselves, and support.
 
 Anaconda vs miniconda:
 ----------------------
@@ -19,7 +19,7 @@ Either will work fine with ``py_gnome``.
 
 **NOTES:**
 
-Be sure to get the python2 version of Anaconda.
+Be sure to get the python2 version of Anaconda. py_gnoe is currently only python 2 compatible.
 
 Anaconda (and miniconda?) can be installed in either single-user or multi-user mode:
 
@@ -48,7 +48,7 @@ Linux:
 
 The Linux 64bit-python2.7 is the one to use.
 
-We do not support 32 bit on linux (or anywhere, anymore)
+We do not support 32 bit on any platform.
 
 conda
 -----
@@ -99,11 +99,12 @@ The "conda-forge" project:
 
 https://conda-forge.github.io/
 
-Is a community project to build a wide variety of packages for conda -- it supports
-most of what PyGNOME needs.
+Is a community project to build a wide variety of packages for conda --
+it supports most of what PyGNOME needs.
 
-However, there a few NOAA-specific packages that are not (yet) on conda-forge, so we
-have set up `our own anaconda channel <https://anaconda.org/noaa-orr-erd>`__
+However, there a few NOAA-specific packages that are not (yet) on conda-forge,
+so we have set up
+`our own anaconda channel <https://anaconda.org/noaa-orr-erd>`__
 where we put various packages needed for ``py_gnome``.
 
 Adding extra channels to conda:
@@ -117,9 +118,12 @@ Add the conda-forge channel::
 
     > conda config --add channels conda-forge
 
-When you add a channel to conda, it puts it at the top of the list. So now when you
-install a package, conda will first look in conda-forge, then NOAA-ORR-ERD, and
-then in the default channel. This order should work well for PyGNOME. Be sure to add the channels in the order we specify. You can see what channels you have with::
+When you add a channel to conda, it puts it at the top of the list.
+So now when you install a package, conda will first look in conda-forge,
+then NOAA-ORR-ERD, and then in the default channel.
+This order should work well for PyGNOME.
+Be sure to add the channels in the order we specify.
+You can see what channels you have with::
 
     > conda config --get channels
 
@@ -128,6 +132,8 @@ It should return something like this::
     --add channels 'defaults'   # lowest priority
     --add channels 'NOAA-ORR-ERD'
     --add channels 'conda-forge'   # highest priority
+
+In that order -- the order is important
 
 conda environments
 ------------------
