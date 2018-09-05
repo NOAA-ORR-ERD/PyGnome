@@ -26,13 +26,13 @@ def test_exceptions(low, high):
 
 
 @pytest.mark.parametrize(("low", "high", "array", "persist", "timestep"),
-                   [([0], [10], None, None, 1),
-                    ([1, 3], [5, 6], None, None, 1),
-                    ((1, 3), (5, 6), np.zeros((2,), dtype=float), (-1, 1), 1),
-                    (np.asarray([1., 3.]), np.asarray([4., 7.]),
-                     np.zeros((2,), dtype=np.float64),
-                     np.asarray([100, 0]), 100)
-                     ])
+                         [([0], [10], None, None, 1),
+                          ([1, 3], [5, 6], None, None, 1),
+                          ((1, 3), (5, 6), np.zeros((2,), dtype=float), (-1, 1), 1),
+                          (np.asarray([1., 3.]), np.asarray([4., 7.]),
+                           np.zeros((2,), dtype=np.float64),
+                           np.asarray([100, 0]), 100)
+                          ])
 def test_random_with_persistance(low, high, array, persist, timestep):
     """
     Since numbers are randomly generated, can only test
@@ -55,7 +55,7 @@ def test_random_with_persistance(low, high, array, persist, timestep):
         assert array[persist <= 0] == 0
 
         # for persist == timestep, output is within [low, high] bounds
-        eq_mask = [persist == timestep]
+        eq_mask = persist == timestep
         if np.any(eq_mask):
             assert (array[eq_mask] >= low[eq_mask] and
                     array[eq_mask] <= high[eq_mask])
