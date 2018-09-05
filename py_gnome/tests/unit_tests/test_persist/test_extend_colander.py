@@ -18,8 +18,8 @@ from gnome.utilities.time_utils import FixedOffset
 from gnome.environment.gridded_objects_base import Time
 from gnome.environment.timeseries_objects_base import (TimeseriesData,
                                                        TimeseriesVector)
-from gnome.utilities.serializable_demo_objects import DemoObj, DemoObjSchema
-from gnome.persist.base_schema import ObjType, ObjTypeSchema, GeneralGnomeObjectSchema
+from gnome.utilities.serializable_demo_objects import DemoObj
+
 
 @pytest.fixture('class')
 def dates():
@@ -29,13 +29,15 @@ def dates():
                      dt.datetime(2000, 1, 1, 6),
                      dt.datetime(2000, 1, 1, 8), ])
 
+
 @pytest.fixture('class')
 def series_data():
-    return np.array([1,3,6,10,15])
+    return np.array([1, 3, 6, 10, 15])
+
 
 @pytest.fixture('class')
 def series_data2():
-    return np.array([2,6,12,20,30])
+    return np.array([2, 6, 12, 20, 30])
 
 
 class Test_LocalDateTime(object):
@@ -168,6 +170,7 @@ class TestDemoObj(object):
         serial = inst.serialize(options={'raw_paths': False})
         assert serial['filename'] == 'foo.nc'
 
+
 class TestObjType(object):
     _t = Time(dates())
     test_class = TimeseriesVector
@@ -176,6 +179,7 @@ class TestObjType(object):
                    TimeseriesData(name='v', time=_t, data=series_data2())],
         units='m/s'
     )
+
     def test_serialization(self):
         serial = self.test_class_instance.serialize()
         pp.pprint(serial)
@@ -184,5 +188,5 @@ class TestObjType(object):
         assert deser == self.test_class_instance
 
     def test_save_load(self):
-        #without context manager
+        # without context manager
         json_, zipfile_, refs = self.test_class_instance.save('Test.zip')

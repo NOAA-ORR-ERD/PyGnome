@@ -635,21 +635,21 @@ class GnomeId(AddLogger):
             elif zipfile.is_zipfile(saveloc):
                 #saveloc is a zip archive
                 #get json from the file to start the process
-                saveloc = zipfile.ZipFile(saveloc, 'r')
-                if filename:
-                    with saveloc.open(filename, 'rU') as fp:
-                        json_ = json.load(fp, parse_float=True, parse_int=True)
-                    return cls._schema().load(json_, saveloc=saveloc, refs=refs)
-                else:
-                    #no filename, so search archive
-                    for fn in saveloc.namelist():
-                        if fn.endswith('.json'):
-                            with saveloc.open(fn, 'rU') as fp:
-                                json_ = json.load(fp)
-                            if 'obj_type' in json_:
-                                if class_from_objtype(json_['obj_type']) is cls:
-                                    return cls._schema().load(json_, saveloc=saveloc, refs=refs)
-                    raise ValueError('No .json file containing a {0} found in archive {1}'.format(cls.__name__, saveloc))
+                with zipfile.ZipFile(saveloc, 'r') as saveloc:
+                    if filename:
+                        with saveloc.open(filename, 'rU') as fp:
+                            json_ = json.load(fp, parse_float=True, parse_int=True)
+                        return cls._schema().load(json_, saveloc=saveloc, refs=refs)
+                    else:
+                        #no filename, so search archive
+                        for fn in saveloc.namelist():
+                            if fn.endswith('.json'):
+                                with saveloc.open(fn, 'rU') as fp:
+                                    json_ = json.load(fp)
+                                if 'obj_type' in json_:
+                                    if class_from_objtype(json_['obj_type']) is cls:
+                                        return cls._schema().load(json_, saveloc=saveloc, refs=refs)
+                        raise ValueError('No .json file containing a {0} found in archive {1}'.format(cls.__name__, saveloc))
             else:
                 #saveloc is .json file
                 with open(saveloc, 'r') as fp:

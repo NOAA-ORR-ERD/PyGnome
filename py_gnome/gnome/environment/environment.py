@@ -5,7 +5,11 @@ the Wind object defines the Wind conditions for the spill
 import copy
 
 
-from repoze.lru import lru_cache
+try:
+    from functools import lru_cache  # it's built-in on py3
+except ImportError:
+    from backports.functools_lru_cache import lru_cache  # needs backports for py2
+
 from colander import SchemaNode, MappingSchema, Float, String, drop, OneOf
 
 import gsw

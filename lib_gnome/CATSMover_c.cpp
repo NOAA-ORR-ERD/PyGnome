@@ -123,7 +123,7 @@ OSErr CATSMover_c::ComputeVelocityScale(const Seconds& model_time)
 			{
 				// unable to compute refScale
 				this->refScale = 0;
-				return -1;
+				return -2;	// to flag a ref pt error for pygnome
 			}
 
 			this->refScale = scaleValue / length; 
@@ -402,7 +402,7 @@ VelocityRec CATSMover_c::GetScaledPatValue(const Seconds &model_time,
 
 	if (!this->fOptimize.isOptimizedForStep && this->scaleType == SCALE_OTHERGRID) {
 		// we need to update refScale
-		this->ComputeVelocityScale(model_time);
+		err = this->ComputeVelocityScale(model_time);
 	}
 	
 	// get and apply our time file scale factor
