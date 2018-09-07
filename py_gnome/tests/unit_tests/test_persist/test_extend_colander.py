@@ -165,7 +165,12 @@ class TestDemoObj(object):
                        TimeseriesData(name='v', time=_t, data=series_data2())],
             units='m/s'
         )
-        filename = os.path.normpath('C:\\foo.nc')
+        # kludge for platform differences
+        # It should work for the platform the test is running on:
+        if os.name == 'posix':
+            filename = 'some/random/path/foo.nc'
+        else:  # if not posix, should be windows
+            filename = os.path.normpath('C:\\foo.nc')
         inst = DemoObj(filename=filename, variable=tsv, variables=[tsv, tsv.variables[0]])
         serial = inst.serialize(options={'raw_paths': False})
         assert serial['filename'] == 'foo.nc'
