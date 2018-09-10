@@ -2,7 +2,7 @@ import pdb
 import datetime
 import zipfile
 import six
-import io
+import logging
 import collections
 import os
 import json
@@ -18,6 +18,8 @@ from extend_colander import NumpyFixedLenSchema
 from gnome.gnomeobject import Refs, class_from_objtype
 from gnome.persist.extend_colander import OrderedCollectionType
 from gnome.utilities.geometry.polygons import PolygonSet
+
+log = logging.getLogger(__name__)
 
 @deferred
 def now(node, kw):
@@ -165,6 +167,7 @@ class ObjType(SchemaType):
                 if id_ not in refs or id_ is None:
                     obj_type = class_from_objtype(value['obj_type'])
                     obj = obj_type.new_from_dict(value)
+                    log.info('Created new {0} object {1}'.format(obj.obj_type, obj.name))
                     node.register_refs(node, obj, refs)
                     if id_ is None:
                         id_ = obj.id
@@ -400,6 +403,7 @@ class ObjType(SchemaType):
                             if 'id' in fn:
                                 fn = fn['id']
                                 cstruct[r][i] = self._load_json_from_file(fn, saveloc)
+                                log.info('Loaded json from {0}'.format(fn))
                                 cstruct[r][i]['id'] = fn
                             else:
                                 #old-style obj-in-list (spill.initializers)
@@ -407,6 +411,7 @@ class ObjType(SchemaType):
                                 pass
                         else:
                             cstruct[r][i] = self._load_json_from_file(fn, saveloc)
+                            log.info('Loaded json from {0}'.format(fn))
                             cstruct[r][i]['id'] = fn
 
                 else:
@@ -419,6 +424,7 @@ class ObjType(SchemaType):
                         cstruct[r]['id'] = cstruct.get('name', cstruct.get('json_')) + '.' + r
                     elif fn is not None:
                         cstruct[r] = self._load_json_from_file(fn, saveloc)
+                        log.info('Loaded json from {0}'.format(fn))
                         cstruct[r]['id'] = fn
                 #since object id is not saved, but we need a means to ID this object
                 #during deserialization, append filename as object id. It's removed
@@ -433,6 +439,7 @@ class ObjType(SchemaType):
             if d in cstruct:
                 if isinstance(cstruct[d], six.string_types):
                     cstruct[d] = self._load_supporting_file(cstruct[d], saveloc, tmpdir)
+                    log.info('Extracted file {0}'.format(cstruct[d]))
                 elif isinstance(cstruct[d], collections.Iterable):
                     #List, tuple, etc
                     for i, filename in enumerate(cstruct[d]):
