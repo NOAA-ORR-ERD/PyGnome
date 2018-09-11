@@ -31,6 +31,7 @@ from gnome.spill.release import BaseReleaseSchema, PointLineReleaseSchema,\
     ContinuousReleaseSchema, SpatialReleaseSchema
 from gnome.spill.elements.element_type import ElementTypeSchema
 from gnome.environment.water import WaterSchema
+from gnome.spill.le import LEData
 
 
 class BaseSpill(GnomeId):
@@ -44,6 +45,8 @@ class BaseSpill(GnomeId):
         initialize -- sub-classes will probably have a lot more to do
         """
         super(BaseSpill, self).__init__(**kwargs)
+        self.data = LEData()
+        self._le_production_timeline
 
     @property
     def release_time(self):
