@@ -13,5 +13,6 @@ from release import (Release,
                      GridRelease,
                      VerticalPlumeRelease,
                      InitElemsFromFile)
+from le import LEData
 import elements
 

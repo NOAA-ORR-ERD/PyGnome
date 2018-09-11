@@ -41,15 +41,17 @@ from gnome.basic_types import (world_point_type,
                                fate)
 from gnome import AddLogger
 
+def position_init_line_release(arr, start_position=None, end_position=None):
+    
 
-class ArrayType(AddLogger):
+class ArrayType(type):
     """
     Object used to capture attributes of numpy data array for elements
 
     An ArrayType specifies how data arrays associated with elements
     are defined.
     """
-    def __init__(self, shape, dtype, name, initial_value=0):
+    def __init__(self, shape, dtype, name, initial_value=0, init_func=None):
         """
         constructor for ArrayType
 
@@ -62,42 +64,21 @@ class ArrayType(AddLogger):
         self.dtype = dtype
         self.initial_value = initial_value
         self.name = name
+        self.init_func = init_func
 
-    def initialize_null(self, shape=None):
-        """
-        initialize array with 0 elements. Used so SpillContainer can
-        initializes all arrays with 0 elements. Used when the model is rewound.
-        The purpose is to show all data_arrays even if model is not yet running
-        or no particles have been released
-        """
-        return self.initialize(0, shape)
-
-    def initialize(self, num_elements, shape=None, initial_value=None):
+    def initialize(self, arr, *args, **kwargs):
         """
         Initialize a numpy array with the dtype and shape specified. The length
         of the array is given by num_elements and spill is given as input if
         the initialize function needs information about the spill to initialize
 
-        :param num_elements: number of elements so size of array to initialize
-
-        Optional parameter
-
-        :param shape=None: If this is None then use self.shape to determine
-            size of array to create, else use this parameter. This is primarily
-            used for ArrayTypes where either object's shape attribute is None
-            or we want to override the object's predefined 'shape' during
-            initialization
+        :param arr: numpy view into a data array
         """
-        if shape is None:
-            shape = self.shape
 
-        if initial_value is None:
-            initial_value = self.initial_value
-
-        arr = np.zeros((num_elements,) + shape, dtype=self.dtype)
-        arr[:] = initial_value
-
-        return arr
+        if self.init_func is None:
+            arr = self.initial_value
+        else:
+            self.init_func(arr, *args, **kwargs)
 
     def _num_gt_2(self, num):
         if num < 2:
