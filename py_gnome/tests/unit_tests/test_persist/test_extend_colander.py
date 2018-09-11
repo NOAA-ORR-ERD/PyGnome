@@ -154,7 +154,8 @@ class TestDemoObj(object):
             units='m/s'
         )
         inst = DemoObj(filename=None, variable=tsv, variables=[tsv, tsv.variables[0]])
-        json_, zipfile_, refs = inst.save(saveloc=None)
+        saveloc = tempfile.mkdtemp()
+        json_, zipfile_, refs = inst.save(saveloc=saveloc)
         loaded = DemoObj.load(zipfile_)
         assert inst == loaded
 
