@@ -1,4 +1,9 @@
+stages:
+  - test
+  - build
+
 test:
+  stage: test
   script:
   - yum update -y
   - yum install gcc gcc-c++ -y
@@ -17,10 +22,15 @@ test:
   - cd ./py_gnome
   - python ./setup.py install
   - py.test
+  
   tags:
-    - tests
+    - test
+    - docker
+    - oillibrary_base
+
 
 develop:
+  stage: build
   script:
     - docker pull gitlab.orr.noaa.gov:5002/oillibrary
     - docker tag gitlab.orr.noaa.gov:5002/oillibrary oillibrary
@@ -30,8 +40,10 @@ develop:
     - develop
   tags:
     - docker
+    - build
 
 master:
+  stage: build
   script:
     - docker pull gitlab.orr.noaa.gov:5002/oillibrary
     - docker tag gitlab.orr.noaa.gov:5002/oillibrary oillibrary
@@ -41,8 +53,10 @@ master:
      - master
   tags:
      - docker
+     - build
   
 production:
+  stage: build
   script:
       - docker pull gitlab.orr.noaa.gov:5002/oillibrary:production
       - docker tag gitlab.orr.noaa.gov:5002/oillibrary:production oillibrary
@@ -52,3 +66,4 @@ production:
      - production
   tags:
      - docker
+     - build

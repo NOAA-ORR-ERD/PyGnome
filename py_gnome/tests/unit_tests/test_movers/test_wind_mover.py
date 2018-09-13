@@ -669,39 +669,37 @@ def test_serialize_deserialize(wind_circ):
     """
     wind = Wind(filename=file_)
     wm = WindMover(wind)
-    serial = wm.serialize('webapi')
+    serial = wm.serialize()
     assert 'wind' in serial
 
-    dict_ = wm.deserialize(serial)
-    dict_['wind'] = wind_circ['wind']
-    wm.update_from_dict(dict_)
+    wm2 = wm.deserialize(serial)
 
-    assert wm.wind == wind_circ['wind']
+    assert wm == wm2
 
 
-@pytest.mark.parametrize("save_ref", [False, True])
-def test_save_load(save_ref, saveloc_):
-    """
-    tests and illustrates the functionality of save/load for
-    WindMover
-    """
-    wind = Wind(filename=file_)
-    wm = WindMover(wind)
-    wm_fname = 'WindMover_save_test.json'
-    refs = None
-    if save_ref:
-        w_fname = 'Wind.json'
-        refs = References()
-        refs.reference(wind, w_fname)
-        wind.save(saveloc_, refs, w_fname)
-
-    wm.save(saveloc_, references=refs, name=wm_fname)
-
-    l_refs = References()
-    obj = load(os.path.join(saveloc_, wm_fname), l_refs)
-    assert (obj == wm and obj is not wm)
-    assert (obj.wind == wind and obj.wind is not wind)
-    shutil.rmtree(saveloc_)  # clean-up
+# @pytest.mark.parametrize("save_ref", [False, True])
+# def test_save_load(save_ref, saveloc_):
+#     """
+#     tests and illustrates the functionality of save/load for
+#     WindMover
+#     """
+#     wind = Wind(filename=file_)
+#     wm = WindMover(wind)
+#     wm_fname = 'WindMover_save_test.json'
+#     refs = None
+#     if save_ref:
+#         w_fname = 'Wind.json'
+#         refs = References()
+#         refs.reference(wind, w_fname)
+#         wind.save(saveloc_, refs, w_fname)
+#
+#     wm.save(saveloc_, references=refs, filename=wm_fname)
+#
+#     l_refs = References()
+#     obj = load(os.path.join(saveloc_, wm_fname), l_refs)
+#     assert (obj == wm and obj is not wm)
+#     assert (obj.wind == wind and obj.wind is not wind)
+#     shutil.rmtree(saveloc_)  # clean-up
 
 
 def test_array_types():
