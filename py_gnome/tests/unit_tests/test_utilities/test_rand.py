@@ -55,7 +55,7 @@ def test_random_with_persistance(low, high, array, persist, timestep):
         assert array[persist <= 0] == 0
 
         # for persist == timestep, output is within [low, high] bounds
-        eq_mask = [persist == timestep]
+        eq_mask = persist == timestep
         if np.any(eq_mask):
             assert (array[eq_mask] >= low[eq_mask] and
                     array[eq_mask] <= high[eq_mask])

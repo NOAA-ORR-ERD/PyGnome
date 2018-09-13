@@ -538,8 +538,9 @@ def sample_sc_no_uncertainty():
     return sc
 
 
-@pytest.fixture(scope='module')
-def sample_model():
+
+# @pytest.fixture(scope='module')
+def sample_model_fixture_base():
     """
     sample model with no outputter and no spills. Use this as a template for
     fixtures to add spills
@@ -598,8 +599,12 @@ def sample_model():
             }
 
 
-@pytest.fixture(scope='module')
-def sample_model2():
+# make this two fixtures - one module scope, one function scope
+sample_model = pytest.fixture(scope='module')(sample_model_fixture_base)
+sample_model_fcn = pytest.fixture(scope='function')(sample_model_fixture_base)
+
+
+def sample_model2_fixture_base():
     """
     sample model with no outputter and no spills. Use this as a template for
     fixtures to add spills
@@ -656,16 +661,21 @@ def sample_model2():
             'release_end_pos': end_points}
 
 
-@pytest.fixture(scope='function')
-def sample_model_fcn():
-    'sample_model with function scope'
-    return sample_model()
+# make this two fixtures - one module scope, one function scope
+sample_model2 = pytest.fixture(scope='module')(sample_model2_fixture_base)
+sample_model_fcn2 = pytest.fixture(scope='function')(sample_model2_fixture_base)
 
 
-@pytest.fixture(scope='function')
-def sample_model_fcn2():
-    'sample_model with function scope'
-    return sample_model2()
+# @pytest.fixture(scope='function')
+# def sample_model_fcn():
+#     'sample_model with function scope'
+#     return sample_model()
+
+
+# @pytest.fixture(scope='function')
+# def sample_model_fcn2():
+#     'sample_model with function scope'
+#     return sample_model2()
 
 
 def sample_model_weathering(sample_model_fcn,
