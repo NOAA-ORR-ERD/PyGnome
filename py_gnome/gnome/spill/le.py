@@ -20,6 +20,7 @@ class LEData(dict):
         self._array_types.update(default_array_types)
         self._bufs = {}
         self._len = 0
+        self._initialized = False
 
     def __eq__(self, other):
         'Compare equality of two LEData objects'
@@ -68,8 +69,9 @@ class LEData(dict):
             self._bufs[name] = np.zeros((100,) + shape, dtype=atype.dtype)
             self._bufs[name][:] = atype.initial_value
             self[name] = self._bufs[name][0:0]
+        self._initialized = True
 
-    def _extend_data_arrays(self, num_new_elements):
+    def extend_data_arrays(self, num_new_elements):
         """
         initialize data arrays once spill has spawned particles
         Data arrays are set to their initial_values
@@ -77,6 +79,8 @@ class LEData(dict):
         :param int num_released: number of particles released
 
         """
+        if not self._initialized:
+            raise ValueError("Must initialize spill data arrays before use")
         for name, atype in self._array_types.items():
             # initialize all arrays even if 0 length
             if atype.shape is None:
