@@ -187,7 +187,7 @@ class ShipDriftMover(Mover, serializable.Serializable):
             self.status_codes = sc['status_codes']
         except KeyError, err:
             raise ValueError('The spill container does not have the required'
-                             'data arrays\n' + err.message)
+                             'data arrays\n' + str(err))
 
         self.positions = (self.positions.view(dtype=world_point)
                           .reshape((len(self.positions),)))

@@ -106,7 +106,7 @@ class SimpleMover(Mover, serializable.Serializable):
             status_codes = spill['status_codes']
         except KeyError, err:
             raise ValueError("The spill doesn't have the required "
-                             "data arrays\n{0}".format(err.message))
+                             "data arrays\n{}".format(err))
 
         # which ones should we move?
 
