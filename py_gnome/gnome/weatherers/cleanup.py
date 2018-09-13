@@ -523,7 +523,7 @@ class Burn(CleanUpBase):
         '''
         if value not in self.valid_area_units:
             e = uc.InvalidUnitError((value, 'Area'))
-            self.logger.error(e.message)
+            self.logger.error(str(e))
             raise e
         else:
             self._area_units = value
@@ -580,7 +580,7 @@ class Burn(CleanUpBase):
         '''
         if value not in self.valid_length_units:
             e = uc.InvalidUnitError((value, 'Length'))
-            self.logger.error(e.message)
+            self.logger.error(str(e))
             raise e
 
         self._thickness_units = value

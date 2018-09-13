@@ -150,7 +150,7 @@ class ObjType(SchemaType):
                 else:
                     return subnode.serialize(subappstruct, options=options)
             except TypeError as e:
-                if 'unexpected keyword argument' in e.message:
+                if 'unexpected keyword argument' in str(e):
                     return subnode.serialize(subappstruct)
                 else:
                     raise e
