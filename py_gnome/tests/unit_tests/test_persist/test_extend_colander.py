@@ -6,14 +6,15 @@ tests for our extensions to colander
 Not complete at all!
 
 """
-import datetime as dt
 import pytest
+
 import numpy as np
-from gnome.persist import extend_colander
 import os
 import pprint as pp
-
+import tempfile
 from datetime import datetime
+
+from gnome.persist import extend_colander
 from gnome.utilities.time_utils import FixedOffset
 from gnome.environment.gridded_objects_base import Time
 from gnome.environment.timeseries_objects_base import (TimeseriesData,
@@ -23,11 +24,11 @@ from gnome.utilities.serializable_demo_objects import DemoObj
 
 @pytest.fixture('class')
 def dates():
-    return np.array([dt.datetime(2000, 1, 1, 0),
-                     dt.datetime(2000, 1, 1, 2),
-                     dt.datetime(2000, 1, 1, 4),
-                     dt.datetime(2000, 1, 1, 6),
-                     dt.datetime(2000, 1, 1, 8), ])
+    return np.array([datetime(2000, 1, 1, 0),
+                     datetime(2000, 1, 1, 2),
+                     datetime(2000, 1, 1, 4),
+                     datetime(2000, 1, 1, 6),
+                     datetime(2000, 1, 1, 8), ])
 
 
 @pytest.fixture('class')
@@ -127,7 +128,6 @@ class Test_LocalDateTime(object):
 #         pass
 
 
-
 class TestDemoObj(object):
     def test_serialization(self):
         _t = Time(dates())
@@ -144,7 +144,6 @@ class TestDemoObj(object):
         assert deser.variable == inst.variable
         assert deser.variables == inst.variables
         assert deser.filename == 'foo.nc'
-
 
     def test_save_load(self):
         _t = Time(dates())
