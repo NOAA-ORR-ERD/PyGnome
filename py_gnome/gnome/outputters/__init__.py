@@ -1,5 +1,5 @@
 
-from outputter import Outputter, BaseOutputterSchema
+from outputter import Outputter, BaseSchema
 from netcdf import NetCDFOutput, NetCDFOutputSchema
 from renderer import Renderer, RendererSchema
 from weathering import WeatheringOutput
@@ -14,21 +14,3 @@ from image import IceImageOutput
 from shape import ShapeOutput
 
 # NOTE: no need for __all__ if you want export everything!
-outputters = [Outputter,
-              NetCDFOutput,
-              Renderer,
-              WeatheringOutput,
-              TrajectoryGeoJsonOutput,
-              IceGeoJsonOutput,
-              IceJsonOutput,
-              CurrentJsonOutput,
-              SpillJsonOutput,
-              KMZOutput,
-              IceImageOutput,
-              ShapeOutput]
-
-schemas = set()
-for cls in outputters:
-    if hasattr(cls, '_schema'):
-        schemas.add(cls._schema)
-schemas = list(schemas)

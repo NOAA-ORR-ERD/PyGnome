@@ -58,12 +58,6 @@ sort_order = [ChemicalDispersion,
               Langmuir,
               ]
 
-weatherer_schemas = set()
-for cls in sort_order:
-    if hasattr(cls, '_schema'):
-        weatherer_schemas.add(cls._schema)
-weatherer_schemas = list(weatherer_schemas)
-
 weatherers_idx = dict([(v, i) for i, v in enumerate(sort_order)])
 
 

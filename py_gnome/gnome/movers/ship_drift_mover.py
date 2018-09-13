@@ -14,41 +14,35 @@ from gnome.basic_types import (velocity_rec,
                                status_code_type,
                                oil_status)
 from gnome.utilities import projections
-from gnome.utilities import rand
+from gnome.utilities import serializable, rand
 
 from gnome.environment import Grid
 from gnome.movers import Mover, ProcessSchema
 
-
-class ShipDriftMoverSchema(ProcessSchema):
-    wind_file = SchemaNode(
-        String(), missing=drop, save=True, isdatafile=True, test_equal=False
-    )
-    topology_file = SchemaNode(
-        String(), missing=drop, save=True, isdatafile=True, test_equal=False
-    )
-    wind_scale = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
-    grid_type = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
-    drift_angle = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
+from gnome.persist.base_schema import ObjType
 
 
-class ShipDriftMover(Mover):
+class ShipDriftMoverSchema(ObjType, ProcessSchema):
+    wind_file = SchemaNode(String(), missing=drop)
+    topology_file = SchemaNode(String(), missing=drop)
+    wind_scale = SchemaNode(Float(), missing=drop)
+    grid_type = SchemaNode(Float(), missing=drop)
+    drift_angle = SchemaNode(Float(), missing=drop)
+
+
+class ShipDriftMover(Mover, serializable.Serializable):
+    _state = copy.deepcopy(Mover._state)
+    _state.add(update=['wind_scale', 'grid_type', 'drift_angle'],
+               save=['wind_scale', 'grid_type', 'drift_angle'])
+    _state.add_field([serializable.Field('wind_file', save=True,
+                     read=True, isdatafile=True, test_for_eq=False),
+                     serializable.Field('topology_file', save=True,
+                     read=True, isdatafile=True, test_for_eq=False)])
 
     _schema = ShipDriftMoverSchema
 
-    def __init__(self,
-                 wind_file=None,
-                 topology_file=None,
-                 grid_type=1,
-                 drift_angle=0,
-                 extrapolation_is_allowed=False,
-                 time_offset=0,
+    def __init__(self, wind_file, topology_file=None, grid_type=1,
+                 drift_angle=0, extrapolate=False, time_offset=0,
                  **kwargs):
         """
         :param wind_file: file containing wind data on a grid

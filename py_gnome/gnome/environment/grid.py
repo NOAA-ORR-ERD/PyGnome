@@ -6,6 +6,7 @@ import copy
 from colander import (SchemaNode, drop, Float)
 
 from gnome.utilities.time_utils import date_to_sec
+from gnome.utilities.serializable import Serializable
 from gnome.persist import base_schema
 from gnome.cy_gnome.cy_grid_curv import CyTimeGridWindCurv
 from gnome.cy_gnome.cy_grid_rect import CyTimeGridWindRect
@@ -13,15 +14,24 @@ from gnome.cy_gnome.cy_grid_rect import CyTimeGridWindRect
 from .environment import Environment
 
 
-class GridSchema(base_schema.ObjTypeSchema):
+class GridSchema(base_schema.ObjType):
+    name = 'grid'
     grid_type = SchemaNode(Float(), missing=drop)
 
 
-class Grid(Environment):
+class Grid(Environment, Serializable):
     '''
     Defines a grid for a current or wind
     '''
 
+    _update = []
+
+    # used to create new obj or as readonly parameter
+    _create = []
+    _create.extend(_update)
+
+    _state = copy.deepcopy(Environment._state)
+    _state.add(save=_create, update=_update)
     _schema = GridSchema
 
     def __init__(self, filename, topology_file=None, grid_type=1,

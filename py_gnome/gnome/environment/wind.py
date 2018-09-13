@@ -22,6 +22,7 @@ from gnome.basic_types import wind_datasources
 
 from gnome.cy_gnome.cy_ossm_time import ossm_wind_units
 
+from gnome.utilities.serializable import Serializable, Field
 from gnome.utilities.time_utils import sec_to_datetime
 from gnome.utilities.timeseries import Timeseries
 from gnome.utilities.inf_datetime import InfDateTime
@@ -29,8 +30,7 @@ from gnome.utilities.distributions import RayleighDistribution as rayleigh
 
 from gnome.persist.extend_colander import (DefaultTupleSchema,
                                            LocalDateTime,
-                                           DatetimeValue2dArraySchema,
-                                           FilenameSchema)
+                                           DatetimeValue2dArraySchema)
 from gnome.persist.validators import convertible_to_seconds
 from gnome.persist import validators, base_schema
 
@@ -82,34 +82,34 @@ class WindTimeSeriesSchema(DatetimeValue2dArraySchema):
         validators.ascending_datetime(node, cstruct)
 
 
-class WindSchema(base_schema.ObjTypeSchema):
+class WindSchema(base_schema.ObjType):
     '''
     validate data after deserialize, before it is given back to pyGnome's
     from_dict to set _state of object
     '''
-    name = SchemaNode(String(), test_equal=False)
-    description = SchemaNode(String())
-    filename = FilenameSchema(isdatafile=True, update=False, test_equal=False)#Thanks to CyTimeseries
-    updated_at = SchemaNode(LocalDateTime())
-    latitude = SchemaNode(Float())
-    longitude = SchemaNode(Float())
-    source_id = SchemaNode(String())
-    source_type = SchemaNode(
-        String(),
-        validator=OneOf(wind_datasources._attr),
-        default='undefined', missing='undefined'
-    )
+    name = 'wind'
+    description = SchemaNode(String(), missing=drop)
+    filename = SchemaNode(String(), missing=drop)
+    updated_at = SchemaNode(LocalDateTime(), missing=drop)
+
+    latitude = SchemaNode(Float(), missing=drop)
+    longitude = SchemaNode(Float(), missing=drop)
+    source_id = SchemaNode(String(), missing=drop)
+    source_type = SchemaNode(String(),
+                             validator=OneOf(wind_datasources._attr),
+                             default='undefined', missing='undefined')
     units = SchemaNode(String(), default='m/s')
-    speed_uncertainty_scale = SchemaNode(Float())
-    timeseries = WindTimeSeriesSchema(test_equal=False) #Because comparing datetimevalue2d arrays does not play nice
-    extrapolation_is_allowed = SchemaNode(Boolean())
-    data_start = SchemaNode(LocalDateTime(), read_only=True,
+    speed_uncertainty_scale = SchemaNode(Float(), missing=drop)
+
+    timeseries = WindTimeSeriesSchema(missing=drop)
+    extrapolation_is_allowed = SchemaNode(Boolean(), missing=drop)
+    data_start = SchemaNode(LocalDateTime(), missing=drop,
                             validator=convertible_to_seconds)
-    data_stop = SchemaNode(LocalDateTime(), read_only=True,
+    data_stop = SchemaNode(LocalDateTime(), missing=drop,
                            validator=convertible_to_seconds)
 
 
-class Wind(Timeseries, Environment):
+class Wind(Serializable, Timeseries, Environment):
     '''
     Defines the Wind conditions for a single point
     '''
@@ -117,7 +117,35 @@ class Wind(Timeseries, Environment):
     _ref_as = 'wind'
 
     # default units for input/output data
+    _update = ['description',
+               'latitude',
+               'longitude',
+               'source_type',
+               'source_id',  # what is source ID? Buoy ID?
+               'updated_at',
+               'speed_uncertainty_scale']
+
+    # used to create new obj or as readonly parameter
+    _create = []
+    _create.extend(_update)
+
+    _state = copy.deepcopy(Environment._state)
+    _state.add(save=_create, update=_update)
     _schema = WindSchema
+
+    # add 'filename' as a Field object
+    _state.add_field([Field('filename', isdatafile=True, save=True, read=True,
+                            test_for_eq=False),
+                      Field('timeseries', save=False, update=True),
+                      Field('extrapolation_is_allowed', save=True,
+                            update=True),
+                      # test for equality of units a little differently
+                      Field('units', save=True, update=True,
+                            test_for_eq=False),
+                      Field('data_start', read=True),
+                      Field('data_stop', read=True),
+                      ])
+    _state['name'].test_for_eq = False
 
     # list of valid velocity units for timeseries
     valid_vel_units = _valid_units('Velocity')
@@ -177,6 +205,8 @@ class Wind(Timeseries, Environment):
                     raise TypeError('Units must be provided with timeseries')
 
                 self.set_wind_data(timeseries, units, coord_sys)
+
+            self.name = kwargs.pop('name', self.__class__.__name__)
 
         self.extrapolation_is_allowed = extrapolation_is_allowed
 
@@ -285,25 +315,23 @@ class Wind(Timeseries, Environment):
 
         return data
 
-#     def save(self, saveloc, references=None, filename=None, overwrite=True):
-#         '''
-#         Write Wind timeseries to file or to zip,
-#         then call save method using super
-#         '''
-#         json_, zipfile_, refs = super(Wind, self).save(saveloc, references, overwrite=overwrite)
-#         import pdb
-#         pdb.set_trace()
-#         filename = (filename, self.name + '.json')[filename is None]
-#         ts_name = os.path.splitext(filename)[0] + '_data.WND'
-#
-#         if zipfile.is_zipfile(saveloc):
-#             self._write_timeseries_to_zip(saveloc, ts_name)
-#             self._filename = ts_name
-#         else:
-#             datafile = os.path.join(saveloc, ts_name)
-#             self._write_timeseries_to_file(datafile)
-#             self._filename = datafile
+    def save(self, saveloc, references=None, name=None):
+        '''
+        Write Wind timeseries to file or to zip,
+        then call save method using super
+        '''
+        name = (name, 'Wind.json')[name is None]
+        ts_name = os.path.splitext(name)[0] + '_data.WND'
 
+        if zipfile.is_zipfile(saveloc):
+            self._write_timeseries_to_zip(saveloc, ts_name)
+            self._filename = ts_name
+        else:
+            datafile = os.path.join(saveloc, ts_name)
+            self._write_timeseries_to_file(datafile)
+            self._filename = datafile
+
+        return super(Wind, self).save(saveloc, references, name)
 
     def _write_timeseries_to_zip(self, saveloc, ts_name):
         '''
@@ -352,6 +380,19 @@ class Wind(Timeseries, Environment):
                      .format(idt,
                              round(val[i, 0], 4),
                              round(val[i, 1], 4)))
+
+    def update_from_dict(self, data):
+        '''
+        update attributes from dict - override base class because we want to
+        set the units before updating the data so conversion is done correctly.
+        Internally all data is stored in SI units.
+        '''
+        updated = self.update_attr('units', data.pop('units', self.units))
+
+        if super(Wind, self).update_from_dict(data):
+            return True
+        else:
+            return updated
 
     def get_wind_data(self, datetime=None, units=None, coord_sys='r-theta'):
         """

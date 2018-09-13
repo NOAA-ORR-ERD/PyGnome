@@ -19,10 +19,11 @@ from colander import (SchemaNode, Float)
 
 from gnome.basic_types import oil_status, mover_type
 from gnome.utilities.projections import FlatEarthProjection as proj
+from gnome.utilities import serializable
 
 from gnome.movers import Mover, ProcessSchema
 
-from gnome.persist.base_schema import ObjTypeSchema
+from gnome.persist.base_schema import ObjType
 from gnome.persist.extend_colander import NumpyFixedLenSchema
 
 
@@ -36,16 +37,12 @@ class SimpleMoverVelocitySchema(NumpyFixedLenSchema):
     vel_z = SchemaNode(Float())
 
 
-class SimpleMoverSchema(ProcessSchema):
-    uncertainty_scale = SchemaNode(
-        Float(), save=True, update=True
-    )
-    velocity = SimpleMoverVelocitySchema(
-        save=True, update=True
-    )
+class SimpleMoverSchema(ObjType, ProcessSchema):
+    uncertainty_scale = SchemaNode(Float())
+    velocity = SimpleMoverVelocitySchema()
 
 
-class SimpleMover(Mover):
+class SimpleMover(Mover, serializable.Serializable):
 
     """
     simple_mover
@@ -56,6 +53,9 @@ class SimpleMover(Mover):
      think about it)
     """
 
+    _state = copy.deepcopy(Mover._state)
+    _state.add(update=['uncertainty_scale', 'velocity'],
+               save=['uncertainty_scale', 'velocity'])
     _schema = SimpleMoverSchema
 
     def __init__(self,

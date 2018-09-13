@@ -5,7 +5,7 @@ from spill import (Spill,
                    grid_spill)
 
 from release import (Release,
-                     BaseReleaseSchema,
+                     ReleaseSchema,
                      PointLineRelease,
                      PointLineReleaseSchema,
                      ContinuousRelease,

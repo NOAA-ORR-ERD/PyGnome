@@ -35,6 +35,16 @@ def test_default_properties():
     assert mover.default_num_method == 'RK2'
 
 
+def test_real_data_start_stop():
+    mover = PyMover()
+
+    with raises(NotImplementedError):
+        _data_start = mover.data_start
+
+    with raises(NotImplementedError):
+        _data_stop = mover.data_stop
+
+
 class TestActive:
     time_step = 15 * 60  # seconds
     model_time = datetime(2012, 8, 20, 13)

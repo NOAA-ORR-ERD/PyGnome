@@ -67,6 +67,7 @@ def test_init(element_type, amount):
     # else:
     #     assert len(spill.initializers) == 0
 
+    assert spill.name == 'Spill'
     assert spill.release_duration == 0
 
 
@@ -99,6 +100,8 @@ def test_amount_mass_vol(amount, units):
 
 
 def test_init_exceptions():
+    with raises(TypeError):
+        Spill()
 
     with raises(TypeError):
         Spill(Release(datetime.now()), amount=10)
@@ -712,8 +715,18 @@ class Test_point_line_release_spill:
                                          release_time=self.release_time,
                                          amount=amount,
                                          units=units)
-        new_spill = Spill.deserialize(spill.serialize())
-        assert new_spill == spill
+        dict_ = Spill.deserialize(spill.serialize(json_))
+        if json_ == 'save':
+            new_spill = Spill.new_from_dict(dict_)
+            assert spill == new_spill
+        else:
+            # for webapi, make new objects from nested objects before creating
+            # new element_type
+            dict_['element_type'] = spill.element_type
+            dict_['release'] = spill.release
+            new_spill = Spill.new_from_dict(dict_)
+            assert True
+
 
 """ A few more line release (point_line_release_spill) tests """
 num_elems = ((998, ),

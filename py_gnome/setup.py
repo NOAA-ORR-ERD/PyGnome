@@ -243,6 +243,8 @@ if sys.platform is "darwin" or "win32":
 # print netcdf_inc
 # print netcdf_lib_files
 
+# raise Exception("stopping here")
+
 
 # the cython extensions to build -- each should correspond to a *.pyx file
 extension_names = ['cy_mover',
@@ -323,11 +325,7 @@ cpp_files = [os.path.join(cpp_code_dir, f) for f in cpp_files]
 macros = [('pyGNOME', 1), ]
 
 # Build the extension objects
-
-# suppressing certain warnings
-compile_args = ["-Wno-unused-function",  # unused function - cython creates a lot
-                ]
-
+compile_args = []
 extensions = []
 
 lib = []
@@ -354,12 +352,9 @@ static_lib_files = netcdf_lib_files
 #          We also don't have the static builds for these.
 #          Also, the static_lib_files only need to be linked against
 #          lib_gnome in the following Extension.
-# CHB NOTE: one of these days, we need to figure out how to build against
-#           conda netcdf...
 
 if sys.platform == "darwin":
 
-    print "using these compile arguments:", compile_args
     basic_types_ext = Extension(r'gnome.cy_gnome.cy_basic_types',
                                 ['gnome/cy_gnome/cy_basic_types.pyx'] + cpp_files,
                                 language='c++',
@@ -500,7 +495,6 @@ if sys.platform == "win32":
 extensions.append(Extension("gnome.utilities.geometry.cy_point_in_polygon",
                             sources=sources,
                             include_dirs=include_dirs,
-                            extra_compile_args=compile_args,
                             extra_link_args=link_args,
                             ))
 
@@ -509,7 +503,6 @@ extensions.append(Extension("gnome.utilities.file_tools.filescanner",
                                                   'utilities',
                                                   'file_tools',
                                                   'filescanner.pyx')],
-                            extra_compile_args=compile_args,
                             include_dirs=include_dirs,
                             language="c",
                             ))

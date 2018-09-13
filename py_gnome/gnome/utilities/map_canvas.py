@@ -43,13 +43,12 @@ class MapCanvas(object):
     """
 
     def __init__(self,
-                 image_size=(800, 600),
+                 image_size,
                  projection=None,
                  viewport=None,
                  preset_colors='BW',
                  background_color='transparent',
-                 colordepth=8,
-                 **kwargs):
+                 colordepth=8):
         """
         create a new map image from scratch -- specifying the size
 
@@ -103,7 +102,6 @@ class MapCanvas(object):
 
         self.projection.set_scale(self.viewport, self.image_size)
         self.graticule = GridLines(self._viewport, self.projection)
-        super(MapCanvas, self).__init__()
 
     def viewport_to_dict(self):
         '''

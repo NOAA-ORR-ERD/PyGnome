@@ -765,7 +765,7 @@ class TestAddSpillContainerPair:
             alltrue = [check[ix].id == spill['id'] \
                                 for ix, spill in enumerate(toserial[key])]
             assert all(alltrue)
-            alltrue = [check[ix].obj_type == spill['obj_type'] \
+            alltrue = [check[ix].obj_type_to_dict() == spill['obj_type'] \
                                 for ix, spill in enumerate(toserial[key])]
             assert all(alltrue)
 

@@ -29,7 +29,7 @@ def model(sample_model, output_dir):
 
     water, wind = Water(), constant_wind(1., 0)
     model.environment += [water, wind]
-    model.weatherers += Evaporation(water=water, wind=wind)
+    model.weatherers += Evaporation(water, wind)
 
     et = model.spills[0].element_type
 

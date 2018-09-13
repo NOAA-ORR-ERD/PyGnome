@@ -183,7 +183,11 @@ def test_serialize_deserialize():
     wind = constant_wind(1., 0)
     av = RunningAverage(wind)
     json_ = av.serialize()
+    json_['wind'] = wind.serialize()
 
     # deserialize and ensure the dict's are correct
     d_av = RunningAverage.deserialize(json_)
-    assert d_av == av
+    assert d_av['wind'] == Wind.deserialize(json_['wind'])
+    d_av['wind'] = wind
+    av.update_from_dict(d_av)
+    assert av.wind is wind

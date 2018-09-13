@@ -16,8 +16,9 @@ from inspect import getmembers, ismethod
 import unit_conversion as uc
 from colander import (SchemaNode, Bool, String, Float, drop)
 
-from gnome.gnomeobject import GnomeId
-from gnome.persist.base_schema import ObjTypeSchema, GeneralGnomeObjectSchema
+from gnome.utilities.serializable import Serializable, Field
+from gnome.persist import class_from_objtype
+from gnome.persist.base_schema import ObjType
 
 from . import elements
 from .release import (PointLineRelease,
@@ -25,23 +26,19 @@ from .release import (PointLineRelease,
                       GridRelease,
                       SpatialRelease)
 from .. import _valid_units
-from gnome.spill.release import BaseReleaseSchema, PointLineReleaseSchema,\
-    ContinuousReleaseSchema, SpatialReleaseSchema
-from gnome.spill.elements.element_type import ElementTypeSchema
-from gnome.environment.water import WaterSchema
 
 
-class BaseSpill(GnomeId):
+class BaseSpill(Serializable, object):
     """
     A base class for spills -- so we can check for them, etc.
 
     and as a spec for the API.
     """
-    def __init__(self, **kwargs):
+    def __init__(self, release_time=None, name=""):
         """
         initialize -- sub-classes will probably have a lot more to do
         """
-        super(BaseSpill, self).__init__(**kwargs)
+        self.release_time = release_time
 
     @property
     def release_time(self):
@@ -166,44 +163,29 @@ class BaseSpill(GnomeId):
         return False
 
 
-class SpillSchema(ObjTypeSchema):
+class SpillSchema(ObjType):
     'Spill class schema'
-    on = SchemaNode(
-        Bool(), default=True, missing=True,
-        description='on/off status of spill',
-        save=True, update=True
-    )
-    release = GeneralGnomeObjectSchema(
-        acceptable_schemas=[BaseReleaseSchema,
-                            PointLineReleaseSchema,
-                            ContinuousReleaseSchema,
-                            SpatialReleaseSchema],
-        save=True, update=True, save_reference=True
-    )
-    amount = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
-    units = SchemaNode(
-        String(), missing=drop, save=True, update=True
-    )
-    amount_uncertainty_scale = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
-#     frac_coverage = SchemaNode(
-#         Float(), missing=drop, save=True, update=True
-#     )
-    element_type = ElementTypeSchema(
-        save=True, update=True, save_reference=True
-    )
-    water = WaterSchema(
-        missing=drop, save=True, update=True, save_reference=True
-    )
+    on = SchemaNode(Bool(), default=True, missing=True,
+                    description='on/off status of spill')
+    amount = SchemaNode(Float(), missing=drop)
+    units = SchemaNode(String(), missing=drop)
+    amount_uncertainty_scale = SchemaNode(Float(), missing=drop)
 
 
 class Spill(BaseSpill):
     """
     Models a spill by combining Release and ElementType objects
     """
+    _update = ['on', 'release', 'amount', 'units', 'amount_uncertainty_scale']
+
+    _create = ['frac_coverage']
+    _create.extend(_update)
+
+    _state = copy.deepcopy(Serializable._state)
+    _state.add(save=_create, update=_update)
+    _state += [Field('element_type', save=True, update=True,
+                     save_reference=True),
+               Field('water', save=True, update=True, save_reference=True)]
     _schema = SpillSchema
 
     valid_vol_units = _valid_units('Volume')
@@ -215,7 +197,7 @@ class Spill(BaseSpill):
     # _name = 'Spill'
 
     def __init__(self,
-                 release=None,
+                 release,
                  water=None,
                  element_type=None,
                  substance=None,
@@ -223,7 +205,7 @@ class Spill(BaseSpill):
                  amount=None,  # could be volume or mass
                  units=None,
                  amount_uncertainty_scale=0.0,
-                 **kwargs):
+                 name='Spill'):
         """
         Spills used by the gnome model. It contains a release object, which
         releases elements. It also contains an element_type object which
@@ -262,7 +244,6 @@ class Spill(BaseSpill):
             If amount property is None, then just floating elements
             (ie. 'windages')
         """
-        super(Spill, self).__init__(**kwargs)
         self.water = water
         self.release = release
 
@@ -293,6 +274,7 @@ class Spill(BaseSpill):
         # fixme: why is fractional area part of spill???
         # fraction of area covered by oil
         self.frac_coverage = 1.0
+        self.name = name
 
 
 # fixme: a bunch of these properties should really be defined in subclasses
@@ -389,6 +371,35 @@ class Spill(BaseSpill):
                 'amount={0.amount}, '
                 'units="{0.units}", '
                 ')'.format(self))
+
+    def __eq__(self, other):
+        """
+        over ride base == operator defined in Serializable class.
+        Spill object contains nested objects like ElementType and Release
+        objects. Check all properties here so nested objects properties
+        can be checked in the __eq__ implementation within the nested objects
+        """
+        if not self._check_type(other):
+            return False
+
+        if (self._state.get_field_by_attribute('save') !=
+                other._state.get_field_by_attribute('save')):
+            return False
+
+        for name in self._state.get_names('save'):
+            if not hasattr(self, name):
+                """
+                for an attribute like obj_type, base class has
+                obj_type_to_dict method so let base class convert the attribute
+                to dict, then compare
+                """
+                if (self.attr_to_dict(name) != other.attr_to_dict(name)):
+                    return False
+
+            elif getattr(self, name) != getattr(other, name):
+                return False
+
+        return True
 
     def _check_units(self, units):
         """
@@ -803,6 +814,66 @@ class Spill(BaseSpill):
             data_arrays['frac_coverage'][-num_new_particles:] = \
                 self.frac_coverage
 
+    def serialize(self, json_='webapi'):
+        """
+        override base serialize implementation
+        Need to add node for release object and element_type object
+        """
+        toserial = self.to_serialize(json_)
+        schema = self.__class__._schema()
+
+        o_json_ = schema.serialize(toserial)
+        o_json_['element_type'] = self.element_type.serialize(json_)
+        o_json_['release'] = self.release.serialize(json_)
+
+        if self.water is not None:
+            o_json_['water'] = self.water.serialize(json_)
+
+        return o_json_
+
+    @classmethod
+    def deserialize(cls, json_):
+        """
+        Instead of creating schema dynamically for Spill() before
+        deserialization, call nested object's serialize/deserialize methods
+
+        We also need to accept sparse json objects, in which case we will
+        not treat them, but just send them back.
+        """
+        if not cls.is_sparse(json_):
+            schema = cls._schema()
+
+            dict_ = schema.deserialize(json_)
+            relcls = class_from_objtype(json_['release']['obj_type'])
+            dict_['release'] = relcls.deserialize(json_['release'])
+
+            if json_['json_'] == 'webapi':
+                '''
+                save files store a reference to element_type so it will get
+                deserialized, created and added to this dict by load method
+                '''
+                etcls = class_from_objtype(json_['element_type']['obj_type'])
+                dict_['element_type'] = etcls.deserialize(json_['element_type']
+                                                          )
+
+                if 'water' in json_:
+                    w_cls = class_from_objtype(json_['water']['obj_type'])
+                    dict_['water'] = w_cls.deserialize(json_['water'])
+            else:
+                '''
+                Convert nested dict (release object) back into object. The
+                ElementType is now saved as a reference so it is taken care of
+                by load method
+                For the 'webapi', we're not always creating a new object
+                so do this only for 'save' files
+                '''
+                obj = relcls.new_from_dict(dict_.pop('release'))
+                dict_['release'] = obj
+
+            return dict_
+        else:
+            return json_
+
 
 """ Helper functions """
 
@@ -855,7 +926,7 @@ def surface_point_line_spill(num_elements,
                                      windage_persist=windage_persist,
                                      substance=substance)
 
-    return Spill(release=release,
+    return Spill(release,
                  element_type=element_type,
                  amount=amount,
                  units=units,
@@ -910,15 +981,13 @@ def grid_spill(bounds,
                                     randomly reset on this time scale
     :param str name='Surface Point/Line Release': a name for the spill
     '''
-    release = GridRelease(release_time,
-                          bounds,
-                          resolution)
+    release = GridRelease(release_time, bounds, resolution)
 
     element_type = elements.floating(windage_range=windage_range,
                                      windage_persist=windage_persist,
                                      substance=substance)
 
-    return Spill(release=release,
+    return Spill(release,
                  element_type=element_type,
                  amount=amount,
                  units=units,
@@ -1012,7 +1081,7 @@ def subsurface_plume_spill(num_elements,
                                   density=density,
                                   density_units=density_units)
 
-    return Spill(release=release,
+    return Spill(release,
                  element_type=element_type,
                  amount=amount,
                  units=units,
@@ -1030,7 +1099,7 @@ def continuous_release_spill(initial_elements,
                              on=True,
                              amount=None,
                              units=None,
-                             name='Point or Line Release'):
+                             name='Point/Line Release'):
     '''
     Helper function returns a Spill object containing a point or line release
     '''
@@ -1060,7 +1129,7 @@ def point_line_release_spill(num_elements,
                              on=True,
                              amount=None,
                              units=None,
-                             name='Point or Line Release'):
+                             name='Point/Line Release'):
     '''
     Helper function returns a Spill object containing a point or line release
     '''
@@ -1095,10 +1164,10 @@ def spatial_release_spill(start_positions,
 
     A spatial release is a spill that releases elements at known locations.
     '''
-    release = SpatialRelease(release_time=release_time,
+    release = SpatialRelease(release_time,
                              start_position=start_positions,
                              name=name)
-    spill = Spill(release=release,
+    spill = Spill(release,
                   water=water,
                   element_type=element_type,
                   substance=substance,

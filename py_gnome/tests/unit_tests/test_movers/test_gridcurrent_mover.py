@@ -187,7 +187,10 @@ def test_serialize_deserialize():
     """
 
     c_grid = GridCurrentMover(curr_file, topology_file)
-    serial = c_grid.serialize()
-    c2 = GridCurrentMover.deserialize(serial)
+    serial = c_grid.serialize('webapi')
+    dict_ = GridCurrentMover.deserialize(serial)
+    c2 = GridCurrentMover.new_from_dict(dict_)
     assert c_grid == c2
+
+    c_grid.update_from_dict(dict_)  # tests no failures
 

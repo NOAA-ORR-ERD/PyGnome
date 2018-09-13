@@ -21,21 +21,18 @@ from gnome.array_types import (frac_lost,  # due to evaporation and dissolution
                                viscosity,
                                frac_water)
 
+from gnome.utilities.serializable import Serializable, Field
 from gnome import constants
 from .core import WeathererSchema
 from gnome.weatherers import Weatherer
 from gnome.cy_gnome.cy_weatherers import emulsify_oil
-from gnome.environment.waves import WavesSchema
+from gnome.persist import class_from_objtype
 
 
-class EmulsificationSchema(WeathererSchema):
-    waves = WavesSchema(
-        save=True, update=True, save_reference=True
-    )
-
-
-class Emulsification(Weatherer):
-    _schema = EmulsificationSchema
+class Emulsification(Weatherer, Serializable):
+    _state = copy.deepcopy(Weatherer._state)
+    _state += [Field('waves', save=True, update=True, save_reference=True)]
+    _schema = WeathererSchema
 
     def __init__(self,
                  waves=None,

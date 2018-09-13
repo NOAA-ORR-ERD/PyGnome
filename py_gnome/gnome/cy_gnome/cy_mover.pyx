@@ -89,12 +89,8 @@ cdef class CyMover(object):
                 For now just raise an OSError - until the types of possible
                 errors are defined and enumerated
                 """
-                if err == -2:
-                    raise OSError('{0.__class__.__name__} returned an error: reference point not valid, err = {1}'
-                                  .format(self, err))
-                else:
-                    raise OSError('{0.__class__.__name__} returned an error: {1}'
-                                  .format(self, err))
+                raise OSError('{0.__class__.__name__} returned an error: {1}'
+                              .format(self, err))
         else:
             raise OSError('{0.__class__.__name__}: no C++ mover attached'
                           .format(self))
