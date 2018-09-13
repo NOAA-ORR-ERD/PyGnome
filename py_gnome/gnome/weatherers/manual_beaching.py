@@ -18,7 +18,6 @@ import unit_conversion as uc
 
 from gnome.basic_types import datetime_value_1d
 from gnome.weatherers import Weatherer
-from gnome.utilities.serializable import Serializable, Field
 from gnome.utilities.inf_datetime import InfDateTime
 
 from gnome.persist import validators, base_schema
@@ -27,6 +26,7 @@ from gnome.persist.extend_colander import (DefaultTupleSchema,
                                            DatetimeValue1dArraySchema)
 from .core import WeathererSchema
 from .cleanup import RemoveMass
+from gnome.environment.environment import WaterSchema
 
 
 class BeachingTupleSchema(DefaultTupleSchema):
@@ -64,9 +64,15 @@ class BeachingSchema(WeathererSchema):
     validate data after deserialize, before it is given back to pyGnome's
     from_dict to set _state of object
     '''
-    units = SchemaNode(String(), default='m^3')
-
-    timeseries = BeachingTimeSeriesSchema(missing=drop)
+    units = SchemaNode(
+        String(), default='m^3', save=True, update=True
+    )
+    timeseries = BeachingTimeSeriesSchema(
+        missing=drop, save=True, update=True
+    )
+    water = WaterSchema(
+        save=True, update=True, save_reference=True
+    )
 
 
 class Beaching(RemoveMass, Weatherer):
@@ -75,10 +81,6 @@ class Beaching(RemoveMass, Weatherer):
     manner in that Beaching removes mass at a user specified rate. Mixin the
     RemoveMass functionality.
     '''
-    _state = copy.deepcopy(Weatherer._state)
-    _state += [Field('timeseries', save=True, update=True),
-               Field('units', save=True, update=True),
-               Field('water', save=True, update=True, save_reference=True)]
     _schema = BeachingSchema
 
     def __init__(self,

@@ -158,10 +158,8 @@ def test_serialize_deserialize():
     """
 
     new_wind = ShipDriftMover(wind_file, topology_file, grid_type=2)
-    serial = new_wind.serialize('webapi')
-    dict_ = ShipDriftMover.deserialize(serial)
-    nw2 = ShipDriftMover.new_from_dict(dict_)
+    serial = new_wind.serialize()
+    nw2 = ShipDriftMover.deserialize(serial)
 
     assert new_wind == nw2
 
-    new_wind.update_from_dict(dict_)

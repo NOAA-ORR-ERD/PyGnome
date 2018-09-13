@@ -245,9 +245,6 @@ class OrderedCollection(object):
                 '{1}\n'
                 '}})'.format(self.__class__.__name__, '\n'.join(strlist)))
 
-    def __repr__(self):
-        return self.__str__()
-
     def __eq__(self, other):
         """ Equality of two ordered collections """
 
@@ -265,6 +262,39 @@ class OrderedCollection(object):
 
     def __ne__(self, other):
         return not self == other
+
+    def update(self, cstruct, refs=None):
+        '''
+        cstruct is meant to be a list of COMPLETE object serializations, or
+        GnomeID appstructs (refs to existing objects).
+        '''
+        if not isinstance(cstruct, list):
+            raise ValueError('Must update an OrderedCollection with a list')
+        current_values = self.values()
+        new_vals = []
+
+        for elem in cstruct:
+            if isinstance(elem, dict):
+                id_ = elem.get('id', None)
+                if id_ is None:
+                    raise ValueError('id of element in OC update dict is missing')
+                if id_ in self._d_index:
+                    #obj currently exists in this collection
+                    obj = self.get(id_)
+                    obj.update(elem)
+                else:
+                    raise ValueError('{0} is not an object contained by this OC'.format(id))
+                new_vals.append(obj)
+            elif isinstance(elem, self.dtype):
+                new_vals.append(elem)
+            else:
+                raise ValueError('update element is not dict or valid type for this OC')
+
+        self.clear()
+        self.add(new_vals)
+
+        return self
+
 
     #JAH: This is why OCs can be serialized and lists cannot!
     def to_dict(self):

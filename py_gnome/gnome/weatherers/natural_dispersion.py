@@ -19,19 +19,26 @@ from gnome.array_types import (viscosity,
                                frac_water,
                                droplet_avg_size)
 
-from gnome.utilities.serializable import Serializable, Field
 
 from .core import WeathererSchema
 from gnome.weatherers import Weatherer
+from gnome.environment.water import WaterSchema
+from gnome.environment.waves import WavesSchema
 
 g = constants.gravity  # the gravitational constant.
 
 
+class NaturalDispersionSchema(WeathererSchema):
+    water = WaterSchema(
+        save=True, update=True, save_reference=True
+    )
+    waves = WavesSchema(
+        save=True, update=True, save_reference=True
+    )
+
+
 class NaturalDispersion(Weatherer):
-    _state = copy.deepcopy(Weatherer._state)
-    _state += [Field('water', save=True, update=True, save_reference=True),
-               Field('waves', save=True, update=True, save_reference=True)]
-    _schema = WeathererSchema
+    _schema = NaturalDispersionSchema
 
     def __init__(self,
                  waves=None,

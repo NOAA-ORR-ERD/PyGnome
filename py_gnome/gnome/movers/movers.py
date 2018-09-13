@@ -12,30 +12,38 @@ from gnome.basic_types import (world_point,
                                spill_type,
                                status_code_type)
 
+from gnome.utilities import time_utils
+from gnome.persist.base_schema import ObjTypeSchema
+from gnome.cy_gnome.cy_rise_velocity_mover import CyRiseVelocityMover
+from gnome import GnomeId
 from gnome.utilities.projections import FlatEarthProjection
-from gnome.utilities import time_utils, serializable
 from gnome.utilities.inf_datetime import InfDateTime, InfTime, MinusInfTime
 
 from gnome.persist.validators import convertible_to_seconds
 from gnome.persist.extend_colander import LocalDateTime
 
 
-from gnome.cy_gnome.cy_rise_velocity_mover import CyRiseVelocityMover
-
-
-class ProcessSchema(MappingSchema):
+class ProcessSchema(ObjTypeSchema):
     '''
     base Process schema - attributes common to all movers/weatherers
     defined at one place
     '''
-    on = SchemaNode(Bool(), missing=drop)
-    active_start = SchemaNode(LocalDateTime(), missing=drop,
-                              validator=convertible_to_seconds)
-    active_stop = SchemaNode(LocalDateTime(), missing=drop,
-                             validator=convertible_to_seconds)
+    on = SchemaNode(
+        Bool(), missing=drop, save=True, update=True
+    )
+    active_start = SchemaNode(
+        LocalDateTime(),
+        missing=drop, validator=convertible_to_seconds,
+        save=True, update=True
+    )
+    active_stop = SchemaNode(
+        LocalDateTime(),
+        missing=drop, validator=convertible_to_seconds,
+        save=True, update=True
+    )
 
 
-class Process(AddLogger):
+class Process(GnomeId):
     """
     Base class from which all Python movers/weatherers can inherit
 
@@ -44,10 +52,6 @@ class Process(AddLogger):
     NOTE: Since base class is not Serializable, it does not need
     a class level _schema attribute.
     """
-    _state = copy.deepcopy(serializable.Serializable._state)
-    _state.add(update=['on', 'active_start', 'active_stop'],
-               save=['on', 'active_start', 'active_stop'],
-               read=['active'])
 
     def __init__(self, **kwargs):  # default min + max values for timespan
         """
@@ -169,6 +173,15 @@ class Process(AddLogger):
         """
         pass
 
+    @property
+    def data_start(self):
+        return MinusInfTime()
+
+    @property
+    def data_stop(self):
+        return InfTime()
+
+
 class Mover(Process):
     def get_move(self, sc, time_step, model_time_datetime):
         """
@@ -210,22 +223,6 @@ class PyMover(Mover):
                     for o in kwargs['env']:
                         if k in o._ref_as:
                             setattr(self, k, o)
-
-    @property
-    def data_start(self):
-        '''
-            Typically, a mover will have a linked Environment object, and
-            if this object manages a time series of data points, it will have
-            a data_start and data_stop attribute which indicate the times
-            where the data points begin and end.
-            Since the Environment object should manage its own attributes,
-            this attribute will be read-only
-        '''
-        raise NotImplementedError
-
-    @property
-    def data_stop(self):
-        raise NotImplementedError
 
     @property
     def is_data_on_cells(self):
@@ -412,7 +409,7 @@ class CyMover(Mover):
             self.status_codes = sc['status_codes']
         except KeyError, err:
             raise ValueError('The spill container does not have the required'
-                             'data arrays\n' + err.message)
+                             'data arrays\n' + str(err))
 
         if sc.uncertain:
             self.spill_type = spill_type.uncertainty
@@ -439,7 +436,7 @@ class CyMover(Mover):
                     except KeyError, err:
                         raise ValueError('The spill container does not have'
                                          ' the required data array\n{}'
-                                         .format(err.message))
+                                         .format(err))
 
                     self.mover.model_step_is_done(self.status_codes)
             else:

@@ -64,7 +64,7 @@ def model(sample_model_fcn, output_filename):
     water = Water()
     model.movers += RandomMover(diffusion_coef=100000)
     model.movers += constant_wind_mover(1.0, 0.0)
-    model.weatherers += Evaporation(water, model.movers[-1].wind)
+    model.weatherers += Evaporation(water=water, wind=model.movers[-1].wind)
 
     model.outputters += NetCDFOutput(output_filename)
 
@@ -587,8 +587,7 @@ def test_write_output_post_run(model, output_ts_factor):
     model.outputters += o_put
 
 
-@pytest.mark.parametrize(("json_"), ['save', 'webapi'])
-def test_serialize_deserialize(json_, output_filename):
+def test_serialize_deserialize(output_filename):
     '''
     todo: this behaves in unexpected ways when using the 'model' testfixture.
     For now, define a model in here for the testing - not sure where the
@@ -616,15 +615,11 @@ def test_serialize_deserialize(json_, output_filename):
         model.step()
         print "step: {0}, _start_idx: {1}".format(ix, o_put._start_idx)
 
-    dict_ = o_put.deserialize(o_put.serialize(json_))
-    o_put2 = NetCDFOutput.new_from_dict(dict_)
-    if json_ == 'save':
-        assert o_put == o_put2
-    else:
-        # _start_idx and _middle_of_run should not match
-        assert o_put._start_idx != o_put2._start_idx
-        assert o_put._middle_of_run != o_put2._middle_of_run
-        assert o_put != o_put2
+    o_put2 = NetCDFOutput.deserialize(o_put.serialize())
+    assert o_put == o_put2
+#     assert o_put._start_idx != o_put2._start_idx
+#     assert o_put._middle_of_run != o_put2._middle_of_run
+#     assert o_put != o_put2
 
     if os.path.exists(o_put.netcdf_filename):
         print '\n{0} exists'.format(o_put.netcdf_filename)
