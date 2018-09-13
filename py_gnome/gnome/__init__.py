@@ -4,11 +4,11 @@
 from itertools import chain
 
 import sys
-import os
+# import os
 import logging
 import json
 import warnings
-import pkg_resources
+# import pkg_resources
 import importlib
 
 import unit_conversion as uc
