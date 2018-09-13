@@ -989,13 +989,13 @@ class Model(GnomeId):
             # release particles for next step - these particles will be aged
             # in the next step
             num_released = spill.release_elements(self.time_step, self.model_time)
-
+            spill.initialize_elements(num_released, self.time_step, self.model_time)
             # initialize data - currently only weatherers do this so cycle
             # over weatherers collection - in future, maybe movers can also do
             # this
-#             if num_released > 0:
-#                 for item in self.weatherers:
-#                     item.initialize_data(sc, num_released)
+            if num_released > 0:
+                for item in self.weatherers:
+                    item.initialize_data(spill.data, num_released)
 
             self.logger.debug("{1._pid} released {0} new elements for step:"
                               " {1.current_time_step} for {1.name}".
