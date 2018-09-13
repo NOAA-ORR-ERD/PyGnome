@@ -402,14 +402,16 @@ void ShioTimeValue_c::GetYearDataPath(char *pathName)
 OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *value)
 {
 	OSErr err = 0;
-	Boolean needToCompute = true;
+	//Boolean needToCompute = true;
 	// Seconds modelStartTime = model->GetStartTime();	// minus AH 07/10/2012
 	// Seconds modelEndTime = model->GetEndTime();		// minus AH 07/10/2012
 
 	DateTimeRec beginDate, endDate;
 	Seconds beginSeconds;
 	Boolean daylightSavings;
+#ifndef pyGNOME
 	YEARDATAHDL		YHdl = 0; 
+#endif
 	double *XODE=0, *VPU=0;
     //YEARDATA		*yearData = (YEARDATA *) NULL;
 	long numConstituents;
@@ -911,7 +913,7 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 			long i;
 			Boolean valueFound = false;
 			Seconds midTime;
-			double forHeight, maxMinDeriv, largestDeriv = 0.;
+			double maxMinDeriv, largestDeriv = 0.;
 			HighLowData startHighLowData,endHighLowData;
 			double scaleFactor = 1.;
 			char msg[256];
@@ -1126,7 +1128,7 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 			//sprintf(msg,lfFix("The largest calculated derivative was %.4lf"),largestDeriv);
 			//strcat(msg, ".  Enter scale factor for heights coefficients file : ");
 			char msg[256];
-			double scaleFactor;
+			double scaleFactor = 1;
 			strcpy(msg, "Enter scale factor for progressive wave coefficients file : ");
 			if (fScaleFactor==0)
 			{
@@ -1180,7 +1182,7 @@ double ShioTimeValue_c::GetDeriv (Seconds t1, double val1, Seconds t2, double va
 OSErr ShioTimeValue_c::GetConvertedHeightValue(Seconds forTime, VelocityRec *value)
 {
 	long i;
-	OSErr err = 0;
+	//OSErr err = 0;
 	HighLowData startHighLowData,endHighLowData;
 	for( i=0 ; i<this->GetNumHighLowValues()-1; i++) 
 	{
@@ -1225,12 +1227,12 @@ OSErr ShioTimeValue_c::GetProgressiveWaveValue(const Seconds& forTime, VelocityR
 OSErr ShioTimeValue_c::GetLocationInTideCycle(const Seconds& model_time, short *ebbFloodType, float *fraction)
 {
 	
-	Seconds time = model_time, ebbFloodTime;	
+	Seconds time = model_time/*, ebbFloodTime*/;	
 	EbbFloodData ebbFloodData1, ebbFloodData2;
 	long i, numValues;
-	short type;
-	float factor;
-	OSErr err = 0;
+	//short type;
+	//float factor;
+	//OSErr err = 0;
 	
 	*ebbFloodType = -1;
 	*fraction = 0;
@@ -1280,8 +1282,8 @@ OSErr ShioTimeValue_c::GetLocationInTideCycle(const Seconds& model_time, short *
 		numValues = 2*(this->GetNumHighLowValues())-1;
 		for (i=0; i<numValues; i++) // show only max/mins, converted from high/lows
 		{
-			HighLowData startHighLowData,endHighLowData,nextHighLowData;
-			double maxMinDeriv;
+			HighLowData startHighLowData,endHighLowData/*,nextHighLowData*/;
+			//double maxMinDeriv;
 			Seconds midTime,midTime2;
 			long index = floor(i/2.);
 			
@@ -1410,17 +1412,17 @@ OSErr ShioTimeValue_c::ReadTimeValues (char *path)
 	//#pragma unused(unitsIfKnownInAdvance)	
 	// Note : this is a subset of the TShioTimeValue::ReadTimeValues, should look at combining the two...
 	char strLine[kMaxKeyedLineLength];
-	long i,numValues;
-	double value1, value2, magnitude, degrees;
+	long i/*,numValues*/;
+	//double value1, value2, magnitude, degrees;
 	CHARH f = 0;
-	DateTimeRec time;
+	//DateTimeRec time;
 	TimeValuePair pair;
-	OSErr	err = noErr,scanErr;
+	OSErr	err = noErr/*,scanErr*/;
 	long lineNum = 0;
 	char *p;
-	long numScanned;
-	double value, stationLat, stationLon;
-	CONTROLVAR  DatumControls;
+	//long numScanned;
+	double /*value, */stationLat, stationLon;
+	//ONTROLVAR  DatumControls;
 	
 	if ((err = OSSMTimeValue_c::InitTimeFunc()) > 0)
 		return err;
@@ -1589,9 +1591,9 @@ readError:
 	this->Dispose();
 	return -1;
 	
-Error:
-	if(f) DisposeHandle((Handle)f); f = nil;
-	return -1;
+//Error:
+	//if(f) DisposeHandle((Handle)f); f = nil;
+	//return -1;
 	
 }
 /////////////////////////////////////////////////
