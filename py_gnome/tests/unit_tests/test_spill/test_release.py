@@ -119,8 +119,13 @@ def test_release_serialization_deserialization(rel_type):
     '''
     cls = rel_type.__class__
     rel_type.num_released = 100  # read only parameter for releases
-    n_rel = cls.deserialize(rel_type.serialize())
-    assert n_rel == rel_type
+    for json_ in ('save', 'webapi'):
+        dict_ = cls.deserialize(rel_type.serialize(json_))
+        n_rel = cls.new_from_dict(dict_)
+        if json_ == 'save':
+            assert n_rel == rel_type
+        else:
+            assert n_rel != rel_type
 
 
 
@@ -189,8 +194,8 @@ class TestContinuousRelease:
         '''
         test rewind resets all parameters of interest
         '''
-        r = PointLineRelease(release_time=self.rel_time,
-                             start_position=self.pos,
+        r = PointLineRelease(self.rel_time,
+                             self.pos,
                              end_position=(1, 2, 3),
                              num_per_timestep=100,
                              end_release_time=self.rel_time + timedelta(hours=2))

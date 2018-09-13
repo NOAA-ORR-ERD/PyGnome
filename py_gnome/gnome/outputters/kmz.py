@@ -10,31 +10,34 @@ import base64
 from colander import SchemaNode, String, drop
 
 from gnome.basic_types import oil_status
+from gnome.utilities.serializable import Serializable, Field
 
-from .outputter import Outputter, BaseOutputterSchema
-from gnome.persist.extend_colander import FilenameSchema
+from .outputter import Outputter, BaseSchema
 
 from . import kmz_templates
 
 
-class KMZSchema(BaseOutputterSchema):
+class KMZSchema(BaseSchema):
     '''
     Nothing is required for initialization
     '''
 #    round_data = SchemaNode(Bool(), missing=drop)
 #    round_to = SchemaNode(Int(), missing=drop)
-    filename = FilenameSchema(
-        missing=drop, save=True, update=True, test_equal=False
-    )
+    filename = SchemaNode(String(), missing=drop)
 
 
-class KMZOutput(Outputter):
+class KMZOutput(Outputter, Serializable):
     '''
     class that outputs GNOME results in a kmz format.
 
     Suitable for Google Earth, and semi-suitable for MarPlot
 
     '''
+    _state = copy.deepcopy(Outputter._state)
+
+    # need a schema and also need to override save so output_dir
+    # is saved correctly - maybe point it to saveloc
+    _state += [Field('filename', update=True, save=True)]
     _schema = KMZSchema
 
     time_formatter = '%m/%d/%Y %H:%M'

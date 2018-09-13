@@ -43,20 +43,16 @@ def surface_conc_kde(sc):
 
     :param sc: spill container that you want the concentrations computed on
     """
-    positions = sc['positions']
-    if positions.shape[0] > 2:  # can't compute a kde for less than 3 points!
-        lon = positions[:, 0]
-        lat = positions[:, 1]
-        lon0, lat0 = min(lon), min(lat)
-        # FIXME: should use projection code to get this right.
-        x = (lon - lon0) * 111325 * np.cos(lat0 * np.pi / 180)
-        y = (lat - lat0) * 111325
-        xy = np.vstack([x, y])
-        c = gaussian_kde(xy)(xy)  # units??
-        # this is assuming unit mass per point, so we need to scale it
-        mass = sc['mass']
-        c *= mass.sum() / mass.shape[0]
-    else:
-        c = np.zeros((positions.shape[0],))
+    lon = sc['positions'][:, 0]
+    lat = sc['positions'][:, 1]
+    lon0, lat0 = min(lon), min(lat)
+    # FIXME: should use projection code to get this right.
+    x = (lon - lon0) * 111325 * np.cos(lat0 * np.pi / 180)
+    y = (lat - lat0) * 111325
+    xy = np.vstack([x, y])
+    c = gaussian_kde(xy)(xy)  # units??
+    # this is assuming unit mass per point, so we need to scale it
+    mass = sc['mass']
+    c *= mass.sum() / mass.shape[0]
 
     sc['surface_concentration'] = c

@@ -2,36 +2,27 @@
 objects used to model the spreading of oil
 Include the Langmuir process here as well
 '''
+import copy
 
 import numpy as np
-try:
-    from functools import lru_cache  # it's built-in on py3
-except ImportError:
-    from backports.functools_lru_cache import lru_cache  # needs backports for py2
-
+from repoze.lru import lru_cache
 from colander import SchemaNode, Float, drop
 
-from gnome.environment import WindSchema, WaterSchema
+from gnome.utilities.serializable import Serializable, Field
+from gnome.environment import constant_wind, WindSchema, WaterSchema
 from gnome.constants import gravity
 from gnome import constants
 from .core import Weatherer
 from gnome.exceptions import GnomeRuntimeError
 
 from .core import WeathererSchema
-from gnome.persist.base_schema import GeneralGnomeObjectSchema
-from gnome.environment.gridded_objects_base import VectorVariableSchema
 
 
 class FayGravityViscousSchema(WeathererSchema):
-    thickness_limit = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
-    water = WaterSchema(
-        save=True, update=True
-    )
+    thickness_limit = SchemaNode(Float(), missing=drop)
 
 
-class FayGravityViscous(Weatherer):
+class FayGravityViscous(Weatherer, Serializable):
     '''
     Model the FayGravityViscous spreading of the oil. This assumes all LEs
     released together spread as a blob. The blob can be partitioned into 'N'
@@ -40,6 +31,8 @@ class FayGravityViscous(Weatherer):
     compute thickness - whether 1 or 10 LEs is used to model the blob, the
     thickness remains the same.
     '''
+    _state = copy.deepcopy(Weatherer._state)
+    _state += Field('water', save=True, update=True, save_reference=True)
     _schema = FayGravityViscousSchema
 
     # object used to model spreading of oil and area computation
@@ -492,7 +485,7 @@ class FayGravityViscous(Weatherer):
         sc.update_from_fatedataview()
 
 
-class ConstantArea(Weatherer):
+class ConstantArea(Weatherer, Serializable):
     '''
     Used for testing and diagnostics
     - must be manually hooked up
@@ -537,21 +530,16 @@ class ConstantArea(Weatherer):
         sc.update_from_fatedataview()
 
 
-class LangmuirSchema(WeathererSchema):
-    wind = GeneralGnomeObjectSchema(
-        acceptable_schemas=[WindSchema, VectorVariableSchema],
-        save=True, update=True, save_reference=True
-    )
-    water = WaterSchema(
-        save=True, update=True, save_reference=True
-    )
-
-
-class Langmuir(Weatherer):
+class Langmuir(Weatherer, Serializable):
     '''
     Easiest to define this as a weathering process that updates 'area' array
     '''
     _schema = WeathererSchema
+
+    _state = copy.deepcopy(Weatherer._state)
+    _state += [Field('wind', update=True, save=True, save_reference=True),
+               Field('water', update=True, save=True, save_reference=True)]
+
     _ref_as = 'langmuir'
 
     def __init__(self,
@@ -588,7 +576,7 @@ class Langmuir(Weatherer):
                 np.pi ** 2 /
                 (thickness * rel_buoy * gravity)) ** (1. / 3.)
         cr_k[np.isnan(cr_k)] = 10.	# if density becomes equal to water density
-        cr_k[cr_k==0] = 1.
+        cr_k[cr_k==0] = 1.	
         frac_cov = 1. / cr_k
 
         frac_cov[frac_cov < 0.1] = 0.1

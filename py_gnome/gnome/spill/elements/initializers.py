@@ -13,30 +13,31 @@ import numpy as np
 from colander import SchemaNode, Int, Float, Range, TupleSchema
 
 from gnome.utilities.rand import random_with_persistance
+from gnome.utilities.serializable import Serializable
+from gnome.utilities.distributions import UniformDistribution
 
 from gnome.cy_gnome.cy_rise_velocity_mover import rise_velocity_from_drop_size
 
-from gnome.persist import base_schema
-from gnome.gnomeobject import GnomeId
-from gnome.persist.base_schema import GeneralGnomeObjectSchema
-from gnome.utilities.distributions import (NormalDistributionSchema,
-                                           WeibullDistributionSchema,
-                                           LogNormalDistributionSchema,
-                                           UniformDistributionSchema)
+from gnome.persist import base_schema, class_from_objtype
 """
 Initializers for various element types
 """
 
-class InitBaseClass(GnomeId):
+
+class InitBaseClass(object):
     """
     All Init* classes will define the _state attribute, so just do so in a
     base class.
 
     It also documents that all initializers must implement an initialize method
 
+    todo/Note:
+    This may change as the persistence code changes. Currently, 'id' and
+    'obj_type' are part of base Serializable._state
     """
+    _state = copy.deepcopy(Serializable._state)
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self):
         # Contains the array_types that are set by an initializer but defined
         # anywhere else. For example, InitRiseVelFromDropletSizeFromDist()
         # computes droplet_diameter in the data_arrays even though it isn't
@@ -45,7 +46,6 @@ class InitBaseClass(GnomeId):
         # Make it a set since ElementType does a membership check in
         # set_newparticle_values()
         self.array_types = set()
-        super(InitBaseClass, self).__init__(*args,**kwargs)
 
     def initialize(self, num_new_particles, spill, data_arrays, substance):
         """
@@ -60,24 +60,28 @@ class WindageSchema(TupleSchema):
                              default=0.01)
     max_windage = SchemaNode(Float(), validator=Range(0, 1.0),
                              default=0.04)
+    name = 'windage_range'
 
 
-class InitWindagesSchema(base_schema.ObjTypeSchema):
+class InitWindagesSchema(base_schema.ObjType):
     """
     windages initializer values
     """
-    windage_range = WindageSchema(
-        save=True, update=True,
-    )
-    windage_persist = SchemaNode(
-        Int(), default=900, save=True, update=True,
-    )
+    windage_range = WindageSchema()
+    windage_persist = SchemaNode(Int(), default=900,
+                                 description='windage persistence in minutes')
+    name = 'windages'
 
 
-class InitWindages(InitBaseClass):
+class InitWindages(InitBaseClass, Serializable):
+    _update = ['windage_range', 'windage_persist']
+    _create = []
+    _create.extend(_update)
+    _state = copy.deepcopy(InitBaseClass._state)
+    _state.add(save=_create, update=_update)
     _schema = InitWindagesSchema
 
-    def __init__(self, windage_range=(0.01, 0.04), windage_persist=900, name='windages', *args, **kwargs):
+    def __init__(self, windage_range=(0.01, 0.04), windage_persist=900):
         """
         Initializes the windages, windage_range, windage_persist data arrays.
         Initial values for windages use infinite persistence. These are updated
@@ -94,22 +98,19 @@ class InitWindages(InitBaseClass):
             the beginning of the run.
         :type windage_persist: integer seconds
         """
-        super(InitWindages, self).__init__(*args, **kwargs)
+        super(InitWindages, self).__init__()
         self.windage_persist = windage_persist
         self.windage_range = windage_range
         self.array_types.update(('windages',
                                  'windage_range',
                                  'windage_persist'))
-        self.name = name
+        self.name = 'windages'
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
                 'windage_range={0.windage_range}, '
                 'windage_persist={0.windage_persist}'
                 ')'.format(self))
-
-    def to_dict(self, json_=None):
-        return InitBaseClass.to_dict(self, json_=json_)
 
     @property
     def windage_persist(self):
@@ -159,11 +160,12 @@ class InitWindages(InitBaseClass):
 # do following two classes work for a time release spill?
 
 
-class InitMassFromPlume(InitBaseClass):
+class InitMassFromPlume(InitBaseClass, Serializable):
     """
     Initialize the 'mass' array based on mass flux from the plume spilled
     """
-    _schema = base_schema.ObjTypeSchema
+    _state = copy.deepcopy(InitBaseClass._state)
+    _schema = base_schema.ObjType
 
     def __init__(self):
         """
@@ -182,28 +184,60 @@ class InitMassFromPlume(InitBaseClass):
             spill.plume_gen.mass_of_an_le * 1000
 
 
-class DistributionBaseSchema(base_schema.ObjTypeSchema):
+class DistributionBaseSchema(base_schema.ObjType):
     'Add schema to base class since all derived classes use same schema'
+    description = 'dynamically adds distribution schema to self'
 
-    distribution = GeneralGnomeObjectSchema(
-        acceptable_schemas=[UniformDistributionSchema,
-                          NormalDistributionSchema,
-                          WeibullDistributionSchema,
-                          LogNormalDistributionSchema],
-        save=True, update=True
-    )
+    def __init__(self, **kwargs):
+        dist = kwargs.pop('distribution')
+        self.add(dist)
+        super(DistributionBaseSchema, self).__init__(**kwargs)
 
 
-class DistributionBase(InitBaseClass):
+class DistributionBase(InitBaseClass, Serializable):
     '''
     Define a base class for all initializers that contain a distribution.
     Keep the code to serialize/deserialize distribution objects here so we only
     have to write it once.
     '''
+    _state = copy.deepcopy(InitBaseClass._state)
+    _state.add(save=['distribution'], update=['distribution'])
     _schema = DistributionBaseSchema
+
+    def serialize(self, json_='webapi'):
+        'Add distribution schema based on "distribution" - then serialize'
+
+        dict_ = self.to_serialize(json_)
+        # note: it is important to change the 'name' attribute to distribution
+        # that's the key we look for in json_
+        schema = \
+            self.__class__._schema(name=self.__class__.__name__,
+                                   distribution=(self.distribution.
+                                                 _schema(name='distribution')))
+        return schema.serialize(dict_)
+
+    @classmethod
+    def deserialize(cls, json_):
+        'Add distribution schema based on "distribution" - then deserialize'
+        dcls = class_from_objtype(json_['distribution']['obj_type'])
+
+        # note: it is important to change the 'name' attribute to distribution
+        # that's the key we look for in json_
+        schema = cls._schema(name=cls.__name__,
+                             distribution=dcls._schema(name='distribution'))
+        dict_ = schema.deserialize(json_)
+
+        # convert nested object ['distribution'] saved as a
+        # dict, back to an object if json_ == 'save' here itself
+        if json_['json_'] == 'save':
+            distribution = dict_.get('distribution')
+            dict_['distribution'] = dcls.new_from_dict(distribution)
+
+        return dict_
 
 
 class InitRiseVelFromDist(DistributionBase):
+    _state = copy.deepcopy(DistributionBase._state)
 
     def __init__(self, distribution=None, **kwargs):
         """
@@ -242,6 +276,7 @@ class InitRiseVelFromDist(DistributionBase):
 
 
 class InitRiseVelFromDropletSizeFromDist(DistributionBase):
+    _state = copy.deepcopy(DistributionBase._state)
 
     def __init__(self, distribution=None,
                  water_density=1020.0, water_viscosity=1.0e-6,

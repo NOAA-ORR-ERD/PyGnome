@@ -4,18 +4,15 @@
 '''
 import copy
 
-try:
-    from functools import lru_cache  # it's built-in on py3
-except ImportError:
-    from backports.functools_lru_cache import lru_cache  # needs backports for py2
-
-from colander import SchemaNode, MappingSchema, Float, String, drop, OneOf, required
+from repoze.lru import lru_cache
+from colander import SchemaNode, MappingSchema, Float, String, drop, OneOf
 
 import gsw
 
 import unit_conversion as uc
 
 from gnome import constants
+from gnome.utilities import serializable
 from gnome.utilities.inf_datetime import InfDateTime
 
 from gnome.persist import base_schema
@@ -67,17 +64,17 @@ class UnitsSchema(MappingSchema):
                          validator=OneOf(_valid_density_units))
 
 
-class WaterSchema(base_schema.ObjTypeSchema):
+class WaterSchema(base_schema.ObjType):
     'Colander Schema for Conditions object'
     units = UnitsSchema()
     temperature = SchemaNode(Float())
     salinity = SchemaNode(Float())
-    sediment = SchemaNode(Float())
-    wave_height = SchemaNode(Float(), missing=None)
-    fetch = SchemaNode(Float(), missing=None)
+    sediment = SchemaNode(Float(), missing=drop)
+    wave_height = SchemaNode(Float(), missing=drop)
+    fetch = SchemaNode(Float(), missing=drop)
 
 
-class Water(Environment):
+class Water(Environment, serializable.Serializable):
     '''
     Define the environmental conditions for a spill, like water_temperature,
     atmos_pressure (most likely a constant)
@@ -86,6 +83,7 @@ class Water(Environment):
     these properties through the client
     '''
     _ref_as = 'water'
+    _state = copy.deepcopy(Environment._state)
     _field_descr = {'units': ('update', 'save'),
                     'temperature:': ('update', 'save'),
                     'salinity': ('update', 'save'),
@@ -94,6 +92,15 @@ class Water(Environment):
                     'wave_height': ('update', 'save'),
                     'density': ('update', 'save'),
                     'kinematic_viscosity': ('update', 'save')}
+    _state += [serializable.Field('units', update=True, save=True),
+               serializable.Field('temperature', update=True, save=True),
+               serializable.Field('salinity', update=True, save=True),
+               serializable.Field('sediment', update=True, save=True),
+               serializable.Field('fetch', update=True, save=True),
+               serializable.Field('wave_height', update=True, save=True),
+               serializable.Field('density', update=True, save=True),
+               serializable.Field('kinematic_viscosity', update=True,
+                                  save=True)]
 
     _schema = WaterSchema
 
@@ -228,6 +235,19 @@ class Water(Environment):
         internally which expects salinity in absolute units.
         '''
         return self._get_density(self.salinity, self.temperature)
+
+    def update_from_dict(self, data):
+        '''
+        override base class:
+
+        'fetch' and 'wave_height' get dropped by colander if value is None.
+        In this case, toggle the values back to None.
+        '''
+        for attr in ('fetch', 'wave_height'):
+            if attr not in data:
+                setattr(self, attr, None)
+
+        super(Water, self).update_from_dict(data)
 
     @property
     def units(self):

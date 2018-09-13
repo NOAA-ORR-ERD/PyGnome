@@ -117,8 +117,9 @@ def test_element_type_serialize_deserialize(fcn):
     '''
     element_type = ElementType(initializers=[fcn], substance=oil)
 
-    json_ = element_type.serialize()
-    element_type2 = ElementType.deserialize(json_)
+    json_ = element_type.serialize('save')
+    dict_ = element_type.deserialize(json_)
+    element_type2 = ElementType.new_from_dict(dict_)
 
     assert element_type == element_type2
 
@@ -297,11 +298,24 @@ def test_element_types(elem_type, arr_types, sample_sc_no_uncertainty):
                             assert np.all(sc[key][spill_mask] ==
                                           sc.array_types[key].initial_value)
 
+
 @pytest.mark.parametrize(("fcn"), fcn_list)
 def test_serialize_deserialize_initializers(fcn):
-    n_obj = fcn.__class__.deserialize(fcn.serialize())
+    for json_ in ('save', 'webapi'):
+        cls = fcn.__class__
+        dict_ = cls.deserialize(fcn.serialize(json_))
 
-    assert n_obj == fcn
+        if json_ == 'webapi':
+            if 'distribution' in dict_:
+                # webapi will replace dict with object so mock it here
+                dict_['distribution'] = (eval(dict_['distribution']['obj_type'])
+                                         .new_from_dict(dict_['distribution']))
+
+        n_obj = cls.new_from_dict(dict_)
+        # following is requirement for 'save' files
+        # if object has no read only parameters, then this is true for 'webapi'
+        # as well
+        assert n_obj == fcn
 
 
 test_l = []
@@ -317,10 +331,12 @@ def test_serialize_deserialize():
     This tests serialize/deserilize with 'webapi' option
     '''
     et = floating()
-    n_et = ElementType.deserialize(et.serialize())
+    dict_ = ElementType.deserialize(et.serialize('webapi'))
 
     # for webapi, make new objects from nested objects before creating
     # new element_type
+    dict_['initializers'] = et.initializers
+    n_et = ElementType.new_from_dict(dict_)
     # following is not a requirement for webapi, but it is infact the case
     assert n_et == et
 
@@ -328,7 +344,7 @@ def test_serialize_deserialize():
 def test_standard_density():
     et = floating()
     dict_ = et.serialize()
-    assert dict_['standard_density'] == 1000.0
+    assert dict_['standard_density'] == 1000
 
     et = floating(substance=oil)
     dict_ = et.serialize()
@@ -343,8 +359,8 @@ def test_save_load(saveloc_, test_obj):
     These are stored as nested objects in the Spill but this should also work
     so test it here
     '''
-    json_, savefile, refs = test_obj.save(saveloc_)
-    test_obj2 = test_obj.__class__.load(savefile)
+    refs = test_obj.save(saveloc_)
+    test_obj2 = load(os.path.join(saveloc_, refs.reference(test_obj)))
     assert test_obj == test_obj2
 
 

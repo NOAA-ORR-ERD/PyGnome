@@ -7,17 +7,12 @@ from os.path import basename
 
 import numpy as np
 import pytest
-import tempfile
-import zipfile
 
 from gnome.movers import CatsMover
 from gnome.environment import Tide
 from gnome.utilities import time_utils
 
-from ..conftest import (sample_sc_release,
-                        testdata,
-                        validate_serialize_json,
-                        validate_save_json)
+from ..conftest import sample_sc_release, testdata
 
 curr_file = testdata['CatsMover']['curr']
 td = Tide(filename=testdata['CatsMover']['tide'])
@@ -185,35 +180,37 @@ def _uncertain_loop(pSpill, cats):
     return u_delta
 
 
-@pytest.mark.parametrize(('tide'),
-                         [None, td])
-def test_serialize_deserialize(tide):
+@pytest.mark.parametrize(('tide', 'json_'),
+                         [(None, 'save'),
+                          (td, 'save'),
+                          (None, 'webapi'),
+                          (td, 'webapi')])
+def test_serialize_deserialize(tide, json_):
     """
     test serialize/deserialize/update_from_dict doesn't raise errors
     """
     c_cats = CatsMover(curr_file, tide=tide)
 
-    serial = c_cats.serialize()
-    assert validate_serialize_json(serial, c_cats)
+    toserial = c_cats.serialize(json_)
+    dict_ = c_cats.deserialize(toserial)
 
     # check our CatsMover attributes
+    if json_ == 'webapi':
+        assert toserial['filename'] == basename(toserial['filename'])
+    else:
+        # in save context, we expect a full path to file
+        assert toserial['filename'] != basename(toserial['filename'])
 
-    deser = CatsMover.deserialize(serial)
+    if tide:
+        assert 'tide' in toserial
+        dict_['tide'] = tide  # no longer updating properties of nested objects
+        assert c_cats.tide is tide
 
-    assert deser == c_cats
+        if json_ == 'webapi':
+            assert (toserial['tide']['filename'] ==
+                    basename(toserial['tide']['filename']))
+        else:
+            assert (toserial['tide']['filename'] !=
+                    basename(toserial['tide']['filename']))
 
-@pytest.mark.parametrize(('tide'),[None, td])
-def test_save_load(tide):
-    """
-    test save/loading with and without tide
-    """
-
-    saveloc = tempfile.mkdtemp()
-    c_cats = CatsMover(curr_file, tide=tide)
-    save_json, zipfile_, refs = c_cats.save(saveloc)
-    assert validate_save_json(save_json, zipfile.ZipFile(zipfile_), c_cats)
-
-    loaded = CatsMover.load(zipfile_)
-
-    assert loaded == c_cats
-
+    c_cats.update_from_dict(dict_)

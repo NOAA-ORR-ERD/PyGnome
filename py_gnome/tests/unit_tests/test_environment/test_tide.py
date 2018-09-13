@@ -37,12 +37,13 @@ def test_file(filename):
     (WIP) simply tests that the file loads correctly
     """
     td = Tide(filename)
-    assert td.filename == filename
+
+    assert td.filename == os.path.split(filename)[1]
 
 
-@pytest.mark.parametrize('filename',
-                         [shio_file, ossm_file])
-def test_serialize_deserialize(filename):
+@pytest.mark.parametrize(('filename', 'json_'),
+                         [(shio_file, 'save'), (ossm_file, 'webapi')])
+def test_serialize_deserialize(filename, json_):
     '''
         create - it creates new object after serializing original object
                  and tests equality of the two
@@ -51,7 +52,16 @@ def test_serialize_deserialize(filename):
                  don't fail.  It doesn't update any properties.
     '''
     tide = Tide(filename)
-    serial = tide.serialize()
-    new_t = Tide.deserialize(serial)
-    assert new_t is not tide
-    assert new_t == tide
+
+    serial = tide.serialize(json_)
+    dict_ = Tide.deserialize(serial)
+
+    if json_ == 'save':
+        new_t = Tide.new_from_dict(dict_)
+
+        assert new_t is not tide
+        assert new_t == tide
+    else:
+        tide.update_from_dict(dict_)
+
+        assert True

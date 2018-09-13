@@ -10,6 +10,7 @@ from colander import (SchemaNode, Float, String, drop, Range)
 
 from gnome.basic_types import oil_status, fate as bt_fate
 from gnome.weatherers import Weatherer
+from gnome.utilities.serializable import Serializable, Field
 from gnome.environment.wind import WindSchema
 from gnome.environment import Waves
 
@@ -17,13 +18,6 @@ from .core import WeathererSchema
 from .. import _valid_units
 
 import unit_conversion as uc
-from gnome.environment.water import WaterSchema
-from gnome.persist.base_schema import GeneralGnomeObjectSchema
-from gnome.environment.gridded_objects_base import VectorVariableSchema
-from gnome.movers.movers import ProcessSchema
-from gnome.environment.waves import WavesSchema
-from gnome.persist.extend_colander import LocalDateTime
-from gnome.persist.validators import convertible_to_seconds
 
 
 class RemoveMass(object):
@@ -231,21 +225,17 @@ class CleanUpBase(RemoveMass, Weatherer):
 
 
 class SkimmerSchema(WeathererSchema):
-    amount = SchemaNode(
-        Float(), save=True, update=True
-    )
-    units = SchemaNode(
-        String(), save=True, update=True
-    )
-    efficiency = SchemaNode(
-        Float(), save=True, update=True
-    )
-    water = WaterSchema(
-        missing=drop, save=True, update=True, save_reference=True
-    )
+    amount = SchemaNode(Float())
+    units = SchemaNode(String())
+    efficiency = SchemaNode(Float())
 
 
-class Skimmer(CleanUpBase):
+class Skimmer(CleanUpBase, Serializable):
+    _state = copy.deepcopy(Weatherer._state)
+    _state += [Field('amount', save=True, update=True),
+               Field('units', save=True, update=True),
+               Field('efficiency', save=True, update=True),
+               Field('water', save=True, update=True, save_reference=True)]
 
     _schema = SkimmerSchema
 
@@ -394,49 +384,35 @@ class Skimmer(CleanUpBase):
 
 
 class BurnSchema(WeathererSchema):
-    area = SchemaNode(
-        Float(), save=True, update=True
-    )
-    thickness = SchemaNode(
-        Float(), save=True, update=True
-    )
-    area_units = SchemaNode(
-        String(), save=True, update=True
-    )
-    thickness_units = SchemaNode(
-        String(), save=True, update=True
-    )
-    _oilwater_thickness = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
-    _oilwater_thick_burnrate = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
-    _oil_vol_burnrate = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
-    efficiency = SchemaNode(
-        Float(), missing=None, save=True, update=True
-    )
-    wind = GeneralGnomeObjectSchema(
-        acceptable_schemas=[WindSchema, VectorVariableSchema],
-        missing=drop, save=True, update=True, save_reference=True
-    )
-    water = WaterSchema(
-        missing=drop, save=True, update=True, save_reference=True
-    )
-    active_stop = SchemaNode(
-        LocalDateTime(),
-        missing=drop, validator=convertible_to_seconds,
-        save=False, update=True
-    )
+    area = SchemaNode(Float())
+    thickness = SchemaNode(Float())
+    area_units = SchemaNode(String())
+    thickness_units = SchemaNode(String())
+    _oilwater_thickness = SchemaNode(Float(), missing=drop)
+    _oilwater_thick_burnrate = SchemaNode(Float(), missing=drop)
+    _oil_vol_burnrate = SchemaNode(Float(), missing=drop)
+    efficiency = SchemaNode(Float(), missing=drop)
 
 
-class Burn(CleanUpBase):
+class Burn(CleanUpBase, Serializable):
     _schema = BurnSchema
+
+    _state = copy.deepcopy(Weatherer._state)
+    _state += [Field('area', save=True, update=True),
+               Field('thickness', save=True, update=True),
+               Field('area_units', save=True, update=True),
+               Field('thickness_units', save=True, update=True),
+               Field('efficiency', save=True, update=True),
+               Field('_oilwater_thickness', save=True),
+               Field('_oilwater_thick_burnrate', save=True),
+               Field('_oil_vol_burnrate', save=True),
+               Field('wind', save=True, update=True, save_reference=True),
+               Field('water', save=True, update=True, save_reference=True)]
 
     # save active_stop once burn duration is known - not update able but is
     # returned in webapi json_ so make it readable
+    _state['active_stop'].update = False
+    _state['active_stop'].read = True
 
     valid_area_units = _valid_units('Area')
     valid_length_units = _valid_units('Length')
@@ -523,7 +499,7 @@ class Burn(CleanUpBase):
         '''
         if value not in self.valid_area_units:
             e = uc.InvalidUnitError((value, 'Area'))
-            self.logger.error(str(e))
+            self.logger.error(e.message)
             raise e
         else:
             self._area_units = value
@@ -580,7 +556,7 @@ class Burn(CleanUpBase):
         '''
         if value not in self.valid_length_units:
             e = uc.InvalidUnitError((value, 'Length'))
-            self.logger.error(str(e))
+            self.logger.error(e.message)
             raise e
 
         self._thickness_units = value
@@ -754,25 +730,50 @@ class Burn(CleanUpBase):
 
         sc.update_from_fatedataview(fate='burn')
 
+    def serialize(self, json_='webapi'):
+        """
+        'wind'/'waves' property is saved as references in save file
+        need to add serialized object for 'webapi'. Burn could have 'wind' and
+        ChemicalDispersion could have 'waves'.
+        """
+        serial = super(Burn, self).serialize(json_)
+
+        if json_ == 'webapi':
+            if self.wind is not None:
+                serial['wind'] = self.wind.serialize(json_)
+        return serial
+
+    @classmethod
+    def deserialize(cls, json_):
+        """
+        append correct schema for wind object
+        """
+        schema = cls._schema()
+        if 'wind' in json_ and json_['wind'] is not None:
+            schema.add(WindSchema(name='wind'))
+
+        _to_dict = schema.deserialize(json_)
+
+        return _to_dict
+
+    def update_from_dict(self, data):
+        if 'efficiency' not in data:
+            setattr(self, 'efficiency', None)
+        super(Burn, self).update_from_dict(data)
+
 
 class ChemicalDispersionSchema(WeathererSchema):
-    fraction_sprayed = SchemaNode(
-        Float(), validator=Range(0, 1.0), save=True, update=True
-    )
-    efficiency = SchemaNode(
-        Float(), missing=drop, validator=Range(0, 1.0),
-        save=True, update=True
-    )
-    _rate = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
-    waves = WavesSchema(
-        missing=drop, save=True, update=True, save_reference=True
-    )
+    fraction_sprayed = SchemaNode(Float(), validator=Range(0, 1.0))
+    efficiency = SchemaNode(Float(), missing=drop, validator=Range(0, 1.0))
 
 
-class ChemicalDispersion(CleanUpBase):
+class ChemicalDispersion(CleanUpBase, Serializable):
+    _state = copy.deepcopy(Weatherer._state)
     _schema = ChemicalDispersionSchema
+    _state += [Field('fraction_sprayed', save=True, update=True),
+               Field('efficiency', save=True, update=True),
+               Field('waves', save=True, update=True, save_reference=True),
+               Field('_rate', save=True)]
 
     def __init__(self,
                  fraction_sprayed,
@@ -852,11 +853,7 @@ class ChemicalDispersion(CleanUpBase):
         self._set__timestep(time_step, model_time)
         if (sc['fate_status'] == bt_fate.disperse).sum() == 0:
             substance = self._get_substance(sc)
-            #mass = sum([spill.get_mass() for spill in sc.spills])
-            mass = 0
-            for spill in sc.spills:
-                if spill.on:
-                    mass += spill.get_mass()
+            mass = sum([spill.get_mass() for spill in sc.spills])
 
             # rm_total_mass_si = mass * self.fraction_sprayed
             rm_total_mass_si = mass * self.fraction_sprayed * self.efficiency
@@ -910,3 +907,33 @@ class ChemicalDispersion(CleanUpBase):
                                   .format(self._pid, substance.name, rm_mass))
 
             sc.update_from_fatedataview(fate='disperse')
+
+    def update_from_dict(self, data):
+        if 'efficiency' not in data:
+            setattr(self, 'efficiency', None)
+        super(ChemicalDispersion, self).update_from_dict(data)
+
+    def serialize(self, json_='webapi'):
+        """
+        'wind'/'waves' property is saved as references in save file
+        need to add serialized object for 'webapi'. Burn could have 'wind' and
+        ChemicalDispersion could have 'waves'.
+        """
+        serial = super(ChemicalDispersion, self).serialize(json_)
+
+        if json_ == 'webapi':
+            if self.waves is not None:
+                serial['waves'] = self.waves.serialize(json_)
+        return serial
+
+    @classmethod
+    def deserialize(cls, json_):
+        """
+        ChemicalDispersion could include 'waves'.
+        """
+        schema = cls._schema()
+        _to_dict = schema.deserialize(json_)
+        if 'waves' in json_ and json_['waves'] is not None:
+            _to_dict['waves'] = Waves.deserialize(json_['waves'])
+
+        return _to_dict

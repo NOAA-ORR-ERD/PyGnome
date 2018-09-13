@@ -16,44 +16,25 @@ Note: An ElementType needs a bunch of initializers -- but that is an
 import copy
 
 import unit_conversion as uc
-from colander import SchemaNode, SequenceSchema, Float
-from gnome.persist import base_schema
+
+from gnome.utilities.serializable import Serializable, Field
+from gnome.persist import base_schema, class_from_objtype
 
 from .substance import NonWeatheringSubstance
 from .initializers import (InitRiseVelFromDropletSizeFromDist,
                            InitRiseVelFromDist,
                            InitWindages,
                            InitMassFromPlume)
-from gnome.gnomeobject import GnomeId
-from gnome.persist.base_schema import GeneralGnomeObjectSchema
-from gnome.spill.elements.initializers import (InitWindagesSchema,
-                                               DistributionBaseSchema)
-from __builtin__ import True
 
 
-class ElementTypeSchema(base_schema.ObjTypeSchema):
-    def __init__(self, unknown='preserve', *args, **kwargs):
-        super(ElementTypeSchema, self).__init__(*args, **kwargs)
-        self.typ = base_schema.ObjType('preserve')
+class ElementType(Serializable):
+    _state = copy.deepcopy(Serializable._state)
+    _state += [Field('substance', save=True, update=True, test_for_eq=False),
+               Field('initializers', save=True, update=True),
+               Field('standard_density', update=True, read=True)]
+    _schema = base_schema.ObjType
 
-    initializers = SequenceSchema(
-        GeneralGnomeObjectSchema(
-            acceptable_schemas=[InitWindagesSchema,
-                                DistributionBaseSchema
-                                ]
-        ),
-        save=True, update=True, save_reference=True
-    )
-    standard_density = SchemaNode(
-        Float(), read_only=True
-    )
-
-
-class ElementType(GnomeId):
-
-    _schema = ElementTypeSchema
-
-    def __init__(self, initializers=[], substance=None, standard_density=1000, *args, **kwargs):
+    def __init__(self, initializers=[], substance=None):
         '''
         Define initializers for the type of elements.
         The default element_type has a substance with density of water
@@ -74,7 +55,6 @@ class ElementType(GnomeId):
         :type substance: str or OilProps
 
         '''
-        super(ElementType, self).__init__(*args, **kwargs)
         from oil_library import get_oil_props
         self.get_oil_props = get_oil_props
 
@@ -85,7 +65,6 @@ class ElementType(GnomeId):
             # initializers is not an iterable so assume its an object and just
             # append it to list
             self.initializers.append(initializers)
-
 
         self._substance = None
         if substance is not None:
@@ -178,35 +157,6 @@ class ElementType(GnomeId):
 
         return False
 
-    @classmethod
-    def new_from_dict(cls, dict_):
-        return super(ElementType, cls).new_from_dict(dict_)
-
-    def to_dict(self, json_=None):
-        dict_ = super(ElementType, self).to_dict(json_=json_)
-        #append substance because no good schema exists for it
-        if json_ != 'save':
-            if self.substance is None:
-                dict_['substance'] = None
-            else:
-                dict_['substance'] = self.substance_to_dict()
-        else:
-            if self.substance is not None:
-                dict_['substance'] = self.substance_to_dict()['name']
-        return dict_
-
-    @classmethod
-    def load(cls, saveloc='.', filename=None, refs=None):
-        return super(ElementType, cls).load(saveloc=saveloc, filename=filename, refs=refs)
-
-    def update_from_dict(self, dict_, refs=None):
-        rv = super(ElementType, self).update_from_dict(dict_, refs)
-        if 'substance' in dict_:
-            self.substance = dict_['substance']
-            rv = True
-        return rv
-
-
     def substance_to_dict(self):
         '''
         Call the tojson() method on substance
@@ -223,7 +173,6 @@ class ElementType(GnomeId):
         '''
         if self._substance is not None:
             return self._prune_substance(self._substance.tojson())
-
 
     def _prune_substance(self, substance_json):
         '''
@@ -289,6 +238,96 @@ class ElementType(GnomeId):
                 if i.array_types.issubset(data_arrays):
                     i.initialize(num_new_particles, spill, data_arrays,
                                  self.substance)
+
+    def to_dict(self):
+        """
+        call the to_dict method on each object in the initializers dict. Store
+        results in dict and return.
+
+        todo: the standard to_dict doesn't seem to fit well in this case. It
+        works but perhaps can/should be revisited to make it simpler
+        """
+        dict_ = super(ElementType, self).to_dict()
+
+        init = []
+        for val in dict_['initializers']:
+            init.append(val.to_dict())
+
+        dict_['initializers'] = init
+        return dict_
+
+    def initializers_to_dict(self):
+        'just return the initializers'
+        return self.initializers
+
+    def serialize(self, json_='webapi'):
+        """
+        serialize each object in 'initializers' dict, then add it to the json
+        for the ElementType object.
+
+        Note: the to_dict() method returns a dict of initializers as well;
+        however, the schemas associated with the initializers are dynamic
+        (eg initializers that contain a distribution). It is easier to call the
+        initializer's serialize() method instead of adding the initializer's
+        schemas to the ElementType schema since they are not known ahead of
+        time.
+        """
+        dict_ = self.to_serialize(json_)
+        et_schema = self.__class__._schema()
+        et_json_ = et_schema.serialize(dict_)
+        s_init = []
+
+        for i_val in self.initializers:
+            s_init.append(i_val.serialize(json_))
+
+        et_json_['initializers'] = s_init
+        if 'substance' in dict_:
+            et_json_['substance'] = dict_['substance']
+        et_json_['standard_density'] = self.standard_density
+
+        return et_json_
+
+    @classmethod
+    def deserialize(cls, json_):
+        """
+        deserialize each object in the 'initializers' dict, then add it to
+        deserialized ElementType dict
+
+        We also need to accept sparse json objects, in which case we will
+        not treat them, but just send them back.
+        """
+        if not cls.is_sparse(json_):
+            et_schema = cls._schema()
+
+            # replace substance with just the oil record ID for now since
+            # we don't have a way to construct to object fromjson()
+            dict_ = et_schema.deserialize(json_)
+
+            if 'substance' in json_ and json_['substance'] is not {}:
+                # no colander validation for oil object
+                dict_['substance'] = json_['substance']
+
+            d_init = []
+
+            for i_val in json_['initializers']:
+                i_cls = class_from_objtype(i_val['obj_type'])
+                deserial = i_cls.deserialize(i_val)
+
+                if json_['json_'] == 'save':
+                    '''
+                    If loading from save file, convert the dict_ to new object
+                    here itself
+                    '''
+                    obj = i_cls.new_from_dict(deserial)
+                    d_init.append(obj)
+                else:
+                    d_init.append(deserial)
+
+            dict_['initializers'] = d_init
+
+            return dict_
+        else:
+            return json_
 
 
 def floating(windage_range=(.01, .04),

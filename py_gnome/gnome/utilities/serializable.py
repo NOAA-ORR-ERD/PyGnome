@@ -3,7 +3,6 @@ Created on Feb 15, 2013
 '''
 import copy
 import inspect
-import logging
 
 import numpy as np
 
@@ -450,7 +449,7 @@ class State(object):
         return names
 
 
-class Serializable(GnomeId, Savable):
+class Serializable(GnomeId, Savable, SchemaType):
 
     """
     contains the to_dict and update_from_dict method to output properties of
@@ -506,6 +505,41 @@ class Serializable(GnomeId, Savable):
             except AttributeError:
                 raise AttributeError('ailed to set attribute {0} on object {1}'.format(key, new_obj))
 
+    @classmethod
+    def new_from_dict(cls, dict_):
+        """
+        creates a new object from dictionary
+
+        This is base implementation and can be over-ridden by classes using
+        this mixin
+        """
+        rqd = {}
+        for parent in cls.mro():
+            if inspect.ismethod(parent.__init__):
+                kwargs = inspect.getargspec(parent.__init__)[0][1:]
+
+                # pop kwargs for object creation into rqd dict
+                rqd.update({key: dict_.pop(key) for key in kwargs
+                            if key in dict_})
+
+        # create object with required input arguments
+        new_obj = cls(**rqd)
+
+        if dict_.pop('json_') == 'save':
+            cls._restore_attr_from_save(new_obj, dict_)
+        else:
+            # for webapi, ignore the readonly attributes and set only
+            # attributes that are updatable. At present, the 'webapi' uses
+            # new_from_dict to create a new object only. It does not restore
+            # the state of a previously persisted object
+            if dict_:
+                new_obj.update_from_dict(dict_)
+
+        msg = "constructed object {0}".format(new_obj.__class__.__name__)
+        new_obj.logger.debug(new_obj._pid + msg)
+
+        return new_obj
+
     def _attrlist(self, do=('update', 'read')):
         '''
         returns list of object attributes that need to be serialized. By
@@ -525,6 +559,68 @@ class Serializable(GnomeId, Savable):
                                  "following: 'update', 'save' or 'readonly'.")
 
         return list_
+
+    def to_dict(self):
+        """
+        returns a dictionary containing the serialized representation of this
+        object.
+
+        For every field, if there is a method defined on the object such that
+        the method name is `{field_name}_to_dict`, use the return value of that
+        method as the field value.
+
+        Note: any field in `list` that does not exist on the
+        object and does not have a to_dict method will raise an AttributeError.
+
+        NOTE: add the json_='webapi' key to be serialized so we know what the
+        serialization is for
+        """
+        data = {}
+        list_ = self._state.get_names('all')
+
+        for key in list_:
+            value = self.attr_to_dict(key)
+
+            if hasattr(value, 'to_dict'):
+                value = value.to_dict()  # recursive call
+            elif (key in [f.name for f in
+                          self._state.get_field_by_attribute('iscollection')]):
+                # if self.key is a list, this needs special attention. It does
+                # not have a to_dict like OrderedCollection does!
+                vals = []
+
+                for obj in value:
+                    if isinstance(obj, dict) and 'obj_type' in obj:
+                        obj_type = obj['obj_type']
+                    else:
+                        try:
+                            obj_type = ('{0.__module__}.{0.__class__.__name__}'
+                                        .format(obj))
+                        except AttributeError:
+                            obj_type = '{0.__class__.__name__}'.format(obj)
+
+                    _id = None
+                    if hasattr(obj, 'id'):
+                        _id = str(obj.id)
+                    elif 'id' in obj:
+                        _id = obj['id']
+                    else:
+                        _id = str(id(obj))
+
+                    val = {'obj_type': obj_type, 'id': _id}
+                    vals.append(val)
+
+                value = vals
+
+            if value is not None:
+                # some issue in colander monkey patch and the Wind schema
+                # if None values are not pruned - take them out for now
+                # this also means the default values will not be applied
+                # on serialized -- that's ok though since we don't define
+                # defaults in colander
+                data[key] = value
+
+        return data
 
     def attr_to_dict(self, name):
         """
@@ -689,8 +785,73 @@ class Serializable(GnomeId, Savable):
         """
         return '{0.__module__}.{0.__class__.__name__}'.format(self)
 
+    def _check_type(self, other):
+        'check basic type equality'
+        if self is other:
+            return True
 
+        if type(self) == type(other):
+            return True
 
+        return False
+
+    def __eq__(self, other):
+        """
+        .. function:: __eq__(other)
+
+        Since this class is designed as a mixin with one objective being to
+        save _state of the object, then recreate a new object with the same
+        _state.
+
+        Define a base implementation of __eq__ so an object before persistence
+        can be compared with a new object created after it is persisted.
+        It can be overridden by the class with which it is mixed.
+
+        It looks at attributes defined in self._state and checks the plain
+        python types match.
+
+        It does an allclose() check for numpy arrays using default atol, rtol.
+
+        :param other: object of the same type as self that is used for
+                      comparison in obj1 == other
+
+        NOTE: super is not used.
+        """
+
+        if not self._check_type(other):
+            return False
+
+        for name in self._state.get_names('save'):
+            if not self._state[name].test_for_eq:
+                continue
+
+            if hasattr(self, name):
+                self_attr = getattr(self, name)
+                other_attr = getattr(other, name)
+            else:
+                # not an attribute, let attr_to_dict call appropriate function
+                # and check the dicts are equal
+                self_attr = self.attr_to_dict(name)
+                other_attr = other.attr_to_dict(name)
+
+            if not isinstance(self_attr, np.ndarray):
+                if isinstance(self_attr, float):
+                    if abs(self_attr - other_attr) > 1e-10:
+                        return False
+                elif self_attr != other_attr:
+                    return False
+            else:
+                if not isinstance(self_attr, type(other_attr)):
+                    return False
+
+                if not np.allclose(self_attr, other_attr,
+                                   rtol=1e-4, atol=1e-4):
+                    return False
+
+        return True
+
+    def __ne__(self, other):
+        return not self == other
 
     def to_serialize(self, json_='webapi'):
         '''
@@ -725,9 +886,37 @@ class Serializable(GnomeId, Savable):
         toserial['json_'] = json_
         return toserial
 
-    def items(self):
-        return self.to_serialize().items()
+    def serialize(self, json_='webapi'):
+        """
+        Convert the dict returned by object's to_dict method to valid json
+        format via colander schema
 
+        It uses the modules_dict defined in gnome.persist to find the correct
+        schema module.
+
+        :param json_: tells object whether serialization is for web content
+            or for generating a save file.
+        :returns: json format of serialized data
+
+        """
+        toserial = self.to_serialize(json_)
+        schema = self.__class__._schema()
+        c_fields = self._state.get_field_by_attribute('iscollection')
+
+        if json_ == 'webapi':
+            serial = schema.serialize(toserial)
+            # check for collections
+            for field in c_fields:
+                serial[field.name] = \
+                    self.serialize_oc(getattr(self, field.name), json_)
+        elif json_ == 'save':
+            for field in c_fields:
+                # add a node for each collection, then serialize
+                schema.add(CollectionItemsList(name=field.name))
+
+            serial = schema.serialize(toserial)
+
+        return serial
 
     @classmethod
     def is_sparse(cls, json_):
@@ -752,6 +941,40 @@ class Serializable(GnomeId, Savable):
         for item in coll:
             json_out.append(item.serialize(json_))
         return json_out
+
+    @classmethod
+    def deserialize(cls, json_):
+        """
+            classmethod takes json structure as input, deserializes it using a
+            colander schema then invokes the new_from_dict method to create an
+            instance of the object described by the json schema.
+
+            We also need to accept sparse json objects, in which case we will
+            not treat them, but just send them back.
+        """
+        if not cls.is_sparse(json_):
+            # if there are collections in object, dynamically update schema
+            schema = cls._schema()
+            c_fields = cls._state.get_field_by_attribute('iscollection')
+
+            if json_['json_'] == 'webapi':
+                _to_dict = schema.deserialize(json_)
+
+                for field in c_fields:
+                    if field.name in json_:
+                        _to_dict[field.name] = \
+                            cls.deserialize_oc(json_[field.name])
+            elif json_['json_'] == 'save':
+                for field in c_fields:
+                    if field.name in json_:
+                        # add a node for each collection, then deserialize
+                        schema.add(CollectionItemsList(name=field.name))
+
+                _to_dict = schema.deserialize(json_)
+
+            return _to_dict
+        else:
+            return json_
 
     @classmethod
     def deserialize_oc(cls, json_):

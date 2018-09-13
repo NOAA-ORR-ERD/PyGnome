@@ -1,18 +1,13 @@
 import copy
 
-from colander import Float, SchemaNode
-
-from gnome.persist.base_schema import ObjTypeSchema
-from gnome.gnomeobject import GnomeId
-
-class SubstanceSchema(ObjTypeSchema):
-    standard_density = SchemaNode(
-        Float(), update=True, read_only=True
-    )
+from gnome.utilities.serializable import Serializable, Field
+from gnome.persist.base_schema import ObjType
 
 
-class NonWeatheringSubstance(GnomeId):
-    _schema = ObjTypeSchema
+class NonWeatheringSubstance(Serializable):
+    _state = copy.deepcopy(Serializable._state)
+    _state += [Field('standard_density', update=True, read=True)]
+    _schema = ObjType
 
     def __init__(self,
                  standard_density=1000.0,

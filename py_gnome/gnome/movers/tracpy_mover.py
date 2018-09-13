@@ -88,7 +88,7 @@ class SimpleMover(Mover, serializable.Serializable):
         except KeyError, err:
             raise ValueError('The spill does not have the required '
                              'data arrays\n{}'
-                             .format(err))
+                             .format(err.message))
 
         # which ones should we move?
         in_water_mask = status_codes == basic_types.oil_status.in_water

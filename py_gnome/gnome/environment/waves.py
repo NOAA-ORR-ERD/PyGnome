@@ -14,6 +14,8 @@ import copy
 import numpy as np
 
 from gnome import constants
+from gnome.utilities import serializable
+from gnome.utilities.serializable import Field
 from gnome.utilities.weathering import Adios2, LehrSimecek, PiersonMoskowitz
 
 from gnome.persist import base_schema
@@ -27,18 +29,13 @@ from wind import WindSchema
 g = constants.gravity  # the gravitational constant.
 
 
-class WavesSchema(base_schema.ObjTypeSchema):
+class WavesSchema(base_schema.ObjType):
     'Colander Schema for Conditions object'
+    name = 'Waves'
     description = 'waves schema base class'
-    water = WaterSchema(
-        save=True, update=True, save_reference=True
-    )
-    wind = WindSchema(
-        save=True, update=True, save_reference=True
-    )
 
 
-class Waves(Environment):
+class Waves(Environment, serializable.Serializable):
     """
     class to compute the wave height for a time series
 
@@ -46,7 +43,12 @@ class Waves(Environment):
     variable, but may be extended in the future
     """
     _ref_as = 'waves'
+    _state = copy.deepcopy(Environment._state)
+    _state += [Field('water', save=True, update=True, save_reference=True),
+               Field('wind', save=True, update=True, save_reference=True)]
     _schema = WavesSchema
+
+    _state['name'].test_for_eq = False
 
     def __init__(self, wind=None, water=None, **kwargs):
         """
@@ -229,6 +231,36 @@ class Waves(Environment):
 
         return eps
 
+    def serialize(self, json_='webapi'):
+        """
+        Since 'wind'/'water' property is saved as references in save file
+        need to add appropriate node to WindMover schema for 'webapi'
+        """
+        toserial = self.to_serialize(json_)
+        schema = self.__class__._schema()
+
+        if json_ == 'webapi':
+            if self.wind:
+                schema.add(WindSchema(name='wind'))
+            if self.water:
+                schema.add(WaterSchema(name='water'))
+
+        return schema.serialize(toserial)
+
+    @classmethod
+    def deserialize(cls, json_):
+        """
+        append correct schema for wind object
+        """
+        schema = cls._schema()
+
+        if 'wind' in json_:
+            schema.add(WindSchema(name='wind'))
+
+        if 'water' in json_:
+            schema.add(WaterSchema(name='water'))
+
+        return schema.deserialize(json_)
 
     def prepare_for_model_run(self, _model_time):
         if self.wind is None:

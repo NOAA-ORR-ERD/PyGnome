@@ -19,6 +19,7 @@ from gnome.cy_gnome.cy_ice_mover import CyIceMover
 from gnome.cy_gnome.cy_currentcycle_mover import CyCurrentCycleMover
 from gnome.cy_gnome.cy_component_mover import CyComponentMover
 
+from gnome.utilities.serializable import Serializable, Field
 from gnome.utilities.time_utils import sec_to_datetime
 from gnome.utilities.inf_datetime import InfTime, MinusInfTime
 
@@ -29,20 +30,21 @@ from gnome.persist.extend_colander import LocalDateTime
 from gnome.environment import Tide, TideSchema, Wind, WindSchema
 from gnome.movers import CyMover, ProcessSchema
 
-from gnome.persist.base_schema import ObjTypeSchema, WorldPoint
-from gnome.persist.extend_colander import FilenameSchema
 
-
-class CurrentMoversBaseSchema(ProcessSchema):
-    uncertain_duration = SchemaNode(Float())
-    uncertain_time_delay = SchemaNode(Float())
-    data_start = SchemaNode(LocalDateTime(), read_only=True,
+class CurrentMoversBaseSchema(ObjType, ProcessSchema):
+    uncertain_duration = SchemaNode(Float(), missing=drop)
+    uncertain_time_delay = SchemaNode(Float(), missing=drop)
+    data_start = SchemaNode(LocalDateTime(), missing=drop,
                             validator=convertible_to_seconds)
-    data_stop = SchemaNode(LocalDateTime(), read_only=True,
+    data_stop = SchemaNode(LocalDateTime(), missing=drop,
                            validator=convertible_to_seconds)
 
 
 class CurrentMoversBase(CyMover):
+    _state = copy.deepcopy(CyMover._state)
+    _state.add(update=['uncertain_duration', 'uncertain_time_delay'],
+               save=['uncertain_duration', 'uncertain_time_delay'])
+
     _ref_as = 'current_movers'
 
     def __init__(self,
@@ -130,49 +132,39 @@ class CurrentMoversBase(CyMover):
 
 class CatsMoverSchema(CurrentMoversBaseSchema):
     '''static schema for CatsMover'''
-    filename = FilenameSchema(
-        save=True, isdatafile=True, test_equal=False, update=False
-    )
-    scale = SchemaNode(
-        Bool(), missing=drop, save=True, update=True
-    )
-    scale_refpoint = WorldPoint(
-        missing=drop, save=True, update=True
-    )
-    scale_value = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
+    filename = SchemaNode(String(), missing=drop)
+    scale = SchemaNode(Bool(), missing=drop)
+    scale_refpoint = WorldPoint(missing=drop)
+    scale_value = SchemaNode(Float(), missing=drop)
 
     # the following six could be shared with grid_current
     # in a currents base class
-    down_cur_uncertain = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
-    up_cur_uncertain = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
-    right_cur_uncertain = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
-    left_cur_uncertain = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
-    uncertain_eddy_diffusion = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
-    uncertain_eddy_v0 = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
-    tide = TideSchema(
-        missing=drop, save=True, update=True, save_reference=True
-    )
-    data_start = SchemaNode(LocalDateTime(), read_only=True,
-                            validator=convertible_to_seconds)
-    data_stop = SchemaNode(LocalDateTime(), read_only=True,
-                           validator=convertible_to_seconds)
+    down_cur_uncertain = SchemaNode(Float(), missing=drop)
+    up_cur_uncertain = SchemaNode(Float(), missing=drop)
+    right_cur_uncertain = SchemaNode(Float(), missing=drop)
+    left_cur_uncertain = SchemaNode(Float(), missing=drop)
+    uncertain_eddy_diffusion = SchemaNode(Float(), missing=drop)
+    uncertain_eddy_v0 = SchemaNode(Float(), missing=drop)
 
 
-class CatsMover(CurrentMoversBase):
+class CatsMover(CurrentMoversBase, Serializable):
+
+    _state = copy.deepcopy(CurrentMoversBase._state)
+
+    _update = ['scale', 'scale_refpoint', 'scale_value',
+               'up_cur_uncertain', 'down_cur_uncertain',
+               'right_cur_uncertain', 'left_cur_uncertain',
+               'uncertain_eddy_diffusion', 'uncertain_eddy_v0']
+    _create = []
+    _create.extend(_update)
+    _state.add(update=_update, save=_create)
+    _state.add_field([Field('filename', save=True, read=True, isdatafile=True,
+                            test_for_eq=False),
+                      Field('tide', save=True, update=True,
+                            save_reference=True),
+                      Field('data_start', read=True),
+                      Field('data_stop', read=True),
+                      ])
 
     _schema = CatsMoverSchema
 
@@ -253,7 +245,7 @@ class CatsMover(CurrentMoversBase):
         return 'CatsMover(filename={0})'.format(self.filename)
 
     # Properties
-    filename = property(lambda self: self._filename,
+    filename = property(lambda self: basename(self._filename),
                         lambda self, val: setattr(self, '_filename', val))
 
     scale = property(lambda self: bool(self.mover.scale_type),
@@ -325,9 +317,6 @@ class CatsMover(CurrentMoversBase):
 
     @tide.setter
     def tide(self, tide_obj):
-        if tide_obj is None:
-            self._tide = tide_obj
-            return
         if not isinstance(tide_obj, Tide):
             raise TypeError('tide must be of type environment.Tide')
 
@@ -384,39 +373,70 @@ class CatsMover(CurrentMoversBase):
 
         return velocities
 
+    def serialize(self, json_='webapi'):
+        """
+        Since 'wind' property is saved as a reference when used in save file
+        and 'save' option, need to add appropriate node to WindMover schema
+        """
+        toserial = self.to_serialize(json_)
+        schema = self.__class__._schema()
+
+        if json_ == 'save':
+            toserial['filename'] = self._filename
+
+        if 'tide' in toserial:
+            schema.add(TideSchema(name='tide'))
+
+        return schema.serialize(toserial)
+
+    @classmethod
+    def deserialize(cls, json_):
+        """
+        append correct schema for wind object
+        """
+        if not cls.is_sparse(json_):
+            schema = cls._schema()
+
+            if 'tide' in json_:
+                schema.add(TideSchema())
+
+            return schema.deserialize(json_)
+        else:
+            return json_
+
 
 class GridCurrentMoverSchema(CurrentMoversBaseSchema):
-    filename = FilenameSchema(
-        missing=drop, save=True, update=False, isdatafile=True, test_equal=False
-    )
-    topology_file = FilenameSchema(
-        missing=drop, save=True, update=False, isdatafile=True, test_equal=False
-    )
-    current_scale = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
-    uncertain_along = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
-    uncertain_cross = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
-    extrapolate = SchemaNode(
-        Bool(), missing=drop, save=True, update=True
-    )
-    time_offset = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
-    is_data_on_cells = SchemaNode(
-        Bool(), missing=drop, read_only=True
-    )
-    data_start = SchemaNode(LocalDateTime(), read_only=True,
+    filename = SchemaNode(String(), missing=drop)
+    topology_file = SchemaNode(String(), missing=drop)
+    current_scale = SchemaNode(Float(), missing=drop)
+    uncertain_along = SchemaNode(Float(), missing=drop)
+    uncertain_cross = SchemaNode(Float(), missing=drop)
+    extrapolate = SchemaNode(Bool(), missing=drop)
+    time_offset = SchemaNode(Float(), missing=drop)
+    is_data_on_cells = SchemaNode(Bool(), missing=drop)
+    data_start = SchemaNode(LocalDateTime(), missing=drop,
                             validator=convertible_to_seconds)
-    data_stop = SchemaNode(LocalDateTime(), read_only=True,
+    data_stop = SchemaNode(LocalDateTime(), missing=drop,
                            validator=convertible_to_seconds)
 
 
-class GridCurrentMover(CurrentMoversBase):
+class GridCurrentMover(CurrentMoversBase, Serializable):
+
+    _update = ['uncertain_cross', 'uncertain_along',
+               'current_scale', 'extrapolate', 'time_offset']
+    _save = ['uncertain_cross', 'uncertain_along',
+             'current_scale', 'extrapolate', 'time_offset']
+    _state = copy.deepcopy(CurrentMoversBase._state)
+
+    _state.add(update=_update, save=_save)
+    _state.add_field([Field('filename', save=True, read=True,
+                            isdatafile=True, test_for_eq=False),
+                      Field('topology_file', save=True, read=True,
+                            isdatafile=True, test_for_eq=False),
+                      Field('is_data_on_cells', save=False, read=True),
+                      Field('data_start', read=True),
+                      Field('data_stop', read=True),
+                      ])
 
     _schema = GridCurrentMoverSchema
 
@@ -650,32 +670,31 @@ class GridCurrentMover(CurrentMoversBase):
 
 
 class IceMoverSchema(CurrentMoversBaseSchema):
-    filename = FilenameSchema(
-        missing=drop, save=True, isdatafile=True, test_equal=False, update=False
-    )
-    topology_file = FilenameSchema(
-        missing=drop, save=True, isdatafile=True, test_equal=False, update=False
-    )
-    current_scale = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
-    uncertain_along = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
-    uncertain_cross = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
-    extrapolate = SchemaNode(
-        Bool(), missing=drop, save=True, update=True
-    )
+    filename = SchemaNode(String(), missing=drop)
+    topology_file = SchemaNode(String(), missing=drop)
+    current_scale = SchemaNode(Float(), missing=drop)
+    uncertain_along = SchemaNode(Float(), missing=drop)
+    uncertain_cross = SchemaNode(Float(), missing=drop)
+    extrapolate = SchemaNode(Bool(), missing=drop)
 
 
-class IceMover(CurrentMoversBase):
+class IceMover(CurrentMoversBase, Serializable):
+
+    _update = ['uncertain_cross', 'uncertain_along',
+               'current_scale', 'extrapolate']
+    _save = ['uncertain_cross', 'uncertain_along',
+             'current_scale', 'extrapolate']
+    _state = copy.deepcopy(CurrentMoversBase._state)
+
+    _state.add(update=_update, save=_save)
+    _state.add_field([Field('filename', save=True, read=True,
+                            isdatafile=True, test_for_eq=False),
+                      Field('topology_file', save=True, read=True,
+                            isdatafile=True, test_for_eq=False)])
 
     _schema = IceMoverSchema
 
-    def __init__(self,
-                 filename=None,
+    def __init__(self, filename,
                  topology_file=None,
                  extrapolate=False,
                  time_offset=0,
@@ -929,45 +948,25 @@ class IceMover(CurrentMoversBase):
         return (self.mover.get_offset_time()) / 3600.
 
 
-class CurrentCycleMoverSchema(CurrentMoversBaseSchema):
-    filename = FilenameSchema(
-        missing=drop, save=True, isdatafile=True, test_equal=False, update=False
-    )
-    topology_file = FilenameSchema(
-        missing=drop, save=True, isdatafile=True, test_equal=False, update=False
-    )
-    current_scale = SchemaNode(
-        Float(), default=1, missing=drop, save=True, update=True
-    )
-    uncertain_duration = SchemaNode(
-        Float(), default=24, missing=drop,
-        save=True, update=True
-    )
-    uncertain_time_delay = SchemaNode(
-        Float(), default=0, missing=drop,
-        save=True, update=True
-    )
-    uncertain_along = SchemaNode(
-        Float(), default=.5, missing=drop,
-        save=True, update=True
-    )
-    uncertain_cross = SchemaNode(
-        Float(), default=.25, missing=drop, save=True, update=True
-    )
-    tide = TideSchema(
-        missing=drop, save=True, update=True, save_reference=True
-    )
-    data_start = SchemaNode(LocalDateTime(), read_only=True,
-                            validator=convertible_to_seconds)
-    data_stop = SchemaNode(LocalDateTime(), read_only=True,
-                           validator=convertible_to_seconds)
+class CurrentCycleMoverSchema(ObjType, ProcessSchema):
+    filename = SchemaNode(String(), missing=drop)
+    topology_file = SchemaNode(String(), missing=drop)
+    current_scale = SchemaNode(Float(), default=1, missing=drop)
+    uncertain_duration = SchemaNode(Float(), default=24, missing=drop)
+    uncertain_time_delay = SchemaNode(Float(), default=0, missing=drop)
+    uncertain_along = SchemaNode(Float(), default=.5, missing=drop)
+    uncertain_cross = SchemaNode(Float(), default=.25, missing=drop)
 
 
-class CurrentCycleMover(GridCurrentMover):
+class CurrentCycleMover(GridCurrentMover, Serializable):
+    _state = copy.deepcopy(GridCurrentMover._state)
+    _state.add_field([Field('tide', save=True, update=True,
+                            save_reference=True)])
+
     _schema = CurrentCycleMoverSchema
 
     def __init__(self,
-                 filename = None,
+                 filename,
                  topology_file=None,
                  **kwargs):
         """
@@ -1011,7 +1010,7 @@ class CurrentCycleMover(GridCurrentMover):
                                                 **kwargs)
 
     def __repr__(self):
-        return ('CurrentCycletMover(uncertain_duration={0.uncertain_duration}, '
+        return ('GridCurrentMover(uncertain_duration={0.uncertain_duration}, '
                 'uncertain_time_delay={0.uncertain_time_delay}, '
                 'uncertain_cross={0.uncertain_cross}, '
                 'uncertain_along={0.uncertain_along}, '
@@ -1021,7 +1020,7 @@ class CurrentCycleMover(GridCurrentMover):
                 .format(self.mover, self))
 
     def __str__(self):
-        return ('CurrentCycleMover - current _state.\n'
+        return ('GridCurrentMover - current _state.\n'
                 '  uncertain_duration={0.uncertain_duration}\n'
                 '  uncertain_time_delay={0.uncertain_time_delay}\n'
                 '  uncertain_cross={0.uncertain_cross}\n'
@@ -1052,80 +1051,73 @@ class CurrentCycleMover(GridCurrentMover):
         self._tide = tide_obj
 
     @property
-    def data_start(self):
-        if self.tide is not None:
-            return self.tide.data_start
-        else:
-            return MinusInfTime()
-
-    @property
-    def data_stop(self):
-        if self.tide is not None:
-            return self.tide.data_stop
-        else:
-            return InfTime()
-
-    @property
     def is_data_on_cells(self):
         return None
 
+    def serialize(self, json_='webapi'):
+        """
+        Since 'tide' property is saved as a reference when used in save file
+        and 'save' option, need to add appropriate node to
+        CurrentCycleMover schema
+        """
+        toserial = self.to_serialize(json_)
+        schema = self.__class__._schema()
 
-class ComponentMoverSchema(ProcessSchema):
+        if json_ == 'webapi' and 'tide' in toserial:
+            schema.add(TideSchema(name='tide'))
+
+        return schema.serialize(toserial)
+
+    @classmethod
+    def deserialize(cls, json_):
+        """
+        append correct schema for tide object
+        """
+        schema = cls._schema()
+
+        if 'tide' in json_:
+            schema.add(TideSchema())
+
+        return schema.deserialize(json_)
+
+
+class ComponentMoverSchema(ObjType, ProcessSchema):
     '''static schema for ComponentMover'''
-    filename1 = SchemaNode(
-        String(), missing=drop,
-        save=True, update=True, isdatafile=True, test_equal=False
-    )
-    filename2 = SchemaNode(
-        String(), missing=drop,
-        save=True, update=True, isdatafile=True, test_equal=False
-    )
-    scale_refpoint = WorldPoint(
-        missing=drop, save=True, update=True
-    )
-    pat1_angle = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
-    pat1_speed = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
-    pat1_speed_units = SchemaNode(
-        Int(), missing=drop, save=True, update=True
-    )
-    pat1_scale_to_value = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
-    pat2_angle = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
-    pat2_speed = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
-    pat2_speed_units = SchemaNode(
-        Int(), missing=drop, save=True, update=True
-    )
-    pat2_scale_to_value = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
-    scale_by = SchemaNode(
-        Int(), missing=drop, save=True, update=True
-    )
-    wind = WindSchema(
-        missing=drop, save=True, update=True, save_reference=True
-    )
-    data_start = SchemaNode(LocalDateTime(), read_only=True,
-                            validator=convertible_to_seconds)
-    data_stop = SchemaNode(LocalDateTime(), read_only=True,
-                           validator=convertible_to_seconds)
+    filename1 = SchemaNode(String(), missing=drop)
+    filename2 = SchemaNode(String(), missing=drop)
+    scale_refpoint = WorldPoint(missing=drop)
+    pat1_angle = SchemaNode(Float(), missing=drop)
+    pat1_speed = SchemaNode(Float(), missing=drop)
+    pat1_speed_units = SchemaNode(Int(), missing=drop)
+    pat1_scale_to_value = SchemaNode(Float(), missing=drop)
+    pat2_angle = SchemaNode(Float(), missing=drop)
+    pat2_speed = SchemaNode(Float(), missing=drop)
+    pat2_speed_units = SchemaNode(Int(), missing=drop)
+    pat2_scale_to_value = SchemaNode(Float(), missing=drop)
+    scale_by = SchemaNode(Int(), missing=drop)
 
 
-class ComponentMover(CurrentMoversBase):
+class ComponentMover(CurrentMoversBase, Serializable):
+    _state = copy.deepcopy(CurrentMoversBase._state)
+
+    _update = ['scale_refpoint',
+               'pat1_angle', 'pat1_speed', 'pat1_speed_units',
+               'pat1_scale_to_value',
+               'pat2_angle', 'pat2_speed', 'pat2_speed_units',
+               'pat2_scale_to_value', 'scale_by']
+    _create = []
+    _create.extend(_update)
+    _state.add(update=_update, save=_create)
+    _state.add_field([Field('filename1', save=True, read=True, isdatafile=True,
+                            test_for_eq=False),
+                      Field('filename2', save=True, read=True, isdatafile=True,
+                            test_for_eq=False),
+                      Field('wind', save=True, update=True,
+                            save_reference=True)])
+
     _schema = ComponentMoverSchema
 
-    def __init__(self,
-                 filename1=None,
-                 filename2=None,
-                 wind=None,
+    def __init__(self, filename1, filename2=None, wind=None,
                  **kwargs):
         """
         Uses super to invoke base class __init__ method.
@@ -1151,7 +1143,7 @@ class ComponentMover(CurrentMoversBase):
         See Mover documentation for remaining valid kwargs.
         """
 
-        if filename1 and not os.path.exists(filename1):
+        if not os.path.exists(filename1):
             raise ValueError('Path for Cats filename1 does not exist: {0}'
                              .format(filename1))
 
@@ -1257,20 +1249,6 @@ class ComponentMover(CurrentMoversBase):
                                                                    val))
 
     @property
-    def data_start(self):
-        if self.wind is not None:
-            return self.wind.data_start
-        else:
-            return MinusInfTime()
-
-    @property
-    def data_stop(self):
-        if self.wind is not None:
-            return self.wind.data_stop
-        else:
-            return InfTime()
-
-    @property
     def scale_refpoint(self):
         return self.mover.ref_point
 
@@ -1292,8 +1270,7 @@ class ComponentMover(CurrentMoversBase):
     @wind.setter
     def wind(self, wind_obj):
         if not isinstance(wind_obj, Wind):
-            self._wind = None
-            return
+            raise TypeError('wind must be of type environment.Wind')
 
         self.mover.set_ossm(wind_obj.ossm)
         self._wind = wind_obj
@@ -1312,3 +1289,31 @@ class ComponentMover(CurrentMoversBase):
         Get file values scaled to ref pt value, with tide applied (if any)
         """
         return self.mover._get_velocity_handle()
+
+    def serialize(self, json_='webapi'):
+        """
+        Since 'wind' property is saved as a reference when used in save file
+        and 'save' option, need to add appropriate node to WindMover schema
+        """
+        dict_ = self.to_serialize(json_)
+        schema = self.__class__._schema()
+
+        if json_ == 'webapi' and 'wind' in dict_:
+            schema.add(WindSchema(name='wind'))
+
+        return schema.serialize(dict_)
+
+    @classmethod
+    def deserialize(cls, json_):
+        """
+        append correct schema for wind object
+        """
+        schema = cls._schema()
+
+        if 'wind' in json_:
+            # for 'webapi', there will be nested Wind structure
+            # for 'save' option, there should be no nested 'wind'. It is
+            # removed, loaded and added back after deserialization
+            schema.add(WindSchema())
+
+        return schema.deserialize(json_)

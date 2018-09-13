@@ -14,6 +14,7 @@ def test_environment_init():
     env = Environment()
     sample_time = 60 * 60 * 24 * 365 * 30  # seconds
 
+    assert env.name is None
     assert env._ref_as == 'environment'
 
     with raises(NotImplementedError):
@@ -178,11 +179,11 @@ def test_Water_update_from_dict():
     w.wave_height = 1.0
     json_with_values = w.serialize()
 
-    w.update_from_dict(json_)
+    w.update_from_dict(Water.deserialize(json_))
     assert w.fetch is None
     assert w.wave_height is None
 
-    w.update_from_dict(json_with_values)
+    w.update_from_dict(Water.deserialize(json_with_values))
     assert w.fetch == 0.0
     assert w.wave_height == 1.0
 

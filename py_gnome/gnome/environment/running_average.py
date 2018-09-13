@@ -14,6 +14,7 @@ from gnome import basic_types
 from gnome.utilities.time_utils import (zero_time,
                                         date_to_sec,
                                         sec_to_date)
+from gnome.utilities.serializable import Serializable, Field
 from gnome.utilities.convert import (to_time_value_pair,
                                      to_datetime_value_2d)
 from gnome.persist.extend_colander import (DefaultTupleSchema,
@@ -24,7 +25,6 @@ from gnome.persist import validators, base_schema
 from .environment import Environment
 from gnome.environment import Wind, WindSchema
 from gnome.exceptions import ReferencedObjectNotSet
-from gnome.gnomeobject import GnomeId
 
 
 class UVTuple(DefaultTupleSchema):
@@ -58,23 +58,27 @@ class TimeSeriesSchema(DatetimeValue2dArraySchema):
         validators.ascending_datetime(node, cstruct)
 
 
-class RunningAverageSchema(base_schema.ObjTypeSchema):
+class RunningAverageSchema(base_schema.ObjType):
     'Time series object schema'
+    timeseries = TimeSeriesSchema(missing=drop)
     name = 'running average'
-    timeseries = TimeSeriesSchema(
-        missing=drop, save=True, update=True
-    )
     past_hours_to_average = SchemaNode(Float(), missing=drop)
-    wind = WindSchema(
-        save=True, update=True, save_reference=True
-    )
 
 
-class RunningAverage(Environment):
+class RunningAverage(Environment, Serializable):
     '''
     Defines a running average time series for a wind or tide
     '''
 
+    _update = []
+
+    # used to create new obj or as readonly parameter
+    _create = []
+    _create.extend(_update)
+
+    _state = copy.deepcopy(Environment._state)
+    _state += [Field('wind', save=True, update=True, save_reference=True)]
+    _state.add(save=_create, update=_update)
     _schema = RunningAverageSchema
 
     def __init__(self, wind=None, timeseries=None, past_hours_to_average=3,
@@ -252,3 +256,34 @@ class RunningAverage(Environment):
         data = self.get_timeseries(time)
 
         return tuple(data[0]['value'])
+
+    def serialize(self, json_='webapi'):
+        """
+        Since 'wind' property is saved as references in save file
+        need to add appropriate node to WindMover schema for 'webapi'
+        """
+        toserial = self.to_serialize(json_)
+        schema = self.__class__._schema()
+
+        if json_ == 'webapi':
+            if self.wind:
+                # add wind schema
+                schema.add(WindSchema(name='wind'))
+
+        serial = schema.serialize(toserial)
+
+        return serial
+
+    @classmethod
+    def deserialize(cls, json_):
+        """
+        append correct schema for wind object
+        """
+        schema = cls._schema()
+
+        if 'wind' in json_:
+            schema.add(WindSchema(name='wind'))
+
+        _to_dict = schema.deserialize(json_)
+
+        return _to_dict

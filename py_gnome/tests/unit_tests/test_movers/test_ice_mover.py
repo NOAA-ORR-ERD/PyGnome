@@ -239,7 +239,9 @@ def test_serialize_deserialize():
     """
 
     ice_grid = IceMover(ice_file, topology_file)
-    serial = ice_grid.serialize()
-    ice2 = IceMover.deserialize(serial)
+    serial = ice_grid.serialize('webapi')
+    dict_ = IceMover.deserialize(serial)
+    ice2 = IceMover.new_from_dict(dict_)
     assert ice_grid == ice2
 
+    ice_grid.update_from_dict(dict_)  # tests no failures

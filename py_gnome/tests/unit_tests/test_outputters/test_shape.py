@@ -1,5 +1,6 @@
-
-# tests for shapefile outputter
+'''
+tests for kmz outputter
+'''
 
 import os
 from datetime import datetime, timedelta
@@ -106,11 +107,11 @@ def test_exceptions(output_filename):
     # -- before there was time to change the output file names, etc.
     # So for this unit test, there should be no exception if we do it twice.
     shp.prepare_for_model_run(model_start_time=datetime.now(),
-                              spills=spill_pair,
-                              num_time_steps=4)
+                                 spills=spill_pair,
+                                 num_time_steps=4)
     shp.prepare_for_model_run(model_start_time=datetime.now(),
-                              spills=spill_pair,
-                              num_time_steps=4)
+                                 spills=spill_pair,
+                                 num_time_steps=4)
 
 
     # with raises(AttributeError):

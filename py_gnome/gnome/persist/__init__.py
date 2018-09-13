@@ -7,6 +7,7 @@ from gnome.persist import base_schema, extend_colander, validators
 from gnome.persist.save_load import (Savable,
                                      References,
                                      load,
+                                     class_from_objtype,
                                      is_savezip_valid)
 
 monkey_patch_colander.apply()
@@ -17,4 +18,5 @@ __all__ = [base_schema,
            Savable,
            References,
            load,
+           class_from_objtype,
            is_savezip_valid]
