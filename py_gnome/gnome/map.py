@@ -372,7 +372,7 @@ class ParamMap(GnomeMap):
         self._check_units(self.units)
 
         if units is not 'm':
-            self._distance = uc.Convert("Length", self.units, 'm', distance)
+            self._distance = uc.convert("Length", self.units, 'm', distance)
         else:
             self._distance = distance
 
@@ -410,7 +410,7 @@ class ParamMap(GnomeMap):
 
     @property
     def distance(self):
-        return uc.Convert('Length', 'm', self.units, self._distance)
+        return uc.convert('Length', 'm', self.units, self._distance)
 
     def _check_units(self, units):
         """

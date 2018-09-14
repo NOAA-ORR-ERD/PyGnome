@@ -409,7 +409,7 @@ class CyMover(Mover):
             self.status_codes = sc['status_codes']
         except KeyError, err:
             raise ValueError('The spill container does not have the required'
-                             'data arrays\n' + err.message)
+                             'data arrays\n' + str(err))
 
         if sc.uncertain:
             self.spill_type = spill_type.uncertainty
@@ -436,7 +436,7 @@ class CyMover(Mover):
                     except KeyError, err:
                         raise ValueError('The spill container does not have'
                                          ' the required data array\n{}'
-                                         .format(err.message))
+                                         .format(err))
 
                     self.mover.model_step_is_done(self.status_codes)
             else:

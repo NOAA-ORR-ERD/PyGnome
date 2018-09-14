@@ -58,7 +58,7 @@ bool IsLongWindFile(vector<string> &linesInFile, short *selectedUnitsOut, bool *
 	string currentLine, val1Str, val2Str;
 
 	DateTimeRec time;
-	VelocityRec velocity;
+	//VelocityRec velocity;
 
 	short selectedUnits = kUndefined;
 	bool dataInGMT = false;
@@ -143,7 +143,7 @@ Boolean IsLongWindFile(char *path, short *selectedUnitsOut, Boolean *dataInGMTOu
 
 bool IsNDBCWindFile(vector<string> &linesInFile, long *numHeaderLines)
 {
-	bool bIsValid = false;
+	//bool bIsValid = false;
 	string currentLine;
 
 	if (linesInFile.size() == 0)
@@ -264,7 +264,7 @@ bool IsOSSMTimeFile(vector<string> &linesInFile, short *selectedUnitsOut)
 
 	short selectedUnits = kUndefined;
 	DateTimeRec time;
-	VelocityRec velocity;
+	//VelocityRec velocity;
 
 	// size check
 	if (linesInFile.size() < 3)

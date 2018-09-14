@@ -4,9 +4,11 @@
 from itertools import chain
 
 import sys
+
 import logging
 import json
 import warnings
+
 import importlib
 
 import unit_conversion as uc
@@ -32,6 +34,7 @@ def check_dependency_versions():
     """
     libs = [('gridded', '0.1.2'),
             ('oil_library', '1.1.0'),
+            ('oil_library', '1.1.1'),
             ('unit_conversion', '2.6.0')]
 
     for name, version in libs:

@@ -7,6 +7,8 @@ from os.path import basename
 
 import numpy as np
 import pytest
+import tempfile
+import zipfile
 
 from gnome.movers import CatsMover
 from gnome.environment import Tide
@@ -205,9 +207,11 @@ def test_save_load(tide):
     """
     test save/loading with and without tide
     """
+
+    saveloc = tempfile.mkdtemp()
     c_cats = CatsMover(curr_file, tide=tide)
-    save_json, zipfile_, refs = c_cats.save(None)
-    assert validate_save_json(save_json, zipfile_, c_cats)
+    save_json, zipfile_, refs = c_cats.save(saveloc)
+    assert validate_save_json(save_json, zipfile.ZipFile(zipfile_), c_cats)
 
     loaded = CatsMover.load(zipfile_)
 

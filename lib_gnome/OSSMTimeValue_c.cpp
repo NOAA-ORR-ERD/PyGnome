@@ -427,7 +427,7 @@ OSErr OSSMTimeValue_c::GetTimeChange(long a, long b, Seconds *dt)
 OSErr OSSMTimeValue_c::GetDataStartTime(Seconds *startTime)
 {
 	OSErr err = 0;
-	long n = GetNumValues();
+	//long n = GetNumValues();
 
 	*startTime = 0;
 
@@ -1144,7 +1144,7 @@ OSErr OSSMTimeValue_c::ReadOSSMTimeHeader(char *path)
     float latdeg, latmin, longdeg, longmin;
     short selectedUnits;
 
-    WorldPoint3D wp = {0, 0, 0};
+    WorldPoint3D wp = {{0, 0}, 0};
 
     char strLine[512], firstPartOfFile[512];
 
@@ -1207,7 +1207,7 @@ OSErr OSSMTimeValue_c::ReadOSSMTimeHeader(char *path)
     else
         fUserUnits = selectedUnits;
 
-done:
+//done:
 
     return err;
 }
@@ -1218,13 +1218,13 @@ OSErr OSSMTimeValue_c::ReadHydrologyHeader(vector<string> &linesInFile)
     OSErr err = noErr;
 
 	long	line = 0;
-	long lenToRead, fileLength, numScanned;
+	//long lenToRead, fileLength, numScanned;
 	float latdeg, latmin, longdeg, longmin;
 
 	string currentLine;
 	char *stationName;
 
-	WorldPoint3D wp = {0, 0, 0};
+	WorldPoint3D wp = {{0, 0}, 0};
 
     char strLine[512], firstPartOfFile[512], errmsg[256];
 

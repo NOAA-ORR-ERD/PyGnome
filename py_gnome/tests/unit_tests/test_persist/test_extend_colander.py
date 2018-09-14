@@ -6,14 +6,16 @@ tests for our extensions to colander
 Not complete at all!
 
 """
-import datetime as dt
-import pytest
-import numpy as np
-from gnome.persist import extend_colander
 import os
+from datetime import datetime
 import pprint as pp
 
-from datetime import datetime
+import pytest
+import tempfile
+
+import numpy as np
+
+from gnome.persist import extend_colander
 from gnome.utilities.time_utils import FixedOffset
 from gnome.environment.gridded_objects_base import Time
 from gnome.environment.timeseries_objects_base import (TimeseriesData,
@@ -23,11 +25,11 @@ from gnome.utilities.serializable_demo_objects import DemoObj
 
 @pytest.fixture('class')
 def dates():
-    return np.array([dt.datetime(2000, 1, 1, 0),
-                     dt.datetime(2000, 1, 1, 2),
-                     dt.datetime(2000, 1, 1, 4),
-                     dt.datetime(2000, 1, 1, 6),
-                     dt.datetime(2000, 1, 1, 8), ])
+    return np.array([datetime(2000, 1, 1, 0),
+                     datetime(2000, 1, 1, 2),
+                     datetime(2000, 1, 1, 4),
+                     datetime(2000, 1, 1, 6),
+                     datetime(2000, 1, 1, 8), ])
 
 
 @pytest.fixture('class')
@@ -46,11 +48,14 @@ class Test_LocalDateTime(object):
     def test_serialize_simple(self):
         dt = datetime(2016, 2, 12, 13, 32)
         result = self.dts.serialize(None, dt)
+
         assert result == '2016-02-12T13:32:00'
 
     def test_serialize_with_tzinfo(self):
-        dt = datetime(2016, 2, 12, 13, 32, tzinfo=FixedOffset(3 * 60, '3 hr offset'))
+        dt = datetime(2016, 2, 12, 13, 32,
+                      tzinfo=FixedOffset(3 * 60, '3 hr offset'))
         result = self.dts.serialize(None, dt)
+
         # offset stripped
         assert result == '2016-02-12T13:32:00'
 
@@ -59,6 +64,7 @@ class Test_LocalDateTime(object):
         dt_str = '2016-02-12T13:32:00'
 
         result = self.dts.deserialize(None, dt_str)
+
         assert result == datetime(2016, 2, 12, 13, 32)
 
     def test_deserialize_with_offset(self):
@@ -67,6 +73,7 @@ class Test_LocalDateTime(object):
 
         result = self.dts.deserialize(None, dt_str)
         print repr(result)
+
         assert result == datetime(2016, 2, 12, 13, 32)
 
 
@@ -127,66 +134,93 @@ class Test_LocalDateTime(object):
 #         pass
 
 
-
 class TestDemoObj(object):
-    def test_serialization(self):
-        _t = Time(dates())
-        tsv = TimeseriesVector(
-            variables=[TimeseriesData(name='u', time=_t, data=series_data()),
-                       TimeseriesData(name='v', time=_t, data=series_data2())],
-            units='m/s'
-        )
+    def test_serialization(self, dates, series_data, series_data2):
         filename = 'foo.nc'
+        times = Time(dates)
+        tsv = TimeseriesVector(variables=[TimeseriesData(name='u', time=times,
+                                                         data=series_data),
+                                          TimeseriesData(name='v', time=times,
+                                                         data=series_data2)],
+                               units='m/s')
 
-        inst = DemoObj(filename=filename, variable=tsv, variables=[tsv, tsv.variables[0]])
+        inst = DemoObj(filename=filename, variable=tsv,
+                       variables=[tsv, tsv.variables[0]])
         serial = inst.serialize()
         deser = DemoObj.deserialize(serial)
+
         assert deser.variable == inst.variable
         assert deser.variables == inst.variables
         assert deser.filename == 'foo.nc'
 
+    def test_save_load(self, dates, series_data, series_data2):
+        times = Time(dates)
+        tsv = TimeseriesVector(variables=[TimeseriesData(name='u', time=times,
+                                                         data=series_data),
+                                          TimeseriesData(name='v', time=times,
+                                                         data=series_data2)],
+                               units='m/s')
 
-    def test_save_load(self):
-        _t = Time(dates())
-        tsv = TimeseriesVector(
-            variables=[TimeseriesData(name='u', time=_t, data=series_data()),
-                       TimeseriesData(name='v', time=_t, data=series_data2())],
-            units='m/s'
-        )
-        inst = DemoObj(filename=None, variable=tsv, variables=[tsv, tsv.variables[0]])
-        json_, zipfile_, refs = inst.save(saveloc=None)
+        inst = DemoObj(filename=None, variable=tsv,
+                       variables=[tsv, tsv.variables[0]])
+
+        saveloc = tempfile.mkdtemp()
+        _json_, zipfile_, _refs = inst.save(saveloc=saveloc)
         loaded = DemoObj.load(zipfile_)
+
         assert inst == loaded
 
-    def test_serialization_options(self):
-        _t = Time(dates())
-        tsv = TimeseriesVector(
-            variables=[TimeseriesData(name='u', time=_t, data=series_data()),
-                       TimeseriesData(name='v', time=_t, data=series_data2())],
-            units='m/s'
-        )
-        filename = os.path.normpath('C:\\foo.nc')
-        inst = DemoObj(filename=filename, variable=tsv, variables=[tsv, tsv.variables[0]])
+    def test_serialization_options(self, dates, series_data, series_data2):
+        times = Time(dates)
+        tsv = TimeseriesVector(variables=[TimeseriesData(name='u', time=times,
+                                                         data=series_data),
+                                          TimeseriesData(name='v', time=times,
+                                                         data=series_data2)],
+                               units='m/s')
+
+        # kludge for platform differences
+        # It should work for the platform the test is running on:
+        if os.name == 'posix':
+            filename = 'some/random/path/foo.nc'
+        else:  # if not posix, should be windows
+            filename = os.path.normpath('C:\\foo.nc')
+
+        inst = DemoObj(filename=filename, variable=tsv,
+                       variables=[tsv, tsv.variables[0]])
         serial = inst.serialize(options={'raw_paths': False})
+
         assert serial['filename'] == 'foo.nc'
 
 
 class TestObjType(object):
-    _t = Time(dates())
     test_class = TimeseriesVector
-    test_class_instance = TimeseriesVector(
-        variables=[TimeseriesData(name='u', time=_t, data=series_data()),
-                   TimeseriesData(name='v', time=_t, data=series_data2())],
-        units='m/s'
-    )
 
-    def test_serialization(self):
-        serial = self.test_class_instance.serialize()
+    def build_test_instance(self, dates, series_data, series_data2):
+        times = Time(dates)
+
+        return TimeseriesVector(variables=[TimeseriesData(name='u',
+                                                          time=times,
+                                                          data=series_data),
+                                           TimeseriesData(name='v',
+                                                          time=times,
+                                                          data=series_data2)],
+                                units='m/s')
+
+    def test_serialization(self, dates, series_data, series_data2):
+        test_instance = self.build_test_instance(dates,
+                                                 series_data, series_data2)
+
+        serial = test_instance.serialize()
         pp.pprint(serial)
+
         deser = self.test_class.deserialize(serial)
         pp.pprint(deser)
-        assert deser == self.test_class_instance
 
-    def test_save_load(self):
+        assert deser == test_instance
+
+    def test_save_load(self, dates, series_data, series_data2):
+        test_instance = self.build_test_instance(dates,
+                                                 series_data, series_data2)
+
         # without context manager
-        json_, zipfile_, refs = self.test_class_instance.save('Test.zip')
+        _json_, _zipfile_, _refs = test_instance.save('Test.zip')

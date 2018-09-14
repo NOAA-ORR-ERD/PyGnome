@@ -7,17 +7,14 @@ import tempfile
 import numpy as np
 import netCDF4 as nc
 
-import unit_conversion
-
 from gnome.environment.gridded_objects_base import (Variable,
                                                     VectorVariable,
-                                                    Grid_S,
                                                     PyGrid,
                                                     Time)
 from gnome.environment.timeseries_objects_base import (TimeseriesData,
                                                        TimeseriesVector)
 
-from ..conftest import sample_sc_release, testdata
+from gen_analytical_datasets import gen_all
 
 
 @pytest.fixture('class')
@@ -28,30 +25,32 @@ def dates():
                      dt.datetime(2000, 1, 1, 6),
                      dt.datetime(2000, 1, 1, 8), ])
 
+
 @pytest.fixture('class')
 def series_data():
-    return np.array([1,3,6,10,15])
+    return np.array([1, 3, 6, 10, 15])
+
 
 @pytest.fixture('class')
 def series_data2():
-    return np.array([2,6,12,20,30])
+    return np.array([2, 6, 12, 20, 30])
+
 
 class TestTime:
     test_class = Time
-    test_class_instance = Time(dates())
 
-    def test_construction(self):
-        t = self.test_class_instance
-        assert t.min_time == t.data[0] == dt.datetime(2000,1,1,0)
-        assert t.max_time == t.data[-1] == dt.datetime(2000,1,1,8)
+    def test_construction(self, dates):
+        t = Time(dates)
 
-        dates = [
-            dt.datetime(2000, 1, 1, 0),
-            dt.datetime(2000, 1, 1, 2),
-            dt.datetime(2000, 1, 1, 4),
-            dt.datetime(2000, 1, 1, 6),
-            dt.datetime(2000, 1, 1, 8)
-        ]
+        assert t.min_time == t.data[0] == dt.datetime(2000, 1, 1, 0)
+        assert t.max_time == t.data[-1] == dt.datetime(2000, 1, 1, 8)
+
+        dates = [dt.datetime(2000, 1, 1, 0),
+                 dt.datetime(2000, 1, 1, 2),
+                 dt.datetime(2000, 1, 1, 4),
+                 dt.datetime(2000, 1, 1, 6),
+                 dt.datetime(2000, 1, 1, 8)]
+
         t2 = self.test_class(dates)
 
         assert t == t2
@@ -60,143 +59,167 @@ class TestTime:
         t1 = self.test_class.constant_time()
         t2 = self.test_class.constant_time()
         t3 = self.test_class.constant_time()
+
         assert t1 == t2 == t3
         assert t1 is t2 is t3
 
-    def test_index_of(self):
-        t = self.test_class_instance
+    def test_index_of(self, dates):
+        t = Time(dates)
         before = t.min_time - dt.timedelta(hours=1)
         after = t.max_time + dt.timedelta(hours=1)
+
         assert t.index_of(before, True) == 0
         assert t.index_of(after, True) == 5
         assert t.index_of(t.data[-1], True) == 4
         assert t.index_of(t.data[0], True) == 0
+
         with pytest.raises(ValueError):
             t.index_of(before, False)
+
         with pytest.raises(ValueError):
             t.index_of(after, False)
+
         assert t.index_of(t.max_time, True) == 4
         assert t.index_of(t.min_time, True) == 0
 
-    def test_interp_alpha(self):
-        t = self.test_class_instance
-        test_time = dt.datetime(2000,1,1,1)
+    def test_interp_alpha(self, dates):
+        t = Time(dates)
+        test_time = dt.datetime(2000, 1, 1, 1)
+
         assert np.isclose(t.interp_alpha(test_time), 0.5)
 
-    def test_serialize(self):
-        t = self.test_class_instance
+    def test_serialize(self, dates):
+        t = Time(dates)
         web_ser = t.serialize()
         t2 = self.test_class.deserialize(web_ser)
         assert t == t2
 
-    def test_save_load(self):
+    def test_save_load(self, dates):
+        t = Time(dates)
         saveloc = tempfile.mkdtemp()
         saveloc = os.path.join(saveloc, 'test.zip')
-        references = self.test_class_instance.save(saveloc)
+
+        _references = t.save(saveloc)
         new_instance = self.test_class.load(saveloc)
-        assert self.test_class_instance == new_instance
+
+        assert t == new_instance
 
 
 class TestTimeseriesData:
     test_class = TimeseriesData
-    test_class_instance = TimeseriesData(
-        time=Time(dates()),
-        data=series_data(),
-        units='m'
-    )
 
-    def test_construction(self):
-        t = self.test_class_instance
-        t2 = self.test_class(time=dates(), data=series_data(), units='m')
+    def get_tsd_instance(self, dates, series_data):
+        return TimeseriesData(time=Time(dates), data=series_data, units='m')
+
+    def test_construction(self, dates, series_data):
+        t = self.get_tsd_instance(dates, series_data)
+        t2 = self.test_class(time=dates, data=series_data, units='m')
+
         assert t.time == t2.time
         assert t == t2
 
-    def test_at(self):
-        t = self.test_class_instance
-        assert np.allclose(
-            t.at(np.array([0,0,0]), dt.datetime(2000,1,1,1)),
-            np.array([2,2,2])
-        )
-        assert np.allclose(
-            t.at(np.array([0,0]), dt.datetime(1999,1,1,0)),
-            np.array([1,1])
-        )
-        assert np.allclose(
-            t.at(np.array([0]), dt.datetime(2000,2,1,0)),
-            np.array([15])
-        )
-        assert np.allclose(
-            t.at(np.array([0]), dt.datetime(2000,1,1,0), extrapolate=False),
-            np.array([1])
-        )
+    def test_at(self, dates, series_data):
+        t = self.get_tsd_instance(dates, series_data)
+
+        assert np.allclose(t.at(np.array([0, 0, 0]),
+                                dt.datetime(2000, 1, 1, 1)),
+                           np.array([2, 2, 2]))
+
+        assert np.allclose(t.at(np.array([0, 0]),
+                                dt.datetime(1999, 1, 1, 0)),
+                           np.array([1, 1]))
+
+        assert np.allclose(t.at(np.array([0]),
+                                dt.datetime(2000, 2, 1, 0)),
+                           np.array([15]))
+
+        assert np.allclose(t.at(np.array([0]),
+                                dt.datetime(2000, 1, 1, 0),
+                                extrapolate=False),
+                           np.array([1]))
 
         with pytest.raises(ValueError):
-            t.at(np.array([0,0,0,0]), dt.datetime(2000,2,1,1), extrapolate=False)
+            t.at(np.array([0, 0, 0, 0]),
+                 dt.datetime(2000, 2, 1, 1),
+                 extrapolate=False)
 
-    def test_serialize(self):
-        t = self.test_class_instance
+    def test_serialize(self, dates, series_data):
+        t = self.get_tsd_instance(dates, series_data)
         web_ser = t.serialize()
         t2 = self.test_class.deserialize(web_ser)
         assert t == t2
 
-    def test_save_load(self):
+    def test_save_load(self, dates, series_data):
+        t = self.get_tsd_instance(dates, series_data)
         saveloc = tempfile.mkdtemp()
         saveloc = os.path.join(saveloc, 'test.zip')
-        references = self.test_class_instance.save(saveloc)
+
+        _references = t.save(saveloc)
         new_instance = self.test_class.load(saveloc)
-        assert self.test_class_instance == new_instance
+        assert t == new_instance
 
 
 class TestTimeseriesVector:
-    _t = Time(dates())
     test_class = TimeseriesVector
-    test_class_instance = TimeseriesVector(
-        variables=[TimeseriesData(name='u', time=_t, data=series_data()),
-                   TimeseriesData(name='v', time=_t, data=series_data2())],
-        units='m/s'
-    )
 
-    def test_construction(self):
-        t = self.test_class_instance
-#        assert len(t.variables) == 2
-#        assert t.time == t.variables[0].time == t.variables[1].time
-#        assert t.units == t.variables[0].units == t.variables[1].units
+    def get_tsv_instance(self, dates, series_data, series_data2):
+        _t = Time(dates)
 
-    def test_at(self):
-        t = self.test_class_instance
-        assert np.allclose(
-            t.at(np.array([0,0,0]), dt.datetime(2000,1,1,1)),
-            np.array([(2,4),(2,4),(2,4)])
-        )
-        assert np.allclose(
-            t.at(np.array([0,0]), dt.datetime(1999,1,1,0)),
-            np.array([(1,2),(1,2)])
-        )
-        assert np.allclose(
-            t.at(np.array([0]), dt.datetime(2000,2,1,0)),
-            np.array([(15,30)])
-        )
-        assert np.allclose(
-            t.at(np.array([0]), dt.datetime(2000,1,1,0), extrapolate=False),
-            np.array([(1,2)])
-        )
+        return TimeseriesVector(variables=[TimeseriesData(name='u', time=_t,
+                                                          data=series_data),
+                                           TimeseriesData(name='v', time=_t,
+                                                          data=series_data2)],
+                                units='m/s')
+
+    def test_construction(self, dates, series_data, series_data2):
+        _t = self.get_tsv_instance(dates, series_data, series_data2)
+
+        # assert len(t.variables) == 2
+        # assert t.time == t.variables[0].time == t.variables[1].time
+        # assert t.units == t.variables[0].units == t.variables[1].units
+
+    def test_at(self, dates, series_data, series_data2):
+        t = self.get_tsv_instance(dates, series_data, series_data2)
+
+        assert np.allclose(t.at(np.array([0, 0, 0]),
+                                dt.datetime(2000, 1, 1, 1)),
+                           np.array([(2, 4), (2, 4), (2, 4)]))
+
+        assert np.allclose(t.at(np.array([0, 0]),
+                                dt.datetime(1999, 1, 1, 0)),
+                           np.array([(1, 2), (1, 2)]))
+
+        assert np.allclose(t.at(np.array([0]),
+                                dt.datetime(2000, 2, 1, 0)),
+                           np.array([(15, 30)]))
+
+        assert np.allclose(t.at(np.array([0]),
+                                dt.datetime(2000, 1, 1, 0),
+                                extrapolate=False),
+                           np.array([(1, 2)]))
 
         with pytest.raises(ValueError):
-            t.at(np.array([0, 0,0,0]), dt.datetime(2000,2,1,1), extrapolate=False)
+            t.at(np.array([0, 0, 0, 0]),
+                 dt.datetime(2000, 2, 1, 1),
+                 extrapolate=False)
 
-    def test_serialize(self):
-        t = self.test_class_instance
+    def test_serialize(self, dates, series_data, series_data2):
+        t = self.get_tsv_instance(dates, series_data, series_data2)
         web_ser = t.serialize()
         t2 = self.test_class.deserialize(web_ser)
         assert t == t2
 
-    def test_save_load(self):
+    def test_save_load(self, dates, series_data, series_data2):
+        tsv = self.get_tsv_instance(dates, series_data, series_data2)
         saveloc = tempfile.mkdtemp()
         saveloc = os.path.join(saveloc, 'test.zip')
-        references = self.test_class_instance.save(saveloc)
+
+        _references = tsv.save(saveloc)
         new_instance = self.test_class.load(saveloc)
-        assert self.test_class_instance == new_instance
-#
+
+        assert tsv == new_instance
+
+
 # class TestGrid(TestBase):
 #     pass
 #
@@ -211,24 +234,6 @@ class TestTimeseriesVector:
 #
 # class TestVectorVariable(TestBase):
 #     pass
-
-import os
-import datetime as dt
-
-import pytest
-
-import numpy as np
-import netCDF4 as nc
-
-import unit_conversion
-
-from gnome.environment.gridded_objects_base import (Variable,
-                                                    VectorVariable,
-                                                    Grid_S,
-                                                    PyGrid,
-                                                    S_Depth)
-
-from gen_analytical_datasets import gen_all
 
 '''
 Need to hook this up to existing test data infrastructure
@@ -299,11 +304,13 @@ tri_ring = nc.Dataset(tri_ring)
 #                             [3, 3, 0],
 #                             [3, 0, 0]], dtype=np.float64)
 #
-#         res, alph = dep.interpolation_alphas(corners, Time.constant_time(), w.shape)
+#         res, alph = dep.interpolation_alphas(corners, Time.constant_time(),
+#                                              w.shape)
 #         assert res is None  # all particles on surface
 #         assert alph is None  # all particles on surface
 #
-#         res, alph = dep.interpolation_alphas(corners, Time.constant_time(), u.shape)
+#         res, alph = dep.interpolation_alphas(corners, Time.constant_time(),
+#                                              u.shape)
 #         assert res is None  # all particles on surface
 #         assert alph is None  # all particles on surface
 #
@@ -320,7 +327,8 @@ tri_ring = nc.Dataset(tri_ring)
 #                            [1.5, 1.5, 1.0],
 #                            [2.5, 2.5, 1.25]])
 #
-#         res, alph = dep.interpolation_alphas(layers, Time.constant_time(), w.shape)
+#         res, alph = dep.interpolation_alphas(layers, Time.constant_time(),
+#                                              w.shape)
 #         print res
 #         print alph
 #         assert all(res == [3, 2, 1])
@@ -383,8 +391,10 @@ class TestGriddedProp:
         curr_file = os.path.join(s_data, 'staggered_sine_channel.nc')
 
         k = Variable.from_netCDF(filename=curr_file, varname='u', name='u')
+
         assert k.name == u.name
         assert k.units == 'm/s'
+
         # fixme: this was failing
         # assert k.time == u.time
         assert k.data[0, 0] == u.data[0, 0]
@@ -398,6 +408,7 @@ class TestGriddedProp:
         time = dt.datetime.now()
 
         assert all(u.at(points, time) == [1, 1, 1])
+
         print np.cos(points[:, 0] / 2) / 2
         assert all(np.isclose(v.at(points, time),
                               np.cos(points[:, 0] / 2) / 2))

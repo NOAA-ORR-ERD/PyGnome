@@ -48,7 +48,7 @@ def test_exceptions():
         wm = WindMover()
         wm.prepare_for_model_run()
 
-    print excinfo.value.message
+    print excinfo.value
 
     with raises(TypeError):
         """

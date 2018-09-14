@@ -523,7 +523,7 @@ class Burn(CleanUpBase):
         '''
         if value not in self.valid_area_units:
             e = uc.InvalidUnitError((value, 'Area'))
-            self.logger.error(e.message)
+            self.logger.error(str(e))
             raise e
         else:
             self._area_units = value
@@ -559,7 +559,7 @@ class Burn(CleanUpBase):
         value in SI units is > _min_thickness. If it is not, then log a
         warning
         '''
-        if (uc.Convert('Length', self.thickness_units, 'm',
+        if (uc.convert('Length', self.thickness_units, 'm',
                        self.thickness) <= self._min_thickness):
             msg = ("thickness of {0} {1}, is less than min required {2} m."
                    " Burn will not occur"
@@ -580,7 +580,7 @@ class Burn(CleanUpBase):
         '''
         if value not in self.valid_length_units:
             e = uc.InvalidUnitError((value, 'Length'))
-            self.logger.error(e.message)
+            self.logger.error(str(e))
             raise e
 
         self._thickness_units = value
@@ -625,8 +625,8 @@ class Burn(CleanUpBase):
         if (sc['fate_status'] == bt_fate.burn).sum() == 0:
             substance = self._get_substance(sc)
 
-            _si_area = uc.Convert('Area', self.area_units, 'm^2', self.area)
-            _si_thickness = uc.Convert('Length', self.thickness_units, 'm',
+            _si_area = uc.convert('Area', self.area_units, 'm^2', self.area)
+            _si_thickness = uc.convert('Length', self.thickness_units, 'm',
                                        self.thickness)
 
             mass_to_remove = (self.efficiency *
@@ -648,7 +648,7 @@ class Burn(CleanUpBase):
         frac_water = 0.0
         '''
         # burn rate constant is defined as a thickness rate in m/sec
-        _si_area = uc.Convert('Area', self.area_units, 'm^2', self.area)
+        _si_area = uc.convert('Area', self.area_units, 'm^2', self.area)
 
         # rate if efficiency is 100 %
         self._oilwater_thick_burnrate = self._burn_constant * avg_frac_oil
@@ -658,7 +658,7 @@ class Burn(CleanUpBase):
 
         # burn duration is known once rate is known
         # reset current thickness to initial thickness whenever model is rerun
-        self._oilwater_thickness = uc.Convert('Length',
+        self._oilwater_thickness = uc.convert('Length',
                                               self.thickness_units, 'm',
                                               self.thickness)
 
