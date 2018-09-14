@@ -200,14 +200,14 @@ def assert_helper(sc, new_p):
 @pytest.mark.parametrize(('oil', 'temp'), [('oil_6', 333.0),
                                            (test_oil, 311.15),
                                            ])
-def test_full_run(sample_model, oil, temp):
+def test_full_run(sample_model_fcn, oil, temp):
     '''
     test evaporation outputs for a full run of model.
     This contains a mover so at some point several elements end up on_land.
     This test also checks the evap_decay_constant for elements that are not
     in water is 0 so mass is unchanged.
     '''
-    model = sample_model_weathering(sample_model, oil, temp, 1)
+    model = sample_model_weathering(sample_model_fcn, oil, temp, 1)
     model.environment += [Water(temp), constant_wind(1., 0)]
     model.weatherers += [Evaporation(model.environment[-2],
                                      model.environment[-1])]
