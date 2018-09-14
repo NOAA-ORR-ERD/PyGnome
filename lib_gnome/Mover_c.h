@@ -46,7 +46,7 @@ public:
 	virtual				~Mover_c();
 	virtual void		Dispose () {}
 
-	virtual OSErr		AddUncertainty (long setIndex, long leIndex, VelocityRec *v) { return 0; }
+	//virtual OSErr		AddUncertainty (long setIndex, long leIndex, VelocityRec *v) { return 0; }
 	virtual WorldPoint3D       GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType); 
 	
 	virtual Boolean		VelocityStrAtPoint(WorldPoint3D wp, char *velStr) {return false;}
@@ -55,7 +55,8 @@ public:
 	virtual OSErr 		PrepareForModelRun() { return noErr; } 
 	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, bool, int numLESets, int* LESetsSizesList) { return noErr; } // AH 07/10/2012
 
-	virtual OSErr		UpdateUncertainty(void);
+	//virtual OSErr		UpdateUncertainty(void);
+	virtual OSErr		UpdateUncertainty(const Seconds& elapsedTime, int numLESets, int* LESetsSizesList); 
 #ifndef pyGNOME
 	void				GetMoverName (char *name) { GetClassName (name); }
 	void				SetMoverName (char *name) { SetClassName (name); }
