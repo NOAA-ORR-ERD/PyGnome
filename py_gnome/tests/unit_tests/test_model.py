@@ -617,7 +617,7 @@ def test_linearity_of_wind_movers(wind_persist):
             model1.next()
         except StopIteration as ex:
             # print message
-            print ex.message
+            print ex
             break
 
     while True:
@@ -625,7 +625,7 @@ def test_linearity_of_wind_movers(wind_persist):
             model2.next()
         except StopIteration as ex:
             # print message
-            print ex.message
+            print ex
             break
 
     # mean and variance at the end should be fairly close
