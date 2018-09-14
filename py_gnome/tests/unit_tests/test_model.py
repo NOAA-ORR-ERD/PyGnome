@@ -14,7 +14,6 @@ from pytest import raises
 
 from gnome.basic_types import datetime_value_2d
 from gnome.utilities import inf_datetime
-from gnome.persist import load
 
 import gnome.map
 from gnome.environment import Wind, Tide, constant_wind, Water, Waves
@@ -84,14 +83,18 @@ def test_init():
 
 
 def test_update_model():
-    mdl = Model();
+    mdl = Model()
     d = {'name': 'Model2'}
+
     assert mdl.name == 'Model'
+
     upd = mdl.update(d)
     assert mdl.name == d['name']
-    assert upd == True
+    assert upd is True
+
     d['duration'] = 43200
     upd = mdl.update(d)
+
     assert mdl.duration.seconds == 43200
 
 
@@ -617,7 +620,7 @@ def test_linearity_of_wind_movers(wind_persist):
             model1.next()
         except StopIteration as ex:
             # print message
-            print ex.message
+            print str(ex)
             break
 
     while True:
@@ -625,7 +628,7 @@ def test_linearity_of_wind_movers(wind_persist):
             model2.next()
         except StopIteration as ex:
             # print message
-            print ex.message
+            print str(ex)
             break
 
     # mean and variance at the end should be fairly close
@@ -731,7 +734,7 @@ def test_release_at_right_time():
 
 
 @pytest.mark.parametrize("traj_only", [False, True])
-def test_full_run(model, dump, traj_only):
+def test_full_run(model, dump_folder, traj_only):
     'Test doing a full run'
     # model = setup_simple_model()
     if traj_only:
@@ -923,7 +926,6 @@ def test_contains_object(sample_model_fcn):
     water, wind = Water(), constant_wind(1., 0)
     model.environment += [water, wind]
 
-    #et = floating(substance=model.spills[0].substance.name)
     et = model.spills[0].element_type
     sp = point_line_release_spill(500, (0, 0, 0),
                                   rel_time + timedelta(hours=1),
@@ -1024,7 +1026,6 @@ def test_staggered_spills_weathering(sample_model_fcn, delay):
     model.cache = True
     model.outputters += gnome.outputters.WeatheringOutput()
 
-    #et = floating(substance=model.spills[0].substance.name)
     et = model.spills[0].element_type
     cs = point_line_release_spill(500, (0, 0, 0),
                                   rel_time + delay,
@@ -1365,13 +1366,17 @@ class TestValidateModel():
         (msgs, isvalid) = model.check_inputs()
 
         assert len(msgs) == 1 and isvalid
-        assert ('{0} has release time after model start time'.format(model.spills[0].name) in msgs[0])
+        assert ('{} has release time after model start time'
+                .format(model.spills[0].name)
+                in msgs[0])
 
         model.spills[0].release_time = self.start_time - timedelta(hours=1)
         (msgs, isvalid) = model.check_inputs()
 
         assert len(msgs) == 1 and not isvalid
-        assert ('{0} has release time before model start time'.format(model.spills[0].name) in msgs[0])
+        assert ('{} has release time before model start time'
+                .format(model.spills[0].name)
+                in msgs[0])
 
     def make_model_incomplete_waves(self):
         '''
