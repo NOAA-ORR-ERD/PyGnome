@@ -175,7 +175,9 @@ def assert_helper(sc, new_p):
     total_mass = sum([spill.get_mass('kg') for spill in sc.spills])
     arrays = {'evap_decay_constant', 'mass_components', 'mass', 'status_codes'}
 
-    for substance, data in sc.itersubstancedata(arrays):
+    substances_list = sc.itersubstancedata(arrays)
+    print substances_list
+    for substance, data in substances_list:
         if len(sc) > new_p:
             old_le = len(sc) - new_p
             inwater = data['status_codes'][:old_le] == oil_status.in_water
@@ -198,14 +200,14 @@ def assert_helper(sc, new_p):
 @pytest.mark.parametrize(('oil', 'temp'), [('oil_6', 333.0),
                                            (test_oil, 311.15),
                                            ])
-def test_full_run(sample_model, oil, temp):
+def test_full_run(sample_model_fcn, oil, temp):
     '''
     test evaporation outputs for a full run of model.
     This contains a mover so at some point several elements end up on_land.
     This test also checks the evap_decay_constant for elements that are not
     in water is 0 so mass is unchanged.
     '''
-    model = sample_model_weathering(sample_model, oil, temp, 1)
+    model = sample_model_weathering(sample_model_fcn, oil, temp, 1)
     model.environment += [Water(temp), constant_wind(1., 0)]
     model.weatherers += [Evaporation(model.environment[-2],
                                      model.environment[-1])]

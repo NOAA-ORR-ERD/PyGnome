@@ -54,6 +54,7 @@ class FayGravityViscous(Weatherer):
 
         # need water temp to get initial viscosity of oil so thickness_limit
         # can be set
+        # fixme: can use nominal viscosity!
         self.water = water
         self.array_types.update({'fay_area', 'area', 'spill_num',
                                  'bulk_init_volume', 'age', 'density'})
@@ -92,7 +93,7 @@ class FayGravityViscous(Weatherer):
         max_area = blob_init_vol / self.thickness_limit
         time = (max_area / (np.pi * self.spreading_const[1] ** 2) *
                 (np.sqrt(water_viscosity) /
-                 (blob_init_vol ** 2 * constants.gravity * rel_buoy)) ** (1./3)
+                 (blob_init_vol ** 2 * constants.gravity * rel_buoy)) ** (1. / 3)
                 ) ** 2
 
         return time
@@ -231,12 +232,12 @@ class FayGravityViscous(Weatherer):
         return area
 
     def update_area2(self,
-                    water_viscosity,
-                    relative_buoyancy,
-                    blob_init_volume,
-                    area,
-                    time_step,
-                    age):
+                     water_viscosity,
+                     relative_buoyancy,
+                     blob_init_volume,
+                     area,
+                     time_step,
+                     age):
         '''
         update area array in place, also return area array
         each blob is defined by its age. This updates the area of each blob,
@@ -377,9 +378,10 @@ class FayGravityViscous(Weatherer):
     def prepare_for_model_run(self, sc):
         '''
         Assumes only one type of substance is spilled
+
+        That's now TRUE!
         '''
         subs = sc.get_substances(False)
-
         if len(subs) > 0:
             vo = subs[0].kvis_at_temp(self.water.get('temperature'))
             # set thickness_limit
@@ -422,7 +424,7 @@ class FayGravityViscous(Weatherer):
         if not self.on:
             return
 
-        # do this once incase there are any unit conversions, it only needs to
+        # do this once in case there are any unit conversions, it only needs to
         # happen once - for efficiency
         water_kvis = self.water.get('kinematic_viscosity',
                                     'square meter per second')
@@ -436,25 +438,22 @@ class FayGravityViscous(Weatherer):
                 self._set_init_relative_buoyancy(substance)
 
             mask = data['fay_area'] == 0
-
+            # looping through spills, as each spill has a different initial volume
             for s_num in np.unique(data['spill_num'][mask]):
                 s_mask = np.logical_and(mask, data['spill_num'] == s_num)
-
                 # do the sum only once for efficiency
                 num = s_mask.sum()
 
+                # fixme: is this right? shouldn't initial volume be stored somewhere??
                 data['bulk_init_volume'][s_mask] = (data['mass'][s_mask][0] /
                                                     data['density'][s_mask][0]
                                                     ) * num
-
-                init_blob_area = \
-                    self.init_area(water_kvis,
-                                   self._init_relative_buoyancy,
-                                   data['bulk_init_volume'][s_mask][0])
-
+                init_blob_area = self.init_area(water_kvis,
+                                                self._init_relative_buoyancy,
+                                                data['bulk_init_volume'][s_mask][0])
+                # fixme: these are the same, yes???
                 data['fay_area'][s_mask] = init_blob_area / num
                 data['area'][s_mask] = init_blob_area / num
-
         sc.update_from_fatedataview()
 
     def weather_elements(self, sc, time_step, model_time):
