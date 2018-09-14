@@ -209,7 +209,7 @@ class CleanUpBase(RemoveMass, Weatherer):
             self.logger.debug('{0} marked {1} LEs with mass: {2}'
                               .format(self._pid, ix, data['mass'][:ix].sum()))
 
-        sc.update_from_fatedataview(fate_status='surface_weather')
+        sc.update_from_fatedataview(substance, 'surface_weather')
 
     def _avg_frac_oil(self, data):
         '''
@@ -363,7 +363,7 @@ class Skimmer(CleanUpBase):
             return
 
         for substance, data in sc.itersubstancedata(self.array_types,
-                                                    fate_status='skim'):
+                                                    fate='skim'):
             if len(data['mass']) is 0:
                 continue
 
@@ -390,7 +390,7 @@ class Skimmer(CleanUpBase):
             self.logger.debug('{0} amount skimmed for {1}: {2}'
                               .format(self._pid, substance.name, rm_mass))
 
-        sc.update_from_fatedataview(fate_status='skim')
+        sc.update_from_fatedataview(fate='skim')
 
 
 class BurnSchema(WeathererSchema):
@@ -707,6 +707,7 @@ class Burn(CleanUpBase):
             # get it from wind
             ws = self.wind.get_value(points, model_time)
             self.efficiency = np.where(ws > (1. / 0.07), 0, 1 - 0.07 * ws)
+            print self.efficiency
 
     def weather_elements(self, sc, time_step, model_time):
         '''
@@ -719,7 +720,7 @@ class Burn(CleanUpBase):
         if not self.active or len(sc) == 0:
             return
 
-        for substance, data in sc.itersubstancedata(self.array_types, fate_status='burn'):
+        for substance, data in sc.itersubstancedata(self.array_types, fate='burn'):
             if len(data['mass']) is 0:
                 continue
 
@@ -751,7 +752,7 @@ class Burn(CleanUpBase):
             self.logger.debug('{0} amount burned for {1}: {2}'
                               .format(self._pid, substance.name, rm_mass))
 
-        sc.update_from_fatedataview(fate_status='burn')
+        sc.update_from_fatedataview(fate='burn')
 
 
 class ChemicalDispersionSchema(WeathererSchema):
@@ -885,7 +886,7 @@ class ChemicalDispersion(CleanUpBase):
         'for now just take away 0.1% at every step'
         if self.active and len(sc) > 0:
             for substance, data in sc.itersubstancedata(self.array_types,
-                                                        fate_status='disperse'):
+                                                        fate='disperse'):
                 if len(data['mass']) is 0:
                     continue
 
@@ -908,34 +909,4 @@ class ChemicalDispersion(CleanUpBase):
                                   '{1}: {2}'
                                   .format(self._pid, substance.name, rm_mass))
 
-            sc.update_from_fatedataview(fate_status='disperse')
-
-    def update_from_dict(self, data):
-        if 'efficiency' not in data:
-            setattr(self, 'efficiency', None)
-        super(ChemicalDispersion, self).update_from_dict(data)
-
-    def serialize(self, json_='webapi'):
-        """
-        'wind'/'waves' property is saved as references in save file
-        need to add serialized object for 'webapi'. Burn could have 'wind' and
-        ChemicalDispersion could have 'waves'.
-        """
-        serial = super(ChemicalDispersion, self).serialize(json_)
-
-        if json_ == 'webapi':
-            if self.waves is not None:
-                serial['waves'] = self.waves.serialize(json_)
-        return serial
-
-    @classmethod
-    def deserialize(cls, json_):
-        """
-        ChemicalDispersion could include 'waves'.
-        """
-        schema = cls._schema()
-        _to_dict = schema.deserialize(json_)
-        if 'waves' in json_ and json_['waves'] is not None:
-            _to_dict['waves'] = Waves.deserialize(json_['waves'])
-
-        return _to_dict
+            sc.update_from_fatedataview(fate='disperse')
