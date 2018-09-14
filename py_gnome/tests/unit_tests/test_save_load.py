@@ -6,7 +6,7 @@ from datetime import datetime
 from zipfile import ZipFile, ZIP_DEFLATED
 
 from gnome.utilities.time_utils import sec_to_date
-from gnome.persist import (References, load, is_savezip_valid)
+from gnome.persist import (References, is_savezip_valid)
 from gnome.gnomeobject import class_from_objtype
 
 from gnome.movers import constant_wind_mover
@@ -146,6 +146,7 @@ g_objects = (
     outputters.TrajectoryGeoJsonOutput(),
 )
 
+
 @pytest.mark.parametrize("obj", g_objects)
 def test_serial_deserial(saveloc_, obj):
     'test save/load functionality'
@@ -158,20 +159,17 @@ def test_serial_deserial(saveloc_, obj):
 @pytest.mark.parametrize("obj", g_objects)
 def test_save_load(saveloc_, obj):
     'test save/load functionality'
-    json_, zipfile_, refs = obj.save(saveloc_)
+    _json_, zipfile_, _refs = obj.save(saveloc_)
     obj2 = obj.__class__.load(zipfile_)
 
     assert obj == obj2
 
 
-
-'''
-Wind objects need more work - the data is being written out to file in
-'r-theta' format accurate to 2 decimal places and in knots. All the conversions
-mean the allclose() check on timeseries fails - xfail for now. When loading
-for a file it works fine, no decimal places stored in file for magnitude
-'''
-
+# Wind objects need more work - the data is being written out to file in
+# 'r-theta' format accurate to 2 decimal places and in knots.
+# All the conversions mean the allclose() check on timeseries fails - xfail
+# for now.  When loading for a file it works fine, no decimal places stored
+# in file for magnitude
 @pytest.mark.parametrize("obj",
                          (environment.Wind(timeseries=(sec_to_date(24 * 3600),
                                                        (1, 30)),
@@ -186,6 +184,7 @@ def test_serialize_deserialize_wind_objs(saveloc_, obj):
 
     assert obj == obj2
 
+
 @pytest.mark.parametrize("obj",
                          (environment.Wind(timeseries=(sec_to_date(24 * 3600),
                                                        (1, 30)),
@@ -195,17 +194,15 @@ def test_serialize_deserialize_wind_objs(saveloc_, obj):
                          )
 def test_save_load_wind_objs(saveloc_, obj):
     'test save/load functionality'
-    json_, zipfile_, refs = obj.save(saveloc_,)
+    _json_, zipfile_, _refs = obj.save(saveloc_,)
     obj2 = obj.__class__.load(zipfile_)
 
     assert obj == obj2
 
-'''
-Following movers fail on windows with fixture. This is causing an issue in
-windows for the NetCDF files - for some reason it is not able to delete the
-netcdf data files. All files are being closed in C++.
-'''
 
+# Following movers fail on windows with fixture. This is causing an issue in
+# windows for the NetCDF files - for some reason it is not able to delete the
+# netcdf data files. All files are being closed in C++.
 l_movers2 = (movers.CurrentCycleMover(testdata['CurrentCycleMover']['curr'],
                                       topology_file=testdata['CurrentCycleMover']['top'],
                                       tide=environment.Tide(testdata['CurrentCycleMover']['tide'])),
@@ -217,6 +214,7 @@ l_movers2 = (movers.CurrentCycleMover(testdata['CurrentCycleMover']['curr'],
                                   testdata['GridWindMover']['top_curv']),
              )
 
+
 @pytest.mark.parametrize("obj", l_movers2)
 def test_serialize_deserialize_grids(saveloc_, obj):
     'test serialize/deserialize functionality'
@@ -225,15 +223,16 @@ def test_serialize_deserialize_grids(saveloc_, obj):
 
     assert obj == obj2
 
+
 @pytest.mark.parametrize("obj", l_movers2)
 def test_save_load_grids(saveloc_, obj):
     'test save/load functionality'
-    json_, zipfile_, refs = obj.save(saveloc_,)
+    _json_, zipfile_, _refs = obj.save(saveloc_,)
     obj2 = obj.__class__.load(zipfile_)
 
     assert obj == obj2
     # ==========================================================================
-    # temp = os.path.join(dump, 'temp')
+    # temp = os.path.join(dump_folder, 'temp')
     # for dir_ in (temp, os.path.relpath(temp)):
     #     refs = obj.save(dir_)
     #     obj2 = load(os.path.join(dir_, refs.reference(obj)))

@@ -214,7 +214,7 @@ def all_winds(request):
     are calculated from gnome.utilities.transforms.r_theta_to_uv_wind(...).
     Assumes this method works correctly.
     """
-    return request.getfuncargvalue(request.param)
+    return request.getfixturevalue(request.param)
 
 
 class TestWind:
