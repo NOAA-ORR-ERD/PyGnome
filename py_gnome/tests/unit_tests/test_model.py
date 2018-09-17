@@ -56,8 +56,8 @@ def model(sample_model_fcn, tmpdir):
     model.cache_enabled = True
     model.uncertain = False
 
-    model.outputters += Renderer(model.map.filename, images_dir,
-                                  image_size=(400, 300))
+#     model.outputters += Renderer(model.map.filename, images_dir,
+#                                   image_size=(400, 300))
 
     N = 10  # a line of ten points
     line_pos = np.zeros((N, 3), dtype=np.float64)
@@ -755,8 +755,8 @@ def test_full_run(model, dump_folder, traj_only):
     # which create a background image and an animated gif in addition to the
     # step images.
 #JAH: Shutting this off cause Renderer removed (segfaults on CI)
-    num_images = len(os.listdir(model.outputters[-1].output_dir))
-    assert num_images == model.num_time_steps + 2
+#     num_images = len(os.listdir(model.outputters[-1].output_dir))
+#     assert num_images == model.num_time_steps + 2
 
 
 ''' Test Callbacks on OrderedCollections '''
