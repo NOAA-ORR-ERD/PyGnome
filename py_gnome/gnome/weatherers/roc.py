@@ -19,7 +19,7 @@ from colander import (drop, SchemaNode, MappingSchema, OneOf,
 
 from gnome import _valid_units
 from gnome.basic_types import oil_status, fate as bt_fate
-from gnome.array_types import mass, density, fay_area, frac_water
+from gnome.array_types import gat
 
 
 from gnome.weatherers import Weatherer
@@ -747,7 +747,9 @@ class Disperse(Response):
                                         self._dosage_m)
 
         self.report = []
-        self.array_types.update({'area', 'density', 'viscosity'})
+        self.array_types.update({'area': gat('area'),
+                                 'density': gat('density'),
+                                 'viscosity': gat('viscosity')})
 
     def get_mission_data(self,
                          dosage=None,
@@ -1693,9 +1695,9 @@ class Burn(Response):
                  **kwargs):
         super(Burn, self).__init__(**kwargs)
 
-        self.array_types.update({'mass':  mass,
-                                 'density': density,
-                                 'frac_water': frac_water})
+        self.array_types.update({'mass':  gat('mass'),
+                                 'density': gat('density'),
+                                 'frac_water': gat('frac_water')})
 
         self._units = dict(self._si_units)
         self.units = units

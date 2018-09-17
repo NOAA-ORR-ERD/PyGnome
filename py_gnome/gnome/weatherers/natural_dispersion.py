@@ -7,13 +7,7 @@ import numpy as np
 
 from gnome import constants
 from gnome.cy_gnome.cy_weatherers import disperse_oil
-from gnome.array_types import (viscosity,
-                               mass,
-                               density,
-                               positions,
-                               area,
-                               frac_water,
-                               droplet_avg_size)
+from gnome.array_types import gat
 
 
 from .core import WeathererSchema
@@ -45,13 +39,13 @@ class NaturalDispersion(Weatherer):
         self.water = water
 
         super(NaturalDispersion, self).__init__(**kwargs)
-        self.array_types.update({'viscosity': viscosity,
-                                 'mass':  mass,
-                                 'density': density,
-                                 'positions': positions,
-                                 'area': area,
-                                 'frac_water': frac_water,
-                                 'droplet_avg_size': droplet_avg_size,
+        self.array_types.update({'viscosity': gat('viscosity'),
+                                 'mass': gat('mass'),
+                                 'density': gat('density'),
+                                 'positions': gat('positions'),
+                                 'area': gat('area'),
+                                 'frac_water': gat('frac_water'),
+                                 'droplet_avg_size': gat('droplet_avg_size'),
                                  })
 
     def prepare_for_model_run(self, sc):

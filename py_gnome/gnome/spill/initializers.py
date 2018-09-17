@@ -13,6 +13,7 @@ import numpy as np
 from colander import SchemaNode, Int, Float, Range, TupleSchema
 
 from gnome.utilities.rand import random_with_persistance
+from gnome.array_types import gat
 
 from gnome.cy_gnome.cy_rise_velocity_mover import rise_velocity_from_drop_size
 
@@ -45,7 +46,7 @@ class InitBaseClass(GnomeId):
         # knows about these array_types and can include them.
         # Make it a set since ElementType does a membership check in
         # set_newparticle_values()
-        self.array_types = set()
+        self.array_types = dict()
         super(InitBaseClass, self).__init__(*args,**kwargs)
 
     def initialize(self, num_new_particles, spill, data_arrays, substance):
@@ -98,9 +99,9 @@ class InitWindages(InitBaseClass):
         super(InitWindages, self).__init__(*args, **kwargs)
         self.windage_persist = windage_persist
         self.windage_range = windage_range
-        self.array_types.update(('windages',
-                                 'windage_range',
-                                 'windage_persist'))
+        self.array_types.update({'windages': gat('windages'),
+                                 'windage_range': gat('windage_range'),
+                                 'windage_persist': gat('windage_persist')})
         self.name = name
 
     def __repr__(self):
@@ -171,7 +172,7 @@ class InitMassFromPlume(InitBaseClass):
         update array_types
         """
         super(InitMassFromPlume, self).__init__()
-        self.array_types.add('mass')
+        self.array_types['mass'] = gat('mass')
         self.name = 'mass'
 
     def initialize(self, num_new_particles, spill, data_arrays, substance):
@@ -232,7 +233,7 @@ class InitRiseVelFromDist(DistributionBase):
             raise TypeError('InitRiseVelFromDist requires a distribution for '
                             'rise velocities')
 
-        self.array_types.add('rise_vel')
+        self.array_types['rise_vel'] = gat('rise_vel')
         self.name = 'rise_vel'
 
     def initialize(self, num_new_particles, spill, data_arrays,
@@ -282,7 +283,8 @@ class InitRiseVelFromDropletSizeFromDist(DistributionBase):
 
         self.water_viscosity = water_viscosity
         self.water_density = water_density
-        self.array_types.update(('rise_vel', 'droplet_diameter'))
+        self.array_types.update({'rise_vel': gat('rise_vel'),
+                                 'droplet_diameter': gat('droplet_diameter')})
         self.name = 'rise_vel'
 
     def initialize(self, num_new_particles, spill, data_arrays, substance):

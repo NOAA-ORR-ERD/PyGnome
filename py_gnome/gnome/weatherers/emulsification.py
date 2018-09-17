@@ -9,17 +9,7 @@ import numpy as np
 
 import gnome
 
-from gnome.array_types import (frac_lost,  # due to evaporation and dissolution
-                               age,
-                               mass,
-                               oil_density,
-                               density,
-                               positions,
-                               bulltime,
-                               interfacial_area,
-                               oil_viscosity,
-                               viscosity,
-                               frac_water)
+from gnome.array_types import gat
 
 from gnome import constants
 from .core import WeathererSchema
@@ -54,10 +44,17 @@ class Emulsification(Weatherer):
                 kwargs.pop('make_default_refs', False)
 
         super(Emulsification, self).__init__(**kwargs)
-        self.array_types.update({'age', 'bulltime', 'frac_water',
-                                 'density', 'viscosity', 'positions',
-                                 'oil_density', 'oil_viscosity',
-                                 'mass', 'interfacial_area', 'frac_lost'})
+        self.array_types.update({'age': gat('age'),
+                                 'bulltime': gat('bulltime'),
+                                 'frac_water': gat('frac_water'),
+                                 'density': gat('density'),
+                                 'viscosity': gat('viscosity'),
+                                 'positions': gat('positions'),
+                                 'oil_density': gat('oil_density'),
+                                 'oil_viscosity': gat('oil_viscosity'),
+                                 'mass': gat('mass'),
+                                 'interfacial_area': gat('interfacial_area'),
+                                 'frac_lost': gat('frac_lost')})
 
     def prepare_for_model_run(self, sc):
         '''

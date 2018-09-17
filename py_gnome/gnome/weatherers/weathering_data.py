@@ -18,6 +18,7 @@ except ImportError:
     from backports.functools_lru_cache import lru_cache  # needs backports for py2
 
 from gnome.basic_types import oil_status, fate
+from gnome.array_types import gat
 
 from .core import Weatherer, WeathererSchema
 from gnome.environment.water import WaterSchema
@@ -56,10 +57,19 @@ class WeatheringData(Weatherer):
         super(WeatheringData, self).__init__(**kwargs)
 
         self.water = water
-        self.array_types = {'fate_status', 'positions', 'status_codes',
-                            'density', 'viscosity', 'mass_components', 'mass',
-                            'oil_density', 'oil_viscosity',
-                            'init_mass', 'frac_water', 'frac_lost', 'age'}
+        self.array_types = {'fate_status': gat('fate_status'),
+                            'positions': gat('positions'),
+                            'status_codes': gat('status_codes'),
+                            'density': gat('density'),
+                            'viscosity': gat('viscosity'),
+                            'mass_components': gat('mass_components'),
+                            'mass': gat('mass'),
+                            'oil_density': gat('oil_density'),
+                            'oil_viscosity': gat('oil_viscosity'),
+                            'init_mass': gat('init_mass'),
+                            'frac_water': gat('frac_water'),
+                            'frac_lost': gat('frac_lost'),
+                            'age': gat('age')}
 
         # following used to update viscosity
         self.visc_curvfit_param = 1.5e3     # units are sec^0.5 / m

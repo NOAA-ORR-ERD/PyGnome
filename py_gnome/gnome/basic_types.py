@@ -14,15 +14,16 @@ import sys
 import numpy as np
 
 # pull everything from the cython code
-from cy_gnome.cy_basic_types import *
-
+import cy_gnome.cy_basic_types as cbt
 
 # in lib_gnome, the coordinate systems used (r-theta, uv, etc)
 # are called ts_format, which is not a very descriptive name.
 # the word 'format' can mean a lot of different things depending on
 # what we are talking about.  So we try to be a bit more specific here.
-coord_systems = ts_format
+coord_systems = cbt.ts_format
 
+oil_status = cbt.oil_status
+seconds = cbt.seconds
 
 # Here we customize what a numpy 'long' type is....
 # We do this because numpy does different things with a long
@@ -66,12 +67,12 @@ datetime_value_1d = np.dtype([('time', 'datetime64[s]'),
 # Define enums that are independent of C++ here so we
 # don't have to recompile code
 
-wind_datasources = enum(undefined=0, file=1, manual=2, nws=3, buoy=4)
+wind_datasources = cbt.enum(undefined=0, file=1, manual=2, nws=3, buoy=4)
 
 # Define an enum for weathering status. The numpy array will contain np.uint8
 # datatype. Can still define 2 more flags as 2**6, 2**7
 # These are bit flags
-fate = enum(non_weather=1,
+fate = cbt.enum(non_weather=1,
             surface_weather=2,
             subsurf_weather=4,
             skim=8,

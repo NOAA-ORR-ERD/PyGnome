@@ -6,6 +6,7 @@ from colander import (SchemaNode,
                       Bool, Float, String, Sequence, drop)
 
 from gnome.basic_types import oil_status
+from gnome.array_types import gat
 
 from gnome.utilities import rand
 from gnome.utilities.projections import FlatEarthProjection
@@ -85,6 +86,8 @@ class PyWindMover(movers.PyMover):
                            Default: RK2
 
         """
+
+        (super(PyWindMover, self).__init__(default_num_method=default_num_method, **kwargs))
         self.wind = wind
         self.make_default_refs = False
 
@@ -107,12 +110,9 @@ class PyWindMover(movers.PyMover):
         # also sets self._uncertain_angle_units
         self.uncertain_angle_scale = uncertain_angle_scale
 
-        (super(PyWindMover, self)
-         .__init__(default_num_method=default_num_method, **kwargs))
-
-        self.array_types.update({'windages',
-                                 'windage_range',
-                                 'windage_persist'})
+        self.array_types.update({'windages': gat('windages'),
+                                 'windage_range': gat('windage_range'),
+                                 'windage_persist': gat('windage_persist')})
 
     @classmethod
     def from_netCDF(cls,

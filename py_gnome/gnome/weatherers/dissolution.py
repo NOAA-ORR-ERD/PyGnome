@@ -12,13 +12,7 @@ from gnome.utilities.weathering import (BanerjeeHuibers, Stokes,
                                         DingFarmer, DelvigneSweeney,
                                         PiersonMoskowitz)
 
-from gnome.array_types import (area,
-                               mass,
-                               positions,
-                               density,
-                               viscosity,
-                               partition_coeff,
-                               droplet_avg_size)
+from gnome.array_types import gat
 
 from .core import WeathererSchema
 from gnome.weatherers import Weatherer
@@ -68,13 +62,13 @@ class Dissolution(Weatherer):
 
         super(Dissolution, self).__init__(make_default_refs=make_default_refs, **kwargs)
 
-        self.array_types.update({'area': area,
-                                 'mass':  mass,
-                                 'density': density,
-                                 'positions': positions,
-                                 'viscosity': viscosity,
-                                 'partition_coeff': partition_coeff,
-                                 'droplet_avg_size': droplet_avg_size
+        self.array_types.update({'area': gat('area'),
+                                 'mass': gat('mass'),
+                                 'density': gat('density'),
+                                 'positions': gat('positions'),
+                                 'viscosity': gat('viscosity'),
+                                 'partition_coeff': gat('partition_coeff'),
+                                 'droplet_avg_size': gat('droplet_avg_size')
                                  })
 
     def prepare_for_model_run(self, sc):
