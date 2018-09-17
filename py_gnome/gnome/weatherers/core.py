@@ -4,6 +4,8 @@ import numpy as np
 from colander import SchemaNode
 
 from gnome.persist.extend_colander import NumpyArray
+from gnome.persist.base_schema import ObjTypeSchema
+from gnome.array_types import gat
 
 from gnome.array_types import mass_components
 from gnome.utilities.time_utils import date_to_sec, sec_to_datetime
@@ -36,7 +38,9 @@ class Weatherer(Process):
         super(Weatherer, self).__init__(**kwargs)
 
         # arrays that all weatherers will update - use this to ask
-        self.array_types.update({'mass_components', 'mass', 'init_mass'})
+        self.array_types.update({'mass_components': gat('mass_components'),
+                                 'mass': gat('mass'),
+                                 'init_mass': gat('init_mass')})
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('

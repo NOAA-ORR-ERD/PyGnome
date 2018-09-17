@@ -13,6 +13,8 @@ except ImportError:
 
 from colander import SchemaNode, Float, drop
 
+from gnome.array_types import gat
+
 from gnome.environment import WindSchema, WaterSchema
 from gnome.constants import gravity
 from gnome import constants
@@ -54,8 +56,11 @@ class FayGravityViscous(Weatherer):
         # can be set
         # fixme: can use nominal viscosity!
         self.water = water
-        self.array_types.update({'fay_area', 'area', 'spill_num',
-                                 'bulk_init_volume', 'age', 'density'})
+        self.array_types.update({'fay_area': gat('fay_area'),
+                                 'area': gat('area'),
+                                 'bulk_init_volume': gat('bulk_init_volume'),
+                                 'age': gat('age'),
+                                 'density': gat('density')})
         # relative_buoyancy - use density at release time. For now
         # temperature is fixed so just compute once and store. When temperature
         # varies over time, may want to do something different
@@ -501,7 +506,8 @@ class ConstantArea(Weatherer):
         self.area = area
         super(ConstantArea, self).__init__(**kwargs)
 
-        self.array_types.update({'fay_area'})
+        self.array_types.update({'area': gat('area'),
+                                 'fay_area': gat('fay_area')})
 
     def initialize_data(self, sc):
         '''
@@ -560,7 +566,11 @@ class Langmuir(Weatherer):
         initialize wind to (0, 0) if it is None
         '''
         super(Langmuir, self).__init__(**kwargs)
-        self.array_types.update(('area', 'fay_area', 'frac_coverage', 'spill_num', 'bulk_init_volume', 'density', 'positions'))
+        self.array_types.update({'fay_area': gat('fay_area'),
+                                 'area': gat('area'),
+                                 'bulk_init_volume': gat('bulk_init_volume'),
+                                 'age': gat('age'),
+                                 'density': gat('density')})
 
         self.wind = wind
 

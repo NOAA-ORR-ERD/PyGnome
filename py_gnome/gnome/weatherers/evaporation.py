@@ -7,6 +7,7 @@ import numpy as np
 
 from gnome import constants
 from gnome.basic_types import oil_status
+from gnome.array_types import gat
 from gnome.exceptions import ReferencedObjectNotSet
 
 from .core import WeathererSchema
@@ -48,8 +49,12 @@ class Evaporation(Weatherer):
             make_default_refs = True
 
         super(Evaporation, self).__init__(make_default_refs=make_default_refs, **kwargs)
-        self.array_types.update({'positions', 'area', 'evap_decay_constant',
-                                 'frac_water', 'frac_lost', 'init_mass'})
+        self.array_types.update({'positions': gat('positions'),
+                                 'area': gat('area'),
+                                 'evap_decay_constant': gat('evap_decay_constant'),
+                                 'frac_water': gat('frac_water'),
+                                 'frac_lost': gat('frac_lost'),
+                                 'init_mass': gat('init_mass')})
 
     def prepare_for_model_run(self, sc):
         '''

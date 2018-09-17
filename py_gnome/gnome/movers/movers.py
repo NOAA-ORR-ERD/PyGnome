@@ -67,7 +67,7 @@ class Process(GnomeId):
         self._active_range = active_range
 
         # empty dict since no array_types required for all movers at present
-        self.array_types = set()
+        self.array_types = dict()
         self.make_default_refs = kwargs.pop('make_default_refs', True)
 
     def _check_active_startstop(self, active_start, active_stop):
@@ -167,6 +167,7 @@ class Process(GnomeId):
 
 
 class Mover(Process):
+
     def get_move(self, sc, time_step, model_time_datetime):
         """
         Compute the move in (long,lat,z) space. It returns the delta move

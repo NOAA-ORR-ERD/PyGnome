@@ -14,6 +14,7 @@ from gnome.exceptions import ReferencedObjectNotSet
 from gnome.basic_types import (world_point,
                                world_point_type,
                                velocity_rec)
+from gnome.array_types import gat
 
 from gnome.cy_gnome.cy_wind_mover import CyWindMover
 from gnome.cy_gnome.cy_gridwind_mover import CyGridWindMover
@@ -83,9 +84,9 @@ class WindMoversBase(CyMover):
         # also sets self._uncertain_angle_units
         self.uncertain_angle_scale = uncertain_angle_scale
 
-        self.array_types.update({'windages',
-                                 'windage_range',
-                                 'windage_persist'})
+        self.array_types.update({'windages': gat('windages'),
+                                 'windage_range': gat('windage_range'),
+                                 'windage_persist': gat('windage_persist')})
 
     # no conversion necessary - simply sets/gets the stored value
     uncertain_speed_scale = \

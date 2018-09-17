@@ -3,6 +3,7 @@ import copy
 from colander import (SchemaNode, Float)
 
 from gnome.basic_types import world_point, world_point_type
+from gnome.array_types import gat
 from gnome.cy_gnome.cy_rise_velocity_mover import CyRiseVelocityMover
 
 from gnome.movers import CyMover, ProcessSchema
@@ -39,7 +40,7 @@ class RiseVelocityMover(CyMover):
 
         super(RiseVelocityMover, self).__init__(**kwargs)
 
-        self.array_types.add('rise_vel')
+        self.array_types['rise_vel'] = gat('rise_vel')
 
     def __repr__(self):
         """
@@ -78,4 +79,5 @@ class TamocRiseVelocityMover(RiseVelocityMover):
     def __init__(self, *args, **kwargs):
         super(TamocRiseVelocityMover, self).__init__(*args, **kwargs)
 
-        self.array_types.update(('density', 'droplet_diameter'))
+        self.array_types.update({'density': gat('density'),
+                                 'droplet_diameter': gat('droplet_diameter'})

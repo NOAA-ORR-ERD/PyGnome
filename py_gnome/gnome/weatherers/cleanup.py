@@ -7,7 +7,8 @@ from datetime import timedelta
 import numpy as np
 from colander import (SchemaNode, Float, String, drop, Range)
 
-from gnome.basic_types import fate as bt_fate
+from gnome.basic_types import oil_status, fate as bt_fate
+from gnome.array_types import gat
 from gnome.weatherers import Weatherer
 from gnome.environment.wind import WindSchema
 
@@ -113,7 +114,7 @@ class CleanUpBase(RemoveMass, Weatherer):
 
         super(CleanUpBase, self).__init__(**kwargs)
 
-        self.array_types.update({'frac_water'})
+        self.array_types['frac_water'] = gat('frac_water')
 
     @property
     def efficiency(self):

@@ -42,7 +42,7 @@ from gnome.basic_types import (world_point_type,
 from gnome import AddLogger
 
 def position_init_line_release(arr, start_position=None, end_position=None):
-    
+
 
 class ArrayType(type):
     """
@@ -279,6 +279,18 @@ _default_values = {'positions': ((3,), world_point_type, 'positions',
                    'surface_concentration': ((), np.float64, 'surface_concentration', 0),
                    }
 
+def get_array_type(name):
+    """
+    Returns and instance of an array type appropriate for name, or None if one
+    does not exist
+    """
+    params = _default_values(name)
+    return ArrayType(shape=params[0],
+                     dtype=params[1],
+                     name=params[2],
+                     initial_value=params[3])
+
+gat = get_array_type
 
 # dynamically create the ArrayType objects in this module from _default_values
 # dict. Reason for this logic and subsequent functions is so we only have to
