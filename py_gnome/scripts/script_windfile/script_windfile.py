@@ -48,7 +48,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     renderer = Renderer(mapfile,
                         images_dir,
-                        size=(800, 800),
+                        image_size=(800, 800),
                         )
 
     print 'initializing the model'

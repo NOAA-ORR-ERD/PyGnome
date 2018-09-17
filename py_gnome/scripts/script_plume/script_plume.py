@@ -48,7 +48,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     model.map = GnomeMap()
 
     renderer = Renderer(output_dir=images_dir,
-                        # size=(800, 600),
+                        image_size=(800, 600),
                         output_timestep=timedelta(hours=1),
                         draw_ontop='uncertain')
     renderer.viewport = ((-76.5, 37.), (-75.8, 38.))

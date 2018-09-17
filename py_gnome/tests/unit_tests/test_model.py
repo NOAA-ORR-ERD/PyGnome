@@ -57,7 +57,7 @@ def model(sample_model_fcn, tmpdir):
     model.uncertain = False
 
     model.outputters += Renderer(model.map.filename, images_dir,
-                                 size=(400, 300))
+                                  image_size=(400, 300))
 
     N = 10  # a line of ten points
     line_pos = np.zeros((N, 3), dtype=np.float64)
@@ -370,7 +370,7 @@ def test_simple_run_with_image_output_uncertainty(tmpdir):
     gmap = gnome.map.MapFromBNA(testdata['MapFromBNA']['testmap'],
                                 refloat_halflife=6)  # hours
     renderer = gnome.outputters.Renderer(testdata['MapFromBNA']['testmap'],
-                                         images_dir, size=(400, 300))
+                                         images_dir, image_size=(400, 300))
 
     model = Model(start_time=start_time,
                   time_step=timedelta(minutes=15), duration=timedelta(hours=1),
@@ -732,7 +732,7 @@ def test_release_at_right_time():
     model.step()
     assert model.spills.items()[0].num_released == 12
 
-@pytest.mark.skip(reason="Segfault on CI server")
+# @pytest.mark.skip(reason="Segfault on CI server")
 @pytest.mark.parametrize("traj_only", [False, True])
 def test_full_run(model, dump_folder, traj_only):
     'Test doing a full run'
@@ -754,6 +754,7 @@ def test_full_run(model, dump_folder, traj_only):
     # The Renderer instantiated with default arguments has two output formats
     # which create a background image and an animated gif in addition to the
     # step images.
+#JAH: Shutting this off cause Renderer removed (segfaults on CI)
     num_images = len(os.listdir(model.outputters[-1].output_dir))
     assert num_images == model.num_time_steps + 2
 
@@ -952,7 +953,7 @@ def test_contains_object(sample_model_fcn):
 
     model.weatherers += [evaporation, dispersion, burn, skimmer]
 
-    renderer = Renderer(images_dir='junk', size=(400, 300))
+    renderer = Renderer(images_dir='junk', image_size=(400, 300))
     model.outputters += renderer
 
     for o in (gnome_map, sp, rel, et,
