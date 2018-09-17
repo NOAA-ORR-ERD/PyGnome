@@ -732,7 +732,7 @@ def test_release_at_right_time():
     model.step()
     assert model.spills.items()[0].num_released == 12
 
-
+@pytest.mark.skip(reason="Segfault on CI server")
 @pytest.mark.parametrize("traj_only", [False, True])
 def test_full_run(model, dump_folder, traj_only):
     'Test doing a full run'
