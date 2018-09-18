@@ -1405,7 +1405,7 @@ OSErr ShioTimeValue_c::GetInterpolatedComponent(Seconds forTime, double *value, 
 }
 
 
-OSErr ShioTimeValue_c::ReadTimeValues (char *path)
+OSErr ShioTimeValue_c::ReadShioValues (char *path)
 {
 	// code goes here, use unitsIfKnownInAdvance to tell if we're coming from a location file, 
 	// if not and it's a heights file ask if progressive or standing wave (add new field or track as 'P')
@@ -1416,13 +1416,11 @@ OSErr ShioTimeValue_c::ReadTimeValues (char *path)
 	//double value1, value2, magnitude, degrees;
 	CHARH f = 0;
 	//DateTimeRec time;
-	TimeValuePair pair;
 	OSErr	err = noErr/*,scanErr*/;
 	long lineNum = 0;
 	char *p;
-	//long numScanned;
 	double /*value, */stationLat, stationLon;
-	//ONTROLVAR  DatumControls;
+	//CONTROLVAR  DatumControls;
 	
 	if ((err = OSSMTimeValue_c::InitTimeFunc()) > 0)
 		return err;

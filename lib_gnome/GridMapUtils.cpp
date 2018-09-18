@@ -57,7 +57,7 @@ long CheckSurroundingPoints(LONGH maskH, long numRows, long  numCols, long row, 
 //Boolean NetCDFMoverCurv_c::ThereIsAdjacentLand2(LONGH maskH, VelocityFH velocityH, long numRows, long  numCols, long row, long col) 
 Boolean ThereIsAdjacentLand2(LONGH maskH, DOUBLEH landmaskH, long numRows, long  numCols, long row, long col) 
 {
-	long i, j, iStart, iEnd, jStart, jEnd, lowestLandIndex = 0;
+	long i, j, iStart, iEnd, jStart, jEnd;
 	long neighbor;
 	
 	iStart = (row > 0) ? row - 1 : 0;
@@ -136,7 +136,7 @@ Boolean InteriorLandPoint(LONGH maskH, long numRows, long numCols, long row, lon
 
 Boolean ThereIsALowerLandNeighbor(LONGH maskH, long *lowerPolyNum, long numRows, long numCols, long row, long col) 
 {
-	long iStart, iEnd, jStart, jEnd, lowestLandIndex = 0;
+	long iStart, iEnd, jStart, jEnd;
 	long i, j, neighbor, landPolyNum;
 	long numRows_ext = numRows+1, numCols_ext = numCols+1;
 	
@@ -204,8 +204,8 @@ OSErr NumberIslands(LONGH *islandNumberH, DOUBLEH landmaskH,LONGH landWaterInfo,
 {
 	OSErr err = 0;
 	long numRows_ext = numRows+1, numCols_ext = numCols+1;
-	long nv = numRows * numCols, nv_ext = numRows_ext*numCols_ext;
-	long i, j, n, landPolyNum = 1, lowestSurroundingNum = 0;
+	long /*nv = numRows * numCols,*/nv_ext = numRows_ext*numCols_ext;
+	long i, j, landPolyNum = 1, lowestSurroundingNum = 0;
 	long islandNum, maxIslandNum=3;
 	LONGH maskH = (LONGH)_NewHandleClear(numRows * numCols * sizeof(long));
 	LONGH maskH2 = (LONGH)_NewHandleClear(nv_ext * sizeof(long));
