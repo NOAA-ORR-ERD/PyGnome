@@ -1,9 +1,11 @@
-*****************************************
+#########################################
 Notes on serialization / deserialization:
-*****************************************
+#########################################
+
+.. _serialization_overview:
 
 Overview
-########
+========
 
 The process involves multiple steps:
 
@@ -21,12 +23,10 @@ This is a "cycle", so could be in a different order depending on where you start
 Also -- "deserializing" can be createing a new object from json, or updating teh object from json.
 
 Methods
-#######
+=======
 
 ``Object.serialize()`` returns a "json-compatible" dict.
 
 
 Making a new object serializable
-################################
-
-
+================================

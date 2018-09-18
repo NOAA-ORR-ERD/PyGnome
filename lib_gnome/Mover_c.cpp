@@ -44,8 +44,7 @@ Mover_c::~Mover_c()
 {
 	Dispose ();
 }
-//OSErr Mover_c::UpdateUncertainty(void)
-OSErr Mover_c::UpdateUncertainty(const Seconds& elapsedTime, int numLESets, int* LESetsSizesList) 
+OSErr Mover_c::UpdateUncertainty(void)
 {
 	return 0;	
 }

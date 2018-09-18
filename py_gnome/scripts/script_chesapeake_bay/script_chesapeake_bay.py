@@ -48,7 +48,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # draw_ontop can be 'uncertain' or 'forecast'
     # 'forecast' LEs are in black, and 'uncertain' are in red
     # default is 'forecast' LEs draw on top
-    renderer = Renderer(mapfile, images_dir, size=(800, 600),
+    renderer = Renderer(mapfile, images_dir, image_size=(800, 600),
                         output_timestep=timedelta(hours=2),
                         draw_ontop='forecast')
     # set the viewport to zoom in on the map:

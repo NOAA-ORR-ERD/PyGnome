@@ -86,7 +86,7 @@ cdef class CyShioTime(CyOSSMTime):
         format
         '''
         file_ = filename_as_bytes(filename)
-        err = self.shio.ReadShioValues(file_)
+        err = self.shio.ReadTimeValues(file_)
         self._raise_errors(err)
 
     property daylight_savings_off:

@@ -138,7 +138,7 @@ OSErr GridWindMover_c::get_move(int n, Seconds model_time, Seconds step_len,
 	LERec rec, *prec;
 	prec = &rec;
 
-	WorldPoint3D zero_delta = {{0, 0}, 0.};
+	WorldPoint3D zero_delta = {0, 0, 0.};
 
 	for (int i = 0; i < n; i++) {
 
@@ -176,7 +176,7 @@ WorldPoint3D GridWindMover_c::GetMove(const Seconds& model_time,
 
 	double 	dLong, dLat;
 
-	WorldPoint3D	deltaPoint = {{0, 0}, 0.};
+	WorldPoint3D	deltaPoint = {0, 0, 0.};
 	WorldPoint3D refPoint;	
 
 	VelocityRec windVelocity;

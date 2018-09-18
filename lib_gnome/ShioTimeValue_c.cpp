@@ -1405,7 +1405,7 @@ OSErr ShioTimeValue_c::GetInterpolatedComponent(Seconds forTime, double *value, 
 }
 
 
-OSErr ShioTimeValue_c::ReadShioValues (char *path)
+OSErr ShioTimeValue_c::ReadTimeValues (char *path)
 {
 	// code goes here, use unitsIfKnownInAdvance to tell if we're coming from a location file, 
 	// if not and it's a heights file ask if progressive or standing wave (add new field or track as 'P')
@@ -1457,7 +1457,7 @@ OSErr ShioTimeValue_c::ReadShioValues (char *path)
 		delete _ifstream;
 	} catch(...) {
 		
-		printError("We are unable to open or read from the shio tides file. \nBreaking from ShioTimeValue_c::ReadShioValues().");
+		printError("We are unable to open or read from the shio tides file. \nBreaking from ShioTimeValue_c::ReadTimeValues().");
 		err = true;
 		goto readError;
 	}

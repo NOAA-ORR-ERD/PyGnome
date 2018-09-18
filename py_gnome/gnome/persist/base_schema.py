@@ -506,7 +506,16 @@ class ObjType(SchemaType):
             return
 
         if isinstance(saveloc, zipfile.ZipFile):
-            return saveloc.extract(filename, tmpdir)
+            dirname = os.path.dirname(saveloc.fp.name)
+
+            #Keep an eye on this. It may cause previously existing files
+            #to be recognized incorrectly as what's in the zip since it's a simple
+            #existence check
+            if not os.path.exists(os.path.join(dirname, filename)):
+                saveloc.extract(filename, dirname)
+                return os.path.join(dirname, filename)
+            else:
+                return os.path.join(dirname, filename)
         elif os.path.exists(os.path.join(saveloc, filename)):
             return os.path.join(saveloc, filename)
         elif os.path.exists(filename):

@@ -86,7 +86,7 @@ cdef extern from "ShioTimeValue_c.h":
         EbbFloodDataH   fEbbFloodDataHdl  # values to show on list for tidal currents - not sure if these should be available
         HighLowDataH    fHighLowDataHdl
 
-        OSErr       ReadShioValues(char *path)
+        OSErr       ReadTimeValues(char *path)
         OSErr       SetYearDataPath(char *path)
 
         # Not Sure if Following are required/used

@@ -80,7 +80,7 @@ class WeatheringData(Weatherer):
 
     def initialize_data(self, sc, num_released):
         '''
-        If on is False, then arrays should not be included - dont' initialize
+        If on is False, then arrays should not be included - don't initialize
 
         1. initialize all weathering data arrays
         2. update aggregated data in sc.mass_balance dict
@@ -89,7 +89,7 @@ class WeatheringData(Weatherer):
             return
 
         for substance, data in sc.itersubstancedata(self.array_types,
-                                                    fate='all'):
+                                                    fate_status='all'):
             'update properties only if elements are released'
             if len(data['density']) == 0:
                 continue
@@ -103,7 +103,7 @@ class WeatheringData(Weatherer):
             if np.any(new_LEs_mask):
                 self._init_new_particles(new_LEs_mask, data, substance)
 
-        sc.update_from_fatedataview(fate='all')
+        sc.update_from_fatedataview(fate_status='all')
 
         # also initialize/update aggregated data
         self._aggregated_data(sc, num_released)
@@ -123,7 +123,7 @@ class WeatheringData(Weatherer):
 
         #for substance, data in sc.itersubstancedata(self.array_types):
         for substance, data in sc.itersubstancedata(self.array_types,
-                                                    fate='all'):
+                                                    fate_status='all'):
             'update properties only if elements are released'
             if len(data['density']) == 0:
                 continue
@@ -165,17 +165,15 @@ class WeatheringData(Weatherer):
 
             if v0 is not None:
                 kv1 = self._get_kv1_weathering_visc_update(v0)
-                fw_d_fref = data['frac_water']/self.visc_f_ref
+                fw_d_fref = data['frac_water'] / self.visc_f_ref
 
                 data['viscosity'] = (v0 *
                                      np.exp(kv1 * data['frac_lost']) *
                                      (1 + (fw_d_fref / (1.187 - fw_d_fref))) ** 2.49
                                      )
-                data['oil_viscosity'] = (v0 *
-                                     np.exp(kv1 * data['frac_lost']) )
+                data['oil_viscosity'] = (v0 * np.exp(kv1 * data['frac_lost']))
 
-        #sc.update_from_fatedataview()
-        sc.update_from_fatedataview(fate='all')
+        sc.update_from_fatedataview(fate_status='all')
 
         # also initialize/update aggregated data
         self._aggregated_data(sc, 0)

@@ -48,7 +48,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     print 'adding renderer'
     model.outputters += Renderer(mapfile,
                                  images_dir,
-                                 size=(800, 600),
+                                 image_size=(800, 600),
                                  )
 #                                 draw_back_to_fore=True)
 
