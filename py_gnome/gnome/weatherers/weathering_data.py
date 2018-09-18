@@ -9,20 +9,27 @@ which is defined in a gnome model if there are weatherers defined.
 For now just define a FayGravityInertial class here
 It is only used by WeatheringData to update the 'area' and related arrays
 '''
-import copy
 
 import numpy as np
-from repoze.lru import lru_cache
 
-import gnome    # required by deserialize
+try:
+    from functools import lru_cache  # it's built-in on py3
+except ImportError:
+    from backports.functools_lru_cache import lru_cache  # needs backports for py2
 
 from gnome.basic_types import oil_status, fate
-from gnome.utilities.serializable import Serializable, Field
 
 from .core import Weatherer, WeathererSchema
+from gnome.environment.water import WaterSchema
 
 
-class WeatheringData(Weatherer, Serializable):
+class WeatheringDataSchema(WeathererSchema):
+    water = WaterSchema(
+        save=True, update=True, save_reference=True
+    )
+
+
+class WeatheringData(Weatherer):
     '''
     Serves to initialize weathering data arrays. Also updates data arrays
     like density, viscosity
@@ -34,12 +41,8 @@ class WeatheringData(Weatherer, Serializable):
     initialized anywhere else. This is inplace of defining initializers for
     every single array, let WeatheringData set/initialize/update these arrays.
     '''
-    _state = copy.deepcopy(Weatherer._state)
-    # UI does not need to manipulate - if make_default_refs is True as is the
-    # default, it'll automatically get the default Water object
-    _state += Field('water', save=True, update=False, save_reference=True)
 
-    _schema = WeathererSchema
+    _schema = WeatheringDataSchema
 
     def __init__(self, water, **kwargs):
         '''
@@ -118,6 +121,7 @@ class WeatheringData(Weatherer, Serializable):
 
         water_rho = self.water.get('density')
 
+        #for substance, data in sc.itersubstancedata(self.array_types):
         for substance, data in sc.itersubstancedata(self.array_types,
                                                     fate='all'):
             'update properties only if elements are released'
@@ -170,6 +174,7 @@ class WeatheringData(Weatherer, Serializable):
                 data['oil_viscosity'] = (v0 *
                                      np.exp(kv1 * data['frac_lost']) )
 
+        #sc.update_from_fatedataview()
         sc.update_from_fatedataview(fate='all')
 
         # also initialize/update aggregated data
@@ -222,14 +227,20 @@ class WeatheringData(Weatherer, Serializable):
         # todo: remove fate_status and add 'surface' to status_codes. LEs
         # marked to be skimmed, burned, dispersed will also be marked as
         # 'surface' so following can get cleaned up.
-        sc.mass_balance['floating'] = \
-            (sc['mass'][sc['fate_status'] == fate.surface_weather].sum() +
-             sc['mass'][sc['fate_status'] == fate.non_weather].sum() -
-             sc['mass'][sc['status_codes'] == oil_status.on_land].sum() -
-             sc['mass'][sc['status_codes'] == oil_status.to_be_removed].sum() +
-             sc['mass'][sc['fate_status'] & fate.skim == fate.skim].sum() +
-             sc['mass'][sc['fate_status'] & fate.burn == fate.burn].sum() +
-             sc['mass'][sc['fate_status'] & fate.disperse == fate.disperse].sum())
+        # fixme: refactor to build up the mask, and then apply it.
+        # sc.mass_balance['floating'] = \
+        #     (sc['mass'][sc['fate_status'] == fate.surface_weather].sum() +
+        #      sc['mass'][sc['fate_status'] == fate.non_weather].sum() -
+        #      sc['mass'][sc['status_codes'] == oil_status.on_land].sum() -
+        #      sc['mass'][sc['status_codes'] == oil_status.to_be_removed].sum() +
+        #      sc['mass'][sc['fate_status'] & fate.skim == fate.skim].sum() +
+        #      sc['mass'][sc['fate_status'] & fate.burn == fate.burn].sum() +
+        #      sc['mass'][sc['fate_status'] & fate.disperse == fate.disperse].sum())
+
+        on_surface = ((sc['status_codes'] == oil_status.in_water) &
+                      (sc['positions'][:,2] == 0.0))
+
+        sc.mass_balance['floating'] = sc['mass'][on_surface].sum()
 
         # add 'non_weathering' key if any mass is released for nonweathering
         # particles.
@@ -361,34 +372,3 @@ class WeatheringData(Weatherer, Serializable):
                  (substance.component_density * substance.mass_fraction).sum())
 
         return k_rho
-
-    def serialize(self, json_='webapi'):
-        '''
-            'water' property is saved as references in save file
-        '''
-        toserial = self.to_serialize(json_)
-        schema = self.__class__._schema()
-        serial = schema.serialize(toserial)
-
-        if json_ == 'webapi':
-            if self.water:
-                serial['water'] = self.water.serialize(json_)
-
-        return serial
-
-    @classmethod
-    def deserialize(cls, json_):
-        '''
-            Append correct schema for water
-        '''
-        if not cls.is_sparse(json_):
-            schema = cls._schema()
-            dict_ = schema.deserialize(json_)
-
-            if 'water' in json_:
-                obj = json_['water']['obj_type']
-                dict_['water'] = (eval(obj).deserialize(json_['water']))
-
-            return dict_
-        else:
-            return json_

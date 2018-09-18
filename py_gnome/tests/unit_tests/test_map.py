@@ -22,7 +22,9 @@ from conftest import sample_sc_release
 
 basedir = os.path.dirname(__file__)
 datadir = os.path.normpath(os.path.join(basedir, "sample_data"))
+output_dir = os.path.normpath(os.path.join(basedir, "output_dir"))
 testbnamap = os.path.join(datadir, 'MapBounds_Island.bna')
+bna_with_lake = os.path.join(datadir, 'florida_with_lake_small.bna')
 test_tri_grid = os.path.join(datadir, 'small_trigrid_example.nc')
 
 
@@ -141,45 +143,11 @@ class Test_GnomeMap:
     def test_update_from_dict(self):
         gmap = GnomeMap()
 
-        json_ = gmap.serialize('save')
-        json_['map_bounds'] = [(-10, 10), (10, 10),
-                               (10, -10), (-10, -10)]
-
-        dict_ = gnome.map.GnomeMap.deserialize(json_)
-
-        gmap.update_from_dict(dict_)
-        u_json_ = gmap.serialize('save')
-
-        for key in json_:
-            assert u_json_[key] == json_[key]
-
-    @pytest.mark.parametrize("json_", ({'name': u'GnomeMap',
-                                        'obj_type': u'gnome.map.GnomeMap',
-                                        'json_': u'save',
-                                        'map_bounds': [(-10.0, 10.0),
-                                                       (10.0, 10.0),
-                                                       (10.0, -10.0),
-                                                       (-10.0, -10.0)],
-                                        'spillable_area': [[(-360.0, -90.0),
-                                                            (-360.0, 90.0),
-                                                            (360.0, 90.0),
-                                                            (360.0, -90.0)]]
-                                        },
-                                       {'obj_type': u'gnome.map.GnomeMap',
-                                        'json_': u'webapi',
-                                        },
-                                       )
-                             )
-    def test_new_from_dict(self, json_):
-        context = json_['json_']
-
-        dict_ = GnomeMap.deserialize(json_)
-        gmap = GnomeMap.new_from_dict(dict_)
-
-        u_json_ = gmap.serialize(context)
-
-        for key in json_:
-            assert u_json_[key] == json_[key]
+        json_= {'map_bounds': [(-10, 10), (10, 10),
+                               (10, -10), (-10, -10)]}
+        assert np.all(gmap.map_bounds != json_['map_bounds'])
+        gmap.update_from_dict(json_)
+        assert np.all(gmap.map_bounds == json_['map_bounds'])
 
 
 class Test_ParamMap:
@@ -227,37 +195,26 @@ class Test_ParamMap:
                 for c in coord_coll[0]:
                     assert len(c) == 2
 
+    def test_serialize_deserialize_param(self):
+        """
+        test create new ParamMap from deserialized dict
+        """
+        pmap = gnome.map.ParamMap((5, 5), 12000, 40)
 
-@pytest.mark.parametrize("json_", ('save', 'webapi'))
-def test_serialize_deserialize_param(json_):
-    """
-    test create new ParamMap from deserialized dict
-    """
-    gmap = gnome.map.ParamMap((5, 5), 12000, 40)
-    print gmap.land_polys._PointsArray
+        serial = pmap.serialize()
+        pmap2 = gnome.map.ParamMap.deserialize(serial)
 
-    serial = gmap.serialize(json_)
-    serial['distance'] = 20000
-    print serial
-    dict_ = gnome.map.ParamMap.deserialize(serial)
-    map2 = gnome.map.ParamMap.new_from_dict(dict_)
-    print map2
+        assert pmap == pmap2
 
-    assert gmap == map2
-
-
-@pytest.mark.parametrize("json_", ('save', 'webapi'))
-def test_update_from_dict_param(json_):
-    """
-    test create new ParamMap from deserialized dict
-    """
-    map1 = gnome.map.ParamMap((5, 5), 12000, 40)
-    serial = map1.serialize(json_)
-    map2 = gnome.map.ParamMap((6, 6), 20000, 40)
-    dict_ = gnome.map.ParamMap.deserialize(serial)
-    map2.update_from_dict(dict_)
-
-    assert map1 == map2
+    def test_update_from_dict_param(self):
+        """
+        test create new ParamMap from deserialized dict
+        """
+        map1 = gnome.map.ParamMap((5, 5), 12000, 40)
+        assert map1.center == (5,5,0)
+        json_ = {'center': [6,6]}
+        map1.update_from_dict(json_)
+        assert map1.center == (6,6,0)
 
 
 class Test_RasterMap:
@@ -627,36 +584,32 @@ class Test_MapfromBNA:
                 for c in coord_coll[0]:
                     assert len(c) == 2
 
+    def test_serialize_deserialize(self):
+        """
+        test create new object from to_dict
+        """
+        gmap = gnome.map.MapFromBNA(testbnamap, 6)
 
-@pytest.mark.parametrize("json_", ('save', 'webapi'))
-def test_serialize_deserialize(json_):
-    """
-    test create new object from to_dict
-    """
-    gmap = gnome.map.MapFromBNA(testbnamap, 6)
+        serial = gmap.serialize()
+        map2 = gnome.map.MapFromBNA.deserialize(serial)
 
-    serial = gmap.serialize(json_)
-    dict_ = gnome.map.MapFromBNA.deserialize(serial)
-    map2 = gmap.new_from_dict(dict_)
-
-    assert gmap == map2
+        assert gmap == map2
 
 
-def test_update_from_dict_MapFromBNA():
-    'test update_from_dict for MapFromBNA'
-    gmap = gnome.map.MapFromBNA(testbnamap, 6)
+    def test_update_from_dict_MapFromBNA(self):
+        'test update_from_dict for MapFromBNA'
+        gmap = gnome.map.MapFromBNA(testbnamap, 6)
 
-    serial = gmap.serialize('webapi')
-    dict_ = gnome.map.MapFromBNA.deserialize(serial)
-    dict_['map_bounds'] = [(-10, 10), (10, 10), (10, -10), (-10, -10)]
-    dict_['spillable_area'] = [[(-5, 5), (5, 5), (5, -5), (-5, -5)]]
-    dict_['refloat_halflife'] = 2
 
-    gmap.update_from_dict(dict_)
-    u_json = gmap.serialize('webapi')
+        dict_ = {}
+        dict_['map_bounds'] = [(-10, 10), (10, 10), (10, -10), (-10, -10)]
+        dict_['spillable_area'] = [[(-5, 5), (5, 5), (5, -5), (-5, -5)]]
+        dict_['refloat_halflife'] = 2
+        assert np.all(gmap.map_bounds != dict_['map_bounds'])
 
-    for key in dict_:
-        assert u_json[key] == dict_[key]
+        gmap.update_from_dict(dict_)
+        assert gmap.map_bounds is not dict_['map_bounds']
+        assert np.all(gmap.map_bounds == dict_['map_bounds'])
 
 
 class Test_full_move:
@@ -933,6 +886,52 @@ def test_bna_no_map_bounds():
                                          (6., 11.),
                                          (6., 10.),
                                          ])
+
+
+class Test_lake():
+    """
+    tests for handling a BNA with a lake
+
+    The code should now return a polygon with a hole for lakes.
+
+    And render properly both with the py_gnome renderer and the json output.
+
+    """
+    map = MapFromBNA(bna_with_lake)
+
+    def test_polys(self):
+        """
+        Once loaded, polygons should be there
+        """
+        assert self.map.map_bounds is not None
+
+        assert self.map.spillable_area is not None
+
+        # NOTE: current version puts land and lakes in the land_polys set
+        assert len(self.map.land_polys) == 2
+
+    def test_to_geojson(self):
+        """
+        make sure geojson is right
+        """
+
+        gj = self.map.to_geojson()
+
+        # print gj.keys()
+        # print gj['features'][0].keys()
+        # print len(gj.features)
+
+        # has only the land polys in there.
+        assert len(gj['features']) == 1
+
+        land_polys = gj['features'][0]
+        assert land_polys['geometry']['type'] == "MultiPolygon"
+        assert land_polys["properties"]["name"] == "Shoreline Polys"
+
+        import json
+        outfilename = os.path.join(output_dir, "florida_geojson.json")
+        with open(outfilename, 'w') as outfile:
+            json.dump(gj, outfile, indent=2)
 
 
 if __name__ == '__main__':

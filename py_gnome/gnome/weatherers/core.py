@@ -7,32 +7,24 @@ from colander import SchemaNode, drop
 
 import gnome
 from gnome.persist.extend_colander import NumpyArray
-from gnome.persist.base_schema import ObjType
+from gnome.persist.base_schema import ObjTypeSchema
 
 from gnome.array_types import mass_components
-from gnome.utilities.serializable import Serializable, Field
 from gnome.utilities.time_utils import date_to_sec, sec_to_datetime
 from gnome.exceptions import ReferencedObjectNotSet
 from gnome.movers.movers import Process, ProcessSchema
 
 
-class WeathererSchema(ObjType, ProcessSchema):
-    '''
-    used to serialize object so need ObjType schema and it only contains
-    attributes defined in base class (ProcessSchema)
-    '''
-    name = 'Weatherer'
-    description = 'weatherer schema base class'
+class WeathererSchema(ProcessSchema):
+    pass
 
-
-class Weatherer(Process, Serializable):
+class Weatherer(Process):
     '''
     Base Weathering agent.  This is almost exactly like the base Mover
     in the way that it acts upon the model.  It contains the same API
     as the mover as well. Not Serializable since it does is partial
     implementation
     '''
-    _state = copy.deepcopy(Process._state)
     _schema = WeathererSchema  # nothing new added so use this schema
 
     def __init__(self, **kwargs):
@@ -109,7 +101,7 @@ class Weatherer(Process, Serializable):
     def get_wind_speed(self, points, model_time,
                        coord_sys='r', fill_value=1.0):
         '''
-        Wrapper for the weatherers so they can extrapolate
+            Wrapper for the weatherers so they can get wind speeds
         '''
         retval = self.wind.at(points, model_time, coord_sys=coord_sys)
 
@@ -119,9 +111,13 @@ class Weatherer(Process, Serializable):
             return retval
 
     def check_time(self, wind, model_time):
-        """
-        Should have an option to extrapolate but for now we do by default
-        """
+        '''
+            Should have an option to extrapolate but for now we do by default
+
+            TODO, FIXME: This function does not appear to be used by anything.
+                         Removing it does not break any of the unit tests.
+                         If it is not used, it should probably go away.
+        '''
         new_model_time = model_time
 
         if wind is not None:
@@ -143,48 +139,11 @@ class Weatherer(Process, Serializable):
 
         return new_model_time
 
-    def serialize(self, json_='webapi'):
-        """
-        'water'/'waves' property is saved as references in save file
-        """
-        toserial = self.to_serialize(json_)
-        schema = self.__class__._schema()
-        serial = schema.serialize(toserial)
-
-        if json_ == 'webapi':
-            if hasattr(self, 'wind') and self.wind:
-                serial['wind'] = self.wind.serialize(json_)
-
-            if hasattr(self, 'waves') and self.waves:
-                serial['waves'] = self.waves.serialize(json_)
-
-            if hasattr(self, 'water') and self.water:
-                serial['water'] = self.water.serialize(json_)
-
-        return serial
-
-    @classmethod
-    def deserialize(cls, json_):
-        """
-        Append correct schema for water / waves
-        """
-        if not cls.is_sparse(json_):
-            schema = cls._schema()
-
-            for w in ['wind', 'water', 'waves']:
-                if w in json_:
-                    obj = json_[w]['obj_type']
-                    schema.add(eval(obj)._schema(name=w, missing=drop))
-
-            dict_ = schema.deserialize(json_)
-
-            return dict_
-        else:
-            return json_
-
 
 class HalfLifeWeathererSchema(WeathererSchema):
-    half_lives = SchemaNode(NumpyArray())
+    half_lives = SchemaNode(
+        NumpyArray(), save=True, update=True
+    )
 
 
 class HalfLifeWeatherer(Weatherer):
@@ -192,8 +151,6 @@ class HalfLifeWeatherer(Weatherer):
     Give half-life for all components and decay accordingly
     '''
     _schema = HalfLifeWeathererSchema
-    _state = copy.deepcopy(Weatherer._state)
-    _state += Field('half_lives', save=True, update=True)
 
     def __init__(self, half_lives=(15.*60, ), **kwargs):
         '''

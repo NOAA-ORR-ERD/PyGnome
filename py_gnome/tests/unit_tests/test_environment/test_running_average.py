@@ -37,10 +37,10 @@ def test_av_from_variable_wind():
 
     # wm = Wind(filename=wind_file)
     av = RunningAverage(wm)
-#     print "wm.ossm.timeseries"
-#     print wm.ossm.timeseries[:]
-#     print "av.ossm.timeseries"
-#     print av.ossm.timeseries[:]
+    # print "wm.ossm.timeseries"
+    # print wm.ossm.timeseries[:]
+    # print "av.ossm.timeseries"
+    # print av.ossm.timeseries[:]
 
     assert av.ossm.timeseries['time'][0] == wm.ossm.timeseries['time'][0]
     assert av.ossm.timeseries['value']['u'][0] == wm.ossm.timeseries['value']['u'][0]
@@ -183,11 +183,7 @@ def test_serialize_deserialize():
     wind = constant_wind(1., 0)
     av = RunningAverage(wind)
     json_ = av.serialize()
-    json_['wind'] = wind.serialize()
 
     # deserialize and ensure the dict's are correct
     d_av = RunningAverage.deserialize(json_)
-    assert d_av['wind'] == Wind.deserialize(json_['wind'])
-    d_av['wind'] = wind
-    av.update_from_dict(d_av)
-    assert av.wind is wind
+    assert d_av == av

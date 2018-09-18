@@ -23,7 +23,7 @@ Examples of things that environment objects can represent include: temperature, 
 For documentation of the API and implemented objects see :mod:`gnome.environment.environment_objects`
 
 Background
------------------
+----------
 
 The environmental models in GNOME are often driven with data created by other models, such as ROMS, HYCOM, etc. In the past, the output from
 these models were processed by renaming and regridding to conform to GNOME's expectations before use. Regridding every new dataset is inconvenient,
@@ -79,7 +79,13 @@ With memoization, the equation is as follows::
 Considering locate_points and interpolation_alphas are much more computationally expensive than multiply&sum and hash, this is
 a dramatic performance gain for even N=2
 
+Examples in a Jupyter Notebook:
+...............................
 
-:ref:`env_obj/examples.ipynb#Demonstration-of-component-sharing`
+.. toctree::
+  :maxdepth: 2
+
+  examples.ipynb
+
 
 

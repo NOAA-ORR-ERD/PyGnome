@@ -6,21 +6,27 @@ import copy
 from collections import Iterable
 
 import numpy as np
+from colander import SchemaNode, SequenceSchema, String, drop
 
 from gnome.utilities.time_utils import date_to_sec
-from gnome.utilities.serializable import Serializable, Field
 
 from gnome.movers import PyMover
-from gnome.persist import class_from_objtype
 
-from .outputter import Outputter, BaseSchema
+from .outputter import Outputter, BaseOutputterSchema
+from gnome.persist.base_schema import GeneralGnomeObjectSchema
+from gnome.movers.current_movers import CatsMoverSchema,\
+    ComponentMoverSchema, GridCurrentMoverSchema, CurrentCycleMoverSchema,\
+    IceMoverSchema
+from gnome.movers.wind_movers import WindMoverSchema
 
 
-class SpillJsonSchema(BaseSchema):
-    pass
+class SpillJsonSchema(BaseOutputterSchema):
+    _additional_data = SequenceSchema(
+        SchemaNode(String()), missing=drop, save=True, update=True
+    )
 
 
-class SpillJsonOutput(Outputter, Serializable):
+class SpillJsonOutput(Outputter):
     '''
     Class that outputs data on GNOME particles.
     Following is the format for a particle - the
@@ -48,11 +54,18 @@ class SpillJsonOutput(Outputter, Serializable):
             "timestamp": <TIMESTAMP>
         }
     '''
-    _state = copy.deepcopy(Outputter._state)
-
-    # need a schema and also need to override save so output_dir
-    # is saved correctly - maybe point it to saveloc
     _schema = SpillJsonSchema
+
+    def __init__(self, _additional_data=None, **kwargs):
+        '''
+        :param list current_movers: A list or collection of current grid mover
+                                    objects.
+
+        use super to pass optional \*\*kwargs to base class __init__ method
+        '''
+        self._additional_data =_additional_data if _additional_data else []
+
+        super(SpillJsonOutput, self).__init__(**kwargs)
 
     def write_output(self, step_num, islast_step=False):
         'dump data in geojson format'
@@ -69,8 +82,8 @@ class SpillJsonOutput(Outputter, Serializable):
 
         for sc in self.cache.load_timestep(step_num).items():
             position = sc['positions']
-            longitude = np.around(position[:, 0], 4).tolist()
-            latitude = np.around(position[:, 1], 4).tolist()
+            longitude = np.around(position[:, 0], 5).tolist()
+            latitude = np.around(position[:, 1], 5).tolist()
             status = sc['status_codes'].tolist()
             mass = np.around(sc['mass'], 4).tolist()
             spill_num = sc['spill_num'].tolist()
@@ -92,6 +105,13 @@ class SpillJsonOutput(Outputter, Serializable):
                    "length": len(longitude)
                    }
 
+            if self._additional_data and len(self._additional_data) > 0:
+                for d in self._additional_data:
+                    if d == 'viscosity':
+                        out[d] = np.around(sc[d], 8).tolist()
+                    else:
+                        out[d] = np.around(sc[d], 4).tolist()
+
             if sc.uncertain:
                 uncertain_scs.append(out)
             else:
@@ -112,13 +132,23 @@ class SpillJsonOutput(Outputter, Serializable):
         return output_info
 
 
-class CurrentJsonSchema(BaseSchema):
+class CurrentJsonSchema(BaseOutputterSchema):
+    current_movers = SequenceSchema(
+        GeneralGnomeObjectSchema(
+            acceptable_schemas=[CatsMoverSchema,
+                                ComponentMoverSchema,
+                                GridCurrentMoverSchema,
+                                CurrentCycleMoverSchema,
+                                WindMoverSchema]
+        ),
+        save=True, update=True, save_reference=True
+    )
     '''
     Nothing is required for initialization
     '''
 
 
-class CurrentJsonOutput(Outputter, Serializable):
+class CurrentJsonOutput(Outputter):
     '''
     Class that outputs GNOME current velocity results for each current mover
     in a geojson format.  The output is a collection of Features.
@@ -147,13 +177,6 @@ class CurrentJsonOutput(Outputter, Serializable):
         }
 
     '''
-    _state = copy.deepcopy(Outputter._state)
-
-    # need a schema and also need to override save so output_dir
-    # is saved correctly - maybe point it to saveloc
-    _state.add_field(Field('current_movers', save=True, update=True,
-                           iscollection=True))
-
     _schema = CurrentJsonSchema
 
     def __init__(self, current_movers, **kwargs):
@@ -239,10 +262,13 @@ class CurrentJsonOutput(Outputter, Serializable):
         return self._collection_to_dict(self.current_movers)
 
 
-class IceJsonSchema(BaseSchema):
-    '''
-    Nothing is required for initialization
-    '''
+class IceJsonSchema(BaseOutputterSchema):
+    ice_movers =  SequenceSchema(
+        GeneralGnomeObjectSchema(
+            acceptable_schemas=[IceMoverSchema]
+        ),
+        save=True, update=True, save_reference=True
+    )
 
 
 class IceJsonOutput(Outputter):
@@ -269,13 +295,6 @@ class IceJsonOutput(Outputter):
                                  }
         }
     '''
-    _state = copy.deepcopy(Outputter._state)
-
-    # need a schema and also need to override save so output_dir
-    # is saved correctly - maybe point it to saveloc
-    _state.add_field(Field('ice_movers', save=True, update=True,
-                           iscollection=True))
-
     _schema = IceJsonSchema
 
     def __init__(self, ice_movers, **kwargs):
@@ -327,38 +346,6 @@ class IceJsonOutput(Outputter):
     def rewind(self):
         'remove previously written files'
         super(IceJsonOutput, self).rewind()
-
-    def ice_movers_to_dict(self):
-        '''
-        a dict containing 'obj_type' and 'id' for each object in
-        list/collection
-        '''
-        return self._collection_to_dict(self.ice_movers)
-
-    @classmethod
-    def deserialize(cls, json_):
-        """
-        append correct schema for current mover
-        """
-        schema = cls._schema()
-        _to_dict = schema.deserialize(json_)
-
-        if 'ice_movers' in json_:
-            _to_dict['ice_movers'] = []
-
-            for i, cm in enumerate(json_['ice_movers']):
-                cm_cls = class_from_objtype(cm['obj_type'])
-
-                cm_dict = cm_cls.deserialize(json_['ice_movers'][i])
-
-                _to_dict['ice_movers'].append(cm_dict)
-
-        return _to_dict
-
-
-
-
-
 
 
 

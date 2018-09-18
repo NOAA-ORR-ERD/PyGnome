@@ -5,39 +5,45 @@ import numpy as np
 
 from colander import (SchemaNode, MappingSchema, Bool, drop)
 
-from gnome.persist.validators import convertible_to_seconds
-from gnome.persist.extend_colander import LocalDateTime
+from gnome import AddLogger
 
 from gnome.basic_types import (world_point,
                                world_point_type,
                                spill_type,
                                status_code_type)
 
-from gnome.utilities import inf_datetime
-from gnome.utilities import time_utils, serializable
+from gnome.utilities import time_utils
+from gnome.persist.base_schema import ObjTypeSchema
 from gnome.cy_gnome.cy_rise_velocity_mover import CyRiseVelocityMover
-from gnome import AddLogger
-from gnome.utilities.inf_datetime import InfTime, MinusInfTime
+from gnome import GnomeId
 from gnome.utilities.projections import FlatEarthProjection
+from gnome.utilities.inf_datetime import InfDateTime, InfTime, MinusInfTime
+
+from gnome.persist.validators import convertible_to_seconds
+from gnome.persist.extend_colander import LocalDateTime
 
 
-class ProcessSchema(MappingSchema):
+class ProcessSchema(ObjTypeSchema):
     '''
     base Process schema - attributes common to all movers/weatherers
     defined at one place
     '''
-    on = SchemaNode(Bool(), missing=drop)
-    active_start = SchemaNode(LocalDateTime(), missing=drop,
-                              validator=convertible_to_seconds)
-    active_stop = SchemaNode(LocalDateTime(), missing=drop,
-                             validator=convertible_to_seconds)
-    real_data_start = SchemaNode(LocalDateTime(), missing=drop,
-                                 validator=convertible_to_seconds)
-    real_data_stop = SchemaNode(LocalDateTime(), missing=drop,
-                                validator=convertible_to_seconds)
+    on = SchemaNode(
+        Bool(), missing=drop, save=True, update=True
+    )
+    active_start = SchemaNode(
+        LocalDateTime(),
+        missing=drop, validator=convertible_to_seconds,
+        save=True, update=True
+    )
+    active_stop = SchemaNode(
+        LocalDateTime(),
+        missing=drop, validator=convertible_to_seconds,
+        save=True, update=True
+    )
 
 
-class Process(AddLogger):
+class Process(GnomeId):
     """
     Base class from which all Python movers/weatherers can inherit
 
@@ -46,12 +52,6 @@ class Process(AddLogger):
     NOTE: Since base class is not Serializable, it does not need
     a class level _schema attribute.
     """
-    _state = copy.deepcopy(serializable.Serializable._state)
-    _state.add(update=['on', 'active_start', 'active_stop',
-                       'real_data_start', 'real_data_stop'],
-               save=['on', 'active_start', 'active_stop',
-                     'real_data_start', 'real_data_stop'],
-               read=['active'])
 
     def __init__(self, **kwargs):  # default min + max values for timespan
         """
@@ -62,38 +62,22 @@ class Process(AddLogger):
         :param on: boolean as to whether the object is on or not. Default is on
         :param active_start: datetime when the mover should be active
         :param active_stop: datetime after which the mover should be inactive
-        :param real_data_start: datetime when the mover first has data
-                                (not including extrapolation)
-        :param real_data_stop: datetime after which the mover has no data
-                               (not including extrapolation)
         """
+        self.name = kwargs.pop('name', self.__class__.__name__)
+
         self.on = kwargs.pop('on', True)  # turn the mover on / off for the run
         self._active = self.on  # initial value
 
-        active_start = kwargs.pop('active_start',
-                                  inf_datetime.InfDateTime('-inf'))
-        active_stop = kwargs.pop('active_stop',
-                                 inf_datetime.InfDateTime('inf'))
-
-        real_data_start = kwargs.pop('real_data_start',
-                                     inf_datetime.InfDateTime('-inf'))
-        real_data_stop = kwargs.pop('real_data_stop',
-                                    inf_datetime.InfDateTime('inf'))
+        active_start = kwargs.pop('active_start', InfDateTime('-inf'))
+        active_stop = kwargs.pop('active_stop', InfDateTime('inf'))
 
         self._check_active_startstop(active_start, active_stop)
 
         self._active_start = active_start
         self._active_stop = active_stop
 
-        # not sure if we would ever pass this in...
-        self._check_active_startstop(real_data_start, real_data_stop)
-
-        self.real_data_start = real_data_start
-        self.real_data_stop = real_data_stop
-
         # empty dict since no array_types required for all movers at present
         self.array_types = set()
-        self.name = kwargs.pop('name', self.__class__.__name__)
         self.make_default_refs = kwargs.pop('make_default_refs', True)
 
     def _check_active_startstop(self, active_start, active_stop):
@@ -135,22 +119,6 @@ class Process(AddLogger):
     def active_stop(self, value):
         self._check_active_startstop(self._active_start, value)
         self._active_stop = value
-
-    @property
-    def real_data_start(self):
-        return self._r_d_s
-
-    @real_data_start.setter
-    def real_data_start(self, value):
-        self._r_d_s = value
-
-    @property
-    def real_data_stop(self):
-        return self._r_d_e
-
-    @real_data_stop.setter
-    def real_data_stop(self, value):
-        self._r_d_e = value
 
     def datetime_to_seconds(self, model_time):
         """
@@ -198,6 +166,21 @@ class Process(AddLogger):
         """
         pass
 
+    def post_model_run(self):
+        """
+        Override this method if a derived class needs to perform
+        any actions after a model run is complete (StopIteration triggered)
+        """
+        pass
+
+    @property
+    def data_start(self):
+        return MinusInfTime()
+
+    @property
+    def data_stop(self):
+        return InfTime()
+
 
 class Mover(Process):
     def get_move(self, sc, time_step, model_time_datetime):
@@ -225,9 +208,10 @@ class Mover(Process):
 
 
 class PyMover(Mover):
-    def __init__(self,
-                 default_num_method='RK2',
+    def __init__(self, default_num_method='RK2',
                  **kwargs):
+        super(PyMover, self).__init__(**kwargs)
+
         self.num_methods = {'RK4': self.get_delta_RK4,
                             'Euler': self.get_delta_Euler,
                             'RK2': self.get_delta_RK2}
@@ -235,35 +219,31 @@ class PyMover(Mover):
 
         if 'env' in kwargs:
             if hasattr(self, '_req_refs'):
-                for k, v in self._req_refs.items():
+                for k, in self._req_refs:
                     for o in kwargs['env']:
                         if k in o._ref_as:
                             setattr(self, k, o)
-        Mover.__init__(self, **kwargs)
-
-    @property
-    def real_data_start(self):
-        return self.data.time.min_time.replace(tzinfo=None)
-
-    @real_data_start.setter
-    def real_data_start(self, value):
-        self._r_d_s = value
-
-    @property
-    def real_data_stop(self):
-        return self.data.time.max_time.replace(tzinfo=None)
-
-    @real_data_stop.setter
-    def real_data_stop(self, value):
-        self._r_d_e = value
 
     @property
     def is_data_on_cells(self):
         return self.data.grid.infer_location(self.data.u.data) != 'node'
 
+    def delta_method(self, method_name=None):
+        '''
+            Returns a delta function based on its registered name
+
+            Usage: delta = self.delta_method('RK2')(**kwargs)
+
+            Note: We do not handle any key errors resulting from passing in
+            a bad registered name.
+        '''
+        if method_name is None:
+            method_name = self.default_num_method
+
+        return self.num_methods[method_name]
+
     def get_delta_Euler(self, sc, time_step, model_time, pos, vel_field):
-        vels = vel_field.at(pos, model_time,
-                            extrapolate=self.extrapolate)
+        vels = vel_field.at(pos, model_time)
 
         return vels * time_step
 
@@ -272,12 +252,12 @@ class PyMover(Mover):
         dt_s = dt.seconds
         t = model_time
 
-        v0 = vel_field.at(pos, t, extrapolate=self.extrapolate)
+        v0 = vel_field.at(pos, t)
         d0 = FlatEarthProjection.meters_to_lonlat(v0 * dt_s, pos)
         p1 = pos.copy()
         p1 += d0
 
-        v1 = vel_field.at(p1, t + dt, extrapolate=self.extrapolate)
+        v1 = vel_field.at(p1, t + dt)
 
         return dt_s / 2 * (v0 + v1)
 
@@ -286,22 +266,22 @@ class PyMover(Mover):
         dt_s = dt.seconds
         t = model_time
 
-        v0 = vel_field.at(pos, t, extrapolate=self.extrapolate)
+        v0 = vel_field.at(pos, t)
         d0 = FlatEarthProjection.meters_to_lonlat(v0 * dt_s / 2, pos)
         p1 = pos.copy()
         p1 += d0
 
-        v1 = vel_field.at(p1, t + dt / 2, extrapolate=self.extrapolate)
+        v1 = vel_field.at(p1, t + dt / 2)
         d1 = FlatEarthProjection.meters_to_lonlat(v1 * dt_s / 2, pos)
         p2 = pos.copy()
         p2 += d1
 
-        v2 = vel_field.at(p2, t + dt / 2, extrapolate=self.extrapolate)
+        v2 = vel_field.at(p2, t + dt / 2)
         d2 = FlatEarthProjection.meters_to_lonlat(v2 * dt_s, pos)
         p3 = pos.copy()
         p3 += d2
 
-        v3 = vel_field.at(p3, t + dt, extrapolate=self.extrapolate)
+        v3 = vel_field.at(p3, t + dt)
 
         return dt_s / 6 * (v0 + 2 * v1 + 2 * v2 + v3)
 
@@ -368,19 +348,24 @@ class CyMover(Mover):
                 uncertain_spill_size = np.array((sc.num_released,),
                                                 dtype=np.int32)
 
-            err = self.mover.prepare_for_model_step(
-                        self.datetime_to_seconds(model_time_datetime),
-                        time_step, uncertain_spill_count, uncertain_spill_size)
+            seconds = self.datetime_to_seconds(model_time_datetime)
 
-            if err != 0:
+            try:
+                self.mover.prepare_for_model_step(seconds,
+                                                  time_step,
+                                                  uncertain_spill_count,
+                                                  uncertain_spill_size)
+            except OSError as e:
                 msg = ('No available data in the time interval '
                        'that is being modeled\n'
                        '\tModel time: {}\n'
-                       '\tMover: {} of type {}\n'
                        '\tData available from {} to {}'
+                       '\tMover: {} of type {}\n'
+                       '\tError: {}'
                        .format(model_time_datetime,
+                               self.data_start, self.data_stop,
                                self.name, self.__class__,
-                               self.real_data_start, self.real_data_stop))
+                               str(e)))
 
                 self.logger.error(msg)
                 raise RuntimeError(msg)
@@ -424,7 +409,7 @@ class CyMover(Mover):
             self.status_codes = sc['status_codes']
         except KeyError, err:
             raise ValueError('The spill container does not have the required'
-                             'data arrays\n' + err.message)
+                             'data arrays\n' + str(err))
 
         if sc.uncertain:
             self.spill_type = spill_type.uncertainty
@@ -451,7 +436,7 @@ class CyMover(Mover):
                     except KeyError, err:
                         raise ValueError('The spill container does not have'
                                          ' the required data array\n{}'
-                                         .format(err.message))
+                                         .format(err))
 
                     self.mover.model_step_is_done(self.status_codes)
             else:

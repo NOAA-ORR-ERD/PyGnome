@@ -83,6 +83,18 @@ def test_init():
     model = Model()
 
 
+def test_update_model():
+    mdl = Model();
+    d = {'name': 'Model2'}
+    assert mdl.name == 'Model'
+    upd = mdl.update(d)
+    assert mdl.name == d['name']
+    assert upd == True
+    d['duration'] = 43200
+    upd = mdl.update(d)
+    assert mdl.duration.seconds == 43200
+
+
 def test_init_with_mode():
     model = Model()
     assert model.mode == 'gnome'
@@ -295,7 +307,7 @@ def test_simple_run_with_image_output(tmpdir):
     gnome_map = gnome.map.MapFromBNA(testdata['MapFromBNA']['testmap'],
                                      refloat_halflife=6)  # hours
     renderer = gnome.outputters.Renderer(testdata['MapFromBNA']['testmap'],
-                                         images_dir, size=(400, 300))
+                                         images_dir, image_size=(400, 300))
     geo_json = TrajectoryGeoJsonOutput(output_dir=images_dir)
 
     model = Model(time_step=timedelta(minutes=15),
@@ -1259,10 +1271,10 @@ class TestMergeModels:
 
         # create save model
         sample_save_file = os.path.join(saveloc_, 'SampleSaveModel.zip')
-        model.save(saveloc_, name='SampleSaveModel.zip')
+        model.save(sample_save_file)
 
         if os.path.exists(sample_save_file):
-            model = load(sample_save_file)
+            model = Model.load(sample_save_file)
             model.merge(m)
 
             for oc in m._oc_list:
@@ -1353,13 +1365,13 @@ class TestValidateModel():
         (msgs, isvalid) = model.check_inputs()
 
         assert len(msgs) == 1 and isvalid
-        assert ('Spill has release time after model start time' in msgs[0])
+        assert ('{0} has release time after model start time'.format(model.spills[0].name) in msgs[0])
 
         model.spills[0].release_time = self.start_time - timedelta(hours=1)
         (msgs, isvalid) = model.check_inputs()
 
         assert len(msgs) == 1 and not isvalid
-        assert ('Spill has release time before model start time' in msgs[0])
+        assert ('{0} has release time before model start time'.format(model.spills[0].name) in msgs[0])
 
     def make_model_incomplete_waves(self):
         '''

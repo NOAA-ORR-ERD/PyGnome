@@ -22,18 +22,23 @@ class TMover;
 class DLL_API TimeValue_c : virtual public ClassID_c {
 	
 public:
+
 #ifndef pyGNOME
 	TMover *owner;
 	TimeValue_c (TMover *theOwner) { owner = theOwner; }
 #endif
+
 	TimeValue_c () {}
-	virtual				   ~TimeValue_c () { Dispose (); }
+	virtual ~TimeValue_c () { Dispose (); }
+
+	virtual OSErr InitTimeFunc();
+	virtual void Dispose() {}
+
 	//virtual ClassID GetClassID () { return TYPE_TIMEVALUES; }
-	//virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEVALUES) return TRUE; return ClassID_c::IAm(id); }
-	virtual OSErr   GetTimeValue(const Seconds& current_time, VelocityRec *value);
-	virtual OSErr	CheckStartTime (Seconds time);
-	virtual void	Dispose () {}
-	virtual OSErr	InitTimeFunc ();
+	//virtual Boolean IAm(ClassID id) { if(id==TYPE_TIMEVALUES) return TRUE; return ClassID_c::IAm(id); }
+
+	virtual OSErr GetTimeValue(const Seconds& current_time, VelocityRec *value);
+	virtual OSErr CheckStartTime (Seconds time);
 
 };
 

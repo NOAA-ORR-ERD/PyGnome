@@ -21,6 +21,7 @@ cdef extern from "StringFunctions.h":
     void DateToSeconds(DateTimeRec *, Seconds *)
     void SecondsToDate(Seconds, DateTimeRec *)
 
+
 """
 Declare methods for interpolation of timeseries from
 lib_gnome/OSSMTimeValue_c class and ShioTimeValue
@@ -28,14 +29,17 @@ lib_gnome/OSSMTimeValue_c class and ShioTimeValue
 cdef extern from "OSSMTimeValue_c.h":
     cdef cppclass OSSMTimeValue_c:
         OSSMTimeValue_c() except +
-        # Members
-        string          fileName
-        string          filePath
-        double          fScaleFactor
-        WorldPoint3D    fStationPosition
 
-        # make char array a string - easier to work with in Cython
-        string          fStationName
+        # Members
+        string fileName
+        string filePath
+
+        double fScaleFactor
+
+        bool extrapolationIsAllowed
+
+        WorldPoint3D fStationPosition
+        string fStationName
 
         # Methods
         OSErr   GetTimeValue(Seconds &, VelocityRec *)
@@ -51,6 +55,7 @@ cdef extern from "OSSMTimeValue_c.h":
         WorldPoint3D    GetStationLocation()
         OSErr           GetDataStartTime(Seconds *startTime)
         OSErr           GetDataEndTime(Seconds *endTime)
+
 
 """
 ShioTimeValue_c.h derives from OSSMTimeValue_c - so no need to redefine methods
@@ -87,6 +92,7 @@ cdef extern from "ShioTimeValue_c.h":
         # Not Sure if Following are required/used
         OSErr       GetConvertedHeightValue(Seconds, VelocityRec *)
         OSErr       GetProgressiveWaveValue(Seconds &, VelocityRec *)
+
 
 cdef extern from "Weatherers_c.h":
     OSErr emulsify(int n, unsigned long step_len,

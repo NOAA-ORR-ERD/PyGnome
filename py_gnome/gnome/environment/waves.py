@@ -12,31 +12,33 @@ from __future__ import division
 
 import copy
 import numpy as np
-import gridded
 
 from gnome import constants
-from gnome.utilities import serializable
-from gnome.utilities.serializable import Field
 from gnome.utilities.weathering import Adios2, LehrSimecek, PiersonMoskowitz
 
 from gnome.persist import base_schema
 from gnome.exceptions import ReferencedObjectNotSet
 
 from .environment import Environment
-from .environment import WaterSchema
+from .water import WaterSchema
 
 from wind import WindSchema
 
 g = constants.gravity  # the gravitational constant.
 
 
-class WavesSchema(base_schema.ObjType):
+class WavesSchema(base_schema.ObjTypeSchema):
     'Colander Schema for Conditions object'
-    name = 'Waves'
     description = 'waves schema base class'
+    water = WaterSchema(
+        save=True, update=True, save_reference=True
+    )
+    wind = WindSchema(
+        save=True, update=True, save_reference=True
+    )
 
 
-class Waves(Environment, serializable.Serializable):
+class Waves(Environment):
     """
     class to compute the wave height for a time series
 
@@ -44,12 +46,7 @@ class Waves(Environment, serializable.Serializable):
     variable, but may be extended in the future
     """
     _ref_as = 'waves'
-    _state = copy.deepcopy(Environment._state)
-    _state += [Field('water', save=True, update=True, save_reference=True),
-               Field('wind', save=True, update=True, save_reference=True)]
     _schema = WavesSchema
-
-    _state['name'].test_for_eq = False
 
     def __init__(self, wind=None, water=None, **kwargs):
         """
@@ -79,6 +76,21 @@ class Waves(Environment, serializable.Serializable):
 
         super(Waves, self).__init__(**kwargs)
 
+    @property
+    def data_start(self):
+        '''
+            The Waves object doesn't directly manage a time series of data,
+            so it will not have a data range itself.  But it depends upon
+            a Wind and a Water object.  The Water won't have a data range
+            either, but the Wind will.
+            So its data range will be that of the Wind it is associated with.
+        '''
+        return self.wind.data_start
+
+    @property
+    def data_stop(self):
+        return self.wind.data_stop
+
     def get_value(self, points, time):
         """
         return the rms wave height, peak period and percent wave breaking
@@ -101,7 +113,7 @@ class Waves(Environment, serializable.Serializable):
 
         if wave_height is None:
             # only need velocity
-            U = self.get_wind_speed(points, time, coord_sys='r')
+            U = self.get_wind_speed(points, time)
             H = self.compute_H(U)
         else:
             # user specified a wave height
@@ -114,6 +126,18 @@ class Waves(Environment, serializable.Serializable):
         De = self.dissipative_wave_energy(H)
 
         return H, T, Wf, De
+
+    def get_wind_speed(self, points, model_time,
+                       coord_sys='r', fill_value=1.0):
+        '''
+        Wrapper for the weatherers so they can extrapolate
+        '''
+        retval = self.wind.at(points, model_time, coord_sys=coord_sys)
+
+        if isinstance(retval, np.ma.MaskedArray):
+            return retval.filled(fill_value)
+        else:
+            return retval
 
     def get_emulsification_wind(self, points, time):
         """
@@ -205,38 +229,8 @@ class Waves(Environment, serializable.Serializable):
 
         return eps
 
-    def serialize(self, json_='webapi'):
-        """
-        Since 'wind'/'water' property is saved as references in save file
-        need to add appropriate node to WindMover schema for 'webapi'
-        """
-        toserial = self.to_serialize(json_)
-        schema = self.__class__._schema()
 
-        if json_ == 'webapi':
-            if self.wind:
-                schema.add(WindSchema(name='wind'))
-            if self.water:
-                schema.add(WaterSchema(name='water'))
-
-        return schema.serialize(toserial)
-
-    @classmethod
-    def deserialize(cls, json_):
-        """
-        append correct schema for wind object
-        """
-        schema = cls._schema()
-
-        if 'wind' in json_:
-            schema.add(WindSchema(name='wind'))
-
-        if 'water' in json_:
-            schema.add(WaterSchema(name='water'))
-
-        return schema.deserialize(json_)
-
-    def prepare_for_model_run(self, model_time):
+    def prepare_for_model_run(self, _model_time):
         if self.wind is None:
             raise ReferencedObjectNotSet("wind object not defined for {}"
                                          .format(self.__class__.__name__))

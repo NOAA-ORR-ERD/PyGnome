@@ -1,4 +1,10 @@
-before_script:
+stages:
+  - test
+  - build
+
+test:
+  stage: test
+  script:
   - yum update -y
   - yum install gcc gcc-c++ -y
   - yum install netcdf-devel -y # needed by the C++ code -- it can't find the conda versions
@@ -15,15 +21,49 @@ before_script:
 
   - cd ./py_gnome
   - python ./setup.py install
+  - py.test
+  
+  tags:
+    - test
+    - docker
+    - oillibrary_base
 
-master:
-  script:
-    - py.test -runslow
-  only:
-    - master
 
 develop:
+  stage: build
   script:
-    - py.test
+    - docker pull gitlab.orr.noaa.gov:5002/oillibrary
+    - docker tag gitlab.orr.noaa.gov:5002/oillibrary oillibrary
+    - docker build -f dockerfile . -t gitlab.orr.noaa.gov:5002/pygnome:develop
+    - docker push gitlab.orr.noaa.gov:5002/pygnome:develop
   only:
     - develop
+  tags:
+    - docker
+    - build
+
+master:
+  stage: build
+  script:
+    - docker pull gitlab.orr.noaa.gov:5002/oillibrary
+    - docker tag gitlab.orr.noaa.gov:5002/oillibrary oillibrary
+    - docker build -f dockerfile . -t gitlab.orr.noaa.gov:5002/pygnome
+    - docker push gitlab.orr.noaa.gov:5002/pygnome
+  only:
+     - master
+  tags:
+     - docker
+     - build
+  
+production:
+  stage: build
+  script:
+      - docker pull gitlab.orr.noaa.gov:5002/oillibrary:production
+      - docker tag gitlab.orr.noaa.gov:5002/oillibrary:production oillibrary
+      - docker build -f dockerfile . -t gitlab.orr.noaa.gov:5002/pygnome:production
+      - docker push gitlab.orr.noaa.gov:5002/pygnome:production
+  only:
+     - production
+  tags:
+     - docker
+     - build

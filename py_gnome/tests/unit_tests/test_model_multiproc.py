@@ -33,6 +33,8 @@ pp = PrettyPrinter(indent=2, width=120)
 pytestmark = pytest.mark.skipif("sys.platform=='win32'",
                                 reason="skip on windows")
 
+@pytest.mark.slow
+
 
 def make_model(uncertain=False,
                geojson_output=False):
@@ -141,7 +143,7 @@ def test_init():
     finally:
         model_broadcaster.stop()
 
-
+@pytest.mark.slow
 @pytest.mark.timeout(30)
 def test_uncertainty_array_size():
     model = make_model()
@@ -173,7 +175,7 @@ def test_uncertainty_array_size():
     finally:
         model_broadcaster.stop()
 
-
+@pytest.mark.slow
 @pytest.mark.timeout(30)
 def test_uncertainty_array_indexing():
     model = make_model()
@@ -209,6 +211,7 @@ def is_valid(results):
     return len(results) == 9
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize(('secs', 'timeout', 'expected_runtime', 'valid_func'),
                          [(5, None, 5, is_valid),
                           (11, None, 10, is_none),
@@ -248,6 +251,7 @@ def test_timeout(secs, timeout, expected_runtime, valid_func):
         model_broadcaster.stop()
 
 
+@pytest.mark.slow
 def test_timeout_2_times():
     model = make_model()
 
@@ -293,7 +297,7 @@ def test_timeout_2_times():
     finally:
         model_broadcaster.stop()
 
-
+@pytest.mark.slow
 @pytest.mark.timeout(30)
 def test_rewind():
     model = make_model()
@@ -312,6 +316,7 @@ def test_rewind():
         model_broadcaster.stop()
 
 
+@pytest.mark.slow
 @pytest.mark.timeout(30)
 def test_step():
     model = make_model()
@@ -328,6 +333,7 @@ def test_step():
         model_broadcaster.stop()
 
 
+@pytest.mark.slow
 @pytest.mark.timeout(30)
 def test_full_run():
     model = make_model()
@@ -353,7 +359,7 @@ def test_full_run():
     finally:
         model_broadcaster.stop()
 
-
+@pytest.mark.slow
 @pytest.mark.timeout(30)
 def test_cache_dirs():
     model = make_model()
@@ -371,7 +377,7 @@ def test_cache_dirs():
     finally:
         model_broadcaster.stop()
 
-
+@pytest.mark.slow
 @pytest.mark.timeout(30)
 def test_spill_containers_have_uncertainty_off():
     model = make_model(uncertain=True)
@@ -388,7 +394,7 @@ def test_spill_containers_have_uncertainty_off():
     finally:
         model_broadcaster.stop()
 
-
+@pytest.mark.slow
 @pytest.mark.timeout(30)
 def test_weathering_output_only():
     model = make_model(geojson_output=True)
@@ -414,7 +420,7 @@ def test_weathering_output_only():
     finally:
         model_broadcaster.stop()
 
-
+@pytest.mark.slow
 @pytest.mark.timeout(10)
 def test_child_exception():
     '''

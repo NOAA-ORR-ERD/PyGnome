@@ -269,22 +269,12 @@ def test_serialize_deseriailize():
     w = Waves(wind, water)
 
     json_ = w.serialize()
-    json_['wind'] = wind.serialize()
-    json_['water'] = water.serialize()
 
     # deserialize and ensure the dict's are correct
-    d_ = Waves.deserialize(json_)
-    print 'd_', d_
-    assert d_['wind'] == Wind.deserialize(json_['wind'])
-    assert d_['water'] == Water.deserialize(json_['water'])
-
-    d_['wind'] = wind
-    d_['water'] = water
-
-    w.update_from_dict(d_)
-    assert w.wind is wind
-    assert w.water is water
-
+    w2 = Waves.deserialize(json_)
+    assert w2.wind == Wind.deserialize(json_['wind'])
+    assert w2.water == Water.deserialize(json_['water'])
+    assert w == w2
 
 def test_get_emulsification_wind():
     wind = constant_wind(3., 0)

@@ -363,6 +363,12 @@ class SpillContainerData(object):
         # this is a property in case we want change the internal implementation
         return self._data_arrays
 
+    def keys(self):
+        """
+        a keys() function so it looks a bit more like a dict
+        """
+        return self._data_arrays.keys()
+
 
 class SpillContainer(AddLogger, SpillContainerData):
     """

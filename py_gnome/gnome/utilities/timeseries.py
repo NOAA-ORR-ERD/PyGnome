@@ -11,6 +11,7 @@ from gnome.utilities.time_utils import (zero_time,
 from gnome.utilities.convert import (to_time_value_pair,
                                      tsformat,
                                      to_datetime_value_2d)
+from gnome.persist.base_schema import ObjTypeSchema
 
 
 class TimeseriesError(Exception):
@@ -21,7 +22,10 @@ class TimeseriesError(Exception):
 
 
 class Timeseries(GnomeId):
-    def __init__(self, timeseries=None, filename=None, coord_sys='uv'):
+    _schema = ObjTypeSchema
+
+    def __init__(self, timeseries=None, filename=None, coord_sys='uv',
+                 extrapolation_is_allowed=False):
         """
         Initializes a timeseries object from either a timeseries or datafile
         containing the timeseries. If both timeseries and file are given,
@@ -100,6 +104,8 @@ class Timeseries(GnomeId):
             self.ossm = CyTimeseries(filename=self._filename,
                                      file_format=ts_format)
 
+        self.extrapolation_is_allowed = extrapolation_is_allowed
+
     def _check_timeseries(self, timeseries):
         """
         Run some checks to make sure timeseries is valid.
@@ -133,6 +139,10 @@ class Timeseries(GnomeId):
         length is the number of data points in the timeseries
         """
         return self.ossm.get_num_values()
+
+    def __eq__(self, o):
+        t1 = super(Timeseries, self).__eq__(o)
+        return t1 and hasattr(self, 'ossm') and np.all(self.ossm.timeseries == o.ossm.timeseries)
 
     def get_start_time(self):
         """
@@ -203,6 +213,14 @@ class Timeseries(GnomeId):
     def filename(self):
         return self._filename
 
+    @property
+    def extrapolation_is_allowed(self):
+        return self.ossm.extrapolation_is_allowed
+
+    @extrapolation_is_allowed.setter
+    def extrapolation_is_allowed(self, value):
+        self.ossm.extrapolation_is_allowed = value
+
     def get_timeseries(self, datetime=None, coord_sys='uv'):
         """
         Returns the timeseries in requested coordinate system.
@@ -248,7 +266,7 @@ class Timeseries(GnomeId):
 
             datetimeval = to_datetime_value_2d(timeval, coord_sys)
 
-        return datetimeval
+        return np.copy(datetimeval)
 
     def set_timeseries(self, datetime_value_2d, coord_sys='uv'):
         """
@@ -275,26 +293,3 @@ class Timeseries(GnomeId):
         timeval = to_time_value_pair(datetime_value_2d, coord_sys)
 
         self.ossm.timeseries = timeval
-
-    def __eq__(self, other):
-        '''
-        only checks the timeseries data is equal in (m/s), in 'uv' format
-        filename is irrelevant after data is loaded
-        checks self.get_timeseries() == other.get_timeseries()
-
-        Duck typing check - it does not expect type(self) == type(other)
-        '''
-        self_ts = self.get_timeseries()
-        other_ts = other.get_timeseries()
-
-        if not np.all(self_ts['time'] == other_ts['time']):
-            return False
-
-        if not np.allclose(self_ts['value'], other_ts['value'],
-                           atol=1e-10, rtol=1e-10):
-            return False
-
-        return True
-
-    def __ne__(self, other):
-        return not self == other

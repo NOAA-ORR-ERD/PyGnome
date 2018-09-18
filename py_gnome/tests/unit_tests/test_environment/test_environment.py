@@ -2,8 +2,36 @@
 test object in environment module
 '''
 import pytest
+from pytest import raises
+
 from unit_conversion import InvalidUnitError
-from gnome.environment import Water
+
+from gnome.utilities.inf_datetime import InfDateTime
+from gnome.environment import Environment, Water
+
+
+def test_environment_init():
+    env = Environment()
+    sample_time = 60 * 60 * 24 * 365 * 30  # seconds
+
+    assert env._ref_as == 'environment'
+
+    with raises(NotImplementedError):
+        _dstart = env.data_start
+
+    with raises(NotImplementedError):
+        env.data_start = sample_time
+
+    with raises(NotImplementedError):
+        _dstop = env.data_stop
+
+    with raises(NotImplementedError):
+        env.data_stop = sample_time
+
+    # We want these base class methods available for use, so no implementation
+    # exceptions.  But they don't actually do anything.
+    assert env.prepare_for_model_run(sample_time) is None
+    assert env.prepare_for_model_step(sample_time) is None
 
 
 # pytest.mark.parametrize() is really finicky about what you can use as a
@@ -52,6 +80,10 @@ def test_Water_init(attr, sub_attr, value):
 
 def check_water_defaults(water_obj):
     assert water_obj.name == 'Water'
+
+    assert water_obj.data_start == InfDateTime("-inf")
+    assert water_obj.data_stop == InfDateTime("inf")
+
     assert water_obj.temperature == 300.0
     assert water_obj.salinity == 35.0
     assert water_obj.sediment == .005
@@ -67,16 +99,30 @@ def check_water_defaults(water_obj):
     assert water_obj.units['kinematic_viscosity'] == 'm^2/s'
 
 
-# currently salinity only have psu in there since there is no conversion from
-# psu to ppt, though ppt is a valid unit - needs to be fixed
-# similarly, sediment only has mg/l as units - decide if we want more units
-# here
+def test_not_implemented_in_water():
+    sample_time = 60 * 60 * 24 * 365 * 30  # seconds
+    w = Water()
+
+    with raises(AttributeError):
+        w.data_start = sample_time
+
+    with raises(AttributeError):
+        w.data_stop = sample_time
+
+
 @pytest.mark.parametrize(("attr", "unit"), [('temperature', 'kg'),
                                             ('sediment', 'kg'),
                                             ('salinity', 'ppt'),
                                             ('wave_height', 'l'),
                                             ('fetch', 'ppt')])
-def test_exceptions(attr, unit):
+def test_unit_errors(attr, unit):
+    '''
+        - currently salinity only has psu in there since there is
+          no conversion from psu to ppt, though ppt is a valid unit.
+          This needs to be fixed
+        - similarly, sediment only has mg/l as units.  We need to decide
+          if we want more units here
+    '''
     w = Water()
 
     with pytest.raises(InvalidUnitError):
@@ -132,11 +178,11 @@ def test_Water_update_from_dict():
     w.wave_height = 1.0
     json_with_values = w.serialize()
 
-    w.update_from_dict(Water.deserialize(json_))
+    w.update_from_dict(json_)
     assert w.fetch is None
     assert w.wave_height is None
 
-    w.update_from_dict(Water.deserialize(json_with_values))
+    w.update_from_dict(json_with_values)
     assert w.fetch == 0.0
     assert w.wave_height == 1.0
 

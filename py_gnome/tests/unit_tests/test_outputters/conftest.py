@@ -18,6 +18,7 @@ def tmp_output_dir(tmpdir, request):
 
     return name
 
+
 @pytest.fixture(scope='module')
 def output_dir(request):
     '''
@@ -40,3 +41,21 @@ def output_dir(request):
         pass # already there
 
     return name
+
+@pytest.fixture(scope='function')
+def output_filename(output_dir, request):
+    '''
+    trying to create a unique file for tests so pytest_xdist doesn't have
+    issues.
+    '''
+    dirname = output_dir
+    if not os.path.exists(dirname):
+        os.mkdir(dirname)
+
+    file_name = request.function.func_name
+    if request._pyfuncitem._genid is None:
+        file_name += '_sample.nc'
+    else:
+        file_name += '_' + request._pyfuncitem._genid + '_sample.nc'
+
+    return os.path.join(dirname, file_name)

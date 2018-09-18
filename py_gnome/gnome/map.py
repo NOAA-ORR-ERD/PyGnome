@@ -1,6 +1,9 @@
 # NOTES:
 #  - Should we just use non-projected coordinates for the raster map?
 #    It makes for a little less computation at every step.
+from gnome.gnomeobject import GnomeId
+from gnome.environment.gridded_objects_base import PyGrid
+from __builtin__ import property
 
 """
 An implementation of the GNOME land-water map.
@@ -18,7 +21,7 @@ Features:
 import copy
 import os
 import math
-from osgeo import ogr
+# from osgeo import ogr
 
 import py_gd
 # import pyugrid
@@ -38,26 +41,23 @@ from gnome.utilities.projections import (FlatEarthProjection,
                                          RectangularGridProjection,
                                          RegularGridProjection)
 from gnome.utilities.map_canvas import MapCanvas
-from gnome.utilities.serializable import Serializable, Field
 from gnome.utilities.file_tools import haz_files
-from gnome.utilities.file_tools.osgeo_helpers import (ogr_layers)
-from gnome.utilities.file_tools.osgeo_helpers import (ogr_features)
-from gnome.utilities.file_tools.osgeo_helpers import (ogr_open_file)
+# from gnome.utilities.file_tools.osgeo_helpers import (ogr_layers)
+# from gnome.utilities.file_tools.osgeo_helpers import (ogr_features)
+# from gnome.utilities.file_tools.osgeo_helpers import (ogr_open_file)
 
 from gnome.utilities.geometry.polygons import PolygonSet
-from gnome.utilities.geometry.cy_point_in_polygon import (points_in_poly,
-                                                          point_in_poly)
+from gnome.utilities.geometry import points_in_poly, point_in_poly, is_clockwise
 
 from gnome.cy_gnome.cy_land_check import check_land_layers, move_particles
 
 
-import gnome.map
 from gnome.persist import base_schema
 
 
-class GnomeMapSchema(base_schema.ObjType):
-    map_bounds = base_schema.LongLatBounds(missing=drop)
-    spillable_area = base_schema.PolygonSet(missing=drop)
+class GnomeMapSchema(base_schema.ObjTypeSchema):
+    map_bounds = base_schema.LongLatBounds(save_reference=False)
+    spillable_area = base_schema.PolygonSetSchema(save_reference=False, test_equal=False) #.MetaDataList is not serialized at all
     # land_polys = base_schema.PolygonSet(missing=drop)
 
 
@@ -69,16 +69,19 @@ class ParamMapSchema(GnomeMapSchema):
 
 
 class MapFromBNASchema(GnomeMapSchema):
-    filename = SchemaNode(String())
-    refloat_halflife = SchemaNode(Float(), missing=drop)
+    filename = SchemaNode(
+        String(), isdatafile=True, test_equal=False)
+    refloat_halflife = SchemaNode(Float())
 
 
 class MapFromUGridSchema(GnomeMapSchema):
-    filename = SchemaNode(String())
-    refloat_halflife = SchemaNode(Float(), missing=drop)
+    filename = SchemaNode(
+        String(), read_only=True, isdatafile=True, test_equal=False
+    )
+    refloat_halflife = SchemaNode(Float())
 
 
-class GnomeMap(Serializable):
+class GnomeMap(GnomeId):
     """
     The very simplest map for GNOME -- all water
     with only a bounding box for the map bounds.
@@ -86,11 +89,6 @@ class GnomeMap(Serializable):
     This also serves as a description of the interface and
     base class for more complex maps
     """
-    _update = ['map_bounds', 'spillable_area']
-    _create = []
-    _create.extend(_update)
-    _state = copy.deepcopy(Serializable._state)
-    _state.add(save=_create, update=_update)
     _schema = GnomeMapSchema
 
     refloat_halflife = None  # note -- no land, so never used
@@ -130,14 +128,7 @@ class GnomeMap(Serializable):
                                         (360, 90), (360, -90)),
                                        dtype=np.float64)
 
-        if spillable_area is None or len(spillable_area) == 0:
-            self.spillable_area = PolygonSet()
-            self.spillable_area.append(self.map_bounds)
-        else:
-            if not isinstance(spillable_area, PolygonSet):
-                spillable_area = self._polygon_set_from_points(spillable_area)
-
-            self.spillable_area = spillable_area
+        self.spillable_area = spillable_area
 
         if land_polys is None:
             # empty set, no land
@@ -151,6 +142,11 @@ class GnomeMap(Serializable):
         polys['map_bounds'] = self.map_bounds
         polys['land_polys'] = self.land_polys
         return polys
+
+#     def to_dict(self, json_=None):
+#         dict_ = super(GnomeMap, self).to_dict(json_=json_)
+#         dict_['spillable_area'] = [poly.points.tolist() for poly in self.spillable_area]
+#         return dict_
 
     def _polygon_set_from_points(self, poly):
         '''
@@ -175,38 +171,35 @@ class GnomeMap(Serializable):
         '''
         return np.asarray(l_, dtype=np.float64).reshape(-1, 2)
 
-    def map_bounds_to_dict(self):
-        'convert numpy array to a list for serializing'
-        return self._attr_array_to_dict(self.map_bounds)
+    @property
+    def map_bounds(self):
+        return self._map_bounds
 
-    def map_bounds_update_from_dict(self, val):
-        'convert list of tuples back to numpy array'
-        new_arr = self._attr_from_list_to_array(val)
+    @map_bounds.setter
+    def map_bounds(self, mb):
+        if mb is None:
+            mb = np.array(((-360, -90), (-360, 90),
+                           (360, 90), (360, -90)),
+                           dtype=np.float64)
+        self._map_bounds = np.array(mb)
 
-        if np.any(self.map_bounds != new_arr):
-            self.map_bounds = new_arr
-            return True
+    @property
+    def spillable_area(self):
+        return self._spillable_area
 
-        return False
-
-    def spillable_area_to_dict(self):
-        'convert numpy array to a list for serializing'
-        return [poly.points.tolist() for poly in self.spillable_area]
-
-    def spillable_area_update_from_dict(self, poly_set):
-        'convert list of tuples back to numpy array'
-        # since metadata will not match, let's create a new PolygonSet,
-        # check equality on _PointsArray and update if not equal
+    @spillable_area.setter
+    def spillable_area(self, sa):
+        if sa is None or (isinstance(sa, list) and len(sa) == 0):
+            sa = np.array([[(-360, -90), (-360, 90),
+                           (360, 90), (360, -90)]],
+                           dtype=np.float64)
+        if isinstance(sa, PolygonSet):
+            self._spillable_area = sa
+            return
         ps = PolygonSet()
-        for poly in poly_set:
+        for poly in sa:
             ps.append(poly)
-
-        if not np.array_equal(self.spillable_area._PointsArray,
-                              ps._PointsArray):
-            self.spillable_area = ps
-            return True
-
-        return False
+        self._spillable_area = ps
 
     def on_map(self, coords):
         """
@@ -344,31 +337,8 @@ class GnomeMap(Serializable):
         return FeatureCollection([])
 
 
+
 class ParamMap(GnomeMap):
-    _state = copy.deepcopy(GnomeMap._state)
-    _state.update(['map_bounds', 'spillable_area'], save=False)
-#     _state.add(save=['center', 'distance', 'bearing', 'units'],
-#                update=['center', 'distance', 'bearing', 'units'])
-    _state.add_field([Field('center',
-                            isdatafile=True,
-                            save=True,
-                            update=True,
-                            test_for_eq=False)])
-    _state.add_field([Field('distance',
-                            isdatafile=True,
-                            save=True,
-                            update=True,
-                            test_for_eq=False)])
-    _state.add_field([Field('bearing',
-                            isdatafile=True,
-                            save=True,
-                            update=True,
-                            test_for_eq=False)])
-    _state.add_field([Field('units',
-                            isdatafile=True,
-                            save=True,
-                            update=True,
-                            test_for_eq=False)])
 
     _schema = ParamMapSchema
 
@@ -619,11 +589,11 @@ class ParamMap(GnomeMap):
                 'bearing' in data.keys() or
                 'units' in data.keys()):
             self.build(
-                data['center'] if 'center' in data.keys() else self.center,
-                data[
-                    'distance'] if 'distance' in data.keys() else self.distance,
-                data['bearing'] if 'bearing' in data.keys() else self.bearing,
-                data['units'] if 'units' in data.keys() else self.units)
+                data.pop('center', self.center),
+                data.pop('distance', self.distance),
+                data.pop('bearing', self.bearing),
+                data.pop('units', self.units)
+            )
         else:
             # for the case when instantiating a param map using new_from_dict,
             # since new_from_dict will call update_from_dict
@@ -1022,14 +992,9 @@ class MapFromBNA(RasterMap):
 
     Currently only support BNA, but could be shapefile, or ???
     """
-    _state = copy.deepcopy(RasterMap._state)
-    _state.update(['map_bounds', 'spillable_area'], save=False)
-    _state.add(save=['refloat_halflife'], update=['refloat_halflife'])
-    _state.add_field(Field('filename', isdatafile=True, save=True, read=True,
-                           test_for_eq=False))
     _schema = MapFromBNASchema
 
-    def __init__(self, filename, raster_size=4096 * 4096, **kwargs):
+    def __init__(self, filename=None, raster_size=4096 * 4096, **kwargs):
         """
         Creates a GnomeMap (specifically a RasterMap) from a data file.
         It is expected that you will get the spillable area and map bounds
@@ -1100,8 +1065,7 @@ class MapFromBNA(RasterMap):
             else:
                 map_bounds = BB.AsPoly()
 
-        if spillable_area is None:
-            spillable_area = PolygonSet()
+        if len(spillable_area) == 0:
             spillable_area.append(map_bounds)
 
 
@@ -1154,51 +1118,104 @@ class MapFromBNA(RasterMap):
         # get the basebitmap as a numpy array:
         bitmap_array = canvas.back_asarray()
 
-        RasterMap.__init__(self, bitmap_array, canvas.projection,
+        RasterMap.__init__(self,
+                           bitmap_array,
+                           canvas.projection,
                            map_bounds=map_bounds,
                            spillable_area=spillable_area,
                            land_polys=land_polys,
                            **kwargs)
         return None
 
+    # # keeping this around just in case, but this method is deprecated
+    # # writing the geojson directly from polygons is faster and less
+    # # requiremetns on a complex dependency.
+    # def to_geojson(self):
+    #     """
+    #     Output the vector version of the map
+
+    #     This is what gets drawn in the WebGNOME client, for example
+    #     """
+    #     map_file = ogr_open_file('BNA:' + self.filename)
+    #     polys = []
+
+    #     line_strings = []
+
+    #     for layer in ogr_layers(map_file):
+    #         for f in ogr_features(layer):
+    #             primary_id = f.GetFieldAsString('Primary ID')
+
+    #             # robust but slow solution ~ 1 second processing time
+    #             # if primary_id == 'SpillableArea':
+    #             #     spillarea_features.append(json.loads(f.ExportToJson()))
+    #             # elif primary_id == 'Map Bounds':
+    #             #     bounds_features.append(json.loads(f.ExportToJson()))
+    #             # else:
+    #             #     shoreline_features.append(json.loads(f.ExportToJson()))
+    #             #     shoreline_geo.append(json.loads(f.GetGeometryRef().ExportToJson())['coordinates'][0])
+
+    #             # only doing what we need at the moment
+    #             # in the future we might need the other layers
+    #             if primary_id not in ('SpillableArea', 'Map Bounds'):
+    #                 # apparently this is how you get to the actual
+    #                 # map coordinates using OGR.  It seems a bit brittle.
+    #                 # But this is much more efficient than exporting
+    #                 # to json.
+    #                 geom = f.GetGeometryRef()
+    #                 geo_type = geom.GetGeometryName()
+
+    #                 if geo_type == 'MULTIPOLYGON':
+    #                     poly = geom.GetGeometryRef(0)
+    #                     ring = poly.GetGeometryRef(0)
+
+    #                     polys.append([ring.GetPoints()])
+    #                 elif geo_type == 'LINESTRING':
+    #                     line_strings.append(geom.GetPoints())
+    #                 else:
+    #                     print 'unknown type: ', geo_type
+
+    #     features = []
+
+    #     if polys:
+    #         f = Feature(id="1",
+    #                     properties={'name': 'Shoreline Polys'},
+    #                     geometry=MultiPolygon(coordinates=polys))
+    #         features.append(f)
+    #     if line_strings:
+    #         f = Feature(id="2",
+    #                     properties={'name': 'Shoreline Lines'},
+    #                     geometry=MultiLineString(coordinates=line_strings))
+    #         features.append(f)
+
+    #     return FeatureCollection(features)
+
     def to_geojson(self):
+        """
+        Output the vector version of the shoreline polygons.
 
-        map_file = ogr_open_file('BNA:' + self.filename)
+        This is what gets drawn in the WebGNOME client, for example
+
+        This version directly writes the polygons already stored in the map
+        object -- keeping the door open to that data coming from something
+        other than a bna file.
+
+        FIXME: Technically, geojson recommends ccw polygons -- but putting that
+               check in was pretty slow, so it's commented out.
+
+        FIXME: This really should export the map_bounds and spillable_area
+        as well.
+        """
         polys = []
-        line_strings = []
 
-        for layer in ogr_layers(map_file):
-            for f in ogr_features(layer):
-                primary_id = f.GetFieldAsString('Primary ID')
-
-                # robust but slow solution ~ 1 second processing time
-                # if primary_id == 'SpillableArea':
-                #     spillarea_features.append(json.loads(f.ExportToJson()))
-                # elif primary_id == 'Map Bounds':
-                #     bounds_features.append(json.loads(f.ExportToJson()))
-                # else:
-                #     shoreline_features.append(json.loads(f.ExportToJson()))
-                #     shoreline_geo.append(json.loads(f.GetGeometryRef().ExportToJson())['coordinates'][0])
-
-                # only doing what we need at the moment
-                # in the future we might need the other layers
-                if primary_id not in ('SpillableArea', 'Map Bounds'):
-                    # apparently this is how you get to the actual
-                    # map coordinates using OGR.  It seems a bit brittle.
-                    # But this is much more efficient than exporting
-                    # to json.
-                    geom = f.GetGeometryRef()
-                    geo_type = geom.GetGeometryName()
-
-                    if geo_type == 'MULTIPOLYGON':
-                        poly = geom.GetGeometryRef(0)
-                        ring = poly.GetGeometryRef(0)
-
-                        polys.append([ring.GetPoints()])
-                    elif geo_type == 'LINESTRING':
-                        line_strings.append(geom.GetPoints())
-                    else:
-                        print 'unknown type: ', geo_type
+        for poly in self.land_polys:
+            p = poly.tolist()
+            p.append(p[0])  # first and last points must match in geojson
+            # FIXME: this is a good idea, but really slow...
+            # the is_clockwise() code could be cythonized, maybe that would help?
+            # # geojson polygons should be counter-clockwise
+            # if is_clockwise(poly):
+            #     p.reverse()
+            polys.append([p])
 
         features = []
         if polys:
@@ -1206,12 +1223,6 @@ class MapFromBNA(RasterMap):
                         properties={'name': 'Shoreline Polys'},
                         geometry=MultiPolygon(coordinates=polys))
             features.append(f)
-        if line_strings:
-            f = Feature(id="2",
-                        properties={'name': 'Shoreline Lines'},
-                        geometry=MultiLineString(coordinates=line_strings))
-            features.append(f)
-
         return FeatureCollection(features)
 
 
@@ -1219,19 +1230,14 @@ class MapFromUGrid(RasterMap):
     """
     A raster land-water map, created from netcdf File of a UGrid
     """
-    _state = copy.deepcopy(RasterMap._state)
-    _state.update(['map_bounds', 'spillable_area'], save=False)
-    _state.add(save=['refloat_halflife'], update=['refloat_halflife'])
-    _state.add_field(Field('filename', isdatafile=True, save=True, read=True,
-                           test_for_eq=False))
     _schema = MapFromUGridSchema
 
     def __init__(self, filename, raster_size=1024 * 1024, **kwargs):
         """
         Creates a GnomeMap (specifically a RasterMap) from a netcdf
-        data file with a traingular mesh grid in it.
+        data file with a triangular mesh grid in it.
         The spillable area and map bounds need to be supplied -- there is
-        currenty no way to exprtes that in a netcdf file.
+        currently no way to express that in a netcdf file.
 
         Required arguments:
 
@@ -1257,7 +1263,7 @@ class MapFromUGrid(RasterMap):
         """
         self.filename = filename
 
-        grid = pyugrid.UGrid.from_ncfile(filename)
+        grid = PyGrid.from_netCDF(filename)
 
         polygons = haz_files.ReadBNA(filename, 'PolygonSet')
         map_bounds = None
@@ -1388,7 +1394,7 @@ def map_from_rectangular_grid(mask, lon, lat, refine=1, **kwargs):
     # generating projection for raster map
     proj = RectangularGridProjection(lon, lat)
 
-    return gnome.map.RasterMap(grid, proj,
+    return RasterMap(grid, proj,
                                map_bounds=map_bounds,
                                **kwargs)
 
@@ -1505,5 +1511,5 @@ def map_from_regular_grid(grid_mask, lon, lat, refine=4, refloat_halflife=1,
     proj = RegularGridProjection(bounding_box,
                                  image_size=bitmap_array.shape)
 
-    return gnome.map.RasterMap(bitmap_array, proj,
+    return RasterMap(bitmap_array, proj,
                                refloat_halflife=refloat_halflife)

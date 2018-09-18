@@ -24,23 +24,23 @@ from gnome.model import Model
 from ..conftest import test_oil
 
 
-@pytest.fixture(scope='function')
-def output_filename(output_dir, request):
-    '''
-    trying to create a unique file for tests so pytest_xdist doesn't have
-    issues.
-    '''
-    dirname = output_dir
-    if not os.path.exists(dirname):
-        os.mkdir(dirname)
+# @pytest.fixture(scope='function')
+# def output_filename(output_dir, request):
+#     '''
+#     trying to create a unique file for tests so pytest_xdist doesn't have
+#     issues.
+#     '''
+#     dirname = output_dir
+#     if not os.path.exists(dirname):
+#         os.mkdir(dirname)
 
-    file_name = request.function.func_name
-    if request._pyfuncitem._genid is None:
-        file_name += '_sample.nc'
-    else:
-        file_name += '_' + request._pyfuncitem._genid + '_sample.nc'
+#     file_name = request.function.func_name
+#     if request._pyfuncitem._genid is None:
+#         file_name += '_sample.nc'
+#     else:
+#         file_name += '_' + request._pyfuncitem._genid + '_sample.nc'
 
-    return os.path.join(dirname, file_name)
+#     return os.path.join(dirname, file_name)
 
 
 @pytest.fixture(scope='function')
@@ -64,7 +64,7 @@ def model(sample_model_fcn, output_filename):
     water = Water()
     model.movers += RandomMover(diffusion_coef=100000)
     model.movers += constant_wind_mover(1.0, 0.0)
-    model.weatherers += Evaporation(water, model.movers[-1].wind)
+    model.weatherers += Evaporation(water=water, wind=model.movers[-1].wind)
 
     model.outputters += NetCDFOutput(output_filename)
 
@@ -310,7 +310,8 @@ def test_write_output_all_data(model):
                     else:
                         nc_var = data.variables[var_name]
                         sc_arr = scp.LE(var_name, uncertain)
-
+                    if var_name == "surface_concentration":
+                        continue
                     if len(sc_arr.shape) == 1:
                         assert np.all(nc_var[idx[step]:idx[step + 1]] ==
                                       sc_arr)
@@ -483,10 +484,9 @@ def test_read_all_arrays(model):
                     elif key == 'mass_balance':
                         assert scp.LE(key, uncertain) == mb
                     else:
-                        # if key not in ['last_water_positions',
-                        #                'next_positions']:
-                        assert np.all(scp.LE(key, uncertain)[:] ==
-                                      nc_data[key])
+                        if key not in ['surface_concentration']:  # not always there
+                            assert np.all(scp.LE(key, uncertain)[:] ==
+                                          nc_data[key])
 
         if _found_a_matching_time:
             print ('\ndata in model matches for output in \n{0}'.format(file_))
@@ -587,8 +587,7 @@ def test_write_output_post_run(model, output_ts_factor):
     model.outputters += o_put
 
 
-@pytest.mark.parametrize(("json_"), ['save', 'webapi'])
-def test_serialize_deserialize(json_, output_filename):
+def test_serialize_deserialize(output_filename):
     '''
     todo: this behaves in unexpected ways when using the 'model' testfixture.
     For now, define a model in here for the testing - not sure where the
@@ -616,15 +615,11 @@ def test_serialize_deserialize(json_, output_filename):
         model.step()
         print "step: {0}, _start_idx: {1}".format(ix, o_put._start_idx)
 
-    dict_ = o_put.deserialize(o_put.serialize(json_))
-    o_put2 = NetCDFOutput.new_from_dict(dict_)
-    if json_ == 'save':
-        assert o_put == o_put2
-    else:
-        # _start_idx and _middle_of_run should not match
-        assert o_put._start_idx != o_put2._start_idx
-        assert o_put._middle_of_run != o_put2._middle_of_run
-        assert o_put != o_put2
+    o_put2 = NetCDFOutput.deserialize(o_put.serialize())
+    assert o_put == o_put2
+#     assert o_put._start_idx != o_put2._start_idx
+#     assert o_put._middle_of_run != o_put2._middle_of_run
+#     assert o_put != o_put2
 
     if os.path.exists(o_put.netcdf_filename):
         print '\n{0} exists'.format(o_put.netcdf_filename)
@@ -682,6 +677,31 @@ def test_var_attr_spill_num(output_filename):
                         data.variables['spill_num'].spills_map)
 
             _del_nc_file(nc_name[ix])
+
+def test_surface_concentration_output(model):
+    """
+    make sure the surface concentration is being computed and output
+
+    Rewind model defined by model fixture.
+
+    invoke model.step() till model runs all 5 steps
+
+    For each step, make sure the surface_concentration data is there.
+    """
+    model.rewind()
+    o_put = model.outputters[0]
+
+    # FIXME:
+    # o_put.surface_conc = "kde" # it's now default -- that should change!
+    _run_model(model)
+
+    file_ = o_put.netcdf_filename
+    with nc.Dataset(file_) as data:
+        dv = data.variables
+        for step in range(model.num_time_steps):
+            surface_conc = dv['surface_concentration']
+            # FIXME -- maybe should test something more robust...
+            assert not np.all(surface_conc[:] == 0.0)
 
 
 def _run_model(model):

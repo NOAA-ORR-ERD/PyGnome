@@ -192,13 +192,6 @@ def test_serialize_deserialize(tide):
     """
 
     c_cycle = CurrentCycleMover(curr_file, topology_file, tide=tide)
-    toserial = c_cycle.serialize('webapi')
-    dict_ = c_cycle.deserialize(toserial)
-    if tide:
-        #assert toserial['tide'] == td.serialize(json_)
-        assert 'tide' in toserial
-        dict_['tide'] = tide  # no longer updating properties of nested objects
-        c_cycle.update_from_dict(dict_)
-        assert c_cycle.tide is tide
-    else:
-        c_cycle.update_from_dict(dict_)
+    toserial = c_cycle.serialize()
+    c_cycle2 = c_cycle.deserialize(toserial)
+    assert c_cycle == c_cycle2

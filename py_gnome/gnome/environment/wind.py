@@ -12,7 +12,7 @@ import gridded
 import numpy as np
 
 from colander import (SchemaNode, drop, OneOf,
-                      Float, String, Range)
+                      Float, String, Range, Boolean)
 
 import unit_conversion as uc
 
@@ -22,7 +22,6 @@ from gnome.basic_types import wind_datasources
 
 from gnome.cy_gnome.cy_ossm_time import ossm_wind_units
 
-from gnome.utilities import serializable
 from gnome.utilities.time_utils import sec_to_datetime
 from gnome.utilities.timeseries import Timeseries
 from gnome.utilities.inf_datetime import InfDateTime
@@ -30,7 +29,9 @@ from gnome.utilities.distributions import RayleighDistribution as rayleigh
 
 from gnome.persist.extend_colander import (DefaultTupleSchema,
                                            LocalDateTime,
-                                           DatetimeValue2dArraySchema)
+                                           DatetimeValue2dArraySchema,
+                                           FilenameSchema)
+from gnome.persist.validators import convertible_to_seconds
 from gnome.persist import validators, base_schema
 
 from .environment import Environment
@@ -81,29 +82,34 @@ class WindTimeSeriesSchema(DatetimeValue2dArraySchema):
         validators.ascending_datetime(node, cstruct)
 
 
-class WindSchema(base_schema.ObjType):
+class WindSchema(base_schema.ObjTypeSchema):
     '''
     validate data after deserialize, before it is given back to pyGnome's
     from_dict to set _state of object
     '''
-    description = SchemaNode(String(), missing=drop)
-    filename = SchemaNode(String(), missing=drop)
-    updated_at = SchemaNode(LocalDateTime(), missing=drop)
-
-    latitude = SchemaNode(Float(), missing=drop)
-    longitude = SchemaNode(Float(), missing=drop)
-    source_id = SchemaNode(String(), missing=drop)
-    source_type = SchemaNode(String(),
-                             validator=OneOf(wind_datasources._attr),
-                             default='undefined', missing='undefined')
+    name = SchemaNode(String(), test_equal=False)
+    description = SchemaNode(String())
+    filename = FilenameSchema(isdatafile=True, update=False, test_equal=False)#Thanks to CyTimeseries
+    updated_at = SchemaNode(LocalDateTime())
+    latitude = SchemaNode(Float())
+    longitude = SchemaNode(Float())
+    source_id = SchemaNode(String())
+    source_type = SchemaNode(
+        String(),
+        validator=OneOf(wind_datasources._attr),
+        default='undefined', missing='undefined'
+    )
     units = SchemaNode(String(), default='m/s')
-    speed_uncertainty_scale = SchemaNode(Float(), missing=drop)
+    speed_uncertainty_scale = SchemaNode(Float())
+    timeseries = WindTimeSeriesSchema(test_equal=False) #Because comparing datetimevalue2d arrays does not play nice
+    extrapolation_is_allowed = SchemaNode(Boolean())
+    data_start = SchemaNode(LocalDateTime(), read_only=True,
+                            validator=convertible_to_seconds)
+    data_stop = SchemaNode(LocalDateTime(), read_only=True,
+                           validator=convertible_to_seconds)
 
-    timeseries = WindTimeSeriesSchema(missing=drop)
-    name = 'wind'
 
-
-class Wind(serializable.Serializable, Timeseries, Environment):
+class Wind(Timeseries, Environment):
     '''
     Defines the Wind conditions for a single point
     '''
@@ -111,33 +117,7 @@ class Wind(serializable.Serializable, Timeseries, Environment):
     _ref_as = 'wind'
 
     # default units for input/output data
-    _update = ['description',
-               'latitude',
-               'longitude',
-               'source_type',
-               'source_id',  # what is source ID? Buoy ID?
-               'updated_at',
-               'speed_uncertainty_scale']
-
-    # used to create new obj or as readonly parameter
-    _create = []
-    _create.extend(_update)
-
-    _state = copy.deepcopy(Environment._state)
-    _state.add(save=_create, update=_update)
     _schema = WindSchema
-
-    # add 'filename' as a Field object
-    _state.add_field([serializable.Field('filename', isdatafile=True,
-                                         save=True, read=True,
-                                         test_for_eq=False),
-                      serializable.Field('timeseries', save=False,
-                                         update=True),
-                      # test for equality of units a little differently
-                      serializable.Field('units', save=True,
-                                         update=True, test_for_eq=False),
-                      ])
-    _state['name'].test_for_eq = False
 
     # list of valid velocity units for timeseries
     valid_vel_units = _valid_units('Velocity')
@@ -150,6 +130,7 @@ class Wind(serializable.Serializable, Timeseries, Environment):
                  latitude=None,
                  longitude=None,
                  speed_uncertainty_scale=0.0,
+                 extrapolation_is_allowed=False,
                  **kwargs):
         """
         todo: update docstrings!
@@ -163,6 +144,11 @@ class Wind(serializable.Serializable, Timeseries, Environment):
         self.description = kwargs.pop('description', 'Wind Object')
         self.speed_uncertainty_scale = speed_uncertainty_scale
 
+        # TODO: the way we are doing this, super() is not being used
+        #       effectively.  We should tailor kwargs in a way that we can
+        #       just pass it into the base __init__() function.
+        #       As it is, we are losing arguments that we then need to
+        #       explicitly handle.
         if filename is not None:
             self.source_type = kwargs.pop('source_type', 'file')
 
@@ -192,7 +178,7 @@ class Wind(serializable.Serializable, Timeseries, Environment):
 
                 self.set_wind_data(timeseries, units, coord_sys)
 
-            self.name = kwargs.pop('name', self.__class__.__name__)
+        self.extrapolation_is_allowed = extrapolation_is_allowed
 
     def _check_units(self, units):
         '''
@@ -245,7 +231,8 @@ class Wind(serializable.Serializable, Timeseries, Environment):
 
     @property
     def data_stop(self):
-        """The stop time of the valid data for this wind timeseries
+        """
+        The stop time of the valid data for this wind timeseries
 
         If there is one data point -- it's a constant wind
         so data_start is -InfDateTime
@@ -298,23 +285,25 @@ class Wind(serializable.Serializable, Timeseries, Environment):
 
         return data
 
-    def save(self, saveloc, references=None, name=None):
-        '''
-        Write Wind timeseries to file or to zip,
-        then call save method using super
-        '''
-        name = (name, 'Wind.json')[name is None]
-        ts_name = os.path.splitext(name)[0] + '_data.WND'
+#     def save(self, saveloc, references=None, filename=None, overwrite=True):
+#         '''
+#         Write Wind timeseries to file or to zip,
+#         then call save method using super
+#         '''
+#         json_, zipfile_, refs = super(Wind, self).save(saveloc, references, overwrite=overwrite)
+#         import pdb
+#         pdb.set_trace()
+#         filename = (filename, self.name + '.json')[filename is None]
+#         ts_name = os.path.splitext(filename)[0] + '_data.WND'
+#
+#         if zipfile.is_zipfile(saveloc):
+#             self._write_timeseries_to_zip(saveloc, ts_name)
+#             self._filename = ts_name
+#         else:
+#             datafile = os.path.join(saveloc, ts_name)
+#             self._write_timeseries_to_file(datafile)
+#             self._filename = datafile
 
-        if zipfile.is_zipfile(saveloc):
-            self._write_timeseries_to_zip(saveloc, ts_name)
-            self._filename = ts_name
-        else:
-            datafile = os.path.join(saveloc, ts_name)
-            self._write_timeseries_to_file(datafile)
-            self._filename = datafile
-
-        return super(Wind, self).save(saveloc, references, name)
 
     def _write_timeseries_to_zip(self, saveloc, ts_name):
         '''
@@ -363,19 +352,6 @@ class Wind(serializable.Serializable, Timeseries, Environment):
                      .format(idt,
                              round(val[i, 0], 4),
                              round(val[i, 1], 4)))
-
-    def update_from_dict(self, data):
-        '''
-        update attributes from dict - override base class because we want to
-        set the units before updating the data so conversion is done correctly.
-        Internally all data is stored in SI units.
-        '''
-        updated = self.update_attr('units', data.pop('units', self.units))
-
-        if super(Wind, self).update_from_dict(data):
-            return True
-        else:
-            return updated
 
     def get_wind_data(self, datetime=None, units=None, coord_sys='r-theta'):
         """
@@ -472,7 +448,7 @@ class Wind(serializable.Serializable, Timeseries, Environment):
         return tuple(data[0]['value'])
 
     def at(self, points, time, coord_sys='r-theta',
-           extrapolate=True, _auto_align=True):
+           _auto_align=True):
         '''
         Returns the value of the wind at the specified points at the specified
         time. Valid coordinate systems include 'r-theta', 'r', 'theta',
@@ -485,8 +461,6 @@ class Wind(serializable.Serializable, Timeseries, Environment):
         :param time: Datetime of the time to be queried
 
         :param coord_sys: String describing the coordinate system.
-
-        :param extrapolate: extrapolation on/off (ignored for now)
         '''
         if points is None:
             points = np.array((0, 0)).reshape(-1, 2)

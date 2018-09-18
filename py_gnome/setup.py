@@ -26,6 +26,8 @@ from distutils.command.clean import clean
 from distutils.extension import Extension
 from Cython.Distutils import build_ext
 
+from git import Repo
+
 import numpy as np
 
 # could run setup from anywhere
@@ -34,6 +36,15 @@ SETUP_PATH = os.path.dirname(os.path.abspath(__file__))
 # cd to SETUP_PATH, run develop or install, then cd back
 CWD = os.getcwd()
 os.chdir(SETUP_PATH)
+
+repo = Repo('../.')
+
+try:
+    branch_name = repo.active_branch.name
+except TypeError:
+    branch_name = 'no-branch'
+
+last_update = repo.iter_commits().next().committed_datetime.isoformat(),
 
 
 def target_dir(name):
@@ -112,6 +123,7 @@ class cleanall(clean):
                   .format(filepath, err))
             # raise
 
+
 # setup our environment and architecture
 # These should be properties that are used by all Extensions
 libfile = ''
@@ -165,7 +177,8 @@ def get_netcdf_libs():
         print libs
         print include_dir
     except OSError:
-        raise NotImplementedError("this setup.py needs nc-config to find netcdf libs")
+        raise NotImplementedError("this setup.py needs nc-config "
+                                  "to find netcdf libs")
 
 get_netcdf_libs()
 '''
@@ -229,8 +242,6 @@ if sys.platform is "darwin" or "win32":
 # print netcdf_libs
 # print netcdf_inc
 # print netcdf_lib_files
-
-# raise Exception("stopping here")
 
 
 # the cython extensions to build -- each should correspond to a *.pyx file
@@ -312,7 +323,11 @@ cpp_files = [os.path.join(cpp_code_dir, f) for f in cpp_files]
 macros = [('pyGNOME', 1), ]
 
 # Build the extension objects
-compile_args = []
+
+# suppressing certain warnings
+compile_args = ["-Wno-unused-function",  # unused function - cython creates a lot
+                ]
+
 extensions = []
 
 lib = []
@@ -339,9 +354,12 @@ static_lib_files = netcdf_lib_files
 #          We also don't have the static builds for these.
 #          Also, the static_lib_files only need to be linked against
 #          lib_gnome in the following Extension.
+# CHB NOTE: one of these days, we need to figure out how to build against
+#           conda netcdf...
 
 if sys.platform == "darwin":
 
+    print "using these compile arguments:", compile_args
     basic_types_ext = Extension(r'gnome.cy_gnome.cy_basic_types',
                                 ['gnome/cy_gnome/cy_basic_types.pyx'] + cpp_files,
                                 language='c++',
@@ -482,6 +500,7 @@ if sys.platform == "win32":
 extensions.append(Extension("gnome.utilities.geometry.cy_point_in_polygon",
                             sources=sources,
                             include_dirs=include_dirs,
+                            extra_compile_args=compile_args,
                             extra_link_args=link_args,
                             ))
 
@@ -490,6 +509,7 @@ extensions.append(Extension("gnome.utilities.file_tools.filescanner",
                                                   'utilities',
                                                   'file_tools',
                                                   'filescanner.pyx')],
+                            extra_compile_args=compile_args,
                             include_dirs=include_dirs,
                             language="c",
                             ))
@@ -515,7 +535,8 @@ setup(name='pyGnome',
                               'outputters/sample.b64',
                               'weatherers/platforms.json'
                               ]},
-      # you are not going to be able to "pip install" this anyway -- no need for requirements
+      # you are not going to be able to "pip install" this anyway
+      # -- no need for requirements
       requires=[],   # want other packages here?
       cmdclass={'build_ext': build_ext,
                 'cleanall': cleanall},
@@ -525,13 +546,17 @@ setup(name='pyGnome',
       # metadata for upload to PyPI
       author="Gnome team at NOAA ORR ERD",
       author_email="orr.gnome@noaa.gov",
-      description=("GNOME (General NOAA Operational Modeling Environment) is "
-                   "the modeling tool the Office of Response and "
+      description=("GNOME (General NOAA Operational Modeling Environment) "
+                   "is the modeling tool the Office of Response and "
                    "Restoration's (OR&R) Emergency Response Division uses to "
                    "predict the possible route, or trajectory, a pollutant "
                    "might follow in or on a body of water, such as in an "
-                   "oil spill.\n\n"
-                   "It can also be used as a customizable general particle tracking code"),
+                   "oil spill.  "
+                   "It can also be used as a customizable general particle "
+                   "tracking code.\n"
+                   "Branch: {}\n"
+                   "LastUpdate: {}"
+                   .format(branch_name, last_update)),
       license="Public Domain",
       keywords="oilspill modeling particle_tracking",
       url="https://github.com/NOAA-ORR-ERD/PyGnome"

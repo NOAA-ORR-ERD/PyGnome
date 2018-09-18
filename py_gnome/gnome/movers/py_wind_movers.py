@@ -1,74 +1,80 @@
 import movers
-import copy
 
 import numpy as np
 
 from colander import (SchemaNode,
-                      Bool, Float, String, Sequence, DateTime,
-                      drop)
+                      Bool, Float, String, Sequence, drop)
 
-from gnome.basic_types import (oil_status,
-                               spill_type)
+from gnome.basic_types import oil_status
 
-from gnome.utilities import serializable, rand
+from gnome.utilities import rand
 from gnome.utilities.projections import FlatEarthProjection
 
 from gnome.environment import GridWind
-from gnome.persist import base_schema
+
+from gnome.persist.base_schema import ObjTypeSchema
 from gnome.persist.validators import convertible_to_seconds
-from gnome.persist.extend_colander import LocalDateTime
+from gnome.persist.extend_colander import LocalDateTime, FilenameSchema
+from gnome.persist.base_schema import GeneralGnomeObjectSchema
+from gnome.environment.gridded_objects_base import VectorVariableSchema
 
 
-class PyWindMoverSchema(base_schema.ObjType):
-    filename = SchemaNode(typ=Sequence(accept_scalar=True),
-                          children=[SchemaNode(String())],
-                          missing=drop)
-    wind_scale = SchemaNode(Float(), missing=drop)
-    extrapolate = SchemaNode(Bool(), missing=drop)
-    time_offset = SchemaNode(Float(), missing=drop)
-    wind = GridWind._schema(missing=drop)
-    real_data_start = SchemaNode(DateTime(), missing=drop)
-    real_data_stop = SchemaNode(DateTime(), missing=drop)
-    on = SchemaNode(Bool(), missing=drop)
-    active_start = SchemaNode(LocalDateTime(), missing=drop,
-                              validator=convertible_to_seconds)
-    active_stop = SchemaNode(LocalDateTime(), missing=drop,
-                             validator=convertible_to_seconds)
-    real_data_start = SchemaNode(LocalDateTime(), missing=drop,
-                                 validator=convertible_to_seconds)
-    real_data_stop = SchemaNode(LocalDateTime(), missing=drop,
-                                validator=convertible_to_seconds)
+class PyWindMoverSchema(ObjTypeSchema):
+    wind = GeneralGnomeObjectSchema(
+        acceptable_schemas=[VectorVariableSchema, GridWind._schema],
+        save=True, update=True, save_reference=True
+    )
+    filename = FilenameSchema(
+        missing=drop, save=True, update=False, isdatafile=True
+    )
+    wind_scale = SchemaNode(
+        Float(), missing=drop, save=True, update=True
+    )
+    extrapolation_is_allowed = SchemaNode(
+        Bool(), missing=drop, save=True, update=True
+    )
+    time_offset = SchemaNode(
+        Float(), missing=drop, save=True, update=True
+    )
+    on = SchemaNode(
+        Bool(), missing=drop, save=True, update=True
+    )
+    active_start = SchemaNode(
+        LocalDateTime(), missing=drop,
+        validator=convertible_to_seconds,
+        save=True, update=True
+    )
+    active_stop = SchemaNode(
+        LocalDateTime(), missing=drop,
+        validator=convertible_to_seconds,
+        save=True, update=True
+    )
+    data_start = SchemaNode(
+        LocalDateTime(), validator=convertible_to_seconds, read_only=True
+    )
+    data_stop = SchemaNode(
+        LocalDateTime(), validator=convertible_to_seconds, read_only=True
+    )
 
 
-class PyWindMover(movers.PyMover, serializable.Serializable):
-
-    _state = copy.deepcopy(movers.PyMover._state)
-
-    _state.add_field([serializable.Field('filename',
-                                         save=True, read=True, isdatafile=True,
-                                         test_for_eq=False),
-                      serializable.Field('wind', read=True,
-                                         save_reference=True),
-                      serializable.Field('extrapolate', read=True, save=True)])
-    _state.add(update=['uncertain_duration', 'uncertain_time_delay'],
-               save=['uncertain_duration', 'uncertain_time_delay'])
+class PyWindMover(movers.PyMover):
     _schema = PyWindMoverSchema
 
     _ref_as = 'py_wind_movers'
 
     _req_refs = {'wind': GridWind}
-    _def_count = 0
 
     def __init__(self,
                  filename=None,
                  wind=None,
-                 extrapolate=False,
                  time_offset=0,
                  uncertain_duration=3,
                  uncertain_time_delay=0,
                  uncertain_speed_scale=2.,
                  uncertain_angle_scale=0.4,
+                 wind_scale=1,
                  default_num_method='RK2',
+                 extrapolation_is_allowed=False,
                  **kwargs):
         """
         Initialize a PyWindMover
@@ -87,8 +93,6 @@ class PyWindMover(movers.PyMover, serializable.Serializable):
         :param uncertain_time_delay: when does the uncertainly kick in.
         :param uncertain_cross: Scale for uncertainty perpendicular to the flow
         :param uncertain_along: Scale for uncertainty parallel to the flow
-        :param extrapolate: Allow wind data to be extrapolated
-                            before and after file data
         :param time_offset: Time zone shift if data is in GMT
         :param num_method: Numerical method for calculating movement delta.
                            Choices:('Euler', 'RK2', 'RK4')
@@ -107,14 +111,12 @@ class PyWindMover(movers.PyMover, serializable.Serializable):
                 self.wind = GridWind.from_netCDF(filename=self.filename,
                                                  **kwargs)
 
-        if 'name' not in kwargs:
-            kwargs['name'] = self.__class__.__name__ + str(self.__class__._def_count)
-            self.__class__._def_count += 1
-
-        self.extrapolate = extrapolate
+        self.extrapolation_is_allowed = extrapolation_is_allowed
         self.uncertain_duration = uncertain_duration
         self.uncertain_time_delay = uncertain_time_delay
         self.uncertain_speed_scale = uncertain_speed_scale
+        self.wind_scale = wind_scale
+        self.time_offset = time_offset
 
         # also sets self._uncertain_angle_units
         self.uncertain_angle_scale = uncertain_angle_scale
@@ -129,7 +131,6 @@ class PyWindMover(movers.PyMover, serializable.Serializable):
     @classmethod
     def from_netCDF(cls,
                     filename=None,
-                    extrapolate=False,
                     time_offset=0,
                     wind_scale=1,
                     uncertain_duration=24 * 3600,
@@ -144,7 +145,6 @@ class PyWindMover(movers.PyMover, serializable.Serializable):
 
         return cls(wind=wind,
                    filename=filename,
-                   extrapolate=extrapolate,
                    time_offset=time_offset,
                    wind_scale=wind_scale,
                    uncertain_along=uncertain_along,
@@ -153,20 +153,12 @@ class PyWindMover(movers.PyMover, serializable.Serializable):
                    default_num_method=default_num_method)
 
     @property
-    def real_data_start(self):
-        return self.wind.time.min_time.replace(tzinfo=None)
-
-    @real_data_start.setter
-    def real_data_start(self, value):
-        self._r_d_s = value
+    def data_start(self):
+        return self.wind.data_start
 
     @property
-    def real_data_stop(self):
-        return self.wind.time.max_time.replace(tzinfo=None)
-
-    @real_data_stop.setter
-    def real_data_stop(self, value):
-        self._r_d_e = value
+    def data_stop(self):
+        return self.wind.data_stop
 
     @property
     def is_data_on_cells(self):
@@ -191,10 +183,10 @@ class PyWindMover(movers.PyMover, serializable.Serializable):
 
         if self.active:
             rand.random_with_persistance(sc['windage_range'][:, 0],
-                                         sc['windage_range'][:, 1],
-                                         sc['windages'],
-                                         sc['windage_persist'],
-                                         time_step)
+                                    sc['windage_range'][:, 1],
+                                    sc['windages'],
+                                    sc['windage_persist'],
+                                    time_step)
 
     def get_move(self, sc, time_step, model_time_datetime, num_method=None):
         """
@@ -213,27 +205,19 @@ class PyWindMover(movers.PyMover, serializable.Serializable):
 
         All movers must implement get_move() since that's what the model calls
         """
-        method = None
         positions = sc['positions']
 
         if self.active and len(positions) > 0:
-            if num_method is None:
-                method = self.num_methods[self.default_num_method]
-            else:
-                method = self.num_method[num_method]
-
             status = sc['status_codes'] != oil_status.in_water
-            #positions = sc['positions']
             pos = positions[:]
 
-            deltas = method(sc, time_step, model_time_datetime, pos, self.wind)
-            deltas[:, 0] *= sc['windages']
-            deltas[:, 1] *= sc['windages']
+            deltas = self.delta_method(num_method)(sc, time_step, model_time_datetime, pos, self.wind)
+            deltas[:, 0] *= sc['windages'] * self.wind_scale
+            deltas[:, 1] *= sc['windages'] * self.wind_scale
 
             deltas = FlatEarthProjection.meters_to_lonlat(deltas, positions)
             deltas[status] = (0, 0, 0)
-
         else:
-           deltas = np.zeros_like(positions)
+            deltas = np.zeros_like(positions)
 
         return deltas

@@ -7,8 +7,9 @@ designed to be run with py.test
 """
 import os
 
-import numpy
-np = numpy
+import numpy as np
+
+from pytest import raises
 
 from gnome.basic_types import (spill_type, ts_format,
                                velocity_rec,
@@ -34,7 +35,6 @@ def test_init():
     assert wm.uncertain_time_delay == 0
     assert wm.uncertain_speed_scale == 2
     assert wm.uncertain_angle_scale == 0.4
-    assert wm.extrapolate == False
 
 
 def test_properties():
@@ -44,13 +44,11 @@ def test_properties():
     wm.uncertain_time_delay = 2
     wm.uncertain_speed_scale = 3
     wm.uncertain_angle_scale = 4
-    wm.extrapolate = True
 
     assert wm.uncertain_duration == 1
     assert wm.uncertain_time_delay == 2
     assert wm.uncertain_speed_scale == 3
     assert wm.uncertain_angle_scale == 4
-    assert wm.extrapolate == True
 
 
 def test_eq():
@@ -250,8 +248,8 @@ class TestVariableWind:
     (time_val['value']['v'])[:] = [100, 200]
 
     # CyTimeseries needs the same scope as CyWindMover because CyWindMover
-    # uses the C++ pointer defined in CyTimeseries.time_dep. This must be defined
-    # for the scope of CyWindMover
+    # uses the C++ pointer defined in CyTimeseries.time_dep.
+    # This must be defined for the scope of CyWindMover
 
     ossm = CyTimeseries(timeseries=time_val)
     wm.set_ossm(ossm)
@@ -261,6 +259,7 @@ class TestVariableWind:
             vary_time = x * 1800
             self.wm.prepare_for_model_step(self.cm.model_time + vary_time,
                                            self.cm.time_step)
+
             self.wm.get_move(self.cm.model_time + vary_time,
                              self.cm.time_step,
                              self.cm.ref,
@@ -273,6 +272,37 @@ class TestVariableWind:
             assert np.all(self.delta['lat'] != 0)
             assert np.all(self.delta['long'] == 0)
             assert np.all(self.delta['z'] == 0)
+
+    def test_move_out_of_bounds(self):
+        '''
+            Our wind mover should fail in the prepare_for_model_step() function
+            if our wind time series is out of bounds with respect to the
+            model time we are preparing for, unless our wind time series is
+            configured to extrapolate wind values.
+        '''
+        # setup a time series that's out of range of our model time
+        time_val = np.zeros((2, ), dtype=time_value_pair)
+        (time_val['time'])[:] = np.add([3600, 7200], self.cm.model_time)
+        (time_val['value']['v'])[:] = [100, 200]
+
+        # extrapolation should be off by default
+        ossm = CyTimeseries(timeseries=time_val)
+        self.wm.set_ossm(ossm)
+
+        # this should fail because our time series is not set to extrapolate
+        with raises(OSError):
+            self.wm.prepare_for_model_step(self.cm.model_time,
+                                           self.cm.time_step)
+
+        ossm = CyTimeseries(timeseries=time_val, extrapolation_is_allowed=True)
+        self.wm.set_ossm(ossm)
+
+        # We set our time series to extrapolate, so this should pass
+        self.wm.prepare_for_model_step(self.cm.model_time,
+                                       self.cm.time_step)
+
+        # clean up our time series
+        self.wm.set_ossm(self.ossm)
 
 
 def test_LE_not_in_water():

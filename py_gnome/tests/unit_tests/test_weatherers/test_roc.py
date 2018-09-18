@@ -236,14 +236,10 @@ class TestROCBurn(ROCTests):
     def test_serialization(self):
         b = TestROCBurn.burn
         ser = b.serialize()
-        deser = Burn.deserialize(ser)
+        b2 = Burn.deserialize(ser)
 
-        b2 = Burn.new_from_dict(deser)
-        ser2 = b2.serialize()
-        ser.pop('id')
-        ser2.pop('id')
-
-        assert ser == ser2
+        print b._diff(b2)
+        assert b == b2
 
     def test_step(self, sample_model_fcn2):
         self.sc, self.model = ROCTests.mk_objs(sample_model_fcn2)
@@ -268,20 +264,9 @@ class TestPlatform(ROCTests):
         p = Platform(_name='Test Platform')
 
         ser = p.serialize()
-        pp.pprint(ser)
-        deser = Platform.deserialize(ser)
 
-        pp.pprint(deser)
-
-        p2 = Platform.new_from_dict(deser)
-        ser2 = p2.serialize()
-        pp.pprint(ser2)
-
-        print 'INCORRECT BELOW'
-
-        ser.pop('id')
-        ser2.pop('id')
-        assert ser == ser2
+        p2 = Platform.deserialize(ser)
+        assert p == p2
 
 
 class TestRocChemDispersion(ROCTests):
@@ -323,27 +308,9 @@ class TestRocChemDispersion(ROCTests):
                      units=None,)
 
         ser = p.serialize()
-        print 'Ser'
         pp.pprint(ser)
-        deser = Disperse.deserialize(ser)
-
-        print ''
-        print 'deser'
-        pp.pprint(deser)
-
-        p2 = Disperse.new_from_dict(deser)
-        ser2 = p2.serialize()
-        print
-        pp.pprint(ser2)
-
-        ser.pop('id')
-        ser2.pop('id')
-        ser['platform'].pop('id')
-        ser2['platform'].pop('id')
-
-        assert ser['platform']['swath_width'] == 100.0
-        assert ser2['platform']['swath_width'] == 100.0
-        assert ser == ser2
+        p2 = Disperse.deserialize(ser)
+        assert p == p2
 
     def test_prepare_for_model_run(self, sample_model_fcn2):
         self.sc, self.model = ROCTests.mk_objs(sample_model_fcn2)
@@ -616,16 +583,11 @@ class TestRocSkim(ROCTests):
         s = TestRocSkim.skim
 
         ser = s.serialize()
-        assert 'timeseries' in ser
 
-        deser = Skim.deserialize(ser)
-        s2 = Skim.new_from_dict(deser)
-        ser2 = s2.serialize()
+        s2 = Skim.deserialize(ser)
 
-        ser.pop('id')
-        ser2.pop('id')
 
-        assert ser == ser2
+        assert s == s2
 
     def test_model_save(self, sample_model_fcn2):
         s = TestRocSkim.skim
@@ -633,7 +595,7 @@ class TestRocSkim(ROCTests):
         self.sc, self.model = ROCTests.mk_objs(sample_model_fcn2)
 
         self.model.weatherers.append(s)
-        self.model.save('./')
+        self.model.save('.')
 
     def test_model_load(self):
-        _m = load('./Model.zip')
+        _m = load('Model.zip')

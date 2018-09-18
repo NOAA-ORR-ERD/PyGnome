@@ -1,42 +1,41 @@
 """
 shapefile  outputter
 """
-import copy
 import os
 import zipfile
 
-from colander import SchemaNode, String, Boolean, drop
+from colander import SchemaNode, Boolean, drop
 import shapefile as shp
-
-from gnome.utilities.serializable import Serializable, Field
-
-from .outputter import Outputter, BaseSchema
+from gnome.persist.extend_colander import FilenameSchema
 
 
-class ShapeSchema(BaseSchema):
-    filename = SchemaNode(String(), missing=drop)
-    zip_output = SchemaNode(Boolean(), missing=drop)
+from .outputter import Outputter, BaseOutputterSchema
 
 
-class ShapeOutput(Outputter, Serializable):
+class ShapeSchema(BaseOutputterSchema):
+    filename = FilenameSchema(
+        missing=drop, save=True, update=True, test_equal=False
+    )
+    zip_output = SchemaNode(
+        Boolean(), missing=drop, save=True, update=True
+    )
+
+
+class ShapeOutput(Outputter):
     '''
     class that outputs GNOME results (particles) in a shapefile format.
 
     '''
-    _state = copy.deepcopy(Outputter._state)
-
-    # need a schema and also need to override save so output_dir
-    # is saved correctly - maybe point it to saveloc
-    _state += [Field('filename', update=True, save=True), ]
-    _state += [Field('zip_output', update=True, save=True), ]
     _schema = ShapeSchema
 
     time_formatter = '%m/%d/%Y %H:%M'
 
-    def __init__(self, filename, zip_output=True, **kwargs):
+    def __init__(self, filename, zip_output=True, surface_conc="kde",
+                 **kwargs):
         '''
         :param str output_dir=None: output directory for shape files
-        uses super to pass optional \*\*kwargs to base class __init__ method
+
+        :param zip_output=True: whether to zip up the ouput shape files
         '''
         # # a little check:
         self._check_filename(filename)
@@ -48,7 +47,8 @@ class ShapeOutput(Outputter, Serializable):
 
         self.zip_output = zip_output
 
-        super(ShapeOutput, self).__init__(**kwargs)
+        surface_conc = "kde"  # force this, as it will try!
+        super(ShapeOutput, self).__init__(surface_conc=surface_conc, **kwargs)
 
     def prepare_for_model_run(self,
                               model_start_time,
@@ -113,6 +113,7 @@ class ShapeOutput(Outputter, Serializable):
             w.field('Depth', 'N')
             w.field('Mass', 'N')
             w.field('Age', 'N')
+            w.field('Surf_Conc', 'F')
             w.field('Status_Code', 'N')
 
             if sc.uncertain:
@@ -121,67 +122,18 @@ class ShapeOutput(Outputter, Serializable):
                 self.w = w
 
     def write_output(self, step_num, islast_step=False):
-        """dump a timestep's data into the kmz file"""
+        """dump a timestep's data into the shape file"""
 
         super(ShapeOutput, self).write_output(step_num, islast_step)
 
         if not self.on or not self._write_step:
             return None
 
-        uncertain = False
-
         for sc in self.cache.load_timestep(step_num).items():
-            curr_time = sc.current_time_stamp
+            self._record_shape_entries(sc)
 
-            if sc.uncertain:
-                uncertain = True
-
-                for k, p in enumerate(sc['positions']):
-                    self.w_u.point(p[0], p[1])
-                    self.w_u.record(curr_time.strftime('%Y-%m-%dT%H:%M:%S'),
-                                    sc['id'][k],
-                                    p[2],
-                                    sc['mass'][k],
-                                    sc['age'][k],
-                                    sc['status_codes'][k])
-            else:
-                for k, p in enumerate(sc['positions']):
-                    self.w.point(p[0], p[1])
-                    self.w.record(curr_time.strftime('%Y-%m-%dT%H:%M:%S'),
-                                  sc['id'][k],
-                                  p[2],
-                                  sc['mass'][k],
-                                  sc['age'][k],
-                                  sc['status_codes'][k])
-
-        if islast_step:  # now we really write the files:
-            if uncertain:
-                shapefilenames = [self.filename, self.filename + '_uncert']
-            else:
-                shapefilenames = [self.filename]
-
-            for fn in shapefilenames:
-                if uncertain:
-                    self.w_u.save(fn)
-                else:
-                    self.w.save(fn)
-
-                print 'ShapefileOutputter.zip_output: ', self.zip_output
-                if self.zip_output is True:
-                    zfilename = fn + '.zip'
-
-                    prj_file = open("%s.prj" % fn, "w")
-                    prj_file.write(self.epsg)
-                    prj_file.close()
-
-                    zipf = zipfile.ZipFile(zfilename, 'w')
-
-                    for suf in ['shp', 'prj', 'dbf', 'shx']:
-                        f = os.path.split(fn)[-1] + '.' + suf
-                        zipf.write(os.path.join(self.filedir, f), arcname=f)
-                        os.remove(fn + '.' + suf)
-
-                    zipf.close()
+            if islast_step:
+                self._save_and_archive_shapefiles(sc)
 
         if self.zip_output is True:
             output_filename = self.filename + '.zip'
@@ -192,6 +144,64 @@ class ShapeOutput(Outputter, Serializable):
                        'output_filename': output_filename}
 
         return output_info
+
+    def _record_shape_entries(self, sc):
+        curr_time = sc.current_time_stamp
+        writer = self._get_shape_writer(sc)
+
+        for k, p in enumerate(sc['positions']):
+            writer.point(p[0], p[1])
+
+            if sc.uncertain:
+                writer.record(curr_time.strftime('%Y-%m-%dT%H:%M:%S'),
+                              sc['id'][k],
+                              p[2],
+                              sc['mass'][k],
+                              sc['age'][k],
+                              0.0,
+                              sc['status_codes'][k])
+            else:
+                writer.record(curr_time.strftime('%Y-%m-%dT%H:%M:%S'),
+                              sc['id'][k],
+                              p[2],
+                              sc['mass'][k],
+                              sc['age'][k],
+                              sc['surface_concentration'][k],
+                              sc['status_codes'][k])
+
+    def _get_shape_writer(self, spill_container):
+        if spill_container.uncertain:
+            return self.w_u
+        else:
+            return self.w
+
+    def _save_and_archive_shapefiles(self, sc):
+        writer = self._get_shape_writer(sc)
+
+        if sc.uncertain:
+            filename = self.filename + '_uncert'
+        else:
+            filename = self.filename
+
+        writer.save(filename)
+
+        prj_file = open('{}.prj'.format(filename), "w")
+        prj_file.write(self.epsg)
+        prj_file.close()
+
+        if self.zip_output is True:
+            zfilename = filename + '.zip'
+            zipf = zipfile.ZipFile(zfilename, 'w')
+
+            for suf in ['shp', 'prj', 'dbf', 'shx']:
+                file_to_zip = os.path.split(filename)[-1] + '.' + suf
+
+                zipf.write(os.path.join(self.filedir, file_to_zip),
+                           arcname=file_to_zip)
+
+                os.remove(filename + '.' + suf)
+
+            zipf.close()
 
     def rewind(self):
         '''

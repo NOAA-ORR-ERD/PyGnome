@@ -8,16 +8,17 @@ from glob import glob
 from geojson import dump
 from colander import SchemaNode, String, drop
 
-from gnome.utilities.serializable import Serializable, Field
 
-from .outputter import Outputter, BaseSchema
-
-
-class WeatheringOutputSchema(BaseSchema):
-    output_dir = SchemaNode(String(), missing=drop)
+from .outputter import Outputter, BaseOutputterSchema
 
 
-class WeatheringOutput(Outputter, Serializable):
+class WeatheringOutputSchema(BaseOutputterSchema):
+    output_dir = SchemaNode(
+        String(), missing=drop, save=True, update=True
+    )
+
+
+class WeatheringOutput(Outputter):
     '''
     class that outputs GNOME weathering results.
     The output is the aggregation of properties for all LEs (aka Mass Balance)
@@ -43,11 +44,6 @@ class WeatheringOutput(Outputter, Serializable):
         }
 
     '''
-    _state = copy.deepcopy(Outputter._state)
-
-    # need a schema and also need to override save so output_dir
-    # is saved correctly - maybe point it to saveloc
-    _state += [Field('output_dir', update=True, save=True)]
     _schema = WeatheringOutputSchema
 
     def __init__(self,

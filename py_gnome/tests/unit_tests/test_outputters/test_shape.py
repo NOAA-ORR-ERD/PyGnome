@@ -1,6 +1,5 @@
-'''
-tests for kmz outputter
-'''
+
+# tests for shapefile outputter
 
 import os
 from datetime import datetime, timedelta
@@ -40,7 +39,6 @@ def output_filename(output_dir, request):
     return os.path.join(dirname, file_name)
 
 
-
 @pytest.fixture(scope='function')
 def model(sample_model, output_filename):
     model = sample_model['model']
@@ -66,6 +64,7 @@ def test_init(output_dir):
     'simple initialization passes'
     shp = ShapeOutput(os.path.join(output_dir, 'test'))
 
+
 def test_init_exceptions():
     '''
     test exceptions raised during __init__
@@ -76,6 +75,7 @@ def test_init_exceptions():
 
     with pytest.raises(ValueError):
         ShapeOutput('invalid_path_to_file/file.kmz')
+
 
 def test_exceptions(output_filename):
     spill_pair = SpillContainerPair()
@@ -106,11 +106,11 @@ def test_exceptions(output_filename):
     # -- before there was time to change the output file names, etc.
     # So for this unit test, there should be no exception if we do it twice.
     shp.prepare_for_model_run(model_start_time=datetime.now(),
-                                 spills=spill_pair,
-                                 num_time_steps=4)
+                              spills=spill_pair,
+                              num_time_steps=4)
     shp.prepare_for_model_run(model_start_time=datetime.now(),
-                                 spills=spill_pair,
-                                 num_time_steps=4)
+                              spills=spill_pair,
+                              num_time_steps=4)
 
 
     # with raises(AttributeError):

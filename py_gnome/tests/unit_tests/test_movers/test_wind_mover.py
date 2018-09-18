@@ -47,6 +47,7 @@ def test_exceptions():
     with raises(ReferencedObjectNotSet) as excinfo:
         wm = WindMover()
         wm.prepare_for_model_run()
+
     print excinfo.value.message
 
     with raises(TypeError):
@@ -131,17 +132,17 @@ def test_properties(wind_circ):
     assert wm.uncertain_time_delay == 2
     assert wm.uncertain_speed_scale == 3
     assert wm.uncertain_angle_scale == 4
-    assert wm.real_data_start == datetime(2012, 11, 6, 20, 10)
-    assert wm.real_data_stop == datetime(2012, 11, 6, 20, 15)
+    assert wm.data_start == datetime(2012, 11, 6, 20, 10)
+    assert wm.data_stop == datetime(2012, 11, 6, 20, 15)
 
 
-def test_real_data(wind_circ):
+def test_data_start_stop(wind_circ):
     """
-    test real_data_start / stop properties
+    test data_start / stop properties
     """
     wm = WindMover(wind_circ['wind'])
-    assert wm.real_data_start == datetime(2012, 11, 6, 20, 10)
-    assert wm.real_data_stop == datetime(2012, 11, 6, 20, 15)
+    assert wm.data_start == datetime(2012, 11, 6, 20, 10)
+    assert wm.data_stop == datetime(2012, 11, 6, 20, 15)
 
 
 def test_update_wind(wind_circ):
@@ -175,32 +176,241 @@ def test_update_wind(wind_circ):
                        atol, rtol)
 
 
-def test_prepare_for_model_step():
-    """
-    explicitly test to make sure windages are being updated for persistence
-    != 0 and windages are not being changed for persistance == -1
-    """
+class TestPrepareForModelStep:
     time_step = 15 * 60  # seconds
     model_time = datetime(2012, 8, 20, 13)  # yyyy/month/day/hr/min/sec
+
     sc = sample_sc_release(5, (3., 6., 0.), model_time)
     sc['windage_persist'][:2] = -1
-    wind = Wind(timeseries=np.array((model_time, (2., 25.)),
-                                    dtype=datetime_value_2d).reshape(1),
-                units='meter per second')
 
-    wm = WindMover(wind)
-    wm.prepare_for_model_run()
+    def test_windages_updated(self):
+        '''
+            explicitly test to make sure:
+            - windages are being updated for persistence != 0 and
+            - windages are not being changed for persistance == -1
+        '''
+        wind = Wind(timeseries=np.array((self.model_time, (2., 25.)),
+                                        dtype=datetime_value_2d).reshape(1),
+                    units='meter per second')
 
-    for ix in range(2):
-        curr_time = sec_to_date(date_to_sec(model_time) + time_step * ix)
-        old_windages = np.copy(sc['windages'])
-        wm.prepare_for_model_step(sc, time_step, curr_time)
+        wm = WindMover(wind)
+        wm.prepare_for_model_run()
 
-        mask = [sc['windage_persist'] == -1]
-        assert np.all(sc['windages'][mask] == old_windages[mask])
+        for ix in range(2):
+            curr_time = sec_to_date(date_to_sec(self.model_time) +
+                                    self.time_step * ix)
+            old_windages = np.copy(self.sc['windages'])
+            wm.prepare_for_model_step(self.sc, self.time_step, curr_time)
 
-        mask = [sc['windage_persist'] > 0]
-        assert np.all(sc['windages'][mask] != old_windages[mask])
+            mask = [self.sc['windage_persist'] == -1]
+            assert np.all(self.sc['windages'][mask] == old_windages[mask])
+
+            mask = [self.sc['windage_persist'] > 0]
+            assert np.all(self.sc['windages'][mask] != old_windages[mask])
+
+    def test_constant_wind_before_model_time(self):
+        '''
+            test to make sure the wind mover is behaving properly with
+            out-of-bounds winds.
+            A constant wind should extrapolate if it is out of bounds,
+            so prepare_for_model_step() should not fail.
+
+            We are testing that the wind extrapolates properly, so the
+            windages should be updated in the same way as the in-bounds test
+        '''
+        wind_time = datetime(2012, 8, 19, 13)  # one day before model time
+
+        wind = Wind(timeseries=np.array((wind_time, (2., 25.)),
+                                        dtype=datetime_value_2d).reshape(1),
+                    units='meter per second')
+
+        wm = WindMover(wind)
+        wm.prepare_for_model_run()
+
+        for ix in range(2):
+            curr_time = sec_to_date(date_to_sec(self.model_time) +
+                                    self.time_step * ix)
+            print 'curr_time = ', curr_time
+
+            old_windages = np.copy(self.sc['windages'])
+            wm.prepare_for_model_step(self.sc, self.time_step, curr_time)
+
+            mask = [self.sc['windage_persist'] == -1]
+            assert np.all(self.sc['windages'][mask] == old_windages[mask])
+
+            mask = [self.sc['windage_persist'] > 0]
+            assert np.all(self.sc['windages'][mask] != old_windages[mask])
+
+    def test_constant_wind_after_model_time(self):
+        '''
+            test to make sure the wind mover is behaving properly with
+            out-of-bounds winds.
+            A constant wind should extrapolate if it is out of bounds,
+            so prepare_for_model_step() should not fail.
+
+            We are testing that the wind extrapolates properly, so the
+            windages should be updated in the same way as the in-bounds test
+        '''
+        wind_time = datetime(2012, 8, 21, 13)  # one day after model time
+
+        wind = Wind(timeseries=np.array((wind_time, (2., 25.)),
+                                        dtype=datetime_value_2d).reshape(1),
+                    units='meter per second')
+
+        wm = WindMover(wind)
+        wm.prepare_for_model_run()
+
+        for ix in range(2):
+            curr_time = sec_to_date(date_to_sec(self.model_time) +
+                                    self.time_step * ix)
+            print 'curr_time = ', curr_time
+
+            old_windages = np.copy(self.sc['windages'])
+            wm.prepare_for_model_step(self.sc, self.time_step, curr_time)
+
+            mask = [self.sc['windage_persist'] == -1]
+            assert np.all(self.sc['windages'][mask] == old_windages[mask])
+
+            mask = [self.sc['windage_persist'] > 0]
+            assert np.all(self.sc['windages'][mask] != old_windages[mask])
+
+    def test_variable_wind_before_model_time(self):
+        '''
+            test to make sure the wind mover is behaving properly with
+            out-of-bounds winds.
+            A variable wind should not extrapolate if it is out of bounds,
+            so prepare_for_model_step() should fail with an exception
+            in this case.
+        '''
+        wind_time = datetime(2012, 8, 19, 13)  # one day before model time
+
+        time_series = (np.zeros((3, ), dtype=datetime_value_2d)
+                       .view(dtype=np.recarray))
+        time_series.time = [sec_to_date(date_to_sec(wind_time) +
+                                        self.time_step * i)
+                            for i in range(3)]
+        time_series.value = np.array(((2., 25.), (2., 25.), (2., 25.)))
+
+        wind = Wind(timeseries=time_series.reshape(3),
+                    units='meter per second')
+
+        wm = WindMover(wind)
+        wm.prepare_for_model_run()
+
+        for ix in range(2):
+            curr_time = sec_to_date(date_to_sec(self.model_time) +
+                                    self.time_step * ix)
+
+            with raises(RuntimeError):
+                wm.prepare_for_model_step(self.sc, self.time_step, curr_time)
+
+    def test_variable_wind_after_model_time(self):
+        '''
+            test to make sure the wind mover is behaving properly with
+            out-of-bounds winds.
+            A variable wind should not extrapolate if it is out of bounds,
+            so prepare_for_model_step() should fail with an exception
+            in this case.
+        '''
+        wind_time = datetime(2012, 8, 21, 13)  # one day after model time
+
+        time_series = (np.zeros((3, ), dtype=datetime_value_2d)
+                       .view(dtype=np.recarray))
+        time_series.time = [sec_to_date(date_to_sec(wind_time) +
+                                        self.time_step * i)
+                            for i in range(3)]
+        time_series.value = np.array(((2., 25.), (2., 25.), (2., 25.)))
+
+        wind = Wind(timeseries=time_series.reshape(3),
+                    units='meter per second')
+
+        wm = WindMover(wind)
+        wm.prepare_for_model_run()
+
+        for ix in range(2):
+            curr_time = sec_to_date(date_to_sec(self.model_time) +
+                                    self.time_step * ix)
+
+            with raises(RuntimeError):
+                wm.prepare_for_model_step(self.sc, self.time_step, curr_time)
+
+    def test_variable_wind_before_model_time_with_extrapolation(self):
+        '''
+            test to make sure the wind mover is behaving properly with
+            out-of-bounds winds.
+            A variable wind can extrapolate if it is configured to do so,
+            so prepare_for_model_step() should succeed in this case.
+
+            We are testing that the wind extrapolates properly, so the
+            windages should be updated in the same way as the in-bounds test
+        '''
+        wind_time = datetime(2012, 8, 19, 13)  # one day before model time
+
+        time_series = (np.zeros((3, ), dtype=datetime_value_2d)
+                       .view(dtype=np.recarray))
+        time_series.time = [sec_to_date(date_to_sec(wind_time) +
+                                        self.time_step * i)
+                            for i in range(3)]
+        time_series.value = np.array(((2., 25.), (2., 25.), (2., 25.)))
+
+        wind = Wind(timeseries=time_series.reshape(3),
+                    extrapolation_is_allowed=True,
+                    units='meter per second')
+
+        wm = WindMover(wind)
+        wm.prepare_for_model_run()
+
+        for ix in range(2):
+            curr_time = sec_to_date(date_to_sec(self.model_time) +
+                                    self.time_step * ix)
+
+            old_windages = np.copy(self.sc['windages'])
+            wm.prepare_for_model_step(self.sc, self.time_step, curr_time)
+
+            mask = [self.sc['windage_persist'] == -1]
+            assert np.all(self.sc['windages'][mask] == old_windages[mask])
+
+            mask = [self.sc['windage_persist'] > 0]
+            assert np.all(self.sc['windages'][mask] != old_windages[mask])
+
+    def test_variable_wind_after_model_time_with_extrapolation(self):
+        '''
+            test to make sure the wind mover is behaving properly with
+            out-of-bounds winds.
+            A variable wind can extrapolate if it is configured to do so,
+            so prepare_for_model_step() should succeed in this case.
+
+            We are testing that the wind extrapolates properly, so the
+            windages should be updated in the same way as the in-bounds test
+        '''
+        wind_time = datetime(2012, 8, 21, 13)  # one day after model time
+
+        time_series = (np.zeros((3, ), dtype=datetime_value_2d)
+                       .view(dtype=np.recarray))
+        time_series.time = [sec_to_date(date_to_sec(wind_time) +
+                                        self.time_step * i)
+                            for i in range(3)]
+        time_series.value = np.array(((2., 25.), (2., 25.), (2., 25.)))
+
+        wind = Wind(timeseries=time_series.reshape(3),
+                    extrapolation_is_allowed=True,
+                    units='meter per second')
+
+        wm = WindMover(wind)
+        wm.prepare_for_model_run()
+
+        for ix in range(2):
+            curr_time = sec_to_date(date_to_sec(self.model_time) +
+                                    self.time_step * ix)
+
+            old_windages = np.copy(self.sc['windages'])
+            wm.prepare_for_model_step(self.sc, self.time_step, curr_time)
+
+            mask = [self.sc['windage_persist'] == -1]
+            assert np.all(self.sc['windages'][mask] == old_windages[mask])
+
+            mask = [self.sc['windage_persist'] > 0]
+            assert np.all(self.sc['windages'][mask] != old_windages[mask])
 
 
 class TestWindMover:
@@ -417,15 +627,11 @@ def test_constant_wind_mover():
 
     sc = sample_sc_release(1)
 
-    print wm
-    print repr(wm.wind)
-    print wm.wind.get_wind_data()
-
     time_step = 1000
     model_time = datetime(2013, 3, 1, 0)
+
     wm.prepare_for_model_step(sc, time_step, model_time)
     delta = wm.get_move(sc, time_step, model_time)
-    print 'delta:', delta
 
     # 45 degree wind at the equator -- u,v should be the same
     assert delta[0][0] == delta[0][1]
@@ -434,9 +640,8 @@ def test_constant_wind_mover():
 def test_constant_wind_mover_bounds():
     wm = constant_wind_mover(10, 45, units='knots')
 
-    assert wm.real_data_start == InfDateTime("-inf")
-
-    assert wm.real_data_stop == InfDateTime("inf")
+    assert wm.data_start == InfDateTime("-inf")
+    assert wm.data_stop == InfDateTime("inf")
 
 
 def test_wind_mover_from_file():
@@ -464,39 +669,37 @@ def test_serialize_deserialize(wind_circ):
     """
     wind = Wind(filename=file_)
     wm = WindMover(wind)
-    serial = wm.serialize('webapi')
+    serial = wm.serialize()
     assert 'wind' in serial
 
-    dict_ = wm.deserialize(serial)
-    dict_['wind'] = wind_circ['wind']
-    wm.update_from_dict(dict_)
+    wm2 = wm.deserialize(serial)
 
-    assert wm.wind == wind_circ['wind']
+    assert wm == wm2
 
 
-@pytest.mark.parametrize("save_ref", [False, True])
-def test_save_load(save_ref, saveloc_):
-    """
-    tests and illustrates the functionality of save/load for
-    WindMover
-    """
-    wind = Wind(filename=file_)
-    wm = WindMover(wind)
-    wm_fname = 'WindMover_save_test.json'
-    refs = None
-    if save_ref:
-        w_fname = 'Wind.json'
-        refs = References()
-        refs.reference(wind, w_fname)
-        wind.save(saveloc_, refs, w_fname)
-
-    wm.save(saveloc_, references=refs, name=wm_fname)
-
-    l_refs = References()
-    obj = load(os.path.join(saveloc_, wm_fname), l_refs)
-    assert (obj == wm and obj is not wm)
-    assert (obj.wind == wind and obj.wind is not wind)
-    shutil.rmtree(saveloc_)  # clean-up
+# @pytest.mark.parametrize("save_ref", [False, True])
+# def test_save_load(save_ref, saveloc_):
+#     """
+#     tests and illustrates the functionality of save/load for
+#     WindMover
+#     """
+#     wind = Wind(filename=file_)
+#     wm = WindMover(wind)
+#     wm_fname = 'WindMover_save_test.json'
+#     refs = None
+#     if save_ref:
+#         w_fname = 'Wind.json'
+#         refs = References()
+#         refs.reference(wind, w_fname)
+#         wind.save(saveloc_, refs, w_fname)
+#
+#     wm.save(saveloc_, references=refs, filename=wm_fname)
+#
+#     l_refs = References()
+#     obj = load(os.path.join(saveloc_, wm_fname), l_refs)
+#     assert (obj == wm and obj is not wm)
+#     assert (obj.wind == wind and obj.wind is not wind)
+#     shutil.rmtree(saveloc_)  # clean-up
 
 
 def test_array_types():
