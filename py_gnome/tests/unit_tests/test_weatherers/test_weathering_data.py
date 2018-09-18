@@ -368,7 +368,6 @@ class TestWeatheringData:
         assert sc['fay_area'][0] != sc['fay_area'][1]
         assert np.all(sc['fay_area'] > i_area)
 
-    @pytest.mark.xfail
     @log_capture()
     def test_density_error(self, l):
         '''
@@ -404,14 +403,12 @@ class TestWeatheringData:
                  'ERROR',
                  msg))
 
+
     def test_no_substance(self):
         '''
         test trajectory only case - in this case there is no data for a
-        substance so weatherers should be off but having it on doesn't break
+        substance so weatherers should be off but having it on shouldn't break
         anything.
-
-        todo: A more interesting test is a None substance along with a valid
-            substance.
         '''
         rel_time = datetime.now().replace(microsecond=0)
         (sc, wd) = self.sample_sc_intrinsic(1, rel_time)

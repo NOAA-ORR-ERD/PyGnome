@@ -79,7 +79,8 @@ def test_length():
     assert len(sp) == 10
 
 
-''' Helper functions '''
+# ################
+# Helper functions
 
 
 def assert_dataarray_shape_size(sc):
@@ -155,13 +156,17 @@ def test_multiple_spills(uncertain):
     already released.
     """
     sc = SpillContainer(uncertain)
-    spills = [point_line_release_spill(num_elements, start_position,
-                                       release_time),
-              point_line_release_spill(num_elements, start_position,
+    spills = [point_line_release_spill(num_elements, start_position, release_time),
+              point_line_release_spill(num_elements,
+                                       start_position,
                                        release_time + timedelta(hours=1),
-                                       end_position, end_release_time)]
+                                       end_position,
+                                       end_release_time)
+              ]
 
     sc.spills.add(spills)
+
+    assert len(sc.spills) == 2
 
     for spill in spills:
         assert sc.spills[spill.id] == spill
@@ -178,7 +183,8 @@ def test_multiple_spills(uncertain):
         current_time = release_time + timedelta(seconds=time_step * step)
         sc.release_elements(time_step, current_time)
 
-    assert sc.num_released == spills[0].release.num_elements * len(spills)
+    total_elements = sum(s.num_elements for s in spills)
+    assert sc.num_released == total_elements
     assert_dataarray_shape_size(sc)
 
     sc.spills.remove(spills[0].id)
@@ -190,6 +196,13 @@ def test_multiple_spills(uncertain):
     # however, the data arrays of released particles should be unchanged
     assert sc.num_released == spill.release.num_elements * len(spills)
     assert_dataarray_shape_size(sc)
+
+
+def test_no_spills():
+    """ if there are no spills, the substance should be None"""
+    sc = SpillContainer()
+    sc.prepare_for_model_run()
+    assert sc.substance is None
 
 
 def test_rewind():
@@ -809,6 +822,36 @@ def test_get_spill_mask():
     assert all(sc['spill_num'][sc.get_spill_mask(sp1)] == 1)
 
 
+# Handy utility (should it be a fixture?)
+
+def get_eq_spills():
+    """
+    returns a tuple of identical point_line_release_spill objects
+
+    Set the spill's element_type is to floating(windage_range=(0, 0))
+    since the default, floating(), uses randomly generated values for initial
+    data array values and these will not match for the two spills.
+    """
+    num_elements = 10
+    release_time = datetime(2000, 1, 1, 1)
+
+    spill = point_line_release_spill(num_elements,
+                            (28, -75, 0),
+                            release_time,
+                            element_type=floating(windage_range=(0, 0)))
+    #dict_ = spill.to_dict('save')
+    #spill2 = spill.new_from_dict(dict_)
+    spill2 = copy.deepcopy(spill)
+
+    # IDs will not match! force this so our tests work
+    spill2._id = spill.id
+
+    # check here if equal spills didn't get created - fail this function
+    assert spill == spill2
+
+    return (spill, spill2)
+
+
 def test_eq_spill_container():
     """ test if two spill containers are equal """
 
@@ -865,6 +908,7 @@ def test_eq_allclose_spill_container():
     assert sc2 == sc1
     assert not (sc1 != sc2)
     assert not (sc2 != sc1)
+
 
 
 @pytest.mark.parametrize("uncertain", [False, True])
@@ -1034,36 +1078,6 @@ def test_SpillContainer_add_array_types():
     assert 'droplet_diameter' not in sc.array_types
 
 
-def get_eq_spills():
-    """
-    returns a tuple of identical point_line_release_spill objects
-
-    Set the spill's element_type is to floating(windage_range=(0, 0))
-    since the default, floating(), uses randomly generated values for initial
-    data array values and these will not match for the two spills.
-
-    TODO: Currently does not persist the element_type object.
-    spill.to_dict('save') does not persist this attribute - Fix this.
-    """
-    num_elements = 10
-    release_time = datetime(2000, 1, 1, 1)
-
-    spill = point_line_release_spill(num_elements,
-                            (28, -75, 0),
-                            release_time,
-                            element_type=floating(windage_range=(0, 0)))
-    #dict_ = spill.to_dict('save')
-    #spill2 = spill.new_from_dict(dict_)
-    spill2 = copy.deepcopy(spill)
-
-    # IDs will not match! force this so our tests work
-    spill2._id = spill.id
-
-    # check here if equal spills didn't get created - fail this function
-    assert spill == spill2
-
-    return (spill, spill2)
-
 
 class TestSpillContainerPairGetSetDel:
     s0 = [point_line_release_spill(1, (0, 0, 0), datetime.now()),
@@ -1120,7 +1134,8 @@ class TestSubstanceSpillsDataStructure():
         'test iterators work without any spills'
         sc = SpillContainer()
         assert len(sc.iterspillsbysubstance()) == 0
-        assert len(sc.get_substances()) == 0
+        assert len(sc.get_substances()) == 1
+        assert len(sc.get_substances(complete=False)) == 0
 
     def test_no_substance(self):
         '''
@@ -1136,38 +1151,40 @@ class TestSubstanceSpillsDataStructure():
                             name='spill1')]
         assert len(sc.itersubstancedata('mass')) == 0
         assert len(sc.get_substances()) == 1
+        assert len(sc.get_substances(complete=False)) == 0
 
         # iterspillsbysubstance() iterates through all the spills associated
         # with each substance including the spills where substance is None
-        assert len(sc.iterspillsbysubstance()) == 1
-        assert len(sc.iterspillsbysubstance()) == 1
+        assert len(sc.iterspillsbysubstance()) == 2
 
-    def test_spills_with_and_notwith_substance(self):
+    def test_spills_with_and_not_with_substance1(self):
         '''
-        datastructure only adds substance/spills if substance is not None
-        deleting spill resets datastructure.
-
-        - the spills in _substances_spills 'is' the same as the spills
-          in sc.spills - same object
+        should not be able to add a None substance and an oil
         '''
         sc = SpillContainer()
-        sc.spills += [Spill(Release(datetime.now(), 10),
-                            element_type=floating(substance=None),
-                            name='spill0'),
-                      Spill(Release(datetime.now(), 10),
-                            element_type=floating(substance=test_oil),
-                            name='spill1')]
+        spills = [Spill(Release(datetime.now(), 10),
+                        element_type=floating(substance=None),
+                        name='spill0'),
+                  Spill(Release(datetime.now(), 10),
+                        element_type=floating(substance=test_oil),
+                        name='spill1')]
+        with pytest.raises(ValueError):
+            sc.spills += spills
 
-        assert len(sc.get_substances()) == 2
-        sc.prepare_for_model_run()
-        all_spills = list(chain.from_iterable(sc._substances_spills.spills))
-        assert len(all_spills) == len(sc.spills)
-        for spill in all_spills:
-            assert sc.spills[spill.id] is spill
+    def test_spills_with_and_not_with_substance2(self):
+        '''
+        should not be able to add a None substance and an oil
+        '''
+        sc = SpillContainer()
+        spills = [Spill(Release(datetime.now(), 10),
+                        element_type=floating(substance=test_oil),
+                        name='spill0'),
+                  Spill(Release(datetime.now(), 10),
+                        element_type=floating(substance=None),
+                        name='spill1')]
+        with pytest.raises(ValueError):
+            sc.spills += spills
 
-        del sc.spills[-1]
-        assert len(sc.get_substances()) == 1
-        assert len(sc.iterspillsbysubstance()) == 1
 
     def test_spills_same_substance_init(self):
         sc = SpillContainer()
@@ -1183,7 +1200,9 @@ class TestSubstanceSpillsDataStructure():
         sc.spills += sp_add
         assert len(sc.get_substances()) == 1
         sc.prepare_for_model_run()
-        assert all([sp_add == spills for spills in sc.iterspillsbysubstance()])
+        for sp1, sp2 in zip(sp_add, sc.spills):
+            assert sp1 == sp2
+
 
     def test_spills_different_substance_init(self):
         sc = SpillContainer()
@@ -1197,10 +1216,8 @@ class TestSubstanceSpillsDataStructure():
         splls1 = [Spill(Release(datetime.now(), 10),
                         element_type=floating(substance='oil_crude'))
                   ]
-        sc.spills += splls1
-
-        assert (len(sc.get_substances()) == 2 and
-                len(sc.iterspillsbysubstance()) == 2)
+        with pytest.raises(ValueError):
+            sc.spills += splls1
 
     def test_spills_different_substance_release(self):
         '''
@@ -1227,24 +1244,26 @@ class TestSubstanceSpillsDataStructure():
         splls1 = point_line_release_spill(10, (0, 0, 0),
                                           rel_time,
                                           element_type=floating(substance=None))
-        sc.spills += splls1
+        with pytest.raises(ValueError):
+            # when you add a spill with another substance, you should get an error.
+            sc.spills += splls1
 
-        at = {'density', 'mass_components'}
-        sc.prepare_for_model_run(at)
-        assert len(sc.get_substances()) == 2
+        # at = {'density', 'mass_components'}
+        # sc.prepare_for_model_run(at)
+        # assert len(sc.get_substances()) == 2
 
-        print '\nElements released:'
-        for ix in range(-1, 8):
-            time = rel_time + timedelta(seconds=time_step) * ix
-            num_rel = sc.release_elements(time_step, time)
-            print num_rel
-            for substance, data in sc.itersubstancedata(at):
-                assert substance.name == test_oil
-                idx = sc._substances_spills.substances.index(substance)
-                mask = sc['substance'] == idx
-                for array in at:
-                    assert array in data
-                    assert np.all(data[array] == sc[array][mask])
+        # print '\nElements released:'
+        # for ix in range(-1, 8):
+        #     time = rel_time + timedelta(seconds=time_step) * ix
+        #     num_rel = sc.release_elements(time_step, time)
+        #     print num_rel
+        #     for substance, data in sc.itersubstancedata(at):
+        #         assert substance.name == test_oil
+        #         idx = sc._substances_spills.substances.index(substance)
+        #         mask = sc['substance'] == idx
+        #         for array in at:
+        #             assert array in data
+        #             assert np.all(data[array] == sc[array][mask])
 
 
 def test_split_element():
@@ -1300,5 +1319,5 @@ def test_split_element():
         assert np.allclose(d_split, split)
 
 
-if __name__ == '__main__':
-    test_rewind()
+# if __name__ == '__main__':
+#     test_rewind()

@@ -84,7 +84,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     # renderere is only top-down view on 2d -- but it's something
     renderer = Renderer(output_dir=images_dir,
-                        size=(1024, 768),
+                        image_size=(1024, 768),
                         output_timestep=timedelta(hours=1),
                         )
     renderer.viewport = ((-87.295, 27.795), (-87.705, 28.205))

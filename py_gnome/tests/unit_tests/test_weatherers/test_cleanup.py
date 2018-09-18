@@ -53,6 +53,8 @@ class ObjForTests:
         weatherers = [WeatheringData(water), FayGravityViscous(water)]
         weatherers.sort(key=weatherer_sort)
         sc = SpillContainer()
+        print "******************"
+        print "Adding a spill to spill container"
         sc.spills += point_line_release_spill(10,
                                               (0, 0, 0),
                                               rel_time,
@@ -60,6 +62,7 @@ class ObjForTests:
                                               amount=amount,
                                               units='kg',
                                               water=water)
+        print "spill container substance is:", sc.substance
         return (sc, weatherers)
 
     def prepare_test_objs(self, obj_arrays=None):
@@ -68,9 +71,7 @@ class ObjForTests:
         '''
         # print '\n------------\n', 'reset_and_release', '\n------------'
         self.sc.rewind()
-        self.sc.rewind()
         at = set()
-
         for wd in self.weatherers:
             wd.prepare_for_model_run(self.sc)
             at.update(wd.array_types)
@@ -100,6 +101,7 @@ class ObjForTests:
         data arrays if required for testing
         '''
         num_rel = self.sc.release_elements(time_step, model_time)
+
         if num_rel > 0:
             for wd in self.weatherers:
                 wd.initialize_data(self.sc, num_rel)
@@ -629,7 +631,7 @@ class TestChemicalDispersion(ObjForTests):
                                     active_start,
                                     active_stop,
                                     waves=waves)
-        pts = np.array([[0,0],[0,0]])
+        pts = np.array([[0, 0], [0, 0]])
         c_disp._set_efficiency(pts, self.spill.release_time)
         assert c_disp.efficiency == 1.0
 

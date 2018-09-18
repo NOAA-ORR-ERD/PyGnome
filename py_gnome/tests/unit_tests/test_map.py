@@ -10,7 +10,6 @@ from __future__ import division
 import os
 
 import numpy as np
-import pytest
 
 import gnome.map
 from gnome.basic_types import oil_status, status_code_type
@@ -143,8 +142,8 @@ class Test_GnomeMap:
     def test_update_from_dict(self):
         gmap = GnomeMap()
 
-        json_= {'map_bounds': [(-10, 10), (10, 10),
-                               (10, -10), (-10, -10)]}
+        json_ = {'map_bounds': [(-10, 10), (10, 10),
+                                (10, -10), (-10, -10)]}
         assert np.all(gmap.map_bounds != json_['map_bounds'])
         gmap.update_from_dict(json_)
         assert np.all(gmap.map_bounds == json_['map_bounds'])
@@ -211,10 +210,11 @@ class Test_ParamMap:
         test create new ParamMap from deserialized dict
         """
         map1 = gnome.map.ParamMap((5, 5), 12000, 40)
-        assert map1.center == (5,5,0)
-        json_ = {'center': [6,6]}
+        assert map1.center == (5, 5, 0)
+
+        json_ = {'center': [6, 6]}
         map1.update_from_dict(json_)
-        assert map1.center == (6,6,0)
+        assert map1.center == (6, 6, 0)
 
 
 class Test_RasterMap:
@@ -259,7 +259,7 @@ class Test_RasterMap:
         assert rmap._off_bitmap((-1000, -2000))
         assert rmap._off_bitmap((1000, 2000))
 
-    def test_save_as_image(self, dump):
+    def test_save_as_image(self, dump_folder):
         """
         only tests that it doesn't crash -- you need to look at the
         image to see if it's right
@@ -270,7 +270,7 @@ class Test_RasterMap:
                                      (50, 30), (50, -30)),
                          projection=NoProjection())
 
-        rmap.save_as_image(os.path.join(dump, 'raster_map_image.png'))
+        rmap.save_as_image(os.path.join(dump_folder, 'raster_map_image.png'))
 
         assert True
 
@@ -595,11 +595,9 @@ class Test_MapfromBNA:
 
         assert gmap == map2
 
-
     def test_update_from_dict_MapFromBNA(self):
         'test update_from_dict for MapFromBNA'
         gmap = gnome.map.MapFromBNA(testbnamap, 6)
-
 
         dict_ = {}
         dict_['map_bounds'] = [(-10, 10), (10, 10), (10, -10), (-10, -10)]
@@ -936,7 +934,7 @@ class Test_lake():
 
 if __name__ == '__main__':
 
-    map = test_bna_no_map_bounds()
+    map_ = test_bna_no_map_bounds()
 
     # tester = Test_MapfromBNA()
     # print "running test"

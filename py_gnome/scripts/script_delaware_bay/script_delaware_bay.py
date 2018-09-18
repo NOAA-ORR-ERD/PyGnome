@@ -47,7 +47,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     mapfile = get_datafile(os.path.join(base_dir, 'DelawareRiverMap.bna'))
     gnome_map = MapFromBNA(mapfile, refloat_halflife=1)  # hours
 
-    renderer = Renderer(mapfile, images_dir, size=(800, 800),
+    renderer = Renderer(mapfile, images_dir, image_size=(800, 800),
                         projection_class=GeoProjection)
 
     print 'initializing the model'

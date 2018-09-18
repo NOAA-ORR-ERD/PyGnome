@@ -18,13 +18,12 @@ from gnome.basic_types import datetime_value_2d
 from gnome.map import MapFromBNA
 from gnome.environment import Wind, Tide, Water
 from gnome.model import Model
-from gnome.persist import load
 from gnome.spill import point_line_release_spill
 from gnome.movers import RandomMover, WindMover, CatsMover, IceMover
 from gnome.weatherers import Evaporation, Skimmer, Burn
 from gnome.outputters import CurrentJsonOutput, IceJsonOutput
 
-from ..conftest import dump, testdata, test_oil
+from ..conftest import testdata, test_oil
 
 
 def make_model(uncertain=False, mode='gnome'):
@@ -184,7 +183,7 @@ def test_save_load_model(uncertain, zipsave, saveloc_):
     model.zipsave = zipsave
 
     print 'saving scenario to {}...'.format(saveloc_)
-    json_, savefile, refs = model.save(saveloc_)
+    _json_, savefile, _refs = model.save(saveloc_)
 
     print 'loading scenario ...'
     model2 = Model.load(savefile)
@@ -200,8 +199,8 @@ def test_save_load_model(uncertain, zipsave, saveloc_):
 #                           (True, True)])
 # def test_save_load_midrun_scenario(uncertain, zipsave, saveloc_):
 #     """
-#     create model, save it after 1step, then load and check equality of original
-#     model and persisted model
+#     create model, save it after 1step, then load and check equality
+#     of original model and persisted model
 #     """
 #
 #     model = make_model(uncertain)
@@ -231,8 +230,8 @@ def test_save_load_model(uncertain, zipsave, saveloc_):
 #                           (False, True), (True, True)])
 # def test_save_load_midrun_no_movers(uncertain, zipsave, saveloc_):
 #     """
-#     create model, save it after 1step, then load and check equality of original
-#     model and persisted model
+#     create model, save it after 1step, then load and check equality
+#     of original model and persisted model
 #     Remove all movers and ensure it still works as expected
 #     """
 #
@@ -282,9 +281,6 @@ def test_save_load_model(uncertain, zipsave, saveloc_):
 
 
 class TestWebApi:
-
-    webapi_files = os.path.join(dump(), 'webapi_json')
-
     # clean up saveloc_ if it exists
     # let Scenario.__init__() create saveloc_
     def del_saveloc(self, saveloc_):
@@ -309,7 +305,9 @@ class TestWebApi:
                               (True, 'gnome'),
                               (False, 'adios'),
                               (True, 'adios')])
-    def test_dump_webapi_option(self, uncertain, mode):
+    def test_dump_webapi_option(self, uncertain, mode, dump_folder):
+        self.webapi_files = os.path.join(dump_folder, 'webapi_json')
+
         model = make_model(uncertain, mode=mode)
         self.del_saveloc(self.webapi_files)
         os.makedirs(self.webapi_files)

@@ -410,10 +410,10 @@ InterpolationVal TriGridVel_c::GetInterpolationValuesFromIndex(long triNum)
 long TriGridVel_c::GetRectIndexFromTriIndex2(long triIndex,LONGH ptrVerdatToNetCDFH,long numCols_ext)
 {
 	// code goes here, may eventually want to get interpolation indices around point
-	LongPoint lp;
-	long i, n, ntri = triIndex, index=-1, ptIndex1,ptIndex2,ptIndex3;
+	//LongPoint lp;
+	long i, ntri = triIndex, index=-1, ptIndex1,ptIndex2,ptIndex3;
 	long iIndex[3],jIndex[3],largestI,smallestJ;
-	double refLon,refLat;
+	//double refLon,refLat;
 	
 	TopologyHdl topH ;
 	
@@ -459,9 +459,9 @@ long TriGridVel_c::GetRectIndexFromTriIndex(WorldPoint refPoint,LONGH ptrVerdatT
 {
 	// code goes here, may eventually want to get interpolation indices around point
 	LongPoint lp;
-	long i, n, ntri, index=-1, ptIndex1,ptIndex2,ptIndex3;
+	long i, ntri, index=-1, ptIndex1,ptIndex2,ptIndex3;
 	long iIndex[3],jIndex[3],largestI,smallestJ;
-	double refLon,refLat;
+	//double refLon,refLat;
 	
 	TopologyHdl topH ;
 	
@@ -514,10 +514,10 @@ OSErr TriGridVel_c::GetRectCornersFromTriIndexOrPoint(long *index1, long *index2
 {
 	// code goes here, may eventually want to get interpolation indices around point
 	LongPoint lp;
-	long i, n, ntri, index=-1, ptIndex1,ptIndex2,ptIndex3;
+	long i, ntri, index=-1, ptIndex1,ptIndex2,ptIndex3;
 	long debug_ptIndex1, debug_ptIndex2, debug_ptIndex3;
 	long iIndex[3],jIndex[3],largestI,smallestJ, numCols = numCols_ext-1;
-	double refLon,refLat;
+	//double refLon,refLat;
 	
 	TopologyHdl topH ;
 	
@@ -600,7 +600,7 @@ LongPoint TriGridVel_c::GetRectIndicesFromTriIndex(WorldPoint refPoint,LONGH ptr
 	LongPoint lp={-1,-1}, indices;
 	long i, n, ntri, index=-1, ptIndex1,ptIndex2,ptIndex3;
 	long iIndex[3],jIndex[3],largestI,smallestJ;
-	double refLon,refLat;
+	//double refLon,refLat;
 	
 	TopologyHdl topH ;
 	
@@ -676,7 +676,7 @@ VelocityRec TriGridVel_c::GetPatValue(WorldPoint p)
 double TriGridVel_c::GetDepthAtPoint(WorldPoint p)
 {
 	double depthAtPoint = 0;
-	long ptIndex1,ptIndex2,ptIndex3; 
+	//long ptIndex1,ptIndex2,ptIndex3; 
 	float depth1,depth2,depth3;
 	InterpolationVal interpolationVal;
 

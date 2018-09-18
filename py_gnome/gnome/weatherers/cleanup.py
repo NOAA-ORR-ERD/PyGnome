@@ -209,7 +209,7 @@ class CleanUpBase(RemoveMass, Weatherer):
             self.logger.debug('{0} marked {1} LEs with mass: {2}'
                               .format(self._pid, ix, data['mass'][:ix].sum()))
 
-        sc.update_from_fatedataview(substance, 'surface_weather')
+        sc.update_from_fatedataview(fate_status='surface_weather')
 
     def _avg_frac_oil(self, data):
         '''
@@ -363,7 +363,7 @@ class Skimmer(CleanUpBase):
             return
 
         for substance, data in sc.itersubstancedata(self.array_types,
-                                                    fate='skim'):
+                                                    fate_status='skim'):
             if len(data['mass']) is 0:
                 continue
 
@@ -390,7 +390,7 @@ class Skimmer(CleanUpBase):
             self.logger.debug('{0} amount skimmed for {1}: {2}'
                               .format(self._pid, substance.name, rm_mass))
 
-        sc.update_from_fatedataview(fate='skim')
+        sc.update_from_fatedataview(fate_status='skim')
 
 
 class BurnSchema(WeathererSchema):
@@ -559,7 +559,7 @@ class Burn(CleanUpBase):
         value in SI units is > _min_thickness. If it is not, then log a
         warning
         '''
-        if (uc.Convert('Length', self.thickness_units, 'm',
+        if (uc.convert('Length', self.thickness_units, 'm',
                        self.thickness) <= self._min_thickness):
             msg = ("thickness of {0} {1}, is less than min required {2} m."
                    " Burn will not occur"
@@ -625,8 +625,8 @@ class Burn(CleanUpBase):
         if (sc['fate_status'] == bt_fate.burn).sum() == 0:
             substance = self._get_substance(sc)
 
-            _si_area = uc.Convert('Area', self.area_units, 'm^2', self.area)
-            _si_thickness = uc.Convert('Length', self.thickness_units, 'm',
+            _si_area = uc.convert('Area', self.area_units, 'm^2', self.area)
+            _si_thickness = uc.convert('Length', self.thickness_units, 'm',
                                        self.thickness)
 
             mass_to_remove = (self.efficiency *
@@ -648,7 +648,7 @@ class Burn(CleanUpBase):
         frac_water = 0.0
         '''
         # burn rate constant is defined as a thickness rate in m/sec
-        _si_area = uc.Convert('Area', self.area_units, 'm^2', self.area)
+        _si_area = uc.convert('Area', self.area_units, 'm^2', self.area)
 
         # rate if efficiency is 100 %
         self._oilwater_thick_burnrate = self._burn_constant * avg_frac_oil
@@ -658,7 +658,7 @@ class Burn(CleanUpBase):
 
         # burn duration is known once rate is known
         # reset current thickness to initial thickness whenever model is rerun
-        self._oilwater_thickness = uc.Convert('Length',
+        self._oilwater_thickness = uc.convert('Length',
                                               self.thickness_units, 'm',
                                               self.thickness)
 
@@ -720,7 +720,7 @@ class Burn(CleanUpBase):
         if not self.active or len(sc) == 0:
             return
 
-        for substance, data in sc.itersubstancedata(self.array_types, fate='burn'):
+        for substance, data in sc.itersubstancedata(self.array_types, fate_status='burn'):
             if len(data['mass']) is 0:
                 continue
 
@@ -752,7 +752,7 @@ class Burn(CleanUpBase):
             self.logger.debug('{0} amount burned for {1}: {2}'
                               .format(self._pid, substance.name, rm_mass))
 
-        sc.update_from_fatedataview(fate='burn')
+        sc.update_from_fatedataview(fate_status='burn')
 
 
 class ChemicalDispersionSchema(WeathererSchema):
@@ -886,7 +886,7 @@ class ChemicalDispersion(CleanUpBase):
         'for now just take away 0.1% at every step'
         if self.active and len(sc) > 0:
             for substance, data in sc.itersubstancedata(self.array_types,
-                                                        fate='disperse'):
+                                                        fate_status='disperse'):
                 if len(data['mass']) is 0:
                     continue
 
@@ -909,4 +909,4 @@ class ChemicalDispersion(CleanUpBase):
                                   '{1}: {2}'
                                   .format(self._pid, substance.name, rm_mass))
 
-            sc.update_from_fatedataview(fate='disperse')
+            sc.update_from_fatedataview(fate_status='disperse')
