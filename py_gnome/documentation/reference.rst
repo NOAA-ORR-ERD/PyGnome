@@ -188,8 +188,8 @@ model run and in subsequent steps the model moves and weathers elements.
 ``gnome.environment.gridded_objects_base`` -- PyGnome wrappers for gridded objects
 ----------------------------------------------------------------------------------
 
-.. autoclass:: Time
-    :members:
+.. .. autoclass:: Time
+..     :members:
 .. automodule:: gnome.environment.gridded_objects_base
 .. autoclass:: Variable
     :members: at, from_netCDF
@@ -202,10 +202,10 @@ model run and in subsequent steps the model moves and weathers elements.
     :members:
     :show-inheritance:
     :inherited-members:
-.. autoclass:: TSVectorProp
-    :members:
-    :show-inheritance:
-    :inherited-members:
+.. .. autoclass:: TSVectorProp
+..    :members:
+..    :show-inheritance:
+..    :inherited-members:
 
 ``gnome.outputter`` -- PyGnome outputters module
 ------------------------------------------------
@@ -236,9 +236,10 @@ model run and in subsequent steps the model moves and weathers elements.
 .. automodule:: gnome.utilities.distributions
     :members:
     :show-inheritance:
-.. automodule:: gnome.utilities.serializable
-    :members:
-    :show-inheritance:
+.. This gave some errors -- not sure why
+.. .. automodule:: gnome.utilities.serializable
+..    :members:
+..    :show-inheritance:
 .. automodule:: gnome.utilities.orderedcollection
     :members:
     :show-inheritance:

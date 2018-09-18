@@ -58,3 +58,12 @@ def test_week():
 def test_week2():
     two_weeks = weeks() * 2
     assert two_weeks == days() * 14
+
+
+def test_addition():
+    """
+    This is really just testing timedelta, but jsut in case
+    """
+    span = days() + 12 * hours()
+    assert span == hours(36)
+

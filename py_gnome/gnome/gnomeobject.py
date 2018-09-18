@@ -311,7 +311,7 @@ class GnomeId(AddLogger):
         determine which attributes are put into the dictionary. No extra
         processing is done to each attribute. They are presented as is.
 
-        The json_ parameter is ignored in this base class. 'save' is passed
+        The ``json_`` parameter is ignored in this base class. 'save' is passed
         in when the schema is saving the object. This allows an override of this
         function to do any custom stuff necessary to prepare for saving.
         """
@@ -525,42 +525,48 @@ class GnomeId(AddLogger):
         """
         save object state as json to user specified saveloc
 
-        :param saveloc: A directory, file path, open zipfile.ZipFile, or None
-        .
-        If a directory, it will place the zip file there, overwriting if specified.
-        If a file path, it will write the file there as follows: If the file
-        does not exist, it will create the zip archive there. If the
-        saveloc is a zip file or zipfile.Zipfile object and overwrite is False, it
-        will append there. Otherwise, it will overwrite the file if allowed.
-        If set to None, this function will instead return an open
-        zipfile.Zipfile object linked to a temporary file.
+        :param saveloc: A directory, file path, open zipfile.ZipFile, or None.
+                        If a directory, it will place the zip file there, overwriting
+                        if specified.
+                        If a file path, it will write the file there as follows:
+                        If the file does not exist, it will create the zip archive
+                        there. If the saveloc is a zip file or ``zipfile.Zipfile`` object
+                        and overwrite is False, it will append there. Otherwise, it will
+                        overwrite the file if allowed.
+                        If set to None, this function will instead return an open
+                        ``zipfile.Zipfile`` object linked to a temporary file.
+                        The zip file will be named [object.name].zip if a directory
+                        is specified
 
-        The zip file will be named [object.name].zip if a directory is specified
         :param refs: dictionary of references to objects
         :param overwrite: If True, overwrites the file at the saveloc
 
-        :returns: obj_json, saveloc, and refs
-        obj_json is the json that is written to this object's file in the zipfile
-        For example if saving a Model named Model1, obj_json will contain the contents
-        of the Model1.json in the save file
+        :returns (obj_json, saveloc, refs): ``obj_json`` is the json that is written to this
+                                            object's file in the zipfile.
+                                            For example if saving a Model named Model1,
+                                            obj_json will contain the contents of the
+                                            Model1.json in the save file.
 
-        saveloc will be the string path passed in EXCEPT if None was passed in. In
-        this case, it will be an open zipfile.ZipFile based on a temporary
-        file.
+                                            ``saveloc`` will be the string path passed in
+                                            EXCEPT if None was passed in. In this case, it will
+                                            be an open ``zipfile.ZipFile`` based on a temporary
+                                            file.
 
-        refs will be a dict containing all the objects that were saved in the
-        save file, keyed by object id. It will also contain the reference to
-        the object that called .save itself.
+                                            ``refs`` will be a dict containing all the objects
+                                            that were saved in the save file, keyed by object
+                                            id. It will also contain the reference to the
+                                            object that called ``.save`` itself.
 
         """
-        zipfile_=None
+        zipfile_ = None
+
         if saveloc is None:
-            #only provide an open zipfile object. When this is closed or the object
-            #loses context, the temporary file will automatically delete itself
-            #should be useful for testing without having to deal with cleanup.
+            # only provide an open zipfile object. When this is closed or the object
+            # loses context, the temporary file will automatically delete itself
+            # should be useful for testing without having to deal with cleanup.
             zipfile_ = zipfile.ZipFile(tempfile.SpooledTemporaryFile('w+b'), 'a',
-                             compression=zipfile.ZIP_DEFLATED,
-                             allowZip64=allowzip64)
+                                       compression=zipfile.ZIP_DEFLATED,
+                                       allowZip64=allowzip64)
         elif os.path.isdir(saveloc):
             saveloc = os.path.join(saveloc, self.name + '.zip')
             if os.path.exists(saveloc):
@@ -595,25 +601,27 @@ class GnomeId(AddLogger):
             zipfile_.close()
             return (obj_json, saveloc, refs)
 
-
     @classmethod
     def load(cls, saveloc='.', filename=None, refs=None):
         '''
         Load an instance of this class from an archive or folder
 
         :param saveloc: Can be an open zipfile.ZipFile archive, a folder, or a
-        filename. If it is an open zipfile or folder, it must contain a .json
-        file that describes an instance of this object type. If 'filename' is
-        not specified, it will load the first instance of this object discovered.
-        If a filename, it must be a zip archive or a json file describing an object
-        of this type.
+                        filename. If it is an open zipfile or folder, it must
+                        contain a .json file that describes an instance of this
+                        object type. If 'filename' is not specified, it will load
+                        the first instance of this object discovered.
+                        If a filename, it must be a zip archive or a json file
+                        describing an object of this type.
+
         :param filename: If saveloc is an open zipfile or folder, this indicates
-        the name of the file to be loaded. If saveloc is a filename, this
-        parameter is ignored.
+                         the name of the file to be loaded. If saveloc is a filename,
+                         this parameter is ignored.
+
         :param refs: A dictionary of id -> object instances that will be used to
-        complete references, if available.
+                     complete references, if available.
         '''
-        fp = json_ =None
+        fp = json_ = None
         if not refs:
             refs = Refs()
         if isinstance(saveloc, six.string_types):

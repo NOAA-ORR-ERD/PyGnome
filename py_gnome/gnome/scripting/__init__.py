@@ -33,6 +33,7 @@ __all__ = ['constant_wind',
 
 
 from .utilities import *
+from time_utils import *
 
 from gnome.environment.wind import constant_wind
 
