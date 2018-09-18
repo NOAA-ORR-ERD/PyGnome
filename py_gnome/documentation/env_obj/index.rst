@@ -1,5 +1,5 @@
 Using your data
-=================
+===============
 
 .. toctree::
    :maxdepth: 2
@@ -19,7 +19,7 @@ Environment objects were conceptualized as a flexible and easy-to-develop repres
 
 
 Overview
------------------
+--------
 An important perspective to take is an abstracted view of what gridded data represents. You can imagine any gridded data as a scalar
 field, where each point in space and time is associated with a value. Because the data is discrete on specific points in
 space, the value of a point between these data points must be determined by some sort of interpolation.
