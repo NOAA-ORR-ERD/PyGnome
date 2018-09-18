@@ -328,30 +328,22 @@ class Renderer(Outputter, MapCanvas):
 
         :param background: Color of the text background.
                            Color must be present in foreground palette
-
         :type background: str
 
         :param color: Color of the font. Note that the color must be present
                       in the foreground palette
-
         :type color: str
 
-        :param size: Size of the font, one of {'tiny', 'small', 'medium',
-                                               'large', 'giant'}
-
+        :param size: Size of the font, one of {'tiny', 'small', 'medium', 'large', 'giant'}
         :type size: str
 
         :param position: x, y pixel coordinates of where to draw the timestamp.
-
-        :type position :tuple
+        :type position: tuple
 
         :param align: The reference point of the text bounding box.
-                      One of: {'lt'(left top), 'ct', 'rt',
-                               'l', 'r',
-                               'lb', 'cb', 'rb'}
-
+                      One of:
+                      {'lt'(left top), 'ct', 'rt', 'l', 'r', 'lb', 'cb', 'rb'}
         :type align: str
-
         """
         self.timestamp_attribs.update(kwargs)
 

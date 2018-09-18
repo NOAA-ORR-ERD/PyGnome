@@ -374,7 +374,7 @@ class Platform(GnomeId):
     def release_rate(self, dosage, unit='gal/acre'):
         '''return unit = gal/min'''
         if unit != 'gal/acre':
-            dosage = uc.Convert('oilconcentration', 'unit', 'gal/acre', dosage)
+            dosage = uc.convert('oilconcentration', 'unit', 'gal/acre', dosage)
 
         a_s = self.get('application_speed', 'ft/min')
         s_w = self.get('swadth_width', 'ft')

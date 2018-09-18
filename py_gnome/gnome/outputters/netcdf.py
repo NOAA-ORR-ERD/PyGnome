@@ -789,25 +789,32 @@ class NetCDFOutput(Outputter):
         this class because the NetCDF functionality for PyGnome data with CF
         standard is captured here.
 
-        :param str netcdf_file: Name of the NetCDF file from which to read
-            the data
-        :param datetime time: timestamp at which the data is desired. Looks in
-            the netcdf data's 'time' array and finds the closest time to this
-            and outputs this data. If both 'time' and 'index' are None, return
-            data if file only contains one 'time' else raise an error
+        :param netcdf_file: Name of the NetCDF file from which to read
+                                the data
+
+        :param time: timestamp at which the data is desired. Looks in
+                              the netcdf data's 'time' array and finds the closest
+                              time to this and outputs this data. If both 'time'
+                              and 'index' are None, return data if file only contains
+                              one 'time' else raise an error
+
         :param int index: Index of the 'time' variable (or time_step). This is
-            only used if 'time' is None. If both 'time' and 'index' are None,
-            return data if file only contains one 'time' else raise an error
-        :param which_data='standard': Which data arrays are desired options are
-            ('standard', 'most', 'all', [list_of_array_names])
+                          only used if 'time' is None. If both 'time' and 'index'
+                          are None,return data if file only contains one 'time' else
+                          raise an error
+
+        :param which_data='standard': Which data arrays are desired. Options are:
+                                      ('standard', 'most', 'all', [list_of_array_names])
         :type which_data: string or sequence of strings.
 
         :return: A dict containing standard data closest to the indicated
-            'time'. Standard data is defined as follows:
+                'time'.
+
+        Standard data is defined as follows:
 
         Standard data arrays are numpy arrays of size N, where N is number of
         particles released at time step of interest. They are defined by the
-        class attribute "standard_arrays", currently:
+        class attribute "standard_arrays", currently::
 
             'current_time_stamp': datetime object associated with this data
             'positions'         : NX3 array. NetCDF variables:
@@ -818,17 +825,17 @@ class NetCDFOutput(Outputter):
                                   'id'
             'mass'              : NX1 array showing 'mass' of each particle
 
-        standard_arrays = ['latitude',
-                           'longitude', # pulled from the 'positions' array
-                           'depth',
-                           'status_codes',
-                           'spill_num',
-                           'id',
-                           'mass',
-                           'age',
-                           ]
-
+            standard_arrays = ['latitude',
+                               'longitude', # pulled from the 'positions' array
+                               'depth',
+                               'status_codes',
+                               'spill_num',
+                               'id',
+                               'mass',
+                               'age',
+                               ]
         """
+
         if not os.path.exists(netcdf_file):
             raise IOError('File not found: {0}'.format(netcdf_file))
 

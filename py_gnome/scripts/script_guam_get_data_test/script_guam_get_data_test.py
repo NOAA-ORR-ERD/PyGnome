@@ -43,7 +43,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     model.map = MapFromBNA(mapfile, refloat_halflife=6)  # hours
 
     print 'adding outputters'
-    renderer = Renderer(mapfile, images_dir, size=(800, 600))
+    renderer = Renderer(mapfile, images_dir, image_size=(800, 600))
     renderer.viewport = ((144.6, 13.4), (144.7, 13.5))
     model.outputters += renderer
 

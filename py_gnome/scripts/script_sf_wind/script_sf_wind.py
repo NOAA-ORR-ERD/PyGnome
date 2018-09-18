@@ -34,7 +34,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     mapfile = get_datafile(os.path.join(base_dir, 'coastSF.bna'))
     model.map = MapFromBNA(mapfile, refloat_halflife=1)  # seconds
 
-    renderer = Renderer(mapfile, images_dir, size=(800, 600),
+    renderer = Renderer(mapfile, images_dir, image_size=(800, 600),
                         draw_ontop='forecast')
     renderer.viewport = ((-124.5, 37.), (-120.5, 39))
 

@@ -44,7 +44,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                   map=gnome_map, uncertain=False, cache_enabled=True)
 
     print 'adding outputters'
-    renderer = Renderer(mapfile, images_dir, size=(800, 600),
+    renderer = Renderer(mapfile, images_dir, image_size=(800, 600),
                         # output_timestep=timedelta(hours=1),
                         draw_ontop='uncertain')
     renderer.viewport = ((-67.15, 45.), (-66.9, 45.2))

@@ -14,7 +14,6 @@ from pytest import raises
 
 from gnome.basic_types import datetime_value_2d
 from gnome.utilities import inf_datetime
-from gnome.persist import load
 
 import gnome.map
 from gnome.environment import Wind, Tide, constant_wind, Water, Waves
@@ -57,8 +56,8 @@ def model(sample_model_fcn, tmpdir):
     model.cache_enabled = True
     model.uncertain = False
 
-    model.outputters += Renderer(model.map.filename, images_dir,
-                                 size=(400, 300))
+#     model.outputters += Renderer(model.map.filename, images_dir,
+#                                   image_size=(400, 300))
 
     N = 10  # a line of ten points
     line_pos = np.zeros((N, 3), dtype=np.float64)
@@ -84,14 +83,18 @@ def test_init():
 
 
 def test_update_model():
-    mdl = Model();
+    mdl = Model()
     d = {'name': 'Model2'}
+
     assert mdl.name == 'Model'
+
     upd = mdl.update(d)
     assert mdl.name == d['name']
-    assert upd == True
+    assert upd is True
+
     d['duration'] = 43200
     upd = mdl.update(d)
+
     assert mdl.duration.seconds == 43200
 
 
@@ -367,7 +370,7 @@ def test_simple_run_with_image_output_uncertainty(tmpdir):
     gmap = gnome.map.MapFromBNA(testdata['MapFromBNA']['testmap'],
                                 refloat_halflife=6)  # hours
     renderer = gnome.outputters.Renderer(testdata['MapFromBNA']['testmap'],
-                                         images_dir, size=(400, 300))
+                                         images_dir, image_size=(400, 300))
 
     model = Model(start_time=start_time,
                   time_step=timedelta(minutes=15), duration=timedelta(hours=1),
@@ -617,7 +620,7 @@ def test_linearity_of_wind_movers(wind_persist):
             model1.next()
         except StopIteration as ex:
             # print message
-            print ex.message
+            print ex
             break
 
     while True:
@@ -625,7 +628,7 @@ def test_linearity_of_wind_movers(wind_persist):
             model2.next()
         except StopIteration as ex:
             # print message
-            print ex.message
+            print ex
             break
 
     # mean and variance at the end should be fairly close
@@ -729,9 +732,9 @@ def test_release_at_right_time():
     model.step()
     assert model.spills.items()[0].num_released == 12
 
-
+# @pytest.mark.skip(reason="Segfault on CI server")
 @pytest.mark.parametrize("traj_only", [False, True])
-def test_full_run(model, dump, traj_only):
+def test_full_run(model, dump_folder, traj_only):
     'Test doing a full run'
     # model = setup_simple_model()
     if traj_only:
@@ -751,8 +754,9 @@ def test_full_run(model, dump, traj_only):
     # The Renderer instantiated with default arguments has two output formats
     # which create a background image and an animated gif in addition to the
     # step images.
-    num_images = len(os.listdir(model.outputters[-1].output_dir))
-    assert num_images == model.num_time_steps + 2
+#JAH: Shutting this off cause Renderer removed (segfaults on CI)
+#     num_images = len(os.listdir(model.outputters[-1].output_dir))
+#     assert num_images == model.num_time_steps + 2
 
 
 ''' Test Callbacks on OrderedCollections '''
@@ -923,7 +927,6 @@ def test_contains_object(sample_model_fcn):
     water, wind = Water(), constant_wind(1., 0)
     model.environment += [water, wind]
 
-    #et = floating(substance=model.spills[0].substance.name)
     et = model.spills[0].element_type
     sp = point_line_release_spill(500, (0, 0, 0),
                                   rel_time + timedelta(hours=1),
@@ -950,7 +953,7 @@ def test_contains_object(sample_model_fcn):
 
     model.weatherers += [evaporation, dispersion, burn, skimmer]
 
-    renderer = Renderer(images_dir='junk', size=(400, 300))
+    renderer = Renderer(images_dir='junk', image_size=(400, 300))
     model.outputters += renderer
 
     for o in (gnome_map, sp, rel, et,
@@ -1024,7 +1027,6 @@ def test_staggered_spills_weathering(sample_model_fcn, delay):
     model.cache = True
     model.outputters += gnome.outputters.WeatheringOutput()
 
-    #et = floating(substance=model.spills[0].substance.name)
     et = model.spills[0].element_type
     cs = point_line_release_spill(500, (0, 0, 0),
                                   rel_time + delay,
@@ -1084,12 +1086,12 @@ def test_staggered_spills_weathering(sample_model_fcn, delay):
     assert np.isclose(exp_total_mass, sc.mass_balance['amount_released'])
 
 
-@pytest.mark.parametrize(("s0", "s1"),
-                         [(test_oil, test_oil),
-                          (test_oil, "ARABIAN MEDIUM, EXXON")
-                          ])
-def test_two_substance_spills_weathering(sample_model_fcn, s0, s1):
+def test_two_substance_same(sample_model_fcn, s0=test_oil, s1=test_oil):
     '''
+    The model (SpillContainer) does not allow two different substances.
+
+    Keeping this test in case we do want to extend it some day.
+
     only tests data arrays are correct and we don't end up with stale data
     in substance_data structure of spill container. It models each substance
     independently
@@ -1112,7 +1114,14 @@ def test_two_substance_spills_weathering(sample_model_fcn, s0, s1):
                                   element_type=et,
                                   amount=1,
                                   units='tonnes')
-    model.spills += cs
+
+    if s0 == s1:
+        print "substances are the same -- it should work"
+        model.spills += cs
+    else:
+        print "two different substances -- expect an error"
+        with pytest.raises(ValueError):
+            model.spills += cs
 
     # ensure amount released is equal to exp_total_mass
     exp_total_mass = 0.0
@@ -1157,6 +1166,39 @@ def test_two_substance_spills_weathering(sample_model_fcn, s0, s1):
         print "completed step {0}".format(step)
 
     assert np.isclose(exp_total_mass, sc.mass_balance['amount_released'])
+
+
+def test_two_substance_different(sample_model_fcn, s0=test_oil, s1="ARABIAN MEDIUM, EXXON"):
+    '''
+    The model (SpillContainer) does not allow two different substances.
+
+    Keeping this test in case we do want to extend it some day.
+
+    only tests data arrays are correct and we don't end up with stale data
+    in substance_data structure of spill container. It models each substance
+    independently
+
+    We don't accurately model two oils at present. This is a basic test,
+    maybe a useful example when extending code to multiple oils. It is also
+    useful for catching bugs when doing a refactor so leave it in.
+    '''
+    model = sample_model_weathering(sample_model_fcn, s0)
+    model.map = gnome.map.GnomeMap()    # make it all water
+    model.uncertain = False
+    rel_time = model.spills[0].release_time
+    model.duration = timedelta(days=1)
+
+    et = floating(substance=s1)
+    cs = point_line_release_spill(500, (0, 0, 0),
+                                  rel_time,
+                                  end_release_time=(rel_time +
+                                                    timedelta(hours=1)),
+                                  element_type=et,
+                                  amount=1,
+                                  units='tonnes')
+
+    with pytest.raises(ValueError):
+        model.spills += cs
 
 
 def test_weathering_data_attr():
@@ -1266,8 +1308,10 @@ class TestMergeModels:
         m = Model()
         m.environment += [Water(), constant_wind(1., 0.)]
         m.weatherers += Evaporation(m.environment[0], m.environment[-1])
+        # has to have the same substance as the sample model
         m.spills += point_line_release_spill(10, (0, 0, 0),
-                                             datetime(2014, 1, 1, 12, 0))
+                                             datetime(2014, 1, 1, 12, 0),
+                                             substance=test_oil)
 
         # create save model
         sample_save_file = os.path.join(saveloc_, 'SampleSaveModel.zip')
@@ -1365,13 +1409,17 @@ class TestValidateModel():
         (msgs, isvalid) = model.check_inputs()
 
         assert len(msgs) == 1 and isvalid
-        assert ('{0} has release time after model start time'.format(model.spills[0].name) in msgs[0])
+        assert ('{} has release time after model start time'
+                .format(model.spills[0].name)
+                in msgs[0])
 
         model.spills[0].release_time = self.start_time - timedelta(hours=1)
         (msgs, isvalid) = model.check_inputs()
 
         assert len(msgs) == 1 and not isvalid
-        assert ('{0} has release time before model start time'.format(model.spills[0].name) in msgs[0])
+        assert ('{} has release time before model start time'
+                .format(model.spills[0].name)
+                in msgs[0])
 
     def make_model_incomplete_waves(self):
         '''

@@ -48,7 +48,7 @@ def test_exceptions():
         wm = WindMover()
         wm.prepare_for_model_run()
 
-    print excinfo.value.message
+    print excinfo.value
 
     with raises(TypeError):
         """
@@ -202,10 +202,10 @@ class TestPrepareForModelStep:
             old_windages = np.copy(self.sc['windages'])
             wm.prepare_for_model_step(self.sc, self.time_step, curr_time)
 
-            mask = [self.sc['windage_persist'] == -1]
+            mask = self.sc['windage_persist'] == -1
             assert np.all(self.sc['windages'][mask] == old_windages[mask])
 
-            mask = [self.sc['windage_persist'] > 0]
+            mask = self.sc['windage_persist'] > 0
             assert np.all(self.sc['windages'][mask] != old_windages[mask])
 
     def test_constant_wind_before_model_time(self):
@@ -235,10 +235,10 @@ class TestPrepareForModelStep:
             old_windages = np.copy(self.sc['windages'])
             wm.prepare_for_model_step(self.sc, self.time_step, curr_time)
 
-            mask = [self.sc['windage_persist'] == -1]
+            mask = self.sc['windage_persist'] == -1
             assert np.all(self.sc['windages'][mask] == old_windages[mask])
 
-            mask = [self.sc['windage_persist'] > 0]
+            mask = self.sc['windage_persist'] > 0
             assert np.all(self.sc['windages'][mask] != old_windages[mask])
 
     def test_constant_wind_after_model_time(self):
@@ -268,10 +268,10 @@ class TestPrepareForModelStep:
             old_windages = np.copy(self.sc['windages'])
             wm.prepare_for_model_step(self.sc, self.time_step, curr_time)
 
-            mask = [self.sc['windage_persist'] == -1]
+            mask = self.sc['windage_persist'] == -1
             assert np.all(self.sc['windages'][mask] == old_windages[mask])
 
-            mask = [self.sc['windage_persist'] > 0]
+            mask = self.sc['windage_persist'] > 0
             assert np.all(self.sc['windages'][mask] != old_windages[mask])
 
     def test_variable_wind_before_model_time(self):
@@ -367,10 +367,10 @@ class TestPrepareForModelStep:
             old_windages = np.copy(self.sc['windages'])
             wm.prepare_for_model_step(self.sc, self.time_step, curr_time)
 
-            mask = [self.sc['windage_persist'] == -1]
+            mask = self.sc['windage_persist'] == -1
             assert np.all(self.sc['windages'][mask] == old_windages[mask])
 
-            mask = [self.sc['windage_persist'] > 0]
+            mask = self.sc['windage_persist'] > 0
             assert np.all(self.sc['windages'][mask] != old_windages[mask])
 
     def test_variable_wind_after_model_time_with_extrapolation(self):
@@ -406,10 +406,10 @@ class TestPrepareForModelStep:
             old_windages = np.copy(self.sc['windages'])
             wm.prepare_for_model_step(self.sc, self.time_step, curr_time)
 
-            mask = [self.sc['windage_persist'] == -1]
+            mask = self.sc['windage_persist'] == -1
             assert np.all(self.sc['windages'][mask] == old_windages[mask])
 
-            mask = [self.sc['windage_persist'] > 0]
+            mask = self.sc['windage_persist'] > 0
             assert np.all(self.sc['windages'][mask] != old_windages[mask])
 
 

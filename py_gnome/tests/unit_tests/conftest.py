@@ -37,10 +37,11 @@ base_dir = os.path.dirname(__file__)
 # test_oil = u'ALASKA NORTH SLOPE (MIDDLE PIPELINE)'
 test_oil = u'oil_ans_mp'
 
+
 def validate_serialize_json(json_, orig_obj):
     '''
-    Takes the json_ from a gnome object's serialize function, and verifies that it
-    fits the schema. In particular:
+    Takes the json_ from a gnome object's serialize function, and verifies
+    that it fits the schema. In particular:
     class_from_objtype must return the original object's class when provided
     json_['obj_type']
     all schema nodes set to missing=drop and are None on the original object
@@ -53,11 +54,7 @@ def validate_serialize_json(json_, orig_obj):
     '''
     assert class_from_objtype(json_['obj_type']) is orig_obj.__class__
 
-    schema = orig_obj._schema()
-#     potential_missing = schema.get_nodes_by_attr('missing')
-#     for n in potential_missing:
-#         if getattr(orig_obj,n) is None:
-#             assert n not in json_
+    _schema = orig_obj._schema()
 
     for v in json_.values():
         assert not issubclass(v.__class__, GnomeId)
@@ -75,8 +72,8 @@ def validate_save_json(json_, zipfile_, orig_obj):
     All save_reference attributes have a .json file referenced, and
     such files also exist in the zipfile_
 
-    All missing=drop attributes that are None on the original object do not appear
-    No GnomeId python objects exist in the json
+    All missing=drop attributes that are None on the original object
+    do not appear.  No GnomeId python objects exist in the json
 
     Note that this should not be used to validate cases where the object may
     be doing custom save or using a custom to_dict. If an object does
@@ -110,7 +107,7 @@ def validate_save_json(json_, zipfile_, orig_obj):
 
 
 @pytest.fixture(scope="session")
-def dump():
+def dump_folder():
     '''
     create dump folder for output data/files
     session scope so it is only executed the first time it is used
@@ -611,8 +608,9 @@ def sample_sc_no_uncertainty():
     return sc
 
 
-@pytest.fixture(scope='module')
-def sample_model():
+
+# @pytest.fixture(scope='module')
+def sample_model_fixture_base():
     """
     sample model with no outputter and no spills. Use this as a template for
     fixtures to add spills
@@ -671,8 +669,12 @@ def sample_model():
             }
 
 
-@pytest.fixture(scope='module')
-def sample_model2():
+# make this two fixtures - one module scope, one function scope
+sample_model = pytest.fixture(scope='module')(sample_model_fixture_base)
+sample_model_fcn = pytest.fixture(scope='function')(sample_model_fixture_base)
+
+
+def sample_model2_fixture_base():
     """
     sample model with no outputter and no spills. Use this as a template for
     fixtures to add spills
@@ -729,16 +731,21 @@ def sample_model2():
             'release_end_pos': end_points}
 
 
-@pytest.fixture(scope='function')
-def sample_model_fcn():
-    'sample_model with function scope'
-    return sample_model()
+# make this two fixtures - one module scope, one function scope
+sample_model2 = pytest.fixture(scope='module')(sample_model2_fixture_base)
+sample_model_fcn2 = pytest.fixture(scope='function')(sample_model2_fixture_base)
 
 
-@pytest.fixture(scope='function')
-def sample_model_fcn2():
-    'sample_model with function scope'
-    return sample_model2()
+# @pytest.fixture(scope='function')
+# def sample_model_fcn():
+#     'sample_model with function scope'
+#     return sample_model()
+
+
+# @pytest.fixture(scope='function')
+# def sample_model_fcn2():
+#     'sample_model with function scope'
+#     return sample_model2()
 
 
 def sample_model_weathering(sample_model_fcn,

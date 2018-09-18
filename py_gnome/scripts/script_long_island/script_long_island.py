@@ -44,7 +44,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                   map=gnome_map, uncertain=True, cache_enabled=True)
 
     print 'adding outputters'
-    model.outputters += Renderer(mapfile, images_dir, size=(800, 600))
+    model.outputters += Renderer(mapfile, images_dir, image_size=(800, 600))
 
     netcdf_file = os.path.join(base_dir, 'script_long_island.nc')
     scripting.remove_netcdf(netcdf_file)

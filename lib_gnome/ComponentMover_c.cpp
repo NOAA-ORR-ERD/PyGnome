@@ -186,7 +186,7 @@ OSErr ComponentMover_c::PrepareForModelStep(const Seconds& model_time, const Sec
 			if (err) {if (!errmsg[0]) strcpy(errmsg,"There is a problem with the averaged winds. Please check your inputs.");}
 		}
 	}*/
-done:
+//done:
 	if (err)
 	{
 		if(!errmsg[0])
@@ -200,10 +200,10 @@ OSErr ComponentMover_c::CalculateAveragedWindsVelocity(const Seconds& model_time
 {
 	OSErr err = 0;
 	long j;
-	VelocityRec avValue;
+	//VelocityRec avValue;
 	VelocityRec wVel = {0.,0.};
 	double pat1Theta = PI * -(0.5 + (pat1Angle / 180.0));
-	double pat2Theta = PI * -(0.5 + (pat2Angle / 180.0));
+	//double pat2Theta = PI * -(0.5 + (pat2Angle / 180.0));
 	//WorldPoint3D refPoint3D = {0,0,0.};
 	VelocityRec pat1ValRef;
 	double pat1ValRefLength;
@@ -254,7 +254,7 @@ OSErr ComponentMover_c::CalculateAveragedWindsVelocity(const Seconds& model_time
 	for (j=0;j<averageTimeSteps;j++)
 	{
 		Seconds timeToAddToAverage = startPastTime + j*3600; // eventually this will be time step...
-		double		windSpeedToScale, windDir,theta;
+		double		windSpeedToScale, windDir/*, theta*/;
 		// get the time file / wind mover value for this time
 		// get the mover first then repeat using it for the times..., but make sure get time value gets a value...
 		// check first value - 24, last value else will just use first/last value 
@@ -504,9 +504,9 @@ void ComponentMover_c::SetTimeFile(TOSSMTimeValue *newTimeFile)
 
 OSErr ComponentMover_c::SetOptimizeVariables (char *errmsg, const Seconds& model_time, const Seconds& time_step)
 {
-	VelocityRec	vVel, hVel, wVel = {0.,0.};
+	VelocityRec	/*vVel, hVel,*/ wVel = {0.,0.};
 	OSErr		err = noErr;
-	Boolean 	useEddyUncertainty = false;	
+	//Boolean 	useEddyUncertainty = false;	
 	VelocityRec	ref1Wind, ref2Wind,pat1ValRef, pat2ValRef;
 	double		dot1,dot2;
 	double		pat1SpeedMPS,pat2SpeedMPS,pat1Theta,pat2Theta;
@@ -767,9 +767,9 @@ OSErr ComponentMover_c::get_move(int n, Seconds model_time, Seconds step_len,
 WorldPoint3D ComponentMover_c::GetMove (const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	double 		dLat, dLong;
-	WorldPoint3D	deltaPoint = {0,0,0.};
+	WorldPoint3D	deltaPoint = {{0,0},0.};
 	WorldPoint refPoint = (*theLE).p;	
-	WorldPoint3D	refPoint3D = {0,0,0.};
+	WorldPoint3D	refPoint3D = {{0,0},0.};
 	VelocityRec	finalVel, pat1Val,pat2Val;
 	OSErr err = 0;
 	char errmsg[256];
@@ -808,8 +808,10 @@ Boolean ComponentMover_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticSt
 	char str1[32], str2[32], str3[32];
 	double length1=0., length2=0., length3 = 0.;
 	VelocityRec	pat1Val={0.,0.}, pat2Val={0.,0.}, finalVel;
+#ifndef pyGNOME	
 	OSErr err = 0;
 	char errmsg[256];
+#endif	
 	
 	if (this -> pattern1) {
 		pat1Val = this -> pattern1 -> GetPatValue (wp);
@@ -906,7 +908,7 @@ OSErr ComponentMover_c::GetAveragedWindValue(Seconds time, const Seconds& time_s
 OSErr ComponentMover_c::TextRead(char *cats_path1, char *cats_path2) 
 {
 	OSErr err = 0;
-	TTriGridVel *triGrid = 0;
+	//TTriGridVel *triGrid = 0;
 	
 	TCATSMover *newCATSMover1 = 0;
 	TCATSMover *newCATSMover2 = 0;

@@ -166,22 +166,20 @@ class Model(GnomeId):
 #                "{0.name}").format(model)
 #         model.logger.info(msg)
 #         return model
-
     @classmethod
     def load_savefile(cls, filename):
         """
-        load a model instance from a save file
+        Load a model instance from a save file
 
         :param filename: the filename of the save file -- usually a zip file,
                          but can also be a directry with the full contents of
                          a zip file
 
-        :returns: a model instance all set up from the savefile.
+        :return: a model instance all set up from the savefile.
 
-        This is simply a utility wrapper around:
-        ``gnome.persist.save_load.load()``
-
+        This is simply a utility wrapper around: ``gnome.persist.save_load.load()``
         """
+
         model = gnome.persist.save_load.load(filename)
 
         # check that this actually loaded a model object
@@ -224,7 +222,7 @@ class Model(GnomeId):
         :param duration=timedelta(days=1): How long to run the model,
                                            a timedelta object.
 
-        :param int weathering_substeps=1: How many weathering substeps to
+        :param weathering_substeps=1: How many weathering substeps to
                                           run inside a single model time step.
 
         :param map=gnome.map.GnomeMap(): The land-water map.
@@ -1285,21 +1283,24 @@ class Model(GnomeId):
         Load an instance of this class from an archive or folder
 
         :param saveloc: Can be an open zipfile.ZipFile archive, a folder, or a
-        filename. If it is an open zipfile or folder, it must contain a .json
-        file that describes an instance of this object type. If 'filename' is
-        not specified, it will load the first instance of this object discovered.
-        If a filename, it must be a zip archive or a json file describing an object
-        of this type.
+                        filename. If it is an open zipfile or folder, it must
+                        contain a ``.json`` file that describes an instance of
+                        this object type. If ``filename`` is not specified, it
+                        will load the first instance of this object discovered.
+                        If a filename, it must be a zip archive or a json file
+                        describing an object of this type.
+
         :param filename: If saveloc is an open zipfile or folder, this indicates
-        the name of the file to be loaded. If saveloc is a filename, this
-        parameter is ignored.
+                         the name of the file to be loaded. If saveloc is a filename,
+                         is parameter is ignored.
+
         :param refs: A dictionary of id -> object instances that will be used to
-        complete references, if available.
+                     complete references, if available.
         '''
 
         new_model = super(Model, cls).load(saveloc=saveloc, filename=filename, refs=refs)
-        #Since the model may have saved mid-run, need to try and load spill data
-        #new_model._load_spill_data(saveloc, filename, 'spills_data_arrays.nc')
+        # Since the model may have saved mid-run, need to try and load spill data
+        # new_model._load_spill_data(saveloc, filename, 'spills_data_arrays.nc')
 
         return new_model
 

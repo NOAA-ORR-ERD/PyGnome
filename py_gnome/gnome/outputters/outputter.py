@@ -48,7 +48,7 @@ class BaseOutputterSchema(base_schema.ObjTypeSchema):
 
 class Outputter(GnomeId):
     '''
-    base class for all outputters
+    Base class for all outputters
     Since this outputter doesn't do anything, it'll never be used as part
     of a gnome model. As such, it should never need to be serialized
     '''
@@ -66,7 +66,7 @@ class Outputter(GnomeId):
                  *args,
                  **kwargs):
         """
-        sets attributes for all outputters, like output_timestep, cache
+        Sets attributes for all outputters, like output_timestep, cache, etc.
 
         :param cache: sets the cache object from which to read data. The model
             will automatically set this param
@@ -98,10 +98,11 @@ class Outputter(GnomeId):
                                   the surface concentration the contents of the
                                   string determine the algorithm used. "kde" is
                                   currently the only working option.
-        :type surface_conc" string
-
+        :type surface_conc: string
         """
+
         super(Outputter, self).__init__(*args, **kwargs)
+
         self.cache = cache
         self.on = on
         self.output_zero_step = output_zero_step
