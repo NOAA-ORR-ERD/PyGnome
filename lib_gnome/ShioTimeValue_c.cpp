@@ -1416,13 +1416,11 @@ OSErr ShioTimeValue_c::ReadShioValues (char *path)
 	//double value1, value2, magnitude, degrees;
 	CHARH f = 0;
 	//DateTimeRec time;
-	TimeValuePair pair;
 	OSErr	err = noErr/*,scanErr*/;
 	long lineNum = 0;
 	char *p;
-	//long numScanned;
 	double /*value, */stationLat, stationLon;
-	//ONTROLVAR  DatumControls;
+	//CONTROLVAR  DatumControls;
 	
 	if ((err = OSSMTimeValue_c::InitTimeFunc()) > 0)
 		return err;

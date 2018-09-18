@@ -96,7 +96,7 @@ WORLDPOINTH	TriGridVel_c::GetCenterPointsHdl()
 {
 	OSErr err = 0;
 	LongPointHdl ptsH = 0;
-	WORLDPOINTH wpH = 0;
+	//WORLDPOINTH wpH = 0;
 	TopologyHdl topH ;
 	LongPoint wp1,wp2,wp3;
 	WorldPoint wp;
@@ -598,7 +598,7 @@ LongPoint TriGridVel_c::GetRectIndicesFromTriIndex(WorldPoint refPoint,LONGH ptr
 {
 	// code goes here, may eventually want to get interpolation indices around point
 	LongPoint lp={-1,-1}, indices;
-	long i, n, ntri, index=-1, ptIndex1,ptIndex2,ptIndex3;
+	long i, ntri, index=-1, ptIndex1,ptIndex2,ptIndex3;
 	long iIndex[3],jIndex[3],largestI,smallestJ;
 	//double refLon,refLat;
 	
