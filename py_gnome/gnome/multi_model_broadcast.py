@@ -361,7 +361,13 @@ class ModelBroadcaster(GnomeId):
 
     def clean_task_files(self):
         for f in self.task_files:
-            os.remove(f)
+            try:
+                os.remove(f)
+            except OSError as e:
+                if e.errno == 2:
+                    pass
+                else:
+                    raise
 
         self.task_files = []
 
