@@ -10,12 +10,11 @@ This one used the new map_canvas, which uses the gd rendering lib.
 import os
 from os.path import basename
 import glob
-import copy
-import zipfile
+# import copy
+# import zipfile
 
 import numpy as np
 import py_gd
-import pytest
 
 from colander import SchemaNode, String, drop
 
@@ -33,6 +32,7 @@ from gnome.persist.extend_colander import FilenameSchema
 from . import Outputter, BaseOutputterSchema
 
 from gnome.environment.gridded_objects_base import Grid_S, Grid_U
+
 
 class RendererSchema(BaseOutputterSchema):
 
@@ -127,6 +127,7 @@ class Renderer(Outputter, MapCanvas):
 
         :param viewport: viewport of map -- what gets drawn and on what scale.
                          Default is full globe: (((-180, -90), (180, 90)))
+                         If not specifies, it will be set to the map's bounds.
         :type viewport: pair of (lon, lat) tuples ( lower_left, upper right )
 
         :param map_BB=None: bounding box of map if None, it will use the
@@ -206,8 +207,9 @@ class Renderer(Outputter, MapCanvas):
 
         self.map_BB = map_BB
 
+        viewport = self.map_BB if viewport is None else viewport
         MapCanvas.__init__(self, image_size, projection=projection,
-                           viewport=self.map_BB)
+                           viewport=viewport)
 
         # assorted rendering flags:
         self.draw_map_bounds = draw_map_bounds
@@ -283,7 +285,7 @@ class Renderer(Outputter, MapCanvas):
         self.animation = py_gd.Animation(filename, self.delay)
         looping = 0 if self.repeat else -1
 
-        print 'Starting animation'
+        self.logger.info('Starting Animation')
         self.animation.begin_anim(self.back_image, looping)
 
     def prepare_for_model_run(self, *args, **kwargs):
