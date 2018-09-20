@@ -126,7 +126,7 @@ void GridCurrentMover_c::Dispose ()
 OSErr GridCurrentMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec *velocity,double timeStep,Boolean useEddyUncertainty)
 {
 	LEUncertainRec unrec;
-	double u,v,lengthS,alpha,beta,v0;
+	double u,v,lengthS,alpha,beta;
 	OSErr err = 0;
 	
 	if(!fUncertaintyListH || !fLESetSizesH) return 0; // this is our clue to not add uncertainty
