@@ -30,10 +30,8 @@ from gnome.spill import (Spill,
                          InitElemsFromFile,
                          grid_spill,
                          )
-from gnome.spill.elements import (floating,
-                                  ElementType)
+from gnome.spill.initializers import floating_initializers
 
-from gnome.spill_container import SpillContainer
 
 from ..conftest import mock_sc_array_types, mock_append_data_arrays, test_oil, testdata
 

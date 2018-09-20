@@ -18,7 +18,6 @@ from colander import (SchemaNode,
                       )
 
 
-import gnome.utilities.cache
 from gnome.utilities.time_utils import round_time, asdatetime
 from gnome.utilities.orderedcollection import OrderedCollection
 
@@ -30,10 +29,11 @@ from gnome.map import (GnomeMapSchema,
                        MapFromUGridSchema)
 
 from gnome.environment import Environment, Wind
+from gnome.environment import schemas as env_schemas
 
 from gnome.spill_container import SpillContainerPair
 
-from gnome.movers import Mover
+from gnome.movers import Mover, mover_schemas
 from gnome.weatherers import (weatherer_sort,
                               Weatherer,
                               WeatheringData,
@@ -41,7 +41,7 @@ from gnome.weatherers import (weatherer_sort,
                               Langmuir,
                               weatherer_schemas)
 from gnome.outputters import Outputter, NetCDFOutput, WeatheringOutput
-
+from gnome.outputters import schemas as out_schemas
 from gnome.persist import (extend_colander,
                            validators,
                            save_load)
@@ -66,7 +66,6 @@ class ModelSchema(ObjTypeSchema):
         extend_colander.TimeDelta()
     )
     uncertain = SchemaNode(Bool())
-    cache_enabled = SchemaNode(Bool())
     num_time_steps = SchemaNode(Int(), read_only=True)
     make_default_refs = SchemaNode(Bool())
     mode = SchemaNode(
@@ -92,7 +91,7 @@ class ModelSchema(ObjTypeSchema):
 #         save_reference=True, test_equal=False
 #     )
     movers = OrderedCollectionSchema(
-        GeneralGnomeObjectSchema(acceptable_schemas=gnome.movers.mover_schemas),
+        GeneralGnomeObjectSchema(acceptable_schemas=mover_schemas),
         save_reference=True
     )
     weatherers = OrderedCollectionSchema(
@@ -100,11 +99,11 @@ class ModelSchema(ObjTypeSchema):
         save_reference=True
     )
     environment = OrderedCollectionSchema(
-        GeneralGnomeObjectSchema(acceptable_schemas=gnome.environment.schemas),
+        GeneralGnomeObjectSchema(acceptable_schemas=env_schemas),
         save_reference=True
     )
     outputters = OrderedCollectionSchema(
-        GeneralGnomeObjectSchema(acceptable_schemas=gnome.outputters.schemas),
+        GeneralGnomeObjectSchema(acceptable_schemas=out_schemas),
         save_reference=True
     )
 
@@ -154,7 +153,6 @@ class Model(GnomeId):
                  weathering_substeps=1,
                  map=None,
                  uncertain=False,
-                 cache_enabled=False,
                  mode=None,
                  location=[],
                  environment=[],
@@ -209,8 +207,6 @@ class Model(GnomeId):
         self.spills.add(spills)
         self.spills.add(uncertain_spills)
 
-        self._cache = gnome.utilities.cache.ElementCache()
-        self._cache.enabled = cache_enabled
 
         # default to now, rounded to the nearest hour
         self.start_time = start_time
@@ -292,9 +288,6 @@ class Model(GnomeId):
         # set rand before each call so windages are set correctly
         gnome.utilities.rand.seed(1)
 
-        # clear the cache:
-        self._cache.rewind()
-
         for outputter in self.outputters:
             outputter.rewind()
 
@@ -360,16 +353,6 @@ class Model(GnomeId):
 #     def uncertain_spills(self):
 #         return self.spills.to_dict().get('uncertain_spills', [])
 
-    @property
-    def cache_enabled(self):
-        '''
-        If True, then generated data is cached
-        '''
-        return self._cache.enabled
-
-    @cache_enabled.setter
-    def cache_enabled(self, enabled):
-        self._cache.enabled = enabled
 
     @property
     def has_weathering_uncertainty(self):
@@ -732,7 +715,6 @@ class Model(GnomeId):
         # have been updated.
         for outputter in self.outputters:
             outputter.prepare_for_model_run(model_start_time=self.start_time,
-                                            cache=self._cache,
                                             uncertain=self.uncertain,
                                             spills=self.spills,
                                             model_time_step=self.time_step)
@@ -1004,7 +986,7 @@ class Model(GnomeId):
         # cache the results - current_time_step is incremented but the
         # current_time_stamp in spill_containers (self.spills) is not updated
         # till we go through the prepare_for_model_step
-        self._cache.save_timestep(self.current_time_step, self.spills)
+        #self._cache.save_timestep(self.current_time_step, self.spills)
         output_info = self.write_output(isvalid)
 
         self.logger.debug('{0._pid} '
@@ -1188,7 +1170,7 @@ class Model(GnomeId):
             hard code the filename - can make this an attribute if user wants
             to change it - but not sure if that will ever be needed?
             '''
-            self._save_spill_data(saveloc, 'spills_data_arrays.nc')
+            #self._save_spill_data(saveloc, 'spills_data_arrays.nc')
 
         return json_, saveloc, refs
 

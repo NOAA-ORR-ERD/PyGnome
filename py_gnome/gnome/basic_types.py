@@ -24,6 +24,7 @@ coord_systems = cbt.ts_format
 
 oil_status = cbt.oil_status
 seconds = cbt.seconds
+spill_type = cbt.spill_type
 
 # Here we customize what a numpy 'long' type is....
 # We do this because numpy does different things with a long

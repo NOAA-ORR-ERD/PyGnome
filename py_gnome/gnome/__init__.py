@@ -116,7 +116,6 @@ from . import (map,
                environment,
                model,
                # multi_model_broadcast,
-               spill_container,
                spill,
                movers,
                outputters)

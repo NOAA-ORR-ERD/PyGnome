@@ -22,13 +22,12 @@ from gnome.basic_types import datetime_value_2d
 from gnome.map import MapFromBNA
 from gnome.model import Model
 
-from gnome.spill_container import SpillContainer
 
 from gnome.movers import SimpleMover
 # from gnome.weatherers import Skimmer
 from gnome.environment import constant_wind, Water, Waves
 from gnome.utilities.remote_data import get_datafile
-import gnome.array_types as gat
+from gnome.array_types import gat
 from gnome.gnomeobject import class_from_objtype, GnomeId
 
 
@@ -150,15 +149,9 @@ def mock_sc_array_types(array_types):
     function that creates the SpillContainer's array_types attribute
     '''
     d_array_types = {}
-    for array in array_types:
-        if array not in d_array_types:
-            try:
-                d_array_types[array] = getattr(gat, array)
-            except AttributeError:
-                pass
-        else:
-            # must be a tuple of length 2
-            d_array_types[array[0]] = array[1]
+    for atype in array_types:
+        d_array_types[atype] = gat(atype)
+
 
     return d_array_types
 
@@ -196,18 +189,18 @@ def mock_append_data_arrays(array_types, num_elements, data_arrays={}):
     return data_arrays
 
 
-def sample_sc_release(num_elements=10,
-                      start_pos=(0.0, 0.0, 0.0),
-                      release_time=datetime(2000, 1, 1, 1),
-                      uncertain=False,
-                      time_step=360,
-                      spill=None,
-                      element_type=None,
-                      current_time=None,
-                      arr_types=None,
-                      windage_range=None,
-                      units='g',
-                      amount_per_element=1.0):
+def sample_spill_release(num_elements=10,
+                         start_pos=(0.0, 0.0, 0.0),
+                         release_time=datetime(2000, 1, 1, 1),
+                         uncertain=False,
+                         time_step=360,
+                         spill=None,
+                         element_type=None,
+                         current_time=None,
+                         arr_types=None,
+                         windage_range=None,
+                         units='g',
+                         amount_per_element=1.0):
     """
     Initialize a Spill of type 'spill', add it to a SpillContainer.
     Invoke release_elements on SpillContainer, then return the spill container
@@ -243,14 +236,11 @@ def sample_sc_release(num_elements=10,
     if windage_range is not None:
         spill.windage_range = windage_range
 
-    sc = SpillContainer(uncertain)
-    sc.spills.add(spill)
-
     # used for testing so just assume there is a Windage array
-    sc.prepare_for_model_run(arr_types)
-    sc.release_elements(time_step, current_time)
+    spill.prepare_for_model_run(arr_types)
+    spill.release_elements(time_step, current_time)
 
-    return sc
+    return spill
 
 
 def get_testdata():
@@ -577,45 +567,45 @@ def sample_vertical_plume_spill():
     return Spill(vps)
 
 
-@pytest.fixture(scope='function')
-def sample_sc_no_uncertainty():
-    """
-    Sample spill container with 2 point_line_release_spill spills:
-
-    - release_time for 2nd spill is 1 hour delayed
-    - 2nd spill takes 4 hours to release and end_position is different so it
-      is a time varying, line release
-    - both have a volume of 10 and default element_type
-
-    Nothing is released. This module simply defines a SpillContainer, adds
-    the two spills and returns it. It is used in test_spill_container.py
-    and test_elements.py so defined as a fixture.
-    """
-    water = Water()
-    sc = SpillContainer()
-    # Sample data for creating spill
-    num_elements = 100
-    start_position = (23.0, -78.5, 0.0)
-    release_time = datetime(2012, 1, 1, 12)
-    release_time_2 = release_time + timedelta(hours=1)
-
-    end_position = (24.0, -79.5, 1.0)
-    end_release_time = datetime(2012, 1, 1, 12) + timedelta(hours=4)
-
-    spills = [gnome.spill.point_line_release_spill(num_elements,
-                                                   start_position,
-                                                   release_time,
-                                                   amount=10, units='l',
-                                                   water=water),
-              gnome.spill.point_line_release_spill(num_elements,
-                                                   start_position,
-                                                   release_time_2,
-                                                   end_position,
-                                                   end_release_time,
-                                                   water=water),
-              ]
-    sc.spills.add(spills)
-    return sc
+# @pytest.fixture(scope='function')
+# def sample_sc_no_uncertainty():
+#     """
+#     Sample spill container with 2 point_line_release_spill spills:
+#
+#     - release_time for 2nd spill is 1 hour delayed
+#     - 2nd spill takes 4 hours to release and end_position is different so it
+#       is a time varying, line release
+#     - both have a volume of 10 and default element_type
+#
+#     Nothing is released. This module simply defines a SpillContainer, adds
+#     the two spills and returns it. It is used in test_spill_container.py
+#     and test_elements.py so defined as a fixture.
+#     """
+#     water = Water()
+#     sc = SpillContainer()
+#     # Sample data for creating spill
+#     num_elements = 100
+#     start_position = (23.0, -78.5, 0.0)
+#     release_time = datetime(2012, 1, 1, 12)
+#     release_time_2 = release_time + timedelta(hours=1)
+#
+#     end_position = (24.0, -79.5, 1.0)
+#     end_release_time = datetime(2012, 1, 1, 12) + timedelta(hours=4)
+#
+#     spills = [gnome.spill.point_line_release_spill(num_elements,
+#                                                    start_position,
+#                                                    release_time,
+#                                                    amount=10, units='l',
+#                                                    water=water),
+#               gnome.spill.point_line_release_spill(num_elements,
+#                                                    start_position,
+#                                                    release_time_2,
+#                                                    end_position,
+#                                                    end_release_time,
+#                                                    water=water),
+#               ]
+#     sc.spills.add(spills)
+#     return sc
 
 
 

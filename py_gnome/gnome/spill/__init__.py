@@ -14,5 +14,4 @@ from release import (Release,
                      VerticalPlumeRelease,
                      InitElemsFromFile)
 from le import LEData
-import elements
 

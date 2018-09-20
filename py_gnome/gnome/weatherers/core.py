@@ -7,7 +7,6 @@ from gnome.persist.extend_colander import NumpyArray
 from gnome.persist.base_schema import ObjTypeSchema
 from gnome.array_types import gat
 
-from gnome.array_types import mass_components
 from gnome.utilities.time_utils import date_to_sec, sec_to_datetime
 from gnome.exceptions import ReferencedObjectNotSet
 from gnome.movers.movers import Process, ProcessSchema
