@@ -14,16 +14,17 @@ from pprint import pformat
 
 import numpy as np
 
-from dateutil.parser import parse as parsetime
 
 from colander import (SchemaNode,
                       String, Float, Int, Bool, List,
-                      drop, OneOf, SequenceSchema)
+                      drop, OneOf,
+                      # SequenceSchema,
+                      )
 
 from gnome.environment import Environment
 
 import gnome.utilities.cache
-from gnome.utilities.time_utils import round_time
+from gnome.utilities.time_utils import round_time, asdatetime
 from gnome.utilities.orderedcollection import OrderedCollection
 
 from gnome.basic_types import oil_status, fate
@@ -446,10 +447,7 @@ class Model(GnomeId):
 
     @start_time.setter
     def start_time(self, start_time):
-        if not isinstance(start_time, datetime):
-            # assume it's an iso string, or somethign that dateutils can parse.
-            start_time = parsetime(start_time, ignoretz=True)
-        self._start_time = start_time
+        self._start_time = asdatetime(start_time)
         self.rewind()
 
     @property
@@ -1418,6 +1416,7 @@ class Model(GnomeId):
             msg = None
             if spill.on:
                 num_spills_on += 1
+
                 if spill.release_time < self.start_time + self.duration:
                     someSpillIntersectsModel = True
 

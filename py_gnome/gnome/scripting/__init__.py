@@ -34,6 +34,10 @@ __all__ = ['constant_wind',
            'Renderer',
            'NetCDFOutput',
            'KMZOutput',
+           'MapFromBNA',
+           'GridCurrent',
+           'RandomMover',
+           'WindMover',
            ]
 
 import gnome
@@ -55,6 +59,10 @@ from gnome.movers.wind_movers import (constant_wind_mover,
                                       )
 
 from gnome.outputters import Renderer, NetCDFOutput, KMZOutput
+from gnome.map import MapFromBNA
+from gnome.environment import GridCurrent
+from gnome.movers import RandomMover, WindMover
+
 
 def set_verbose(log_level='info'):
     """

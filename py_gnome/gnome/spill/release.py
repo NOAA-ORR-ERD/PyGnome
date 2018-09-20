@@ -5,6 +5,7 @@ is composed of a release object and an ElementType
 
 import copy
 from datetime import datetime, timedelta
+from gnome.utilities.time_utils import asdatetime
 
 import numpy as np
 
@@ -120,7 +121,7 @@ class Release(GnomeId):
         super(Release, self).__init__(**kwargs)
 
         self._num_elements = num_elements
-        self.release_time = release_time
+        self.release_time = asdatetime(release_time)
 
         # number of new particles released at each timestep
         # set/updated by the derived Release classes at each timestep
@@ -286,7 +287,7 @@ class PointLineRelease(Release):
 
         # initializes internal variables: _end_release_time, _start_position,
         # _end_position
-        self.end_release_time = end_release_time
+        self.end_release_time = asdatetime(end_release_time)
         self.start_position = start_position
         self.end_position = end_position
 
@@ -348,6 +349,7 @@ class PointLineRelease(Release):
         previously an instantaneous release but is now timevarying, we need
         to update this method
         '''
+        val = asdatetime(val)
         if val is not None and self.release_time > val:
             raise ValueError('end_release_time must be greater than '
                              'release_time')
@@ -737,6 +739,7 @@ class ContinuousRelease(Release):
         previously an instantaneous release but is now timevarying, we need
         to update this method
         '''
+        val = asdatetime(val)
         if val is not None and self.continuous.release_time > val:
             raise ValueError('end_release_time must be greater than '
                              'release_time')
@@ -789,6 +792,7 @@ class ContinuousRelease(Release):
 
     @release_time.setter
     def release_time(self, val):
+        val = asdatetime(val)
         self.initial_release.release_time = val
         self.continuous.release_time = val
 
