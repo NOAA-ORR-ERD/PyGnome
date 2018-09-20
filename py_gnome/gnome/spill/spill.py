@@ -36,6 +36,7 @@ from gnome.spill.release import BaseReleaseSchema, PointLineReleaseSchema,\
     ContinuousReleaseSchema, SpatialReleaseSchema
 from gnome.environment.water import WaterSchema
 from gnome.spill.le import LEData
+from gnome.spill.substance import SubstanceSchema
 
 
 class BaseSpill(GnomeId):
@@ -150,44 +151,25 @@ class BaseSpill(GnomeId):
 
         raise NotImplementedError
 
-    def set_newparticle_values(self, num_new_particles, current_time,
-                               time_step, data_arrays):
-        """
-        SpillContainer will release elements and initialize all data_arrays
-        to default initial value. The SpillContainer gets passed as input and
-        the data_arrays for 'position' get initialized correctly by the release
-        object: self.release.set_newparticle_positions()
+    def get_initializer_by_name(self, name):
+        ''' get first initializer in list whose name matches 'name' '''
+        init = [i for i in enumerate(self.initializers) if i.name == name]
 
-        If a Spill Amount is given, the Spill object also sets the 'mass' data
-        array; else 'mass' array remains '0'
-
-        :param int num_new_particles: number of new particles that were added.
-            Always greater than 0
-        :param current_time: current time
-        :type current_time: datetime.datetime
-        :param time_step: the time step, sometimes used to decide how many
-            should get released.
-        :type time_step: integer seconds
-        :param data_arrays: dict of data_arrays provided by the SpillContainer.
-            Look for 'positions' array in the dict and update positions for
-            latest num_new_particles that are released
-        :type data_arrays: dict containing numpy arrays for values
-
-        Also, the set_newparticle_values() method for all element_type gets
-        called so each element_type sets the values for its own data correctly
-        """
-        raise NotImplementedError
+        if len(init) == 0:
+            return None
+        else:
+            return init[0]
 
     def has_initializer(self, name):
         '''
         Returns True if an initializer is present in the list which sets the
         data_array corresponding with 'name', otherwise returns False
-
-        Override with a real implimentaitn if you are using initializers
         '''
+        for i in self.initializers:
+            if name in i.array_types:
+                return True
 
         return False
-
 
 class SpillSchema(ObjTypeSchema):
     'Spill class schema'
@@ -223,12 +205,7 @@ class SpillSchema(ObjTypeSchema):
         ),
         save=True, update=True, save_reference=True
     )
-    standard_density = SchemaNode(
-        Float(), read_only=True
-    )
-    def __init__(self, unknown='preserve', *args, **kwargs):
-        super(SpillSchema, self).__init__(*args, **kwargs)
-        self.typ = ObjType(unknown)
+    substance = SubstanceSchema()
 
 
 class Spill(BaseSpill):
@@ -381,29 +358,27 @@ class Spill(BaseSpill):
     def end_position(self, sp):
         self.release.end_position = sp
 
-    @property
-    def array_types(self):
-        return self.element_type.array_types
-
-    @array_types.setter
-    def array_types(self, at):
-        self.element_type.array_types = at
-
+    '''
+    Windage range/persist are important enough to receive properties on the
+    Spill.
+    '''
     @property
     def windage_range(self):
-        return self.element_type.windage_range
+        return self.get_initializer_by_name('windage_range').windage_range
 
     @windage_range.setter
-    def windage_range(self, at):
-        self.element_type.windage_range = at
+    def windage_range(self, val):
+        initializer = self.get_initializer_by_name('windage_range')
+        initializer.windage_range = val
 
     @property
     def windage_persist(self):
-        return self.element_type.windage_persist
+        return self.get_initializer_by_name('windage_persist').windage_persist
 
     @windage_persist.setter
     def windage_persist(self, wp):
-        self.element_type.windage_persist = wp
+        initializer = self.get_initializer_by_name('windage_persist')
+        initializer.windage_persist = wp
 
     @property
     def substance(self):
@@ -677,6 +652,9 @@ class Spill(BaseSpill):
 
         return substance_json
 
+    def prepare_for_model_run(self, array_types, parentModel=None):
+        self.data.prepare_for_model_run(array_types, self.substance.num_oil_components)
+
     def release_elements(self, current_time, time_step):
         """
         Releases and partially initializes new LEs
@@ -693,6 +671,8 @@ class Spill(BaseSpill):
 
         for init in self.initializers:
             init.initialize(to_rel, self, self.data, self.substance)
+
+        self.substance.initialize_LEs(to_rel, self.data)
 
     def num_elements_to_release(self, current_time, time_step):
         """
@@ -772,8 +752,7 @@ def surface_point_line_spill(num_elements,
                  amount=amount,
                  units=units,
                  name=name,
-                 on=on,
-                 units=units)
+                 on=on)
 
 
 def grid_spill(bounds,
@@ -840,8 +819,7 @@ def grid_spill(bounds,
                  amount=amount,
                  units=units,
                  name=name,
-                 on=on,
-                 units=units)
+                 on=on)
 
 
 def subsurface_plume_spill(num_elements,
@@ -935,8 +913,7 @@ def subsurface_plume_spill(num_elements,
                  amount=amount,
                  units=units,
                  name=name,
-                 on=on,
-                 units=units)
+                 on=on)
 
 
 def continuous_release_spill(initial_elements,
@@ -972,8 +949,7 @@ def continuous_release_spill(initial_elements,
                  amount=amount,
                  units=units,
                  name=name,
-                 on=on,
-                 units=units)
+                 on=on)
 
 
 def point_line_release_spill(num_elements,
@@ -1006,8 +982,7 @@ def point_line_release_spill(num_elements,
                  amount=amount,
                  units=units,
                  name=name,
-                 on=on,
-                 units=units)
+                 on=on)
 
 
 def spatial_release_spill(start_positions,
@@ -1037,5 +1012,4 @@ def spatial_release_spill(start_positions,
                  amount=amount,
                  units=units,
                  name=name,
-                 on=on,
-                 units=units)
+                 on=on)

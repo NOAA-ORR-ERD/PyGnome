@@ -143,19 +143,17 @@ class InitWindages(InitBaseClass):
         Since windages exists in data_arrays, so must windage_range and
         windage_persist if this initializer is used/called
         """
-        (data_arrays['windage_range'][-num_new_particles:, 0],
-         data_arrays['windage_range'][-num_new_particles:, 1],
-         data_arrays['windage_persist'][-num_new_particles:]) = \
-            (self.windage_range[0],
-             self.windage_range[1],
-             self.windage_persist)
+        if any([k not in data_arrays for k in self.array_types.keys()]):
+            return
 
-        # initialize all windages - ignore persistence during initialization
-        # if we have infinite persistence, these values are never updated
+        sl = slice(-num_new_particles, None, 1)
+        data_arrays['windage_range'][sl] = self.windage_range
+        data_arrays['windage_persist'][sl] = self.windage_persist
         random_with_persistance(
-                    data_arrays['windage_range'][-num_new_particles:][:, 0],
-                    data_arrays['windage_range'][-num_new_particles:][:, 1],
-                    data_arrays['windages'][-num_new_particles:])
+            data_arrays['windage_range'][-num_new_particles:, 0],
+            data_arrays['windage_range'][-num_new_particles:, 1],
+            data_arrays['windages'][-num_new_particles:]
+        )
 
 
 # do following two classes work for a time release spill?
@@ -176,6 +174,8 @@ class InitMassFromPlume(InitBaseClass):
         self.name = 'mass'
 
     def initialize(self, num_new_particles, spill, data_arrays, substance):
+        if any([k not in data_arrays for k in self.array_types.keys()]):
+            return
         if spill.plume_gen is None:
             raise ValueError('plume_gen attribute of spill is None - cannot'
                              ' compute mass without plume mass flux')
@@ -238,6 +238,8 @@ class InitRiseVelFromDist(DistributionBase):
 
     def initialize(self, num_new_particles, spill, data_arrays,
                    substance=None):
+        if any([k not in data_arrays for k in self.array_types.keys()]):
+            return
         'Update values of "rise_vel" data array for new particles'
         self.distribution.set_values(
                             data_arrays['rise_vel'][-num_new_particles:])
@@ -296,6 +298,8 @@ class InitRiseVelFromDropletSizeFromDist(DistributionBase):
         water density and water_viscosity:
         gnome.cy_gnome.cy_rise_velocity_mover.rise_velocity_from_drop_size()
         """
+        if any([k not in data_arrays for k in self.array_types.keys()]):
+            return
         drop_size = np.zeros((num_new_particles, ), dtype=np.float64)
         le_density = np.zeros((num_new_particles, ), dtype=np.float64)
 

@@ -80,4 +80,4 @@ class TamocRiseVelocityMover(RiseVelocityMover):
         super(TamocRiseVelocityMover, self).__init__(*args, **kwargs)
 
         self.array_types.update({'density': gat('density'),
-                                 'droplet_diameter': gat('droplet_diameter'})
+                                 'droplet_diameter': gat('droplet_diameter')})

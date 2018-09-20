@@ -41,10 +41,8 @@ from gnome.basic_types import (world_point_type,
                                fate)
 from gnome import AddLogger
 
-def position_init_line_release(arr, start_position=None, end_position=None):
 
-
-class ArrayType(type):
+class ArrayType(AddLogger):
     """
     Object used to capture attributes of numpy data array for elements
 
@@ -231,7 +229,7 @@ _default_values = {'positions': ((3,), world_point_type, 'positions',
                    # It is evenly divided to number of LEs
                    'bulk_init_volume': ((), np.float64, 'bulk_init_volume', 0,
                                         ArrayTypeDivideOnSplit),
-                   'density': ((), np.float64, 'density', 0),
+                   'density': ((), np.float64, 'density', 1000),
                    'oil_density': ((), np.float64, 'oil_density', 0),
                    'evap_decay_constant': (None, np.float64,
                                            'evap_decay_constant', None),
@@ -249,7 +247,7 @@ _default_values = {'positions': ((3,), world_point_type, 'positions',
                    # decided to make it a uint8 instead
                    'at_max_area': ((), np.uint8, 'at_max_area', False),
 
-                   'viscosity': ((), np.float64, 'viscosity', 0),
+                   'viscosity': ((), np.float64, 'viscosity', 1000000000000.),
                    'oil_viscosity': ((), np.float64, 'oil_viscosity', 0),
                    # fractional water content in emulsion
                    'frac_water': ((), np.float64, 'frac_water', 0),
@@ -284,7 +282,7 @@ def get_array_type(name):
     Returns and instance of an array type appropriate for name, or None if one
     does not exist
     """
-    params = _default_values(name)
+    params = _default_values[name]
     return ArrayType(shape=params[0],
                      dtype=params[1],
                      name=params[2],
@@ -295,47 +293,47 @@ gat = get_array_type
 # dynamically create the ArrayType objects in this module from _default_values
 # dict. Reason for this logic and subsequent functions is so we only have to
 # update/modify the _default_values dict above
-for key, val in _default_values.iteritems():
-    if len(val) > 4:
-        vars()[key] = val[4](shape=_default_values[key][0],
-                             dtype=_default_values[key][1],
-                             name=_default_values[key][2],
-                             initial_value=_default_values[key][3])
-    else:
-        vars()[key] = ArrayType(shape=_default_values[key][0],
-                                dtype=_default_values[key][1],
-                                name=_default_values[key][2],
-                                initial_value=_default_values[key][3])
-
-
-# list of names of all ArrayTypes defined in this module
-mod = sys.modules[__name__]
+# for key, val in _default_values.iteritems():
+#     if len(val) > 4:
+#         vars()[key] = val[4](shape=_default_values[key][0],
+#                              dtype=_default_values[key][1],
+#                              name=_default_values[key][2],
+#                              initial_value=_default_values[key][3])
+#     else:
+#         vars()[key] = ArrayType(shape=_default_values[key][0],
+#                                 dtype=_default_values[key][1],
+#                                 name=_default_values[key][2],
+#                                 initial_value=_default_values[key][3])
+#
+#
+# # list of names of all ArrayTypes defined in this module
+# mod = sys.modules[__name__]
 
 
 #    define a function to reset all ArrayTypes to defaults
-def reset_to_defaults(names=_default_values.keys()):
-    for name in names:
-        try:
-            obj = getattr(mod, name)
-            obj.shape = _default_values[name][0]
-            obj.dtype = _default_values[name][1]
-            obj.name = _default_values[name][2]
-            obj.initial_value = _default_values[name][3]
-
-        except AttributeError:
-            # name is not part of the defaults - ignore it
-            pass
+# def reset_to_defaults(names=_default_values.keys()):
+#     for name in names:
+#         try:
+#             obj = getattr(mod, name)
+#             obj.shape = _default_values[name][0]
+#             obj.dtype = _default_values[name][1]
+#             obj.name = _default_values[name][2]
+#             obj.initial_value = _default_values[name][3]
+#
+#         except AttributeError:
+#             # name is not part of the defaults - ignore it
+#             pass
 
 # The array types that will always be used in the model.
-default_array_types = {'positions': positions,
-                       'next_positions': next_positions,
-                       'last_water_positions': last_water_positions,
-                       'status_codes': status_codes,
-                       'spill_num': spill_num,
-                       'id': id,
-                       'mass': mass,
-                       'init_mass': init_mass,
-                       'age': age,
-                       'surface_concentration': surface_concentration
+default_array_types = {'positions': gat('positions'),
+                       'next_positions': gat('next_positions'),
+                       'last_water_positions': gat('last_water_positions'),
+                       'status_codes': gat('status_codes'),
+                       'mass': gat('mass'),
+                       'init_mass': gat('init_mass'),
+                       'age': gat('age'),
+                       'density': gat('density'),
+                       'viscosity': gat('viscosity'),
+                       'surface_concentration': gat('surface_concentration')
                        }
 
