@@ -83,9 +83,9 @@ class Renderer(Outputter, MapCanvas):
                   ('grid_2', (175, 175, 175)),
                   ]
 
-    background_map_name = 'background_map.png'
-    foreground_filename_format = 'foreground_{0:05d}.png'
-    foreground_filename_glob = 'foreground_?????.png'
+    background_map_name = 'background_map.'
+    foreground_filename_format = 'foreground_{0:05d}.'
+    foreground_filename_glob = 'foreground_?????.*'
 
     _schema = RendererSchema
 
@@ -100,14 +100,14 @@ class Renderer(Outputter, MapCanvas):
                  draw_back_to_fore=True,
                  draw_map_bounds=False,
                  draw_spillable_area=False,
+                 formats=['png', 'gif'],
+                 draw_ontop='forecast',
                  cache=None,
                  output_timestep=None,
                  output_zero_step=True,
                  output_last_step=True,
                  output_start_time=None,
-                 draw_ontop='forecast',
                  on=True,
-                 formats=['png', 'gif'],
                  timestamp_attrib={},
                  **kwargs
                  ):
@@ -138,6 +138,14 @@ class Renderer(Outputter, MapCanvas):
                                        the images each time step.
         :type draw_back_to_fore: boolean
 
+        :param formats=['gif']: list of formats to output.
+        :type formats: string or list of strings. Options are:
+                       ['bmp', 'jpg', 'jpeg', 'gif', 'png']
+
+        :param draw_ontop: draw 'forecast' or 'uncertain' LEs on top. Default
+            is to draw 'forecast' LEs, which are in black on top
+        :type draw_ontop: str
+
         Following args are passed to base class Outputter's init:
 
         :param cache: sets the cache object from which to read prop. The model
@@ -156,15 +164,6 @@ class Renderer(Outputter, MapCanvas):
         :param output_last_step: default is True. If True then output for
             final step is written regardless of output_timestep
         :type output_last_step: boolean
-
-        :param draw_ontop: draw 'forecast' or 'uncertain' LEs on top. Default
-            is to draw 'forecast' LEs, which are in black on top
-        :type draw_ontop: str
-
-        :param formats: list of formats to output.
-                        Default is .png and animated .gif
-        :type formats: list of strings
-
 
         Remaining kwargs are passed onto baseclass's __init__ with a direct
         call: Outputter.__init__(..)
@@ -278,6 +277,16 @@ class Renderer(Outputter, MapCanvas):
 
         self._draw_ontop = val
 
+    @property
+    def formats(self):
+        return self._formats
+
+    @formats.setter
+    def formats(self, val):
+        if isinstance(val, (str, unicode)):
+            val = (val,)
+        self._formats = val
+
     def output_dir_to_dict(self):
         return os.path.abspath(self.output_dir)
 
@@ -312,7 +321,7 @@ class Renderer(Outputter, MapCanvas):
                 self.start_animation(self.anim_filename)
             else:
                 self.save_background(os.path.join(self.output_dir,
-                                                  self.background_map_name),
+                                                  self.background_map_name + ftype),
                                      file_type=ftype)
 
     def set_timestamp_attrib(self, **kwargs):
@@ -382,21 +391,15 @@ class Renderer(Outputter, MapCanvas):
     def clean_output_files(self):
 
         # clear out the output dir:
-        try:
-            os.remove(os.path.join(self.output_dir,
-                                   self.background_map_name))
-        except OSError:
-            # it's not there to delete..
-            pass
+        # get the files (could have different extensions)
+        files = glob.glob(os.path.join(self.output_dir,
+                                       self.background_map_name) + "*")
+        files += glob.glob(os.path.join(self.output_dir,
+                                        self.foreground_filename_glob))
+        files += glob.glob(os.path.join(self.output_dir,
+                                        self.anim_filename) + "*")
 
-        try:
-            os.remove(self.anim_filename)
-        except OSError:
-            # it's not there to delete..
-            pass
-
-        for name in glob.glob(os.path.join(self.output_dir,
-                                           self.foreground_filename_glob)):
+        for name in files:
             os.remove(name)
 
     def draw_background(self):
@@ -584,8 +587,7 @@ class Renderer(Outputter, MapCanvas):
             return None
 
         image_filename = os.path.join(self.output_dir,
-                                      self.foreground_filename_format
-                                      .format(step_num))
+                                      self.foreground_filename_format.format(step_num))
 
         self.clear_foreground()
 
@@ -613,6 +615,7 @@ class Renderer(Outputter, MapCanvas):
             if ftype == 'gif':
                 self.animation.add_frame(self.fore_image, self.delay)
             else:
+                image_filename += ftype
                 self.save_foreground(image_filename, file_type=ftype)
 
         self.last_filename = image_filename
