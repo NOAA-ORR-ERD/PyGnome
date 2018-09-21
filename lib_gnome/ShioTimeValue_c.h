@@ -82,7 +82,7 @@ public:
 	virtual void			Dispose ();
 	//virtual ClassID 		GetClassID () { return TYPE_SHIOTIMEVALUES; }
 	//virtual Boolean			IAm(ClassID id) { if(id==TYPE_SHIOTIMEVALUES) return TRUE; return OSSMTimeValue_c::IAm(id); }
-	virtual OSErr			ReadTimeValues (char *path);
+	virtual OSErr			ReadShioValues (char *path);
 	virtual long			GetNumEbbFloodValues ();	
 	virtual long			GetNumHighLowValues ();
 	virtual OSErr			GetTimeValue(const Seconds& current_time, VelocityRec *value);

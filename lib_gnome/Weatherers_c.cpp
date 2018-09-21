@@ -45,7 +45,7 @@ OSErr emulsify(int n, unsigned long step_len,
         //sprintf(errmsg,"k_emul = %lf, emul_C = %lf, Y_max = %lf, S_max = %lf, drop_max = %lf\n",k_emul,emul_C,Y_max,S_max,drop_max);
         //printNote(errmsg);
         //if ((age[i] >= emul_time && emul_time >= 0.) || frac_evap[i] >= emul_C && emul_C > 0.)
-        if ((le_age >= emul_time && emul_time >= 0.) || frac_evap[i] >= emul_C && emul_C > 0.)
+        if ((le_age >= emul_time && emul_time >= 0.) || (frac_evap[i] >= emul_C && emul_C > 0.))
         {
             if (emul_time > 0.)	// user has set value
                 start = emul_time;

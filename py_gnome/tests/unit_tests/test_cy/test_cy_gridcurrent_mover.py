@@ -264,6 +264,7 @@ class TestGridCurrentMover:
         topology_file = testdata['GridCurrentMover']['series_top']
 
         self.gcm.text_read(time_grid_file, topology_file)
+        #self.gcm.text_read(time_grid_file)
         self.cm.ref[:]['long'] = -157.795728  # for HiROMS
         self.cm.ref[:]['lat'] = 21.069288
         self.check_move()

@@ -16,7 +16,7 @@ from gnome.outputters import WeatheringOutput
 from ..conftest import test_oil
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='function')
 def model(sample_model):
     model = sample_model['model']
     model.make_default_refs = True
