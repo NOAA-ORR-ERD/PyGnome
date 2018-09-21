@@ -113,32 +113,7 @@ class InitWindages(InitBaseClass):
     def to_dict(self, json_=None):
         return InitBaseClass.to_dict(self, json_=json_)
 
-    @property
-    def windage_persist(self):
-        return self._windage_persist
-
-    @windage_persist.setter
-    def windage_persist(self, val):
-        if val == 0:
-            raise ValueError("'windage_persist' cannot be 0. "
-                             "For infinite windage, windage_persist=-1 "
-                             "otherwise windage_persist > 0.")
-        self._windage_persist = val
-
-    @property
-    def windage_range(self):
-        return self._windage_range
-
-    @windage_range.setter
-    def windage_range(self, val):
-        if np.any(np.asarray(val) < 0) or np.asarray(val).size != 2:
-            raise ValueError("'windage_range' >= (0, 0). "
-                             "Nominal values vary between 1% to 4%. "
-                             "Default windage_range=(0.01, 0.04)")
-        self._windage_range = val
-
-    def initialize(self, num_new_particles, spill, data_arrays,
-                   substance=None):
+    def initialize(self, num_new_particles, data_arrays, env, substance):
         """
         Since windages exists in data_arrays, so must windage_range and
         windage_persist if this initializer is used/called
@@ -173,15 +148,15 @@ class InitMassFromPlume(InitBaseClass):
         self.array_types['mass'] = gat('mass')
         self.name = 'mass'
 
-    def initialize(self, num_new_particles, spill, data_arrays, substance):
+    def initialize(self, num_new_particles, data_arrays, env, substance):
         if any([k not in data_arrays for k in self.array_types.keys()]):
             return
-        if spill.plume_gen is None:
+        if env.plume_gen is None:
             raise ValueError('plume_gen attribute of spill is None - cannot'
                              ' compute mass without plume mass flux')
 
         data_arrays['mass'][-num_new_particles:] = \
-            spill.plume_gen.mass_of_an_le * 1000
+            env.plume_gen.mass_of_an_le * 1000
 
 
 class DistributionBaseSchema(base_schema.ObjTypeSchema):
@@ -236,8 +211,7 @@ class InitRiseVelFromDist(DistributionBase):
         self.array_types['rise_vel'] = gat('rise_vel')
         self.name = 'rise_vel'
 
-    def initialize(self, num_new_particles, spill, data_arrays,
-                   substance=None):
+    def initialize(self, num_new_particles, data_arrays, env, substance):
         if any([k not in data_arrays for k in self.array_types.keys()]):
             return
         'Update values of "rise_vel" data array for new particles'
@@ -289,7 +263,7 @@ class InitRiseVelFromDropletSizeFromDist(DistributionBase):
                                  'droplet_diameter': gat('droplet_diameter')})
         self.name = 'rise_vel'
 
-    def initialize(self, num_new_particles, spill, data_arrays, substance):
+    def initialize(self, num_new_particles, data_arrays, env, substance):
         """
         Update values of 'rise_vel' and 'droplet_diameter' data arrays for
         new particles. First create a droplet_size array sampled from specified
@@ -310,9 +284,13 @@ class InitRiseVelFromDropletSizeFromDist(DistributionBase):
         # Don't require a water object
         # water_temp = spill.water.get('temperature')
         # le_density[:] = substance.density_at_temp(water_temp)
-
-        if spill.water is not None:
-            water_temp = spill.water.get('temperature')
+        water = None
+        for e in env:
+            if e.obj_type.contains('Water'):
+                water = e
+                break
+        if water is not None:
+            water_temp = water.get('temperature')
             le_density[:] = substance.density_at_temp(water_temp)
         else:
             le_density[:] = substance.density_at_temp()
@@ -323,8 +301,7 @@ class InitRiseVelFromDropletSizeFromDist(DistributionBase):
                                 le_density, drop_size,
                                 self.water_viscosity, self.water_density)
 
-def floating_initializers(windage_range=(.01, .04),
-             windage_persist=900):
+def floating_initializers():
     """
     Helper function returns a dict of initializers for floating LEs
 
@@ -335,7 +312,7 @@ def floating_initializers(windage_range=(.01, .04),
         ElementType constructor
     :type substance: str or OilProps
     """
-    return [InitWindages(windage_range, windage_persist)]
+    return [InitWindages()]
 
 
 def plume_initializers(distribution_type='droplet_size',
