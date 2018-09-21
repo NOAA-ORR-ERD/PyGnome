@@ -10,22 +10,18 @@ Element_types -- what the types of the elements are.
 """
 from datetime import timedelta
 import copy
-from inspect import getmembers, ismethod
+import numpy as np
 
 
 import unit_conversion as uc
 from gnome.utilities.time_utils import asdatetime
 
-from colander import (SchemaNode, Bool, String, Float, drop, SequenceSchema)
+from colander import (SchemaNode, Bool, String, Float, drop)
 
 from gnome.gnomeobject import GnomeId
+from gnome.array_types import gat
 from gnome.persist.base_schema import ObjTypeSchema, GeneralGnomeObjectSchema
-from gnome.spill.initializers import (InitWindagesSchema,
-                                    DistributionBaseSchema,
-                                    floating_initializers,
-                                    plume_from_model_initializers,
-                                    plume_initializers)
-from gnome.persist.base_schema import ObjType
+
 
 from .release import (PointLineRelease,
                       ContinuousRelease,
@@ -36,7 +32,11 @@ from gnome.spill.release import BaseReleaseSchema, PointLineReleaseSchema,\
     ContinuousReleaseSchema, SpatialReleaseSchema
 from gnome.environment.water import WaterSchema
 from gnome.spill.le import LEData
-from gnome.spill.substance import SubstanceSchema
+from gnome.spill.substance import (SubstanceSchema,
+                                   Substance,
+                                   NonWeatheringSubstance,
+                                   GnomeOil)
+from gnome.spill.initializers import plume_initializers
 
 
 class BaseSpill(GnomeId):
@@ -45,15 +45,21 @@ class BaseSpill(GnomeId):
 
     and as a spec for the API.
     """
-    def __init__(self, **kwargs):
+    def __init__(self,
+                 on=True,
+                 substance=None,
+                 **kwargs):
         """
         initialize -- sub-classes will probably have a lot more to do
         """
         super(BaseSpill, self).__init__(**kwargs)
+        self.on = on
+        if not self.substance:
+            substance = NonWeatheringSubstance()
+        self.substance=substance
         self.data = LEData()
-        from oil_library import get_oil_props
-        self.get_oil_props = get_oil_props
-        self.initializers = []
+        self.array_types.update({'mass': gat('mass'),
+                                 'init_mass': gat('mass')})
 
     @property
     def release_time(self):
@@ -63,26 +69,34 @@ class BaseSpill(GnomeId):
     def release_time(self, rt):
         self._release_time = asdatetime(rt)
 
-    @property
-    def substance(self):
-        return None
-
-    @property
-    def array_types(self):
-        '''
-        compile/return dict of array_types set by all initializers contained
-        by ElementType object
-        '''
-        at = set()
-        for init in self.initializers:
-            at.update(init.array_types)
-
-        return at
-
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}()'
                 .format(self))
 
+    @property
+    def substance(self):
+        return self._substance
+
+    @substance.setter
+    def substance(self, val):
+        '''
+        first try to use get_oil_props using 'val'. If this fails, then assume
+        user has provided a valid OilProps object and use it as is
+        '''
+        if val is None:
+            self._substance = NonWeatheringSubstance()
+            return
+        elif isinstance(val, Substance):
+            self._substance = val
+        try:
+            self._substance = GnomeOil.get_GnomeOil(val)
+        except Exception:
+            if isinstance(val, basestring):
+                raise
+
+            self.logger.info('Failed to get_oil_props for {0}. Use as is '
+                             'assuming has OilProps interface'.format(val))
+            self._substance = val
     # what is this for??
     def get_mass(self, units=None):
         '''
@@ -151,25 +165,6 @@ class BaseSpill(GnomeId):
 
         raise NotImplementedError
 
-    def get_initializer_by_name(self, name):
-        ''' get first initializer in list whose name matches 'name' '''
-        init = [i for i in enumerate(self.initializers) if i.name == name]
-
-        if len(init) == 0:
-            return None
-        else:
-            return init[0]
-
-    def has_initializer(self, name):
-        '''
-        Returns True if an initializer is present in the list which sets the
-        data_array corresponding with 'name', otherwise returns False
-        '''
-        for i in self.initializers:
-            if name in i.array_types:
-                return True
-
-        return False
 
 class SpillSchema(ObjTypeSchema):
     'Spill class schema'
@@ -197,14 +192,6 @@ class SpillSchema(ObjTypeSchema):
     water = WaterSchema(
         missing=drop, save=True, update=True, save_reference=True
     )
-    initializers = SequenceSchema(
-        GeneralGnomeObjectSchema(
-            acceptable_schemas=[InitWindagesSchema,
-                                DistributionBaseSchema
-                                ]
-        ),
-        save=True, update=True, save_reference=True
-    )
     substance = SubstanceSchema()
 
 
@@ -225,8 +212,6 @@ class Spill(BaseSpill):
     def __init__(self,
                  release=None,
                  water=None,
-                 substance=None,
-                 on=True,
                  amount=None,  # could be volume or mass
                  units=None,
                  amount_uncertainty_scale=0.0,
@@ -272,11 +257,6 @@ class Spill(BaseSpill):
         super(Spill, self).__init__(**kwargs)
         self.water = water
         self.release = release
-
-        self.substance = substance
-
-        self.on = on  # spill is active or not
-        # raise Exception("stopping")
 
         # fixme: shouldn't units default to 'kg'?
         self.units = None
@@ -358,51 +338,6 @@ class Spill(BaseSpill):
     def end_position(self, sp):
         self.release.end_position = sp
 
-    '''
-    Windage range/persist are important enough to receive properties on the
-    Spill.
-    '''
-    @property
-    def windage_range(self):
-        return self.get_initializer_by_name('windage_range').windage_range
-
-    @windage_range.setter
-    def windage_range(self, val):
-        initializer = self.get_initializer_by_name('windage_range')
-        initializer.windage_range = val
-
-    @property
-    def windage_persist(self):
-        return self.get_initializer_by_name('windage_persist').windage_persist
-
-    @windage_persist.setter
-    def windage_persist(self, wp):
-        initializer = self.get_initializer_by_name('windage_persist')
-        initializer.windage_persist = wp
-
-    @property
-    def substance(self):
-        return self._substance
-
-    @substance.setter
-    def substance(self, val):
-        '''
-        first try to use get_oil_props using 'val'. If this fails, then assume
-        user has provided a valid OilProps object and use it as is
-        '''
-        if val is None:
-            self._substance = None
-            return
-        try:
-            self._substance = self.get_oil_props(val)
-        except Exception:
-            if isinstance(val, basestring):
-                raise
-
-            self.logger.info('Failed to get_oil_props for {0}. Use as is '
-                             'assuming has OilProps interface'.format(val))
-            self._substance = val
-
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
                 'release={0.release!r}, '
@@ -467,17 +402,6 @@ class Spill(BaseSpill):
 
         return le_mass
 
-    def contains_object(self, obj_id):
-        for o in (self.element_type, self.release):
-            if o.id == obj_id:
-                return True
-
-            if (hasattr(o, 'contains_object') and
-                    o.contains_object(obj_id)):
-                return True
-
-        return False
-
     @property
     def units(self):
         """
@@ -518,7 +442,7 @@ class Spill(BaseSpill):
                 # water_temp = self.water.get('temperature')
                 # substance has a "standard_density" attribute
                 # for this.
-            std_rho = self.element_type.standard_density
+            std_rho = self.substance.standard_density
 
             vol = uc.convert('Volume', self.units, 'm^3', self.amount)
             mass = std_rho * vol
@@ -586,74 +510,14 @@ class Spill(BaseSpill):
         """
         self.release.rewind()
         self.data.rewind()
-        self.initializers = []
-
-    @classmethod
-    def new_from_dict(cls, dict_):
-        return super(Spill, cls).new_from_dict(dict_)
-
-    def to_dict(self, json_=None):
-        dict_ = super(Spill, self).to_dict(json_=json_)
-        #append substance because no good schema exists for it
-        if json_ != 'save':
-            if self.substance is None:
-                dict_['substance'] = None
-            else:
-                dict_['substance'] = self.substance_to_dict()
-        else:
-            if self.substance is not None:
-                dict_['substance'] = self.substance_to_dict()['name']
-        return dict_
-
-    def update_from_dict(self, dict_, refs=None):
-        rv = super(Spill, self).update_from_dict(dict_, refs)
-        if 'substance' in dict_:
-            self.substance = dict_['substance']
-            rv = True
-        return rv
-
-
-    def substance_to_dict(self):
-        '''
-        Call the tojson() method on substance
-
-        An Oil object that has been queried from the database
-        contains a lot of unnecessary relationships that we do not
-        want to represent in our JSON output,
-
-        So we prune them by first constructing an Oil object from the
-        JSON payload of the queried Oil object.
-
-        This creates an Oil object in memory that does not have any
-        database links. Then output the JSON from the unlinked object.
-        '''
-        if self._substance is not None:
-            return self._prune_substance(self._substance.tojson())
-
-
-    def _prune_substance(self, substance_json):
-        '''
-            Whether saving to a savefile or outputting to the web client,
-            the id of the substance objects is not necessary, and in fact
-            not even wanted.
-
-            Except for the main oil ID from the database.
-        '''
-        del substance_json['imported_record_id']
-        del substance_json['estimated_id']
-
-        for attr in ('kvis', 'densities', 'cuts',
-                     'molecular_weights',
-                     'sara_densities', 'sara_fractions'):
-            for item in substance_json[attr]:
-                for sub_item in ('id', 'oil_id', 'imported_record_id'):
-                    if sub_item in item:
-                        del item[sub_item]
-
-        return substance_json
 
     def prepare_for_model_run(self, array_types, parentModel=None):
-        self.data.prepare_for_model_run(array_types, self.substance.num_oil_components)
+        '''
+        array_types comes from all the other objects above in the model such as
+        movers, weatherers, etc. The ones from the substance still need to be added
+        '''
+        array_types.update(self.substance.array_types)
+        self.data.prepare_for_model_run(array_types, self.substance)
 
     def release_elements(self, current_time, time_step):
         """
@@ -664,13 +528,11 @@ class Spill(BaseSpill):
 
         #Partial initialization from various objects
         self.data['mass'][-to_rel:] = self._elem_mass(to_rel, current_time, time_step)
+        self.data['init_mass'][-to_rel:] = self.data['mass'][-to_rel:]
         self.release.set_newparticle_positions(to_rel, current_time, time_step, self.data)
 
         if 'frac_coverage' in self.data:
             self.data['frac_coverage'][-to_rel:] = self.frac_coverage
-
-        for init in self.initializers:
-            init.initialize(to_rel, self, self.data, self.substance)
 
         self.substance.initialize_LEs(to_rel, self.data)
 
@@ -742,17 +604,16 @@ def surface_point_line_spill(num_elements,
                                end_position=end_position,
                                end_release_time=end_release_time)
 
-    inits = floating_initializers(windage_range=windage_range,
-                                  windage_persist=windage_persist)
-
-    return Spill(release=release,
+    retv = Spill(release=release,
                  water=water,
-                 initializers=inits,
                  substance=substance,
                  amount=amount,
                  units=units,
                  name=name,
                  on=on)
+    retv.substance.windage_range = windage_range,
+    retv.substance.windage_persist = windage_persist
+    return retv
 
 
 def grid_spill(bounds,
@@ -809,17 +670,16 @@ def grid_spill(bounds,
                           bounds,
                           resolution)
 
-    inits = floating_initializers(windage_range=windage_range,
-                                  windage_persist=windage_persist)
-
-    return Spill(release=release,
+    retv = Spill(release=release,
                  water=water,
-                 initializers=inits,
                  substance=substance,
                  amount=amount,
                  units=units,
                  name=name,
                  on=on)
+    retv.substance.windage_range = windage_range,
+    retv.substance.windage_persist = windage_persist
+    return retv
 
 
 def subsurface_plume_spill(num_elements,
@@ -906,15 +766,17 @@ def subsurface_plume_spill(num_elements,
                                windage_range=windage_range,
                                windage_persist=windage_persist)
 
-    return Spill(release=release,
+    retv = Spill(release=release,
                  water=water,
-                 initializers=inits,
                  substance=substance,
                  amount=amount,
                  units=units,
                  name=name,
                  on=on)
-
+    retv.substance.initializers = inits
+    retv.substance.windage_range = windage_range,
+    retv.substance.windage_persist = windage_persist
+    return retv
 
 def continuous_release_spill(initial_elements,
                              num_elements,
@@ -939,17 +801,16 @@ def continuous_release_spill(initial_elements,
                                 num_elements=num_elements,
                                 end_position=end_position,
                                 end_release_time=end_release_time)
-    inits = floating_initializers(windage_range=windage_range,
-                                  windage_persist=windage_persist)
-
-    return Spill(release=release,
+    retv = Spill(release=release,
                  water=water,
-                 initializers=inits,
                  substance=substance,
                  amount=amount,
                  units=units,
                  name=name,
                  on=on)
+    retv.substance.windage_range = windage_range,
+    retv.substance.windage_persist = windage_persist
+    return retv
 
 
 def point_line_release_spill(num_elements,
@@ -973,16 +834,16 @@ def point_line_release_spill(num_elements,
                                num_elements=num_elements,
                                end_position=end_position,
                                end_release_time=end_release_time)
-    inits = floating_initializers(windage_range=windage_range,
-                                  windage_persist=windage_persist)
-    return Spill(release=release,
+    retv = Spill(release=release,
                  water=water,
-                 initializers=inits,
                  substance=substance,
                  amount=amount,
                  units=units,
                  name=name,
                  on=on)
+    retv.substance.windage_range = windage_range,
+    retv.substance.windage_persist = windage_persist
+    return retv
 
 
 def spatial_release_spill(start_positions,
@@ -1003,13 +864,13 @@ def spatial_release_spill(start_positions,
     release = SpatialRelease(release_time=release_time,
                              start_position=start_positions,
                              name=name)
-    inits = floating_initializers(windage_range=windage_range,
-                                  windage_persist=windage_persist)
-    return Spill(release=release,
+    retv = Spill(release=release,
                  water=water,
-                 initializers=inits,
                  substance=substance,
                  amount=amount,
                  units=units,
                  name=name,
                  on=on)
+    retv.substance.windage_range = windage_range,
+    retv.substance.windage_persist = windage_persist
+    return retv

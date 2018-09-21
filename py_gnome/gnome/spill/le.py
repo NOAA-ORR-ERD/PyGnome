@@ -86,9 +86,12 @@ class LEData(collections.MutableMapping, AddLogger, dict):
         """
         return len(self)
 
-    def prepare_for_model_run(self, array_types, num_oil_components):
+    def prepare_for_model_run(self, array_types, substance):
         self._array_types.update(array_types)
-        self.num_oil_components = num_oil_components
+        if hasattr(substance, 'num_oil_components'):
+            self.num_oil_components = substance.num_oil_components
+        else:
+            self.num_oil_components = 1
         self.initialize_data_arrays()
 
     def initialize_data_arrays(self):

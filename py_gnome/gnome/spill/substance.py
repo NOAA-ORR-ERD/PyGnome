@@ -1,29 +1,149 @@
 import copy
 
-from colander import Float, SchemaNode
+from colander import Float, SchemaNode, SequenceSchema
 import numpy as np
 import warnings
 from gnome.basic_types import fate, oil_status
+from gnome.array_types import gat
 
-from gnome.persist.base_schema import ObjTypeSchema, ObjType
+from gnome.persist.base_schema import (ObjTypeSchema,
+                                       ObjType,
+                                       GeneralGnomeObjectSchema)
 from gnome.gnomeobject import GnomeId
 from oil_library.oil_props import OilProps
 from oil_library.factory import get_oil
 from gnome.environment.water import Water
+from gnome.spill.initializers import (floating_initializers,
+                                      InitWindagesSchema,
+                                      DistributionBaseSchema)
+
 
 class SubstanceSchema(ObjTypeSchema):
     standard_density = SchemaNode(Float(), read_only=True)
+    initializers = SequenceSchema(
+        GeneralGnomeObjectSchema(
+            acceptable_schemas=[InitWindagesSchema,
+                                DistributionBaseSchema
+                                ]
+        ),
+        save=True, update=True, save_reference=True
+    )
 
     def __init__(self, unknown='preserve', *args, **kwargs):
         super(SubstanceSchema, self).__init__(*args, **kwargs)
         self.typ = ObjType(unknown)
 
 
-class GnomeOil(GnomeId, OilProps):
+class Substance(GnomeId):
     _schema = SubstanceSchema
+
+    def __init__(self,
+                 initializers=floating_initializers(),
+                 windage_range=(.01, .04),
+                 windage_persist=900,
+                 **kwargs):
+        super(Substance, self).__init__(**kwargs)
+        self.initializers = initializers
+        #add the types from initializers
+        self._windage_init=None
+        for i in self.initializers:
+            self.array_types.update(i.array_types)
+            if 'windages' in i.array_types:
+                self._windage_init = i
+        self.windage_range = windage_range
+        self.windage_persist = windage_persist
+
+    @property
+    def is_weatherable(self):
+        if not hasattr(self, '_is_weatherable'):
+            self._is_weatherable = True
+        return self._is_weatherable
+
+    @is_weatherable.setter
+    def is_weatherable(self, val):
+        self._is_weatherable = True if val else False
+    '''
+    Windage range/persist are important enough to receive properties on the
+    Substance.
+    '''
+    @property
+    def windage_range(self):
+        if self._windage_init:
+            return self._windage_init._windage_range
+        else:
+            raise ValueError('No windage initializer on this substance')
+
+    @windage_range.setter
+    def windage_range(self, val):
+        if self._windage_init:
+            if np.any(np.asarray(val) < 0) or np.asarray(val).size != 2:
+                raise ValueError("'windage_range' >= (0, 0). "
+                                 "Nominal values vary between 1% to 4%. "
+                                 "Default windage_range=(0.01, 0.04)")
+            self._windage_init._windage_range = val
+        else:
+            raise ValueError('No windage initializer on this substance')
+
+    @property
+    def windage_persist(self):
+        if self._windage_init:
+            return self._windage_init._windage_persist
+        else:
+            raise ValueError('No windage initializer on this substance')
+
+    @windage_persist.setter
+    def windage_persist(self, val):
+        if self._windage_init:
+            if val == 0:
+                raise ValueError("'windage_persist' cannot be 0. "
+                                 "For infinite windage, windage_persist=-1 "
+                                 "otherwise windage_persist > 0.")
+            self._windage_persist = val
+        else:
+            raise ValueError('No windage initializer on this substance')
+
+    def get_initializer_by_name(self, name):
+        ''' get first initializer in list whose name matches 'name' '''
+        init = [i for i in enumerate(self.initializers) if i.name == name]
+
+        if len(init) == 0:
+            return None
+        else:
+            return init[0]
+
+    def has_initializer(self, name):
+        '''
+        Returns True if an initializer is present in the list which sets the
+        data_array corresponding with 'name', otherwise returns False
+        '''
+        for i in self.initializers:
+            if name in i.array_types:
+                return True
+
+        return False
+    def initialize_LEs(self, to_rel, arrs, env):
+        '''
+        :param to_rel - number of new LEs to initialize
+        :param arrs - dict-like of data arrays representing LEs
+        :param env - collection of gnome.environment objects
+        '''
+        for init in self.initializers:
+            init.initialize(to_rel, arrs, env, self)
+
+
+class GnomeOil(Substance, OilProps):
+
+    def __init__(self, *args, **kwargs):
+        super(GnomeOil, self).__init__(*args, **kwargs)
+        #add the array types that this substance DIRECTLY initializes
+        self.array_types.update({'density': gat('density'),
+                                 'viscosity': gat('viscosity')})
 
     @classmethod
     def get_GnomeOil(self, oil_info, max_cuts=None):
+        '''
+        Use this instead of get_oil_props
+        '''
         oil_ = get_oil(oil_info, max_cuts)
         return GnomeOil(oil_)
 
@@ -52,19 +172,19 @@ class GnomeOil(GnomeId, OilProps):
         substance = cls.get_GnomeOil(dict_)
         return substance
 
-    @property
-    def is_weatherable(self):
-        if not hasattr(self, '_is_weatherable'):
-            self._is_weatherable = True
-        return self._is_weatherable
-
-    @is_weatherable.setter
-    def is_weatherable(self, val):
-        self._is_weatherable = True if val else False
-
-    def initialize_LEs(self, num_released, data, water=None):
-        sl = slice(-num_released, None, 1)
-
+    def initialize_LEs(self, to_rel, arrs, env):
+        '''
+        :param to_rel - number of new LEs to initialize
+        :param arrs - dict-like of data arrays representing LEs
+        :param env - collection of gnome.environment objects
+        '''
+        super(GnomeOil, self).initialize_LEs(to_rel, arrs, env)
+        sl = slice(-to_rel, None, 1)
+        water = None
+        for e in env:
+            if e.obj_type.contains('Water'):
+                water = e
+                break
         if water is None:
             #LEs released at standard temperature and pressure
             self.logger.warning('No water provided for substance initialization, using default Water object')
@@ -81,24 +201,22 @@ class GnomeOil(GnomeId, OilProps):
                            self.water.units['temperature']))
             self.logger.error(msg)
 
-            data['density'][sl] = self.water.get('density')
+            arrs['density'][sl] = self.water.get('density')
         else:
-            data['density'][sl] = density
-
-        data['init_mass'][sl] = data['mass'][sl]
+            arrs['density'][sl] = density
 
         substance_kvis = self.kvis_at_temp(water_temp)
         if substance_kvis is not None:
             'make sure we do not add NaN values'
-            data['viscosity'][sl] = substance_kvis
+            arrs['viscosity'][sl] = substance_kvis
 
 
-class NonWeatheringSubstance(GnomeId):
-    _schema = SubstanceSchema
+class NonWeatheringSubstance(Substance):
 
     def __init__(self,
                  standard_density=1000.0,
-                 pour_point=273.15):
+                 pour_point=273.15,
+                 **kwargs):
         '''
         Non-weathering substance class for use with ElementType.
         - Right now, we consider our substance to have default properties
@@ -113,8 +231,10 @@ class NonWeatheringSubstance(GnomeId):
                                   to be measured in degrees Kelvin.
         :type pour_point: Floating point decimal value
         '''
+        super(NonWeatheringSubstance, self).__init__(**kwargs)
         self.standard_density = standard_density
         self._pour_point = pour_point
+        self.array_types['density'] = gat('density')
 
     @property
     def is_weatherable(self):
@@ -126,11 +246,15 @@ class NonWeatheringSubstance(GnomeId):
     def is_weatherable(self, val):
         self.logger.warn('This substance {0} cannot be set to be weathering')
 
-    def initialize_LEs(self, num_released, data, water=None):
-        sl = slice(-num_released, None, 1)
-        data['density'][sl] = self.standard_density
-
-        data['init_mass'][sl] = data['mass'][sl]
+    def initialize_LEs(self, to_rel, arrs, env):
+        '''
+        :param to_rel - number of new LEs to initialize
+        :param arrs - dict-like of data arrays representing LEs
+        :param env - collection of gnome.environment objects
+        '''
+        super(GnomeOil, self).initialize_LEs(to_rel, arrs, env)
+        sl = slice(-to_rel, None, 1)
+        arrs['density'][sl] = self.standard_density
 
     def pour_point(self):
         '''
