@@ -516,6 +516,7 @@ class Spill(BaseSpill):
         array_types comes from all the other objects above in the model such as
         movers, weatherers, etc. The ones from the substance still need to be added
         '''
+        array_types.update(self.array_types)
         array_types.update(self.substance.array_types)
         self.data.prepare_for_model_run(array_types, self.substance)
 
@@ -535,6 +536,7 @@ class Spill(BaseSpill):
             self.data['frac_coverage'][-to_rel:] = self.frac_coverage
 
         self.substance.initialize_LEs(to_rel, self.data)
+        #weatherers may still initialize further, but this is triggered from Model
 
     def num_elements_to_release(self, current_time, time_step):
         """

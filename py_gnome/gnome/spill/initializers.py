@@ -7,7 +7,6 @@ These are properties that are spill specific like:
   'nonweathering' element_types would set use_droplet_size flag to False
   'weathering' element_types would use droplet_size, densities, mass?
 '''
-import copy
 import numpy as np
 
 from colander import SchemaNode, Int, Float, Range, TupleSchema
@@ -24,7 +23,6 @@ from gnome.utilities.distributions import (NormalDistributionSchema,
                                            WeibullDistributionSchema,
                                            LogNormalDistributionSchema,
                                            UniformDistributionSchema)
-from .substance import NonWeatheringSubstance
 """
 Initializers for various element types
 """
