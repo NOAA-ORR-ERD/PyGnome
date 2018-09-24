@@ -92,7 +92,8 @@ class GnomeMap(GnomeId):
     """
     _schema = GnomeMapSchema
 
-    refloat_halflife = None
+    refloat_halflife = None  # note -- no land, so never used
+    _ref_as = 'map'
 
     def __init__(self, map_bounds=None, spillable_area=None, land_polys=None,
                  name=None):

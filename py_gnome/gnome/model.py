@@ -536,151 +536,138 @@ class Model(GnomeId):
             self.weatherers.clear()
             self.weatherers += s_weatherers
 
-    def _attach_references(self):
+    def _attach_default_refs(self, ref_dict):
         '''
-        attach references
+        Model invokes the default reference attachment system. Please note the
+        structure of this function as an example of how to extend the system
+        to contained child objects.
         '''
-        attr = {}
-        attr['wind'] = self.find_by_attr('_ref_as', 'wind', self.environment)
-        attr['water'] = self.find_by_attr('_ref_as', 'water', self.environment)
-        attr['waves'] = self.find_by_attr('_ref_as', 'waves', self.environment)
-        attr['current'] = self.find_by_attr('_ref_as', 'current', self.environment)
+        #Begin by attaching references to self. Model doesn't need any special
+        #behavior, so just call super. If special behavior is necessary beyond
+        #simply going for the first-in-line, it is defined here.
+        super(Model, self)._attach_default_refs(ref_dict)
 
-        weather_data = set()
+        #gathering references IS OPTIONAL. If you are expecting relevant refs
+        #to have already been collected by a parent, this may be skipped.
+        #Since Model is top-level, it should gather what it can
+        self.gather_ref_as(self.environment, ref_dict)
+        self.gather_ref_as(self.map, ref_dict)
+        self.gather_ref_as(self.movers, ref_dict)
+        self.gather_ref_as(self.weatherers, ref_dict)
+        self.gather_ref_as(self.outputters, ref_dict)
+
+        #Provide the references to all contained objects that also use the
+        #default references system by calling _attach_default_refs on each
+        #instance
+        for coll in [self.environment,
+                     self.weatherers,
+                     self.movers,
+                     self.outputters,
+                     self.spills]:
+            for item in coll:
+                item._attach_default_refs(ref_dict)
+
+    def setup_model_run(self):
+        '''
+        Runs the setup procedure preceding a model run. When complete, the
+        model should be ready to run to completion without additional prep
+        Currently this function consists of the following operations:
+
+        1. Set up special objects.
+            Some weatherers currently require other weatherers to exist. This
+            step satisfies those requirements
+        2. Remake collections in case ordering constraints apply (weatherers)
+        3. Compile array_types and run setup procedure on spills
+            array_types defines what data arrays are required by the various
+            components of the model
+        4. Attach default references
+        5. Call prepare_for_model_run on all relevant objects
+        6. Conduct miscellaneous prep items. See section in code for details.
+        '''
+
+        '''Step 1: Set up special objects'''
+        weather_data = dict()
         wd = None
         spread = None
         langmuir = None
-        for coll in ('environment', 'weatherers', 'movers'):
-            for item in getattr(self, coll):
-                if hasattr(item, '_req_refs'):
-                    ref_dict = {}
-                    for var in item._req_refs.keys():
-                        inst = self.find_by_attr('_ref_as', var,
-                                                 self.environment)
-                        if inst is not None:
-                            ref_dict[var] = inst
-                    if len(ref_dict) > 0:
-                        item._attach_default_refs(ref_dict)
-                else:
-                    if coll == 'weatherers':
-                        # by default turn WeatheringData and spreading object
-                        # off
-                        if isinstance(item, WeatheringData):
-                            item.on = False
-                            wd = item
+        for item in self.weatherers:
+            if item.on:
+                weather_data.update(item.array_types)
 
-                        try:
-                            if item._ref_as == 'spreading':
-                                item.on = False
-                                spread = item
-
-                        except AttributeError:
-                            pass
-
-                        try:
-                            if item._ref_as == 'langmuir':
-                                item.on = False
-                                langmuir = item
-
-                        except AttributeError:
-                            pass
-
-                        if item.on:
-                            weather_data.update(item.array_types)
-
-                    if hasattr(item, 'on') and not item.on:
-                        # no need to setup references if item is not on
-                        continue
-
-                    for name, val in attr.iteritems():
-                        if (hasattr(item, name) and
-                                getattr(item, name) is None and
-                                item.make_default_refs):
-                            setattr(item, name, val)
-
-        all_spills = self.spills
-
-        for spill in all_spills:
-            for name, val in attr.iteritems():
-                if (hasattr(spill, name) and
-                        getattr(spill, name) is None and
-                        spill.make_default_refs):
-                    setattr(spill, name, val)
+            if isinstance(item, WeatheringData):
+                item.on = False
+                wd = item
+            try:
+                if item._ref_as == 'spreading':
+                    item.on = False
+                    spread = item
+                if item._ref_as == 'langmuir':
+                    item.on = False
+                    langmuir = item
+            except AttributeError:
+                pass
 
         # if WeatheringData object and FayGravityViscous (spreading object)
         # are not defined by user, add them automatically because most
         # weatherers will need these
         if len(weather_data) > 0:
             if wd is None:
-                self.weatherers += WeatheringData(attr['water'])
+                self.weatherers += WeatheringData()
             else:
-                # turn mass_balance on and make references
+                # turn WD back on
                 wd.on = True
-                if wd.make_default_refs:
-                    wd.water = attr['water']
 
         # if a weatherer is using 'area' array, make sure it is being set.
         # Objects that set 'area' are referenced as 'spreading'
         if 'area' in weather_data:
             if spread is None:
-                self.weatherers += FayGravityViscous(attr['water'])
+                self.weatherers += FayGravityViscous()
             else:
-                # turn spreading on and make references
+                # turn spreading back on
                 spread.on = True
-                if spread.make_default_refs:
-                    for at in attr:
-                        if hasattr(spread, at):
-                            spread.water = attr['water']
 
             if langmuir is None:
-                self.weatherers += Langmuir(attr['water'], attr['wind'])
+                self.weatherers += Langmuir()
             else:
-                # turn spreading on and make references
+                # turn langmuir back on
                 langmuir.on = True
-                if langmuir.make_default_refs:
-                    for at in attr:
-                        if hasattr(langmuir, at):
-                            langmuir.water = attr['water']
-                            langmuir.wind = attr['wind']
 
-    def setup_model_run(self):
-        '''
-        Sets up each mover for the model run
-        '''
-        # use a set since we only want to add unique 'names' for data_arrays
-        # that will be added
-        array_types = dict()
-
-        # attach references so objects don't raise ReferencedObjectNotSet error
-        # in prepare_for_model_run()
-        self._attach_references()
-
-        # remake orderedcollections defined by model
+        '''Step 2: Remake and reorganize collections'''
         for oc in [self.movers, self.weatherers,
                    self.outputters, self.environment]:
             oc.remake()
-
-        for op in self.outputters:
-            array_types.update(op.array_types)
-
-        # order weatherers collection
         self._order_weatherers()
+
+        '''Step 3: Compile array_types and run setup on spills'''
+        array_types = {}
+        for oc in [self.movers, self.weatherers,
+                   self.outputters, self.environment]:
+            for item in oc:
+                array_types.update(item.array_types)
+
+        for sp in self.spills:
+            sp.prepare_for_model_run(array_types, self)
+
+        '''Step 4: Attach default references'''
+        ref_dict = {}
+        self._attach_default_refs(ref_dict)
+
+        '''Step 5 & 6: Call prepare_for_model_run and misc setup'''
         transport = False
         for mover in self.movers:
             if mover.on:
                 mover.prepare_for_model_run()
                 transport = True
-                array_types.update(mover.array_types)
 
         weathering = False
         for w in self.weatherers:
-            for sc in self.spills.items():
+            for sp in self.spills:
                 # weatherers will initialize 'mass_balance' key/values
                 # to 0.0
                 if w.on:
-                    w.prepare_for_model_run(sc)
+                    #TODO: weatherers should not prep on a per-spill basis
+                    w.prepare_for_model_run(sp.data)
                     weathering = True
-                    array_types.update(w.array_types)
 
         for environment in self.environment:
             environment.prepare_for_model_run(self.start_time)
@@ -698,9 +685,6 @@ class Model(GnomeId):
                 # simple case with no weatherers or movers
                 self._time_step = 900
             self._reset_num_time_steps()
-
-        for sp in self.spills:
-            sp.prepare_for_model_run(array_types, self)
 
         # outputters need array_types, so this needs to come after those
         # have been updated.
