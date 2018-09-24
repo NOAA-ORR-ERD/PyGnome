@@ -44,8 +44,11 @@ class WeatheringData(Weatherer):
     '''
 
     _schema = WeatheringDataSchema
+    _req_refs = ['water']
 
-    def __init__(self, water, **kwargs):
+    def __init__(self,
+                 water=None,
+                 **kwargs):
         '''
         initialize object.
 
@@ -125,7 +128,7 @@ class WeatheringData(Weatherer):
         # initialize mass_components
         data['mass_components'][sl] = \
             (np.asarray(substance.mass_fraction, dtype=np.float64) *
-             (data['mass'][mask].reshape(len(data['mass'][mask]), -1)))
+             (data['mass'][sl].reshape(len(data['mass'][sl]), -1)))
 
         data['init_mass'][sl] = data['mass'][sl]
 

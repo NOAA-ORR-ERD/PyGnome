@@ -44,6 +44,7 @@ class FayGravityViscous(Weatherer):
 
     # object used to model spreading of oil and area computation
     _ref_as = 'spreading'
+    _req_refs = ['water']
 
     def __init__(self, water=None, **kwargs):
         '''
@@ -557,6 +558,7 @@ class Langmuir(Weatherer):
     '''
     _schema = WeathererSchema
     _ref_as = 'langmuir'
+    _req_refs = ['water', 'wind']
 
     def __init__(self,
                  water=None,
