@@ -1,11 +1,8 @@
 #!/usr/bin/env python
 
 import os
-
 from datetime import datetime, timedelta
-import copy
 import zipfile
-
 from pprint import pformat
 
 import numpy as np
@@ -13,10 +10,7 @@ import numpy as np
 
 from colander import (SchemaNode,
                       String, Float, Int, Bool, List,
-                      drop, OneOf,
-                      # SequenceSchema,
-                      )
-
+                      drop, OneOf)
 
 from gnome.utilities.time_utils import round_time, asdatetime
 from gnome.utilities.orderedcollection import OrderedCollection
@@ -29,9 +23,8 @@ from gnome.map import (GnomeMapSchema,
                        MapFromUGridSchema)
 
 from gnome.environment import Environment, Wind
+from gnome.array_types import gat
 from gnome.environment import schemas as env_schemas
-
-from gnome.spill_container import SpillContainerPair
 
 from gnome.movers import Mover, mover_schemas
 from gnome.weatherers import (weatherer_sort,
@@ -43,14 +36,12 @@ from gnome.weatherers import (weatherer_sort,
 from gnome.outputters import Outputter, NetCDFOutput, WeatheringOutput
 from gnome.outputters import schemas as out_schemas
 from gnome.persist import (extend_colander,
-                           validators,
-                           save_load)
+                           validators)
 from gnome.persist.base_schema import (ObjTypeSchema,
                                        GeneralGnomeObjectSchema)
 from gnome.exceptions import ReferencedObjectNotSet, GnomeRuntimeError
 from gnome.spill.spill import SpillSchema, BaseSpill
 from gnome.gnomeobject import GnomeId, allowzip64, Refs
-
 from gnome.persist.extend_colander import OrderedCollectionSchema
 
 
@@ -132,8 +123,7 @@ class Model(GnomeId):
 
         This is simply a utility wrapper around gnome.persist.save_load.load()
         """
-
-        model = save_load.load(filename)
+        model = cls.load(filename)
 
         # check that this actually loaded a model object
         #  load() will load any gnome object from json...
@@ -216,7 +206,7 @@ class Model(GnomeId):
         self._name = name
 
         if not map:
-            map = gnome.map.GnomeMap()
+            map = GnomeMap()
         self._map = map
 
         if mode is not None:
@@ -245,6 +235,7 @@ class Model(GnomeId):
 
         self.location = location
         self._register_callbacks()
+        self.array_types.update({'age': gat('age')})
 
     def _register_callbacks(self):
 
@@ -658,7 +649,7 @@ class Model(GnomeId):
         '''
         # use a set since we only want to add unique 'names' for data_arrays
         # that will be added
-        array_types = set()
+        array_types = dict()
 
         # attach references so objects don't raise ReferencedObjectNotSet error
         # in prepare_for_model_run()

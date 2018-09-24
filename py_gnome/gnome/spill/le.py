@@ -15,7 +15,7 @@ class LEData(collections.MutableMapping, AddLogger, dict):
         self._array_types = {}
         self._array_types.update(default_array_types)
         self._bufs = {}
-        self._arrs = dict()
+        self._arrs = {}
         self._arrs.update(dict(*args, **kwargs))
         self._initialized = False
         if not name:
