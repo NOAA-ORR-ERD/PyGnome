@@ -91,7 +91,7 @@ class GnomeMap(GnomeId):
     """
     _schema = GnomeMapSchema
 
-    refloat_halflife = None  # note -- no land, so never used
+    refloat_halflife = None
 
     def __init__(self, map_bounds=None, spillable_area=None, land_polys=None,
                  name=None):
@@ -197,6 +197,11 @@ class GnomeMap(GnomeId):
             self._spillable_area = sa
             return
         ps = PolygonSet()
+        try:
+            sa[0][0][0]
+        except TypeError:
+            # probably a single polygon -- put it in a list
+            sa = [sa]
         for poly in sa:
             ps.append(poly)
         self._spillable_area = ps
