@@ -845,7 +845,6 @@ class Model(GnomeId):
         '''
         for sc in self.spills.items():
             if sc.num_released > 0:  # can this check be removed?
-
                 # possibly refloat elements
                 self.map.refloat_elements(sc, self.time_step)
 
@@ -1570,8 +1569,7 @@ class Model(GnomeId):
         Convenience method to allow user to look up properties of a spill.
         User can specify ucert as 'ucert' or 1
         '''
-        if ucert == 'ucert':
-            ucert = 1
+        ucert = 1 if ucert == 'ucert' else 0
         return self.spills.items()[ucert][prop_name]
 
     def get_spill_data(self, target_properties, conditions, ucert=0):
