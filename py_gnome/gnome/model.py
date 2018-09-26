@@ -846,7 +846,7 @@ class Model(GnomeId):
         for sc in self.spills.items():
             if sc.num_released > 0:  # can this check be removed?
                 # possibly refloat elements
-                self.map.refloat_elements(sc, self.time_step)
+                self.map.refloat_elements(sc, self.time_step, self.model_time)
 
                 # reset next_positions
                 (sc['next_positions'])[:] = sc['positions']
@@ -856,7 +856,7 @@ class Model(GnomeId):
                     delta = m.get_move(sc, self.time_step, self.model_time)
                     sc['next_positions'] += delta
 
-                self.map.beach_elements(sc, self.time_step)
+                self.map.beach_elements(sc, self.model_time)
 
                 # let model mark these particles to be removed
                 tbr_mask = sc['status_codes'] == oil_status.off_maps
