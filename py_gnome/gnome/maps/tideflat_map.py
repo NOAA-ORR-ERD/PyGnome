@@ -28,17 +28,17 @@ from gnome.utilities.geometry import (points_in_poly,
 ## So this is an experiment -- can I uae a class constructor make a custom subclass of a Map??
 
 
-class TidalFlatMap(GnomeMap):
+class TideflatMap(GnomeId):
     """
-    Gnome Map that handles the usual beaching, etc, but also
-
-    checks for tidal flats, and sets and unsets the on_tidalflat
+    Checks for tidal flats, and sets and unsets the on_tidalflat
     oil_status code appropriately.
 
+    Not subclassed from a GnomeMap, as it delgates to the passed-in map
+    instead
     """
     def __init__(self, land_map, tideflat):
         """
-        initialize a TidalFlatMap
+        initialize a TideflatMap
 
         :param land_map: A usual GnomeMap object -- for land-water, etc.
                          It will be used to do beaching/refloating before
@@ -58,9 +58,14 @@ class TidalFlatMap(GnomeMap):
         """
         Delegate everything that is not overridden to the enclosed GnomeMap
         """
+        print "__getattr__ called with:", name
         return getattr(self.land_map, name)
 
     # These are the methods that need to be overridden:
+    def beach_elements(self, spill_container, time_step=None):
+        self.land_map.beach_elements(spill_container, time_step)
+
+
     def refloat_elements(self, spill_container, time_step):
         """
         Checks whether elements that were on a tidal flat still are.
@@ -88,9 +93,9 @@ class TidalFlatMap(GnomeMap):
         self.land_map.refloat_elements(spill_container, time_step)
 
 
-class TideFlatBase(GnomeId):
+class TideflatBase(GnomeId):
     """
-    Base class for a TideFlat object to be used with TideFlatBase
+    Base class for a Tideflat object to be used with TideflatBase
     """
     pass
 
@@ -112,11 +117,11 @@ class TideFlatBase(GnomeId):
         return np.logical_not(self.is_dry(points, time))
 
 
-class SimpleTideFlat(TideFlatBase):
+class SimpleTideflat(TideflatBase):
     """
-    Simple TideFlat implimentation for testing and demo
+    Simple Tideflat implimentation for testing and demo
 
-    For a real case, a subclass of TideFlatBase should be
+    For a real case, a subclass of TideflatBase should be
     made that impliments these methods in a meaningful way
 
     This provides a single polygon describing a tidal flat

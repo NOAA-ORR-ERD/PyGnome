@@ -283,7 +283,7 @@ class GnomeMap(GnomeId):
         # let model decide if we want to remove elements marked as off-map
         status_codes[off_map] = oil_status.off_maps
 
-    def beach_elements(self, spill):
+    def beach_elements(self, sc, time_step=None):
         """
         Determines which LEs were or weren't beached or moved off_map.
         status_code is changed to oil_status.off_maps if off the map.
@@ -303,8 +303,8 @@ class GnomeMap(GnomeId):
 
         are called.
         """
-        self.resurface_airborne_elements(spill)
-        self._set_off_map_status(spill)
+        self.resurface_airborne_elements(sc)
+        self._set_off_map_status(sc)
 
     def refloat_elements(self, spill_container, time_step):
         """
@@ -515,7 +515,7 @@ class ParamMap(GnomeMap):
     def find_last_water_pos(self, starts, ends):
         return starts + (ends - starts) * 0.000001
 
-    def beach_elements(self, sc):
+    def beach_elements(self, sc, time_step=None):
         """
         Determines which LEs were or weren't beached or moved off_map.
         status_code is changed to oil_status.off_maps if off the map.
@@ -844,8 +844,7 @@ class RasterMap(GnomeMap):
             return self._in_water_pixel(self.projection.to_pixel(coord,
                                                                  asint=True)[0]
                                         )
-
-    def beach_elements(self, sc):
+    def beach_elements(self, sc, time_step=None):
         """
         Determines which elements were or weren't beached.
 
@@ -860,6 +859,10 @@ class RasterMap(GnomeMap):
             It must have the following data arrays:
             ('prev_position', 'positions', 'last_water_pt', 'status_code')
         """
+
+        print "RasterMap beach_elements called"
+
+
         self.resurface_airborne_elements(sc)
 
         # pull the data from the sc

@@ -856,7 +856,7 @@ class Model(GnomeId):
                     delta = m.get_move(sc, self.time_step, self.model_time)
                     sc['next_positions'] += delta
 
-                self.map.beach_elements(sc)
+                self.map.beach_elements(sc, self.time_step)
 
                 # let model mark these particles to be removed
                 tbr_mask = sc['status_codes'] == oil_status.off_maps

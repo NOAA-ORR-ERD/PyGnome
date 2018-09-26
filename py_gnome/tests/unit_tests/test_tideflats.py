@@ -32,6 +32,9 @@ from .conftest import sample_sc_release, testdata
 wind_file = testdata['GridWindMover']['wind_curv']
 topology_file = testdata['GridWindMover']['top_curv']
 
+
+
+
 # sample_sc_release(num_elements=10,
 #                       start_pos=(0.0, 0.0, 0.0),
 #                       release_time=datetime(2000, 1, 1, 1),
