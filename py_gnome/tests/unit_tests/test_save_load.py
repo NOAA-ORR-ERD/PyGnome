@@ -46,6 +46,7 @@ from conftest import testdata, test_oil
 
 import pytest
 from testfixtures import LogCapture
+from tests.unit_tests.conftest import test_oil
 
 
 def test_warning_logged():
@@ -159,16 +160,16 @@ g_objects = (
                            num_elements=10,
                            start_position=(0, 0, 0)),
     spill.point_line_release_spill(10, (0, 0, 0), datetime.now()),
-    spill.elements.ElementType(substance=test_oil),
-
-    Skimmer(100, 'kg', 0.3,
-            (datetime(2014, 1, 1, 0, 0), datetime(2014, 1, 1, 4, 0))),
-    Burn(100, 1, (datetime(2014, 1, 1, 0, 0), InfDateTime('inf')),
-         efficiency=.9),
-    ChemicalDispersion(.2,
-                       (datetime(2014, 1, 1, 0, 0),
-                        datetime(2014, 1, 1, 4, 0)),
-                       efficiency=.3),
+    spill.substance.Substance(windage_range=(0.05, 0.07)),
+    spill.substance.GnomeOil(test_oil, windage_range=(0.05, 0.07)),
+    spill.substance.NonWeatheringSubstance(windage_range=(0.05, 0.07)),
+    Skimmer(100, 'kg', 0.3, datetime(2014, 1, 1, 0, 0),
+                       datetime(2014, 1, 1, 4, 0)),
+    Burn(100, 1, datetime(2014, 1, 1, 0, 0),
+                    efficiency=.9),
+    ChemicalDispersion(.2, datetime(2014, 1, 1, 0, 0),
+                                  datetime(2014, 1, 1, 4, 0),
+                                  efficiency=.3),
     # todo: ask Caitlin how to fix
     # movers.RiseVelocityMover(),
     # todo: This is incomplete - no _schema for

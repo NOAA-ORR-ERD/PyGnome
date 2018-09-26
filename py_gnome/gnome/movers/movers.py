@@ -54,7 +54,7 @@ class Process(GnomeId):
                              active
         :type active_range: 2-tuple of datetimes
         """
-        self.name = kwargs.pop('name', self.__class__.__name__)
+        super(Process, self).__init__(**kwargs)
 
         self.on = kwargs.pop('on', True)
         self._active = self.on
@@ -67,7 +67,6 @@ class Process(GnomeId):
         self._active_range = active_range
 
         # empty dict since no array_types required for all movers at present
-        self.array_types = dict()
         self.make_default_refs = kwargs.pop('make_default_refs', True)
 
     def _check_active_startstop(self, active_start, active_stop):
