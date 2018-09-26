@@ -1,4 +1,5 @@
 import copy
+import six
 
 from colander import Float, SchemaNode, SequenceSchema
 import numpy as np
@@ -12,6 +13,7 @@ from gnome.persist.base_schema import (ObjTypeSchema,
 from gnome.gnomeobject import GnomeId
 from oil_library.oil_props import OilProps
 from oil_library.factory import get_oil
+from oil_library.models import Oil
 from gnome.environment.water import Water
 from gnome.spill.initializers import (floating_initializers,
                                       InitWindagesSchema,
@@ -19,7 +21,6 @@ from gnome.spill.initializers import (floating_initializers,
 
 
 class SubstanceSchema(ObjTypeSchema):
-    standard_density = SchemaNode(Float(), read_only=True)
     initializers = SequenceSchema(
         GeneralGnomeObjectSchema(
             acceptable_schemas=[InitWindagesSchema,
@@ -28,6 +29,12 @@ class SubstanceSchema(ObjTypeSchema):
         ),
         save=True, update=True, save_reference=True
     )
+
+class GnomeOilSchema(SubstanceSchema):
+    standard_density = SchemaNode(Float(), read_only=True)
+
+class NonWeatheringSubstanceSchema(SubstanceSchema):
+    standard_density = SchemaNode(Float(), read_only=True)
 
     def __init__(self, unknown='preserve', *args, **kwargs):
         super(SubstanceSchema, self).__init__(*args, **kwargs)
@@ -38,11 +45,15 @@ class Substance(GnomeId):
     _schema = SubstanceSchema
 
     def __init__(self,
-                 initializers=floating_initializers(),
+                 initializers=None,
                  windage_range=(.01, .04),
                  windage_persist=900,
+                 *args,
                  **kwargs):
-        super(Substance, self).__init__(**kwargs)
+        super(Substance, self).__init__(*args,**kwargs)
+        if not initializers:
+            initializers = floating_initializers(windage_range=windage_range,
+                                                 windage_persist=windage_persist)
         self.initializers = initializers
         #add the types from initializers
         self._windage_init=None
@@ -50,8 +61,10 @@ class Substance(GnomeId):
             self.array_types.update(i.array_types)
             if 'windages' in i.array_types:
                 self._windage_init = i
-        self.windage_range = windage_range
-        self.windage_persist = windage_persist
+        if windage_range != (.01, .04):
+            self.windage_range = windage_range
+        if windage_persist != 900:
+            self.windage_persist = windage_persist
 
     @property
     def is_weatherable(self):
@@ -69,7 +82,7 @@ class Substance(GnomeId):
     @property
     def windage_range(self):
         if self._windage_init:
-            return self._windage_init._windage_range
+            return self._windage_init.windage_range
         else:
             raise ValueError('No windage initializer on this substance')
 
@@ -80,14 +93,14 @@ class Substance(GnomeId):
                 raise ValueError("'windage_range' >= (0, 0). "
                                  "Nominal values vary between 1% to 4%. "
                                  "Default windage_range=(0.01, 0.04)")
-            self._windage_init._windage_range = val
+            self._windage_init.windage_range = val
         else:
             raise ValueError('No windage initializer on this substance')
 
     @property
     def windage_persist(self):
         if self._windage_init:
-            return self._windage_init._windage_persist
+            return self._windage_init.windage_persist
         else:
             raise ValueError('No windage initializer on this substance')
 
@@ -98,7 +111,7 @@ class Substance(GnomeId):
                 raise ValueError("'windage_persist' cannot be 0. "
                                  "For infinite windage, windage_persist=-1 "
                                  "otherwise windage_persist > 0.")
-            self._windage_persist = val
+            self._windage_init.windage_persist = val
         else:
             raise ValueError('No windage initializer on this substance')
 
@@ -131,13 +144,36 @@ class Substance(GnomeId):
             init.initialize(to_rel, arrs, env, self)
 
 
-class GnomeOil(Substance, OilProps):
+class GnomeOil(OilProps, Substance):
+    _schema = GnomeOilSchema
 
-    def __init__(self, *args, **kwargs):
-        super(GnomeOil, self).__init__(*args, **kwargs)
+    def __init__(self,
+                 name=None,
+                 *args,
+                  **kwargs):
+
+        if isinstance(name, six.string_types):
+            #GnomeOil('oil_name_here')
+            oil_obj = get_oil(name)
+        elif isinstance(name, Oil):
+            oil_obj = name
+        else:
+            raise ValueError('Must provide an oil name or OilLibrary.Oil to GnomeOil init')
+#         super(GnomeOil, self).__init__(oil_obj)
+        #must call separately because OilProps only takes a single arg
+        OilProps.__init__(self, oil_obj)
+        Substance.__init__(self, *args, **kwargs)
         #add the array types that this substance DIRECTLY initializes
         self.array_types.update({'density': gat('density'),
                                  'viscosity': gat('viscosity')})
+
+    def __eq__(self, other):
+        t1 = Substance.__eq__(self, other)
+        try:
+            t2 = self.tojson() == other.tojson()
+        except Exception:
+            return False
+        return t1 and t2
 
     @classmethod
     def get_GnomeOil(self, oil_info, max_cuts=None):
@@ -167,10 +203,10 @@ class GnomeOil(Substance, OilProps):
         json_.update(substance_json)
         return json_
 
-    @classmethod
-    def new_from_dict(cls, dict_):
-        substance = cls.get_GnomeOil(dict_)
-        return substance
+#     @classmethod
+#     def new_from_dict(cls, dict_):
+#         substance = cls.get_GnomeOil(dict_)
+#         return substance
 
     def initialize_LEs(self, to_rel, arrs, env):
         '''
@@ -212,6 +248,7 @@ class GnomeOil(Substance, OilProps):
 
 
 class NonWeatheringSubstance(Substance):
+    _schema = NonWeatheringSubstanceSchema
 
     def __init__(self,
                  standard_density=1000.0,

@@ -44,7 +44,6 @@ class InitBaseClass(GnomeId):
         # knows about these array_types and can include them.
         # Make it a set since ElementType does a membership check in
         # set_newparticle_values()
-        self.array_types = dict()
         super(InitBaseClass, self).__init__(*args,**kwargs)
 
     def initialize(self, num_new_particles, spill, data_arrays, substance):
@@ -77,7 +76,7 @@ class InitWindagesSchema(base_schema.ObjTypeSchema):
 class InitWindages(InitBaseClass):
     _schema = InitWindagesSchema
 
-    def __init__(self, windage_range=(0.01, 0.04), windage_persist=900, name='windages', *args, **kwargs):
+    def __init__(self, windage_range=(0.01, 0.04), windage_persist=900, *args, **kwargs):
         """
         Initializes the windages, windage_range, windage_persist data arrays.
         Initial values for windages use infinite persistence. These are updated
@@ -100,7 +99,6 @@ class InitWindages(InitBaseClass):
         self.array_types.update({'windages': gat('windages'),
                                  'windage_range': gat('windage_range'),
                                  'windage_persist': gat('windage_persist')})
-        self.name = name
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
@@ -299,7 +297,8 @@ class InitRiseVelFromDropletSizeFromDist(DistributionBase):
                                 le_density, drop_size,
                                 self.water_viscosity, self.water_density)
 
-def floating_initializers():
+def floating_initializers(windage_range=(.01, .04),
+                          windage_persist=900,):
     """
     Helper function returns a dict of initializers for floating LEs
 
@@ -310,7 +309,8 @@ def floating_initializers():
         ElementType constructor
     :type substance: str or OilProps
     """
-    return [InitWindages()]
+    return [InitWindages(windage_range=windage_range,
+                         windage_persist=windage_persist)]
 
 
 def plume_initializers(distribution_type='droplet_size',
@@ -382,7 +382,7 @@ def plume_initializers(distribution_type='droplet_size',
 
 
 def plume_from_model_initializers(distribution_type='droplet_size',
-                                  distribution='weibull',
+                                  distribution=None,
                                   windage_range=(.01, .04),
                                   windage_persist=900,
                                   **kwargs):

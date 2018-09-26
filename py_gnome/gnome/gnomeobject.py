@@ -139,6 +139,7 @@ class GnomeId(AddLogger):
             if isinstance(name, six.string_types) and '/' in name or '\\' in name:
                 raise ValueError("Invalid slash character in {0}".format(name))
             self.name = name
+        self.array_types = dict()
 
     @property
     def id(self):
