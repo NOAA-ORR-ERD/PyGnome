@@ -14,7 +14,7 @@ from gnome.spill import point_line_release_spill
 from gnome.outputters import Outputter
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='function')
 def model(sample_model):
     """
     Use fixture sample_model and add a few things to it for the

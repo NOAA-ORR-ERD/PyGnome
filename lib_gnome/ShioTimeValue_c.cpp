@@ -27,7 +27,7 @@ using std::ios;
 void ShioTimeValue_c::InitInstanceVariables(void)
 {
 	this->fUserUnits = kKnots; // ??? JLM code goes here
-	
+
 	// initialize any fields we have
 	this->fStationName[0] = 0;
 	this->fStationType = 0;
@@ -57,7 +57,7 @@ ShioTimeValue_c::ShioTimeValue_c(TMover *theOwner,TimeValuePairH tvals) : OSSMTi
 	this->InitInstanceVariables();
 }
 ShioTimeValue_c::ShioTimeValue_c(TMover *theOwner) : OSSMTimeValue_c(theOwner)
-{ 
+{
 	this->InitInstanceVariables();
 }
 #endif
@@ -78,9 +78,9 @@ char* GetKeyedLine(CHARH f, const char *key, long lineNum, char *strLine)
 	// returns NIL if key does not match
 	char* p = 0;
 	long keyLen = strlen(key);
-	NthLineInTextOptimized (*f,lineNum, strLine, kMaxKeyedLineLength); 
+	NthLineInTextOptimized (*f,lineNum, strLine, kMaxKeyedLineLength);
 	RemoveTrailingWhiteSpace(strLine);
-	if (!strncmpnocase(strLine,key,keyLen)) 
+	if (!strncmpnocase(strLine,key,keyLen))
 		p = strLine+keyLen;
 	return p;
 }
@@ -96,9 +96,9 @@ OSErr ShioTimeValue_c::GetKeyedValue(CHARH f, const char *key, long lineNum, cha
 	long i,numVals = 0;
 	char str[kMaxStrChar];
 	OSErr err = 0;
-	
+
 	if(!h) return -1;
-	
+
 	*val = nil;
 	if(!(p = GetKeyedLine(f,key,lineNum,strLine)))  {err = -2; goto done;}
 	for(;;) //forever
@@ -115,7 +115,7 @@ OSErr ShioTimeValue_c::GetKeyedValue(CHARH f, const char *key, long lineNum, cha
 		(*h)[numVals++] = value;
 		if(numVals >= kMaxNumVals) {err = -4; goto done;}
 	}
-	
+
 done:
 	if(numVals < 10) err = -5;// probably a bad line
 	if(err && h) {_DisposeHandle((Handle)h); h = 0;}
@@ -135,7 +135,7 @@ OSErr ShioTimeValue_c::GetKeyedValue(CHARH f, const char *key, long lineNum, cha
 	for(p2 = p; TRUE ; p2++)
 	{//advance to the first space
 		if(*p2 == 0) return -1; //error, only one part to the string
-		if(*p2 == ' ') 
+		if(*p2 == ' ')
 		{
 			*p2 = 0; // null terminate the first part
 			p2++;
@@ -220,26 +220,26 @@ long  ShioTimeValue_c::I_SHIOEBBFLOODS(void)
 	}
 	else
 		return 99999;
-	
+
 }
 
-Boolean ShioTimeValue_c::DaylightSavingTimeInEffect(DateTimeRec *dateStdTime)	
+Boolean ShioTimeValue_c::DaylightSavingTimeInEffect(DateTimeRec *dateStdTime)
 {
 	// Assume that the change from standard to daylight
-	// savings time is on the first Sunday in April at 0200 and 
+	// savings time is on the first Sunday in April at 0200 and
 	// the switch back to Standard time is on the
-	// last Sunday in October at 0200.             
-	
-	// Starting in 2007 change from standard to daylight 
-	// savings time is on the second Sunday in March at 0200 and 
+	// last Sunday in October at 0200.
+
+	// Starting in 2007 change from standard to daylight
+	// savings time is on the second Sunday in March at 0200 and
 	// the switch back to Standard time is on the
-	// first Sunday in November at 0200.             
-	
+	// first Sunday in November at 0200.
+
 	//return false;	// code goes here, outside US don't use daylight savings
-// 	if (settings.daylightSavingsTimeFlag == DAYLIGHTSAVINGSOFF) return false; 
-	
-	if (this->daylight_savings_off == DAYLIGHTSAVINGSOFF) return false;	
-	
+// 	if (settings.daylightSavingsTimeFlag == DAYLIGHTSAVINGSOFF) return false;
+
+	if (this->daylight_savings_off == DAYLIGHTSAVINGSOFF) return false;
+
 	if (dateStdTime->year < 2007)
 	{
 		switch(dateStdTime->month)
@@ -250,17 +250,17 @@ Boolean ShioTimeValue_c::DaylightSavingTimeInEffect(DateTimeRec *dateStdTime)
 			case 11:
 			case 12:
 				return false;
-				
+
 			case 5:
 			case 6:
 			case 7:
 			case 8:
 			case 9:
 				return true;
-				
+
 			case 4: // april
 				if(dateStdTime->day > 7) return true; // past the first week
-				if(dateStdTime->dayOfWeek == 1) 
+				if(dateStdTime->dayOfWeek == 1)
 				{	// first sunday
 					if(dateStdTime->hour >= 2) return true;  // after 2AM
 					else return false; // before 2AM
@@ -271,10 +271,10 @@ Boolean ShioTimeValue_c::DaylightSavingTimeInEffect(DateTimeRec *dateStdTime)
 					if(prevSundayDay >= 1) return true; // previous Sunday was this month, so we are after the magic Sunday
 					else return false;// previous Sunday was previous month, so we are before the magic Sunday
 				}
-				
+
 			case 10://Oct
 				if(dateStdTime->day < 25) return true; // before the last week
-				if(dateStdTime->dayOfWeek == 1) 
+				if(dateStdTime->dayOfWeek == 1)
 				{	// last sunday
 					if(dateStdTime->hour >= 2) return false;  // after 2AM
 					else return true; // before 2AM
@@ -284,10 +284,10 @@ Boolean ShioTimeValue_c::DaylightSavingTimeInEffect(DateTimeRec *dateStdTime)
 					short nextSundayDay = dateStdTime->day - dateStdTime->dayOfWeek + 8;
 					if(nextSundayDay > 31) return false; // next Sunday is next month, so we are after the magic Sunday
 					else return true;// next Sunday is this month, so we are before the magic Sunday
-				}				
+				}
 		}
 	}
-	else 
+	else
 	{
 		switch(dateStdTime->month)
 		{
@@ -297,7 +297,7 @@ Boolean ShioTimeValue_c::DaylightSavingTimeInEffect(DateTimeRec *dateStdTime)
 			//case 11:
 			case 12:
 				return false;
-				
+
 			case 4:
 			case 5:
 			case 6:
@@ -306,11 +306,11 @@ Boolean ShioTimeValue_c::DaylightSavingTimeInEffect(DateTimeRec *dateStdTime)
 			case 9:
 			case 10:
 				return true;
-				
+
 			case 3: // March
 				if(dateStdTime->day < 8) return false; // before the second week
 				if(dateStdTime->day > 14) return true; // past the second week
-				if(dateStdTime->dayOfWeek == 1) 
+				if(dateStdTime->dayOfWeek == 1)
 				{	// first sunday
 					if(dateStdTime->hour >= 2) return true;  // after 2AM
 					else return false; // before 2AM
@@ -321,10 +321,10 @@ Boolean ShioTimeValue_c::DaylightSavingTimeInEffect(DateTimeRec *dateStdTime)
 					if(prevSundayDay >= 8) return true; // previous Sunday was this month, so we are after the magic Sunday
 					else return false;// previous Sunday was previous month, so we are before the magic Sunday
 				}
-				
+
 			case 11: // Nov
 				if(dateStdTime->day > 7) return false; // after the first week
-				if(dateStdTime->dayOfWeek == 1) 
+				if(dateStdTime->dayOfWeek == 1)
 				{	// first sunday
 					if(dateStdTime->hour >= 2) return false;  // after 2AM
 					else return true; // before 2AM
@@ -334,7 +334,7 @@ Boolean ShioTimeValue_c::DaylightSavingTimeInEffect(DateTimeRec *dateStdTime)
 					short nextSundayDay = dateStdTime->day - dateStdTime->dayOfWeek + 8;
 					if(nextSundayDay > 14) return false; // next Sunday is next month, so we are after the magic Sunday
 					else return true;// next Sunday is this month, so we are before the magic Sunday
-				}				
+				}
 		}
 	}
 
@@ -364,7 +364,7 @@ void ShioTimeValue_c::GetYearDataDirectory(char* directoryPath)
 	if (applicationFolderPath[0]==0)
 		//strcpy(directoryPath,"SampleData/Data/yeardata/");
 		printNote("The year data directory has not been set\n");
-	else 
+	else
 		strcpy(directoryPath,applicationFolderPath);
 	//sprintf(errmsg,"The year data path being used is %s\n",directoryPath);
 	//printNote(errmsg);
@@ -410,7 +410,7 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 	Seconds beginSeconds;
 	Boolean daylightSavings;
 #ifndef pyGNOME
-	YEARDATAHDL		YHdl = 0; 
+	YEARDATAHDL		YHdl = 0;
 #endif
 	double *XODE=0, *VPU=0;
     //YEARDATA		*yearData = (YEARDATA *) NULL;
@@ -418,12 +418,12 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 	CONSTITUENT		*conArray = 0;
 	char	directoryPath[256], errStr[256];
 	YEARDATA2* yearData = 0;
-	
+
 	long numValues = this->GetNumValues(), amtYearData = 0, i;
 	// check that to see if the value is in our already computed range
 	if(numValues > 0)
-	{	
-		
+	{
+
 		if(INDEXH(this->timeValues, 0).time <= current_time
 		   && current_time <= INDEXH(this->timeValues, numValues-1).time)	// AH 07/10/2012
 		{ // the value is in the computed range
@@ -436,42 +436,42 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 		}
 		//this->fScaleFactor = 0;	//if we want to ask for a scale factor for each computed range...
 	}
-	
+
 	// else we need to re-compute the values
 	this->SetTimeValueHandle(nil);
 	errStr[0] = 0;
-	
+
 	// calculate the values every hour for the interval containing the model run time
 	//SecondsToDate(modelStartTime,&beginDate);
-	
+
 //	SecondsToDate(modelStartTime-6*3600,&beginDate);	// for now to handle the new tidal current mover 1/27/04 // minus AH 07/10/2012
 	SecondsToDate(current_time-6*3600,&beginDate);	// AH 07/10/2012
-	
+
 	beginDate.hour = 0; // Shio expects this to be the start of the day
 	beginDate.minute = 0;
 	beginDate.second = 0;
 	DateToSeconds(&beginDate, &beginSeconds);
-	
+
 //	SecondsToDate(modelEndTime+24*3600,&endDate);// add one day so that we can truncate to start of the day	// minus AH 07/10/2012
 	SecondsToDate(current_time+48*3600,&endDate); // AH 07/10/2012
-	
+
 	endDate.hour = 0; // Shio expects this to be the start of the day
 	endDate.minute = 0;
 	endDate.second = 0;
-	 
+
 	daylightSavings = this->DaylightSavingTimeInEffect(&beginDate);// code goes here, set the daylight flag
-#ifndef pyGNOME	
+#ifndef pyGNOME
 #ifdef IBM	// code goes here - decide where to put the yeardata folder
 	YHdl = GetYearData(beginDate.year);
-	//GetYearDataDirectory(directoryPath);	// put full path together	
-	//yearData = ReadYearData(beginDate.year,directoryPath,errStr);	
+	//GetYearDataDirectory(directoryPath);	// put full path together
+	//yearData = ReadYearData(beginDate.year,directoryPath,errStr);
 #else
 	//YHdl = (YEARDATAHDL)_NewHandle(0);
-	GetYearDataDirectory(directoryPath);	// put full path together	
-	yearData = ReadYearData(beginDate.year,directoryPath,errStr);	
+	GetYearDataDirectory(directoryPath);	// put full path together
+	yearData = ReadYearData(beginDate.year,directoryPath,errStr);
 #endif
 	if(!YHdl && !yearData)  { TechError("TShioTimeValue::GetTimeValue()", "GetYearData()", 0); return -1; }
-	
+
 	if (YHdl) amtYearData = _GetHandleSize((Handle)YHdl)/sizeof(**YHdl);
 	else if (yearData) amtYearData = yearData->numElements;
 	try
@@ -487,7 +487,7 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 	{
 		for (i = 0; i<amtYearData; i++)
 		{
-			XODE[i] = (double) INDEXH(YHdl,i).XODE;	
+			XODE[i] = (double) INDEXH(YHdl,i).XODE;
 			VPU[i] = (double) INDEXH(YHdl,i).VPU;
 		}
 	}
@@ -516,10 +516,10 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 	GetYearDataDirectory(directoryPath);	// put full path together
 	//sprintf(msgStr,"Path for year data = %s\n",directoryPath);
 	//printNote(msgStr);
-	yearData = ReadYearData(beginDate.year,directoryPath,errStr);	
+	yearData = ReadYearData(beginDate.year,directoryPath,errStr);
 	if (errStr[0] != 0) printNote(errStr);
 	if(!yearData)  { TechError("TShioTimeValue::GetTimeValue()", "GetYearData()", 0); return -1; }
-	
+
 	if (yearData) amtYearData = yearData->numElements;
 	try
 	{
@@ -538,18 +538,18 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 			VPU[i] = yearData->VPU[i];
 		}
 	}
-	//GetYearDataDirectory(directoryPath);	// put full path together	
+	//GetYearDataDirectory(directoryPath);	// put full path together
 	//yearData = ReadYearData(beginDate.year,directoryPath,errStr);
 #endif
-	
-	
+
+
 	numConstituents = _GetHandleSize((Handle)fConstituent.H)/sizeof(**fConstituent.H);
 	conArray = new CONSTITUENT[numConstituents];
 	for (i = 0; i<numConstituents; i++)
 	{
 		conArray[i].H = INDEXH(fConstituent.H,i);
 		conArray[i].kPrime = INDEXH(fConstituent.kPrime,i);
-		
+
 		// NOTE: all these other fields in CONTROLVAR are undefined for height stations
 		conArray[i].DatumControls.datum = fConstituent.DatumControls.datum;
 		conArray[i].DatumControls.FDir = fConstituent.DatumControls.FDir;
@@ -558,14 +558,14 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 		conArray[i].DatumControls.HFlag = fConstituent.DatumControls.HFlag;
 		conArray[i].DatumControls.RotFlag = fConstituent.DatumControls.RotFlag;
 	}
-	
+
 	if(this->fStationType == 'C')
 	{
 		// get the currents
 		COMPCURRENTS *answers ;
 		//memset(&answers,0,sizeof(answers));
-		answers = new COMPCURRENTS;		
-		
+		answers = new COMPCURRENTS;
+
 		answers->nPts = 0;
 		answers->time = 0;
 		answers->speed = 0;
@@ -578,12 +578,12 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 		answers->EbbFloodSpeeds = 0;
 		answers->EbbFloodTimes = 0;
 		answers->EbbFlood = 0;
-		
+
 		err = GetTideCurrent(&beginDate,&endDate,
 							 numConstituents,
-							 //&fConstituent,	
+							 //&fConstituent,
 							 conArray,
-							 &fCurrentOffset,		
+							 &fCurrentOffset,
 							 answers,		// Current-time struc with answers
 							 //YHdl,
 							 XODE,VPU,
@@ -601,7 +601,7 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 			{
 				// copy these values into a handle
 				TimeValuePairH tvals = (TimeValuePairH)_NewHandle(num10MinValues* sizeof(TimeValuePair));
-				if(!tvals) 
+				if(!tvals)
 				{TechError("TShioTimeValue::GetTimeValue()", "GetYearData()", 0); err = memFullErr; goto done_currents;}
 				else
 				{
@@ -611,10 +611,10 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 						if(answers->time[i].flag == outOfSequenceFlag) continue; // skip this value, code goes here
 						if(answers->time[i].flag == 1) continue; // skip this value, 1 is don't plot flag - junk at beginning or end of data
 						// note:timeHdl values are in hrs from start
-						tvPair.time = beginSeconds + (long) (answers->time[i].val*3600); 
+						tvPair.time = beginSeconds + (long) (answers->time[i].val*3600);
 						tvPair.value.u = KNOTSTOMETERSPERSEC * answers->speed[i];// convert from knots to m/s
 						tvPair.value.v = 0; // not used
-						//INDEXH(tvals,i) = tvPair;	
+						//INDEXH(tvals,i) = tvPair;
 						INDEXH(tvals,numCopied) = tvPair;	// if skip outOfSequence values don't want holes in the handle
 						numCopied++;
 					}
@@ -623,8 +623,8 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 				}
 				////// JLM  , try saving the highs and lows for displaying on the left hand side
 				{
-					
-					short	numEbbFloods = answers->numEbbFloods;			// Number of ebb and flood occurrences.								
+
+					short	numEbbFloods = answers->numEbbFloods;			// Number of ebb and flood occurrences.
 					double *EbbFloodSpeedsPtr = answers->EbbFloodSpeeds;	// double knots
 					EXTFLAG *EbbFloodTimesPtr = answers->EbbFloodTimes;		// double hours, flag=0 means plot
 					short	*EbbFloodPtr = answers->EbbFlood;			// 0 -> Min Before Flood.
@@ -636,27 +636,27 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 					double EbbFloodSpeed;
 					EXTFLAG EbbFloodTime;
 					short EbbFlood;
-					
-					
+
+
 					/*short numEbbFloodSpeeds = 0;
 					 short numEbbFloodTimes = 0;
 					 short numEbbFlood = 0;
 					 double dBugEbbFloodSpeedArray[40];
 					 EXTFLAG dBugEbbFloodTimesArray[40];
 					 short dBugEbbFloodArray[40];
-					 
+
 					 // just double check the size of the handles is what we expect
-					 
+
 					 if(EbbFloodSpeedsHdl)
 					 numEbbFloodSpeeds = _GetHandleSize((Handle)EbbFloodSpeedsHdl)/sizeof(**EbbFloodSpeedsHdl);
-					 
+
 					 if(EbbFloodTimesHdl)
 					 numEbbFloodTimes = _GetHandleSize((Handle)EbbFloodTimesHdl)/sizeof(**EbbFloodTimesHdl);
-					 
+
 					 if(EbbFloodHdl)
 					 numEbbFlood = _GetHandleSize((Handle)EbbFloodHdl)/sizeof(**EbbFloodHdl);
-					 
-					 if(numEbbFlood == numEbbFloodSpeeds 
+
+					 if(numEbbFlood == numEbbFloodSpeeds
 					 && numEbbFlood == numEbbFloodTimes
 					 )
 					 {
@@ -668,15 +668,15 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 					 // 1 -> Max Flood.
 					 // 2 -> Min Before Ebb.
 					 // 3 -> Max Ebb.
-					 
+
 					 }
 					 dBugEbbFloodArray[39] = dBugEbbFloodArray[39]; // just a break point
-					 
+
 					 }*/
-					
-					
+
+
 					/////////////////////////////////////////////////
-					
+
 					// count the number of values we wish to show to the user
 					// (we show the user if the plot flag is set)
 					numToShowUser = 0;
@@ -689,12 +689,12 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 								numToShowUser++;
 						}
 					}
-					
+
 					// now allocate a handle of this size to hold the values for the user
-					
-					if(fEbbFloodDataHdl) 
+
+					if(fEbbFloodDataHdl)
 					{
-						_DisposeHandle((Handle)fEbbFloodDataHdl); 
+						_DisposeHandle((Handle)fEbbFloodDataHdl);
 						fEbbFloodDataHdl = 0;
 					}
 					if(numToShowUser > 0)
@@ -707,7 +707,7 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 							EbbFloodTime = EbbFloodTimesPtr[i];
 							EbbFloodSpeed = EbbFloodSpeedsPtr[i];
 							EbbFlood = EbbFloodPtr[i];
-							
+
 							if(EbbFloodTime.flag == 0)
 							{
 								EbbFloodData ebbFloodData;
@@ -721,15 +721,15 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 							}
 						}
 					}
-					
+
 				}
 				/////////////////////////////////////////////////
-				
+
 			}
 		}
-		
+
 	done_currents:
-		
+
 		// dispose of GetTideCurrent allocated handles
 		//CleanUpCompCurrents(&answers);
 		if (answers)
@@ -743,9 +743,9 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 			if (answers->EbbFloodSpeeds) {delete [] answers->EbbFloodSpeeds; answers->EbbFloodSpeeds = 0;}
 			if (answers->EbbFloodTimes) {delete [] answers->EbbFloodTimes; answers->EbbFloodTimes = 0;}
 			if (answers->EbbFlood) {delete [] answers->EbbFlood; answers->EbbFlood = 0;}
-			
+
 			delete answers;
-			
+
 			answers = 0;
 		}
 		if (XODE)  {delete [] XODE; XODE = 0;}
@@ -753,14 +753,14 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 		if (conArray) {delete [] conArray; conArray = 0;}
 		if(err) return err;
 	}
-	
+
 	else if (this->fStationType == 'H')
-	{	
+	{
 		// get the heights
 		COMPHEIGHTS *answers;
 		//memset(&answers,0,sizeof(answers));
-		answers = new COMPHEIGHTS;		
-		
+		answers = new COMPHEIGHTS;
+
 		answers->nPts = 0;
 		answers->time = 0;
 		answers->height = 0;
@@ -769,23 +769,23 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 		answers->HighLowHeights = 0;
 		answers->HighLowTimes = 0;
 		answers->HighLow = 0;
-		
+
 		err = GetTideHeight(&beginDate,&endDate,
 							XODE,VPU,
 							numConstituents,
-							conArray,	
+							conArray,
 							//YHdl,
 							&fHeightOffset,
 							answers,
-							//&fConstituent,	
+							//&fConstituent,
 							//**minmaxvalhdl, // not used
 							//**minmaxtimehdl, // not used
 							//nminmax, // not used
 							//*cntrlvars, // not used
 							daylightSavings);
-		
+
 		//model->NewDirtNotification(DIRTY_LIST);// what we display in the list is invalid
-		
+
 		if (!err)
 		{
 #ifndef pyGNOME	// AH 07/10/2012
@@ -796,7 +796,7 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 			{
 				// convert the heights into speeds
 				TimeValuePairH tvals = (TimeValuePairH)_NewHandle(num10MinValues*sizeof(TimeValuePair));
-				if(!tvals) 
+				if(!tvals)
 				{TechError("TShioTimeValue::GetTimeValue()", "_NewHandle()", 0); err = memFullErr; goto done_heights;}
 				else
 				{
@@ -810,7 +810,7 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 						if(answers->time[i].flag == outOfSequenceFlag) continue;// skip this value, code goes here
 						if(answers->time[i].flag == 1) continue;// skip this value, 1 is don't plot flag - junk at beginning or end of data
 						// note:timeHdl values are in hrs from start
-						tvPair.time = beginSeconds + (long) (answers->time[i].val*3600); 
+						tvPair.time = beginSeconds + (long) (answers->time[i].val*3600);
 						tvPair.value.u = 0; // fill in later
 						tvPair.value.v = 0; // not used
 						INDEXH(tvals,numCopied) = tvPair;
@@ -819,24 +819,24 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 					}
 					_SetHandleSize((Handle)tvals, numCopied*sizeof(TimeValuePair));
 					_SetHandleSize((Handle)heightHdl, numCopied*sizeof(double));
-					
+
 					long imax = numCopied-1;
 					for(i = 0; i < numCopied; i++)
-					{					
-						if (i>0 && i<imax) 
-						{	// temp fudge, need to approx derivative to convert to speed (m/s), 
+					{
+						if (i>0 && i<imax)
+						{	// temp fudge, need to approx derivative to convert to speed (m/s),
 							// from ft/min (time step is 10 minutes), use centered difference
 							// for now use extra 10000 factor to get reasonable values
 							// will also need the scale factor, check about out of sequence flag
-							deriv = 3048*(INDEXH(heightHdl,i+1)-INDEXH(heightHdl,i-1))/1200.; 
+							deriv = 3048*(INDEXH(heightHdl,i+1)-INDEXH(heightHdl,i-1))/1200.;
 						}
-						else if (i==0) 
-						{	
-							deriv = 3048*(INDEXH(heightHdl,i+1)-INDEXH(heightHdl,i))/600.; 
+						else if (i==0)
+						{
+							deriv = 3048*(INDEXH(heightHdl,i+1)-INDEXH(heightHdl,i))/600.;
 						}
-						else if (i==imax) 
-						{	
-							deriv = 3048*(INDEXH(heightHdl,i)-INDEXH(heightHdl,i-1))/600.; 
+						else if (i==imax)
+						{
+							deriv = 3048*(INDEXH(heightHdl,i)-INDEXH(heightHdl,i-1))/600.;
 						}
 						INDEXH(tvals,i).value.u = deriv;	// option to have standing (deriv) vs progressive wave (no deriv)
 					}
@@ -845,7 +845,7 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 				}
 				////// JLM  , save the highs and lows for displaying on the left hand side
 				{
-					short	numHighLows = answers->numHighLows;			// Number of high and low tide occurrences.								
+					short	numHighLows = answers->numHighLows;			// Number of high and low tide occurrences.
 					double *HighLowHeightsPtr = answers->HighLowHeights;	// double feet
 					EXTFLAG *HighLowTimesPtr = answers->HighLowTimes;		// double hours, flag=0 means plot
 					short			*HighLowPtr = answers->HighLow;			// 0 -> Low Tide.
@@ -855,9 +855,9 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 					double HighLowHeight;
 					EXTFLAG HighLowTime;
 					short HighLow;
-					
+
 					/////////////////////////////////////////////////
-					
+
 					// count the number of values we wish to show to the user
 					// (we show the user if the plot flag is set)
 					numToShowUser = 0;
@@ -870,12 +870,12 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 								numToShowUser++;
 						}
 					}
-					
+
 					// now allocate a handle of this size to hold the values for the user
-					
-					if(fHighLowDataHdl) 
+
+					if(fHighLowDataHdl)
 					{
-						_DisposeHandle((Handle)fHighLowDataHdl); 
+						_DisposeHandle((Handle)fHighLowDataHdl);
 						fHighLowDataHdl = 0;
 					}
 					if(numToShowUser > 0)
@@ -888,7 +888,7 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 							HighLowTime = HighLowTimesPtr[i];
 							HighLowHeight = HighLowHeightsPtr[i];
 							HighLow = HighLowPtr[i];
-							
+
 							if(HighLowTime.flag == 0)
 							{
 								HighLowData highLowData;
@@ -900,12 +900,12 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 							}
 						}
 					}
-					
+
 				}
 				/////////////////////////////////////////////////
 			}
 		}
-		
+
 		/////////////////////////////////////////////////
 		// Find derivative
 		if(!err)
@@ -917,7 +917,7 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 			HighLowData startHighLowData,endHighLowData;
 			double scaleFactor = 1.;
 			char msg[256];
-			for( i=0 ; i<this->GetNumHighLowValues()-1; i++) 
+			for( i=0 ; i<this->GetNumHighLowValues()-1; i++)
 			{
 				startHighLowData = INDEXH(fHighLowDataHdl, i);
 				endHighLowData = INDEXH(fHighLowDataHdl, i+1);
@@ -931,10 +931,10 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 		//		if (forTime > startHighLowData.time && forTime < endHighLowData.time && !valueFound)	// minus AH 07/10/2012
 				if (current_time > startHighLowData.time && current_time < endHighLowData.time && !valueFound)	// AH 07/10/2012
 				{
-				//	(*value).u = GetDeriv(startHighLowData.time, startHighLowData.height, 
+				//	(*value).u = GetDeriv(startHighLowData.time, startHighLowData.height,
 				//						  endHighLowData.time, endHighLowData.height, forTime);		// minus AH 07/10/2012
 					(*value).u = GetDeriv(startHighLowData.time, startHighLowData.height,endHighLowData.time, endHighLowData.height, current_time);	// AH 07/10/2012
-										  
+
 					(*value).v = 0.;
 					valueFound = true;
 				}
@@ -944,7 +944,7 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 									   endHighLowData.time, endHighLowData.height, midTime);
 				// track largest and save all for left hand list, but only do this first time...
 				if (fabs(maxMinDeriv) > largestDeriv) largestDeriv = fabs(maxMinDeriv);
-			}		
+			}
 			/////////////////////////////////////////////////
 			// ask for a scale factor if not known from wizard
 			sprintf(msg,"The largest calculated derivative was %.4lf", largestDeriv);
@@ -961,10 +961,10 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 			}
 			(*value).u = (*value).u * fScaleFactor;
 		}
-		
-		
+
+
 	done_heights:
-		
+
 		// dispose of GetTideHeight allocated handles
 		//CleanUpCompHeights(&answers);
 		if (answers)
@@ -974,9 +974,9 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 			if (answers->HighLowHeights) {delete [] answers->HighLowHeights; answers->HighLowHeights = 0;}
 			if (answers->HighLowTimes) {delete [] answers->HighLowTimes; answers->HighLowTimes = 0;}
 			if (answers->HighLow) {delete [] answers->HighLow; answers->HighLow = 0;}
-			
+
 			delete answers;
-			
+
 			answers = 0;
 		}
 		if (XODE)  {delete [] XODE; XODE = 0;}
@@ -984,15 +984,15 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 		if (conArray) {delete [] conArray; conArray = 0;}
 		return err;
 	}
-	
+
 	else if (this->fStationType == 'P')
-	{	
+	{
 		// get the heights
 		//COMPHEIGHTS answers;
 		COMPHEIGHTS *answers;
 		//memset(&answers,0,sizeof(answers));
-		answers = new COMPHEIGHTS;		
-		
+		answers = new COMPHEIGHTS;
+
 		answers->nPts = 0;
 		answers->time = 0;
 		answers->height = 0;
@@ -1001,11 +1001,11 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 		answers->HighLowHeights = 0;
 		answers->HighLowTimes = 0;
 		answers->HighLow = 0;
-		
+
 		err = GetTideHeight(&beginDate,&endDate,
 							XODE,VPU,
 							numConstituents,
-							conArray,	
+							conArray,
 							//YHdl,
 							&fHeightOffset,
 							answers,
@@ -1014,9 +1014,9 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 							//nminmax, // not used
 							//*cntrlvars, // not used
 							daylightSavings);
-		
+
 		//model->NewDirtNotification(DIRTY_LIST);// what we display in the list is invalid
-		
+
 		if (!err)
 		{
 #ifndef pyGNOME	// AH 07/10/2012
@@ -1027,7 +1027,7 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 			{
 				// code goes here, convert the heights into speeds
 				TimeValuePairH tvals = (TimeValuePairH)_NewHandle(num10MinValues*sizeof(TimeValuePair));
-				if(!tvals) 
+				if(!tvals)
 				{TechError("TShioTimeValue::GetTimeValue()", "_NewHandle()", 0); err = memFullErr; goto done_heights2;}
 				else
 				{
@@ -1041,7 +1041,7 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 						if(answers->time[i].flag == outOfSequenceFlag) continue;// skip this value, code goes here
 						if(answers->time[i].flag == 1) continue;// skip this value, 1 is don't plot flag - junk at beginning or end of data
 						// note:timeHdl values are in hrs from start
-						tvPair.time = beginSeconds + (long)(answers->time[i].val*3600); 
+						tvPair.time = beginSeconds + (long)(answers->time[i].val*3600);
 						tvPair.value.u = 3048*answers->height[i]/1200.; // convert to m/s
 						tvPair.value.v = 0; // not used
 						INDEXH(tvals,numCopied) = tvPair;
@@ -1050,11 +1050,11 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 					}
 					_SetHandleSize((Handle)tvals, numCopied*sizeof(TimeValuePair));
 					this->SetTimeValueHandle(tvals);
-					
+
 				}
 				////// JLM  , save the highs and lows for displaying on the left hand side
 				{
-					short	numHighLows = answers->numHighLows;			// Number of high and low tide occurrences.								
+					short	numHighLows = answers->numHighLows;			// Number of high and low tide occurrences.
 					double *HighLowHeightsPtr = answers->HighLowHeights;	// double feet
 					EXTFLAG *HighLowTimesPtr = answers->HighLowTimes;		// double hours, flag=0 means plot
 					short			*HighLowPtr = answers->HighLow;			// 0 -> Low Tide.
@@ -1064,9 +1064,9 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 					double HighLowHeight;
 					EXTFLAG HighLowTime;
 					short HighLow;
-					
+
 					/////////////////////////////////////////////////
-					
+
 					// count the number of values we wish to show to the user
 					// (we show the user if the plot flag is set)
 					numToShowUser = 0;
@@ -1079,12 +1079,12 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 								numToShowUser++;
 						}
 					}
-					
+
 					// now allocate a handle of this size to hold the values for the user
-					
-					if(fHighLowDataHdl) 
+
+					if(fHighLowDataHdl)
 					{
-						_DisposeHandle((Handle)fHighLowDataHdl); 
+						_DisposeHandle((Handle)fHighLowDataHdl);
 						fHighLowDataHdl = 0;
 					}
 					if(numToShowUser > 0)
@@ -1097,7 +1097,7 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 							HighLowTime = HighLowTimesPtr[i];
 							HighLowHeight = HighLowHeightsPtr[i];
 							HighLow = HighLowPtr[i];
-							
+
 							if(HighLowTime.flag == 0)
 							{
 								HighLowData highLowData;
@@ -1109,12 +1109,12 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 							}
 						}
 					}
-					
+
 				}
 				/////////////////////////////////////////////////
 			}
 		}
-		
+
 		/////////////////////////////////////////////////
 		// Find derivative
 		if(!err)
@@ -1142,10 +1142,10 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 			}
 			(*value).u = (*value).u * fScaleFactor;
 		}
-		
-		
+
+
 	done_heights2:
-		
+
 		// dispose of GetTideHeight allocated handles
 		//CleanUpCompHeights(&answers);
 		if (answers)
@@ -1155,9 +1155,9 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 			if (answers->HighLowHeights) {delete [] answers->HighLowHeights; answers->HighLowHeights = 0;}
 			if (answers->HighLowTimes) {delete [] answers->HighLowTimes; answers->HighLowTimes = 0;}
 			if (answers->HighLow) {delete [] answers->HighLow; answers->HighLow = 0;}
-			
+
 			delete answers;
-			
+
 			answers = 0;
 		}
 		if (XODE)  {delete [] XODE; XODE = 0;}
@@ -1184,7 +1184,7 @@ OSErr ShioTimeValue_c::GetConvertedHeightValue(Seconds forTime, VelocityRec *val
 	long i;
 	//OSErr err = 0;
 	HighLowData startHighLowData,endHighLowData;
-	for( i=0 ; i<this->GetNumHighLowValues()-1; i++) 
+	for( i=0 ; i<this->GetNumHighLowValues()-1; i++)
 	{
 		startHighLowData = INDEXH(fHighLowDataHdl, i);
 		endHighLowData = INDEXH(fHighLowDataHdl, i+1);
@@ -1196,7 +1196,7 @@ OSErr ShioTimeValue_c::GetConvertedHeightValue(Seconds forTime, VelocityRec *val
 		}
 		if (forTime>startHighLowData.time && forTime<endHighLowData.time)
 		{
-			(*value).u = GetDeriv(startHighLowData.time, startHighLowData.height, 
+			(*value).u = GetDeriv(startHighLowData.time, startHighLowData.height,
 								  endHighLowData.time, endHighLowData.height, forTime) * fScaleFactor;
 			(*value).v = 0.;
 			return noErr;
@@ -1211,34 +1211,34 @@ OSErr ShioTimeValue_c::GetProgressiveWaveValue(const Seconds& forTime, VelocityR
 	OSErr err = 0;
 	(*value).u = 0;
 	(*value).v = 0;
-	
+
 	if ((err = OSSMTimeValue_c::GetTimeValue(forTime,value)) > 0)
 		return err; // minus AH 07/10/2012
 
 	//if (err = OSSMTimeValue_c::GetTimeValue(start_time, end_time, current_time, value)) return err;		// AH 07/10/2012
-	
+
 	(*value).u = (*value).u * fScaleFactor;	// derivative is zero at the highs and lows
 	(*value).v = (*value).v * fScaleFactor;
-	
+
 	return err;
 }
 
 /////////////////////////////////////////////////
 OSErr ShioTimeValue_c::GetLocationInTideCycle(const Seconds& model_time, short *ebbFloodType, float *fraction)
 {
-	
-	Seconds time = model_time/*, ebbFloodTime*/;	
+
+	Seconds time = model_time/*, ebbFloodTime*/;
 	EbbFloodData ebbFloodData1, ebbFloodData2;
 	long i, numValues;
 	//short type;
 	//float factor;
 	//OSErr err = 0;
-	
+
 	*ebbFloodType = -1;
 	*fraction = 0;
 	//////////////////////
 	if (this->fStationType == 'C')
-	{	
+	{
 		numValues = this->GetNumEbbFloodValues();
 		for (i=0; i<numValues-1; i++)
 		{
@@ -1268,7 +1268,7 @@ OSErr ShioTimeValue_c::GetLocationInTideCycle(const Seconds& model_time, short *
 		printError("Ebb Flood data could not be determined");
 		return -1;
 	}
-	/*else 
+	/*else
 	 {
 	 printNote("Shio height files aren't implemented for tidal cycle current mover");
 	 return -1;
@@ -1286,34 +1286,34 @@ OSErr ShioTimeValue_c::GetLocationInTideCycle(const Seconds& model_time, short *
 			//double maxMinDeriv;
 			Seconds midTime,midTime2;
 			long index = floor(i/2.);
-			
+
 			startHighLowData = INDEXH(fHighLowDataHdl, index);
 			endHighLowData = INDEXH(fHighLowDataHdl, index+1);
-			
+
 			midTime = (endHighLowData.time - startHighLowData.time)/2 + startHighLowData.time;
 			midTime2 = (endHighLowData.time - startHighLowData.time)/2 + endHighLowData.time;
-			
+
 			switch(startHighLowData.type)
 			{
 				case	LowTide:
-					if (fmod(i,2.) == 0)	
+					if (fmod(i,2.) == 0)
 					{
 						derivTime = startHighLowData.time;
 						type1 = MinBeforeFlood;
 					}
-					else	
+					else
 					{
 						derivTime = midTime;
 						type1 = MaxFlood;
 					}
 					break;
 				case	HighTide:
-					if (fmod(i,2.) == 0)	
+					if (fmod(i,2.) == 0)
 					{
 						derivTime = startHighLowData.time;
 						type1 = MinBeforeEbb;
 					}
-					else 
+					else
 					{
 						derivTime = midTime;
 						type1 = MaxEbb;
@@ -1323,24 +1323,24 @@ OSErr ShioTimeValue_c::GetLocationInTideCycle(const Seconds& model_time, short *
 			switch(endHighLowData.type)
 			{
 				case	LowTide:
-					if (fmod(i,2.) == 0)	
+					if (fmod(i,2.) == 0)
 					{
 						derivTime2 = endHighLowData.time;
 						type2 = MinBeforeFlood;
 					}
-					else	
+					else
 					{
 						derivTime2 = midTime2;
 						type2 = MaxFlood;
 					}
 					break;
 				case	HighTide:
-					if (fmod(i,2.) == 0)	
+					if (fmod(i,2.) == 0)
 					{
 						derivTime2 = endHighLowData.time;
 						type2 = MinBeforeEbb;
 					}
-					else 
+					else
 					{
 						derivTime2 = midTime2;
 						type2 = MaxEbb;
@@ -1405,31 +1405,29 @@ OSErr ShioTimeValue_c::GetInterpolatedComponent(Seconds forTime, double *value, 
 }
 
 
-OSErr ShioTimeValue_c::ReadTimeValues (char *path)
+OSErr ShioTimeValue_c::ReadShioValues (char *path)
 {
-	// code goes here, use unitsIfKnownInAdvance to tell if we're coming from a location file, 
+	// code goes here, use unitsIfKnownInAdvance to tell if we're coming from a location file,
 	// if not and it's a heights file ask if progressive or standing wave (add new field or track as 'P')
-	//#pragma unused(unitsIfKnownInAdvance)	
+	//#pragma unused(unitsIfKnownInAdvance)
 	// Note : this is a subset of the TShioTimeValue::ReadTimeValues, should look at combining the two...
 	char strLine[kMaxKeyedLineLength];
 	long i/*,numValues*/;
 	//double value1, value2, magnitude, degrees;
 	CHARH f = 0;
 	//DateTimeRec time;
-	TimeValuePair pair;
 	OSErr	err = noErr/*,scanErr*/;
 	long lineNum = 0;
 	char *p;
-	//long numScanned;
 	double /*value, */stationLat, stationLon;
-	//ONTROLVAR  DatumControls;
-	
+	//CONTROLVAR  DatumControls;
+
 	if ((err = OSSMTimeValue_c::InitTimeFunc()) > 0)
 		return err;
 
 	timeValues = 0;
 	fileName[0] = 0;
-	
+
 	if (!path)
 		return -1;
 
@@ -1440,10 +1438,10 @@ OSErr ShioTimeValue_c::ReadTimeValues (char *path)
 	strLine[kMaxNameLen - 1] = 0;
 
 	SplitPathFileName(strLine, this->fileName);
-	
+
 //	err = ReadFileContents(TERMINATED, 0, 0, path, 0, 0, &f);
 //	if(err)	{ TechError("TShioTimeValue::ReadTimeValues()", "ReadFileContents()", 0); return -1; }
-	
+
 	char c;
 	try {
 		int x = i = 0;
@@ -1458,12 +1456,12 @@ OSErr ShioTimeValue_c::ReadTimeValues (char *path)
 			DEREFH(f)[i] = c;
 		delete _ifstream;
 	} catch(...) {
-		
+
 		printError("We are unable to open or read from the shio tides file. \nBreaking from ShioTimeValue_c::ReadTimeValues().");
 		err = true;
 		goto readError;
 	}
-        
+
 
 	lineNum = 0;
 	// first line
@@ -1475,10 +1473,10 @@ OSErr ShioTimeValue_c::ReadTimeValues (char *path)
 			//case 'c': case 'C': this->fStationType = 'C'; break;
 			//case 'h': case 'H': this->fStationType = 'H'; break;
 			//case 'p': case 'P': this->fStationType = 'P';	// for now assume progressive waves selected in file, maybe change to user input
-		case 'c': case 'C': 
+		case 'c': case 'C':
 			this->fStationType = 'C'; break;
-		case 'h': case 'H': 
-			this->fStationType = 'H'; 
+		case 'h': case 'H':
+			this->fStationType = 'H';
 /*#ifndef pyGNOME
 			if (unitsIfKnownInAdvance!=-2)	// not a location file
 			{
@@ -1493,13 +1491,13 @@ OSErr ShioTimeValue_c::ReadTimeValues (char *path)
 			}
 #endif*/
 			break;
-		case 'p': case 'P': 
+		case 'p': case 'P':
 			this->fStationType = 'P';	// for now assume progressive waves selected in file, maybe change to user input
-			
+
 			//printError("You have selected a SHIO heights file.  Only SHIO current files can be used in GNOME.");
 			//return -1;
 			break;	// Allow heights files to be read in 9/18/00
-		default:	goto readError; 	
+		default:	goto readError;
 	}
 	// 3nd line
 	if(!(p = GetKeyedLine(f,"Name=",lineNum++,strLine)))  goto readError;
@@ -1534,13 +1532,13 @@ OSErr ShioTimeValue_c::ReadTimeValues (char *path)
 	if ((err = this->GetKeyedValue(f, "DatumControls.L2Flag=", lineNum++, strLine, &this->fConstituent.DatumControls.L2Flag)) > 0)  goto readError;
 	if ((err = this->GetKeyedValue(f, "DatumControls.HFlag=", lineNum++, strLine, &this->fConstituent.DatumControls.HFlag)) > 0)  goto readError;
 	if ((err = this->GetKeyedValue(f, "DatumControls.RotFlag=", lineNum++, strLine, &this->fConstituent.DatumControls.RotFlag)) > 0)  goto readError;
-	
+
 skipDatumControls:
 	if ((err = this->GetKeyedValue(f, "H=", lineNum++, strLine, &this->fConstituent.H)) > 0)  goto readError;
 	if ((err = this->GetKeyedValue(f, "kPrime=", lineNum++, strLine, &this->fConstituent.kPrime)) > 0)  goto readError;
-	
+
 	if (!(p = GetKeyedLine(f,"[Offset]",lineNum++,strLine)))  goto readError;
-	
+
 	switch(this->fStationType)
 	{
 		case 'c': case 'C':
@@ -1560,7 +1558,7 @@ skipDatumControls:
 			if ((err = this->GetKeyedValue(f, "MaxEbbDir=", lineNum++, strLine, &this->fCurrentOffset.MaxEbbDir)) > 0)  goto readError;
 			SetFileType(SHIOCURRENTSFILE);
 			break;
-		case 'h': case 'H': 
+		case 'h': case 'H':
 			if ((err = this->GetKeyedValue(f, "HighTime=", lineNum++, strLine, &this->fHeightOffset.HighTime)) > 0)  goto readError;
 			if ((err = this->GetKeyedValue(f, "LowTime=", lineNum++, strLine, &this->fHeightOffset.LowTime)) > 0)  goto readError;
 			if ((err = this->GetKeyedValue(f, "HighHeight_Mult=", lineNum++, strLine, &this->fHeightOffset.HighHeight_Mult)) > 0)  goto readError;
@@ -1569,7 +1567,7 @@ skipDatumControls:
 			if ((err = this->GetKeyedValue(f, "LowHeight_Add=", lineNum++, strLine, &this->fHeightOffset.LowHeight_Add)) > 0)  goto readError;
 			SetFileType(SHIOHEIGHTSFILE);
 			break;
-		case 'p': case 'P': 
+		case 'p': case 'P':
 			if ((err = this->GetKeyedValue(f, "HighTime=", lineNum++, strLine, &this->fHeightOffset.HighTime)) > 0)  goto readError;
 			if ((err = this->GetKeyedValue(f, "LowTime=", lineNum++, strLine, &this->fHeightOffset.LowTime)) > 0)  goto readError;
 			if ((err = this->GetKeyedValue(f, "HighHeight_Mult=", lineNum++, strLine, &this->fHeightOffset.HighHeight_Mult)) > 0)  goto readError;
@@ -1579,22 +1577,22 @@ skipDatumControls:
 			SetFileType(PROGRESSIVETIDEFILE);
 			break;
 	}
-	
-	
+
+
 	if(f) _DisposeHandle((Handle)f); f = nil;
 	return 0;
-	
+
 readError:
 	if(f) DisposeHandle((Handle)f); f = nil;
 	sprintf(strLine,"Error reading SHIO time file %s on line %ld",this->fileName,lineNum);
 	printError(strLine);
 	this->Dispose();
 	return -1;
-	
+
 //Error:
 	//if(f) DisposeHandle((Handle)f); f = nil;
 	//return -1;
-	
+
 }
 /////////////////////////////////////////////////
 YEARDATA2* gYearDataHdl1990Plus2[kMAXNUMSAVEDYEARS];
@@ -1603,20 +1601,20 @@ YEARDATA2* ReadYearData(short year, const char *path, char *errStr)
 
 {
 	// Get year data which are amplitude corrections XODE and epoc correcton VPU
-	
+
 	// NOTE: as per Andy & Mikes code, this func provides only a single year's
 	// data: it does not handle requests spanning years. Both Andy and Mike would
 	// just ask for the year at the start of the data request.
-	
+
 	// Each year has its own file of data, named "#2002" for year 2002, for example
-	
+
 	// NOTE: you must pass in the file path because it is platform specific:
 	// the files live in the sub-directory "yeardata"
 	// - on Mac the path is ":yeardata:#2002" and works off the app dir as current directory
 	// - on Mac running in python in terminal, the path is "yeardata/#2002"
-	
+
 	// if errStr not empty then don't bother, something has already gone wrong
-	
+
 	YEARDATA2	*result = 0;
 	FILE		*stream = 0;
 	double		*xode = 0;
@@ -1624,22 +1622,22 @@ YEARDATA2* ReadYearData(short year, const char *path, char *errStr)
 	double		data1, data2;
 	char		filePathName[256];
 	short		cnt, numPoints = 0, err = 0;
-	
+
 	short yearMinus1990 = year-1990;
-	
+
 	if(0<= yearMinus1990 && yearMinus1990 <kMAXNUMSAVEDYEARS)
 	{
 		if(gYearDataHdl1990Plus2[yearMinus1990]) return gYearDataHdl1990Plus2[yearMinus1990];
 	}
 	//if (errStr[0] != 0) return 0;
 	//errStr[0] = 0;
-	
+
 	// create the filename of the proper year data file
 	sprintf(filePathName, "%s#%d", path, year);
-	
+
 	// It appears that there are 128 data values for XODE and VPU in each file
 	// NOTE: we only collect the first 128 data points (BUG if any more ever get added)
-	
+
 	try
 	{
 		result = new YEARDATA2;
@@ -1651,9 +1649,9 @@ YEARDATA2* ReadYearData(short year, const char *path, char *errStr)
 		err = -1;
 		strcpy(errStr, "Memory error in ReadYearData");
 	}
-	
+
 	if (!err) stream = fopen(filePathName, "r");
-	
+
 	if (stream)
 	{
 		for (cnt = 0; cnt < 128; cnt++)
@@ -1677,26 +1675,26 @@ YEARDATA2* ReadYearData(short year, const char *path, char *errStr)
 		err = -1;
 		sprintf(errStr, "Could not open file '%s'", filePathName);
 	}
-	
+
 	if (err)
-		
+
 	{
 		if (vpu) delete [] vpu;
 		if (xode) delete [] xode;
 		if (result) delete result;
 		return 0;
-	}	
-	
+	}
+
 	result->numElements = numPoints;
 	result->XODE = xode;
 	result->VPU = vpu;
-	
+
 	if(result && 0<= yearMinus1990 && yearMinus1990 <kMAXNUMSAVEDYEARS)
 	{
 		gYearDataHdl1990Plus2[yearMinus1990] = result;
 	}
-	
+
 	return result;
-	
+
 }
 

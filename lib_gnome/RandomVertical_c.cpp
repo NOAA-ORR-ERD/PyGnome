@@ -80,7 +80,7 @@ OSErr RandomVertical_c::get_move(int n, Seconds model_time, Seconds step_len, Wo
 	LERec rec;
 	prec = &rec;
 	
-	WorldPoint3D zero_delta ={0,0,0.};
+	WorldPoint3D zero_delta ={{0,0},0.};
 
 	for (int i = 0; i < n; i++) {
 		// only operate on LE if the status is in water
@@ -115,10 +115,10 @@ double GetDepthAtPoint(WorldPoint p)
 WorldPoint3D RandomVertical_c::GetMove (const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	double	dLong, dLat, z = 0;
-	WorldPoint3D	deltaPoint = {0,0,0.};
+	WorldPoint3D	deltaPoint = {{0,0},0.};
 	WorldPoint refPoint = (*theLE).p;	
 	float rand;
-	OSErr err = 0;
+	//OSErr err = 0;
 
 	//if ((*theLE).z==0)	return deltaPoint;
 	// will need a flag to check if LE is supposed to stay on the surface or can be diffused below	

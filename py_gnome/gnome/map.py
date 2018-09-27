@@ -91,7 +91,7 @@ class GnomeMap(GnomeId):
     """
     _schema = GnomeMapSchema
 
-    refloat_halflife = None  # note -- no land, so never used
+    refloat_halflife = None
 
     def __init__(self, map_bounds=None, spillable_area=None, land_polys=None,
                  name=None):
@@ -197,6 +197,11 @@ class GnomeMap(GnomeId):
             self._spillable_area = sa
             return
         ps = PolygonSet()
+        try:
+            sa[0][0][0]
+        except TypeError:
+            # probably a single polygon -- put it in a list
+            sa = [sa]
         for poly in sa:
             ps.append(poly)
         self._spillable_area = ps
@@ -278,7 +283,7 @@ class GnomeMap(GnomeId):
         # let model decide if we want to remove elements marked as off-map
         status_codes[off_map] = oil_status.off_maps
 
-    def beach_elements(self, spill):
+    def beach_elements(self, sc, model_time=None):
         """
         Determines which LEs were or weren't beached or moved off_map.
         status_code is changed to oil_status.off_maps if off the map.
@@ -298,10 +303,10 @@ class GnomeMap(GnomeId):
 
         are called.
         """
-        self.resurface_airborne_elements(spill)
-        self._set_off_map_status(spill)
+        self.resurface_airborne_elements(sc)
+        self._set_off_map_status(sc)
 
-    def refloat_elements(self, spill_container, time_step):
+    def refloat_elements(self, spill_container, time_step, model_time=None):
         """
         This method performs the re-float logic -- changing the element
         status flag, and moving the element to the last known water position
@@ -510,7 +515,7 @@ class ParamMap(GnomeMap):
     def find_last_water_pos(self, starts, ends):
         return starts + (ends - starts) * 0.000001
 
-    def beach_elements(self, sc):
+    def beach_elements(self, sc, model_time=None):
         """
         Determines which LEs were or weren't beached or moved off_map.
         status_code is changed to oil_status.off_maps if off the map.
@@ -546,7 +551,7 @@ class ParamMap(GnomeMap):
         sc.mass_balance['off_maps'] += \
             sc['mass'][sc['status_codes'] == oil_status.off_maps].sum()
 
-    def refloat_elements(self, spill_container, time_step):
+    def refloat_elements(self, spill_container, time_step, model_time=None):
         """
         This method performs the re-float logic -- changing the element
         status flag, and moving the element to the last known water position
@@ -839,8 +844,7 @@ class RasterMap(GnomeMap):
             return self._in_water_pixel(self.projection.to_pixel(coord,
                                                                  asint=True)[0]
                                         )
-
-    def beach_elements(self, sc):
+    def beach_elements(self, sc, model_time=None):
         """
         Determines which elements were or weren't beached.
 
@@ -855,6 +859,10 @@ class RasterMap(GnomeMap):
             It must have the following data arrays:
             ('prev_position', 'positions', 'last_water_pt', 'status_code')
         """
+
+        print "RasterMap beach_elements called"
+
+
         self.resurface_airborne_elements(sc)
 
         # pull the data from the sc
@@ -898,7 +906,7 @@ class RasterMap(GnomeMap):
         sc.mass_balance['off_maps'] += \
             sc['mass'][sc['status_codes'] == oil_status.off_maps].sum()
 
-    def refloat_elements(self, spill_container, time_step):
+    def refloat_elements(self, spill_container, time_step, model_time=None):
         """
         This method performs the re-float logic -- changing the element
         status flag, and moving the element to the last known water position

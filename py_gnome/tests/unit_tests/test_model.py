@@ -81,6 +81,24 @@ def model(sample_model_fcn, tmpdir):
 def test_init():
     model = Model()
 
+    assert True
+
+
+def test_update_model():
+    mdl = Model()
+    d = {'name': 'Model2'}
+
+    assert mdl.name == 'Model'
+
+    upd = mdl.update(d)
+    assert mdl.name == d['name']
+    assert upd is True
+
+    d['duration'] = 43200
+    upd = mdl.update(d)
+
+    assert mdl.duration.seconds == 43200
+
 
 def test_update_model():
     mdl = Model()
@@ -125,6 +143,34 @@ def test_start_time():
     st = datetime(2012, 8, 12, 13)
     model.start_time = st
 
+    assert model.current_time_step == -1
+    assert model.start_time == st
+
+def test_start_time_string():
+    """
+    model start time can also be set with a string
+    """
+
+    st = datetime.now()
+    st = st.replace(minute=0, second=0, microsecond=0)
+
+    st_str = st.isoformat()
+
+    model = Model(start_time=st_str)
+
+    assert model.start_time == st
+
+    st = datetime.now()
+    model.start_time = st
+    assert model.start_time == st
+    assert model.current_time_step == -1
+
+    model.step()
+
+    st = datetime(2012, 8, 12, 13)
+    model.start_time = '2012-08-12T13'
+
+    assert model.start_time == datetime(2012, 8, 12, 13)
     assert model.current_time_step == -1
     assert model.start_time == st
 
