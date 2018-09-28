@@ -8,7 +8,7 @@ and
 Element_types -- what the types of the elements are.
 
 """
-from datetime import timedelta
+from datetime import timedelta, datetime
 import copy
 import numpy as np
 
@@ -23,7 +23,8 @@ from gnome.array_types import gat
 from gnome.persist.base_schema import ObjTypeSchema, GeneralGnomeObjectSchema
 
 
-from .release import (PointLineRelease,
+from .release import (Release,
+                      PointLineRelease,
                       ContinuousRelease,
                       GridRelease,
                       SpatialRelease)
@@ -40,34 +41,74 @@ from gnome.spill.initializers import plume_initializers
 
 
 class BaseSpill(GnomeId):
-    """
-    A base class for spills -- so we can check for them, etc.
+    '''
+    BaseSpill defines the common interface used by all types of Spills.
+    All Spill types must present the following attributes:
+    1. A Release that handles initialization of particle positions
+    2. A Substance that handles initialization of density, viscosity, windage,
+        and other physical attributes of an LE
+    3. An amount of substance spilled, in mass or volume
+    4. A specified unit for the amount, in mass or volume
+    5. A target number of LEs to produce. This MAY OR MAY NOT be a strict limit
+        or target, depending on implementation.
+    6. The '.data' attribute, which provides direct access to the Spill's LE
+        data.
 
-    and as a spec for the API.
-    """
+    All Spill types must fulfill at least the following roles:
+    1. Determine WHEN and HOW MANY LEs to produce.
+    2. Allocate and initialize MASS to the new LEs.
+    3. Trigger contained Release object and Substance to initialize
+        newly created LEs
+
+    :param release: an object defining how elements are to be released
+    :type release: derived from :class:`~gnome.spill.Release`
+
+    :param bool on=True: Toggles the spill on/off.
+
+    :param float amount=None: mass or volume of oil spilled.
+
+    :param str units=None: must provide units for amount spilled.
+
+    :param float amount_uncertainty_scale=0.0: scale value in range 0-1
+                                               that adds uncertainty to the
+                                               spill amount.
+                                               Maximum uncertainty scale
+                                               is (2/3) * spill_amount.
+
+    '''
     def __init__(self,
                  on=True,
                  substance=None,
+                 release=None,
+                 num_elements=1000,
+                 amount=0,  # could be volume or mass
+                 units='kg',
                  **kwargs):
         """
         initialize -- sub-classes will probably have a lot more to do
         """
         super(BaseSpill, self).__init__(**kwargs)
         self.on = on
-        if not self.substance:
-            substance = NonWeatheringSubstance()
         self.substance=substance
+        if release is None:
+            release = Release(release_time=datetime.now())
+            self.release = release
+            self.num_elements = num_elements
+        else:
+            self.release = release
+
+        self.units = units
+        self.amount = amount
+
         self.data = LEData()
-        self.array_types.update({'mass': gat('mass'),
-                                 'init_mass': gat('mass')})
 
     @property
     def release_time(self):
-        return self._release_time
+        return self.release.release_time
 
     @release_time.setter
     def release_time(self, rt):
-        self._release_time = asdatetime(rt)
+        self.release.release_time = asdatetime(rt)
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}()'
@@ -142,7 +183,19 @@ class BaseSpill(GnomeId):
         rewinds the release to original status (before anything has been
         released).
         """
-        raise NotImplementedError
+        self.data.rewind()
+
+    def prepare_for_model_run(self, array_types, timestep):
+        '''
+        array_types comes from all the other objects above in the model such as
+        movers, weatherers, etc. The ones from the substance still need to be added
+        '''
+        self.generate_LE_timeline(timestep)
+        self.generate_mass_timeline(timestep)
+
+        array_types.update(self.array_types)
+        array_types.update(self.substance.array_types)
+        self.data.prepare_for_model_run(array_types, self.substance)
 
     def num_elements_to_release(self, current_time, time_step):
         """
@@ -210,10 +263,7 @@ class Spill(BaseSpill):
     # _name = 'Spill'
 
     def __init__(self,
-                 release=None,
                  water=None,
-                 amount=None,  # could be volume or mass
-                 units=None,
                  amount_uncertainty_scale=0.0,
                  **kwargs):
         """
@@ -256,18 +306,7 @@ class Spill(BaseSpill):
         """
         super(Spill, self).__init__(**kwargs)
         self.water = water
-        self.release = release
 
-        # fixme: shouldn't units default to 'kg'?
-        self.units = None
-        # fixme -- and amount always be in kg?
-        self.amount = amount
-
-        if amount is not None:
-            if units is None:
-                raise TypeError("Units must be provided with amount spilled")
-            else:
-                self.units = units
 
         self.amount_uncertainty_scale = amount_uncertainty_scale
 
@@ -317,7 +356,7 @@ class Spill(BaseSpill):
     # doesn't seem like this should be set on the spill object!
     @property
     def num_released(self):
-        return self.release.num_released
+        return len(self.data)
     # @num_released.setter
     # def num_released(self, ne):
     #     self.release.num_released = ne
@@ -341,7 +380,6 @@ class Spill(BaseSpill):
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
                 'release={0.release!r}, '
-                'element_type={0.element_type}, '
                 'on={0.on}, '
                 'amount={0.amount}, '
                 'units="{0.units}", '
@@ -511,21 +549,12 @@ class Spill(BaseSpill):
         self.release.rewind()
         self.data.rewind()
 
-    def prepare_for_model_run(self, array_types, parentModel=None):
-        '''
-        array_types comes from all the other objects above in the model such as
-        movers, weatherers, etc. The ones from the substance still need to be added
-        '''
-        array_types.update(self.array_types)
-        array_types.update(self.substance.array_types)
-        self.data.prepare_for_model_run(array_types, self.substance)
-
     def release_elements(self, current_time, time_step):
         """
         Releases and partially initializes new LEs
         """
         to_rel = self.release.num_elements_to_release(current_time, time_step)
-        self.data.extend_data_arrays(self, to_rel)
+        self.data.extend_data_arrays(to_rel)
 
         #Partial initialization from various objects
         self.data['mass'][-to_rel:] = self._elem_mass(to_rel, current_time, time_step)
@@ -535,8 +564,10 @@ class Spill(BaseSpill):
         if 'frac_coverage' in self.data:
             self.data['frac_coverage'][-to_rel:] = self.frac_coverage
 
-        self.substance.initialize_LEs(to_rel, self.data)
+        self.substance.initialize_LEs(to_rel, self.data, [])
+        #empty list above should be model environment collection eventually??
         #weatherers may still initialize further, but this is triggered from Model
+        return to_rel
 
     def num_elements_to_release(self, current_time, time_step):
         """

@@ -13,14 +13,13 @@ import pytest
 
 import numpy as np
 
-from gnome.array_types import positions
 from gnome.spill import (Release,
                          PointLineRelease,
                          ContinuousRelease,
                          GridRelease,
                          Spill)
-from gnome.spill_container import SpillContainer
 from gnome.spill.release import release_from_splot_data
+from gnome.spill.le import LEData
 
 
 def test_init():
@@ -78,21 +77,6 @@ def test_grid_release():
                                                    [0., 12., 0.],
                                                    [1., 12., 0.],
                                                    [2., 12., 0.]])
-
-
-def test_release_no_attr():
-    """
-    a lot of attribute access is to get attributes of the initilizers
-
-    that is tested in other tests, but this tests that it fails when it should
-    """
-    rel = PointLineRelease(release_time=rel_time,
-                           num_elements=5,
-                           start_position=(0, 0, 0)),
-
-    with pytest.raises(AttributeError):
-        rel.something_weird
-
 
 # todo: add other release to this test - need schemas for all
 
@@ -170,18 +154,17 @@ class TestContinuousRelease:
                                     initial_elements=1000,
                                     end_release_time=end_time)
         s = Spill(release)
-        sc = SpillContainer()
-        sc.spills += s
-        sc.prepare_for_model_run()
+        sc = s.data
+        s.prepare_for_model_run()
         for ix in range(5):
             time = self.rel_time + timedelta(seconds=900 * ix)
-            num_les = sc.release_elements(900, time)
+            num_les = s.release_elements(900, time)
             if time <= s.end_release_time:
                 if ix == 0:
                     assert num_les == 1100
                 else:
                     assert num_les == 100
-                assert sc.num_released == 100 + ix * 100 + 1000
+                assert s.num_released == 100 + ix * 100 + 1000
             else:
                 assert num_les == 0
 
@@ -194,17 +177,10 @@ class TestContinuousRelease:
                              end_position=(1, 2, 3),
                              num_per_timestep=100,
                              end_release_time=self.rel_time + timedelta(hours=2))
-        num = r.num_elements_to_release(self.rel_time, 900)
         assert not r.start_time_invalid
 
         # updated only after set_newparticle_positions is called
-        assert r.num_released == 0
-        pos = {'positions': positions.initialize(num)}
-        r.set_newparticle_positions(num,
-                                    self.rel_time,
-                                    900,
-                                    pos)
-        assert r.num_released == num
+
         assert r._delta_pos is not None
         assert np.any(r._next_release_pos != r.start_position)
 
