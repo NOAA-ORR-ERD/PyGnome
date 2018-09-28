@@ -754,7 +754,6 @@ class RasterMap(GnomeMap):
         np.putmask(bitmap, self.basebitmap > 0, 2)
 
         im = py_gd.from_array(bitmap)
-        print im.get_color_index('white')
 
         im.save(filename, 'bmp')
 
@@ -859,9 +858,6 @@ class RasterMap(GnomeMap):
             It must have the following data arrays:
             ('prev_position', 'positions', 'last_water_pt', 'status_code')
         """
-
-        print "RasterMap beach_elements called"
-
 
         self.resurface_airborne_elements(sc)
 
