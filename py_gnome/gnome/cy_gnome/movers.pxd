@@ -43,6 +43,7 @@ cdef extern from "RandomVertical_c.h":
         double fHorizontalDiffusionCoefficient
         double fHorizontalDiffusionCoefficientBelowML
         double fMixedLayerDepth
+        bool bSurfaceIsAllowed
         OSErr get_move(int n, unsigned long model_time, unsigned long step_len,
                        WorldPoint3D* ref, WorldPoint3D* delta,
                        short* LE_status, LEType spillType, long spillID)        
