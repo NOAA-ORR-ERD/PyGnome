@@ -817,7 +817,7 @@ def surface_point_line_spill(num_elements,
                              units=None,
                              windage_range=(.01, .04),
                              windage_persist=900,
-                             name='Surface Point/Line Release'):
+                             name='Surface Point or Line Release'):
     '''
     Helper function returns a Spill object
 

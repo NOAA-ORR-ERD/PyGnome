@@ -133,6 +133,8 @@ class GnomeId(AddLogger):
         self.__class__._instance_count += 1
 
         if name:
+            if '/' in name or '\\' in name:
+                raise ValueError("Invalid slash character in {0}".format(name))
             self.name = name
 
     @property
@@ -604,6 +606,7 @@ class GnomeId(AddLogger):
                                             reference to the object that
                                             called ``.save`` itself.
         """
+
         zipfile_ = None
 
         if saveloc is None:
