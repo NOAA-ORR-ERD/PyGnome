@@ -18,6 +18,7 @@ from gnome.persist.extend_colander import LocalDateTime
 from gnome.persist.validators import convertible_to_seconds
 
 from gnome.basic_types import world_point_type
+from gnome.array_types import gat
 from gnome.utilities.plume import Plume, PlumeGenerator
 
 from gnome.outputters import NetCDFOutput
@@ -132,6 +133,10 @@ class Release(GnomeId):
         # current_time > self.release_time, then no particles are ever released
         # model start time is valid
         self.start_time_invalid = start_time_invalid
+        self._active_time_step = 1
+        self.array_types.update({'positions': gat('positions')
+                                 'mass': gat('mass'),
+                                 'init_mass': gat('mass')})
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
@@ -201,6 +206,13 @@ class Release(GnomeId):
         self.start_time_invalid = None
 
     @property
+    def LE_timestep_ratio(self):
+        '''
+        Returns the ratio
+        '''
+        return self.num_elements / self.get_num_release_time_steps(self._active_time_step)
+
+    @property
     def num_elements(self):
         return self._num_elements
 
@@ -215,11 +227,15 @@ class Release(GnomeId):
     @property
     def release_duration(self):
         '''
-        returns a timedelta object defining the time over which the particles
-        are released. The default is 0; derived classes like PointLineRelease
-        must over-ride
+        return value in seconds
         '''
         return 0
+
+    def get_num_release_time_steps(self, ts):
+        '''
+        calculates how many time steps it takes to complete the release duration
+        '''
+        return 1 + int(self.release_duration / ts)
 
 
 class PointLineRelease(Release):
@@ -634,8 +650,6 @@ class PointLineRelease(Release):
                         end_position[2],
                         num_new_particles)
 
-        self.num_released += num_new_particles
-
     def rewind(self):
         '''
         Rewind to initial conditions -- i.e. nothing released.
@@ -775,14 +789,6 @@ class ContinuousRelease(Release):
         self.continuous.num_per_timestep = val
 
     @property
-    def num_released(self):
-        return self.initial_release.num_released + self.continuous.num_released
-
-    @num_released.setter
-    def num_released(self, val):
-        self.continuous.num_released = val
-
-    @property
     def release_duration(self):
         return self.continuous.release_duration
 
@@ -876,8 +882,7 @@ class SpatialRelease(Release):
         if self.start_time_invalid:
             return 0
 
-        if (current_time + timedelta(seconds=time_step) <= self.release_time or
-                self.num_released >= self.num_elements):
+        if (current_time + timedelta(seconds=time_step) <= self.release_time):
             return 0
 
         return self.num_elements
@@ -890,7 +895,6 @@ class SpatialRelease(Release):
         .. note:: this releases all the elements at their initial positions at
             the release_time
         """
-        self.num_released = self.num_elements
         data_arrays['positions'][-self.num_released:] = self.start_position
 
 

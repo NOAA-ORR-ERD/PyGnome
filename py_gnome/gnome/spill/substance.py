@@ -289,7 +289,7 @@ class NonWeatheringSubstance(Substance):
         :param arrs - dict-like of data arrays representing LEs
         :param env - collection of gnome.environment objects
         '''
-        super(GnomeOil, self).initialize_LEs(to_rel, arrs, env)
+        super(NonWeatheringSubstance, self).initialize_LEs(to_rel, arrs, env)
         sl = slice(-to_rel, None, 1)
         arrs['density'][sl] = self.standard_density
 
