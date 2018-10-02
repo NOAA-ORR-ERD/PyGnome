@@ -148,7 +148,10 @@ class TimeseriesData(GnomeId):
 
         if len(self.time) == 1:
             # single time time series (constant)
-            value = np.full((points.shape[0], 1), self.data, dtype=np.float64)
+            if points is None:
+                value = self.data
+            else:
+                value = np.full((points.shape[0], 1), self.data, dtype=np.float64)
 
             if units is not None and units != self.units:
                 value = unit_conversion.convert(self.units, units, value)
@@ -177,7 +180,10 @@ class TimeseriesData(GnomeId):
         if units is not None and units != self.units:
             value = unit_conversion.convert(self.units, units, value)
 
-        return np.full((points.shape[0], 1), value, dtype=np.float64)
+        if points is None:
+            return value
+        else:
+            return np.full((points.shape[0], 1), value, dtype=np.float64)
 
     def in_units(self, unit):
         '''
