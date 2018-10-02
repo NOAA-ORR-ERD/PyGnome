@@ -553,13 +553,15 @@ class Spill(BaseSpill):
         """
         Releases and partially initializes new LEs
         """
-        to_rel = self.release.num_elements_to_release(current_time, time_step)
+        should_exist = self.release.num_elements_after_time(current_time, time_step)
+        cur_exist = len(self.data)
+        to_rel = should_exist - cur_exist
         self.data.extend_data_arrays(to_rel)
 
         #Partial initialization from various objects
         self.data['mass'][-to_rel:] = self._elem_mass(to_rel, current_time, time_step)
         self.data['init_mass'][-to_rel:] = self.data['mass'][-to_rel:]
-        self.release.set_newparticle_positions(to_rel, current_time, time_step, self.data)
+        self.release.initialize_LEs(to_rel, self.data, current_time, time_step)
 
         if 'frac_coverage' in self.data:
             self.data['frac_coverage'][-to_rel:] = self.frac_coverage
