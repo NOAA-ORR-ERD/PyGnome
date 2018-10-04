@@ -20,7 +20,7 @@ def compute_surface_concentration(sc, algorithm):
 
     :param algorithm: algorithm to use -- currently only "kde" is supported
     """
-    if sc['positions'].shape[0] == 0:  # nothing to be done
+    if sc['positions'].shape[0] == 0 or not algorithm:  # nothing to be done
         return
     if algorithm == 'kde':
         surface_conc_kde(sc)
