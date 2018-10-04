@@ -44,13 +44,10 @@ def surface_conc_kde(sc):
     :param sc: spill container that you want the concentrations computed on
     """
     positions = sc['positions']
-    print positions
     if positions.shape[0] > 2:  # can't compute a kde for less than 3 points!
         lon = positions[:, 0]
         lat = positions[:, 1]
         mass = sc['mass']
-        print np.unique(lon)
-        print np.unique(lat)
         if len(np.unique(lat))>2 or len(np.unique(lon))>2:
             lon0, lat0 = min(lon), min(lat)
             # FIXME: should use projection code to get this right.
