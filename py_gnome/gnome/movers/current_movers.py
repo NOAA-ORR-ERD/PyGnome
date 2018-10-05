@@ -31,6 +31,7 @@ from gnome.movers import CyMover, ProcessSchema
 
 from gnome.persist.base_schema import ObjTypeSchema, WorldPoint
 from gnome.persist.extend_colander import FilenameSchema
+from sympy.physics.units.dimensions import current
 
 
 class CurrentMoversBaseSchema(ProcessSchema):
@@ -176,7 +177,10 @@ class CatsMover(CurrentMoversBase):
 
     _schema = CatsMoverSchema
 
-    def __init__(self, filename, tide=None, uncertain_duration=48,
+    def __init__(self,
+                 filename=None,
+                 tide=None,
+                 uncertain_duration=48,
                  **kwargs):
         """
         Uses super to invoke base class __init__ method.
@@ -208,6 +212,7 @@ class CatsMover(CurrentMoversBase):
         Remaining kwargs are passed onto Mover's __init__ using super.
         See Mover documentation for remaining valid kwargs.
         """
+
         if not os.path.exists(filename):
             raise ValueError('Path for Cats filename does not exist: {0}'
                              .format(filename))
@@ -217,6 +222,8 @@ class CatsMover(CurrentMoversBase):
         # check if this is stored with cy_cats_mover?
         self.mover = CyCatsMover()
         self.mover.text_read(filename)
+        super(CatsMover, self).__init__(uncertain_duration=uncertain_duration,
+                                        **kwargs)
 
         self.name = os.path.split(filename)[1]
 
@@ -246,8 +253,6 @@ class CatsMover(CurrentMoversBase):
             self.scale_value != 0.0 and
                 self.scale_refpoint is None):
             raise TypeError("Provide a reference point in 'scale_refpoint'.")
-
-        super(CatsMover, self).__init__(uncertain_duration, **kwargs)
 
     def __repr__(self):
         return 'CatsMover(filename={0})'.format(self.filename)
@@ -677,6 +682,9 @@ class IceMover(CurrentMoversBase):
     def __init__(self,
                  filename=None,
                  topology_file=None,
+                 current_scale=None,
+                 uncertain_along=0.5,
+                 uncertain_cross=0.25,
                  extrapolate=False,
                  time_offset=0,
                  **kwargs):
@@ -731,6 +739,9 @@ class IceMover(CurrentMoversBase):
         self.mover.extrapolate_in_time(extrapolate)
 
         self.mover.offset_time(time_offset * 3600.)
+        self.uncertain_along = uncertain_along
+        self.uncertain_cross = uncertain_cross
+        self.current_scale = current_scale
 
         super(IceMover, self).__init__(**kwargs)
 
@@ -929,31 +940,7 @@ class IceMover(CurrentMoversBase):
         return (self.mover.get_offset_time()) / 3600.
 
 
-class CurrentCycleMoverSchema(CurrentMoversBaseSchema):
-    filename = FilenameSchema(
-        missing=drop, save=True, isdatafile=True, test_equal=False, update=False
-    )
-    topology_file = FilenameSchema(
-        missing=drop, save=True, isdatafile=True, test_equal=False, update=False
-    )
-    current_scale = SchemaNode(
-        Float(), default=1, missing=drop, save=True, update=True
-    )
-    uncertain_duration = SchemaNode(
-        Float(), default=24, missing=drop,
-        save=True, update=True
-    )
-    uncertain_time_delay = SchemaNode(
-        Float(), default=0, missing=drop,
-        save=True, update=True
-    )
-    uncertain_along = SchemaNode(
-        Float(), default=.5, missing=drop,
-        save=True, update=True
-    )
-    uncertain_cross = SchemaNode(
-        Float(), default=.25, missing=drop, save=True, update=True
-    )
+class CurrentCycleMoverSchema(GridCurrentMoverSchema):
     tide = TideSchema(
         missing=drop, save=True, update=True, save_reference=True
     )
@@ -967,8 +954,7 @@ class CurrentCycleMover(GridCurrentMover):
     _schema = CurrentCycleMoverSchema
 
     def __init__(self,
-                 filename = None,
-                 topology_file=None,
+                 tide=None,
                  **kwargs):
         """
         Initialize a CurrentCycleMover
@@ -1001,14 +987,10 @@ class CurrentCycleMover(GridCurrentMover):
         self.mover = CyCurrentCycleMover()
 
         self._tide = None
-
-        tide = kwargs.pop('tide', None)
-        if tide is not None:
+        if tide:
             self.tide = tide
 
-        super(CurrentCycleMover, self).__init__(filename=filename,
-                                                topology_file=topology_file,
-                                                **kwargs)
+        super(CurrentCycleMover, self).__init__(**kwargs)
 
     def __repr__(self):
         return ('CurrentCycletMover(uncertain_duration={0.uncertain_duration}, '
@@ -1125,6 +1107,16 @@ class ComponentMover(CurrentMoversBase):
     def __init__(self,
                  filename1=None,
                  filename2=None,
+                 scale_refpoint=None,
+                 pat1_angle=0,
+                 pat1_speed=10,
+                 pat1_speed_units=2,
+                 pat1_scale_to_value=0.1,
+                 pat2_angle=90,
+                 pat2_scale_to_value=0.1,
+                 pat2_speed=10,
+                 pat2_speed_units=2,
+                 scale_by=0,
                  wind=None,
                  **kwargs):
         """
@@ -1165,19 +1157,22 @@ class ComponentMover(CurrentMoversBase):
 
         self.mover = CyComponentMover()
         self.mover.text_read(filename1, filename2)
+        super(ComponentMover, self).__init__(**kwargs)
+
 
         self._wind = None
         if wind is not None:
             self.wind = wind
-
-        # TODO: no need to check for None since properties that are None
-        #       are not persisted
-
-        # I think this is required...
-        if 'scale_refpoint' in kwargs:
-            self.scale_refpoint = kwargs.pop('scale_refpoint')
-
-        super(ComponentMover, self).__init__(**kwargs)
+        self.scale_by = scale_by
+        self.scale_refpoint = scale_refpoint
+        self.pat1_angle = pat1_angle
+        self.pat1_speed = pat1_speed
+        self.pat1_speed_units = pat1_speed_units
+        self.pat1_scale_to_value = pat1_scale_to_value
+        self.pat2_angle = pat2_angle
+        self.pat2_scale_to_value = pat2_scale_to_value
+        self.pat2_speed = pat2_speed
+        self.pat2_speed_units = pat2_speed_units
 
     def __repr__(self):
         """
