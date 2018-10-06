@@ -18,6 +18,7 @@ import numpy as np
 from gnome.gnomeobject import GnomeId
 from gnome.map import GnomeMap
 from gnome.basic_types import oil_status
+from gnome.utilities.time_utils import asdatetime
 
 from gnome.utilities.geometry import (points_in_poly,
                                       # point_in_poly,
@@ -162,8 +163,8 @@ class SimpleTideflat(TideflatBase):
         """
 
         self.bounds = np.array(bounds, dtype=np.float64).reshape((-1, 2))
-        self.dry_start = dry_start
-        self.dry_end = dry_end
+        self.dry_start = asdatetime(dry_start)
+        self.dry_end = asdatetime(dry_end)
 
     def is_dry(self, points, model_time):
         """
