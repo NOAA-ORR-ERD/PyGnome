@@ -559,8 +559,6 @@ class Spill(BaseSpill):
         self.data.extend_data_arrays(to_rel)
 
         #Partial initialization from various objects
-        self.data['mass'][-to_rel:] = self._elem_mass(to_rel, current_time, time_step)
-        self.data['init_mass'][-to_rel:] = self.data['mass'][-to_rel:]
         self.release.initialize_LEs(to_rel, self.data, current_time, time_step)
 
         if 'frac_coverage' in self.data:
