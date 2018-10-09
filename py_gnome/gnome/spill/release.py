@@ -172,7 +172,7 @@ class PointLineRelease(Release):
                  num_per_timestep=None,
                  end_release_time=None,
                  end_position=None,
-                 amount=None,
+                 release_mass=None,
                  **kwargs):
         """
         Required Arguments:
@@ -204,9 +204,9 @@ class PointLineRelease(Release):
             If None, then release from a point source
         :type end_position: 3-tuple of floats (long, lat, z)
 
-        :param amount=None: optional. This is the mass released in kilograms.
+        :param release_mass=0: optional. This is the mass released in kilograms.
 
-        :type amount: integer
+        :type release_mass: integer
 
         num_elements and release_time passed to base class __init__ using super
         See base :class:`Release` documentation
@@ -229,6 +229,7 @@ class PointLineRelease(Release):
         self.end_release_time = asdatetime(end_release_time)
         self.start_position = start_position
         self.end_position = end_position
+        self.release_mass = release_mass
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
@@ -411,7 +412,7 @@ class PointLineRelease(Release):
         self._release_ts = None
         self._pos_ts = None
 
-    def prepare_for_model_run(self, ts, amount):
+    def prepare_for_model_run(self, ts):
         '''
         :param ts: integer seconds
         :param amount: integer kilograms
@@ -431,6 +432,7 @@ class PointLineRelease(Release):
 
         self.generate_release_timeseries(num_ts, max_release, ts)
         self._prepared = True
+        self._mass_per_le = self.release_mass*1.0 / max_release
 
     def num_elements_after_time(self, current_time, time_step):
         '''
@@ -464,7 +466,20 @@ class PointLineRelease(Release):
             np.linspace(start_position[2],
                         end_position[2],
                         to_rel)
+        data['mass'][sl] = self._mass_per_le
+        data['init_mass'][sl] = self._mass_per_le
 
+
+class LinearInterpolatedRelease(Release):
+
+    def __init__(self,
+                 release_ts=None,
+                 mass_per_LE=None,
+                 position_ts=None,
+                 **kwargs):
+        self.release_ts = release_ts
+        self.mass_per_LE = mass_per_LE
+        self.position_ts = position_ts
 
 class ContinuousRelease(Release):
     _schema = ContinuousReleaseSchema
