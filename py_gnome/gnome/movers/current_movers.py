@@ -31,7 +31,6 @@ from gnome.movers import CyMover, ProcessSchema
 
 from gnome.persist.base_schema import ObjTypeSchema, WorldPoint
 from gnome.persist.extend_colander import FilenameSchema
-from sympy.physics.units.dimensions import current
 
 
 class CurrentMoversBaseSchema(ProcessSchema):
@@ -317,12 +316,12 @@ class CatsMover(CurrentMoversBase):
         Must be a tuple of length 2 or 3: (long, lat, z). If only (long, lat)
         is given, the set z = 0
         '''
+        if val is None:
+            return
         if len(val) == 2:
             self.mover.ref_point = (val[0], val[1], 0.)
         else:
             self.mover.ref_point = val
-
-        self.mover.compute_velocity_scale()
 
     @property
     def tide(self):
@@ -682,7 +681,7 @@ class IceMover(CurrentMoversBase):
     def __init__(self,
                  filename=None,
                  topology_file=None,
-                 current_scale=None,
+                 current_scale=1,
                  uncertain_along=0.5,
                  uncertain_cross=0.25,
                  extrapolate=False,
@@ -954,6 +953,8 @@ class CurrentCycleMover(GridCurrentMover):
     _schema = CurrentCycleMoverSchema
 
     def __init__(self,
+                 filename=None,
+                 topology_file=None,
                  tide=None,
                  **kwargs):
         """
@@ -990,7 +991,9 @@ class CurrentCycleMover(GridCurrentMover):
         if tide:
             self.tide = tide
 
-        super(CurrentCycleMover, self).__init__(**kwargs)
+        super(CurrentCycleMover, self).__init__(filename=filename,
+                                                topology_file=topology_file,
+                                                **kwargs)
 
     def __repr__(self):
         return ('CurrentCycletMover(uncertain_duration={0.uncertain_duration}, '
@@ -1275,6 +1278,8 @@ class ComponentMover(CurrentMoversBase):
         Must be a tuple of length 2 or 3: (long, lat, z). If only (long, lat)
         is given, the set z = 0
         '''
+        if val is None:
+            return
         if len(val) == 2:
             self.mover.ref_point = (val[0], val[1], 0.)
         else:
