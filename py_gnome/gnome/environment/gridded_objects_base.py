@@ -465,6 +465,7 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
         return array of shape (time_slices, len_linearized_data,2)
         first is magnitude, second is direction
         '''
+
         raw_u = self.variables[0].data[:]
         raw_v = self.variables[1].data[:]
 

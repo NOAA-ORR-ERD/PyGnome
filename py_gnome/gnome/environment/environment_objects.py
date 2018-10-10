@@ -490,6 +490,44 @@ class GridCurrent(VelocityGrid, Environment):
 
         return value
 
+    def get_data_vectors(self):
+        '''
+        return array of shape (time_slices, len_linearized_data,2)
+        first is magnitude, second is direction
+        '''
+
+        if(hasattr(self, 'angle') and self.angle):
+
+            raw_ang = self.angle.data[:]
+            raw_u = self.variables[0].data[:]
+            raw_v = self.variables[1].data[:]
+
+            if self.depth is not None:
+                raw_u = raw_u[:, self.depth.surface_index]
+                raw_v = raw_v[:, self.depth.surface_index]
+
+            if np.any(np.array(raw_u.shape) != np.array(raw_v.shape)):
+                # must be roms-style staggered
+                raw_u = (raw_u[:, 0:-1, :] + raw_u[:, 1:, :]) / 2
+                raw_v = (raw_v[:, :, 0:-1] + raw_v[:, :, 1:]) / 2
+                raw_ang = (raw_ang[0:-1, 0:-1] + raw_ang[1:, 1:]) / 2
+
+            if 'degree' in self.angle.units:
+                angs = raw_ang * np.pi/180.
+
+            x = raw_u[:] * np.cos(raw_ang) - raw_v[:] * np.sin(raw_ang)
+            y = raw_u[:] * np.sin(raw_ang) + raw_v[:] * np.cos(raw_ang)
+            x = x.reshape(x.shape[0], -1)
+            y = y.reshape(y.shape[0], -1)
+            import pdb
+            pdb.set_trace()
+            #r = np.ma.stack((x, y)) change to this when numpy 1.15 becomes norm.
+            r = np.ma.concatenate((x[None,:], y[None,:]))
+
+            return np.ascontiguousarray(r.filled(0), np.float32)
+
+        else:
+            return super(GridCurrent, self).get_data_vectors()
 
 class GridWind(VelocityGrid, Environment):
     _ref_as = 'wind'
