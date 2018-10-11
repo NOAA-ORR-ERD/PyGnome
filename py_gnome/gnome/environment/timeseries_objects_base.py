@@ -353,7 +353,7 @@ class TimeseriesVector(GnomeId):
         '''
         raise NotImplementedError()
 
-    def at(self, *args, **kwargs):
+    def at(self, points, time, *args, **kwargs):
         '''
             Find the value of the property at positions P at time T
 
@@ -378,6 +378,10 @@ class TimeseriesVector(GnomeId):
             :return: returns a Nx2 array of interpolated values
             :rtype: double
         '''
-        return np.column_stack([var.at(*args, **kwargs)
+        val = np.column_stack([var.at(points, time, *args, **kwargs)
                                 for var in self.variables])
+        if points is None:
+            return val[0]
+        else:
+            return val
 
