@@ -93,6 +93,15 @@ def r2():
                             end_position= (10, 20, 30),
                             num_elements=1000)
 
+@pytest.fixture('function')
+def r3():
+    return PointLineRelease(release_time=rel_time,
+                            start_position=pos,
+                            end_position= (10, 20, 30),
+                            end_release_time=rel_time + timedelta(seconds=900)*10,
+                            num_per_timestep=100,
+                            release_mass=5000)
+
 class TestPointLineRelease:
 
     def test_LE_timestep_ratio(self, r1):
@@ -101,7 +110,7 @@ class TestPointLineRelease:
         assert r1.LE_timestep_ratio(10) == 1
         assert r1.LE_timestep_ratio(20) == 2
 
-    def test_prepare_for_model_run(self, r1, r2):
+    def test_prepare_for_model_run(self, r1, r2, r3):
         r1.prepare_for_model_run(900)
         assert len(r1._release_ts.data) == 11
         assert r1._release_ts.at(None, r1.release_time) == 0
@@ -134,6 +143,15 @@ class TestPointLineRelease:
         assert r2._mass_per_le == 0
         assert len(r2._pos_ts.time) == 2
 
+        r3.prepare_for_model_run(900)
+        assert len(r3._release_ts.data) == 11
+        assert r3._release_ts.at(None, r3.release_time) == 0
+        assert r3._release_ts.at(None, r3.end_release_time) == 1100
+        assert np.all(r3._release_ts.data == np.linspace(0,1100, len(r3._release_ts.data)))
+        assert len(r3._pos_ts.time) == 11
+        assert np.all(r1._pos_ts.at(None, r3.release_time + timedelta(seconds=900)*5) == np.array([(5.,15.,25.)]))
+
+    @pytest.mark.parametrize('r1', [r1(), r3()])
     def test_num_elements_after_time(self, r1):
 
         #not _prepared yet so it should return 0 for anything
@@ -143,6 +161,8 @@ class TestPointLineRelease:
         r1.prepare_for_model_run(900)
         assert r1.num_elements_after_time(r1.release_time, 0) == 0
         assert r1.num_elements_after_time(r1.release_time, 150) == int(r1._release_ts.data[1] * 150./900)
+        assert r1.num_elements_after_time(r1.end_release_time, 10) == r1._release_ts.data[-1]
+
     def test_rewind(self, r1):
         r1.prepare_for_model_run(900)
         assert r1._prepared == True
@@ -154,6 +174,64 @@ class TestPointLineRelease:
     def test__eq__(self, r1, r2):
         assert r1 != r2
         assert r1 == r1
+
+    def test_serialization(self, r1):
+        ser = r1.serialize()
+        deser = PointLineRelease.deserialize(ser)
+        assert deser == r1
+
+        r1.prepare_for_model_run(900)
+        ser = r1.serialize()
+        deser = PointLineRelease.deserialize(ser)
+        assert deser == r1
+
+    @pytest.mark.parametrize('r1', [r1(), r3()])
+    def test_LE_initialization(self, r1):
+        #initialize_LEs(self, to_rel, data, current_time, time_step)
+        data = LEData()
+        ts = 900
+        r1.prepare_for_model_run(ts)
+        data.prepare_for_model_run(r1.array_types, None)
+        data.extend_data_arrays(10)
+        #initialize over the time interval 0-10%
+        r1.initialize_LEs(10, data, r1.release_time, ts)
+
+        #particles should have positions spread over 0-10% (frac) of the
+        #line from start_position to end_position
+        assert len(data['positions']) == 10
+        for pos in data['positions']:
+            for d in [0,1,2]:
+                assert pos[d] >= r1.start_position[d]
+                #only 1 time step out of 10, so particles should only be on 10% of the line
+                assert pos[d] <= r1.start_position[d] + (r1.end_position[d] - r1.start_position[d]) / 10
+
+        assert np.all(data['mass'] == r1._mass_per_le)
+
+        #reset and try overlap beginning
+        data.rewind()
+        data.prepare_for_model_run(r1.array_types, None)
+        data.extend_data_arrays(100)
+        #initialize 100 LEs overlapping the start of the release
+        r1.initialize_LEs(100, data, r1.release_time - timedelta(seconds=ts/2), ts)
+        for pos in data['positions']:
+            for d in [0,1,2]:
+                assert pos[d] >= r1.start_position[d]
+                #only 1/2 time step out of 10, so particles should only be on 5% of the line
+                assert pos[d] <= r1.start_position[d] + (r1.end_position[d] - r1.start_position[d]) / 20
+
+        assert np.all(data['mass'] == r1._mass_per_le)
+
+        #Should be fine initializing over a longer or shorter time interval than was prepared with
+        r1.initialize_LEs(100, data, r1.release_time - timedelta(seconds=ts/2), 10000)
+        for pos in data['positions']:
+            for d in [0,1,2]:
+                assert pos[d] >= r1.start_position[d]
+                assert pos[d] <= r1.end_position[d]
+        r1.initialize_LEs(100, data, r1.release_time + timedelta(seconds=ts/4), 225)
+        for pos in data['positions']:
+            for d in [0,1,2]:
+                assert pos[d] >= r1._pos_ts.at(None, r1.release_time + timedelta(seconds=ts/4))[d]
+                assert pos[d] <= r1._pos_ts.at(None, r1.release_time + timedelta(seconds=ts/2))[d]
 
 
 def test_release_from_splot_data():
