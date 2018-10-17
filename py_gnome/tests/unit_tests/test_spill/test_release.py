@@ -110,6 +110,12 @@ class TestPointLineRelease:
         assert r1.LE_timestep_ratio(10) == 1
         assert r1.LE_timestep_ratio(20) == 2
 
+    def test_get_num_release_time_steps(self, r1):
+        assert r1.get_num_release_time_steps(9000) == 1
+        assert r1.get_num_release_time_steps(8999) == 2
+        assert r1.get_num_release_time_steps(900) == 10
+        assert r1.get_num_release_time_steps(899) == 11
+
     def test_prepare_for_model_run(self, r1, r2, r3):
         r1.prepare_for_model_run(900)
         assert len(r1._release_ts.data) == 11
@@ -117,6 +123,7 @@ class TestPointLineRelease:
         assert r1._release_ts.at(None, r1.end_release_time) == 1000
         assert np.all(r1._release_ts.data == np.linspace(0,1000, len(r1._release_ts.data)))
         assert r1._mass_per_le == 5
+        assert r1.get_num_release_time_steps(900) == 10
         assert len(r1._pos_ts.time) == 11
         assert np.all(r1._pos_ts.at(None, r1.release_time + timedelta(seconds=900)*5) == np.array([(5.,15.,25.)]))
 
@@ -146,8 +153,8 @@ class TestPointLineRelease:
         r3.prepare_for_model_run(900)
         assert len(r3._release_ts.data) == 11
         assert r3._release_ts.at(None, r3.release_time) == 0
-        assert r3._release_ts.at(None, r3.end_release_time) == 1100
-        assert np.all(r3._release_ts.data == np.linspace(0,1100, len(r3._release_ts.data)))
+        assert r3._release_ts.at(None, r3.end_release_time) == 1000
+        assert np.all(r3._release_ts.data == np.linspace(0,1000, len(r3._release_ts.data)))
         assert len(r3._pos_ts.time) == 11
         assert np.all(r1._pos_ts.at(None, r3.release_time + timedelta(seconds=900)*5) == np.array([(5.,15.,25.)]))
 
@@ -163,6 +170,7 @@ class TestPointLineRelease:
         assert r1.num_elements_after_time(r1.release_time, 150) == int(r1._release_ts.data[1] * 150./900)
         assert r1.num_elements_after_time(r1.end_release_time, 10) == r1._release_ts.data[-1]
 
+        assert r1.num_elements_after_time(r1.release_time - timedelta(seconds=450), 900) == int(r1._release_ts.data[1]/2)
     def test_rewind(self, r1):
         r1.prepare_for_model_run(900)
         assert r1._prepared == True
@@ -221,12 +229,18 @@ class TestPointLineRelease:
 
         assert np.all(data['mass'] == r1._mass_per_le)
 
+        data.extend_data_arrays(900)
         #Should be fine initializing over a longer or shorter time interval than was prepared with
-        r1.initialize_LEs(100, data, r1.release_time - timedelta(seconds=ts/2), 10000)
+        r1.initialize_LEs(1000, data, r1.release_time - timedelta(seconds=ts/2), 10000)
         for pos in data['positions']:
             for d in [0,1,2]:
                 assert pos[d] >= r1.start_position[d]
                 assert pos[d] <= r1.end_position[d]
+        assert data['mass'].sum() == 5000
+
+        data.rewind()
+        data.prepare_for_model_run(r1.array_types, None)
+        data.extend_data_arrays(100)
         r1.initialize_LEs(100, data, r1.release_time + timedelta(seconds=ts/4), 225)
         for pos in data['positions']:
             for d in [0,1,2]:
