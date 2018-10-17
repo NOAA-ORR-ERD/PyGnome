@@ -266,7 +266,6 @@ def test_model_run_with_tideflat(simple_model):
     print status
     assert np.all(status == oil_status.on_land)
 
-    assert False
 
 
 
