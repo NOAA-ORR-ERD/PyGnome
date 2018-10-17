@@ -11,7 +11,7 @@ import numpy as np
 
 from colander import (iso8601,
                       SchemaNode, SequenceSchema,
-                      drop, Bool, Int)
+                      drop, Bool, Int, Float)
 
 from gnome.persist.base_schema import ObjTypeSchema, WorldPoint, WorldPointNumpy
 from gnome.persist.extend_colander import LocalDateTime
@@ -26,6 +26,7 @@ from gnome.gnomeobject import GnomeId
 from gnome.environment.timeseries_objects_base import TimeseriesData,\
     TimeseriesVector
 from gnome.environment.gridded_objects_base import Time
+from math import ceil
 
 
 class BaseReleaseSchema(ObjTypeSchema):
@@ -54,8 +55,8 @@ class PointLineReleaseSchema(BaseReleaseSchema):
         save=True, update=True
     )
     num_elements = SchemaNode(Int())
-    num_per_timestep = SchemaNode(
-        Int(), missing=drop, save=True, update=True
+    release_mass = SchemaNode(
+        Float()
     )
     description = 'PointLineRelease object schema'
 
@@ -73,6 +74,7 @@ class SpatialReleaseSchema(BaseReleaseSchema):
     start_position = StartPositions(
         save=True, update=True
     )
+    release_mass = SchemaNode(Float())
 
 
 class Release(GnomeId):
@@ -141,6 +143,25 @@ class Release(GnomeId):
         return value in seconds
         '''
         return 0
+
+    def LE_timestep_ratio(self, ts):
+        '''
+        Returns the ratio
+        '''
+        return 1.0 * self.num_elements / self.get_num_release_time_steps(ts)
+
+    def maximum_mass_error(self, ts):
+        '''
+        This function returns the maximum error in mass present in the model at
+        any given time. In theory, this should be the mass of 1 LE
+        '''
+        pass
+
+    def get_num_release_time_steps(self, ts):
+        '''
+        calculates how many time steps it takes to complete the release duration
+        '''
+        return int(ceil(self.release_duration / ts))
 
 
 class PointLineRelease(Release):
@@ -302,6 +323,7 @@ class PointLineRelease(Release):
         if val is not None or val < 0:
             self._num_elements = None
 
+
     @Release.num_elements.setter
     def num_elements(self, val):
         '''
@@ -359,13 +381,7 @@ class PointLineRelease(Release):
         '''
         if self.num_elements is None and self.num_per_timestep is not None:
             return self.num_per_timestep
-        return 1.0 * self.num_elements / max((self.get_num_release_time_steps(ts)-1), 1)
-
-    def get_num_release_time_steps(self, ts):
-        '''
-        calculates how many time steps it takes to complete the release duration
-        '''
-        return 1 + int(self.release_duration / ts)
+        return 1.0 * self.num_elements / self.get_num_release_time_steps(ts)
 
     def generate_release_timeseries(self, num_ts, max_release, ts):
         '''
@@ -379,22 +395,21 @@ class PointLineRelease(Release):
             #This is a special case, when the release is short enough a single
             #timestep encompasses the whole thing.
             t = Time([self.release_time, self.end_release_time])
-            num_ts = 2
         else:
-            t = Time([self.release_time + timedelta(seconds=ts * step) for step in range(0,num_ts)])
+            t = Time([self.release_time + timedelta(seconds=ts * step) for step in range(0,num_ts + 1)])
             t.data[-1] = self.end_release_time
         self._release_ts = TimeseriesData(name=self.name+'_release_ts',
                                           time=t,
-                                          data=np.linspace(0, max_release, num_ts).astype(int))
+                                          data=np.linspace(0, max_release, num_ts + 1).astype(int))
         lon_ts = TimeseriesData(name=self.name+'_lon_ts',
                                 time=t,
-                                data=np.linspace(self.start_position[0], self.end_position[0], num_ts))
+                                data=np.linspace(self.start_position[0], self.end_position[0], num_ts + 1))
         lat_ts = TimeseriesData(name=self.name+'_lat_ts',
                                 time=t,
-                                data=np.linspace(self.start_position[1], self.end_position[1], num_ts))
+                                data=np.linspace(self.start_position[1], self.end_position[1], num_ts + 1))
         z_ts = TimeseriesData(name=self.name+'_z_ts',
                                 time=t,
-                                data=np.linspace(self.start_position[2], self.end_position[2], num_ts))
+                                data=np.linspace(self.start_position[2], self.end_position[2], num_ts + 1))
         self._pos_ts = TimeseriesVector(name=self.name+'_pos_ts',
                                         time=t,
                                         variables=[lon_ts, lat_ts, z_ts])
@@ -473,6 +488,7 @@ class SpatialRelease(Release):
     def __init__(self,
                  release_time=None,
                  start_position=None,
+                 release_mass=0,
                  **kwargs):
         """
         :param release_time: time the LEs are released
@@ -490,42 +506,26 @@ class SpatialRelease(Release):
                                           dtype=world_point_type)
                                .reshape((-1, 3)))
         self.num_elements = len(self.start_position)
+        self.release_mass = release_mass
 
-    @classmethod
-    def new_from_dict(cls, dict_):
-        '''
-            Custom new_from_dict() functionality for SpatialRelease
-        '''
-        if ('release_time' in dict_ and not isinstance(dict_['release_time'], datetime)):
-            dict_['release_time'] = iso8601.parse_date(dict_['release_time'],
-                                                       default_timezone=None)
-
-        return super(SpatialRelease, cls).new_from_dict(dict_)
-
-    def num_elements_to_release(self, current_time, time_step):
+    def num_elements_after_time(self, current_time, time_step):
         """
         return number of particles released in current_time + time_step
         """
         # call base class method to check if start_time is valid
-        super(SpatialRelease, self).num_elements_to_release(current_time,
-                                                            time_step)
-        if self.start_time_invalid:
-            return 0
-
         if (current_time + timedelta(seconds=time_step) <= self.release_time):
             return 0
 
         return self.num_elements
 
-    def set_newparticle_positions(self, num_new_particles, current_time,
-                                  time_step, data_arrays):
+    def initialize_LEs(self, to_rel, data, current_time, time_step):
         """
         set positions for new elements added by the SpillContainer
 
         .. note:: this releases all the elements at their initial positions at
             the release_time
         """
-        data_arrays['positions'][-self.num_released:] = self.start_position
+        data['positions'][-to_rel:] = self.start_position
 
 
 def GridRelease(release_time, bounds, resolution):
@@ -556,11 +556,12 @@ class ContinuousSpatialRelease(SpatialRelease):
     continuous release of elements from specified positions
     """
     def __init__(self,
-                 num_elements,
-                 release_time,
-                 end_release_time,
-                 start_positions,
-                 name="continuous spatial release"):
+                 release_time=None,
+                 start_positions=None,
+                 num_elements=10000,
+                 end_release_time=None,
+                 LE_timeseries=None,
+                 **kwargs):
         """
         :param num_elements: the total number of elements to release.
                             note that this may be rounded to fit the
@@ -582,7 +583,7 @@ class ContinuousSpatialRelease(SpatialRelease):
         """
         Release.__init__(release_time,
                          num_elements,
-                         name)
+                         **kwargs)
 
         self._start_positions = (np.asarray(start_positions,
                                            dtype=world_point_type).reshape((-1, 3)))
