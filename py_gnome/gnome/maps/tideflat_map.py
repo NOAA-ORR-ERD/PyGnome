@@ -59,19 +59,16 @@ class TideflatMap(GnomeId):
         """
         Delegate everything that is not overridden to the enclosed GnomeMap
         """
-        print "__getattr__ called with:", name
         return getattr(self.land_map, name)
 
     # These are the methods that need to be overridden:
     def beach_elements(self, spill_container, model_time=None):
 
-        print "in beach_elements:", model_time
-
         # first check the usual beaching:
         self.land_map.beach_elements(spill_container, model_time)
 
         status_codes = spill_container['status_codes']
-        positions = spill_container['positions']
+        positions = spill_container['next_positions']
 
         # only the elements that are on water
         #  note that they get moved off the tideflat in refloat_elements
@@ -95,10 +92,9 @@ class TideflatMap(GnomeId):
 
         :param spill_container: current SpillContainer
         :type spill_container:  :class:`gnome.spill_container.SpillContainer`
-
         """
         status_codes = spill_container['status_codes']
-        positions = spill_container['positions']
+        positions = spill_container['next_positions']
 
         tf_idx = np.nonzero(status_codes == oil_status.on_tideflat)[0]
 

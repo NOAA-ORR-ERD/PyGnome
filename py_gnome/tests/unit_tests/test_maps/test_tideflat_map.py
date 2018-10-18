@@ -183,12 +183,12 @@ def test_refloat_elements():
     tfm = TideflatMap(get_gnomemap(), get_simple_tideflat())
 
     # Fake spill_container
-    sc = {'positions': np.array(((12, 11, 0),  # in water
-                                 (13.5, 13.5, 0),  # on_land (if the map did that)
-                                 (12.5, 12.5, 0),  # still on tideflat
-                                 (11.5, 12.5, 0),  # no longer on tideflat
-                                 (12.5, 13.5, 0),  # in water
-                                 )),
+    sc = {'next_positions': np.array(((12, 11, 0),  # in water
+                                      (13.5, 13.5, 0),  # on_land (if the map did that)
+                                      (12.5, 12.5, 0),  # still on tideflat
+                                      (11.5, 12.5, 0),  # no longer on tideflat
+                                      (12.5, 13.5, 0),  # in water
+                                      )),
           'status_codes': np.array((oil_status.in_water,
                                     oil_status.on_land,
                                     oil_status.on_tideflat,
@@ -196,9 +196,7 @@ def test_refloat_elements():
                                     oil_status.in_water,
                                     ))}
 
-    # print sc['status_codes']
-    tfm.refloat_elements(sc, datetime(2018, 1, 1, 12, 30))
-    # print sc['status_codes']
+    tfm.refloat_elements(sc, gs.minutes(10), datetime(2018, 1, 1, 12, 30))
     assert np.all(sc['status_codes'] == np.array((oil_status.in_water,
                                                   oil_status.on_land,
                                                   oil_status.on_tideflat,
@@ -219,7 +217,7 @@ def test_full_model_run(simple_model):
     simple_model.duration = gs.hours(18)
     # simple_model.full_run()
     for step in simple_model:
-        print step['step_num']
+        print "step num:", step['step_num']
 
     status = simple_model.get_spill_property('status_codes')
 
@@ -254,21 +252,11 @@ def test_model_run_with_tideflat(simple_model):
 
     model.map = TideflatMap(model.map, tf)
 
-    print model.map
-
     # to make it run faster
     model.time_step = gs.hours(2)
     for step in model:
-        print step['step_num']
+        print "step_num", step['step_num']
 
     status = model.get_spill_property('status_codes')
 
-    print status
     assert np.all(status == oil_status.on_land)
-
-
-
-
-
-
-
