@@ -250,7 +250,7 @@ def test_model_run_with_tideflat(simple_model):
     # get the map from the model and wrap it in a TideflatMap
     tfm = TideflatMap(model.map, tf)
 
-    model.map = TideflatMap(model.map, tf)
+    model.map = tfm
 
     # to make it run faster
     model.time_step = gs.hours(2)
