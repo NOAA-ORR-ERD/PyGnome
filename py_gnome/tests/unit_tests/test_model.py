@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 '''
 test code for the model class
 '''
@@ -13,7 +12,7 @@ import pytest
 from pytest import raises
 
 from gnome.basic_types import datetime_value_2d
-from gnome.utilities import inf_datetime
+from gnome.utilities.inf_datetime import InfDateTime
 
 import gnome.map
 from gnome.environment import Wind, Tide, constant_wind, Water, Waves
@@ -793,8 +792,8 @@ def test_callback_add_mover():
     model.movers += CatsMover(d_file)
 
     for mover in model.movers:
-        assert mover.active_start == inf_datetime.InfDateTime('-inf')
-        assert mover.active_stop == inf_datetime.InfDateTime('inf')
+        assert mover.active_range == (InfDateTime('-inf'),
+                                      InfDateTime('inf'))
 
         if hasattr(mover, 'wind'):
             assert mover.wind in model.environment
@@ -803,18 +802,17 @@ def test_callback_add_mover():
             if mover.tide is not None:
                 assert mover.tide in model.environment
 
-    # Add a mover with user defined active_start / active_stop values
+    # Add a mover with user defined active start / active stop values
     # - these should not be updated
 
     active_on = model.start_time + timedelta(hours=1)
     active_off = model.start_time + timedelta(hours=4)
     custom_mover = SimpleMover(velocity=(1., -1., 0.),
-                               active_start=active_on,
-                               active_stop=active_off)
+                               active_range=(active_on, active_off))
     model.movers += custom_mover
 
-    assert model.movers[custom_mover.id].active_start == active_on
-    assert model.movers[custom_mover.id].active_stop == active_off
+    assert model.movers[custom_mover.id].active_range == (active_on,
+                                                          active_off)
 
 
 def test_callback_add_mover_midrun():
@@ -942,14 +940,14 @@ def test_contains_object(sample_model_fcn):
     evaporation = Evaporation()
     skim_start = sp.release_time + timedelta(hours=1)
     skimmer = Skimmer(.5 * sp.amount, units=sp.units, efficiency=0.3,
-                      active_start=skim_start,
-                      active_stop=skim_start + timedelta(hours=1))
+                      active_range=(skim_start,
+                                    skim_start + timedelta(hours=1)))
     burn = burn_obj(sp)
     disp_start = skim_start + timedelta(hours=1)
     dispersion = ChemicalDispersion(0.1,
-                                    active_start=disp_start,
-                                    active_stop=disp_start + timedelta(hours=1)
-                                    )
+                                    active_range=(disp_start,
+                                                  disp_start +
+                                                  timedelta(hours=1)))
 
     model.weatherers += [evaporation, dispersion, burn, skimmer]
 
@@ -976,8 +974,8 @@ def make_skimmer(spill, delay_hours=1, duration=2):
     amount = spill.amount
     units = spill.units
     skimmer = Skimmer(.3 * amount, units=units, efficiency=0.3,
-                      active_start=skim_start,
-                      active_stop=skim_start + timedelta(hours=duration))
+                      active_range=(skim_start,
+                                    skim_start + timedelta(hours=duration)))
     return skimmer
 
 
@@ -989,9 +987,9 @@ def chemical_disperson_obj(spill, delay_hours=1, duration=1):
     disp_start = rel_time + timedelta(hours=delay_hours)
 
     return ChemicalDispersion(.1,
-                              active_start=disp_start,
-                              active_stop=(disp_start +
-                                           timedelta(hours=duration)),
+                              active_range=(disp_start,
+                                            disp_start +
+                                            timedelta(hours=duration)),
                               efficiency=0.3)
 
 
@@ -1002,7 +1000,7 @@ def burn_obj(spill, delay_hours=1.5):
     thick = 1   # in meters
     area = (0.2 * volume) / thick
 
-    return Burn(area, thick, active_start=burn_start)
+    return Burn(area, thick, active_range=(burn_start, InfDateTime('inf')))
 
 
 @pytest.mark.parametrize("delay", [timedelta(hours=0),
@@ -1343,12 +1341,13 @@ def test_weatherer_sort():
     model = Model()
 
     skimmer = Skimmer(100, 'kg', efficiency=0.3,
-                      active_start=datetime(2014, 1, 1, 0, 0),
-                      active_stop=datetime(2014, 1, 1, 0, 3))
-    burn = Burn(100, 1, active_start=datetime(2014, 1, 1, 0, 0))
+                      active_range=(datetime(2014, 1, 1, 0, 0),
+                                    datetime(2014, 1, 1, 0, 3)))
+    burn = Burn(100, 1,
+                active_range=(datetime(2014, 1, 1, 0, 0), InfDateTime('inf')))
     c_disp = ChemicalDispersion(.3,
-                                active_start=datetime(2014, 1, 1, 0, 0),
-                                active_stop=datetime(2014, 1, 1, 0, 3),
+                                active_range=(datetime(2014, 1, 1, 0, 0),
+                                              datetime(2014, 1, 1, 0, 3)),
                                 efficiency=0.2)
     weatherers = [Emulsification(),
                   Evaporation(Water(),
@@ -1377,7 +1376,8 @@ def test_weatherer_sort():
     # Burn, ChemicalDispersion are at same sorting level so appending
     # another Burn to the end of the list will sort it to be just after
     # ChemicalDispersion so index 2
-    burn = Burn(50, 1, active_start=datetime(2014, 1, 1, 0, 0))
+    burn = Burn(50, 1, active_range=(datetime(2014, 1, 1, 0, 0),
+                                     InfDateTime('inf')))
     exp_order.insert(3, burn)
 
     model.weatherers += exp_order[3]  # add this and check sorting still works

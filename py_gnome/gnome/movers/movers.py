@@ -1,11 +1,8 @@
-import copy
 from datetime import datetime, timedelta
 
 import numpy as np
 
-from colander import (SchemaNode, MappingSchema, Bool, drop)
-
-from gnome import AddLogger
+from colander import (SchemaNode, TupleSchema, Bool, drop)
 
 from gnome.basic_types import (world_point,
                                world_point_type,
@@ -23,24 +20,18 @@ from gnome.persist.validators import convertible_to_seconds
 from gnome.persist.extend_colander import LocalDateTime
 
 
+class TimeRangeSchema(TupleSchema):
+    start = SchemaNode(LocalDateTime(), validator=convertible_to_seconds)
+    stop = SchemaNode(LocalDateTime(), validator=convertible_to_seconds)
+
+
 class ProcessSchema(ObjTypeSchema):
     '''
     base Process schema - attributes common to all movers/weatherers
     defined at one place
     '''
-    on = SchemaNode(
-        Bool(), missing=drop, save=True, update=True
-    )
-    active_start = SchemaNode(
-        LocalDateTime(),
-        missing=drop, validator=convertible_to_seconds,
-        save=True, update=True
-    )
-    active_stop = SchemaNode(
-        LocalDateTime(),
-        missing=drop, validator=convertible_to_seconds,
-        save=True, update=True
-    )
+    on = SchemaNode(Bool(), missing=drop, save=True, update=True)
+    active_range = TimeRangeSchema()
 
 
 class Process(GnomeId):
@@ -50,31 +41,30 @@ class Process(GnomeId):
     It defines the base functionality for mover/weatherer.
 
     NOTE: Since base class is not Serializable, it does not need
-    a class level _schema attribute.
+          a class level _schema attribute.
     """
-
-    def __init__(self, **kwargs):  # default min + max values for timespan
+    def __init__(self, **kwargs):
         """
         Initialize default Mover/Weatherer parameters
 
         All parameters are optional (kwargs)
 
         :param on: boolean as to whether the object is on or not. Default is on
-        :param active_start: datetime when the mover should be active
-        :param active_stop: datetime after which the mover should be inactive
+        :param active_range: Range of datetimes for when the mover should be
+                             active
+        :type active_range: 2-tuple of datetimes
         """
         self.name = kwargs.pop('name', self.__class__.__name__)
 
-        self.on = kwargs.pop('on', True)  # turn the mover on / off for the run
-        self._active = self.on  # initial value
+        self.on = kwargs.pop('on', True)
+        self._active = self.on
 
-        active_start = kwargs.pop('active_start', InfDateTime('-inf'))
-        active_stop = kwargs.pop('active_stop', InfDateTime('inf'))
+        active_range = kwargs.pop('active_range',
+                                  (InfDateTime('-inf'), InfDateTime('inf')))
 
-        self._check_active_startstop(active_start, active_stop)
+        self._check_active_startstop(*active_range)
 
-        self._active_start = active_start
-        self._active_stop = active_stop
+        self._active_range = active_range
 
         # empty dict since no array_types required for all movers at present
         self.array_types = set()
@@ -88,12 +78,14 @@ class Process(GnomeId):
         if (isinstance(active_start, datetime) and
                 isinstance(active_stop, (InfTime, MinusInfTime))):
             if active_stop <= active_start:
-                msg = 'active_start {0} should be smaller than active_stop {1}'
-                raise ValueError(msg.format(active_start, active_stop))
+                raise ValueError('active start time {0} should be smaller '
+                                 'than the active stop time {1}'
+                                 .format(active_start, active_stop))
         else:
             if active_start >= active_stop:
-                msg = 'active_start {0} should be smaller than active_stop {1}'
-                raise ValueError(msg.format(active_start, active_stop))
+                raise ValueError('active start time {0} should be smaller '
+                                 'than the active stop time {1}'
+                                 .format(active_start, active_stop))
 
         return True
 
@@ -103,22 +95,13 @@ class Process(GnomeId):
         return self._active
 
     @property
-    def active_start(self):
-        return self._active_start
+    def active_range(self):
+        return self._active_range
 
-    @active_start.setter
-    def active_start(self, value):
-        self._check_active_startstop(value, self._active_stop)
-        self._active_start = value
-
-    @property
-    def active_stop(self):
-        return self._active_stop
-
-    @active_stop.setter
-    def active_stop(self, value):
-        self._check_active_startstop(self._active_start, value)
-        self._active_stop = value
+    @active_range.setter
+    def active_range(self, value):
+        self._check_active_startstop(*value)
+        self._active_range = value
 
     def datetime_to_seconds(self, model_time):
         """
@@ -139,7 +122,7 @@ class Process(GnomeId):
         sets active flag based on time_span and on flag.
         Object is active if following hold and 'on' is True:
 
-        1. active_start <= (model_time + time_step/2) so object is on for
+        1. active start <= (model_time + time_step/2) so object is on for
            more than half the timestep
         2. (model_time + time_step/2) <= active_stop so again the object is
            on for at least half the time step
@@ -151,8 +134,9 @@ class Process(GnomeId):
 
         """
         half_timestep = model_time_datetime + timedelta(seconds=time_step / 2)
-        if (self.active_start <= half_timestep and
-                self.active_stop >= half_timestep and
+
+        if (self.active_range[0] <= half_timestep and
+                self.active_range[1] >= half_timestep and
                 self.on):
             self._active = True
         else:
@@ -201,6 +185,7 @@ class Mover(Process):
         All movers must implement get_move() since that's what the model calls
         """
         positions = sc['positions']
+
         delta = np.zeros_like(positions)
         delta[:] = np.nan
 
@@ -287,7 +272,6 @@ class PyMover(Mover):
 
 
 class CyMover(Mover):
-
     def __init__(self, **kwargs):
         """
         Base class for python wrappers around cython movers.

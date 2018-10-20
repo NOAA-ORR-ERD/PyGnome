@@ -27,7 +27,7 @@ cdef class CyTimeGridVel(object):
 
         def __set__(self, value):
             self.timegrid.fTimeShift = value
-            
+
     def load_data(self, datafile, topology=None):
         cdef OSErr err
         if topology:
@@ -53,9 +53,11 @@ cdef class CyTimeGridVel(object):
         cdef char errmsg[256]
 
         location = np.asarray(location)
+
         # do the multiply by 1000000 here - this is what gnome expects
-        ref_point.p.pLong = location[0]*1000000
-        ref_point.p.pLat = location[1]*1000000
+        ref_point.p.pLong = location[0] * 1000000
+        ref_point.p.pLat = location[1] * 1000000
+
         if len(location) == 2:
             ref_point.z = 0
         else:
@@ -66,14 +68,14 @@ cdef class CyTimeGridVel(object):
             raise Exception('SetInterval error message: {0}'.format(errmsg))
 
         vel = self.timegrid.GetScaledPatValue(time, ref_point)
+
         # return as velocity_rec dtype array
         return np.asarray(tuple(vel.values()), dtype=velocity_rec)
 
-
     def get_values(self,
-                 int model_time,
-                 cnp.ndarray[WorldPoint3D, ndim=1] ref_points,
-                 cnp.ndarray[VelocityRec] vels):
+                   int model_time,
+                   cnp.ndarray[WorldPoint3D, ndim=1] ref_points,
+                   cnp.ndarray[VelocityRec] vels):
         """
         .. function:: get_move(self,
                  model_time,
@@ -94,9 +96,8 @@ cdef class CyTimeGridVel(object):
         N = len(ref_points)
 
         err = self.timegrid.get_values(N, model_time,
-                                 &ref_points[0], &vels[0])
+                                       &ref_points[0], &vels[0])
 
         if err == 1:
             raise ValueError('Make sure numpy arrays for ref_points and vels, '
                              'are defined')
-

@@ -3,15 +3,13 @@ oil removal from various cleanup options
 add these as weatherers
 '''
 from datetime import timedelta
-import copy
 
 import numpy as np
 from colander import (SchemaNode, Float, String, drop, Range)
 
-from gnome.basic_types import oil_status, fate as bt_fate
+from gnome.basic_types import fate as bt_fate
 from gnome.weatherers import Weatherer
 from gnome.environment.wind import WindSchema
-from gnome.environment import Waves
 
 from .core import WeathererSchema
 from .. import _valid_units
@@ -20,10 +18,10 @@ import unit_conversion as uc
 from gnome.environment.water import WaterSchema
 from gnome.persist.base_schema import GeneralGnomeObjectSchema
 from gnome.environment.gridded_objects_base import VectorVariableSchema
-from gnome.movers.movers import ProcessSchema
 from gnome.environment.waves import WavesSchema
 from gnome.persist.extend_colander import LocalDateTime
 from gnome.persist.validators import convertible_to_seconds
+from gnome.utilities.inf_datetime import InfDateTime
 
 
 class RemoveMass(object):
@@ -57,7 +55,7 @@ class RemoveMass(object):
         For cleanup operations we may know the start time pretty precisely.
         Use this to set _timestep to less than time_step resolution. Mostly
         done for testing right now so if XXX amount is skimmed between
-        active_start and active_stop, the rate * duration gives the correct
+        active start and active stop, the rate * duration gives the correct
         amount. Object must be active before invoking this, else
         self._timestep will give invalid results
         '''
@@ -67,13 +65,12 @@ class RemoveMass(object):
         self._timestep = time_step
         dt = timedelta(seconds=time_step)
 
-        if (model_time < self.active_start):
-            self._timestep = \
-                time_step - (self.active_start -
-                             model_time).total_seconds()
+        if (model_time < self.active_range[0]):
+            self._timestep = time_step - (self.active_range[0] -
+                                          model_time).total_seconds()
 
-        if (self.active_stop < model_time + dt):
-            self._timestep = (self.active_stop -
+        if (self.active_range[1] < model_time + dt):
+            self._timestep = (self.active_range[1] -
                               model_time).total_seconds()
 
     def prepare_for_model_step(self, sc, time_step, model_time):
@@ -92,8 +89,8 @@ class RemoveMass(object):
             self._active = False
             return
 
-        if (model_time + timedelta(seconds=time_step) > self.active_start and
-                self.active_stop > model_time):
+        if (model_time + timedelta(seconds=time_step) > self.active_range[0]
+                and self.active_range[1] > model_time):
             self._active = True
         else:
             self._active = False
@@ -253,20 +250,25 @@ class Skimmer(CleanUpBase):
                  amount,
                  units,
                  efficiency,
-                 active_start,
-                 active_stop,
+                 active_range,
                  water=None,
                  **kwargs):
         '''
         initialize Skimmer object - calls base class __init__ using super()
-        active_start and active_stop time are required
+        active_range is required
         cleanup operations must have a valid datetime - cannot use -inf and inf
-        active_start/active_stop is used to get the mass removal rate
+        active_range is used to get the mass removal rate
         '''
+        if units is None:
+            raise TypeError('Need valid mass or volume units for amount')
+
+        if any([isinstance(dt, InfDateTime) for dt in active_range]):
+            raise TypeError('cleanup operations must have a valid datetime.  '
+                            ' - cannot use -inf and inf')
+
         self.water = water
 
-        super(Skimmer, self).__init__(active_start=active_start,
-                                      active_stop=active_stop,
+        super(Skimmer, self).__init__(active_range=active_range,
                                       efficiency=efficiency,
                                       **kwargs)
         self._units = None
@@ -277,13 +279,10 @@ class Skimmer(CleanUpBase):
         # set in prepare_for_model_run()
         self._rate = None
 
-        # let prepare_for_model_step set timestep to use when active_start or
-        # active_stop is between a timestep. Generally don't do subtimestep
+        # let prepare_for_model_step set timestep to use when active start or
+        # active stop is between a timestep. Generally don't do subtimestep
         # resolution; however, in this case we want numbers to add up correctly
         self._timestep = 0.0
-
-        if self.units is None:
-            raise TypeError('Need valid mass or volume units for amount')
 
     def _validunits(self, value):
         'checks if units are either valid_vol_units or valid_mass_units'
@@ -309,8 +308,9 @@ class Skimmer(CleanUpBase):
         '''
         no need to call base class since no new array_types were added
         '''
-        self._rate = self.amount/(self.active_stop -
-                                  self.active_start).total_seconds()
+        self._rate = self.amount / (self.active_range[1] -
+                                    self.active_range[0]).total_seconds()
+
         if self.on:
             sc.mass_balance['skimmed'] = 0.0
 
@@ -394,48 +394,29 @@ class Skimmer(CleanUpBase):
 
 
 class BurnSchema(WeathererSchema):
-    area = SchemaNode(
-        Float(), save=True, update=True
-    )
-    thickness = SchemaNode(
-        Float(), save=True, update=True
-    )
-    area_units = SchemaNode(
-        String(), save=True, update=True
-    )
-    thickness_units = SchemaNode(
-        String(), save=True, update=True
-    )
-    _oilwater_thickness = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
-    _oilwater_thick_burnrate = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
-    _oil_vol_burnrate = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
-    efficiency = SchemaNode(
-        Float(), missing=None, save=True, update=True
-    )
-    wind = GeneralGnomeObjectSchema(
-        acceptable_schemas=[WindSchema, VectorVariableSchema],
-        missing=drop, save=True, update=True, save_reference=True
-    )
-    water = WaterSchema(
-        missing=drop, save=True, update=True, save_reference=True
-    )
-    active_stop = SchemaNode(
-        LocalDateTime(),
-        missing=drop, validator=convertible_to_seconds,
-        save=False, update=True
-    )
+    area = SchemaNode(Float(), save=True, update=True)
+    thickness = SchemaNode(Float(), save=True, update=True)
+    area_units = SchemaNode(String(), save=True, update=True)
+    thickness_units = SchemaNode(String(), save=True, update=True)
+    _oilwater_thickness = SchemaNode(Float(), save=True, update=True,
+                                     missing=drop)
+    _oilwater_thick_burnrate = SchemaNode(Float(), save=True, update=True,
+                                          missing=drop)
+    _oil_vol_burnrate = SchemaNode(Float(), save=True, update=True,
+                                   missing=drop)
+    efficiency = SchemaNode(Float(), missing=None, save=True, update=True)
+    wind = GeneralGnomeObjectSchema(acceptable_schemas=[WindSchema,
+                                                        VectorVariableSchema],
+                                    save=True, update=True,
+                                    save_reference=True, missing=drop)
+    water = WaterSchema(save=True, update=True, save_reference=True,
+                        missing=drop)
 
 
 class Burn(CleanUpBase):
     _schema = BurnSchema
 
-    # save active_stop once burn duration is known - not update able but is
+    # save active stop once burn duration is known - not update able but is
     # returned in webapi json_ so make it readable
 
     valid_area_units = _valid_units('Area')
@@ -444,7 +425,7 @@ class Burn(CleanUpBase):
     def __init__(self,
                  area,
                  thickness,
-                 active_start,
+                 active_range,
                  area_units='m^2',
                  thickness_units='m',
                  efficiency=1.0,
@@ -453,13 +434,16 @@ class Burn(CleanUpBase):
                  **kwargs):
         '''
         Set the area of boomed oil to be burned.
-        Cleanup operations must have a valid datetime for active_start,
-        cannot use -inf. Cannot set active_stop - burn automatically stops
+        Cleanup operations must have a valid datetime for active start,
+        cannot use -inf. Cannot set active stop - burn automatically stops
         when oil/water thickness reaches 2mm.
 
         :param float area: area of boomed oil/water mixture to burn
         :param float thickness: thickness of boomed oil/water mixture
-        :param datetime active_start: time when the burn starts
+        :param datetime active_range: time when the burn starts is the only
+                                      thing we track.  However we give a range
+                                      to be consistent with all other
+                                      weatherers.
         :param str area_units: default is 'm^2'
         :param str thickness_units: default is 'm'
         :param float efficiency: burn efficiency, must be greater than 0 and
@@ -475,11 +459,7 @@ class Burn(CleanUpBase):
         :param bool on: whether object is on or not for the run
 
         '''
-        if 'active_stop' in kwargs:
-            # user cannot set 'active_stop'
-            kwargs.pop('active_stop')
-
-        super(Burn, self).__init__(active_start=active_start,
+        super(Burn, self).__init__(active_range=active_range,
                                    efficiency=efficiency,
                                    **kwargs)
 
@@ -509,7 +489,7 @@ class Burn(CleanUpBase):
         self.wind = wind
         self.water = water
 
-        # initialize rates and active_stop based on frac_water = 0.0
+        # initialize rates and active stop based on frac_water = 0.0
         self._init_rate_duration()
 
     @property
@@ -529,13 +509,18 @@ class Burn(CleanUpBase):
             self._area_units = value
 
     @property
-    def active_start(self):
-        return self._active_start
+    def active_range(self):
+        return self._active_range
 
-    @active_start.setter
-    def active_start(self, value):
-        self._active_start = value
-        self._init_rate_duration()
+    @active_range.setter
+    def active_range(self, value):
+        if (self.active_range[0] != value[0]):
+            # the self._init_rate_duration function will set the active stop
+            # which will cause active range to be set twice.  This seems a bit
+            # clunky.  it would probably be better to pass the active start
+            # into the function.
+            self._active_range = value
+            self._init_rate_duration()
 
     @property
     def thickness(self):
@@ -546,7 +531,7 @@ class Burn(CleanUpBase):
         '''
         1. log a warning if thickness in SI units is less than _min_thickness
         2. if thickness changes, invoke _init_rate_duration() to reset
-           active_stop - more important for UI so it reflects the correct
+           active stop - more important for UI so it reflects the correct
            duration.
         '''
         self._thickness = value
@@ -576,7 +561,7 @@ class Burn(CleanUpBase):
     def thickness_units(self, value):
         '''
         value must be one of the valid units given in valid_length_units
-        also reset active_stop()
+        also reset active stop
         '''
         if value not in self.valid_length_units:
             e = uc.InvalidUnitError((value, 'Length'))
@@ -592,7 +577,7 @@ class Burn(CleanUpBase):
     def prepare_for_model_run(self, sc):
         '''
         resets internal _oilwater_thickness variable to initial thickness
-        specified by user and active_stop to 'inf' again.
+        specified by user and active stop to 'inf' again.
         initializes sc.mass_balance['burned'] = 0.0
         '''
         self._init_rate_duration()
@@ -602,7 +587,7 @@ class Burn(CleanUpBase):
 
     def prepare_for_model_step(self, sc, time_step, model_time):
         '''
-        1. set 'active' flag based on active_start, and model_time
+        1. set 'active' flag based on active start, and model_time
         2. Mark LEs to be burned - do them in order right now. Assume all LEs
            that are released together will be burned together since they would
            be closer to each other in position.
@@ -615,7 +600,7 @@ class Burn(CleanUpBase):
             return
 
         # if initial oilwater_thickness is < _min_thickness, then stop
-        # don't want to deal with active_start being equal to active_stop, need
+        # don't want to deal with active start being equal to active stop, need
         # this incase user sets a bad initial value
         if self._oilwater_thickness <= self._min_thickness:
             self._active = False
@@ -665,8 +650,9 @@ class Burn(CleanUpBase):
         burn_duration = ((self._oilwater_thickness - self._min_thickness) /
                          self._oilwater_thick_burnrate)
 
-        self.active_stop = (self.active_start +
-                            timedelta(seconds=burn_duration))
+        self._active_range = (self.active_range[0],
+                              self.active_range[0] +
+                              timedelta(seconds=burn_duration))
 
     def _set_burn_params(self, sc, substance):
         '''
@@ -720,7 +706,8 @@ class Burn(CleanUpBase):
         if not self.active or len(sc) == 0:
             return
 
-        for substance, data in sc.itersubstancedata(self.array_types, fate_status='burn'):
+        for substance, data in sc.itersubstancedata(self.array_types,
+                                                    fate_status='burn'):
             if len(data['mass']) is 0:
                 continue
 
@@ -756,19 +743,13 @@ class Burn(CleanUpBase):
 
 
 class ChemicalDispersionSchema(WeathererSchema):
-    fraction_sprayed = SchemaNode(
-        Float(), validator=Range(0, 1.0), save=True, update=True
-    )
-    efficiency = SchemaNode(
-        Float(), missing=drop, validator=Range(0, 1.0),
-        save=True, update=True
-    )
-    _rate = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
-    waves = WavesSchema(
-        missing=drop, save=True, update=True, save_reference=True
-    )
+    fraction_sprayed = SchemaNode(Float(), save=True, update=True,
+                                  validator=Range(0, 1.0))
+    efficiency = SchemaNode(Float(), save=True, update=True, missing=drop,
+                            validator=Range(0, 1.0))
+    _rate = SchemaNode(Float(), save=True, update=True, missing=drop)
+    waves = WavesSchema(save=True, update=True, missing=drop,
+                        save_reference=True)
 
 
 class ChemicalDispersion(CleanUpBase):
@@ -776,8 +757,7 @@ class ChemicalDispersion(CleanUpBase):
 
     def __init__(self,
                  fraction_sprayed,
-                 active_start,
-                 active_stop,
+                 active_range,
                  waves=None,
                  efficiency=1.0,
                  **kwargs):
@@ -789,10 +769,9 @@ class ChemicalDispersion(CleanUpBase):
         :type volume: float
         :param units: volume units
         :type units: str
-        :param active_start: start time of operation
-        :type active_start: datetime
-        :param active_stop: stop time of operation
-        :type active_stop: datetime
+        :param active_range: Range of datetimes for when the mover should be
+                             active
+        :type active_range: 2-tuple of datetimes
         :param waves: waves object - query to get height. It must contain
             get_value() method. Default is None to support object creation by
             WebClient before a waves object is defined
@@ -808,8 +787,7 @@ class ChemicalDispersion(CleanUpBase):
         remaining kwargs include 'on' and 'name' and these are passed to base
         class via super
         '''
-        super(ChemicalDispersion, self).__init__(active_start=active_start,
-                                                 active_stop=active_stop,
+        super(ChemicalDispersion, self).__init__(active_range=active_range,
                                                  efficiency=efficiency,
                                                  **kwargs)
 
@@ -852,8 +830,9 @@ class ChemicalDispersion(CleanUpBase):
         self._set__timestep(time_step, model_time)
         if (sc['fate_status'] == bt_fate.disperse).sum() == 0:
             substance = self._get_substance(sc)
-            #mass = sum([spill.get_mass() for spill in sc.spills])
+            # mass = sum([spill.get_mass() for spill in sc.spills])
             mass = 0
+
             for spill in sc.spills:
                 if spill.on:
                     mass += spill.get_mass()
@@ -866,9 +845,10 @@ class ChemicalDispersion(CleanUpBase):
             self._update_LE_status_codes(sc, bt_fate.disperse,
                                          substance, rm_total_mass_si,
                                          oilwater_mix=False)
-            self._rate = \
-                (rm_total_mass_si /
-                 (self.active_stop - self.active_start).total_seconds())
+
+            self._rate = (rm_total_mass_si /
+                          (self.active_range[1] - self.active_range[0])
+                          .total_seconds())
 
     def _set_efficiency(self, points, model_time):
         if self.efficiency is None:
@@ -893,8 +873,8 @@ class ChemicalDispersion(CleanUpBase):
                 points = sc['positions']
                 self._set_efficiency(points, model_time)
 
-                # rm_mass = self._rate * self._timestep * self.efficiency
-                rm_mass = self._rate * self._timestep  # rate includes efficiency
+                # rate includes efficiency
+                rm_mass = self._rate * self._timestep
 
                 total_mass = data['mass'].sum()
                 rm_mass_frac = min(rm_mass / total_mass, 1.0)

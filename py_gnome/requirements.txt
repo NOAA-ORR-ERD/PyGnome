@@ -42,7 +42,7 @@ git+https://github.com/NOAA-ORR-ERD/OilLibrary.git@v1.0.0#egg=oil_library
 
 ## py_gd requires the libgd graphics rendering library
 ## This may be easy to get for Linux, but on OS-X and Windows, you are better off using conda
-git+https://github.com/NOAA-ORR-ERD/py_gd.git@v0.1.6#egg=py_gd
+git+https://github.com/NOAA-ORR-ERD/py_gd.git@v0.1.8.1#egg=py_gd
 
 
 ##    BINARY dependencies: probably cannot be pip installed

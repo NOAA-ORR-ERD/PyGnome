@@ -33,20 +33,15 @@ from gnome.persist.extend_colander import LocalDateTime
 from gnome.utilities.inf_datetime import InfTime, MinusInfTime
 
 
-
 class WindMoversBaseSchema(ProcessSchema):
-    uncertain_duration = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
-    uncertain_time_delay = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
-    uncertain_speed_scale = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
-    uncertain_angle_scale = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
+    uncertain_duration = SchemaNode(Float(), save=True, update=True,
+                                    missing=drop)
+    uncertain_time_delay = SchemaNode(Float(), save=True, update=True,
+                                      missing=drop)
+    uncertain_speed_scale = SchemaNode(Float(), save=True, update=True,
+                                       missing=drop)
+    uncertain_angle_scale = SchemaNode(Float(), save=True, update=True,
+                                       missing=drop)
 
 
 class WindMoversBase(CyMover):
@@ -179,8 +174,7 @@ class WindMoversBase(CyMover):
                 '  uncertain_time_delay={0.uncertain_time_delay}\n'
                 '  uncertain_speed_scale={0.uncertain_speed_scale}\n'
                 '  uncertain_angle_scale={0.uncertain_angle_scale}\n'
-                '  active_start time={0.active_start}\n'
-                '  active_stop time={0.active_stop}\n'
+                '  active_range time={0.active_range}\n'
                 '  current on/off status={0.on}\n')
         return info.format(self)
 
@@ -278,6 +272,7 @@ class WindMover(WindMoversBase):
         if self.on and self.wind is None:
             msg = "wind object not defined for WindMover"
             raise ReferencedObjectNotSet(msg)
+
 
 def wind_mover_from_file(filename, **kwargs):
     """
@@ -518,8 +513,11 @@ class IceWindMover(WindMoversBase):
         :param topology_file=None: absolute or relative path to topology file.
                                    If not given, the IceMover will
                                    compute the topology from the data file.
-        :param active_start: datetime when the mover should be active
-        :param active_stop: datetime after which the mover should be inactive
+
+        :param active_range: Range of datetimes for when the mover should be
+                             active
+        :type active_range: 2-tuple of datetimes
+
         :param wind_scale: Value to scale wind data
         :param extrapolate: Allow current data to be extrapolated
                             before and after file data
@@ -561,15 +559,13 @@ class IceWindMover(WindMoversBase):
 
     def __repr__(self):
         return ('IceWindMover('
-                'active_start={1.active_start}, '
-                'active_stop={1.active_stop}, '
+                'active_range={1.active_range}, '
                 'on={1.on})'
                 .format(self.mover, self))
 
     def __str__(self):
         return ('IceWindMover - current _state.\n'
-                '  active_start time={1.active_start}\n'
-                '  active_stop time={1.active_stop}\n'
+                '  active_range time={1.active_range}\n'
                 '  current on/off status={1.on}'
                 .format(self.mover, self))
 

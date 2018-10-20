@@ -13,30 +13,14 @@ from gnome.utilities.inf_datetime import InfDateTime
 from gnome.spill.elements import floating
 from gnome.environment import Water
 
-from gnome.weatherers import *
-
 from oil_library import get_oil_props
 from conftest import weathering_data_arrays, test_oil
 
 from gnome.weatherers import (Weatherer,
-              HalfLifeWeatherer,
-              ChemicalDispersion,
-              Skimmer,
-              Burn,
-              ROC_Burn,
-              ROC_Disperse,
-              Beaching,
-              Evaporation,
-              NaturalDispersion,
-              # OilParticleAggregation,
-              Dissolution,
-              # Biodegradation,
-              Emulsification,
-              WeatheringData,
-              FayGravityViscous,
-              ConstantArea,
-              Langmuir,
-              )
+                              HalfLifeWeatherer,
+                              NaturalDispersion,
+                              Dissolution,
+                              weatherer_sort)
 
 subs = get_oil_props(test_oil)
 rel_time = datetime(2012, 8, 20, 13)  # yyyy/month/day/hr/min/sec
@@ -49,9 +33,11 @@ class TestWeatherer:
         print weatherer
         assert weatherer.on
         assert weatherer.active
-        assert weatherer.active_start == InfDateTime('-inf')
-        assert weatherer.active_stop == InfDateTime('inf')
-        assert weatherer.array_types == {'mass_components', 'mass', 'init_mass'}
+        assert weatherer.active_range == (InfDateTime('-inf'),
+                                          InfDateTime('inf'))
+        assert weatherer.array_types == {'mass_components',
+                                         'mass',
+                                         'init_mass'}
 
     def test_one_weather(self):
         '''
@@ -81,28 +67,6 @@ class TestWeatherer:
         assert np.allclose(0.5 * orig_mc.sum(1), sc['mass'])
         assert np.allclose(0.5 * orig_mc, sc['mass_components'])
 
-# # all the weatherers
-# __all__ = [Weatherer,
-#            HalfLifeWeatherer,
-#            ChemicalDispersion,
-#            Skimmer,
-#            Burn,
-#            ROC_Burn,
-#            ROC_Disperse,
-#            Beaching,
-#            Evaporation,
-#            NaturalDispersion,
-#            # OilParticleAggregation,
-#            Dissolution,
-#            # Biodegradation,
-#            Emulsification,
-#            WeatheringData,
-#            FayGravityViscous,
-#            ConstantArea,
-#            Langmuir,
 
 def test_sort_order():
     assert weatherer_sort(Dissolution()) > weatherer_sort(NaturalDispersion())
-
-
-

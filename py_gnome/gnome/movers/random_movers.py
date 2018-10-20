@@ -1,7 +1,6 @@
 '''
 Movers using diffusion as the forcing function
 '''
-import copy
 import numpy as np
 
 from colander import (SchemaNode, Float, Boolean, drop)
@@ -15,25 +14,19 @@ from gnome.environment.gridded_objects_base import PyGrid
 from gnome.environment.gridded_objects_base import VariableSchema
 
 from gnome.movers import CyMover, ProcessSchema
-from gnome.persist.base_schema import ObjTypeSchema
 from gnome.persist.validators import convertible_to_seconds
 from gnome.persist.extend_colander import LocalDateTime
 from gnome.utilities.inf_datetime import InfTime, MinusInfTime
 
 
 class RandomMoverSchema(ProcessSchema):
-    diffusion_coef = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
-    uncertain_factor = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
-    data_start = SchemaNode(
-        LocalDateTime(), validator=convertible_to_seconds, read_only=True
-    )
-    data_stop = SchemaNode(
-        LocalDateTime(), validator=convertible_to_seconds, read_only=True
-    )
+    diffusion_coef = SchemaNode(Float(), save=True, update=True, missing=drop)
+    uncertain_factor = SchemaNode(Float(), save=True, update=True,
+                                  missing=drop)
+    data_start = SchemaNode(LocalDateTime(), validator=convertible_to_seconds,
+                            read_only=True)
+    data_stop = SchemaNode(LocalDateTime(), validator=convertible_to_seconds,
+                           read_only=True)
 
 
 class RandomMover(CyMover):
@@ -92,9 +85,9 @@ class RandomMover(CyMover):
 
     def __repr__(self):
         return ('RandomMover(diffusion_coef={0}, uncertain_factor={1}, '
-                'active_start={2}, active_stop={3}, on={4})'
+                'active_range={2}, on={3})'
                 .format(self.diffusion_coef, self.uncertain_factor,
-                        self.active_start, self.active_stop, self.on))
+                        self.active_range, self.on))
 
 
 class IceAwareRandomMoverSchema(RandomMoverSchema):

@@ -11,6 +11,7 @@ import numpy as np
 
 from gnome import scripting
 from gnome.basic_types import datetime_value_2d
+from gnome.utilities.inf_datetime import InfDateTime
 
 from gnome.model import Model
 
@@ -25,6 +26,7 @@ from gnome.weatherers import Evaporation, ChemicalDispersion, Burn, Skimmer
 from gnome.outputters import WeatheringOutput, TrajectoryGeoJsonOutput
 
 from gnome.multi_model_broadcast import ModelBroadcaster
+
 from conftest import testdata, test_oil
 
 from pprint import PrettyPrinter
@@ -95,15 +97,16 @@ def make_model(uncertain=False,
     skimmer = Skimmer(0.3 * amount,
                       units=units,
                       efficiency=0.3,
-                      active_start=skim_start,
-                      active_stop=skim_start + timedelta(hours=4))
+                      active_range=(skim_start,
+                                    skim_start + timedelta(hours=4)))
     # thickness = 1m so area is just 20% of volume
     volume = spill.get_mass() / spill.substance.density_at_temp()
     burn = Burn(0.2 * volume, 1.0,
-                active_start=skim_start, efficiency=.9)
+                active_range=(skim_start, InfDateTime('inf')),
+                efficiency=.9)
     c_disp = ChemicalDispersion(0.1, waves=waves, efficiency=0.5,
-                                active_start=skim_start,
-                                active_stop=skim_start + timedelta(hours=1))
+                                active_range=(skim_start,
+                                              skim_start + timedelta(hours=1)))
 
     model.weatherers += [Evaporation(water_env, wind),
                          c_disp,

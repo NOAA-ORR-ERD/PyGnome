@@ -1,13 +1,10 @@
 #!/usr/bin/env python
-import copy
-
 import numpy as np
 
-from colander import SchemaNode, drop
+from colander import SchemaNode
 
 import gnome
 from gnome.persist.extend_colander import NumpyArray
-from gnome.persist.base_schema import ObjTypeSchema
 
 from gnome.array_types import mass_components
 from gnome.utilities.time_utils import date_to_sec, sec_to_datetime
@@ -17,6 +14,7 @@ from gnome.movers.movers import Process, ProcessSchema
 
 class WeathererSchema(ProcessSchema):
     pass
+
 
 class Weatherer(Process):
     '''
@@ -43,11 +41,10 @@ class Weatherer(Process):
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
-                'active_start={0.active_start!r}, '
-                'active_stop={0.active_stop!r}, '
+                'active_range={0.active_range!r}, '
                 'on={0.on}, '
-                'active={0.active}'
-                ')'.format(self))
+                'active={0.active})'
+                .format(self))
 
     def initialize_data(self, sc, num_released):
         '''
