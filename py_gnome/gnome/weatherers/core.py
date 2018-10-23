@@ -3,7 +3,6 @@ import numpy as np
 
 from colander import SchemaNode
 
-import gnome
 from gnome.persist.extend_colander import NumpyArray
 
 from gnome.array_types import mass_components

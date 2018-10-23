@@ -1,7 +1,7 @@
 import movers
 import numpy as np
 
-from colander import (SchemaNode, Bool, Float, String, Sequence, drop)
+from colander import (SchemaNode, Bool, Float, drop)
 
 from gnome.basic_types import oil_status
 from gnome.basic_types import (world_point_type,
@@ -12,6 +12,8 @@ from gnome.utilities.projections import FlatEarthProjection
 from gnome.environment import GridCurrent
 from gnome.environment.gridded_objects_base import Grid_U, VectorVariableSchema
 
+from gnome.movers.movers import TimeRangeSchema
+
 from gnome.persist.base_schema import ObjTypeSchema
 from gnome.persist.validators import convertible_to_seconds
 from gnome.persist.extend_colander import LocalDateTime, FilenameSchema
@@ -19,43 +21,24 @@ from gnome.persist.base_schema import GeneralGnomeObjectSchema
 from __builtin__ import property
 
 
-
 class PyCurrentMoverSchema(ObjTypeSchema):
-    current = GeneralGnomeObjectSchema(
-        acceptable_schemas=[VectorVariableSchema, GridCurrent._schema],
-        save=True, update=True, save_reference=True
-    )
-    filename = FilenameSchema(
-        missing=drop, save=True, update=False, isdatafile=True
-    )
-    current_scale = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
-    extrapolation_is_allowed = SchemaNode(
-        Bool(), missing=drop, save=True, update=True
-    )
-#    time_offset = SchemaNode(
-#        Float(), missing=drop, save=True, update=True
-#    )
-    on = SchemaNode(
-        Bool(), missing=drop, save=True, update=True
-    )
-    active_start = SchemaNode(
-        LocalDateTime(), missing=drop,
-        validator=convertible_to_seconds,
-        save=True, update=True
-    )
-    active_stop = SchemaNode(
-        LocalDateTime(), missing=drop,
-        validator=convertible_to_seconds,
-        save=True, update=True
-    )
-    data_start = SchemaNode(
-        LocalDateTime(), validator=convertible_to_seconds, read_only=True
-    )
-    data_stop = SchemaNode(
-        LocalDateTime(), validator=convertible_to_seconds, read_only=True
-    )
+    current = GeneralGnomeObjectSchema(save=True, update=True,
+                                       save_reference=True,
+                                       acceptable_schemas=[VectorVariableSchema,
+                                                           GridCurrent._schema]
+                                       )
+    filename = FilenameSchema(save=True, update=False, isdatafile=True,
+                              missing=drop)
+    current_scale = SchemaNode(Float(), save=True, update=True,
+                               missing=drop)
+    extrapolation_is_allowed = SchemaNode(Bool(), save=True, update=True,
+                                          missing=drop)
+    on = SchemaNode(Bool(), missing=drop, save=True, update=True)
+    active_range = TimeRangeSchema()
+    data_start = SchemaNode(LocalDateTime(), read_only=True,
+                            validator=convertible_to_seconds)
+    data_stop = SchemaNode(LocalDateTime(), read_only=True,
+                           validator=convertible_to_seconds)
 
 
 class PyCurrentMover(movers.PyMover):
@@ -89,8 +72,11 @@ class PyCurrentMover(movers.PyMover):
         :param current: Environment object representing currents to be
                         used. If this is not specified, a GridCurrent object
                         will attempt to be instantiated from the file
-        :param active_start: datetime when the mover should be active
-        :param active_stop: datetime after which the mover should be inactive
+
+        :param active_range: Range of datetimes for when the mover should be
+                             active
+        :type active_range: 2-tuple of datetimes
+
         :param current_scale: Value to scale current data
         :param uncertain_duration: how often does a given uncertain element
                                    get reset
