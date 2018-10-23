@@ -16,7 +16,7 @@ class NonWeatheringSubstance(GnomeId):
 
     def __init__(self,
                  standard_density=1000.0,
-                 pour_point=273.15):
+                 ):
         '''
         Non-weathering substance class for use with ElementType.
         - Right now, we consider our substance to have default properties
@@ -32,14 +32,6 @@ class NonWeatheringSubstance(GnomeId):
         :type pour_point: Floating point decimal value
         '''
         self.standard_density = standard_density
-        self._pour_point = pour_point
-
-    def pour_point(self):
-        '''
-            We need to match the interface of the OilProps object, so we
-            define this as a read-only function
-        '''
-        return self._pour_point
 
     def density_at_temp(self):
         '''
