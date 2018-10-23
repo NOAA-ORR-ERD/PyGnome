@@ -124,6 +124,8 @@ def test_unit_errors(attr, unit):
           if we want more units here
     '''
     w = Water()
+    w.wave_height = 1
+    w.fetch = 10000
 
     with pytest.raises(InvalidUnitError):
         w.get(attr, unit)
