@@ -269,14 +269,15 @@ class ObjType(SchemaType):
             fname = refs[json_['id']]
         else:
             fname = str(json_['name']) + '.json'
-
             if fname in zipfile_.namelist():
                 # file already exists. This happens for example if a WindMover
                 # is named X, and it's wind is also named X.
 
                 # Add sub name to refs in case this object gets referenced
                 # elsewhere in future
-                fname = fname + json_['id']
+                fname = fname.split('.json')[0]
+                fname = fname + '__' + json_['id'] + '__.json'
+
 
             refs[json_['id']] = fname
 
@@ -319,7 +320,15 @@ class ObjType(SchemaType):
                         json_[n][i] = refname
                 else:
                     # single reference
-                    json_[n] = json_[n]['name'] + '.json'
+                    refname = json_[n]['name'] + '.json'
+
+                    if json_[n]['id'] in refs:
+                        # this name has already been added somewhere else,
+                        # and MAY have a different name if there was a
+                        # naming conflict
+                        refname = refs[json_[n]['id']]
+
+                    json_[n] = refname
 
         # Put supporting files into the zipfile and edit their paths
         # in the json

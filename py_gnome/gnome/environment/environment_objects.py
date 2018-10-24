@@ -492,7 +492,7 @@ class GridCurrent(VelocityGrid, Environment):
 
     def get_data_vectors(self):
         '''
-        return array of shape (time_slices, len_linearized_data,2)
+        return array of shape (2, time_slices, len_linearized_data)
         first is magnitude, second is direction
         '''
 
@@ -513,17 +513,25 @@ class GridCurrent(VelocityGrid, Environment):
                 raw_ang = (raw_ang[0:-1, 0:-1] + raw_ang[1:, 1:]) / 2
 
             if 'degree' in self.angle.units:
-                angs = raw_ang * np.pi/180.
+                raw_ang = raw_ang * np.pi/180.
 
             x = raw_u[:] * np.cos(raw_ang) - raw_v[:] * np.sin(raw_ang)
+            xt = x.shape[0]
             y = raw_u[:] * np.sin(raw_ang) + raw_v[:] * np.cos(raw_ang)
-            x = x.reshape(x.shape[0], -1)
-            y = y.reshape(y.shape[0], -1)
+            yt = y.shape[0]
             import pdb
             pdb.set_trace()
+            x = x.filled(0).reshape(xt, -1)
+            x = np.ma.MaskedArray(x, mask = self.grid._masks['node'][0])
+            x = x.compressed().reshape(xt, -1)
+            y = y.filled(0).reshape(yt, -1)
+            y = np.ma.MaskedArray(y, mask = self.grid._masks['node'][0])
+            y = y.compressed().reshape(yt,-1)
             #r = np.ma.stack((x, y)) change to this when numpy 1.15 becomes norm.
-            r = np.ma.concatenate((x[None,:], y[None,:]))
-
+            r = np.concatenate((x[None,:], y[None,:]))
+            retval = np.ascontiguousarray(r.astype(np.float32)) # r.compressed().astype(np.float32)
+            print retval.shape
+            return retval
             return np.ascontiguousarray(r.filled(0), np.float32)
 
         else:
