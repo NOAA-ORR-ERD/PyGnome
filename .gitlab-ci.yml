@@ -37,7 +37,7 @@ develop:
   only:
     - develop
   tags:
-    - docker
+    - shell
     - build
 
 master:
@@ -50,7 +50,7 @@ master:
   only:
      - master
   tags:
-     - docker
+     - shell
      - build
   
 production:
@@ -63,5 +63,5 @@ production:
   only:
      - production
   tags:
-     - docker
+     - shell
      - build
