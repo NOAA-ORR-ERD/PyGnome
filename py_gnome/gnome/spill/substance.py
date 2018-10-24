@@ -252,7 +252,6 @@ class NonWeatheringSubstance(Substance):
 
     def __init__(self,
                  standard_density=1000.0,
-                 pour_point=273.15,
                  **kwargs):
         '''
         Non-weathering substance class for use with ElementType.
@@ -270,7 +269,6 @@ class NonWeatheringSubstance(Substance):
         '''
         super(NonWeatheringSubstance, self).__init__(**kwargs)
         self.standard_density = standard_density
-        self._pour_point = pour_point
         self.array_types['density'] = gat('density')
 
     @property
@@ -292,13 +290,6 @@ class NonWeatheringSubstance(Substance):
         super(NonWeatheringSubstance, self).initialize_LEs(to_rel, arrs, env)
         sl = slice(-to_rel, None, 1)
         arrs['density'][sl] = self.standard_density
-
-    def pour_point(self):
-        '''
-            We need to match the interface of the OilProps object, so we
-            define this as a read-only function
-        '''
-        return self._pour_point
 
     def density_at_temp(self, temp):
         '''
