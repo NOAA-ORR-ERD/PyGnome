@@ -6,11 +6,8 @@ import shutil
 import json
 import zipfile
 import logging
-import tempfile
 
-import gnome
 import colander
-import contextlib
 from gnome.gnomeobject import class_from_objtype
 
 # as long as loggers are configured before module is loaded, module scope
@@ -36,8 +33,12 @@ class Refs(dict):
         provides a unique name by appending length+1
         '''
         base_name = obj.obj_type.split('.')[-1]
-        num_of_same_type = filter(lambda v: v.obj_type == obj.obj_type, self.values())
-        return base_name + num_of_same_type+1
+
+        num_of_same_type = [v for v in self.values()
+                            if v.obj_type == obj.obj_type]
+
+        return base_name + num_of_same_type + 1
+
 
 class References(object):
     '''

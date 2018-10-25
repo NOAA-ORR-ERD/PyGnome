@@ -111,62 +111,6 @@ class Model(GnomeId):
     modes = {'gnome', 'adios', 'roc'}
 
     @classmethod
-#     def new_from_dict(cls, dict_):
-#         'Finalize model construction from deserialized json or save file'
-#
-#         new_model = super(Model, cls).new_from_dict(dict_)
-#         for oc in _oc_list:
-#             pass
-#
-#         json_ = dict_.pop('json_')
-#         l_env = dict_.pop('environment', [])
-#         l_out = dict_.pop('outputters', [])
-#         g_objects = dict_.pop('movers', [])
-#         l_weatherers = dict_.pop('weatherers', [])
-#         c_spills = dict_.pop('spills', [])
-#
-#         if 'uncertain_spills' in dict_:
-#             u_spills = dict_.pop('uncertain_spills')
-#             l_spills = zip(c_spills, u_spills)
-#         else:
-#             l_spills = c_spills
-#
-#         # define defaults for properties that a location file may not contain
-#         kwargs = inspect.getargspec(cls.__init__)
-#         default_restore = dict(zip(kwargs[0][1:], kwargs[3]))
-#
-#         if json_ == 'webapi':
-#             # default is to disable cache
-#             default_restore['cache_enabled'] = False
-#
-#         for key in default_restore:
-#             default_restore[key] = dict_.pop(key, default_restore[key])
-#
-#         model = object.__new__(cls)
-#         model.__restore__(**default_restore)
-#
-#         [model.environment.add(obj) for obj in l_env]
-#         [model.outputters.add(obj) for obj in l_out]
-#         [model.spills.add(obj) for obj in l_spills]
-#         [model.movers.add(obj) for obj in g_objects]
-#         [model.weatherers.add(obj) for obj in l_weatherers]
-#
-#         # register callbacks with OrderedCollections after objects are added
-#         model._register_callbacks()
-#
-#         # OrderedCollections are being used so maintain order.
-#         if json_ == 'webapi':
-#             model.update_from_dict(dict_)
-#         else:
-#             cls._restore_attr_from_save(model, dict_)
-#
-#         # restore the spill data outside this method - let's not try to find
-#         # the saveloc here
-#         msg = ("{0._pid}'new_from_dict' created new model: "
-#                "{0.name}").format(model)
-#         model.logger.info(msg)
-#         return model
-    @classmethod
     def load_savefile(cls, filename):
         """
         Load a model instance from a save file

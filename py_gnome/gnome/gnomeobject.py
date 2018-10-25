@@ -1,16 +1,19 @@
 #!/usr/bin/env python
 import os
-from uuid import uuid1
+import six
 import copy
 import logging
-import numpy as np
-import zipfile
-import json
-import glob
 import tempfile
-import gnome
-import six
+import glob
+import json
+import zipfile
+
+from uuid import uuid1
+
+import numpy as np
 import colander
+
+import gnome
 from gnome.utilities.orderedcollection import OrderedCollection
 
 log = logging.getLogger(__name__)
@@ -615,7 +618,6 @@ class GnomeId(AddLogger):
                                             reference to the object that
                                             called ``.save`` itself.
         """
-
         zipfile_ = None
 
         if saveloc is None:
