@@ -5,7 +5,6 @@ directory, all fixtures are found
 from gnome.environment import constant_wind, Water, Waves
 
 from gnome.weatherers import WeatheringData, FayGravityViscous
-from gnome.spill.elements import floating
 
 from ..conftest import test_oil, sample_sc_release
 

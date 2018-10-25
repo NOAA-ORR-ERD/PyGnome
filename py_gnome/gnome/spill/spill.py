@@ -31,7 +31,7 @@ from gnome.spill.release import (BaseReleaseSchema,
                                  PointLineReleaseSchema,
                                  SpatialReleaseSchema)
 from gnome.environment.water import WaterSchema
-from gnome.spill.le import LEData
+#from gnome.spill.le import LEData
 from gnome.spill.substance import (SubstanceSchema,
                                    Substance,
                                    NonWeatheringSubstance,
@@ -145,7 +145,7 @@ class Spill(GnomeId):
         self.units = units
         self.amount = amount
 
-        self.data = LEData()
+#         self.data = LEData()
         self.water = water
 
 
@@ -217,9 +217,9 @@ class Spill(GnomeId):
         self.release.num_elements = ne
 
     # doesn't seem like this should be set on the spill object!
-    @property
-    def num_released(self):
-        return len(self.data)
+#     @property
+#     def num_released(self):
+#         return len(self.data)
     # @num_released.setter
     # def num_released(self, ne):
     #     self.release.num_released = ne
@@ -376,7 +376,7 @@ class Spill(GnomeId):
         """
         self.array_types = {}
         self.release.rewind()
-        self.data.rewind()
+#         self.data.rewind()
 
     def prepare_for_model_run(self, array_types, timestep):
         '''
@@ -388,28 +388,29 @@ class Spill(GnomeId):
         array_types.update(self.array_types)
         array_types.update(self.substance.array_types)
         array_types.update(self.release.array_types)
-        self.data.prepare_for_model_run(array_types, self.substance)
+        #self.data.prepare_for_model_run(array_types, self.substance)
 
-    def release_elements(self, current_time, time_step):
+    def release_elements(self, sc, current_time, time_step):
         """
         Releases and partially initializes new LEs
         """
         if not self.on:
             return 0
+        idx = sc.spills.index(self)
         should_exist = self.release.num_elements_after_time(current_time, time_step)
-        cur_exist = len(self.data)
+        cur_exist = len(sc['spill_num'] == idx)
         to_rel = should_exist - cur_exist
         if to_rel == 0:
             return 0 #nothing to release, so end early
-        self.data.extend_data_arrays(to_rel)
+        sc._append_data_arrays(to_rel)
 
         #Partial initialization from various objects
-        self.release.initialize_LEs(to_rel, self.data, current_time, time_step)
+        self.release.initialize_LEs(to_rel, sc, current_time, time_step)
 
-        if 'frac_coverage' in self.data:
-            self.data['frac_coverage'][-to_rel:] = self.frac_coverage
+        if 'frac_coverage' in sc:
+            sc['frac_coverage'][-to_rel:] = self.frac_coverage
 
-        self.substance.initialize_LEs(to_rel, self.data, [])
+        self.substance.initialize_LEs(to_rel, sc, [])
         #empty list above should be model environment collection eventually??
         #weatherers may still initialize further, but this is triggered from Model
         return to_rel
