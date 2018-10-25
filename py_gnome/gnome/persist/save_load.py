@@ -515,7 +515,7 @@ class Savable(object):
 # max json filesize is 1MegaByte
 # max compression ratio: uncompressed/compressed = 3
 _max_json_filesize = 1024 * 1024
-_max_compress_ratio = 16
+_max_compress_ratio = 54
 
 
 def is_savezip_valid(savezip):
