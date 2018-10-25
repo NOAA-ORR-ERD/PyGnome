@@ -4,6 +4,7 @@ import os
 from datetime import datetime, timedelta
 import zipfile
 from pprint import pformat
+import copy
 
 import numpy as np
 
@@ -14,7 +15,7 @@ from colander import (SchemaNode,
 
 from gnome.utilities.time_utils import round_time, asdatetime
 from gnome.utilities.orderedcollection import OrderedCollection
-
+from gnome.spill_container import SpillContainerPair
 from gnome.basic_types import oil_status, fate
 
 from gnome.map import (GnomeMapSchema,
@@ -36,11 +37,13 @@ from gnome.weatherers import (weatherer_sort,
 from gnome.outputters import Outputter, NetCDFOutput, WeatheringOutput
 from gnome.outputters import schemas as out_schemas
 from gnome.persist import (extend_colander,
-                           validators)
+                           validators,
+                           References)
 from gnome.persist.base_schema import (ObjTypeSchema,
+                                       CollectionItemsList,
                                        GeneralGnomeObjectSchema)
 from gnome.exceptions import ReferencedObjectNotSet, GnomeRuntimeError
-from gnome.spill.spill import SpillSchema, BaseSpill
+from gnome.spill.spill import SpillSchema
 from gnome.gnomeobject import GnomeId, allowzip64, Refs
 from gnome.persist.extend_colander import OrderedCollectionSchema
 
@@ -57,6 +60,7 @@ class ModelSchema(ObjTypeSchema):
         extend_colander.TimeDelta()
     )
     uncertain = SchemaNode(Bool())
+    cache_enabled = SchemaNode(Bool())
     num_time_steps = SchemaNode(Int(), read_only=True)
     make_default_refs = SchemaNode(Bool())
     mode = SchemaNode(
@@ -143,6 +147,7 @@ class Model(GnomeId):
                  weathering_substeps=1,
                  map=None,
                  uncertain=False,
+                 cache_enabled=False,
                  mode=None,
                  location=[],
                  environment=[],
@@ -193,10 +198,15 @@ class Model(GnomeId):
         self.outputters.add(outputters)
 
         # contains both certain/uncertain spills
-        self.spills = OrderedCollection(dtype=BaseSpill)
-        self.spills.add(spills)
-        self.spills.add(uncertain_spills)
+        self.spills = SpillContainerPair(uncertain)
+        if len(uncertain_spills) > 0:
+            _spills = zip(spills, uncertain_spills)
+        else:
+            _spills = spills
+        self.spills.add(_spills)
 
+        self._cache = gnome.utilities.cache.ElementCache()
+        self._cache.enabled = cache_enabled
 
         # default to now, rounded to the nearest hour
         self.start_time = start_time
@@ -273,11 +283,13 @@ class Model(GnomeId):
 
         # note: This may be redundant.  They will get reset in
         #       setup_model_run() anyway..
-        for sp in self.spills:
-            sp.rewind()
+        self.spills.rewind()
 
         # set rand before each call so windages are set correctly
         gnome.utilities.rand.seed(1)
+
+        # clear the cache:
+        self._cache.rewind()
 
         for outputter in self.outputters:
             outputter.rewind()
@@ -289,40 +301,40 @@ class Model(GnomeId):
 #        write the already-cached data to an output files.
 #        """
 
-#     def update_from_dict(self, dict_, refs=None):
-#         """
-#         functions in common_object.
-#         """
-#         if refs is None:
-#             refs = Refs()
-#             self._schema.register_refs(self._schema(), self, refs)
-#         updatable = self._schema().get_nodes_by_attr('update')
-#         attrs = copy.copy(dict_)
-#         updated = False
-#         for k in attrs.keys():
-#             if k not in updatable:
-#                 attrs.pop(k)
-#
-#         for name in updatable:
-#             node = self._schema().get(name)
-#             if name in attrs:
-#                 if name != 'spills':
-#                     attrs[name] = self._schema.process_subnode(node, self, getattr(self, name), name, attrs, attrs[name], refs)
-#                     if attrs[name] is drop:
-#                         del attrs[name]
-#                 else:
-#                     oldspills = OrderedCollection(self.spills._spill_container.spills[:], dtype=self.spills._spill_container.spills.dtype)
-#                     new_spills = ObjTypeSchema.process_subnode(node, self, self.spills._spill_container.spills, 'spills', attrs, attrs[name], refs)
-#                     if not updated and self._attr_changed(oldspills, new_spills):
-#                         updated = True
-#                     attrs.pop(name)
-#
-#         for k, v in attrs.items():
-#             if hasattr(self, k):
-#                 if not updated and self._attr_changed(getattr(self, k), v):
-#                     updated = True
-#                 setattr(self, k, v)
-#         return updated
+    def update_from_dict(self, dict_, refs=None):
+        """
+        functions in common_object.
+        """
+        if refs is None:
+            refs = Refs()
+            self._schema.register_refs(self._schema(), self, refs)
+        updatable = self._schema().get_nodes_by_attr('update')
+        attrs = copy.copy(dict_)
+        updated = False
+        for k in attrs.keys():
+            if k not in updatable:
+                attrs.pop(k)
+
+        for name in updatable:
+            node = self._schema().get(name)
+            if name in attrs:
+                if name != 'spills':
+                    attrs[name] = self._schema.process_subnode(node, self, getattr(self, name), name, attrs, attrs[name], refs)
+                    if attrs[name] is drop:
+                        del attrs[name]
+                else:
+                    oldspills = OrderedCollection(self.spills._spill_container.spills[:], dtype=self.spills._spill_container.spills.dtype)
+                    new_spills = ObjTypeSchema.process_subnode(node, self, self.spills._spill_container.spills, 'spills', attrs, attrs[name], refs)
+                    if not updated and self._attr_changed(oldspills, new_spills):
+                        updated = True
+                    attrs.pop(name)
+
+        for k, v in attrs.items():
+            if hasattr(self, k):
+                if not updated and self._attr_changed(getattr(self, k), v):
+                    updated = True
+                setattr(self, k, v)
+        return updated
 
     @property
     def uncertain(self):
@@ -340,10 +352,20 @@ class Model(GnomeId):
             self.spills.uncertain = uncertain_value  # update uncertainty
             self.rewind()
 
-#     @property
-#     def uncertain_spills(self):
-#         return self.spills.to_dict().get('uncertain_spills', [])
+    @property
+    def uncertain_spills(self):
+        return self.spills.to_dict().get('uncertain_spills', [])
 
+    @property
+    def cache_enabled(self):
+        '''
+        If True, then generated data is cached
+        '''
+        return self._cache.enabled
+
+    @cache_enabled.setter
+    def cache_enabled(self, enabled):
+        self._cache.enabled = enabled
 
     @property
     def has_weathering_uncertainty(self):
@@ -559,11 +581,12 @@ class Model(GnomeId):
         #Provide the references to all contained objects that also use the
         #default references system by calling _attach_default_refs on each
         #instance
+        all_spills = [sp for sc in self.spills.items() for sp in sc.spills.values()]
         for coll in [self.environment,
                      self.weatherers,
                      self.movers,
                      self.outputters,
-                     self.spills]:
+                     all_spills]:
             for item in coll:
                 item._attach_default_refs(ref_dict)
 
@@ -645,8 +668,8 @@ class Model(GnomeId):
             for item in oc:
                 array_types.update(item.array_types)
 
-        for sp in self.spills:
-            sp.prepare_for_model_run(array_types, self)
+        for sc in self.spills.items():
+            sc.prepare_for_model_run(array_types)
 
         '''Step 4: Attach default references'''
         ref_dict = {}
@@ -661,12 +684,11 @@ class Model(GnomeId):
 
         weathering = False
         for w in self.weatherers:
-            for sp in self.spills:
+            for sc in self.spills.items():
                 # weatherers will initialize 'mass_balance' key/values
                 # to 0.0
                 if w.on:
-                    #TODO: weatherers should not prep on a per-spill basis
-                    w.prepare_for_model_run(sp.data)
+                    w.prepare_for_model_run(sc)
                     weathering = True
 
         for environment in self.environment:
@@ -719,11 +741,11 @@ class Model(GnomeId):
         '''
         # initialize movers differently if model uncertainty is on
         for m in self.movers:
-            for sc in self.spills:
+            for sc in self.spills.items():
                 m.prepare_for_model_step(sc, self.time_step, self.model_time)
 
         for w in self.weatherers:
-            for sc in self.spills:
+            for sc in self.spills.items():
                 # maybe we will setup a super-sampling step here???
                 w.prepare_for_model_step(sc, self.time_step, self.model_time)
 
@@ -741,32 +763,34 @@ class Model(GnomeId):
          - calls the beaching code to beach the elements that need beaching.
          - sets the new position
         '''
-        for spill in self.spills:
-            sp = spill.data
+        for sc in self.spills.items():
+            if sc.num_released > 0:  # can this check be removed?
 
-            # possibly refloat elements
-            self.map.refloat_elements(sp, self.time_step)
+                # possibly refloat elements
+                self.map.refloat_elements(sc, self.time_step)
 
-            # reset next_positions
-            (sp['next_positions'])[:] = sp['positions']
+                # reset next_positions
+                (sc['next_positions'])[:] = sc['positions']
 
-            # loop through the movers
-            for m in self.movers:
-                delta = m.get_move(sp, self.time_step, self.model_time)
-                sp['next_positions'] += delta
+                # loop through the movers
+                for m in self.movers:
+                    delta = m.get_move(sc, self.time_step, self.model_time)
+                    sc['next_positions'] += delta
 
-            self.map.beach_elements(sp)
+                self.map.beach_elements(sc)
 
-            # let model mark these particles to be removed
-            tbr_mask = sp['status_codes'] == oil_status.off_maps
-            sp['status_codes'][tbr_mask] = oil_status.to_be_removed
+                # let model mark these particles to be removed
+                tbr_mask = sc['status_codes'] == oil_status.off_maps
+                sc['status_codes'][tbr_mask] = oil_status.to_be_removed
 
-            self._update_fate_status(spill)
+                substances = sc.get_substances(False)
+                if len(substances)>0:
+                    self._update_fate_status(sc)
 
-            # the final move to the new positions
-            (sp['positions'])[:] = sp['next_positions']
+                # the final move to the new positions
+                (sc['positions'])[:] = sc['next_positions']
 
-    def _update_fate_status(self, spill):
+    def _update_fate_status(self, sc):
         '''
         WeatheringData used to perform this operation in weather_elements;
         however, WeatheringData is one of the objects in weatherers collection
@@ -774,8 +798,7 @@ class Model(GnomeId):
         of 'fate_status' array and only manipulate 'status_codes'. Until then,
         update fate_status in move_elements
         '''
-        if 'fate_status' in spill.data:
-            sc = spill.data
+        if 'fate_status' in sc:
             non_w_mask = sc['status_codes'] == oil_status.on_land
             sc['fate_status'][non_w_mask] = fate.non_weather
 
@@ -810,13 +833,15 @@ class Model(GnomeId):
             # if no weatherers then mass_components array may not be defined
             return
 
-        for spill in self.spills:
+        for sc in self.spills.items():
             # elements may have beached to update fate_status
+
+            sc.reset_fate_dataview()
 
             for w in self.weatherers:
                 for model_time, time_step in self._split_into_substeps():
                     # change 'mass_components' in weatherer
-                    w.weather_elements(spill.data, time_step, model_time)
+                    w.weather_elements(sc, time_step, model_time)
 
     def _split_into_substeps(self):
         '''
@@ -862,14 +887,14 @@ class Model(GnomeId):
         for outputter in self.outputters:
             outputter.model_step_is_done()
 
-        for spill in self.spills:
+        for sc in self.spills.items():
             '''
             removes elements with oil_status.to_be_removed
             '''
-            spill.model_step_is_done()
+            sc.model_step_is_done()
 
             # age remaining particles
-            spill.data['age'][:] = spill.data['age'][:] + self.time_step
+            sc['age'][:] = sc['age'][:] + self.time_step
 
     def write_output(self, valid, messages=None):
         output_info = {'step_num': self.current_time_step}
@@ -895,11 +920,11 @@ class Model(GnomeId):
         hind casting.
         '''
         isvalid = True
-        for spill in self.spills:
+        for sc in self.spills.items():
             # Set the current time stamp only after current_time_step is
             # incremented and before the output is written. Set it to None here
             # just so we're not carrying around the old time_stamp
-            spill.current_time_stamp = None
+            sc.current_time_stamp = None
 
         if self.current_time_step == -1:
             # that's all we need to do for the zeroth time step
@@ -940,19 +965,19 @@ class Model(GnomeId):
         #    self.model_time + self.time_step
         # This is the current_time_stamp attribute of the SpillContainer
         #     [sc.current_time_stamp for sc in self.spills.items()]
-        for spill in self.spills:
-            spill.current_time_stamp = self.model_time
+        for sc in self.spills.items():
+            sc.current_time_stamp = self.model_time
 
             # release particles for next step - these particles will be aged
             # in the next step
-            num_released = spill.release_elements(self.time_step, self.model_time)
-            spill.initialize_elements(num_released, self.time_step, self.model_time)
+            num_released = sc.release_elements(self.time_step, self.model_time)
+
             # initialize data - currently only weatherers do this so cycle
             # over weatherers collection - in future, maybe movers can also do
             # this
             if num_released > 0:
                 for item in self.weatherers:
-                    item.initialize_data(spill.data, num_released)
+                    item.initialize_data(sc, num_released)
 
             self.logger.debug("{1._pid} released {0} new elements for step:"
                               " {1.current_time_step} for {1.name}".
@@ -961,7 +986,7 @@ class Model(GnomeId):
         # cache the results - current_time_step is incremented but the
         # current_time_stamp in spill_containers (self.spills) is not updated
         # till we go through the prepare_for_model_step
-        #self._cache.save_timestep(self.current_time_step, self.spills)
+        self._cache.save_timestep(self.current_time_step, self.spills)
         output_info = self.write_output(isvalid)
 
         self.logger.debug('{0._pid} '
@@ -1083,6 +1108,13 @@ class Model(GnomeId):
     model instance from a saved location
     '''
 
+    def spills_update_from_dict(self, value):
+        'invoke SpillContainerPair().update_from_dict'
+        # containers don't need to be serializable; however, it was easiest to
+        # put an update_from_dict method in the SpillContainerPair. Keep the
+        # interface for this the same, so make it a dict
+        return self.spills.update_from_dict({'spills': value})
+
     def _create_zip(self, saveloc, name):
         '''
         create a zipfile and update saveloc to point to it. This is now
@@ -1145,7 +1177,7 @@ class Model(GnomeId):
             hard code the filename - can make this an attribute if user wants
             to change it - but not sure if that will ever be needed?
             '''
-            #self._save_spill_data(saveloc, 'spills_data_arrays.nc')
+            self._save_spill_data(saveloc, 'spills_data_arrays.nc')
 
         return json_, saveloc, refs
 

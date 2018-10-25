@@ -21,7 +21,7 @@ import cy_gnome.cy_basic_types as cbt
 # the word 'format' can mean a lot of different things depending on
 # what we are talking about.  So we try to be a bit more specific here.
 coord_systems = cbt.ts_format
-
+ts_format = cbt.ts_format
 oil_status = cbt.oil_status
 seconds = cbt.seconds
 spill_type = cbt.spill_type

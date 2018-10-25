@@ -13,18 +13,7 @@ import numpy as np
 
 from gnome.basic_types import fate as bt_fate
 from gnome.basic_types import oil_status
-import gnome.array_types as gat
-from gnome.array_types import (positions,
-                               next_positions,
-                               last_water_positions,
-                               status_codes,
-                               spill_num,
-                               id,
-                               mass,
-                               init_mass,
-                               age,
-                               density,
-                               substance,
+from gnome.array_types import (gat,
                                ArrayType,
                                default_array_types)
 
@@ -387,7 +376,7 @@ class SpillContainer(AddLogger, SpillContainerData):
     """
     def __init__(self, uncertain=False):
         super(SpillContainer, self).__init__(uncertain=uncertain)
-        self.spills = OrderedCollection(dtype=gnome.spill.spill.BaseSpill)
+        self.spills = OrderedCollection(dtype=gnome.spill.spill.Spill)
         self.spills.register_callback(self._spills_changed,
                                       ('add', 'replace', 'remove'))
         self.rewind()
@@ -500,7 +489,7 @@ class SpillContainer(AddLogger, SpillContainerData):
 
         if len(self.get_substances()) > 1:
             # add an arraytype for substance if more than one substance
-            self._array_types.update({'substance': substance})
+            self._array_types.update({'substance': gat('substance')})
 
         self.logger.info('{0} - number of substances: {1}'.
                          format(os.getpid(), len(self.get_substances())))
@@ -798,7 +787,7 @@ class SpillContainer(AddLogger, SpillContainerData):
 
         return u_sc
 
-    def prepare_for_model_run(self, array_types=set()):
+    def prepare_for_model_run(self, array_types=dict()):
         """
         called when setting up the model prior to 1st time step
         This is considered 0th timestep by model
@@ -895,7 +884,7 @@ class SpillContainer(AddLogger, SpillContainerData):
             for spill in spills:
                 # only spills that are included here - no need to check
                 # spill.on flag
-                num_rel = spill.num_elements_to_release(model_time, time_step)
+                num_rel = spill.release_elements(self, model_time, time_step)
                 if num_rel > 0:
                     # update 'spill_num' ArrayType's initial_value so it
                     # corresponds with spill number for this set of released
@@ -921,11 +910,6 @@ class SpillContainer(AddLogger, SpillContainerData):
 
                     # append to data arrays - number of oil components is
                     # currently the same for all spills
-                    self._append_data_arrays(num_rel)
-                    spill.set_newparticle_values(num_rel,
-                                                 model_time,
-                                                 time_step,
-                                                 self._data_arrays)
                     num_rel_by_substance += num_rel
 
             # always reset data arrays else the changing arrays are stale
