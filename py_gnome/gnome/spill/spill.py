@@ -674,7 +674,7 @@ class Spill(BaseSpill):
                 # for the UI to be consistent, the conversion needs to use
                 # standard density -- not the current water temp.
                 # water_temp = self.water.get('temperature')
-                # ideally substance would have a "standard_density" attribute
+                # substance has a "standard_density" attribute
                 # for this.
             std_rho = self.element_type.standard_density
 
