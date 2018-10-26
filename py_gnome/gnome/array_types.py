@@ -49,7 +49,7 @@ class ArrayType(AddLogger):
     An ArrayType specifies how data arrays associated with elements
     are defined.
     """
-    def __init__(self, shape, dtype, name, initial_value=0, init_func=None):
+    def __init__(self, shape, dtype, name, initial_value=0):
         """
         constructor for ArrayType
 
@@ -62,21 +62,42 @@ class ArrayType(AddLogger):
         self.dtype = dtype
         self.initial_value = initial_value
         self.name = name
-        self.init_func = init_func
 
-    def initialize(self, arr, *args, **kwargs):
+    def initialize_null(self, shape=None):
+        """
+        initialize array with 0 elements. Used so SpillContainer can
+        initializes all arrays with 0 elements. Used when the model is rewound.
+        The purpose is to show all data_arrays even if model is not yet running
+        or no particles have been released
+        """
+        return self.initialize(0, shape)
+
+    def initialize(self, num_elements, shape=None, initial_value=None):
         """
         Initialize a numpy array with the dtype and shape specified. The length
         of the array is given by num_elements and spill is given as input if
         the initialize function needs information about the spill to initialize
 
-        :param arr: numpy view into a data array
-        """
+        :param num_elements: number of elements so size of array to initialize
 
-        if self.init_func is None:
-            arr = self.initial_value
-        else:
-            self.init_func(arr, *args, **kwargs)
+        Optional parameter
+
+        :param shape=None: If this is None then use self.shape to determine
+            size of array to create, else use this parameter. This is primarily
+            used for ArrayTypes where either object's shape attribute is None
+            or we want to override the object's predefined 'shape' during
+            initialization
+        """
+        if shape is None:
+            shape = self.shape
+
+        if initial_value is None:
+            initial_value = self.initial_value
+
+        arr = np.zeros((num_elements,) + shape, dtype=self.dtype)
+        arr[:] = initial_value
+
+        return arr
 
     def _num_gt_2(self, num):
         if num < 2:
@@ -311,18 +332,18 @@ gat = get_array_type
 
 
 #    define a function to reset all ArrayTypes to defaults
-# def reset_to_defaults(names=_default_values.keys()):
-#     for name in names:
-#         try:
-#             obj = getattr(mod, name)
-#             obj.shape = _default_values[name][0]
-#             obj.dtype = _default_values[name][1]
-#             obj.name = _default_values[name][2]
-#             obj.initial_value = _default_values[name][3]
-#
-#         except AttributeError:
-#             # name is not part of the defaults - ignore it
-#             pass
+def reset_to_defaults(names=_default_values.keys()):
+    for name in names:
+        try:
+            obj = gat(name)
+            obj.shape = _default_values[name][0]
+            obj.dtype = _default_values[name][1]
+            obj.name = _default_values[name][2]
+            obj.initial_value = _default_values[name][3]
+
+        except AttributeError:
+            # name is not part of the defaults - ignore it
+            pass
 
 # The array types that will always be used in the model.
 default_array_types = {'positions': gat('positions'),
@@ -334,6 +355,8 @@ default_array_types = {'positions': gat('positions'),
                        'age': gat('age'),
                        'density': gat('density'),
                        'viscosity': gat('viscosity'),
-                       'surface_concentration': gat('surface_concentration')
+                       'surface_concentration': gat('surface_concentration'),
+                       'spill_num': gat('spill_num'),
+                       'id': gat('id')
                        }
 

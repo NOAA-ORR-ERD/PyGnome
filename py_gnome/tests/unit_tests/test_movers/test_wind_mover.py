@@ -19,7 +19,7 @@ from gnome.environment import Wind
 
 from gnome.spill import point_line_release_spill
 from gnome.spill_container import SpillContainer
-from gnome.spill.elements import floating
+from gnome.spill.substance import NonWeatheringSubstance
 
 from gnome.movers import (WindMover,
                           constant_wind_mover,
@@ -505,7 +505,7 @@ def test_windage_index():
         spill = point_line_release_spill(num_elements=5,
                                          start_position=(0., 0., 0.),
                                          release_time=rel_time + i * timedelta(hours=1),
-                                         element_type=floating(windage_range=(i * .01 +
+                                         substance=NonWeatheringSubstance(windage_range=(i * .01 +
                                                                .01, i * .01 + .01),
                                                                windage_persist=900)
                                          )

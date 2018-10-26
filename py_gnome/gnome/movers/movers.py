@@ -43,7 +43,10 @@ class Process(GnomeId):
     NOTE: Since base class is not Serializable, it does not need
           a class level _schema attribute.
     """
-    def __init__(self, **kwargs):
+
+    def __init__(self,
+                 make_default_refs=True,
+                 **kwargs):  # default min + max values for timespan
         """
         Initialize default Mover/Weatherer parameters
 
@@ -67,7 +70,7 @@ class Process(GnomeId):
         self._active_range = active_range
 
         # empty dict since no array_types required for all movers at present
-        self.make_default_refs = kwargs.pop('make_default_refs', True)
+        self.make_default_refs = make_default_refs
 
     def _check_active_startstop(self, active_start, active_stop):
         # there are no swapped-argument versions of the comare operations,
