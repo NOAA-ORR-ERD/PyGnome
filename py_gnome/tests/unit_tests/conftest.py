@@ -29,6 +29,8 @@ from gnome.environment import constant_wind, Water, Waves
 from gnome.utilities.remote_data import get_datafile
 from gnome.array_types import gat
 from gnome.gnomeobject import class_from_objtype, GnomeId
+from gnome.spill.substance import NonWeatheringSubstance
+from gnome.spill_container import SpillContainer
 
 
 base_dir = os.path.dirname(__file__)
@@ -148,9 +150,15 @@ def mock_sc_array_types(array_types):
     function that creates the SpillContainer's array_types attribute
     '''
     d_array_types = {}
-    for atype in array_types:
-        d_array_types[atype] = gat(atype)
-
+    for array in array_types:
+        if array not in d_array_types:
+            try:
+                d_array_types[array] = getattr(gat, array)
+            except AttributeError:
+                pass
+        else:
+            # must be a tuple of length 2
+            d_array_types[array[0]] = array[1]
 
     return d_array_types
 
@@ -188,13 +196,13 @@ def mock_append_data_arrays(array_types, num_elements, data_arrays={}):
     return data_arrays
 
 
-def sample_spill_release(num_elements=10,
+def sample_sc_release(num_elements=10,
                          start_pos=(0.0, 0.0, 0.0),
                          release_time=datetime(2000, 1, 1, 1),
                          uncertain=False,
                          time_step=360,
                          spill=None,
-                         element_type=None,
+                         substance=None,
                          current_time=None,
                          arr_types=None,
                          windage_range=None,
@@ -214,12 +222,14 @@ def sample_spill_release(num_elements=10,
     if spill is None:
         spill = gnome.spill.point_line_release_spill(num_elements,
                                                      start_pos,
-                                                     release_time)
+                                                     release_time,
+                                                     amount=0)
     spill.units = units
     spill.amount = amount_per_element * num_elements
 
-    if element_type is not None:
-        spill.element_type = element_type
+    if substance is None:
+        substance = NonWeatheringSubstance()
+    spill.substance = substance
 
     if current_time is None:
         current_time = spill.release_time
@@ -235,11 +245,14 @@ def sample_spill_release(num_elements=10,
     if windage_range is not None:
         spill.windage_range = windage_range
 
-    # used for testing so just assume there is a Windage array
-    spill.prepare_for_model_run(arr_types)
-    spill.release_elements(time_step, current_time)
+    sc = SpillContainer(uncertain)
+    sc.spills.add(spill)
 
-    return spill
+    # used for testing so just assume there is a Windage array
+    sc.prepare_for_model_run(arr_types)
+    sc.release_elements(time_step, current_time)
+
+    return sc
 
 
 def get_testdata():
@@ -566,45 +579,45 @@ def sample_vertical_plume_spill():
     return Spill(vps)
 
 
-# @pytest.fixture(scope='function')
-# def sample_sc_no_uncertainty():
-#     """
-#     Sample spill container with 2 point_line_release_spill spills:
-#
-#     - release_time for 2nd spill is 1 hour delayed
-#     - 2nd spill takes 4 hours to release and end_position is different so it
-#       is a time varying, line release
-#     - both have a volume of 10 and default element_type
-#
-#     Nothing is released. This module simply defines a SpillContainer, adds
-#     the two spills and returns it. It is used in test_spill_container.py
-#     and test_elements.py so defined as a fixture.
-#     """
-#     water = Water()
-#     sc = SpillContainer()
-#     # Sample data for creating spill
-#     num_elements = 100
-#     start_position = (23.0, -78.5, 0.0)
-#     release_time = datetime(2012, 1, 1, 12)
-#     release_time_2 = release_time + timedelta(hours=1)
-#
-#     end_position = (24.0, -79.5, 1.0)
-#     end_release_time = datetime(2012, 1, 1, 12) + timedelta(hours=4)
-#
-#     spills = [gnome.spill.point_line_release_spill(num_elements,
-#                                                    start_position,
-#                                                    release_time,
-#                                                    amount=10, units='l',
-#                                                    water=water),
-#               gnome.spill.point_line_release_spill(num_elements,
-#                                                    start_position,
-#                                                    release_time_2,
-#                                                    end_position,
-#                                                    end_release_time,
-#                                                    water=water),
-#               ]
-#     sc.spills.add(spills)
-#     return sc
+@pytest.fixture(scope='function')
+def sample_sc_no_uncertainty():
+    """
+    Sample spill container with 2 point_line_release_spill spills:
+
+    - release_time for 2nd spill is 1 hour delayed
+    - 2nd spill takes 4 hours to release and end_position is different so it
+      is a time varying, line release
+    - both have a volume of 10 and default element_type
+
+    Nothing is released. This module simply defines a SpillContainer, adds
+    the two spills and returns it. It is used in test_spill_container.py
+    and test_elements.py so defined as a fixture.
+    """
+    water = Water()
+    sc = SpillContainer()
+    # Sample data for creating spill
+    num_elements = 100
+    start_position = (23.0, -78.5, 0.0)
+    release_time = datetime(2012, 1, 1, 12)
+    release_time_2 = release_time + timedelta(hours=1)
+
+    end_position = (24.0, -79.5, 1.0)
+    end_release_time = datetime(2012, 1, 1, 12) + timedelta(hours=4)
+
+    spills = [gnome.spill.point_line_release_spill(num_elements,
+                                                   start_position,
+                                                   release_time,
+                                                   amount=10, units='l',
+                                                   water=water),
+              gnome.spill.point_line_release_spill(num_elements,
+                                                   start_position,
+                                                   release_time_2,
+                                                   end_position,
+                                                   end_release_time,
+                                                   water=water),
+              ]
+    sc.spills.add(spills)
+    return sc
 
 
 
@@ -758,14 +771,14 @@ def sample_model_weathering(sample_model_fcn,
     model.uncertain = False     # fixme: with uncertainty, copying spill fails!
     model.duration = timedelta(hours=4)
 
-    et = gnome.spill.elements.floating(substance=oil)
+    sub = gnome.spill.substance.GnomeOil(oil)
     start_time = model.start_time + timedelta(hours=1)
     end_time = start_time + timedelta(seconds=model.time_step * 3)
     spill = gnome.spill.point_line_release_spill(num_les,
                                                  rel_pos,
                                                  start_time,
                                                  end_release_time=end_time,
-                                                 element_type=et,
+                                                 substance=sub,
                                                  amount=100,
                                                  units='kg')
     model.spills += spill
@@ -784,14 +797,14 @@ def sample_model_weathering2(sample_model_fcn2, oil, temp=311.16):
     model.uncertain = False     # fixme: with uncertainty, copying spill fails!
     model.duration = timedelta(hours=24)
 
-    et = gnome.spill.elements.floating(substance=oil)
+    sub = gnome.spill.substance.GnomeOil(oil)
     start_time = model.start_time
     end_time = start_time
     spill = gnome.spill.point_line_release_spill(10,
                                                  rel_pos,
                                                  start_time,
                                                  end_release_time=end_time,
-                                                 element_type=et,
+                                                 substance=sub,
                                                  amount=10000,
                                                  units='kg')
     model.spills += spill

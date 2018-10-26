@@ -84,11 +84,11 @@ class TestRandomVertical:
         if the surface_is_allowed flag is on
         """
 
-    	self.cm.ref['z'][:]=0
+        self.cm.ref['z'][:]=0
         self.rm.surface_is_allowed = True
         new_delta = np.zeros((self.cm.num_le, ), dtype=world_point)
         self.move(new_delta)
-    	self.cm.ref['z'][:]=.1
+        self.cm.ref['z'][:]=.1
         assert np.all(new_delta.view(dtype=np.double).reshape(1, -1)
                       == 0)
 
@@ -124,7 +124,7 @@ class TestRandomVertical:
         self.rm.mixed_layer_depth = 0
 
         srand(1)
-    	self.cm.ref['z'][:]=.1
+        self.cm.ref['z'][:]=.1
         newer_delta = np.zeros((self.cm.num_le, ), dtype=world_point)
         self.move(newer_delta)  # get the move after changing mld
         print

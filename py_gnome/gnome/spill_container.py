@@ -583,7 +583,7 @@ class SpillContainer(AddLogger, SpillContainerData):
                 # allow user to override an array_type that might already exist
                 # in self._array_types
                 try:
-                    array = getattr(gat, array)
+                    array = gat(array)
                 except AttributeError:
                     msg = ("Skipping {0} - not found in gnome.array_types;"
                            " and ArrayType is not provided.").format(array)
@@ -595,11 +595,7 @@ class SpillContainer(AddLogger, SpillContainerData):
 
     def _append_initializer_array_types(self, array_types):
         # for each array_types, use the name to get the associated initializer
-        for name in array_types:
-            for spill in self.spills:
-                if spill.has_initializer(name):
-                    self._append_array_types(spill.get_initializer(name).
-                                             array_types)
+        pass
 
     def _append_data_arrays(self, num_released):
         """
