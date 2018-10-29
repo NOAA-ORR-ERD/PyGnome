@@ -35,29 +35,22 @@ void RandomVertical_c::Init()
 	fVerticalDiffusionCoefficient = 5; //  cm**2/sec	
 	fVerticalBottomDiffusionCoefficient = .11; //  cm**2/sec, Bushy suggested a larger default	
 	fMixedLayerDepth = 10.; // meters
+	bSurfaceIsAllowed = false; 
 	fHorizontalDiffusionCoefficient = 100000; //  cm**2/sec	
 	fHorizontalDiffusionCoefficientBelowML = 126; //  cm**2/sec	
-	bUseDepthDependentDiffusion = false;
-	//memset(&fOptimize,0,sizeof(fOptimize));
 }
 
 OSErr RandomVertical_c::PrepareForModelRun()
 {
-	//this -> fOptimize.isFirstStep = true;	// may need this, but no uncertainty at this point
 	return noErr;
 }
 OSErr RandomVertical_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, int* LESetsSizesList)
 {
-	//this -> fOptimize.isOptimizedForStep = true;
-	//this -> fOptimize.value = sqrt(6.*(fDiffusionCoefficient/10000.)*time_step)/METERSPERDEGREELAT; // in deg lat
-	//this -> fOptimize.uncertaintyValue = sqrt(fUncertaintyFactor*6.*(fDiffusionCoefficient/10000.)*time_step)/METERSPERDEGREELAT; // in deg lat
 	return noErr;
 }
 
 void RandomVertical_c::ModelStepIsDone()
 {
-	//if (this -> fOptimize.isFirstStep == true) this -> fOptimize.isFirstStep = false;
-	//memset(&fOptimize,0,sizeof(fOptimize));
 }
 
 
@@ -80,7 +73,7 @@ OSErr RandomVertical_c::get_move(int n, Seconds model_time, Seconds step_len, Wo
 	LERec rec;
 	prec = &rec;
 	
-	WorldPoint3D zero_delta ={0,0,0.};
+	WorldPoint3D zero_delta ={{0,0},0.};
 
 	for (int i = 0; i < n; i++) {
 		// only operate on LE if the status is in water
@@ -115,15 +108,18 @@ double GetDepthAtPoint(WorldPoint p)
 WorldPoint3D RandomVertical_c::GetMove (const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	double	dLong, dLat, z = 0;
-	WorldPoint3D	deltaPoint = {0,0,0.};
+	WorldPoint3D	deltaPoint = {{0,0},0.};
 	WorldPoint refPoint = (*theLE).p;	
 	float rand;
-	OSErr err = 0;
 
 	//if ((*theLE).z==0)	return deltaPoint;
 	// will need a flag to check if LE is supposed to stay on the surface or can be diffused below	
 	// will want to be able to set mixed layer depth, but have a local value that can be changed
-	if ((*theLE).z>0)	// only apply vertical diffusion if there are particles below surface
+	
+	// 9/28/18 Amy would like particles that surface to be put back into the water column
+	// we may eventually have only a percentage of the particles go back in 
+	// this can be turned off by setting bSurfaceIsAllowed to true 
+	if ((*theLE).z>0 || bSurfaceIsAllowed==false)	// only apply vertical diffusion if there are particles below surface
 	{
 		double verticalDiffusionCoefficient, horizontalDiffusionCoefficient;
 		double mixedLayerDepth=fMixedLayerDepth, totalLEDepth, depthAtPoint=INFINITE_DEPTH;

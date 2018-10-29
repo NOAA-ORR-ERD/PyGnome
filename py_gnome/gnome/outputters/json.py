@@ -107,7 +107,7 @@ class SpillJsonOutput(Outputter):
 
             if self._additional_data and len(self._additional_data) > 0:
                 for d in self._additional_data:
-                    if d == 'viscosity':
+                    if d == 'viscosity' or d == 'surface_concentration':
                         out[d] = np.around(sc[d], 8).tolist()
                     else:
                         out[d] = np.around(sc[d], 4).tolist()

@@ -126,7 +126,7 @@ void GridCurrentMover_c::Dispose ()
 OSErr GridCurrentMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec *velocity,double timeStep,Boolean useEddyUncertainty)
 {
 	LEUncertainRec unrec;
-	double u,v,lengthS,alpha,beta,v0;
+	double u,v,lengthS,alpha,beta;
 	OSErr err = 0;
 	
 	if(!fUncertaintyListH || !fLESetSizesH) return 0; // this is our clue to not add uncertainty
@@ -237,7 +237,7 @@ OSErr GridCurrentMover_c::get_move(int n, Seconds model_time, Seconds step_len, 
 	LERec rec;
 	prec = &rec;
 	
-	WorldPoint3D zero_delta ={0,0,0.};
+	WorldPoint3D zero_delta ={{0,0},0.};
 	
 	for (int i = 0; i < n; i++) {
 		
@@ -356,7 +356,7 @@ WorldPoint3D GridCurrentMover_c::GetMove(const Seconds& model_time, Seconds time
 	}
 	else
 	{
-		WorldPoint3D deltaD[5] = {{0,0},0}; // [ dummy, dy1, dy2, dy3, dy4 ]
+		WorldPoint3D deltaD[5] = {{{0,0},0}}; // [ dummy, dy1, dy2, dy3, dy4 ]
 		double RK_dy_Factors[4] = {0, .5, .5, 1};
 		double RK_Factors[4] = {1./6., 1./3., 1./3., 1./6.};
 		WorldPoint3D finalDelta = {{0,0},0};
@@ -365,7 +365,7 @@ WorldPoint3D GridCurrentMover_c::GetMove(const Seconds& model_time, Seconds time
 		startPoint.z = (*theLE).z;
 		VelocityRec scaledVel[4];
 		double dLong, dLat;
-		Boolean useEddyUncertainty = false;
+		//Boolean useEddyUncertainty = false;
 		// check the interval and set if necessary each time
 		/*if(!fIsOptimizedForStep)
 		{
@@ -431,7 +431,7 @@ OSErr GridCurrentMover_c::TextRead(char *path, char *topFilePath)
 		}
 
 		if (isNetCDFPathsFile) {
-			char errmsg[256];
+			//char errmsg[256];
 
 			err = timeGrid->ReadInputFileNames(fileNamesPath);
 			if (err)
@@ -454,8 +454,6 @@ OSErr GridCurrentMover_c::TextRead(char *path, char *topFilePath)
 
 	if (IsPtCurFile(linesInFile))
 	{
-		char errmsg[256];
-
 		newTimeGrid = new TimeGridCurTri();
 		if (newTimeGrid)
 		{
@@ -487,7 +485,6 @@ OSErr GridCurrentMover_c::TextRead(char *path, char *topFilePath)
 	else if (IsGridCurTimeFile(linesInFile, &selectedUnits))
 	{
 		//cerr << "we are opening a GridCurTimeFile..." << "'" << path << "'" << endl;
-		char errmsg[256];
 		newTimeGrid = new TimeGridCurRect();
 		//timeGrid = new TimeGridVel();
 		if (newTimeGrid)

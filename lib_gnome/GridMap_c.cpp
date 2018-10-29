@@ -77,7 +77,7 @@ TTriGridVel* GridMap_c::GetGrid()
 LongPointHdl GridMap_c::GetPointsHdl()	
 {
 	LongPointHdl ptsHdl = 0;
-	TMover *mover=0;
+	//TMover *mover=0;
 	
 	ptsHdl = (dynamic_cast<TTriGridVel*>(fGrid)) -> GetPointsHdl();
 	//ptsHdl = ((TTriGridVel*)fGrid) -> GetPointsHdl();
@@ -231,7 +231,7 @@ OSErr GridMap_c::SetUpCurvilinearGrid(DOUBLEH landMaskH, long numRows, long numC
 	long nSegs, segNum = 0, numIslands, rectIndex; 
 	long iIndex,jIndex,index,currentIndex,startIndex; 
 	long triIndex1,triIndex2,waterCellNum=0;
-	long ptIndex = 0,cellNum = 0,diag = 1;
+	long ptIndex = 0,cellNum = 0;
 	Boolean foundPt = false, isOdd;
 	OSErr err = 0;
 	
@@ -336,7 +336,7 @@ OSErr GridMap_c::SetUpCurvilinearGrid(DOUBLEH landMaskH, long numRows, long numC
 	for (i=0; i<=numVerdatPts; i++)	// make a list of grid points that will be used for triangles
 	{
 		float fLong, fLat, fDepth, dLon, dLat, dLon1, dLon2, dLat1, dLat2;
-		double val, u=0., v=0.;
+		//double val, u=0., v=0.;
 		LongPoint vertex;
 		
 		if(i < numVerdatPts) 
@@ -760,12 +760,7 @@ done:
 OSErr GridMap_c::SetUpCurvilinearGrid2(DOUBLEH landMaskH, long numRows, long numCols, WORLDPOINTFH vertexPtsH, FLOATH depthPtsH, char* errmsg)
 {	// this is for the points on nodes case (old coops_mask)
 	OSErr err = 0;
-	long i,j,k;
-	char *velUnits=0; 
-	long latlength = numRows, numtri = 0;
-	long lonlength = numCols;
-	Boolean isLandMask = true;
-	float fDepth1, fLat1, fLong1;
+	long i,j;
 	long index1=0;
 	
 	errmsg[0]=0;
@@ -781,7 +776,6 @@ OSErr GridMap_c::SetUpCurvilinearGrid2(DOUBLEH landMaskH, long numRows, long num
 	long currentIsland=0, islandNum, nBoundaryPts=0, nEndPts=0, waterStartPoint;
 	long nSegs, segNum = 0, numIslands, rectIndex; 
 	long currentIndex,startIndex; 
-	long diag = 1;
 	Boolean foundPt = false, isOdd;
 	
 	LONGH landWaterInfo = (LONGH)_NewHandleClear(nCells * sizeof(long));
@@ -894,8 +888,9 @@ OSErr GridMap_c::SetUpCurvilinearGrid2(DOUBLEH landMaskH, long numRows, long num
 	//index = 0;
 	for (i=0; i<=numVerdatPts; i++)	// make a list of grid points that will be used for triangles
 	{
-		float fLong, fLat, fDepth, dLon, dLat, dLon1, dLon2, dLat1, dLat2;
-		double val, u=0., v=0.;
+		float fLong, fLat, fDepth; 
+		//float dLon, dLat, dLon1, dLon2, dLat1, dLat2;
+		//double val, u=0., v=0.;
 		LongPoint vertex;
 		
 		if(i < numVerdatPts) 
@@ -1861,16 +1856,15 @@ OSErr GridMap_c::GetPointsAndMask(char *path,DOUBLEH *maskH,WORLDPOINTFH *vertex
 {
 	// this code is for curvilinear grids
 	OSErr err = 0;
-	long i,j,k, indexOfStart = 0;
+	long i,j;
 	int status, ncid, latIndexid, lonIndexid, latid, lonid, depthid, mask_id, numdims;
 	size_t latLength, lonLength, t_len2;
-	float startLat,startLon,endLat,endLon;
 	char dimname[NC_MAX_NAME];
 	WORLDPOINTFH vertexPtsH=0;
 	FLOATH totalDepthsH=0;
 	double *lat_vals=0,*lon_vals=0;
 	float *depth_vals=0;
-	static size_t latIndex=0,lonIndex=0,ptIndex[2]={0,0};
+	static size_t /*latIndex=0,lonIndex=0,*/ptIndex[2]={0,0};
 	static size_t pt_count[2];
 	char errmsg[256] = "";
 	char *modelTypeStr=0;
@@ -2041,9 +2035,8 @@ OSErr GridMap_c::GetPointsAndMask(char *path,DOUBLEH *maskH,WORLDPOINTFH *vertex
 		}
 	}
 	*maskH = mylandmaskH;
-	if(err) goto done;
 	
-depths:
+//depths:
 	if (err) goto done;
 	// also translate to fDepthDataInfo and fDepthsH here, using sigma or zgrid info
 	
@@ -2113,7 +2106,7 @@ OSErr GridMap_c::GetPointsAndBoundary(char *path,
 	int curr_ucmp_id, uv_dimid[3], uv_ndims;
 
 	size_t nodeLength, nbndLength, neleLength;
-	static size_t latIndex = 0, lonIndex = 0, ptIndex = 0;
+	static size_t ptIndex = 0;
 	static size_t pt_count;
 	static size_t bndIndex[2] = {0, 0}, bnd_count[2];
 	static size_t topIndex[2] = {0, 0}, top_count[2];
@@ -2121,7 +2114,6 @@ OSErr GridMap_c::GetPointsAndBoundary(char *path,
 	float *lat_vals = 0, *lon_vals = 0, *depth_vals = 0;
 	long *bndry_indices = 0, *bndry_nums = 0, *bndry_type = 0, *top_verts = 0, *top_neighbors = 0;
 	double scale_factor = 1.;
-	char *modelTypeStr = 0;
 
 	FLOATH totalDepthsH = 0;
 	WORLDPOINTFH vertexPtsH = 0;	
@@ -2283,10 +2275,6 @@ OSErr GridMap_c::GetPointsAndBoundary(char *path,
 		*triangle_verts = top_verts;
 		*triangle_neighbors = top_neighbors;
 	}
-
-depths:
-	if (err)
-		goto done;
 
 done:
 
@@ -2829,9 +2817,9 @@ OSErr GridMap_c::ExportTopology(char* path)
 	
 	OSErr err = 0;
 	long numTriangles, numBranches, nver, nBoundarySegs=0, nWaterBoundaries=0, nBoundaryPts;
-	long i, n, v1,v2,v3,n1,n2,n3;
+	long i,v1,v2,v3,n1,n2,n3;
 	double x,y,z;
-	char buffer[512],hdrStr[64],topoStr[128];
+	char /*buffer[512],*/hdrStr[64],topoStr[128];
 	TopologyHdl topH=0;
 	TTriGridVel* triGrid = 0;	
 	TDagTree* dagTree = 0;
@@ -2991,14 +2979,14 @@ OSErr GridMap_c::SaveAsNetCDF(char *path)
 	OSErr err = 0;	
 	int status, ncid, ver_dim, top_dim, dag_dim, edge_dim, top_dimid[2], landwater_dimid[1], edge_dimid[2], boundary_count_dimid[1], dag_dimid[2], lat_dimid[1], lon_dimid[1], depth_dimid[1];
 	int mesh2_node_x_id, mesh2_node_y_id, mesh2_depth_id, mesh2_face_links_id, mesh2_face_nodes_id, mesh2_dagtree_id, mesh2_landwater_id, mesh2_edge_id, mesh2_boundary_count_id;
-	int i, j, mesh2_id, two_dim, three_dim, dimid[1];
+	int i, j, mesh2_id, two_dim, three_dim/*, dimid[1]*/;
 	double *lat_vals=0,*lon_vals=0,*depth_vals=0;
 	long *dag_vals=0,*top_vals=0,*neighbor_vals=0, *landwater_vals=0, *edge_vals=0, *boundary_count_vals=0;
 	long dimension = 2, startIndex = 0, flagValues = -1, flagRange = -8;
 	long nSegs = GetNumBoundarySegs();	
 	long theSeg,startver,endver,index,index1,index2,boundaryIndex=0;
 	
-	long numTriangles, numBranches, nver, nBoundarySegs=0, nWaterBoundaries=0, nBoundaryPts=0;
+	long numTriangles, numBranches, nver, nBoundarySegs=0, /*nWaterBoundaries=0, */nBoundaryPts=0;
 	long boundaryFlagRange[] = {1, 2}, boundaryFlagValues[] = {1,2};
 	
 	TopologyHdl topH=0;
@@ -3008,7 +2996,7 @@ OSErr GridMap_c::SaveAsNetCDF(char *path)
 	FLOATH depthsH=0;
 	DAGHdl		treeH = 0;
 	LONGH	boundarySegmentsH = 0, boundaryTypeH = 0, boundaryPointsH = 0;
-	char errmsg[256];
+	//char errmsg[256];
 	
 	triGrid = dynamic_cast<TTriGridVel*>(this->fGrid);
 	if (!triGrid) {printError("There is no topology to export"); return -1;}
@@ -3565,7 +3553,7 @@ OSErr GridMap_c::TextRead(char *path)
 	char nameStr[256];
 	char errmsg[256];
 
-	WorldRect bounds = theWorld;
+	//WorldRect bounds = theWorld;
 	short gridType;
 	
 	errmsg[0] = 0;
@@ -3676,13 +3664,13 @@ OSErr GridMap_c::TextRead(char *path)
 void GridMap_c::DrawBoundaries(Rect r)
 {
 	long nSegs = GetNumBoundarySegs();	
-	long theSeg,startver,endver,j;
-	long x,y;
+	long theSeg,startver,endver;
+	//long x,y,j;
 	//Point pt;
-	Boolean offQuickDrawPlane = false;
+	//Boolean offQuickDrawPlane = false;
 	
-	long penWidth = 3;
-	long halfPenWidth = penWidth/2;
+	//long penWidth = 3;
+	//long halfPenWidth = penWidth/2;
 	
 	//PenNormal();
 	//RGBColor sc;
@@ -3760,12 +3748,13 @@ void GridMap_c::DrawBoundaries2(Rect r)
 	
 	long nSegs = GetNumBoundarySegs();	
 	long theSeg,startver,endver,j;
-	long x,y,index1,index;
-	Point pt;
-	Boolean offQuickDrawPlane = false;
+	//long x,y;
+	long index1,index;
+	//Point pt;
+	//Boolean offQuickDrawPlane = false;
 	
-	long penWidth = 3;
-	long halfPenWidth = penWidth/2;
+	//long penWidth = 3;
+	//long halfPenWidth = penWidth/2;
 	
 	LongPointHdl ptsHdl = GetPointsHdl();	
 	if(!ptsHdl) return;

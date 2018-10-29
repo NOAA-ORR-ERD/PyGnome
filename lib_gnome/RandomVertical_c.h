@@ -23,8 +23,7 @@ public:
 	double fHorizontalDiffusionCoefficientBelowML; //cm**2/s
 	double fVerticalBottomDiffusionCoefficient; //cm**2/s
 	double fMixedLayerDepth;	// meters
-	Boolean bUseDepthDependentDiffusion;
-	//TR_OPTIMZE fOptimize; // this does not need to be saved to the save file
+	Boolean bSurfaceIsAllowed;
 	
 #ifndef pyGNOME
 	RandomVertical_c (TMap *owner, char *name);

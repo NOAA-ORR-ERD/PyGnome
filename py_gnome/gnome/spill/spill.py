@@ -674,7 +674,7 @@ class Spill(BaseSpill):
                 # for the UI to be consistent, the conversion needs to use
                 # standard density -- not the current water temp.
                 # water_temp = self.water.get('temperature')
-                # ideally substance would have a "standard_density" attribute
+                # substance has a "standard_density" attribute
                 # for this.
             std_rho = self.element_type.standard_density
 
@@ -817,7 +817,7 @@ def surface_point_line_spill(num_elements,
                              units=None,
                              windage_range=(.01, .04),
                              windage_persist=900,
-                             name='Surface Point/Line Release'):
+                             name='Surface Point or Line Release'):
     '''
     Helper function returns a Spill object
 

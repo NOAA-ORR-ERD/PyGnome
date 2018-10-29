@@ -169,6 +169,9 @@ class Grid_S(GnomeId, gridded.grids.Grid_S):
 
     _schema = GridSchema
 
+    def __init__(self, use_masked_boundary=True, *args, **kwargs):
+        super(Grid_S, self).__init__(*args, use_masked_boundary=use_masked_boundary, **kwargs)
+
     '''hack to avoid problems when registering object in webgnome'''
     @property
     def non_grid_variables(self):
@@ -226,6 +229,11 @@ class Grid_S(GnomeId, gridded.grids.Grid_S):
             lats = (self.node_lat[0:-1, 0:-1] + self.node_lat[1:, 1:]) / 2
             return np.stack((lons, lats), axis=-1).reshape(-1, 2)
         else:
+            if self._get_geo_mask('center'):
+                if not self._cell_trees['center']:
+                    self.build_celltree('center', use_mask=True)
+                print self._cell_trees['node'][1].shape
+                return self._cell_trees['node'][1]
             return self.centers.reshape(-1, 2)
 
     def get_metadata(self):
@@ -245,6 +253,20 @@ class Grid_S(GnomeId, gridded.grids.Grid_S):
         and the resulting lines are drawn, you should end up with a picture of
         the grid.
         '''
+        if self._get_geo_mask('node') is not None:
+            #masked sgrid, so use Grid_U style of lines
+            if not hasattr(self, '_cell_trees'):
+                self.build_celltree()
+            nodes = self._cell_trees['node'][1]
+            faces = self._cell_trees['node'][2]
+            open_cells = nodes[faces]
+            closed_cells = np.concatenate((open_cells, open_cells[:, None, 0]),
+                                          axis=1)
+            closed_cells = closed_cells.astype(np.float32, copy=False)
+            lengths = closed_cells.shape[1] * np.ones(closed_cells.shape[0],
+                                                      dtype=np.int32)
+            return (lengths, [closed_cells])
+
         hor_lines = (np.dstack((self.node_lon[:], self.node_lat[:])).astype(np.float32))
         ver_lines = (hor_lines.transpose((1, 0, 2)).astype(np.float32))
 
@@ -465,6 +487,7 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
         return array of shape (time_slices, len_linearized_data,2)
         first is magnitude, second is direction
         '''
+
         raw_u = self.variables[0].data[:]
         raw_v = self.variables[1].data[:]
 
