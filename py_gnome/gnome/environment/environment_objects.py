@@ -425,12 +425,6 @@ class GridCurrent(VelocityGrid, Environment):
                 'v': ['northward_sea_water_velocity'],
                 'w': ['upward_sea_water_velocity']}
 
-    def __init__(self, extrapolation_is_allowed=False,
-                 *args, **kwargs):
-        super(GridCurrent, self).__init__(*args, **kwargs)
-
-        self.extrapolation_is_allowed = extrapolation_is_allowed
-
     def at(self, points, time, units=None, **kwargs):
         '''
         Find the value of the property at positions P at time T
@@ -548,11 +542,9 @@ class GridWind(VelocityGrid, Environment):
 
     def __init__(self,
                  wet_dry_mask=None,
-                 extrapolation_is_allowed=False,
                  *args, **kwargs):
         super(GridWind, self).__init__(*args, **kwargs)
 
-        self.extrapolation_is_allowed = extrapolation_is_allowed
 
         if wet_dry_mask is not None:
             if self.grid.infer_location(wet_dry_mask) != 'center':
@@ -782,13 +774,12 @@ class IceAwareCurrent(GridCurrent):
         if temp_fn is not None:
             kwargs['filename'] = temp_fn
 
-        return (super(IceAwareCurrent, cls)
-                .from_netCDF(ice_concentration=ice_concentration,
+        return (super(IceAwareCurrent, cls).from_netCDF(ice_concentration=ice_concentration,
                              ice_velocity=ice_velocity,
                              **kwargs))
 
     def at(self, points, time, units=None, **kwargs):
-        extrapolate = self._extrapolation_is_allowed
+        extrapolate = self.extrapolation_is_allowed
         interp = (self.ice_concentration.at(points, time,
                                             extrapolate=extrapolate, **kwargs)
                   .copy())
@@ -839,7 +830,7 @@ class IceAwareWind(GridWind):
         super(IceAwareWind, self).__init__(*args, **kwargs)
 
     @classmethod
-    @GridCurrent._get_shared_vars()
+    @GridWind._get_shared_vars()
     def from_netCDF(cls,
                     ice_concentration=None,
                     ice_velocity=None,
@@ -856,7 +847,7 @@ class IceAwareWind(GridWind):
                              **kwargs))
 
     def at(self, points, time, units=None, **kwargs):
-        extrapolate = self._extrapolation_is_allowed
+        extrapolate = self.extrapolation_is_allowed
         interp = self.ice_concentration.at(points, time,
                                            extrapolate=extrapolate, **kwargs)
 
