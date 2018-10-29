@@ -799,11 +799,9 @@ class IceAwareCurrent(GridCurrent):
             ice_mask = interp >= 0.8
 
             water_v = (super(IceAwareCurrent, self)
-                       .at(points, time, units, extrapolate, **kwargs))
+                       .at(points, time, units=units, extrapolate=extrapolate, **kwargs))
 
-            ice_v = (self.ice_velocity.at(points, time, units, extrapolate,
-                                          **kwargs)
-                     .copy())
+            ice_v = (self.ice_velocity.at(points, time, units=units, extrapolate=extrapolate, **kwargs).copy())
 
             interp = (interp - 0.2) * 10 / 6.
 
@@ -818,8 +816,11 @@ class IceAwareCurrent(GridCurrent):
 
             return vels
         else:
-            return super(IceAwareCurrent, self).at(points, time, units,
-                                                   extrapolate, **kwargs)
+            return super(IceAwareCurrent, self).at(points,
+                                                   time,
+                                                   units=units,
+                                                   extrapolate=extrapolate,
+                                                   **kwargs)
 
 
 class IceAwareWind(GridWind):
