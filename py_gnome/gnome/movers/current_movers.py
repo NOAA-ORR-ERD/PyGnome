@@ -489,10 +489,14 @@ class GridCurrentMover(CurrentMoversBase):
 
         self.num_method = num_method
 
-        # this causes an error saving for currents that don't have topology
-#         if self.topology_file is None:
-#             self.topology_file = filename + '.dat'
-#             self.export_topology(self.topology_file)
+        if self.topology_file is None:
+            # this causes an error saving for currents that don't have topology
+            #self.topology_file = filename + '.dat'
+            #self.export_topology(self.topology_file)
+            temp_topology_file = filename + '.dat'
+            self.export_topology(temp_topology_file)
+            if os.path.exists(temp_topology_file):
+                self.topology_file = temp_topology_file
 
     def __repr__(self):
         return ('GridCurrentMover('

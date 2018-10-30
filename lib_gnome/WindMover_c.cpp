@@ -478,8 +478,9 @@ OSErr WindMover_c::PrepareForModelStep(const Seconds& model_time,
 	}
 
 	err = this->GetTimeValue(model_time, &this->current_time_value);	
-
+#ifndef pyGNOME
 	if (err) printError("An error occurred in TWindMover::PrepareForModelStep");
+#endif
 
 	return err;
 }

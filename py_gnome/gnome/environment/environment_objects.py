@@ -425,12 +425,6 @@ class GridCurrent(VelocityGrid, Environment):
                 'v': ['northward_sea_water_velocity'],
                 'w': ['upward_sea_water_velocity']}
 
-    def __init__(self, extrapolation_is_allowed=False,
-                 *args, **kwargs):
-        super(GridCurrent, self).__init__(*args, **kwargs)
-
-        self.extrapolation_is_allowed = extrapolation_is_allowed
-
     def at(self, points, time, units=None, **kwargs):
         '''
         Find the value of the property at positions P at time T
@@ -548,11 +542,9 @@ class GridWind(VelocityGrid, Environment):
 
     def __init__(self,
                  wet_dry_mask=None,
-                 extrapolation_is_allowed=False,
                  *args, **kwargs):
         super(GridWind, self).__init__(*args, **kwargs)
 
-        self.extrapolation_is_allowed = extrapolation_is_allowed
 
         if wet_dry_mask is not None:
             if self.grid.infer_location(wet_dry_mask) != 'center':
@@ -782,12 +774,12 @@ class IceAwareCurrent(GridCurrent):
         if temp_fn is not None:
             kwargs['filename'] = temp_fn
 
-        return (super(IceAwareCurrent, cls)
-                .from_netCDF(ice_concentration=ice_concentration,
+        return (super(IceAwareCurrent, cls).from_netCDF(ice_concentration=ice_concentration,
                              ice_velocity=ice_velocity,
                              **kwargs))
 
-    def at(self, points, time, units=None, extrapolate=False, **kwargs):
+    def at(self, points, time, units=None, **kwargs):
+        extrapolate = self.extrapolation_is_allowed
         interp = (self.ice_concentration.at(points, time,
                                             extrapolate=extrapolate, **kwargs)
                   .copy())
@@ -799,11 +791,9 @@ class IceAwareCurrent(GridCurrent):
             ice_mask = interp >= 0.8
 
             water_v = (super(IceAwareCurrent, self)
-                       .at(points, time, units, extrapolate, **kwargs))
+                       .at(points, time, units=units, **kwargs))
 
-            ice_v = (self.ice_velocity.at(points, time, units, extrapolate,
-                                          **kwargs)
-                     .copy())
+            ice_v = (self.ice_velocity.at(points, time, units=units, extrapolate=extrapolate, **kwargs).copy())
 
             interp = (interp - 0.2) * 10 / 6.
 
@@ -818,8 +808,10 @@ class IceAwareCurrent(GridCurrent):
 
             return vels
         else:
-            return super(IceAwareCurrent, self).at(points, time, units,
-                                                   extrapolate, **kwargs)
+            return super(IceAwareCurrent, self).at(points,
+                                                   time,
+                                                   units=units,
+                                                   **kwargs)
 
 
 class IceAwareWind(GridWind):
@@ -838,7 +830,7 @@ class IceAwareWind(GridWind):
         super(IceAwareWind, self).__init__(*args, **kwargs)
 
     @classmethod
-    @GridCurrent._get_shared_vars()
+    @GridWind._get_shared_vars()
     def from_netCDF(cls,
                     ice_concentration=None,
                     ice_velocity=None,
@@ -854,7 +846,8 @@ class IceAwareWind(GridWind):
                              ice_velocity=ice_velocity,
                              **kwargs))
 
-    def at(self, points, time, units=None, extrapolate=False, **kwargs):
+    def at(self, points, time, units=None, **kwargs):
+        extrapolate = self.extrapolation_is_allowed
         interp = self.ice_concentration.at(points, time,
                                            extrapolate=extrapolate, **kwargs)
 
@@ -865,7 +858,7 @@ class IceAwareWind(GridWind):
             ice_mask = interp >= 0.8
 
             wind_v = (super(IceAwareWind, self)
-                      .at(points, time, units, extrapolate, **kwargs))
+                      .at(points, time, units, **kwargs))
 
             interp = (interp - 0.2) * 10 / 6.
 
@@ -879,4 +872,4 @@ class IceAwareWind(GridWind):
             return vels
         else:
             return (super(IceAwareWind, self)
-                    .at(points, time, units, extrapolate, **kwargs))
+                    .at(points, time, units, **kwargs))

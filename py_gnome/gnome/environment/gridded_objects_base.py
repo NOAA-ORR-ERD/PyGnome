@@ -2,6 +2,7 @@ import datetime
 import StringIO
 import copy
 import numpy as np
+from functools import wraps
 
 from colander import (SchemaNode, SequenceSchema,
                       Sequence, String, Boolean, DateTime,
@@ -371,8 +372,8 @@ class Variable(gridded.Variable, GnomeId):
                                      'depth': Depth})
 
     def __init__(self, extrapolation_is_allowed=False, *args, **kwargs):
-        self.extrapolation_is_allowed = extrapolation_is_allowed
         super(Variable, self).__init__(*args, **kwargs)
+        self.extrapolation_is_allowed = extrapolation_is_allowed
 
     def at(self, *args, **kwargs):
         if ('extrapolate' not in kwargs):
@@ -475,6 +476,13 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
                                      'depth': Depth,
                                      'variable': Variable})
 
+    def __init__(self,
+                 extrapolation_is_allowed=False,
+                 *args,
+                 **kwargs):
+        super(VectorVariable, self).__init__(*args, **kwargs)
+        self.extrapolation_is_allowed = extrapolation_is_allowed
+
     @classmethod
     def new_from_dict(cls, dict_, **kwargs):
         if not dict_.get('variables', False):
@@ -536,3 +544,51 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
             return InfDateTime("inf")
         else:
             return self.time.min_time.replace(tzinfo=None)
+
+    @classmethod
+    def _get_shared_vars(cls, *sh_args):
+        default_shared = ['dataset', 'data_file', 'grid_file', 'grid']
+        if len(sh_args) != 0:
+            shared = sh_args
+        else:
+            shared = default_shared
+
+        def getvars(func):
+            @wraps(func)
+            def wrapper(*args, **kws):
+                def _mod(n):
+                    k = kws
+                    s = shared
+                    return (n in s) and ((n not in k) or (n in k and k[n] is None))
+
+                if 'filename' in kws and kws['filename'] is not None:
+                    kws['data_file'] = kws['grid_file'] = kws['filename']
+                ds = dg =  None
+                if _mod('dataset'):
+                    if 'grid_file' in kws and 'data_file' in kws:
+                        if kws['grid_file'] == kws['data_file']:
+                            ds = dg = gridded.utilities.get_dataset(kws['grid_file'])
+                        else:
+                            ds = gridded.utilities.get_dataset(kws['data_file'])
+                            dg = gridded.utilities.get_dataset(kws['grid_file'])
+                    kws['dataset'] = ds
+                else:
+                    if 'grid_file' in kws and kws['grid_file'] is not None:
+                        dg = gridded.utilities.get_dataset(kws['grid_file'])
+                    else:
+                        dg = kws['dataset']
+                    ds = kws['dataset']
+                if _mod('grid'):
+                    gt = kws.get('grid_topology', None)
+                    kws['grid'] = PyGrid.from_netCDF(kws['filename'], dataset=dg, grid_topology=gt)
+                if kws.get('varnames', None) is None:
+                    varnames = cls._gen_varnames(kws['data_file'],
+                                                 dataset=ds)
+#                 if _mod('time'):
+#                     time = Time.from_netCDF(filename=kws['data_file'],
+#                                             dataset=ds,
+#                                             varname=data)
+#                     kws['time'] = time
+                return func(*args, **kws)
+            return wrapper
+        return getvars
