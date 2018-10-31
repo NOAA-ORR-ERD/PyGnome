@@ -4,6 +4,7 @@ stages:
 
 test:
   stage: test
+  image: gitlab.orr.noaa.gov:5002/oillibrary:latest
   script:
   - yum update -y
   - yum install gcc gcc-c++ -y
@@ -24,10 +25,7 @@ test:
   - py.test
   
   tags:
-    - test
     - docker
-    - oillibrary_base
-
 
 develop:
   stage: build
@@ -39,7 +37,7 @@ develop:
   only:
     - develop
   tags:
-    - docker
+    - shell
     - build
 
 master:
@@ -52,7 +50,7 @@ master:
   only:
      - master
   tags:
-     - docker
+     - shell
      - build
   
 production:
@@ -65,5 +63,5 @@ production:
   only:
      - production
   tags:
-     - docker
+     - shell
      - build

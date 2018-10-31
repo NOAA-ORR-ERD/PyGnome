@@ -920,7 +920,7 @@ class Test_lake():
         # print len(gj.features)
 
         # has only the land polys in there.
-        assert len(gj['features']) == 1
+        assert len(gj['features']) == 2
 
         land_polys = gj['features'][0]
         assert land_polys['geometry']['type'] == "MultiPolygon"

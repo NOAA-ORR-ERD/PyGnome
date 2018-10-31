@@ -10,27 +10,20 @@ from gnome.persist.base_schema import ObjTypeSchema
 
 
 class RiseVelocityMoverSchema(ProcessSchema):
-    water_density = SchemaNode(
-        Float(), save=True, update=True
-    )
-    water_viscosity = SchemaNode(
-        Float(), save=True, update=True
-    )
+    water_density = SchemaNode(Float(), save=True, update=True)
+    water_viscosity = SchemaNode(Float(), save=True, update=True)
 
 
 class RiseVelocityMover(CyMover):
-
     """
     This mover class inherits from CyMover and contains CyRiseVelocityMover
 
     The real work is done by CyRiseVelocityMover.
     CyMover sets everything up that is common to all movers.
     """
-
     _schema = RiseVelocityMoverSchema
 
-    def __init__(self,
-                 **kwargs):
+    def __init__(self, **kwargs):
         """
         Uses super to invoke base class __init__ method.
 
@@ -53,8 +46,8 @@ class RiseVelocityMover(CyMover):
         .. todo::
             We probably want to include more information.
         """
-        return ('RiseVelocityMover(active_start={0}, active_stop={1}, on={2})'
-                .format(self.active_start, self.active_stop, self.on))
+        return ('RiseVelocityMover(active_range={0}, on={1})'
+                .format(self.active_range, self.on))
 
     def get_move(self, sc, time_step, model_time_datetime):
         """
