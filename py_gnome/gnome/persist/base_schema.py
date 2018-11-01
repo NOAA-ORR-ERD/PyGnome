@@ -368,7 +368,7 @@ class ObjType(SchemaType):
             if not hasattr(subnode, '_save'):
                 # This happens when it goes into non-gnome object attributes
                 # (Strings, Numbers, etc)
-                if (issubclass(subnode.typ,(Sequence, OrderedCollectionType)) and
+                if (isinstance(subnode.typ,(Sequence, OrderedCollectionType)) and
                     isinstance(subnode.children[0], ObjTypeSchema)):
                     # To be able to continue saving inside iterables,
                     # whose schema does not contain a save function,
