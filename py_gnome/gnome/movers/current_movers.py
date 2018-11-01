@@ -2,8 +2,6 @@
 Movers using currents and tides as forcing functions
 '''
 import os
-from os.path import basename
-import copy
 
 import numpy as np
 
@@ -22,14 +20,13 @@ from gnome.cy_gnome.cy_component_mover import CyComponentMover
 from gnome.utilities.time_utils import sec_to_datetime
 from gnome.utilities.inf_datetime import InfTime, MinusInfTime
 
-from gnome.persist.base_schema import ObjType, WorldPoint
 from gnome.persist.validators import convertible_to_seconds
 from gnome.persist.extend_colander import LocalDateTime
 
 from gnome.environment import Tide, TideSchema, Wind, WindSchema
 from gnome.movers import CyMover, ProcessSchema
 
-from gnome.persist.base_schema import ObjTypeSchema, WorldPoint
+from gnome.persist.base_schema import WorldPoint
 from gnome.persist.extend_colander import FilenameSchema
 
 
@@ -441,8 +438,11 @@ class GridCurrentMover(CurrentMoversBase):
         :param topology_file=None: absolute or relative path to topology file.
                                    If not given, the GridCurrentMover will
                                    compute the topology from the data file.
-        :param active_start: datetime when the mover should be active
-        :param active_stop: datetime after which the mover should be inactive
+
+        :param active_range: Range of datetimes for when the mover should be
+                             active
+        :type active_range: 2-tuple of datetimes
+
         :param current_scale: Value to scale current data
         :param uncertain_duration: how often does a given uncertain element
                                    get reset
@@ -504,8 +504,7 @@ class GridCurrentMover(CurrentMoversBase):
                 'uncertain_time_delay={0.uncertain_time_delay}, '
                 'uncertain_cross={0.uncertain_cross}, '
                 'uncertain_along={0.uncertain_along}, '
-                'active_start={1.active_start}, '
-                'active_stop={1.active_stop}, '
+                'active_range={1.active_range}, '
                 'on={1.on})'
                 .format(self.mover, self))
 
@@ -515,8 +514,7 @@ class GridCurrentMover(CurrentMoversBase):
                 '  uncertain_time_delay={0.uncertain_time_delay}\n'
                 '  uncertain_cross={0.uncertain_cross}\n'
                 '  uncertain_along={0.uncertain_along}\n'
-                '  active_start time={1.active_start}\n'
-                '  active_stop time={1.active_stop}\n'
+                '  active_range time={1.active_range}\n'
                 '  current on/off status={1.on}'
                 .format(self.mover, self))
 
@@ -700,8 +698,11 @@ class IceMover(CurrentMoversBase):
         :param topology_file=None: absolute or relative path to topology file.
                                    If not given, the IceMover will
                                    compute the topology from the data file.
-        :param active_start: datetime when the mover should be active
-        :param active_stop: datetime after which the mover should be inactive
+
+        :param active_range: Range of datetimes for when the mover should be
+                             active
+        :type active_range: 2-tuple of datetimes
+
         :param current_scale: Value to scale current data
         :param uncertain_duration: how often does a given uncertain element
                                    get reset
@@ -755,8 +756,7 @@ class IceMover(CurrentMoversBase):
                 'uncertain_time_delay={0.uncertain_time_delay}, '
                 'uncertain_cross={0.uncertain_cross}, '
                 'uncertain_along={0.uncertain_along}, '
-                'active_start={1.active_start}, '
-                'active_stop={1.active_stop}, '
+                'active_range={1.active_range}, '
                 'on={1.on})'
                 .format(self.mover, self))
 
@@ -766,8 +766,7 @@ class IceMover(CurrentMoversBase):
                 '  uncertain_time_delay={0.uncertain_time_delay}\n'
                 '  uncertain_cross={0.uncertain_cross}\n'
                 '  uncertain_along={0.uncertain_along}\n'
-                '  active_start time={1.active_start}\n'
-                '  active_stop time={1.active_stop}\n'
+                '  active_range time={1.active_range}\n'
                 '  current on/off status={1.on}'
                 .format(self.mover, self))
 
@@ -972,8 +971,11 @@ class CurrentCycleMover(GridCurrentMover):
                                    compute the topology from the data file.
         :param tide: A gnome.environment.Tide object to be attached to
                      CatsMover
-        :param active_start: datetime when the mover should be active
-        :param active_stop: datetime after which the mover should be inactive
+
+        :param active_range: Range of datetimes for when the mover should be
+                             active
+        :type active_range: 2-tuple of datetimes
+
         :param current_scale: Value to scale current data
         :param uncertain_duration: How often does a given uncertain element
                                    get reset
@@ -1005,8 +1007,7 @@ class CurrentCycleMover(GridCurrentMover):
                 'uncertain_time_delay={0.uncertain_time_delay}, '
                 'uncertain_cross={0.uncertain_cross}, '
                 'uncertain_along={0.uncertain_along}, '
-                'active_start={1.active_start}, '
-                'active_stop={1.active_stop}, '
+                'active_range={1.active_range}, '
                 'on={1.on})'
                 .format(self.mover, self))
 
@@ -1016,8 +1017,7 @@ class CurrentCycleMover(GridCurrentMover):
                 '  uncertain_time_delay={0.uncertain_time_delay}\n'
                 '  uncertain_cross={0.uncertain_cross}\n'
                 '  uncertain_along={0.uncertain_along}'
-                '  active_start time={1.active_start}'
-                '  active_stop time={1.active_stop}'
+                '  active_range time={1.active_range}'
                 '  current on/off status={1.on}'
                 .format(self.mover, self))
 

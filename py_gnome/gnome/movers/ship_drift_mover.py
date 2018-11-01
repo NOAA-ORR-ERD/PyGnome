@@ -2,7 +2,6 @@
 Ship drift mover
 '''
 import os
-import copy
 
 import numpy as np
 
@@ -21,21 +20,13 @@ from gnome.movers import Mover, ProcessSchema
 
 
 class ShipDriftMoverSchema(ProcessSchema):
-    wind_file = SchemaNode(
-        String(), missing=drop, save=True, isdatafile=True, test_equal=False
-    )
-    topology_file = SchemaNode(
-        String(), missing=drop, save=True, isdatafile=True, test_equal=False
-    )
-    wind_scale = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
-    grid_type = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
-    drift_angle = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
+    wind_file = SchemaNode(String(), save=True, missing=drop, isdatafile=True,
+                           test_equal=False)
+    topology_file = SchemaNode(String(), missing=drop, save=True,
+                               isdatafile=True, test_equal=False)
+    wind_scale = SchemaNode(Float(), missing=drop, save=True, update=True)
+    grid_type = SchemaNode(Float(), missing=drop, save=True, update=True)
+    drift_angle = SchemaNode(Float(), missing=drop, save=True, update=True)
 
 
 class ShipDriftMover(Mover):
@@ -62,7 +53,6 @@ class ShipDriftMover(Mover):
         Pass optional arguments to base class
         uses super: super(ShipDriftMover,self).__init__(\*\*kwargs)
         """
-
         if not os.path.exists(wind_file):
             raise ValueError('Path for wind file does not exist: {0}'
                              .format(wind_file))
@@ -106,20 +96,17 @@ class ShipDriftMover(Mover):
             We probably want to include more information.
         """
         return ('ShipDriftMover('
-                'active_start={1.active_start}, '
-                'active_stop={1.active_stop}, '
-                'on={1.on})'.format(self.mover, self))
+                'active_range={0.active_range}, '
+                'on={0.on})'.format(self, self.mover))
 
     def __str__(self):
         return ('ShipDriftMover - current _state.\n'
-                '  active_start time={1.active_start}\n'
-                '  active_stop time={1.active_stop}\n'
+                '  active_range time={1.active_range}\n'
                 '  current on/off status={1.on}'
-                .format(self.mover, self))
+                .format(self, self.mover))
 
     wind_scale = property(lambda self: self._wind_scale,
-                          lambda self, val: setattr(self,
-                                                    'wind_scale', val))
+                          lambda self, val: setattr(self, 'wind_scale', val))
 
     extrapolate = property(lambda self: self.grid.extrapolate,
                            lambda self, val: setattr(self.grid,

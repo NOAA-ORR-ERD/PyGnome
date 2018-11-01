@@ -18,7 +18,6 @@ Features:
    extra space is not in the land map
 
 """
-import copy
 import os
 import math
 # from osgeo import ogr
@@ -28,9 +27,9 @@ import py_gd
 
 import numpy as np
 
-from colander import SchemaNode, String, Float, drop, Integer
+from colander import SchemaNode, String, Float, Integer
 
-from geojson import FeatureCollection, Feature, MultiPolygon, MultiLineString
+from geojson import FeatureCollection, Feature, MultiPolygon
 
 import unit_conversion as uc
 
@@ -47,7 +46,7 @@ from gnome.utilities.file_tools import haz_files
 # from gnome.utilities.file_tools.osgeo_helpers import (ogr_open_file)
 
 from gnome.utilities.geometry.polygons import PolygonSet
-from gnome.utilities.geometry import points_in_poly, point_in_poly, is_clockwise
+from gnome.utilities.geometry import points_in_poly, point_in_poly
 
 from gnome.cy_gnome.cy_land_check import check_land_layers, move_particles
 
@@ -57,7 +56,9 @@ from gnome.persist import base_schema
 
 class GnomeMapSchema(base_schema.ObjTypeSchema):
     map_bounds = base_schema.LongLatBounds(save_reference=False)
-    spillable_area = base_schema.PolygonSetSchema(save_reference=False, test_equal=False) #.MetaDataList is not serialized at all
+    # .MetaDataList is not serialized at all
+    spillable_area = base_schema.PolygonSetSchema(save_reference=False,
+                                                  test_equal=False)
     # land_polys = base_schema.PolygonSet(missing=drop)
 
 
