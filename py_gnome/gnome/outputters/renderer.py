@@ -1,4 +1,3 @@
-
 """
 renderer_gd.py
 
@@ -10,12 +9,9 @@ This one used the new map_canvas, which uses the gd rendering lib.
 import os
 from os.path import basename
 import glob
-import copy
-import zipfile
 
 import numpy as np
 import py_gd
-import pytest
 
 from colander import SchemaNode, String, drop
 
@@ -25,39 +21,30 @@ from gnome.utilities.file_tools import haz_files
 from gnome.utilities.map_canvas import MapCanvas
 
 from gnome.utilities import projections
-from gnome.utilities.projections import FlatEarthProjection, ProjectionSchema
+from gnome.utilities.projections import ProjectionSchema
+
+from gnome.environment.gridded_objects_base import Grid_S
 
 from gnome.persist import base_schema
 from gnome.persist.extend_colander import FilenameSchema
 
 from . import Outputter, BaseOutputterSchema
 
-from gnome.environment.gridded_objects_base import Grid_S, Grid_U
 
 class RendererSchema(BaseOutputterSchema):
-
     # not sure if bounding box needs defintion separate from LongLatBounds
-    viewport = base_schema.LongLatBounds(
-        save=True, update=True
-    )
+    viewport = base_schema.LongLatBounds(save=True, update=True)
 
     # following are only used when creating objects, not updating -
     # so missing=drop
-    map_filename = FilenameSchema(
-        missing=drop, save=True, update=True, isdatafile=True, test_equal=False
-    )
-    projection = ProjectionSchema(
-        missing=drop, save=True, update=True
-    )
-    image_size = base_schema.ImageSize(
-        missing=drop, save=True, update=True
-    )
-    output_dir = SchemaNode(
-        String(), save=True, update=True, test_equal=False
-    )
-    draw_ontop = SchemaNode(
-        String(), save=True, update=True
-    )
+    map_filename = FilenameSchema(save=True, update=True,
+                                  isdatafile=True, test_equal=False,
+                                  missing=drop,)
+
+    projection = ProjectionSchema(save=True, update=True, missing=drop)
+    image_size = base_schema.ImageSize(save=True, update=False, missing=drop)
+    output_dir = SchemaNode(String(), save=True, update=True, test_equal=False)
+    draw_ontop = SchemaNode(String(), save=True, update=True)
 
 
 class Renderer(Outputter, MapCanvas):
@@ -334,7 +321,8 @@ class Renderer(Outputter, MapCanvas):
                       in the foreground palette
         :type color: str
 
-        :param size: Size of the font, one of {'tiny', 'small', 'medium', 'large', 'giant'}
+        :param size: Size of the font, one of {'tiny', 'small', 'medium',
+                                               'large', 'giant'}
         :type size: str
 
         :param position: x, y pixel coordinates of where to draw the timestamp.
@@ -544,11 +532,12 @@ class Renderer(Outputter, MapCanvas):
                 for i in range(w):
                     for j in range(h):
                         if raster_map.basebitmap[i, j] == 1:
-                            rect = projection.to_lonlat(np.array(((i, j),
-                                                                  (i + 1, j),
-                                                                  (i + 1, j + 1),
-                                                                  (i, j + 1)),
-                                                                 dtype=np.float64))
+                            rect = (projection
+                                    .to_lonlat(np.array(((i, j),
+                                                         (i + 1, j),
+                                                         (i + 1, j + 1),
+                                                         (i, j + 1)),
+                                                        dtype=np.float64)))
                             self.draw_polygon(rect, fill_color='raster_map',
                                               background=True)
 
@@ -697,7 +686,6 @@ class GridVisLayer(object):
         if not self.on:
             return
 
-
         lines = self.projection.to_pixel_multipoint(self.lines, asint=True)
 
         for l in lines:
@@ -763,7 +751,6 @@ class GridPropVisLayer(object):
             if self.prop.grid.face_coordinates is None:
                 self.prop.grid.build_face_coordinates()
             start = self.prop.grid.face_coordinates
-
 
         if hasattr(data_u, 'mask'):
             start[data_u.mask] = [0., 0.]

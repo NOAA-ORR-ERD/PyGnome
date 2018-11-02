@@ -10,7 +10,6 @@ NOTE: some of these only really test if the code crashes
   -- It's a good idea to look at the output.
 
 """
-
 import os
 from os.path import basename
 
@@ -364,8 +363,7 @@ def test_serialize_deserialize(output_dir):
                  output_dir=output_dir,
                  image_size=(1000, 800),
                  viewport=((-126.5, 47.5),
-                           (-126.0, 48.0)),
-                 )
+                           (-126.0, 48.0)))
 
     toserial = r.serialize()
 
