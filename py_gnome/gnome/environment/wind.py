@@ -129,20 +129,26 @@ class Wind(Timeseries, Environment):
     valid_vel_units = _valid_units('Velocity')
 
     def __init__(self,
-                 timeseries=None,
                  units=None,
-                 filename=None,
                  coord_sys='r-theta',
                  latitude=None,
                  longitude=None,
                  speed_uncertainty_scale=0.0,
                  extrapolation_is_allowed=False,
+                 source_id='undefined',
+                 source_type='undefined',
+                 updated_at=None,
                  **kwargs):
         """
         todo: update docstrings!
         """
-        self.updated_at = kwargs.pop('updated_at', None)
-        self.source_id = kwargs.pop('source_id', 'undefined')
+
+        if kwargs.get('timeseries',None) is not None:
+            if units is None:
+                raise TypeError('Units must be provided with timeseries')
+        super(Wind, self).__init__(coord_sys=coord_sys, **kwargs)
+        self.updated_at = updated_at
+        self.source_id = source_id
 
         self.longitude = longitude
         self.latitude = latitude
@@ -155,7 +161,7 @@ class Wind(Timeseries, Environment):
         #       just pass it into the base __init__() function.
         #       As it is, we are losing arguments that we then need to
         #       explicitly handle.
-        if filename is not None:
+        if self.filename is not None:
             self.source_type = kwargs.pop('source_type', 'file')
 
             super(Wind, self).__init__(filename=filename, coord_sys=coord_sys, **kwargs)
@@ -167,8 +173,8 @@ class Wind(Timeseries, Environment):
             if units is not None:
                 self.units = units
         else:
-            if kwargs.get('source_type') in wind_datasources._attr:
-                self.source_type = kwargs.pop('source_type')
+            if source_type in wind_datasources._attr:
+                self.source_type = source_type
             else:
                 self.source_type = 'undefined'
 
@@ -178,11 +184,8 @@ class Wind(Timeseries, Environment):
 
             self.units = 'mps'  # units for default object
 
-            if timeseries is not None:
-                if units is None:
-                    raise TypeError('Units must be provided with timeseries')
 
-                self.set_wind_data(timeseries, units, coord_sys)
+            self.set_wind_data(self.ossm.timeseries, units, coord_sys)
 
         self.extrapolation_is_allowed = extrapolation_is_allowed
 

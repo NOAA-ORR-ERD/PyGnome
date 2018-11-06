@@ -783,7 +783,7 @@ class SpillContainer(AddLogger, SpillContainerData):
 
         return u_sc
 
-    def prepare_for_model_run(self, array_types=dict()):
+    def prepare_for_model_run(self, array_types=dict(), time_step=300):
         """
         called when setting up the model prior to 1st time step
         This is considered 0th timestep by model
@@ -822,6 +822,8 @@ class SpillContainer(AddLogger, SpillContainerData):
         # let's keep those. A rewind will reset data_arrays.
         self._append_array_types(array_types)
         self._append_initializer_array_types(array_types)
+        for s in self.spills:
+            s.prepare_for_model_run(array_types, time_step)
 
         if self._substances_spills is None:
             self._set_substancespills()

@@ -14,6 +14,8 @@ from colander import (SchemaNode,
                       drop, OneOf)
 
 from gnome.utilities.time_utils import round_time, asdatetime
+import gnome.utilities.rand
+from gnome.utilities.cache import ElementCache
 from gnome.utilities.orderedcollection import OrderedCollection
 from gnome.spill_container import SpillContainerPair
 from gnome.basic_types import oil_status, fate
@@ -187,6 +189,7 @@ class Model(GnomeId):
                              decide which UI views it should present.
         '''
         # making sure basic stuff is in place before properties are set
+        super(Model, self).__init__(**kwargs)
         self.environment = OrderedCollection(dtype=Environment)
         self.movers = OrderedCollection(dtype=Mover)
         self.weatherers = OrderedCollection(dtype=Weatherer)
@@ -205,7 +208,7 @@ class Model(GnomeId):
             _spills = spills
         self.spills.add(_spills)
 
-        self._cache = gnome.utilities.cache.ElementCache()
+        self._cache = ElementCache()
         self._cache.enabled = cache_enabled
 
         # default to now, rounded to the nearest hour
@@ -470,7 +473,7 @@ class Model(GnomeId):
         '''
         # We do not count any remainder time.
         if self.duration is not None and self.time_step is not None:
-            initial_0th_step = 1
+            initial_0th_step = 0
             self._num_time_steps = (initial_0th_step +
                                     int(self.duration.total_seconds() //
                                         self.time_step))
@@ -669,7 +672,7 @@ class Model(GnomeId):
                 array_types.update(item.array_types)
 
         for sc in self.spills.items():
-            sc.prepare_for_model_run(array_types)
+            sc.prepare_for_model_run(array_types, self.time_step)
 
         '''Step 4: Attach default references'''
         ref_dict = {}
@@ -1364,10 +1367,13 @@ class Model(GnomeId):
                                 .format(self.__class__.__name__, msg))
                     isvalid = False
 
-                if spill.substance is not None and spill.water is not None:
-                    water_temp = spill.water.get('temperature')
-                    try:
-                        pour_point = spill.substance.pour_point()
+                if spill.substance.is_weatherable:
+                    # min_k1 = spill.substance.get('pour_point_min_k')
+                    pour_point = spill.substance.pour_point()
+
+                    if spill.water is not None:
+                        water_temp = spill.water.get('temperature')
+
                         if water_temp < pour_point[0]:
                             msg = ('The water temperature, {0} K, '
                                    'is less than the minimum pour point '
