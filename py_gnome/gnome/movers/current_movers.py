@@ -218,10 +218,10 @@ class CatsMover(CurrentMoversBase):
         # check if this is stored with cy_cats_mover?
         self.mover = CyCatsMover()
         self.mover.text_read(filename)
+        if 'name' not in kwargs:
+            kwargs['name'] = os.path.split(filename)[1]
         super(CatsMover, self).__init__(uncertain_duration=uncertain_duration,
                                         **kwargs)
-
-        self.name = os.path.split(filename)[1]
 
         self._tide = None
         if tide is not None:

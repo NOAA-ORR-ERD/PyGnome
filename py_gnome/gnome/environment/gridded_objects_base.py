@@ -144,7 +144,7 @@ class Grid_U(gridded.grids.Grid_U, GnomeId):
         open_cells = self.nodes[self.faces]
         closed_cells = np.concatenate((open_cells, open_cells[:, None, 0]),
                                       axis=1)
-        closed_cells = closed_cells.astype(np.float32, copy=False)
+        closed_cells = closed_cells.astype(np.float32)
         lengths = closed_cells.shape[1] * np.ones(closed_cells.shape[0],
                                                   dtype=np.int32)
 
