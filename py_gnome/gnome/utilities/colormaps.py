@@ -2468,43 +2468,43 @@ def ourTestFunc(frac):
     else:
         return (0, 255, 127)
 
-if __name__ == "__main__":
-    cm = ColorMap("hsv", val_range=(0, 255))
-    print cm.get_colors((0, 100, 255))
+# if __name__ == "__main__":
+#     cm = ColorMap("hsv", val_range=(0, 255))
+#     print cm.get_colors((0, 100, 255))
 
-    print '\nTesting an integer value range:'
-    cm.val_range = (1000, 2000)
-    print cm.get_colors((1000,)), NamedColorMaps['hsv'][0]
-    print cm.get_colors((1000,)) == NamedColorMaps['hsv'][0]
+#     print '\nTesting an integer value range:'
+#     cm.val_range = (1000, 2000)
+#     print cm.get_colors((1000,)), NamedColorMaps['hsv'][0]
+#     print cm.get_colors((1000,)) == NamedColorMaps['hsv'][0]
 
-    print cm.get_colors((2000,)), NamedColorMaps['hsv'][-1]
-    print cm.get_colors((2000,)) == NamedColorMaps['hsv'][-1]
+#     print cm.get_colors((2000,)), NamedColorMaps['hsv'][-1]
+#     print cm.get_colors((2000,)) == NamedColorMaps['hsv'][-1]
 
-    # testing our entire range.
-    cm.val_range = (1000, 2020)
-    for i, v in enumerate(range(1000, 2024, 4)):
-        assert np.all(NamedColorMaps['hsv'][i] == cm.get_colors((v,)))
+#     # testing our entire range.
+#     cm.val_range = (1000, 2020)
+#     for i, v in enumerate(range(1000, 2024, 4)):
+#         assert np.all(NamedColorMaps['hsv'][i] == cm.get_colors((v,)))
 
-    print '\nTesting a floating point value range:'
-    cm.val_range = (10.0, 20.0)
-    print cm.get_colors((10.0,)), NamedColorMaps['hsv'][0]
-    print cm.get_colors((10.0,)) == NamedColorMaps['hsv'][0]
+#     print '\nTesting a floating point value range:'
+#     cm.val_range = (10.0, 20.0)
+#     print cm.get_colors((10.0,)), NamedColorMaps['hsv'][0]
+#     print cm.get_colors((10.0,)) == NamedColorMaps['hsv'][0]
 
-    print cm.get_colors((20.0,)), NamedColorMaps['hsv'][-1]
-    print cm.get_colors((20.0,)) == NamedColorMaps['hsv'][-1]
+#     print cm.get_colors((20.0,)), NamedColorMaps['hsv'][-1]
+#     print cm.get_colors((20.0,)) == NamedColorMaps['hsv'][-1]
 
-    # testing our entire range.
-    for i, v in enumerate(np.linspace(10.0, 20.0, 256)):
-        assert np.all(NamedColorMaps['hsv'][i] == cm.get_colors((v,)))
+#     # testing our entire range.
+#     for i, v in enumerate(np.linspace(10.0, 20.0, 256)):
+#         assert np.all(NamedColorMaps['hsv'][i] == cm.get_colors((v,)))
 
-    print '\nTesting a reversed floating point value range:'
-    cm.val_range = (20.0, 10.0)
-    print cm.get_colors((20.0,)), NamedColorMaps['hsv'][0]
-    print cm.get_colors((20.0,)) == NamedColorMaps['hsv'][0]
+#     print '\nTesting a reversed floating point value range:'
+#     cm.val_range = (20.0, 10.0)
+#     print cm.get_colors((20.0,)), NamedColorMaps['hsv'][0]
+#     print cm.get_colors((20.0,)) == NamedColorMaps['hsv'][0]
 
-    print cm.get_colors((10.0,)), NamedColorMaps['hsv'][-1]
-    print cm.get_colors((10.0,)) == NamedColorMaps['hsv'][-1]
+#     print cm.get_colors((10.0,)), NamedColorMaps['hsv'][-1]
+#     print cm.get_colors((10.0,)) == NamedColorMaps['hsv'][-1]
 
-    # testing our entire range.
-    for i, v in enumerate(np.linspace(20.0, 10.0, 256)):
-        assert np.all(NamedColorMaps['hsv'][i] == cm.get_colors((v,)))
+#     # testing our entire range.
+#     for i, v in enumerate(np.linspace(20.0, 10.0, 256)):
+#         assert np.all(NamedColorMaps['hsv'][i] == cm.get_colors((v,)))

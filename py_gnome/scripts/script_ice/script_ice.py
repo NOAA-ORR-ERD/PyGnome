@@ -32,7 +32,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     renderer = gs.Renderer(mapfile, images_dir, image_size=(1024, 768))
     renderer.set_viewport(((-165, 69), (-161.5, 70)))
 
-    model.outputters += renderer
+    # model.outputters += renderer
 
     netcdf_file = os.path.join(base_dir, 'script_ice.nc')
     gs.remove_netcdf(netcdf_file)

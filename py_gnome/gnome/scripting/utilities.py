@@ -47,6 +47,7 @@ def remove_netcdf(netcdf_file):
         os.remove(file_ + '_uncertain' + ext)
         print 'removed {0}'.format(netcdf_file)
 
+
 def set_verbose(log_level='info'):
     """
     Set the logging system to dump to the console --
