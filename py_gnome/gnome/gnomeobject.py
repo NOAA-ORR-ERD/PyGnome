@@ -424,7 +424,7 @@ class GnomeId(AddLogger):
                 # maybe an iterable - checking for
                 # isinstance(current_value, collections.Iterable) fails for
                 # string so just do a try/except
-                if np.any(current_value != received_value):
+                if np.any(np.array(current_value) != np.array(received_value)):
                     return True
 
     def _check_type(self, other):

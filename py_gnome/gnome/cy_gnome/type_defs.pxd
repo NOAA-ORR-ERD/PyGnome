@@ -11,7 +11,7 @@ cdef extern from "Basics.h":
         short minute
         short second
         short dayOfWeek
-    
+
     ctypedef char **CHARH
     ctypedef CHARH Handle
 
@@ -33,14 +33,14 @@ cdef extern from "GEOMETRY.H":
         long loLat
         long hiLong
         long hiLat
-        
+
     ctypedef WorldPoint **WORLDPOINTH
 
 cdef extern from "TypeDefs.h":
 #     ctypedef struct TModelDialogVariables:
 #         Boolean bUncertain
 #         Boolean preventLandJumping
-        
+
     ctypedef struct TR_OPTIMZE:
         Boolean isOptimizedForStep
         Boolean isFirstStep
@@ -66,25 +66,25 @@ cdef extern from "TypeDefs.h":
         short statusCode
         WorldPoint lastWaterPt
         unsigned long beachTime
-        
+
     ctypedef struct VelocityRec:
         double u
         double v
-        
+
     ctypedef struct VelocityFRec:
         double u
         double v
-        
+
     ctypedef VelocityFRec **VelocityFH
     ctypedef VelocityRec **VelocityH
-    
+
     ctypedef struct LongPoint:
         long h
         long v
 
     ctypedef long **LONGH
     ctypedef LongPoint **LongPointHdl
-    
+
     ctypedef struct LoadedData:
         long timeIndex
         VelocityFH dataHdl
@@ -98,7 +98,7 @@ cdef extern from "TypeDefs.h":
         VelocityRec value
 
     ctypedef TimeValuePair **TimeValuePairH
-    ctypedef TimeValuePair *TimeValuePairP 
+    ctypedef TimeValuePair *TimeValuePairP
 
     ctypedef struct GridCellInfo:
         long cellNum
@@ -116,21 +116,22 @@ cdef extern from "TypeDefs.h":
         OILSTAT_OFFMAPS = 7
         OILSTAT_EVAPORATED = 10
         OILSTAT_TO_BE_REMOVED = 12
-    
+        OILSTAT_ON_TIDEFLAT = 32
+
     ctypedef enum NUM_METHOD:
         EULER = 0
         RK4 = 1
-    
+
     # In C++, this information is defined for each LE
     # However, it is the same for all LEs in a spill.
-    # In PyGnome, this is called spill_type and is a property 
-    # of the spill object. 
+    # In PyGnome, this is called spill_type and is a property
+    # of the spill object.
     ctypedef enum LEType:
         FORECAST_LE = 1
         UNCERTAINTY_LE = 2
-    
+
 #     ctypedef enum:
-#         DONT_DISPERSE 
+#         DONT_DISPERSE
 #         DISPERSE
 #         HAVE_DISPERSED
 #         DISPERSE_NAT
@@ -139,10 +140,10 @@ cdef extern from "TypeDefs.h":
 #         HAVE_EVAPORATED
 #         REMOVE
 #         HAVE_REMOVED
-#         
+#
     ctypedef enum:
         M19REALREAL = 1
-        M19HILITEDEFAULT    
+        M19HILITEDEFAULT
         M19MAGNITUDEDEGREES
         M19DEGREESMAGNITUDE
         M19MAGNITUDEDIRECTION

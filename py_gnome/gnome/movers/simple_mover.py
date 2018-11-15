@@ -69,6 +69,8 @@ class SimpleMover(Mover):
 
         :param velocity: a (u, v, w) triple -- in meters per second
 
+        :param uncertainty_scale=0.5: the scale of the uncertainty of the velocity
+
         Remaining kwargs are passed onto Mover's __init__ using super.
         See Mover documentation for remaining valid kwargs.
         """
@@ -80,7 +82,8 @@ class SimpleMover(Mover):
         super(SimpleMover, self).__init__(**kwargs)
 
     def __repr__(self):
-        return 'SimpleMover(<%s>)' % self.id
+        return "SimpleMover(velocity={!r}, uncertainty_scale={!r})".format(self.velocity,
+                                                                          self.uncertainty_scale)
 
     def get_move(self, spill,
                  time_step, model_time):

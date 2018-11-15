@@ -128,22 +128,21 @@ class ObjType(SchemaType):
 
     def serialize(self, node, appstruct, options=None):
         def callback(subnode, subappstruct):
-            try:
-                if (isinstance(subnode.schema_type,
-                               (Sequence, OrderedCollectionType)) and
-                        isinstance(subnode.children[0], ObjTypeSchema)):
-                    scalar = (hasattr(subnode.typ, 'accept_scalar') and
-                              subnode.typ.accept_scalar)
+            if (isinstance(subnode.typ,(Sequence, OrderedCollectionType)) and
+                isinstance(subnode.children[0], ObjTypeSchema)):
+                scalar = (hasattr(subnode.typ, 'accept_scalar') and
+                          subnode.typ.accept_scalar)
 
-                    return subnode.typ._impl(subnode, subappstruct, callback,
-                                             scalar)
-                else:
+                return subnode.typ._impl(subnode, subappstruct, callback,
+                                         scalar)
+            else:
+                try:
                     return subnode.serialize(subappstruct, options=options)
-            except TypeError as e:
-                if 'unexpected keyword argument' in str(e):
-                    return subnode.serialize(subappstruct)
-                else:
-                    raise e
+                except TypeError as e:
+                    if 'unexpected keyword argument' in str(e):
+                        return subnode.serialize(subappstruct)
+                    else:
+                        raise e
 
         value = self._ser(node, appstruct, options=options)
 
@@ -186,9 +185,8 @@ class ObjType(SchemaType):
             else:
                 # This needs to become more flexible! It needs to detect
                 # subclasses of Sequence!
-                if (isinstance(subnode.schema_type,
-                               (Sequence, OrderedCollectionType)) and
-                        isinstance(subnode.children[0], ObjTypeSchema)):
+                if (isinstance(subnode.typ,(Sequence, OrderedCollectionType)) and
+                    isinstance(subnode.children[0], ObjTypeSchema)):
                     # To deal with iterable schemas that do not have
                     # a deserialize with refs function
                     scalar = (hasattr(subnode.typ, 'accept_scalar') and
@@ -370,7 +368,8 @@ class ObjType(SchemaType):
             if not hasattr(subnode, '_save'):
                 # This happens when it goes into non-gnome object attributes
                 # (Strings, Numbers, etc)
-                if (subnode.schema_type in (Sequence, OrderedCollectionType)):
+                if (isinstance(subnode.typ,(Sequence, OrderedCollectionType)) and
+                    isinstance(subnode.children[0], ObjTypeSchema)):
                     # To be able to continue saving inside iterables,
                     # whose schema does not contain a save function,
                     # call the subnode typ _impl with this function as callback
@@ -420,9 +419,8 @@ class ObjType(SchemaType):
         def callback(subnode, subcstruct):
             if not hasattr(subnode, 'load'):
                 # This is the path for non-gnome attributes
-                if (subnode.schema_type in (Sequence,
-                                            OrderedCollectionType) and
-                        isinstance(subnode.children[0], ObjTypeSchema)):
+                if (isinstance(subnode.typ,(Sequence, OrderedCollectionType)) and
+                    isinstance(subnode.children[0], ObjTypeSchema)):
                     # To deal with iterable schemas that do not have a
                     # load function
                     scalar = (hasattr(subnode.typ, 'accept_scalar') and

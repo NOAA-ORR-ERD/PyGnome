@@ -235,18 +235,35 @@ class OrderedCollection(object):
         return self
 
     def __str__(self):
+        """
+        for __str__, don't show the keys
+        """
+        # order by position in list
+        itemlist = sorted(self._d_index.items(), key=lambda x: x[1])
+
+        # reference the value in list
+        itemlist = [self._elems[v] for (k, v) in itemlist]
+
+        formatter = '    %s,'
+        if len(itemlist) > 12:  # should we abbreviate the list at all?
+            strlist = [formatter % i for i in itemlist[:2]]
+            strlist += ('\t...', '\t...')
+            strlist += [formatter % i for i in itemlist[-2:]]
+        else:
+            strlist = [formatter % i for i in itemlist]
+
+        return ('{0}({{\n'
+                '{1}\n'
+                '}})'.format(self.__class__.__name__, '\n'.join(strlist)))
+
+    def __repr__(self):
         # order by position in list
         itemlist = sorted(self._d_index.items(), key=lambda x: x[1])
 
         # reference the value in list
         itemlist = [(k, self._elems[v]) for (k, v) in itemlist]
 
-        if len(itemlist) > 6:  # should we abbreviate the list?
-            strlist = ['\t%s: %s,' % i for i in itemlist[:2]]
-            strlist += ('\t...', '\t...')
-            strlist += ['\t%s: %s,' % i for i in itemlist[-2:]]
-        else:
-            strlist = ['\t%s: %s,' % i for i in itemlist]
+        strlist = ['    %s:\n        %r,' % i for i in itemlist]
 
         return ('{0}({{\n'
                 '{1}\n'

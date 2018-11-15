@@ -14,6 +14,7 @@ from gnome.utilities.time_utils import (date_to_sec,
                                         zero_time,
                                         UTC,
                                         FixedOffset,
+                                        asdatetime,
                                         )
 
 
@@ -200,3 +201,38 @@ def test_datetime64_dst():
     dt_list = dt_arr.astype(datetime).tolist()
 
     assert dt_list == dts
+
+
+def test_asdatetime_str():
+    dt = asdatetime("2010-06-01T12:30")
+    assert isinstance(dt, datetime)
+    assert dt == datetime(2010, 6, 1, 12, 30)
+
+
+def test_asdatetime_str2():
+    dt = asdatetime("2010-06-01 12:30")
+    assert isinstance(dt, datetime)
+    assert dt == datetime(2010, 6, 1, 12, 30)
+
+
+def test_asdatetime_str3():
+    dt = asdatetime("2010-06-01")
+    assert isinstance(dt, datetime)
+    assert dt == datetime(2010, 6, 1)
+
+
+def test_asdatetime_dt():
+    dt = datetime(2010, 6, 1, 12, 30)
+    dt2 = asdatetime(dt)
+    assert dt == dt2
+    # they should be the same object
+    assert dt is dt2
+
+
+def test_asdatetime_none():
+    """ None should get passed through as well """
+    dt = asdatetime(None)
+    assert dt is None
+
+
+
