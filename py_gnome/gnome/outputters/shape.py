@@ -113,7 +113,7 @@ class ShapeOutput(Outputter):
             w.field('Depth', 'N')
             w.field('Mass', 'N')
             w.field('Age', 'N')
-            w.field('Surf_Conc', 'F')
+            w.field('Surf_Conc', 'F',10,5)
             w.field('Status_Code', 'N')
 
             if sc.uncertain:
@@ -125,7 +125,6 @@ class ShapeOutput(Outputter):
         """dump a timestep's data into the shape file"""
 
         super(ShapeOutput, self).write_output(step_num, islast_step)
-
         if not self.on or not self._write_step:
             return None
 
@@ -148,10 +147,11 @@ class ShapeOutput(Outputter):
     def _record_shape_entries(self, sc):
         curr_time = sc.current_time_stamp
         writer = self._get_shape_writer(sc)
-
+        
+        
         for k, p in enumerate(sc['positions']):
             writer.point(p[0], p[1])
-
+        
             if sc.uncertain:
                 writer.record(curr_time.strftime('%Y-%m-%dT%H:%M:%S'),
                               sc['id'][k],
