@@ -18,7 +18,6 @@ Features:
    extra space is not in the land map
 
 """
-import copy
 import os
 import math
 # from osgeo import ogr
@@ -28,9 +27,9 @@ import py_gd
 
 import numpy as np
 
-from colander import SchemaNode, String, Float, drop, Integer
+from colander import SchemaNode, String, Float, Integer
 
-from geojson import FeatureCollection, Feature, MultiPolygon, MultiLineString
+from geojson import FeatureCollection, Feature, MultiPolygon
 
 import unit_conversion as uc
 
@@ -47,7 +46,7 @@ from gnome.utilities.file_tools import haz_files
 # from gnome.utilities.file_tools.osgeo_helpers import (ogr_open_file)
 
 from gnome.utilities.geometry.polygons import PolygonSet
-from gnome.utilities.geometry import points_in_poly, point_in_poly, is_clockwise
+from gnome.utilities.geometry import points_in_poly, point_in_poly
 
 from gnome.cy_gnome.cy_land_check import check_land_layers, move_particles
 
@@ -57,7 +56,9 @@ from gnome.persist import base_schema
 
 class GnomeMapSchema(base_schema.ObjTypeSchema):
     map_bounds = base_schema.LongLatBounds(save_reference=False)
-    spillable_area = base_schema.PolygonSetSchema(save_reference=False, test_equal=False) #.MetaDataList is not serialized at all
+    # .MetaDataList is not serialized at all
+    spillable_area = base_schema.PolygonSetSchema(save_reference=False,
+                                                  test_equal=False)
     # land_polys = base_schema.PolygonSet(missing=drop)
 
 
@@ -1209,24 +1210,38 @@ class MapFromBNA(RasterMap):
         FIXME: This really should export the map_bounds and spillable_area
         as well.
         """
-        polys = []
+        land_coords = []
+        lake_coords = []
+        crds=None
 
         for poly in self.land_polys:
-            p = poly.tolist()
-            p.append(p[0])  # first and last points must match in geojson
+            if poly.metadata[2] == '1':
+                crds = land_coords
+            elif poly.metadata[2] == '2':
+                crds = lake_coords
+            else:
+                continue
+            pts = poly.points.tolist()
+            pts.append(pts[0])
+            crds.append([pts])
             # FIXME: this is a good idea, but really slow...
             # the is_clockwise() code could be cythonized, maybe that would help?
             # # geojson polygons should be counter-clockwise
             # if is_clockwise(poly):
             #     p.reverse()
-            polys.append([p])
 
         features = []
-        if polys:
-            f = Feature(id="1",
+        if land_coords:
+            land = Feature(id="1",
                         properties={'name': 'Shoreline Polys'},
-                        geometry=MultiPolygon(coordinates=polys))
-            features.append(f)
+                        geometry=MultiPolygon(land_coords)
+                    )
+            lakes = Feature(id="2",
+                            properties={'name': 'Lakes'},
+                            geometry=MultiPolygon(lake_coords)
+                        )
+            features.append(land)
+            features.append(lakes)
         return FeatureCollection(features)
 
 

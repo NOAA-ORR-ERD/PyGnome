@@ -24,7 +24,8 @@ class FixedOffset(tzinfo):
         self.__name = name
 
     def __repr__(self):
-        return "FixedOffset(%i, '%s')" % (self.__offset.total_seconds() / 60, self.__name)
+        return ("FixedOffset({}, '{}')"
+                .format(self.__offset.total_seconds() / 60, self.__name))
 
     def utcoffset(self, dt):
         return self.__offset
@@ -85,7 +86,8 @@ def date_to_sec(date_times):
         # can I index it?
         date_times[0]  # yup -- it's a sequence of some sort
         scalar = False
-        if type(date_times) == np.ndarray and (date_times.dtype == np.dtype('<M8[s]')):
+        if (type(date_times) == np.ndarray and
+                date_times.dtype == np.dtype('<M8[s]')):
             date_times = date_times.astype(datetime).tolist()
     except TypeError:
         scalar = True
@@ -95,52 +97,22 @@ def date_to_sec(date_times):
         date_times = [date_times.astype(datetime)]
 
     if not isinstance(date_times[0], datetime):
-        raise TypeError("date_to_sec only works on datetime and datetime64 objects")
+        raise TypeError('date_to_sec only works on datetime and datetime64 '
+                        'objects')
 
     t_list = []
     for dt in date_times:
         timetuple = list(dt.timetuple())
         # last element is "is_dst" flag:
         # 0 means "not DST", 1 means "DST", -1 "unknown"
-        # but IIUC, it is only used for the DST transition - when there can be two times that
-        # cross the border setting this to 0 seems to force what we want.
+        # but IIUC, it is only used for the DST transition
+        # That is to say, when there can be two times that cross the border,
+        # then setting this to 0 seems to force what we want.
         timetuple[-1] = 0
         t_list.append(time.mktime(timetuple))
 
     return np.array(t_list, dtype=np.uint32) if not scalar else t_list[0]
 
-
-# def sec_to_date(seconds):
-# old code that uses sec_to_timestruct -- broken for spring DST transition
-#     """
-#     :param seconds: Either time in seconds or a numpy array containing
-#                     time in seconds (integer -- ideally uint32)
-
-#     Takes the time and converts it back to datetime object.
-
-#     It invokes time_utils.sec_to_timestruct(...), which it then
-#     converts back to datetime object. It keeps time to seconds accuracy,
-#     so up to the tm_sec field. tm_isdst = 0. Does not account for DST
-
-#     Note: Functionality broken up into time_utils.sec_to_timestruct(...)
-#           to test that it works in the same way as the lib_gnome C++
-#           cython wrapper
-#     """
-#     t_array = np.asarray(seconds, dtype=np.uint32).reshape(-1)
-#     d_array = np.zeros(np.shape(t_array), dtype='datetime64[s]')
-
-#     for li in xrange(len(t_array)):
-#         t = sec_to_timestruct(t_array[li])
-#         try:
-#             d_array[li] = datetime(*t[:6])
-#         except ValueError:
-#             print ('Cannot convert timestruct into datetime! '
-#                    'idx: {0}, '
-#                    'array elem: {1}, '
-#                    'timestruct: {2}'.format(li, t_array[li], t))
-#             raise
-
-#     return len(d_array) == 1 and d_array[0].astype(object) or d_array
 
 def sec_to_date(seconds):
     """
@@ -160,15 +132,22 @@ def sec_to_date(seconds):
     t_array = np.asarray(seconds, dtype=np.uint32).reshape(-1)
     d_list = [sec_to_datetime(sec) for sec in t_array]
 
-    return d_list[0] if len(d_list) == 1 else np.array(d_list, dtype='datetime64[s]')
+    if len(d_list) == 1:
+        return d_list[0]
+    else:
+        return np.array(d_list, dtype='datetime64[s]')
 
 
 def sec_to_datetime(seconds):
     dt = datetime.fromtimestamp(seconds)
-    # check for dst -- have to use time.localtime -- no idea how else to get it!
+    # check for dst
+    # - have to use time.localtime
+    # - no idea how else to get it!
     timetuple = time.localtime(seconds)
+
     if timetuple[-1] == 1:  # DST flag
         dt -= timedelta(hours=1)
+
     return dt
 
 
@@ -188,8 +167,8 @@ def sec_to_timestruct(seconds):
     Returns a time.struct_time
     """
     SECS_IN_HOUR = 3600
-
     timetuple = list(time.localtime(seconds))
+
     if timetuple[-1] == 1:
         # roll clock back by an hour for daylight savings correction
         # and then unset the daylight savings flag
@@ -216,7 +195,6 @@ def round_time(dt=None, roundTo=60):  # IGNORE:W0621
 
     found on : http://stackoverflow.com
     """
-
     if dt is None:
         dt = datetime.now()
 
@@ -254,16 +232,13 @@ def asdatetime(dt):
 
 
 if __name__ == '__main__':
-    dt = datetime.datetime(2012,
-                           12,
-                           31,
-                           23,
-                           44,
-                           59,
+    dt = datetime.datetime(2012, 12, 31,
+                           23, 44, 59,
                            1234)
 
     print 'a datetime:'
     print dt
+
     print 'rounded to 1 hour:'
     print round_time(dt, roundTo=60 * 60)
 

@@ -1,10 +1,9 @@
 '''
 Movers using diffusion as the forcing function
 '''
-import copy
 import numpy as np
 
-from colander import (SchemaNode, Float, drop)
+from colander import (SchemaNode, Float, Boolean, drop)
 
 from gnome.basic_types import oil_status
 from gnome.cy_gnome.cy_random_mover import CyRandomMover
@@ -15,25 +14,19 @@ from gnome.environment.gridded_objects_base import PyGrid
 from gnome.environment.gridded_objects_base import VariableSchema
 
 from gnome.movers import CyMover, ProcessSchema
-from gnome.persist.base_schema import ObjTypeSchema
 from gnome.persist.validators import convertible_to_seconds
 from gnome.persist.extend_colander import LocalDateTime
 from gnome.utilities.inf_datetime import InfTime, MinusInfTime
 
 
 class RandomMoverSchema(ProcessSchema):
-    diffusion_coef = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
-    uncertain_factor = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
-    data_start = SchemaNode(
-        LocalDateTime(), validator=convertible_to_seconds, read_only=True
-    )
-    data_stop = SchemaNode(
-        LocalDateTime(), validator=convertible_to_seconds, read_only=True
-    )
+    diffusion_coef = SchemaNode(Float(), save=True, update=True, missing=drop)
+    uncertain_factor = SchemaNode(Float(), save=True, update=True,
+                                  missing=drop)
+    data_start = SchemaNode(LocalDateTime(), validator=convertible_to_seconds,
+                            read_only=True)
+    data_stop = SchemaNode(LocalDateTime(), validator=convertible_to_seconds,
+                           read_only=True)
 
 
 class RandomMover(CyMover):
@@ -92,9 +85,9 @@ class RandomMover(CyMover):
 
     def __repr__(self):
         return ('RandomMover(diffusion_coef={0}, uncertain_factor={1}, '
-                'active_start={2}, active_stop={3}, on={4})'
+                'active_range={2}, on={3})'
                 .format(self.diffusion_coef, self.uncertain_factor,
-                        self.active_start, self.active_stop, self.on))
+                        self.active_range, self.on))
 
 
 class IceAwareRandomMoverSchema(RandomMoverSchema):
@@ -190,6 +183,7 @@ class RandomVerticalMoverSchema(ProcessSchema):
     horizontal_diffusion_coef_below_ml = SchemaNode(
         Float(), missing=drop, save=True, update=True
     )
+    surface_is_allowed = SchemaNode(Boolean())
 
 
 class RandomVerticalMover(CyMover):
@@ -221,6 +215,8 @@ class RandomVerticalMover(CyMover):
                                                    diffusion below the mixed
                                                    layer. Default is 126 cm2/s.
 
+        :param surface_is_allowed: Vertical diffusion will ignore surface
+            particles if this is True. Default is False.
         Remaining kwargs are passed onto Mover's __init__ using super.
         See Mover documentation for remaining valid kwargs.
         """
@@ -228,7 +224,8 @@ class RandomVerticalMover(CyMover):
                                            vertical_diffusion_coef_below_ml=kwargs.pop('vertical_diffusion_coef_below_ml', .11),
                                            horizontal_diffusion_coef_above_ml=kwargs.pop('horizontal_diffusion_coef_above_ml', 100000),
                                            horizontal_diffusion_coef_below_ml=kwargs.pop('horizontal_diffusion_coef_below_ml', 126),
-                                           mixed_layer_depth=kwargs.pop('mixed_layer_depth', 10.))
+                                           mixed_layer_depth=kwargs.pop('mixed_layer_depth', 10.),
+                                           surface_is_allowed=kwargs.pop('surface_is_allowed', False))
         super(RandomVerticalMover, self).__init__(**kwargs)
 
     @property
@@ -251,6 +248,10 @@ class RandomVerticalMover(CyMover):
     def mixed_layer_depth(self):
         return self.mover.mixed_layer_depth
 
+    @property
+    def surface_is_allowed(self):
+        return self.mover.surface_is_allowed
+
     @horizontal_diffusion_coef_above_ml.setter
     def horizontal_diffusion_coef_above_ml(self, value):
         self.mover.horizontal_diffusion_coef_above_ml = value
@@ -271,15 +272,21 @@ class RandomVerticalMover(CyMover):
     def mixed_layer_depth(self, value):
         self.mover.mixed_layer_depth = value
 
+    @surface_is_allowed.setter
+    def surface_is_allowed(self, value):
+        self.mover.surface_is_allowed = value
+
     def __repr__(self):
         return ('RandomVerticalMover(vertical_diffusion_coef_above_ml={0}, '
                 'vertical_diffusion_coef_below_ml={1}, mixed_layer_depth={2}, '
                 'horizontal_diffusion_coef_above_ml={3}, '
                 'horizontal_diffusion_coef_below_ml={4}, '
-                'active_start={5}, active_stop={6}, on={6})'
+                'surface_is_allowed={5}, '
+                'active_range={6}, on={7})'
                 .format(self.vertical_diffusion_coef_above_ml,
                         self.vertical_diffusion_coef_below_ml,
                         self.mixed_layer_depth,
+                        self.surface_is_allowed,
                         self.horizontal_diffusion_coef_above_ml,
                         self.horizontal_diffusion_coef_below_ml,
-                        self.active_start, self.active_stop, self.on))
+                        self.active_range, self.on))

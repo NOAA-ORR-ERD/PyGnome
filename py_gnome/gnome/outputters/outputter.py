@@ -54,6 +54,8 @@ class Outputter(GnomeId):
     '''
     _schema = BaseOutputterSchema
 
+    _surf_conc_computed = False
+
     def __init__(self,
                  cache=None,
                  on=True,
@@ -307,6 +309,7 @@ class Outputter(GnomeId):
         # doing this here so that it will only happen if there is an
         # output step.
         # this updates the most recent one in the cache
+
         if (self._write_step and
                 self.surface_conc and
                 not self._surf_conc_computed):

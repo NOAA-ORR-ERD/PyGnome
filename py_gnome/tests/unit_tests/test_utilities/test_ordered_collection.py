@@ -436,3 +436,24 @@ class TestCallbacks:
     def _reset_ObjToAdd_init_state(self):
         for obj in self.to_add:
             obj.reset()
+
+
+def test_str():
+    """
+    __str__ and __repr__ methods should return something handy
+
+    not really a test, but it runs the code
+    """
+    mymovers = OrderedCollection([SimpleMover(velocity=(1.0, -1.0, 0.0)),
+                                  SimpleMover(velocity=(2.0, -1.0, 0.0)),
+                                  SimpleMover(velocity=(3.0, -1.0, 0.0)),
+                                  SimpleMover(velocity=(4.0, -1.0, 0.0))
+                                  ])
+
+    print repr(mymovers)
+    print str(mymovers)
+
+    assert repr(mymovers).startswith("OrderedCollection(")
+    assert str(mymovers).startswith("OrderedCollection(")
+
+    # assert False

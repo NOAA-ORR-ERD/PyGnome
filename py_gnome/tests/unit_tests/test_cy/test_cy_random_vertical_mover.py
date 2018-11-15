@@ -81,9 +81,11 @@ class TestRandomVertical:
     def test_surface_particles(self):
         """
         ensure no move for surface particles
+        if the surface_is_allowed flag is on
         """
 
     	self.cm.ref['z'][:]=0
+        self.rm.surface_is_allowed = True
         new_delta = np.zeros((self.cm.num_le, ), dtype=world_point)
         self.move(new_delta)
     	self.cm.ref['z'][:]=.1

@@ -5,9 +5,11 @@ Include the Langmuir process here as well
 
 import numpy as np
 try:
-    from functools import lru_cache  # it's built-in on py3
+    # it's built-in on py3
+    from functools import lru_cache
 except ImportError:
-    from backports.functools_lru_cache import lru_cache  # needs backports for py2
+    # needs backports for py2
+    from backports.functools_lru_cache import lru_cache
 
 from colander import SchemaNode, Float, drop
 
@@ -23,12 +25,8 @@ from gnome.environment.gridded_objects_base import VectorVariableSchema
 
 
 class FayGravityViscousSchema(WeathererSchema):
-    thickness_limit = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
-    water = WaterSchema(
-        save=True, update=True
-    )
+    thickness_limit = SchemaNode(Float(), missing=drop, save=True, update=True)
+    water = WaterSchema(save=True, update=True)
 
 
 class FayGravityViscous(Weatherer):
@@ -308,39 +306,40 @@ class FayGravityViscous(Weatherer):
                                                        blob_init_volume[m_age][0],
                                                        age[m_age][0])
 
-#                 blob_area2 = self._update_blob_area(water_viscosity,
-#                                                    relative_buoyancy,
-#                                                    blob_init_volume[m_age][0],
-#                                                    age[m_age][0]/2)
+                    # blob_area2 = self._update_blob_area(water_viscosity,
+                    #                                     relative_buoyancy,
+                    #                                     blob_init_volume[m_age][0],
+                    #                                     age[m_age][0]/2)
 
                 else:
                     blob_area4 = self._update_blob_area(water_viscosity,
-                                                       relative_buoyancy,
-                                                       blob_init_volume[m_age][0],
-                                                       age[m_age][0])
+                                                        relative_buoyancy,
+                                                        blob_init_volume[m_age][0],
+                                                        age[m_age][0])
 
                     C = (np.pi *
-                        self.spreading_const[1] ** 2 *
-                        (blob_init_volume[m_age][0] ** 2 *
-                        constants.gravity *
-                        relative_buoyancy /
-                        np.sqrt(water_viscosity)) ** (1. / 3.))
+                         self.spreading_const[1] ** 2 *
+                         (blob_init_volume[m_age][0] ** 2 *
+                          constants.gravity *
+                          relative_buoyancy /
+                          np.sqrt(water_viscosity)) ** (1. / 3.))
 
-                    #blob_area_fgv = .5 * C**2 / area[m_age].sum()	# make sure area > 0
-                    #blob_area_fgv = area[m_age][0] + .5 * (C**2 / area[m_age][0]) * time_step	# make sure area > 0
-                    #blob_area_fgv = area[m_age][0] + .5 * (C**2 / area[m_age][0]) * time_step	# make sure area > 0
+                    # blob_area_fgv = .5 * C**2 / area[m_age].sum()	# make sure area > 0
+                    # blob_area_fgv = area[m_age][0] + .5 * (C**2 / area[m_age][0]) * time_step	# make sure area > 0
+                    # blob_area_fgv = area[m_age][0] + .5 * (C**2 / area[m_age][0]) * time_step	# make sure area > 0
                     blob_area_fgv = area[m_age].sum() + .5 * (C**2 / area[m_age].sum()) * time_step	# make sure area > 0
-                    #blob_area_fgv = blob_area2 + .5 * (C**2 / blob_area2) * time_step	# make sure area > 0
+                    # blob_area_fgv = blob_area2 + .5 * (C**2 / blob_area2) * time_step	# make sure area > 0
 
                     K = 4 * np.pi * 2 * .033
-                    #blob_area_diffusion = (7 / 6) * K * (area[m_age].sum() / K) ** (1 / 7)
-                    blob_area_diffusion = area[m_age].sum() + ((7 / 6) * K * (area[m_age].sum() / K) ** (1 / 7)) * time_step
-                    #blob_area_diffusion = area[m_age][0] + ((7 / 6) * K * (area[m_age][0] / K) ** (1 / 7)) * time_step
-                    #blob_area_diffusion = blob_area2 + ((7 / 6) * K * (blob_area2 / K) ** (1 / 7)) * time_step
 
-                    #blob_area = blob_area_fgv
+                    # blob_area_diffusion = (7 / 6) * K * (area[m_age].sum() / K) ** (1 / 7)
+                    blob_area_diffusion = area[m_age].sum() + ((7 / 6) * K * (area[m_age].sum() / K) ** (1 / 7)) * time_step
+                    # blob_area_diffusion = area[m_age][0] + ((7 / 6) * K * (area[m_age][0] / K) ** (1 / 7)) * time_step
+                    # blob_area_diffusion = blob_area2 + ((7 / 6) * K * (blob_area2 / K) ** (1 / 7)) * time_step
+
+                    # blob_area = blob_area_fgv
                     blob_area = blob_area_fgv + blob_area_diffusion
-                    #blob_area = blob_area_diffusion
+                    # blob_area = blob_area_diffusion
 
                 if blob_area >= max_area:
                     area[m_age] = max_area / m_age.sum()

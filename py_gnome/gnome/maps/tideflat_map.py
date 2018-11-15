@@ -26,9 +26,6 @@ from gnome.utilities.geometry import (points_in_poly,
                                       )
 
 
-## So this is an experiment -- can I uae a class constructor make a custom subclass of a Map??
-
-
 class TideflatMap(GnomeId):
     """
     Checks for tidal flats, and sets and unsets the on_tidalflat
@@ -112,6 +109,8 @@ class TideflatMap(GnomeId):
 class TideflatBase(GnomeId):
     """
     Base class for a Tideflat object to be used with TideflatBase
+
+    Subclasses should overide the is_dry() method.
     """
     pass
 
@@ -126,7 +125,9 @@ class TideflatBase(GnomeId):
         This should be over-ridden -- this version always returns
         FAlse for all points
         """
-        points = np.array(points).reshape((-1, 3))
+        points = np.asarray(points, dtype=np.float64)
+        if points.shape[1] != 3:
+            raise ValueError("points should be a Nx3 array or equivalent")
         return np.zeros(points.shape[0], dtype=np.bool)
 
     def is_wet(self, points, time):
@@ -178,5 +179,3 @@ class SimpleTideflat(TideflatBase):
             return np.zeros(points.shape[0], dtype=np.bool)
 
         return points_in_poly(self.bounds, points)
-
-

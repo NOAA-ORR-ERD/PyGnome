@@ -15,6 +15,8 @@ from pytest import raises
 import numpy as np
 
 from gnome.basic_types import datetime_value_2d
+from gnome.utilities.inf_datetime import InfDateTime
+
 from gnome.map import MapFromBNA
 from gnome.environment import Wind, Tide, Water
 from gnome.model import Model
@@ -137,9 +139,11 @@ def make_model(uncertain=False, mode='gnome'):
                          Skimmer(spill_amount * .5,
                                  spill_units,
                                  efficiency=.3,
-                                 active_start=skim_start,
-                                 active_stop=skim_start + timedelta(hours=2)),
-                         Burn(0.2 * spill_volume, 1.0, skim_start,
+                                 active_range=(skim_start,
+                                               skim_start + timedelta(hours=2)
+                                               )),
+                         Burn(0.2 * spill_volume, 1.0,
+                              (skim_start, InfDateTime('inf')),
                               efficiency=0.9)]
 
     model.outputters += \

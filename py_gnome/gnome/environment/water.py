@@ -175,6 +175,9 @@ class Water(Environment):
         '''
         val = getattr(self, attr)
 
+        if val is None:
+            return val
+
         if unit is None:
             # Note: salinity only have one units since we don't
             # have any conversions for them in unit_conversion yet - revisit

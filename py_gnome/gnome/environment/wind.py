@@ -89,7 +89,10 @@ class WindSchema(base_schema.ObjTypeSchema):
     '''
     name = SchemaNode(String(), test_equal=False)
     description = SchemaNode(String())
-    filename = FilenameSchema(isdatafile=True, update=False, test_equal=False)#Thanks to CyTimeseries
+
+    # Thanks to CyTimeseries
+    filename = FilenameSchema(isdatafile=True, update=False, test_equal=False)
+
     updated_at = SchemaNode(LocalDateTime())
     latitude = SchemaNode(Float())
     longitude = SchemaNode(Float())
@@ -101,7 +104,10 @@ class WindSchema(base_schema.ObjTypeSchema):
     )
     units = SchemaNode(String(), default='m/s')
     speed_uncertainty_scale = SchemaNode(Float())
-    timeseries = WindTimeSeriesSchema(test_equal=False) #Because comparing datetimevalue2d arrays does not play nice
+
+    # Because comparing datetimevalue2d arrays does not play nice
+    timeseries = WindTimeSeriesSchema(test_equal=False)
+
     extrapolation_is_allowed = SchemaNode(Boolean())
     data_start = SchemaNode(LocalDateTime(), read_only=True,
                             validator=convertible_to_seconds)

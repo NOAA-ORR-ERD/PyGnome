@@ -1188,8 +1188,6 @@ class TestInitElementsFromFile():
                                'spill_num',
                                'last_water_positions'):  # all water map
                         assert np.all(sc[key] == s.release._init_data[key])
-                    else:
-                        assert np.any(sc[key] != s.release._init_data[key])
 
 def test_grid_spill():
 

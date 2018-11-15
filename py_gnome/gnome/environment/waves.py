@@ -104,12 +104,12 @@ class Waves(Environment):
 
         Units:
           wave_height: meters (RMS height)
-          peak_perid: seconds
+          peak_period: seconds
           whitecap_fraction: unit-less fraction
           dissipation_energy: not sure!! # fixme!
         """
         # make sure are we are up to date with water object
-        wave_height = self.water.wave_height
+        wave_height = self.water.get('wave_height')
 
         if wave_height is None:
             # only need velocity
@@ -117,8 +117,11 @@ class Waves(Environment):
             H = self.compute_H(U)
         else:
             # user specified a wave height
-            H = wave_height
-            U = self.pseudo_wind(H)
+            U = self.get_wind_speed(points, time)
+            H = np.full_like(U, wave_height)
+            #H = wave_height
+            U = self.pseudo_wind(H)	#significant wave height used for pseudo wind
+            H = .707 * H	#Hrms
 
         Wf = self.whitecap_fraction(U)
         T = self.mean_wave_period(U)
@@ -156,7 +159,7 @@ class Waves(Environment):
         fixme: I'm not sure this is right -- if we stick with the wave energy
                given by the user for dispersion, why not for emulsification?
         """
-        wave_height = self.water.wave_height
+        wave_height = self.water.get('wave_height')
         U = self.get_wind_speed(points, time)  # only need velocity
 
         if wave_height is None:
@@ -169,7 +172,7 @@ class Waves(Environment):
 
     def compute_H(self, U):
         U = np.array(U).reshape(-1)
-        return Adios2.wave_height(U, self.water.fetch)
+        return Adios2.wave_height(U, self.water.get('fetch'))
 
     def pseudo_wind(self, H):
         H = np.array(H).reshape(-1)
@@ -182,8 +185,8 @@ class Waves(Environment):
     def mean_wave_period(self, U):
         U = np.array(U).reshape(-1)
         return Adios2.mean_wave_period(U,
-                                       self.water.wave_height,
-                                       self.water.fetch)
+                                       self.water.get('wave_height'),
+                                       self.water.get('fetch'))
 
     def peak_wave_period(self, points, time):
         '''

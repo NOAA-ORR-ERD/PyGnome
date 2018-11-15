@@ -6,30 +6,33 @@ import pytest
 import numpy as np
 
 from gnome.basic_types import datetime_value_1d
+from gnome.utilities.inf_datetime import InfDateTime
+
 from gnome.weatherers import Beaching
 
 from .test_cleanup import ObjForTests
 
 from pytest import mark
 
-active_start = datetime(2015, 1, 1, 12, 0)
+active_range = (datetime(2015, 1, 1, 12, 0),
+                InfDateTime('inf'))
 
-timeseries = [(active_start + timedelta(hours=1), 5),
-              (active_start + timedelta(hours=1.25), 4),
-              (active_start + timedelta(hours=4), 2),
-              (active_start + timedelta(hours=7), 8)]
+timeseries = [(active_range[0] + timedelta(hours=1), 5),
+              (active_range[0] + timedelta(hours=1.25), 4),
+              (active_range[0] + timedelta(hours=4), 2),
+              (active_range[0] + timedelta(hours=7), 8)]
 
 
 @mark.parametrize(("timeseries", "units"),
                   [(timeseries, 'kg'),
                    (np.asarray(timeseries, dtype=datetime_value_1d), 'l')])
 def test_init(timeseries, units):
-    b = Beaching(active_start, units, timeseries, name='test_beaching')
+    b = Beaching(active_range, units, timeseries, name='test_beaching')
 
     assert b.name == 'test_beaching'
     assert b.units == units
-    assert b.active_start == active_start
-    assert b.timeseries[-1][0] == b.active_stop
+    assert b.active_range[0] == active_range[0]
+    assert b.timeseries[-1][0] == b.active_range[1]
 
     ts = np.asarray(timeseries, dtype=datetime_value_1d)
 
@@ -39,24 +42,27 @@ def test_init(timeseries, units):
 
 class TestBeaching(ObjForTests):
     (sc, weatherers) = ObjForTests.mk_test_objs()
-    sc.spills[0].release_time = active_start
-    b = Beaching(active_start, 'l', timeseries, name='test_beaching',
+    sc.spills[0].release_time = active_range[0]
+
+    b = Beaching(active_range, 'l', timeseries, name='test_beaching',
                  water=weatherers[0].water)
+
     substance = sc.spills[0].substance
 
     @mark.parametrize(("model_time", "active"),
-                      [(active_start, True),
+                      [(active_range[0], True),
                        (timeseries[-1][0], False)])
     def test_prepare_for_model_step(self, model_time, active):
         self.reset_and_release()
         self.b.prepare_for_model_step(self.sc, 1800, model_time)
+
         assert self.b.active is active
 
     @mark.parametrize(("model_time", "dt", "rate_idx", "rate_dt"),
-                      [(active_start, 1800, [0], [1800]),
-                       (active_start + timedelta(hours=.75), 2700,
+                      [(active_range[0], 1800, [0], [1800]),
+                       (active_range[0] + timedelta(hours=.75), 2700,
                         [0, 1, 2], [900, 900, 900]),
-                       (active_start + timedelta(hours=3.5), 2700,
+                       (active_range[0] + timedelta(hours=3.5), 2700,
                         [2, 3], [1800, 900])])
     def test_remove_mass(self, model_time, dt, rate_idx, rate_dt):
         '''
@@ -88,7 +94,7 @@ class TestBeaching(ObjForTests):
 
         assert self.sc.mass_balance['observed_beached'] == 0.0
 
-        while (model_time < self.b.active_stop + timedelta(seconds=time_step)):
+        while (model_time < self.b.active_range[1] + timedelta(seconds=time_step)):
             amt = self.sc.mass_balance['observed_beached']
 
             self.release_elements(time_step, model_time)

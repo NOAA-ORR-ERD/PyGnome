@@ -258,7 +258,7 @@ def test_call_height():
 
     print H, T, Wf, De
 
-    assert H == 1.0
+    assert H == .707	# returns root mean square wave height
     # fixme: add some value checks -- what to use???
 
 

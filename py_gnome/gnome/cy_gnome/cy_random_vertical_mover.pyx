@@ -31,13 +31,15 @@ cdef class CyRandomVerticalMover(cy_mover.CyMover):
                  vertical_diffusion_coef_below_ml=.11,
                  horizontal_diffusion_coef_above_ml=100000,
                  horizontal_diffusion_coef_below_ml=126,
-                 mixed_layer_depth=10.):
+                 mixed_layer_depth=10.,
+                 surface_is_allowed=False):
         """
         Default vertical_diffusion_coef_above_ml = 5 [cm**2/sec]
         Default vertical_diffusion_coef_below_ml = .11 [cm**2/sec]
         Default horizontal_diffusion_coef_above_ml = 100000 [cm**2/sec]
         Default horizontal_diffusion_coef_below_ml = 126 [cm**2/sec]
         Default mixed_layer_depth = 10. [meters]
+        Default surface_is_allowed = False
         """
         if vertical_diffusion_coef_above_ml < 0:
             raise ValueError('CyRandomVerticalMover must have a value '
@@ -69,6 +71,7 @@ cdef class CyRandomVerticalMover(cy_mover.CyMover):
         self.rand.fHorizontalDiffusionCoefficient = horizontal_diffusion_coef_above_ml
         self.rand.fHorizontalDiffusionCoefficientBelowML = horizontal_diffusion_coef_below_ml
         self.rand.fMixedLayerDepth = mixed_layer_depth
+        self.rand.bSurfaceIsAllowed = surface_is_allowed
 
     property vertical_diffusion_coef_above_ml:
         def __get__(self):
@@ -127,6 +130,13 @@ cdef class CyRandomVerticalMover(cy_mover.CyMover):
                                  'for horizontal_diffusion_coef_below_ml')
             self.rand.fHorizontalDiffusionCoefficientBelowML = value
 
+    property surface_is_allowed:
+        def __get__(self):
+            return self.rand.bSurfaceIsAllowed
+
+        def __set__(self, value):
+            self.rand.bSurfaceIsAllowed = value
+
     def __repr__(self):
         """
         unambiguous repr of object, reuse for str() method
@@ -136,12 +146,14 @@ cdef class CyRandomVerticalMover(cy_mover.CyMover):
                 'vertical_diffusion_coef_below_ml={1}, '
                 'horizontal_diffusion_coef_above_ml={2}, '
                 'horizontal_diffusion_coef_below_ml={3}, '
-                'mixed_layer_depth={4})'
+                'mixed_layer_depth={4}, '
+                'surface_is_allowed={5})'
                 .format(self.vertical_diffusion_coef_above_ml,
                         self.vertical_diffusion_coef_below_ml,
                         self.horizontal_diffusion_coef_above_ml,
                         self.horizontal_diffusion_coef_below_ml,
-                        self.mixed_layer_depth))
+                        self.mixed_layer_depth,
+                        self.surface_is_allowed))
 
     def get_move(self,
                  model_time,
