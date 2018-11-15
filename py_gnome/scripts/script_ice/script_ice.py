@@ -1,36 +1,15 @@
+#!/usr/bin/env python
+
 """
 Example of using gnome in "ice infested waters"
 
 With the ice and current data coming from a ROMS coupled ocean-ice model.
-
 """
 
+# The gnome.scripting module provides most of what you need for basic scripts
+import gnome.scripting as gs
+
 import os
-from datetime import datetime, timedelta
-
-import numpy as np
-
-from gnome import scripting
-from gnome import utilities
-from gnome.basic_types import datetime_value_2d, numerical_methods
-
-from gnome.utilities.remote_data import get_datafile
-
-from gnome.model import Model
-
-from gnome.map import MapFromBNA
-from gnome.environment import Wind
-from gnome.spill import point_line_release_spill
-from gnome.movers import RandomMover, constant_wind_mover
-
-from gnome.environment import IceAwareCurrent, IceAwareWind
-from gnome.movers.py_wind_movers import PyWindMover
-from gnome.movers.py_current_movers import PyCurrentMover
-
-from gnome.outputters import Renderer, NetCDFOutput
-#from gnome.environment.vector_field import ice_field
-import gnome.utilities.profiledeco as pd
-
 # define base directory
 base_dir = os.path.dirname(__file__)
 
@@ -38,103 +17,80 @@ base_dir = os.path.dirname(__file__)
 def make_model(images_dir=os.path.join(base_dir, 'images')):
     print 'initializing the model'
 
-    start_time = datetime(1985, 1, 1, 13, 31)
+    start_time = "1985-01-01T13:31"
 
-    # 1 day of data in file
-    # 1/2 hr in seconds
-    model = Model(start_time=start_time,
-                  duration=timedelta(days=4),
-                  time_step=3600)
+    model = gs.Model(start_time=start_time,
+                     duration=gs.days(2),
+                     time_step=gs.hours(1))
 
-    mapfile = get_datafile(os.path.join(base_dir, 'ak_arctic.bna'))
+    mapfile = gs.get_datafile(os.path.join(base_dir, 'ak_arctic.bna'))
 
     print 'adding the map'
-    model.map = MapFromBNA(mapfile, refloat_halflife=0.0)  # seconds
+    model.map = gs.MapFromBNA(mapfile, refloat_halflife=0.0)  # seconds
 
     print 'adding outputters'
+    renderer = gs.Renderer(mapfile, images_dir, image_size=(1024, 768))
+    renderer.set_viewport(((-165, 69), (-161.5, 70)))
 
-    # draw_ontop can be 'uncertain' or 'forecast'
-    # 'forecast' LEs are in black, and 'uncertain' are in red
-    # default is 'forecast' LEs draw on top
-#     renderer = Renderer(mapfile, images_dir, image_size=(1024, 768))
-#     model.outputters += renderer
+    model.outputters += renderer
+
     netcdf_file = os.path.join(base_dir, 'script_ice.nc')
-    scripting.remove_netcdf(netcdf_file)
-
-    model.outputters += NetCDFOutput(netcdf_file, which_data='all')
+    gs.remove_netcdf(netcdf_file)
+    model.outputters += gs.NetCDFOutput(netcdf_file,
+                                        which_data='all')
 
     print 'adding a spill'
-    # for now subsurface spill stays on initial layer
-    # - will need diffusion and rise velocity
-    # - wind doesn't act
-    # - start_position = (-76.126872, 37.680952, 5.0),
-    spill1 = point_line_release_spill(num_elements=10000,
-                                      start_position=(-163.75,
-                                                      69.75,
-                                                      0.0),
-                                      release_time=start_time)
-#
-#     spill2 = point_line_release_spill(num_elements=5000,
-#                                       start_position=(-163.75,
-#                                                       69.5,
-#                                                       0.0),
-#                                       release_time=start_time)
+    # For a subsurfce spill, you would need to add vertical movers:
+    # - gs.RiseVelocityMover
+    # - gs.RandomVerticalMover
+    spill1 = gs.point_line_release_spill(num_elements=1000,
+                                         start_position=(-163.75,
+                                                         69.75,
+                                                         0.0),
+                                         release_time=start_time)
 
     model.spills += spill1
-#     model.spills += spill2
 
     print 'adding a RandomMover:'
-    model.movers += RandomMover(diffusion_coef=1000)
+    model.movers += gs.RandomMover(diffusion_coef=10000)
 
-    print 'adding a wind mover:'
-
-#     model.movers += constant_wind_mover(0.5, 0, units='m/s')
-
-    print 'adding a current mover:'
-
-    fn = [get_datafile('arctic_avg2_0001_gnome.nc'),
-          get_datafile('arctic_avg2_0002_gnome.nc'),
+    print 'adding the ice movers'
+    fn = [gs.get_datafile('arctic_avg2_0001_gnome.nc'),
+          gs.get_datafile('arctic_avg2_0002_gnome.nc'),
           ]
 
     gt = {'node_lon': 'lon',
           'node_lat': 'lat'}
 
-    ice_aware_curr = IceAwareCurrent.from_netCDF(filename=fn,
-                                                 grid_topology=gt)
-    ice_aware_wind = IceAwareWind.from_netCDF(filename=fn,
-                                              grid=ice_aware_curr.grid,)
+    ice_aware_curr = gs.IceAwareCurrent.from_netCDF(filename=fn,
+                                                    grid_topology=gt)
+    ice_aware_wind = gs.IceAwareWind.from_netCDF(filename=fn,
+                                                 grid=ice_aware_curr.grid,)
     method = 'RK2'
 
-#     i_c_mover = PyCurrentMover(current=ice_aware_curr)
-#     i_c_mover = PyCurrentMover(current=ice_aware_curr, default_num_method='Euler')
-    i_c_mover = PyCurrentMover(current=ice_aware_curr, default_num_method=method)
-    i_w_mover = PyWindMover(wind=ice_aware_wind, default_num_method=method)
+    i_c_mover = gs.PyCurrentMover(current=ice_aware_curr,
+                                  default_num_method=method)
+    i_w_mover = gs.PyWindMover(wind=ice_aware_wind,
+                               default_num_method=method)
 
+    # shifting to -360 to 0 longitude
     ice_aware_curr.grid.node_lon = ice_aware_curr.grid.node_lon[:] - 360
-#     ice_aware_curr.grid.build_celltree()
     model.movers += i_c_mover
     model.movers += i_w_mover
+
+    # to visualize the grid and currents
 #     renderer.add_grid(ice_aware_curr.grid)
 #     renderer.add_vec_prop(ice_aware_curr)
-
-
-#     renderer.set_viewport(((-190.9, 60), (-72, 89)))
-    # curr_file = get_datafile(os.path.join(base_dir, 'COOPSu_CREOFS24.nc'))
-    # c_mover = GridCurrentMover(curr_file)
-    # model.movers += c_mover
 
     return model
 
 
 if __name__ == "__main__":
-    scripting.make_images_dir()
+    # gs.set_verbose()
+    gs.make_images_dir()
     model = make_model()
     print "doing full run"
-    startTime = datetime.now()
-    # pd.profiler.enable()
+    startTime = gs.now()
     for step in model:
-        print "step: %.4i -- memuse: %fMB" % (step['step_num'],
-                                              utilities.get_mem_use())
-    print "it took %s to run" % (datetime.now() - startTime)
-    # pd.profiler.disable()
-    # pd.print_stats(0.1)
+        print "step: %.4i" % (step['step_num'])
+    print "it took %s to run" % (gs.now() - startTime)
