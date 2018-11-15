@@ -229,21 +229,3 @@ def asdatetime(dt):
         return parsetime(dt, ignoretz=True)
     else:
         return dt
-
-
-if __name__ == '__main__':
-    dt = datetime.datetime(2012, 12, 31,
-                           23, 44, 59,
-                           1234)
-
-    print 'a datetime:'
-    print dt
-
-    print 'rounded to 1 hour:'
-    print round_time(dt, roundTo=60 * 60)
-
-    print 'rounded to 30 minutes:'
-    print round_time(dt, roundTo=30 * 60)
-
-    print 'rounded to one day:'
-    print round_time(dt, roundTo=3600 * 60 * 60)

@@ -521,10 +521,8 @@ class GridCurrent(VelocityGrid, Environment):
             y = y.compressed().reshape(yt,-1)
             #r = np.ma.stack((x, y)) change to this when numpy 1.15 becomes norm.
             r = np.concatenate((x[None,:], y[None,:]))
-            retval = np.ascontiguousarray(r.astype(np.float32)) # r.compressed().astype(np.float32)
-            print retval.shape
-            return retval
-            return np.ascontiguousarray(r.filled(0), np.float32)
+            return np.ascontiguousarray(r.astype(np.float32)) # r.compressed().astype(np.float32)
+            # return np.ascontiguousarray(r.filled(0), np.float32)
 
         else:
             return super(GridCurrent, self).get_data_vectors()

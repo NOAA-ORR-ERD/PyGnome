@@ -8,44 +8,40 @@ with only functions available in this module
 Helper functions are imported from various py_gnome modules
 (spill, environment, movers etc).
 
-contrary to the usual practive, this module is designed to by used like so:
+we recommend that this module be used like so::
 
-from gnome.scripting import *
+  import gnome.scripting import gs
 
-Then you will have easy access to most of the stuff you need to write simple py_gnome scripts.py_gnome
+Then you will have easy access to most of the stuff you need to write
+py_gnome scripts with, e.g.::
 
+    model = gs.Model(start_time="2018-04-12T12:30",
+                     duration=gs.days(2),
+                     time_step=gs.minutes(15))
+
+    model.map = gs.MapFromBNA('coast.bna', refloat_halflife=0.0)  # seconds
+
+    model.spills += gs.point_line_release_spill(num_elements=1000,
+                                                start_position=(-163.75,
+                                                                69.75,
+                                                                0.0),
+                                                release_time="2018-04-12T12:30")
 """
-
-
-__all__ = ['constant_wind',
-           'constant_wind_mover',
-           'point_line_release_spill',
-           'surface_point_line_spill',
-           'subsurface_plume_spill',
-           'grid_spill',
-           "make_images_dir",
-           "remove_netcdf",
-           'seconds',
-           'hours',
-           'minutes',
-           'days',
-           'weeks',
-           'Model',
-           'set_verbose',
-           'Renderer',
-           'NetCDFOutput',
-           'KMZOutput',
-           'MapFromBNA',
-           'GridCurrent',
-           'RandomMover',
-           'WindMover',
-           ]
 
 import gnome
 from gnome.model import Model
 
-from .utilities import *
-from .time_utils import *
+from .utilities import (make_images_dir,
+                        remove_netcdf,
+                        set_verbose,
+                        )
+
+from .time_utils import (seconds,
+                         minutes,
+                         hours,
+                         days,
+                         weeks,
+                         now)
 
 from gnome.spill.spill import (point_line_release_spill,
                                surface_point_line_spill,
@@ -58,25 +54,25 @@ from gnome.movers.wind_movers import (constant_wind_mover,
                                       wind_mover_from_file,
                                       )
 
+from gnome.environment import (IceAwareCurrent,
+                               IceAwareWind,
+                               )
+
 from gnome.outputters import Renderer, NetCDFOutput, KMZOutput
+
 from gnome.map import MapFromBNA
-from gnome.environment import GridCurrent
-from gnome.movers import RandomMover, WindMover
 
+from gnome.environment import (GridCurrent,
+                               IceAwareCurrent,
+                               IceAwareWind,
+                               )
 
-def set_verbose(log_level='info'):
-    """
-    Set the logging system to dump to the console --
-    you can see much more what's going on with the model
-    as it runs
+from gnome.movers import (RandomMover,
+                          RandomVerticalMover,
+                          WindMover,
+                          RiseVelocityMover,
+                          PyWindMover,
+                          PyCurrentMover,
+                          )
 
-    :param log_level='info': the level you want your log to show. options are,
-                             in order of importance: "debug", "info", "warning",
-                             "error", "critical".
-
-    You will only get the logging messages at or above the level you set.
-    Set to "debug" for everything.
-    """
-    gnome.initialize_console_log(log_level)
-
-
+from gnome.utilities.remote_data import get_datafile

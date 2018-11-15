@@ -33,15 +33,9 @@ These are the full set:
 
 """
 
-__all__ = ['seconds',
-           'minutes',
-           'hours',
-           'days',
-           'weeks',
-           ]
+from datetime import datetime, timedelta
 
-
-from datetime import timedelta
+now = datetime.now
 
 
 def seconds(seconds=1):

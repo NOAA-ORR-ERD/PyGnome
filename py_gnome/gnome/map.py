@@ -493,8 +493,8 @@ class ParamMap(GnomeMap):
         if (coord == self.center):
             return True
         else:
-            print ('Only allowable location for spill is the center '
-                   'that this map was built with')
+            # Only allowable location for spill is the center
+            # that this map was built with
             return False
 
     def _set_off_map_status(self, spill):

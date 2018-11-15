@@ -421,7 +421,7 @@ class MapCanvas(object):
         save the map image to the specified filename
 
         This copies the foreground image on top of the
-        background image and saves teh whole thing.
+        background image and saves the whole thing.
 
         :param filename: full path of file to be saved to
         :type filename: string
@@ -431,8 +431,9 @@ class MapCanvas(object):
                          {'png', 'gif', 'jpeg', 'bmp'}
         """
         # copy the pallette from the foreground image
-        print dir(self.fore_image)
-        print self.fore_image.colors
+        # print dir(self.fore_image)
+        # print self.fore_image.colors
+        # fixme: is this being used???
         assert False
 
         self.fore_image.copy(self.back_image,

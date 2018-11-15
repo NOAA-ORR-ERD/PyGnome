@@ -233,7 +233,6 @@ class Grid_S(GnomeId, gridded.grids.Grid_S):
             if self._get_geo_mask('center'):
                 if not self._cell_trees['center']:
                     self.build_celltree('center', use_mask=True)
-                print self._cell_trees['node'][1].shape
                 return self._cell_trees['node'][1]
             return self.centers.reshape(-1, 2)
 

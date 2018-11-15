@@ -684,8 +684,6 @@ class Model(GnomeId):
         # Objects that set 'area' are referenced as 'spreading'
         if 'area' in weather_data:
             if spread is None:
-                print ('adding FayGravityViscous to the model...')
-                print ('water = ', attr['water'])
                 self.weatherers += FayGravityViscous(attr['water'])
             else:
                 # turn spreading on and make references
