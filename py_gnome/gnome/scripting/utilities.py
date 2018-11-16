@@ -11,9 +11,7 @@ remember to add anyting new you want imported to "__all__"
 import os
 import shutil
 
-__all__ = ["make_images_dir",
-           "remove_netcdf",
-           ]
+import gnome
 
 
 def make_images_dir(images_dir=None):
@@ -48,3 +46,19 @@ def remove_netcdf(netcdf_file):
     if os.path.exists(file_ + '_uncertain' + ext):
         os.remove(file_ + '_uncertain' + ext)
         print 'removed {0}'.format(netcdf_file)
+
+
+def set_verbose(log_level='info'):
+    """
+    Set the logging system to dump to the console --
+    you can see much more what's going on with the model
+    as it runs
+
+    :param log_level='info': the level you want your log to show. options are,
+                             in order of importance: "debug", "info", "warning",
+                             "error", "critical".
+
+    You will only get the logging messages at or above the level you set.
+    Set to "debug" for everything.
+    """
+    gnome.initialize_console_log(log_level)

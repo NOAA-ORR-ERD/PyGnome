@@ -231,9 +231,13 @@ def sample_sc_release(num_elements=10,
     if current_time is None:
         current_time = spill.release_time
 
+    # fixme -- maybe this is not the place for the default arrays?
+    always = {'windages', 'windage_range', 'windage_persist'}
     if arr_types is None:
         # default always has standard windage parameters required by wind_mover
-        arr_types = {'windages', 'windage_range', 'windage_persist'}
+        arr_types = always
+    else:
+        arr_types.update(always)
 
     if windage_range is not None:
         spill.windage_range = windage_range

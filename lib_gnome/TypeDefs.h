@@ -126,7 +126,7 @@ enum { //OSSMOIL_UNKNOWN = 0,  JLM 3/11/99, there was no such thing as unkown in
 //	   OIL_COMBINATION = 1000 };
 
 // light to heavy
-enum { OIL_UNKNOWN = 0, OIL_GAS, OIL_JETFUELS, OIL_DIESEL, OIL_4, OIL_CRUDE, OIL_6,  
+enum { OIL_UNKNOWN = 0, OIL_GAS, OIL_JETFUELS, OIL_DIESEL, OIL_4, OIL_CRUDE, OIL_6,
 	OIL_CONSERVATIVE, OIL_USER1=5000, OIL_USER2 = 5001,
 	OIL_COMBINATION = 1000, CHEMICAL = 8 };
 
@@ -134,20 +134,27 @@ enum NUM_METHOD {EULER = 0, TRAPEZOID = 1, RK4 = 2};
 
 enum { LT_LAND = 1, LT_WATER = 2, LT_UNDEFINED = -1 };
 
-// OSSM land types 
-enum { OSSM_L0 = 1, OSSM_L1 = 2, OSSM_L2 = 3, OSSM_L3 = 4, OSSM_L4 = 5, OSSM_L5 = 6, 
-	OSSM_L6 = 7, OSSM_L7 = 8, OSSM_L8 = 9, OSSM_L9 = 10, OSSM_LL = 11, 
+// OSSM land types
+enum { OSSM_L0 = 1, OSSM_L1 = 2, OSSM_L2 = 3, OSSM_L3 = 4, OSSM_L4 = 5, OSSM_L5 = 6,
+	OSSM_L6 = 7, OSSM_L7 = 8, OSSM_L8 = 9, OSSM_L9 = 10, OSSM_LL = 11,
 	OSSM_W0 = 12, OSSM_W1 = 13, OSSM_W2 = 14, OSSM_W3 = 15, OSSM_WW = 16};
 
-enum LEStatus { OILSTAT_NOTRELEASED = 0, OILSTAT_INWATER = 2, OILSTAT_ONLAND = 3,
-	OILSTAT_OFFMAPS = 7, OILSTAT_EVAPORATED = 10, OILSTAT_TO_BE_REMOVED = 12};
+enum LEStatus { OILSTAT_NOTRELEASED = 0,
+	            OILSTAT_INWATER = 2,
+	            OILSTAT_ONLAND = 3,
+	            OILSTAT_OFFMAPS = 7,
+	            OILSTAT_EVAPORATED = 10,
+	            OILSTAT_TO_BE_REMOVED = 12,
+	            OILSTAT_ON_TIDEFLAT = 32 // set to 32 if we want to go to bitmaps at some point.
+	           };
+
 //JLM note: on why these number are what they are
-// OILSTAT_INAIR (which was 1) meant evaporated, and got confused with the 
+// OILSTAT_INAIR (which was 1) meant evaporated, and got confused with the
 // with OILSTAT_EVAPORATED (which was 10, because of old ossm)
-// Using these numbers will keep our testers save files in sync 
-// 
-// old OSSM (and hence TAT) use the codes 
-// nMap 7 for off maps,  beachHeight -50 for beached 
+// Using these numbers will keep our testers save files in sync
+//
+// old OSSM (and hence TAT) use the codes
+// nMap 7 for off maps,  beachHeight -50 for beached
 // and adds 10 to the pollutant code to indicate EVAPORATED
 enum { OLD_OSSM_OFFMAPS = 7, OLD_OSSM_EVAPORATED = 10, OLD_OSSM_BEACHED = -50};
 
@@ -346,11 +353,11 @@ enum {TWO_D=1, BAROTROPIC, SIGMA, MULTILAYER, SIGMA_ROMS};	// gridtypes
 
 
 typedef struct {
-	double 	alongCurUncertainty;	
-	double 	crossCurUncertainty;	
-	double 	uncertMinimumInMPS;	
-	double 	startTimeInHrs;	
-	double 	durationInHrs;	
+	double 	alongCurUncertainty;
+	double 	crossCurUncertainty;
+	double 	uncertMinimumInMPS;
+	double 	startTimeInHrs;
+	double 	durationInHrs;
 } UncertaintyParameters;
 
 typedef struct {
@@ -372,19 +379,19 @@ typedef struct {
 
 typedef struct {
 	long timeIndex;
-	DOUBLEH dataHdl; 
+	DOUBLEH dataHdl;
 }  LoadedFieldData,*LoadedFieldDataP;
 
 
 typedef struct {
 	float totalDepth;
-	long indexToDepthData; 
+	long indexToDepthData;
 	long numDepths;
 }  DepthDataInfo,*DepthDataInfoP,**DepthDataInfoH;
 
 typedef struct {
 	char pathName[kMaxNameLen];
-	Seconds startTime; 
+	Seconds startTime;
 	Seconds endTime;
 }  PtCurFileInfo,*PtCurFileInfoP,**PtCurFileInfoH;
 
@@ -401,16 +408,16 @@ typedef struct
 	Boolean			setEddyValues;
 	Seconds			fUncertainStartTime;
 	double			fDuration; 				// duration time for uncertainty;
-	double			fEddyDiffusion;		
-	double			fEddyV0;			
-	double			fDownCurUncertainty;	
-	double			fUpCurUncertainty;	
-	double			fRightCurUncertainty;	
-	double			fLeftCurUncertainty;	
+	double			fEddyDiffusion;
+	double			fEddyV0;
+	double			fDownCurUncertainty;
+	double			fUpCurUncertainty;
+	double			fRightCurUncertainty;
+	double			fLeftCurUncertainty;
 } CurrentUncertainyInfo;
 
 
-// According to the manual this directive should be embedded 
+// According to the manual this directive should be embedded
 // inside the structure definition, so may not do anything here (here pasted from OSSM.H):
 
 #ifdef MAC
@@ -437,11 +444,11 @@ enum { NONE = 0, WINDSPEED, WINDSTRESS };	// for scaling
 #define M19 1900
 
 enum { M19REALREAL = 1, M19HILITEDEFAULT,
-	
+
 	M19MAGNITUDEDEGREES, M19DEGREESMAGNITUDE,
-	
+
 	M19MAGNITUDEDIRECTION, M19DIRECTIONMAGNITUDE,
-	
+
 	M19CANCEL, M19LABEL };
 
 enum {TERMINATED = 2,NONTERMINATED};

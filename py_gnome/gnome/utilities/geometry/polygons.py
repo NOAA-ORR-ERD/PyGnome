@@ -400,23 +400,23 @@ class PolygonSet(object):
         return new_polys
 
 
-def test():
-    #  a test function
+# def test():
+#     #  a test function
 
-    p1 = np.array([[1, 2], [3, 4], [5, 6], [7, 8]])
-    p2 = p1 * 5
+#     p1 = np.array([[1, 2], [3, 4], [5, 6], [7, 8]])
+#     p2 = p1 * 5
 
-    set_ = PolygonSet()
-    set_.append(p1)
-    set_.append(p2)
+#     set_ = PolygonSet()
+#     set_.append(p1)
+#     set_.append(p2)
 
-    print set_[0]
-    print set_[1]
+#     print set_[0]
+#     print set_[1]
 
-    print "minimum is: ", set_.GetBoundingBox()[0]
-    print "maximum is: ", set_.GetBoundingBox()[1]
+#     print "minimum is: ", set_.GetBoundingBox()[0]
+#     print "maximum is: ", set_.GetBoundingBox()[1]
 
 
-if __name__ == "__main__":
-    # run a test function
-    test()
+# if __name__ == "__main__":
+#     # run a test function
+#     test()

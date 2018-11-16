@@ -1,16 +1,32 @@
 #!/usr/bin/env python
+
+# import pdb
+# import inspect
+
 import os
+
+# import shutil
 from datetime import datetime, timedelta
 import copy
 import zipfile
 
+# import collections
+from pprint import pformat
+
 import numpy as np
 
-from colander import (SchemaNode, String, Float, Int, Bool, List,
-                      drop, OneOf)
+
+from colander import (SchemaNode,
+                      String, Float, Int, Bool, List,
+                      drop, OneOf,
+                      # SequenceSchema,
+                      )
+
+from gnome.environment import Environment
+
 
 import gnome.utilities.cache
-from gnome.utilities.time_utils import round_time
+from gnome.utilities.time_utils import round_time, asdatetime
 from gnome.utilities.orderedcollection import OrderedCollection
 
 from gnome.basic_types import oil_status, fate
@@ -40,7 +56,12 @@ from gnome.persist import (extend_colander,
                            validators,
                            save_load)
 from gnome.persist.base_schema import (ObjTypeSchema,
+                                       CollectionItemsList,
                                        GeneralGnomeObjectSchema)
+from gnome.exceptions import ReferencedObjectNotSet, GnomeRuntimeError
+from gnome.spill.spill import SpillSchema
+from gnome.gnomeobject import GnomeId, allowzip64, Refs
+
 from gnome.persist.extend_colander import OrderedCollectionSchema
 
 
@@ -159,7 +180,9 @@ class Model(GnomeId):
         All arguments have a default.
 
         :param time_step=timedelta(minutes=15): model time step in seconds
-                                                or as a timedelta object
+                                                or as a timedelta object. NOTE:
+                                                if you pass in a number, it WILL
+                                                be seconds
 
         :param start_time=datetime.now(): start time of model, datetime
                                           object. Rounded to the nearest hour.
@@ -204,7 +227,7 @@ class Model(GnomeId):
         self._cache.enabled = cache_enabled
 
         # default to now, rounded to the nearest hour
-        self._start_time = start_time
+        self.start_time = start_time
         self._duration = duration
         self.weathering_substeps = weathering_substeps
 
@@ -270,7 +293,7 @@ class Model(GnomeId):
         Rewinds the model to the beginning (start_time)
         '''
         self._current_time_step = -1
-        self.model_time = self._start_time
+        self.model_time = self.start_time
 
         # fixme: do the movers need re-setting? -- or wait for
         #        prepare_for_model_run?
@@ -401,7 +424,7 @@ class Model(GnomeId):
 
     @start_time.setter
     def start_time(self, start_time):
-        self._start_time = start_time
+        self._start_time = asdatetime(start_time)
         self.rewind()
 
     @property
@@ -436,7 +459,7 @@ class Model(GnomeId):
 
     @current_time_step.setter
     def current_time_step(self, step):
-        self.model_time = self._start_time + timedelta(seconds=step *
+        self.model_time = self.start_time + timedelta(seconds=step *
                                                        self.time_step)
         self._current_time_step = step
 
@@ -661,8 +684,6 @@ class Model(GnomeId):
         # Objects that set 'area' are referenced as 'spreading'
         if 'area' in weather_data:
             if spread is None:
-                print ('adding FayGravityViscous to the model...')
-                print ('water = ', attr['water'])
                 self.weatherers += FayGravityViscous(attr['water'])
             else:
                 # turn spreading on and make references
@@ -801,9 +822,8 @@ class Model(GnomeId):
         '''
         for sc in self.spills.items():
             if sc.num_released > 0:  # can this check be removed?
-
                 # possibly refloat elements
-                self.map.refloat_elements(sc, self.time_step)
+                self.map.refloat_elements(sc, self.time_step, self.model_time)
 
                 # reset next_positions
                 (sc['next_positions'])[:] = sc['positions']
@@ -813,7 +833,7 @@ class Model(GnomeId):
                     delta = m.get_move(sc, self.time_step, self.model_time)
                     sc['next_positions'] += delta
 
-                self.map.beach_elements(sc)
+                self.map.beach_elements(sc, self.model_time)
 
                 # let model mark these particles to be removed
                 tbr_mask = sc['status_codes'] == oil_status.off_maps
@@ -1067,12 +1087,11 @@ class Model(GnomeId):
         while True:
             try:
                 results = self.step()
-                self.logger.info(results)
-
+                self.logger.info(pformat(results))
                 output_data.append(results)
             except StopIteration:
                 self.post_model_run()
-                self.logger.info('Run Complete: Stop Iteration')
+                self.logger.info('** Run Complete **')
                 break
 
         return output_data
@@ -1381,6 +1400,7 @@ class Model(GnomeId):
             msg = None
             if spill.on:
                 num_spills_on += 1
+
                 if spill.release_time < self.start_time + self.duration:
                     someSpillIntersectsModel = True
 
@@ -1533,8 +1553,7 @@ class Model(GnomeId):
         Convenience method to allow user to look up properties of a spill.
         User can specify ucert as 'ucert' or 1
         '''
-        if ucert == 'ucert':
-            ucert = 1
+        ucert = 1 if ucert == 'ucert' else 0
         return self.spills.items()[ucert][prop_name]
 
     def get_spill_data(self, target_properties, conditions, ucert=0):

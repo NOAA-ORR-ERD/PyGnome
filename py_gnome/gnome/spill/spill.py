@@ -14,6 +14,8 @@ from inspect import getmembers, ismethod
 
 
 import unit_conversion as uc
+from gnome.utilities.time_utils import asdatetime
+
 from colander import (SchemaNode, Bool, String, Float, drop)
 
 from gnome.gnomeobject import GnomeId
@@ -49,7 +51,7 @@ class BaseSpill(GnomeId):
 
     @release_time.setter
     def release_time(self, rt):
-        self._release_time = rt
+        self._release_time = asdatetime(rt)
 
     @property
     def substance(self):
@@ -303,7 +305,7 @@ class Spill(BaseSpill):
 
     @release_time.setter
     def release_time(self, rt):
-        self.release.release_time = rt
+        self.release.release_time = asdatetime(rt)
 
     @property
     def end_release_time(self):
@@ -311,7 +313,7 @@ class Spill(BaseSpill):
 
     @end_release_time.setter
     def end_release_time(self, rt):
-        self.release.end_release_time = rt
+        self.release.end_release_time = asdatetime(rt)
 
     @property
     def release_duration(self):

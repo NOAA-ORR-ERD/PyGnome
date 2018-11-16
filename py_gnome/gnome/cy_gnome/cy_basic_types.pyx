@@ -37,7 +37,9 @@ oil_status = enum(not_released=OILSTAT_NOTRELEASED,
                   on_land=OILSTAT_ONLAND,
                   off_maps=OILSTAT_OFFMAPS,
                   evaporated=OILSTAT_EVAPORATED,
-                  to_be_removed=OILSTAT_TO_BE_REMOVED)
+                  to_be_removed=OILSTAT_TO_BE_REMOVED,
+                  on_tideflat=OILSTAT_ON_TIDEFLAT,
+                  )
 
 numerical_methods = enum(euler=EULER,
                          rk4=RK4)
