@@ -65,7 +65,7 @@ class AddLogger(object):
             # because old save files
             kwargs.pop('json_')
 
-        super(AddLogger, self).__init__(*args, **kwargs)
+        super(AddLogger, self).__init__(**kwargs)
 
     @property
     def logger(self):
