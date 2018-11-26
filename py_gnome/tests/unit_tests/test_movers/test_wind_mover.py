@@ -1,8 +1,5 @@
-import os
 from datetime import timedelta, datetime
-import shutil
 
-import pytest
 from pytest import raises
 
 import numpy as np
@@ -27,7 +24,6 @@ from gnome.spill.elements import floating
 from gnome.movers import (WindMover,
                           constant_wind_mover,
                           wind_mover_from_file)
-from gnome.persist import References, load
 from gnome.exceptions import ReferencedObjectNotSet
 
 from ..conftest import sample_sc_release, testdata
@@ -563,7 +559,8 @@ def test_timespan():
 
     wm = WindMover(Wind(timeseries=time_val,
                         units='meter per second'),
-                   active_start=model_time + timedelta(seconds=time_step))
+                   active_range=(model_time + timedelta(seconds=time_step),
+                                 InfDateTime('inf')))
 
     wm.prepare_for_model_run()
     wm.prepare_for_model_step(sc, time_step, model_time)
@@ -574,7 +571,8 @@ def test_timespan():
     assert wm.active is False
     assert np.all(delta == 0)  # model_time + time_step = active_start
 
-    wm.active_start = model_time - timedelta(seconds=time_step / 2)
+    wm.active_range = (model_time - timedelta(seconds=time_step / 2),
+                       InfDateTime('inf'))
     wm.prepare_for_model_step(sc, time_step, model_time)
 
     delta = wm.get_move(sc, time_step, model_time)

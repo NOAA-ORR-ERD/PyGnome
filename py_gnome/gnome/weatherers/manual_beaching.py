@@ -5,9 +5,7 @@
     model run.
     It is modelled as a weathering process.
 '''
-
 from datetime import datetime
-import copy
 
 import numpy as np
 
@@ -36,8 +34,7 @@ class BeachingTupleSchema(DefaultTupleSchema):
     datetime = SchemaNode(LocalDateTime(default_tzinfo=None),
                           default=base_schema.now,
                           validator=validators.convertible_to_seconds)
-    amount = SchemaNode(Float(),
-                        default=0,
+    amount = SchemaNode(Float(), default=0,
                         validator=Range(min=0,
                                         min_err='amount must be '
                                                 'greater than or equal to 0'))
@@ -47,9 +44,9 @@ class BeachingTimeSeriesSchema(DatetimeValue1dArraySchema):
     '''
     Schema for list of Amount tuples, to make the amount timeseries
     '''
-    value = \
-        BeachingTupleSchema(default=(datetime.now().replace(second=0,
-                                                            microsecond=0), 0))
+    value = BeachingTupleSchema(default=(datetime.now()
+                                         .replace(second=0, microsecond=0),
+                                         0))
 
     def validator(self, node, cstruct):
         '''
@@ -64,15 +61,9 @@ class BeachingSchema(WeathererSchema):
     validate data after deserialize, before it is given back to pyGnome's
     from_dict to set _state of object
     '''
-    units = SchemaNode(
-        String(), default='m^3', save=True, update=True
-    )
-    timeseries = BeachingTimeSeriesSchema(
-        missing=drop, save=True, update=True
-    )
-    water = WaterSchema(
-        save=True, update=True, save_reference=True
-    )
+    units = SchemaNode(String(), default='m^3', save=True, update=True)
+    timeseries = BeachingTimeSeriesSchema(missing=drop, save=True, update=True)
+    water = WaterSchema(save=True, update=True, save_reference=True)
 
 
 class Beaching(RemoveMass, Weatherer):
@@ -84,7 +75,7 @@ class Beaching(RemoveMass, Weatherer):
     _schema = BeachingSchema
 
     def __init__(self,
-                 active_start,
+                 active_range,
                  units='m^3',
                  timeseries=None,
                  water=None,
@@ -100,13 +91,7 @@ class Beaching(RemoveMass, Weatherer):
         .. note:: Assumes the model's
             time_step is smaller than the timeseries timestep, meaning the
         '''
-        if 'active_stop' in kwargs:
-            # user cannot set 'active_stop'. active_stop is automatically set
-            # to be the last time in the timeseries range
-            kwargs.pop('active_stop')
-
-        super(Beaching, self).__init__(active_start=active_start,
-                                       **kwargs)
+        super(Beaching, self).__init__(active_range=active_range, **kwargs)
 
         self.water = water
 
@@ -135,14 +120,15 @@ class Beaching(RemoveMass, Weatherer):
         '''
         value = np.asarray(value, dtype=datetime_value_1d)
 
-        # prepends active_start to _timeseries array. This is for convenience
+        # prepends active start to _timeseries array. This is for convenience
         to_insert = np.zeros(1, dtype=datetime_value_1d)
 
-        if self.active_start != InfDateTime('-inf'):
-            to_insert['time'][0] = np.datetime64(self.active_start)
+        if self.active_range[0] != InfDateTime('-inf'):
+            to_insert['time'][0] = np.datetime64(self.active_range[0])
 
         self._timeseries = np.insert(value, 0, to_insert)
-        self.active_stop = self._timeseries['time'][-1].astype(datetime)
+        self.active_range = (self.active_range[0],
+                             self._timeseries['time'][-1].astype(datetime))
 
     @property
     def units(self):
@@ -187,7 +173,7 @@ class Beaching(RemoveMass, Weatherer):
             the step.
         '''
         if self._rate is None:
-            # ensure active_start < timeseries['time'][0]
+            # ensure active start < timeseries['time'][0]
             # timedelta64 seems to be in seconds
             dt = np.diff(self._timeseries['time']).astype(np.float64)
 
@@ -211,7 +197,7 @@ class Beaching(RemoveMass, Weatherer):
             self._rate = dm / dt
 
         # find rate for time interval (model_time, model_time + time_step)
-        # function is called for model_time within active_start and active_stop
+        # function is called for model_time within active start and active stop
         # so following should always work
         # Expect the timestep to be much smaller than the delta time between
         # timeseries, however, let's not make this assumption since it can't be

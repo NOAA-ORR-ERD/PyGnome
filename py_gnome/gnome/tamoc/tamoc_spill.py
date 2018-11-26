@@ -135,8 +135,8 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
           parameter defaults such as the one used for 'tamoc_parameters'
     """
     def __init__(self,
-                 release_time,
-                 start_position,
+                 release_time=None,
+                 start_position=None,
                  num_elements=None,
                  end_release_time=None,
                  name='TAMOC plume',
@@ -167,8 +167,7 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
                                'salinity': None,
                                'temperature': None}
                  ):
-        super(TamocSpill, self).__init__(release_time=release_time,
-                                         name=name)
+        super(TamocSpill, self).__init__()
 
         self.release_time = release_time
         self.start_position = start_position

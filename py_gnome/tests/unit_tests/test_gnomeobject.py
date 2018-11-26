@@ -12,6 +12,7 @@ from gnome import (environment,
                    movers,
                    outputters,
                    spill)
+from gnome.spill.release import Release
 from gnome.model import Model
 from gnome.environment import Waves, Wind, Water
 from gnome.weatherers import Evaporation, NaturalDispersion
@@ -45,8 +46,8 @@ test 'name' is an input for all base classes
 base_class = [(environment.Environment, ()),
               (movers.Mover, ()),
               (outputters.Outputter, ()),
-              (spill.Release, (10,)),
-              (spill.Spill, (spill.Release(0),))
+              (Release, ()),
+              (spill.Spill, (Release(),))
               ]
 
 

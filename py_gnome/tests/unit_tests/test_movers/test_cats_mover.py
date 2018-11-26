@@ -19,6 +19,7 @@ from ..conftest import (sample_sc_release,
                         validate_serialize_json,
                         validate_save_json)
 
+
 curr_file = testdata['CatsMover']['curr']
 td = Tide(filename=testdata['CatsMover']['tide'])
 
@@ -111,7 +112,7 @@ def test_certain_uncertain():
 
 c_cats = CatsMover(curr_file)
 
-
+0
 def test_default_props():
     """
     test default properties
@@ -202,7 +203,8 @@ def test_serialize_deserialize(tide):
 
     assert deser == c_cats
 
-@pytest.mark.parametrize(('tide'),[None, td])
+
+@pytest.mark.parametrize(('tide'), [None, td])
 def test_save_load(tide):
     """
     test save/loading with and without tide
@@ -210,10 +212,10 @@ def test_save_load(tide):
 
     saveloc = tempfile.mkdtemp()
     c_cats = CatsMover(curr_file, tide=tide)
-    save_json, zipfile_, refs = c_cats.save(saveloc)
+    save_json, zipfile_, _refs = c_cats.save(saveloc)
+
     assert validate_save_json(save_json, zipfile.ZipFile(zipfile_), c_cats)
 
     loaded = CatsMover.load(zipfile_)
 
     assert loaded == c_cats
-

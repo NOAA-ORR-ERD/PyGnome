@@ -41,7 +41,6 @@ class MapCanvas(object):
     This version uses a paletted (8 bit) image -- may be updated for RGB images
     at some point.
     """
-
     def __init__(self,
                  image_size=(800, 600),
                  projection=None,
@@ -154,8 +153,10 @@ class MapCanvas(object):
         if BB is None:
             self._viewport.center = center
 
-            distances = self.projection.meters_to_lonlat((width, height, 0),
-                                                         (center[0], center[1], 0))
+            distances = (self.projection
+                         .meters_to_lonlat((width, height, 0),
+                                           (center[0], center[1], 0)))
+
             self._viewport.width = distances[0][0]
             self._viewport.height = distances[0][1]
         else:
@@ -197,7 +198,8 @@ class MapCanvas(object):
         Add a list of colors to the pallette
 
         :param color_list: list of colors:
-                           each elemnt of the list is a 2-tuple: ('color_name', (r,g,b))
+                           each element of the list is a 2-tuple:
+                             ('color_name', (r,g,b))
         """
         self.fore_image.add_colors(color_list)
         self.back_image.add_colors(color_list)
@@ -392,7 +394,7 @@ class MapCanvas(object):
             self.draw_polyline(line, 'black', 1, background)
 
     def draw_grid(self):
-        #Not Implemeneted in MapCanvas
+        # Not Implemeneted in MapCanvas
         return None
 
     def draw_tags(self, draw_to_back=True):
@@ -419,7 +421,7 @@ class MapCanvas(object):
         save the map image to the specified filename
 
         This copies the foreground image on top of the
-        background image and saves teh whole thing.
+        background image and saves the whole thing.
 
         :param filename: full path of file to be saved to
         :type filename: string
@@ -428,12 +430,10 @@ class MapCanvas(object):
         :type file_type: one of the following:
                          {'png', 'gif', 'jpeg', 'bmp'}
         """
-        # create a new image to composite
-        width, height = self.image_size[:2]
-        image = py_gd.Image(width=width, height=height)
         # copy the pallette from the foreground image
-        print dir(self.fore_image)
-        print self.fore_image.colors
+        # print dir(self.fore_image)
+        # print self.fore_image.colors
+        # fixme: is this being used???
         assert False
 
         self.fore_image.copy(self.back_image,
@@ -727,8 +727,8 @@ class Viewport(object):
         :param height: height of the viewport (lat)
 
         :param BB: Bounding box of the viewport (overrides previous parameters)
-        :type BB:  a list of lon/lat tuples containing the lower left and top right
-              coordinates
+        :type BB:  a list of lon/lat tuples containing the lower left
+                   and top right coordinates
         """
         self._BB = None
         self._center = None

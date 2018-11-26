@@ -1,16 +1,19 @@
 #!/usr/bin/env python
 import os
-from uuid import uuid1
+import six
 import copy
 import logging
-import numpy as np
-import zipfile
-import json
-import glob
 import tempfile
-import gnome
-import six
+import glob
+import json
+import zipfile
+
+from uuid import uuid1
+
+import numpy as np
 import colander
+
+import gnome
 from gnome.utilities.orderedcollection import OrderedCollection
 
 log = logging.getLogger(__name__)
@@ -62,7 +65,7 @@ class AddLogger(object):
             # because old save files
             kwargs.pop('json_')
 
-        super(AddLogger, self).__init__(*args, **kwargs)
+        super(AddLogger, self).__init__(**kwargs)
 
     @property
     def logger(self):
@@ -309,7 +312,16 @@ class GnomeId(AddLogger):
 
         [dict_.pop(n, None) for n in read_only_attrs]
 
-        new_obj = cls(**dict_)
+        try:
+            new_obj = cls(**dict_)
+        except Exception as e:
+            # The exception generated here is typically a TypeError with
+            # no useful information for tracking down which class raised it.
+            # So we try to capture the class name and re-raise it.
+            # Note: Directly accessing e.message is deprecated, which is why
+            #       we go through this bizarre machination.
+            raise e.__class__('Exception in {}.__init__(): {}'
+                              .format(cls.__name__, e))
 
         msg = "constructed object {0}".format(new_obj.__class__.__name__)
         new_obj.logger.debug(new_obj._pid + msg)
@@ -412,7 +424,7 @@ class GnomeId(AddLogger):
                 # maybe an iterable - checking for
                 # isinstance(current_value, collections.Iterable) fails for
                 # string so just do a try/except
-                if np.any(current_value != received_value):
+                if np.any(np.array(current_value) != np.array(received_value)):
                     return True
 
     def _check_type(self, other):
@@ -606,7 +618,6 @@ class GnomeId(AddLogger):
                                             reference to the object that
                                             called ``.save`` itself.
         """
-
         zipfile_ = None
 
         if saveloc is None:

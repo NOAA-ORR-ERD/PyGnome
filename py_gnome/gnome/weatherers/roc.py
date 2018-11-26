@@ -5,7 +5,6 @@ add these as weatherers
 from __future__ import division
 
 import os
-import copy
 import json
 from datetime import datetime, timedelta
 from collections import OrderedDict
@@ -16,7 +15,7 @@ import unit_conversion as uc
 
 from colander import (drop, SchemaNode, MappingSchema, OneOf,
                       SequenceSchema, TupleSchema,
-                      Integer, Float, String, DateTime, Mapping)
+                      Integer, Float, String, DateTime)
 
 from gnome import _valid_units
 from gnome.basic_types import oil_status, fate as bt_fate
@@ -26,11 +25,7 @@ from gnome.array_types import mass, density, fay_area, frac_water
 from gnome.weatherers import Weatherer
 from gnome.weatherers.core import WeathererSchema
 
-from gnome.persist import validators, base_schema
-from gnome.persist.extend_colander import (LocalDateTime,
-                                           DefaultTupleSchema,
-                                           NumpyArray,
-                                           TimeDelta)
+from gnome.persist import base_schema
 from gnome.gnomeobject import GnomeId
 from gnome.persist.base_schema import GeneralGnomeObjectSchema
 from gnome.environment.wind import WindSchema
@@ -64,9 +59,8 @@ class OnSceneTimeSeriesSchema(SequenceSchema):
 
 
 class ResponseSchema(WeathererSchema):
-    timeseries = OnSceneTimeSeriesSchema(
-        save=True, update=True, test_equal=False
-    )
+    timeseries = OnSceneTimeSeriesSchema(save=True, update=True,
+                                         test_equal=False)
 
 
 class Response(Weatherer):
@@ -77,12 +71,14 @@ class Response(Weatherer):
     def __init__(self, timeseries=None,
                  **kwargs):
         super(Response, self).__init__(**kwargs)
+
         self.timeseries = timeseries
         self._report = []
 
     def _get_thickness(self, sc):
         oil_thickness = 0.0
         substance = self._get_substance(sc)
+
         if sc['area'].any() > 0:
             volume_emul = ((sc['mass'].mean() / substance.density_at_temp()) /
                            (1.0 - sc['frac_water'].mean()))
@@ -109,6 +105,7 @@ class Response(Weatherer):
 
     def get(self, attr, unit=None):
         val = getattr(self, attr)
+
         if unit is None:
             if (attr not in self._si_units or
                     self._si_units[attr] == self.units[attr]):
@@ -176,7 +173,8 @@ class Response(Weatherer):
 
         old_mass = data['mass_components'][indices].sum(1)
 
-        data['mass_components'][indices] = (1 - rm_mass_frac)[:, np.newaxis] * data['mass_components'][indices]
+        data['mass_components'][indices] = ((1 - rm_mass_frac)[:, np.newaxis] *
+                                            data['mass_components'][indices])
         data['mass'][indices] = data['mass_components'][indices].sum(1)
 
         new_mass = data['mass_components'][indices].sum(1)
@@ -216,8 +214,8 @@ class Response(Weatherer):
             # outside timeseries intervals
             for i, _t in enumerate(self.timeseries[0:-1]):
                 if (time >= self.timeseries[i][-1] and
-                        time < self.timeseries[i+1][0]):
-                    return i+1
+                        time < self.timeseries[i + 1][0]):
+                    return i + 1
 
     def time_to_next_interval(self, time):
         '''
@@ -228,6 +226,7 @@ class Response(Weatherer):
         cur_idx = self.index_of(time)
         if cur_idx == -1:
             next_idx = self.next_interval_index(time)
+
             if next_idx is None:
                 return None
             else:
@@ -257,14 +256,16 @@ class PlatformSchema(base_schema.ObjTypeSchema):
 
     def __init__(self, *args, **kwargs):
         for k in Platform._attr.keys():
-            self.add(SchemaNode(Float(), missing=drop, name=k, save=True, update=True))
+            self.add(SchemaNode(Float(), missing=drop, name=k, save=True,
+                                update=True))
 
         units = PlatformUnitsSchema(save=True, update=True)
         units.missing = drop
         units.name = 'units'
 
         self.add(units)
-        self.add(SchemaNode(String(), name="type", missing=drop, save=True, update=True))
+        self.add(SchemaNode(String(), name="type", missing=drop, save=True,
+                            update=True))
 
         super(PlatformSchema, self).__init__()
 
@@ -599,42 +600,30 @@ class DisperseUnitsSchema(MappingSchema):
 
 
 class DisperseSchema(ResponseSchema):
-    loading_type = SchemaNode(
-        String(), validator=OneOf(['simultaneous', 'separate']),
-        save=True, update=True
-    )
-    dosage_type = SchemaNode(
-        String(), missing=drop, validator=OneOf(['auto', 'custom']),
-        save=True, update=True
-    )
-    disp_oil_ratio = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
-    disp_eff = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
-    platform = PlatformSchema(
-        save=True, update=True
-    )
-#     units = DisperseUnitsSchema(
-#         missing=drop, save=True, update=True
-#     )
-    report = SequenceSchema(
-        SchemaNode(String()),
-        read_only=True
-    )
-    wind = GeneralGnomeObjectSchema(
-        acceptable_schemas=[WindSchema, VectorVariableSchema],
-        save=True, update=True, save_reference=True
-    )
+    loading_type = SchemaNode(String(),
+                              validator=OneOf(['simultaneous', 'separate']),
+                              save=True, update=True)
+    dosage_type = SchemaNode(String(), missing=drop,
+                             validator=OneOf(['auto', 'custom']),
+                             save=True, update=True)
+    disp_oil_ratio = SchemaNode(Float(), missing=drop, save=True, update=True)
+    disp_eff = SchemaNode(Float(), missing=drop, save=True, update=True)
+    platform = PlatformSchema(save=True, update=True)
+    # units = DisperseUnitsSchema(missing=drop, save=True, update=True)
+    report = SequenceSchema(SchemaNode(String()), read_only=True)
+    wind = GeneralGnomeObjectSchema(acceptable_schemas=[WindSchema,
+                                                        VectorVariableSchema],
+                                    save=True, update=True,
+                                    save_reference=True)
 
     def __init__(self, *args, **kwargs):
         for k, _v in Disperse._attr.items():
-            self.add(SchemaNode(Float(), missing=drop, name=k, save=True, update=True))
+            self.add(SchemaNode(Float(), missing=drop, name=k, save=True,
+                                update=True))
 
-        #need to do this because of order of class definitions
+        # need to do this because of order of class definitions
         self.add(DisperseUnitsSchema(missing=drop, save=True, update=True))
-        self.children[-1].name='units'
+        self.children[-1].name = 'units'
         super(DisperseSchema, self).__init__()
 
 
@@ -964,7 +953,7 @@ class Disperse(Response):
             elif self.cur_state == 'en_route':
                 time_left = self._next_state_time - model_time
                 self.state.append(['transit',
-                                   min(self._time_remaining,time_left)
+                                   min(self._time_remaining, time_left)
                                    .total_seconds()])
                 self._time_remaining -= min(self._time_remaining, time_left)
                 model_time, time_step = self.update_time(self._time_remaining,
@@ -1035,8 +1024,11 @@ class Disperse(Response):
                     self._ts_payloads_delivered += (disp_actual /
                                                     self.platform.get('payload', 'm^3'))
 
-                    self.oil_treated_this_timestep += min(mass_treatable, oil_avail)
-                    model_time, time_step = self.update_time(self._time_remaining, model_time, time_step)
+                    self.oil_treated_this_timestep += min(mass_treatable,
+                                                          oil_avail)
+                    model_time, time_step = self.update_time(self._time_remaining,
+                                                             model_time,
+                                                             time_step)
 
                     if self._time_remaining > zero:
                         # end of interval, end of operation, or out of
@@ -1688,7 +1680,6 @@ class Burn(Response):
                    'speed': ('velocity', _valid_vel_units),
                    '_boom_capacity_max': ('volume', _valid_vol_units)}
 
-
     _schema = BurnSchema
 
     def __init__(self,
@@ -1700,7 +1691,6 @@ class Burn(Response):
                  burn_efficiency_type=None,
                  units=_si_units,
                  **kwargs):
-
         super(Burn, self).__init__(**kwargs)
 
         self.array_types.update({'mass':  mass,
@@ -2078,51 +2068,21 @@ class SkimUnitsSchema(MappingSchema):
 
 
 class SkimSchema(ResponseSchema):
-    units = SkimUnitsSchema(
-        save=True, update=True
-    )
-    speed = SchemaNode(
-        Float(), save=True, update=True
-    )
-    storage = SchemaNode(
-        Float(), save=True, update=True
-    )
-    swath_width = SchemaNode(
-        Float(), save=True, update=True
-    )
-    group = SchemaNode(
-        String(), save=True, update=True
-    )
-    throughput = SchemaNode(
-        Float(), save=True, update=True
-    )
-    nameplate_pump = SchemaNode(
-        Float(), save=True, update=True
-    )
-    skim_efficiency_type = SchemaNode(
-        String(), save=True, update=True
-    )
-    decant = SchemaNode(
-        Float(), save=True, update=True
-    )
-    decant_pump = SchemaNode(
-        Float(), save=True, update=True
-    )
-    rig_time = SchemaNode(
-        Float(), save=True, update=True
-    )
-    transit_time = SchemaNode(
-        Float(), save=True, update=True
-    )
-    discharge_pump = SchemaNode(
-        Float(), save=True, update=True
-    )
-    recovery = SchemaNode(
-        Float(), save=True, update=True
-    )
-    recovery_ef = SchemaNode(
-        Float(), save=True, update=True
-    )
+    units = SkimUnitsSchema(save=True, update=True)
+    speed = SchemaNode(Float(), save=True, update=True)
+    storage = SchemaNode(Float(), save=True, update=True)
+    swath_width = SchemaNode(Float(), save=True, update=True)
+    group = SchemaNode(String(), save=True, update=True)
+    throughput = SchemaNode(Float(), save=True, update=True)
+    nameplate_pump = SchemaNode(Float(), save=True, update=True)
+    skim_efficiency_type = SchemaNode(String(), save=True, update=True)
+    decant = SchemaNode(Float(), save=True, update=True)
+    decant_pump = SchemaNode(Float(), save=True, update=True)
+    rig_time = SchemaNode(Float(), save=True, update=True)
+    transit_time = SchemaNode(Float(), save=True, update=True)
+    discharge_pump = SchemaNode(Float(), save=True, update=True)
+    recovery = SchemaNode(Float(), save=True, update=True)
+    recovery_ef = SchemaNode(Float(), save=True, update=True)
 
 
 class Skim(Response):

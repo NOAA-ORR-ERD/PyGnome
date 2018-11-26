@@ -20,7 +20,6 @@ from __future__ import division
 import numpy as np
 from gnome.gnomeobject import GnomeId
 from gnome.persist.base_schema import ObjTypeSchema
-from gnome.persist.extend_colander import DefaultTupleSchema
 from colander import drop, TupleSchema, Float, SchemaNode, Int
 
 
@@ -48,29 +47,22 @@ def to_2d_coords(coords):
         raise ValueError("coords must be one of:\n"
                          "a (lon, lat) pair\n"
                          "a (lon, lat, depth) triple\n"
-                         "a Nx2 array-like object of (lon,lat) pairs\n"
-                         "a Nx3 array-like object of (lon, lat, depth) triples\n"
+                         "a Nx2 array-like object of (lon, lat)\n"
+                         "a Nx3 array-like object of (lon, lat, depth)\n"
                          )
+
 
 class ProjectionSchema(ObjTypeSchema):
     bounding_box = TupleSchema(
-        children=[
-            TupleSchema(
-                children=[SchemaNode(Float()), SchemaNode(Float())]
-            ),
-            TupleSchema(
-                children=[SchemaNode(Float()), SchemaNode(Float())]
-            )
-        ],
-        missing=drop, save=True, update=True
-    )
-    image_size = TupleSchema(
-        children=[
-            SchemaNode(Int()),
-            SchemaNode(Int())
-        ],
-        missing=drop, save=True, update=True
-    )
+        missing=drop, save=True, update=False,
+        children=[TupleSchema(children=[SchemaNode(Float()),
+                                        SchemaNode(Float())]),
+                  TupleSchema(children=[SchemaNode(Float()),
+                                        SchemaNode(Float())])
+                  ])
+    image_size = TupleSchema(save=True, update=True, missing=drop,
+                             children=[SchemaNode(Int()), SchemaNode(Int())])
+
 
 class NoProjection(GnomeId):
     """
@@ -80,14 +72,12 @@ class NoProjection(GnomeId):
 
     used for testing, primarily, and as a definition of the interface
     """
-
-    _schema=ProjectionSchema
+    _schema = ProjectionSchema
 
     def set_scale(self, bounding_box, image_size=None):
         """
         Does nothing
         """
-
         pass
 
     @property
@@ -142,8 +132,7 @@ class GeoProjection(GnomeId):
     This one doesn't really project, but does convert to pixel coords
     i.e. "geo-coordinates"
     """
-
-    _schema=ProjectionSchema
+    _schema = ProjectionSchema
 
     def __init__(self, bounding_box=None, image_size=None, *args, **kwargs):
         """
@@ -258,8 +247,8 @@ class GeoProjection(GnomeId):
 
         (z is ignored, and there is no z in the returned array)
 
-        :returns: The pixel coords as a similar Nx2 array of integer
-                  x,y coordinates (using the y = 0 at the top, and y increasing down)
+        :returns: The pixel (x, y) coords as a similar Nx2 array of integer
+                  (using the y = 0 at the top, and y increasing down)
 
         NOTE: The values between the minimum of a pixel value to less than the
               max of a pixel range are in that pixel, so  a point exactly at
@@ -385,25 +374,27 @@ class FlatEarthProjection(GeoProjection):
         :type ref_positions: NX3, numpy array (Only lat is used here)
 
         :returns delta_lon_lat: Differential (delta) positional values
-                                Nx3 numpy array of (delta-lon, delta-lat, delta-z)
+                                Nx3 numpy array of (delta-lon,
+                                                    delta-lat,
+                                                    delta-z)
         """
 
         # make a copy -- don't change meters
         delta_lon_lat = np.array(meters, dtype=np.float64)
         if len(delta_lon_lat.shape) == 1:
             if delta_lon_lat.shape[0] == 2:
-                delta_lon_lat = delta_lon_lat.reshape(1,2)
+                delta_lon_lat = delta_lon_lat.reshape(1, 2)
             else:
-                delta_lon_lat = delta_lon_lat.reshape(1,3)
+                delta_lon_lat = delta_lon_lat.reshape(1, 3)
         # reference is possible for reference positions
         ref_positions = np.asarray(ref_positions,
                                    dtype=np.float64)
 
         if len(ref_positions.shape) == 1:
             if ref_positions.shape[0] == 2:
-                ref_positions = ref_positions.reshape(1,2)
+                ref_positions = ref_positions.reshape(1, 2)
             else:
-                ref_positions = ref_positions.reshape(1,3)
+                ref_positions = ref_positions.reshape(1, 3)
 
         delta_lon_lat[:, :2] *= 8.9992801e-06
         delta_lon_lat[:, 0] /= np.cos(np.deg2rad(ref_positions[:, 1]))

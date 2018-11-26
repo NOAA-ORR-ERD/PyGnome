@@ -2,18 +2,13 @@
 Created on Feb 15, 2013
 '''
 import copy
-import inspect
-import logging
 
 import numpy as np
-
-from colander import SchemaType
 
 from gnome import GnomeId
 from gnome.persist import Savable
 from gnome.utilities.orderedcollection import OrderedCollection
 from gnome.persist import class_from_objtype
-from gnome.persist.base_schema import CollectionItemsList
 
 
 class Field(object):  # ,serializable.Serializable):
@@ -101,12 +96,14 @@ class Field(object):  # ,serializable.Serializable):
         'unambiguous object representation'
         attr_vals = ', '.join(['{0}={1}'.format(attr, val)
                                for attr, val in self.__dict__.iteritems()])
+
         return ('{0.__class__.__module__}.{0.__class__.__name__}'
                 '({1})'.format(self, attr_vals))
 
     def __str__(self):
         attr_vals = ', '.join(['{0}={1}'.format(attr, val)
                                for attr, val in self.__dict__.iteritems()])
+
         return ('Field Object: '
                 '{1}'.format(self, attr_vals))
 
@@ -172,7 +169,7 @@ class State(object):
         return self.__dict__ == other.__dict__
 
     def __ne__(self, other):
-        return not self.__dict__ == other.__dict__
+        return not self.__eq__(other)
 
     def __contains__(self, name):
         """
@@ -181,7 +178,7 @@ class State(object):
         a list of 'Field' objects corresponding with properties that are
         serialized
         """
-        if name in [f.name for f in self.fields]:
+        if name in self.get_names():
             return True
 
         return False
@@ -275,16 +272,20 @@ class State(object):
         fields = []
         for item in update:
             f = Field(item, update=True)
+
             if item in save:
                 f.save = True
                 save.remove(item)
+
             fields.append(f)
 
         for item in save:
             f = Field(item, save=True)
+
             if item in read:
                 f.read = True
                 read.remove(item)
+
             fields.append(f)
 
         [fields.append(Field(item, read=True)) for item in read]
@@ -296,11 +297,14 @@ class State(object):
         if vals is not None:
             if isinstance(vals, basestring):
                 vals = [vals]
+
             if not isinstance(vals, (list, tuple)):
                 raise ValueError('inputs must be a list of strings')
+
             vals = list(set(vals))
         else:
             vals = []
+
         return vals
 
     def remove(self, l_names):
@@ -314,12 +318,9 @@ class State(object):
 
         for name in l_names:
             field = self.get_field_by_name(name)
+
             if field == []:
                 return
-            # do not raise error - if field doesn't exist, do nothing
-            #    raise ValueError('Cannot remove {0} since self.fields '
-            #                     'does not contain a field '
-            #                     'with this name'.format(name))
 
             self.fields.remove(field)
 
@@ -345,8 +346,8 @@ class State(object):
         for key in kwargs.keys():
             if key not in self._valid_field_attr:
                 raise AttributeError('{0} is not a valid attribute '
-                                     'of Field object. '
-                                     'It cannot be updated.'.format(key))
+                                     'of Field object. It cannot be updated.'
+                                     .format(key))
 
         if 'read' in kwargs.keys() and 'update' in kwargs.keys():
             if kwargs.get('read') and kwargs.get('update'):
@@ -354,6 +355,7 @@ class State(object):
                                      "cannot both be True")
 
         l_field = self.get_field_by_name(l_names)
+
         if not isinstance(l_field, list):
             l_field = [l_field]
 
@@ -361,6 +363,7 @@ class State(object):
 
         read_ = kwargs.pop('read', None)
         update_ = kwargs.pop('update', None)
+
         for field in l_field:
             for (key, val) in kwargs.iteritems():
                 setattr(field, key, val)
@@ -380,6 +383,7 @@ class State(object):
                 setattr(field, 'update', update_)
 
         read_ = None
+
         if 'read' in kwargs.keys():
             read_ = kwargs.pop('read')
 
@@ -413,11 +417,10 @@ class State(object):
         'returns a list of fields where attr is true'
         if attr not in self._valid_field_attr:
             raise AttributeError('{0} is not valid attribute. '
-                                 'Field.__dict__ contains: '
-                                 '{1}'.format(attr, self._valid_field_attr))
+                                 'Field.__dict__ contains: {1}'
+                                 .format(attr, self._valid_field_attr))
 
-        out = [field for field in self.fields if getattr(field, attr)]
-        return out
+        return [field for field in self.fields if getattr(field, attr)]
 
     def get_names(self, attr='all'):
         """
@@ -430,7 +433,7 @@ class State(object):
         >>> _state.get_names('save')     # returns ['t0', 't1']
         """
         if attr == 'all':
-            return [field_.name for field_ in self.fields]
+            return [f.name for f in self.fields]
 
         names = []
 
@@ -504,7 +507,9 @@ class Serializable(GnomeId, Savable):
             try:
                 setattr(new_obj, key, dict_[key])
             except AttributeError:
-                raise AttributeError('ailed to set attribute {0} on object {1}'.format(key, new_obj))
+                raise AttributeError('failed to set attribute {0} '
+                                     'on object {1}'
+                                     .format(key, new_obj))
 
     def _attrlist(self, do=('update', 'read')):
         '''
@@ -515,23 +520,23 @@ class Serializable(GnomeId, Savable):
         with the union of the corresponding lists.
         '''
         actions = {'update', 'save', 'read'}
-        list_ = []
+        attr_list = []
 
         for action in do:
             if action in actions:
-                list_.extend(self._state.get_names(action))
+                attr_list.extend(self._state.get_names(action))
             else:
                 raise ValueError("input not understood. String must be one of "
                                  "following: 'update', 'save' or 'readonly'.")
 
-        return list_
+        return attr_list
 
     def attr_to_dict(self, name):
         """
         refactor to_dict's functionality so child classes can convert a
         single attribute to_dict instead of doing a whole list of fields
         """
-        to_dict_fn_name = '%s_to_dict' % name
+        to_dict_fn_name = '{}_to_dict'.format(name)
 
         if hasattr(self, to_dict_fn_name):
             value = getattr(self, to_dict_fn_name)()
@@ -571,22 +576,6 @@ class Serializable(GnomeId, Savable):
         list_ = self._state.get_names('update')
         updated = False
 
-        if ('active_start' in data and
-                'active_stop' in data and
-                'active_stop' in list_):
-            # special case: these attributes employ range checking,
-            # so we would like to make sure that we evaluate
-            # active_stop before active_start if we are setting the active
-            # range outside and above the original range,
-            # and we would like to evaluate active_start before active_stop
-            # if we are setting the active range outside and below the
-            # original range.
-            try:
-                self._check_active_startstop(data['active_start'],
-                                             self.active_stop)
-            except ValueError:
-                list_.insert(0, list_.pop(list_.index('active_stop')))
-
         for key in list_:
             if key not in data:
                 continue
@@ -617,6 +606,7 @@ class Serializable(GnomeId, Savable):
         elif isinstance(current_value, OrderedCollection):
             if len(current_value) != len(received_value):
                 return True
+
             for ix, item in enumerate(current_value):
                 if item is not received_value[ix]:
                     return True
@@ -649,10 +639,12 @@ class Serializable(GnomeId, Savable):
         :type value: depends on each attribute being updated
         '''
         current_value = getattr(self, name)
+
         if isinstance(current_value, OrderedCollection):
             return self._update_orderedcoll_attr(current_value, value)
 
         from_dict_fn_name = '%s_update_from_dict' % name
+
         if hasattr(self, from_dict_fn_name):
             return getattr(self, from_dict_fn_name)(value)
 
@@ -661,7 +653,9 @@ class Serializable(GnomeId, Savable):
                 setattr(self, name, value)
                 return True
             except AttributeError:
-                raise AttributeError('failed to update attribute {0} to value {1} on object {2}'.format(name, value, self))
+                raise AttributeError('failed to update attribute {0} '
+                                     'to value {1} on object {2}'
+                                     .format(name, value, self))
         else:
             return False
 
@@ -678,8 +672,10 @@ class Serializable(GnomeId, Savable):
 
         if updated:
             curr_oc.clear()
+
             if l_new_oc:
                 curr_oc += l_new_oc
+
         return updated
 
     def obj_type_to_dict(self):
@@ -688,9 +684,6 @@ class Serializable(GnomeId, Savable):
         This is base implementation and can be over-ridden
         """
         return '{0.__module__}.{0.__class__.__name__}'.format(self)
-
-
-
 
     def to_serialize(self, json_='webapi'):
         '''
@@ -710,6 +703,7 @@ class Serializable(GnomeId, Savable):
                              "or for save files: ('webapi', 'save')")
 
         toserial = {}
+
         for key in attrlist:
             if key in dict_:
                 # if attribute is None, then dict_ does not contain it
@@ -723,11 +717,11 @@ class Serializable(GnomeId, Savable):
                     toserial[key] = dict_[key]
 
         toserial['json_'] = json_
+
         return toserial
 
     def items(self):
         return self.to_serialize().items()
-
 
     @classmethod
     def is_sparse(cls, json_):
@@ -739,6 +733,7 @@ class Serializable(GnomeId, Savable):
         '''
         r_attr_list = cls._state.get_names('read')
         r_attr_list.append('json_')
+
         attr_list = [attr for attr in json_ if attr not in r_attr_list]
 
         return len(attr_list) == 0
@@ -749,8 +744,10 @@ class Serializable(GnomeId, Savable):
         iterable containing serializable objects
         '''
         json_out = []
+
         for item in coll:
             json_out.append(item.serialize(json_))
+
         return json_out
 
     @classmethod
@@ -762,6 +759,7 @@ class Serializable(GnomeId, Savable):
         list.
         '''
         deserial = []
+
         for item in json_:
             d_item = cls._deserialize_nested_obj(item)
             deserial.append(d_item)
@@ -795,6 +793,7 @@ class Serializable(GnomeId, Savable):
                 obj_type = '{0.__module__}.{0.__class__.__name__}'.format(obj)
             except AttributeError:
                 obj_type = '{0.__class__.__name__}'.format(obj)
+
             item = {'obj_type': obj_type, 'id': str(obj.id)}
             items.append(item)
 

@@ -6,12 +6,14 @@ from datetime import timedelta
 import pytest
 import numpy as np
 
+from gnome.utilities.inf_datetime import InfDateTime
+
+from gnome.spill.elements import floating
 from gnome.environment import constant_wind, Water, Waves
 from gnome.weatherers import (NaturalDispersion,
                               Evaporation,
                               Emulsification)
 from gnome.outputters import WeatheringOutput
-from gnome.spill.elements import floating
 
 from conftest import weathering_data_arrays
 from ..conftest import (sample_model_weathering,
@@ -26,10 +28,10 @@ waves = Waves(wind, water)
 
 @pytest.mark.parametrize(('oil', 'temp', 'num_elems', 'on'),
                          [('oil_bahia', 311.15, 3, True),
-                          #('BAHIA', 311.15, 3, True),
-                          #('ABU SAFAH', 311.15, 3, True),
+                          # ('BAHIA', 311.15, 3, True),
+                          # ('ABU SAFAH', 311.15, 3, True),
                           ('oil_ans_mp', 311.15, 3, True),
-                          #('ALASKA NORTH SLOPE (MIDDLE PIPELINE)', 311.15, 3,
+                          # ('ALASKA NORTH SLOPE (MIDDLE PIPELINE)', 311.15, 3,
                           ('oil_ans_mp', 311.15, 3,
                            False)])
 def test_dispersion(oil, temp, num_elems, on):
@@ -74,17 +76,25 @@ def test_dispersion_not_active(oil, temp, num_elems):
         weathering_data_arrays(disp.array_types,
                                water,
                                element_type=floating(substance=oil))[:2]
+
     sc.amount = 10000
     model_time = (sc.spills[0].release_time +
                   timedelta(seconds=time_step))
 
     disp.prepare_for_model_run(sc)
 
+    assert np.all(sc.mass_balance['natural_dispersion'] == 0)
+    assert np.all(sc.mass_balance['sedimentation'] == 0)
+
     new_model_time = (sc.spills[0].release_time +
                       timedelta(seconds=3600))
 
-    disp.active_start = new_model_time
+    disp.active_range = (new_model_time, InfDateTime('inf'))
     disp.prepare_for_model_step(sc, time_step, model_time)
+
+    assert np.all(sc.mass_balance['natural_dispersion'] == 0)
+    assert np.all(sc.mass_balance['sedimentation'] == 0)
+
     disp.weather_elements(sc, time_step, model_time)
 
     assert np.all(sc.mass_balance['natural_dispersion'] == 0)
@@ -95,10 +105,10 @@ def test_dispersion_not_active(oil, temp, num_elems):
 # the test oils don't match the data base, using so tests don't depend on db
 @pytest.mark.parametrize(('oil', 'temp', 'dispersed'),
                          [('ABU SAFAH', 288.7, 63.076),
-                          #('ALASKA NORTH SLOPE (MIDDLE PIPELINE)',
+                          # ('ALASKA NORTH SLOPE (MIDDLE PIPELINE)',
                           ('oil_ans_mp',
                            288.7, 592.887),
-                          #('BAHIA', 288.7, 14.472)
+                          # ('BAHIA', 288.7, 14.472)
                           ('oil_bahia', 288.7, 133.784)
                           ]
                          )
