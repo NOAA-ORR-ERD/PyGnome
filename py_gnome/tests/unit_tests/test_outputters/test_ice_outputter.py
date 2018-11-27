@@ -16,7 +16,6 @@ from gnome.outputters import IceGeoJsonOutput, IceJsonOutput
 
 from ..conftest import testdata
 
-
 curr_file = testdata['IceMover']['ice_curr_curv']
 topology_file = testdata['IceMover']['ice_top_curv']
 c_ice_mover = IceMover(curr_file, topology_file)

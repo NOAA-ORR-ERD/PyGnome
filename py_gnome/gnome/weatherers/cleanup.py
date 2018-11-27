@@ -693,7 +693,6 @@ class Burn(CleanUpBase):
             # get it from wind
             ws = self.wind.get_value(points, model_time)
             self.efficiency = np.where(ws > (1. / 0.07), 0, 1 - 0.07 * ws)
-            print self.efficiency
 
     def weather_elements(self, sc, time_step, model_time):
         '''

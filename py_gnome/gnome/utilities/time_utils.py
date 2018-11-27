@@ -5,6 +5,7 @@ time_utils
 assorted utilities for working with time and datetime
 """
 from datetime import datetime, timedelta, tzinfo
+from dateutil.parser import parse as parsetime
 import time
 
 import numpy as np
@@ -211,19 +212,20 @@ def round_time(dt=None, roundTo=60):  # IGNORE:W0621
     return len(dt) == 1 and dt[0].astype(object) or dt
 
 
-if __name__ == '__main__':
-    dt = datetime.datetime(2012, 12, 31,
-                           23, 44, 59,
-                           1234)
+def asdatetime(dt):
+    """
+    makes sure the inmput is a datetime.datetime object
 
-    print 'a datetime:'
-    print dt
+    if it already is, it will be passed through.
 
-    print 'rounded to 1 hour:'
-    print round_time(dt, roundTo=60 * 60)
+    If not it will attempt to parse a string to make a datetime object.
 
-    print 'rounded to 30 minutes:'
-    print round_time(dt, roundTo=30 * 60)
-
-    print 'rounded to one day:'
-    print round_time(dt, roundTo=3600 * 60 * 60)
+    None will also be passed through silently
+    """
+    if dt is None:
+        return dt
+    if not isinstance(dt, datetime):
+        # assume it's an iso string, or something that dateutils can parse.
+        return parsetime(dt, ignoretz=True)
+    else:
+        return dt

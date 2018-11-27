@@ -115,11 +115,8 @@ class ElementType(GnomeId):
 
     @windage_range.setter
     def windage_range(self, wr):
-        print self.initializers
         for initr in self.initializers:
-            print "initr:"
             if hasattr(initr, "windage_range"):
-                print "setting windage_range"
                 initr.windage_range = wr
                 return None
         msg = "can't set windage_range: no initializer has it"
@@ -141,11 +138,8 @@ class ElementType(GnomeId):
 
     @windage_persist.setter
     def windage_persist(self, wp):
-        print self.initializers
         for initr in self.initializers:
-            print "initr:"
             if hasattr(initr, "windage_persist"):
-                print "setting windage_persist"
                 initr.windage_persist = wp
                 return None
         msg = "can't set windage_persist: no initializer has it"
