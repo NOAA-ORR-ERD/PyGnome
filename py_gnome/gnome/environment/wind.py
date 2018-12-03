@@ -158,7 +158,7 @@ class Wind(Timeseries, Environment):
         if filename is not None:
             self.source_type = kwargs.pop('source_type', 'file')
 
-            super(Wind, self).__init__(filename=filename, coord_sys=coord_sys)
+            super(Wind, self).__init__(filename=filename, coord_sys=coord_sys, **kwargs)
 
             self.name = kwargs.pop('name', os.path.split(self.filename)[1])
             # set _user_units attribute to match user_units read from file.
@@ -174,7 +174,7 @@ class Wind(Timeseries, Environment):
 
             # either timeseries is given or nothing is given
             # create an empty default object
-            super(Wind, self).__init__(coord_sys=coord_sys)
+            super(Wind, self).__init__(coord_sys=coord_sys, **kwargs)
 
             self.units = 'mps'  # units for default object
 
