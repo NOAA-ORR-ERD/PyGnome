@@ -24,7 +24,10 @@ num_le = 4
 start_pos = (-123.57152, 37.369436, 0.0)
 rel_time = datetime.datetime(2006, 3, 31, 21, 0)
 time_step = 30 * 60  # seconds
-model_time = time_utils.sec_to_date(time_utils.date_to_sec(rel_time))
+# fixme -- huh???
+# model_time = time_utils.sec_to_date(time_utils.date_to_sec(rel_time))
+
+model_time = rel_time
 
 
 def test_exceptions():
@@ -108,7 +111,7 @@ def test_uncertain_loop():
     pSpill = sample_sc_release(num_le, start_pos, rel_time,
                                uncertain=True)
     wind = GridWindMover(wind_file, topology_file)
-    u_delta = _uncertain_loop(pSpill, wind)
+    u_delta = _certain_loop(pSpill, wind)
 
     _assert_move(u_delta)
 
@@ -183,14 +186,16 @@ def _certain_loop(pSpill, wind):
 
     return delta
 
+# _uncertain_loop = _certain_loop
 
-def _uncertain_loop(pSpill, wind):
-    wind.prepare_for_model_run()
-    wind.prepare_for_model_step(pSpill, time_step, model_time)
-    u_delta = wind.get_move(pSpill, time_step, model_time)
-    wind.model_step_is_done()
+# # fixme: why isn't this just the above -- it looks the same?
+# def _uncertain_loop(pSpill, wind):
+#     wind.prepare_for_model_run()
+#     wind.prepare_for_model_step(pSpill, time_step, model_time)
+#     u_delta = wind.get_move(pSpill, time_step, model_time)
+#     wind.model_step_is_done()
 
-    return u_delta
+#     return u_delta
 
 
 def test_serialize_deserialize():
@@ -200,10 +205,7 @@ def test_serialize_deserialize():
     """
 
     grid_wind = GridWindMover(wind_file, topology_file)
-    serial = grid_wind.serialize('webapi')
-    dict_ = GridWindMover.deserialize(serial)
-    gw2 = GridWindMover.new_from_dict(dict_)
+    serial = grid_wind.serialize()
+    gw2 = GridWindMover.deserialize(serial)
 
     assert grid_wind == gw2
-
-    grid_wind.update_from_dict(dict_)

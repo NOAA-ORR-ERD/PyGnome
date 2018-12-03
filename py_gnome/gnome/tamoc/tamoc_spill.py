@@ -15,7 +15,6 @@ from netCDF4 import date2num, num2date
 from datetime import datetime
 
 import gnome
-from gnome.utilities import serializable
 from gnome.utilities.projections import FlatEarthProjection
 from gnome.cy_gnome.cy_rise_velocity_mover import rise_velocity_from_drop_size
 
@@ -136,8 +135,8 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
           parameter defaults such as the one used for 'tamoc_parameters'
     """
     def __init__(self,
-                 release_time,
-                 start_position,
+                 release_time=None,
+                 start_position=None,
                  num_elements=None,
                  end_release_time=None,
                  name='TAMOC plume',
@@ -168,8 +167,7 @@ class TamocSpill(gnome.spill.spill.BaseSpill):
                                'salinity': None,
                                'temperature': None}
                  ):
-        super(TamocSpill, self).__init__(release_time=release_time,
-                                         name=name)
+        super(TamocSpill, self).__init__()
 
         self.release_time = release_time
         self.start_position = start_position

@@ -1,52 +1,41 @@
 '''
 Movers using diffusion as the forcing function
 '''
-import copy
 import numpy as np
 
-from colander import (SchemaNode, Float, drop)
+from colander import (SchemaNode, Float, Boolean, drop)
 
 from gnome.basic_types import oil_status
 from gnome.cy_gnome.cy_random_mover import CyRandomMover
 from gnome.cy_gnome.cy_random_vertical_mover import CyRandomVerticalMover
-
-from gnome.utilities.serializable import Serializable, Field
-from gnome.utilities.inf_datetime import InfTime, MinusInfTime
-
-from gnome.persist.base_schema import ObjType
-from gnome.persist.validators import convertible_to_seconds
-from gnome.persist.extend_colander import LocalDateTime
 
 from gnome.environment import IceConcentration
 from gnome.environment.gridded_objects_base import PyGrid
 from gnome.environment.gridded_objects_base import VariableSchema
 
 from gnome.movers import CyMover, ProcessSchema
+from gnome.persist.validators import convertible_to_seconds
+from gnome.persist.extend_colander import LocalDateTime
+from gnome.utilities.inf_datetime import InfTime, MinusInfTime
 
 
-class RandomMoverSchema(ObjType, ProcessSchema):
-    diffusion_coef = SchemaNode(Float(), missing=drop)
-    uncertain_factor = SchemaNode(Float(), missing=drop)
-    data_start = SchemaNode(LocalDateTime(), missing=drop,
-                            validator=convertible_to_seconds)
-    data_stop = SchemaNode(LocalDateTime(), missing=drop,
-                           validator=convertible_to_seconds)
+class RandomMoverSchema(ProcessSchema):
+    diffusion_coef = SchemaNode(Float(), save=True, update=True, missing=drop)
+    uncertain_factor = SchemaNode(Float(), save=True, update=True,
+                                  missing=drop)
+    data_start = SchemaNode(LocalDateTime(), validator=convertible_to_seconds,
+                            read_only=True)
+    data_stop = SchemaNode(LocalDateTime(), validator=convertible_to_seconds,
+                           read_only=True)
 
 
-class RandomMover(CyMover, Serializable):
+class RandomMover(CyMover):
     """
     This mover class inherits from CyMover and contains CyRandomMover
 
     The real work is done by CyRandomMover.
     CyMover sets everything up that is common to all movers.
     """
-    _state = copy.deepcopy(CyMover._state)
-    _state.add(update=['diffusion_coef', 'uncertain_factor'],
-               save=['diffusion_coef', 'uncertain_factor'])
-    _state.add_field([Field('data_start', read=True),
-                      Field('data_stop', read=True),
-                      ])
-
     _schema = RandomMoverSchema
 
     def __init__(self, **kwargs):
@@ -96,20 +85,19 @@ class RandomMover(CyMover, Serializable):
 
     def __repr__(self):
         return ('RandomMover(diffusion_coef={0}, uncertain_factor={1}, '
-                'active_start={2}, active_stop={3}, on={4})'
+                'active_range={2}, on={3})'
                 .format(self.diffusion_coef, self.uncertain_factor,
-                        self.active_start, self.active_stop, self.on))
+                        self.active_range, self.on))
 
 
 class IceAwareRandomMoverSchema(RandomMoverSchema):
-    ice_concentration = VariableSchema(missing=drop)
+    ice_concentration = VariableSchema(
+        missing=drop, save=True, update=True, save_reference=True
+    )
 
 
 class IceAwareRandomMover(RandomMover):
 
-    _state = copy.deepcopy(RandomMover._state)
-    _state.add_field([Field('ice_concentration',
-                            save=True, read=True, save_reference=True)])
     _schema = IceAwareRandomMoverSchema
 
     _req_refs = {'ice_concentration': IceConcentration}
@@ -134,7 +122,7 @@ class IceAwareRandomMover(RandomMover):
             grid_file = filename
 
         if grid is None:
-            grid = Grid.from_netCDF(grid_file,
+            grid = PyGrid.from_netCDF(grid_file,
                                     grid_topology=grid_topology)
 
         if ice_concentration is None:
@@ -179,34 +167,32 @@ class IceAwareRandomMover(RandomMover):
                     .get_move(sc, time_step, model_time_datetime))
 
 
-class RandomVerticalMoverSchema(ObjType, ProcessSchema):
-    vertical_diffusion_coef_above_ml = SchemaNode(Float(), missing=drop)
-    vertical_diffusion_coef_below_ml = SchemaNode(Float(), missing=drop)
+class RandomVerticalMoverSchema(ProcessSchema):
+    vertical_diffusion_coef_above_ml = SchemaNode(
+        Float(), missing=drop, save=True, update=True
+    )
+    vertical_diffusion_coef_below_ml = SchemaNode(
+        Float(), missing=drop, save=True, update=True
+    )
+    mixed_layer_depth = SchemaNode(
+        Float(), missing=drop, save=True, update=True
+    )
+    horizontal_diffusion_coef_above_ml = SchemaNode(
+        Float(), missing=drop, save=True, update=True
+    )
+    horizontal_diffusion_coef_below_ml = SchemaNode(
+        Float(), missing=drop, save=True, update=True
+    )
+    surface_is_allowed = SchemaNode(Boolean())
 
-    mixed_layer_depth = SchemaNode(Float(), missing=drop)
 
-    horizontal_diffusion_coef_above_ml = SchemaNode(Float(), missing=drop)
-    horizontal_diffusion_coef_below_ml = SchemaNode(Float(), missing=drop)
-
-
-class RandomVerticalMover(CyMover, Serializable):
+class RandomVerticalMover(CyMover):
     """
     This mover class inherits from CyMover and contains CyRandomVerticalMover
 
     The real work is done by CyRandomVerticalMoraneomver.
     CyMover sets everything up that is common to all movers.
     """
-    _state = copy.deepcopy(CyMover._state)
-    _state.add(update=['vertical_diffusion_coef_above_ml',
-                       'vertical_diffusion_coef_below_ml',
-                       'horizontal_diffusion_coef_above_ml',
-                       'horizontal_diffusion_coef_below_ml',
-                       'mixed_layer_depth'],
-               save=['vertical_diffusion_coef_above_ml',
-                     'vertical_diffusion_coef_below_ml',
-                     'horizontal_diffusion_coef_above_ml',
-                     'horizontal_diffusion_coef_below_ml',
-                     'mixed_layer_depth'])
     _schema = RandomVerticalMoverSchema
 
     def __init__(self, **kwargs):
@@ -229,6 +215,8 @@ class RandomVerticalMover(CyMover, Serializable):
                                                    diffusion below the mixed
                                                    layer. Default is 126 cm2/s.
 
+        :param surface_is_allowed: Vertical diffusion will ignore surface
+            particles if this is True. Default is False.
         Remaining kwargs are passed onto Mover's __init__ using super.
         See Mover documentation for remaining valid kwargs.
         """
@@ -236,7 +224,8 @@ class RandomVerticalMover(CyMover, Serializable):
                                            vertical_diffusion_coef_below_ml=kwargs.pop('vertical_diffusion_coef_below_ml', .11),
                                            horizontal_diffusion_coef_above_ml=kwargs.pop('horizontal_diffusion_coef_above_ml', 100000),
                                            horizontal_diffusion_coef_below_ml=kwargs.pop('horizontal_diffusion_coef_below_ml', 126),
-                                           mixed_layer_depth=kwargs.pop('mixed_layer_depth', 10.))
+                                           mixed_layer_depth=kwargs.pop('mixed_layer_depth', 10.),
+                                           surface_is_allowed=kwargs.pop('surface_is_allowed', False))
         super(RandomVerticalMover, self).__init__(**kwargs)
 
     @property
@@ -259,6 +248,10 @@ class RandomVerticalMover(CyMover, Serializable):
     def mixed_layer_depth(self):
         return self.mover.mixed_layer_depth
 
+    @property
+    def surface_is_allowed(self):
+        return self.mover.surface_is_allowed
+
     @horizontal_diffusion_coef_above_ml.setter
     def horizontal_diffusion_coef_above_ml(self, value):
         self.mover.horizontal_diffusion_coef_above_ml = value
@@ -279,15 +272,21 @@ class RandomVerticalMover(CyMover, Serializable):
     def mixed_layer_depth(self, value):
         self.mover.mixed_layer_depth = value
 
+    @surface_is_allowed.setter
+    def surface_is_allowed(self, value):
+        self.mover.surface_is_allowed = value
+
     def __repr__(self):
         return ('RandomVerticalMover(vertical_diffusion_coef_above_ml={0}, '
                 'vertical_diffusion_coef_below_ml={1}, mixed_layer_depth={2}, '
                 'horizontal_diffusion_coef_above_ml={3}, '
                 'horizontal_diffusion_coef_below_ml={4}, '
-                'active_start={5}, active_stop={6}, on={6})'
+                'surface_is_allowed={5}, '
+                'active_range={6}, on={7})'
                 .format(self.vertical_diffusion_coef_above_ml,
                         self.vertical_diffusion_coef_below_ml,
                         self.mixed_layer_depth,
+                        self.surface_is_allowed,
                         self.horizontal_diffusion_coef_above_ml,
                         self.horizontal_diffusion_coef_below_ml,
-                        self.active_start, self.active_stop, self.on))
+                        self.active_range, self.on))

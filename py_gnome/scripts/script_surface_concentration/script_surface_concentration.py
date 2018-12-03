@@ -49,7 +49,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     print 'adding outputters'
     renderer = Renderer(output_dir=images_dir,
-                        size=(800, 800),
+                        image_size=(800, 800),
                         # viewport=((-70.25, 41.75), # FIXME -- why doesn't this work?
                         #           (-69.75, 42.25)),
                         projection_class=GeoProjection)

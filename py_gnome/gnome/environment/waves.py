@@ -14,8 +14,6 @@ import copy
 import numpy as np
 
 from gnome import constants
-from gnome.utilities import serializable
-from gnome.utilities.serializable import Field
 from gnome.utilities.weathering import Adios2, LehrSimecek, PiersonMoskowitz
 
 from gnome.persist import base_schema
@@ -29,13 +27,18 @@ from wind import WindSchema
 g = constants.gravity  # the gravitational constant.
 
 
-class WavesSchema(base_schema.ObjType):
+class WavesSchema(base_schema.ObjTypeSchema):
     'Colander Schema for Conditions object'
-    name = 'Waves'
     description = 'waves schema base class'
+    water = WaterSchema(
+        save=True, update=True, save_reference=True
+    )
+    wind = WindSchema(
+        save=True, update=True, save_reference=True
+    )
 
 
-class Waves(Environment, serializable.Serializable):
+class Waves(Environment):
     """
     class to compute the wave height for a time series
 
@@ -43,12 +46,7 @@ class Waves(Environment, serializable.Serializable):
     variable, but may be extended in the future
     """
     _ref_as = 'waves'
-    _state = copy.deepcopy(Environment._state)
-    _state += [Field('water', save=True, update=True, save_reference=True),
-               Field('wind', save=True, update=True, save_reference=True)]
     _schema = WavesSchema
-
-    _state['name'].test_for_eq = False
 
     def __init__(self, wind=None, water=None, **kwargs):
         """
@@ -106,12 +104,12 @@ class Waves(Environment, serializable.Serializable):
 
         Units:
           wave_height: meters (RMS height)
-          peak_perid: seconds
+          peak_period: seconds
           whitecap_fraction: unit-less fraction
           dissipation_energy: not sure!! # fixme!
         """
         # make sure are we are up to date with water object
-        wave_height = self.water.wave_height
+        wave_height = self.water.get('wave_height')
 
         if wave_height is None:
             # only need velocity
@@ -119,8 +117,11 @@ class Waves(Environment, serializable.Serializable):
             H = self.compute_H(U)
         else:
             # user specified a wave height
-            H = wave_height
-            U = self.pseudo_wind(H)
+            U = self.get_wind_speed(points, time)
+            H = np.full_like(U, wave_height)
+            #H = wave_height
+            U = self.pseudo_wind(H)	#significant wave height used for pseudo wind
+            H = .707 * H	#Hrms
 
         Wf = self.whitecap_fraction(U)
         T = self.mean_wave_period(U)
@@ -158,7 +159,7 @@ class Waves(Environment, serializable.Serializable):
         fixme: I'm not sure this is right -- if we stick with the wave energy
                given by the user for dispersion, why not for emulsification?
         """
-        wave_height = self.water.wave_height
+        wave_height = self.water.get('wave_height')
         U = self.get_wind_speed(points, time)  # only need velocity
 
         if wave_height is None:
@@ -171,7 +172,7 @@ class Waves(Environment, serializable.Serializable):
 
     def compute_H(self, U):
         U = np.array(U).reshape(-1)
-        return Adios2.wave_height(U, self.water.fetch)
+        return Adios2.wave_height(U, self.water.get('fetch'))
 
     def pseudo_wind(self, H):
         H = np.array(H).reshape(-1)
@@ -184,8 +185,8 @@ class Waves(Environment, serializable.Serializable):
     def mean_wave_period(self, U):
         U = np.array(U).reshape(-1)
         return Adios2.mean_wave_period(U,
-                                       self.water.wave_height,
-                                       self.water.fetch)
+                                       self.water.get('wave_height'),
+                                       self.water.get('fetch'))
 
     def peak_wave_period(self, points, time):
         '''
@@ -231,36 +232,6 @@ class Waves(Environment, serializable.Serializable):
 
         return eps
 
-    def serialize(self, json_='webapi'):
-        """
-        Since 'wind'/'water' property is saved as references in save file
-        need to add appropriate node to WindMover schema for 'webapi'
-        """
-        toserial = self.to_serialize(json_)
-        schema = self.__class__._schema()
-
-        if json_ == 'webapi':
-            if self.wind:
-                schema.add(WindSchema(name='wind'))
-            if self.water:
-                schema.add(WaterSchema(name='water'))
-
-        return schema.serialize(toserial)
-
-    @classmethod
-    def deserialize(cls, json_):
-        """
-        append correct schema for wind object
-        """
-        schema = cls._schema()
-
-        if 'wind' in json_:
-            schema.add(WindSchema(name='wind'))
-
-        if 'water' in json_:
-            schema.add(WaterSchema(name='water'))
-
-        return schema.deserialize(json_)
 
     def prepare_for_model_run(self, _model_time):
         if self.wind is None:

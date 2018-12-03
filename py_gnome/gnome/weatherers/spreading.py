@@ -2,27 +2,34 @@
 objects used to model the spreading of oil
 Include the Langmuir process here as well
 '''
-import copy
 
 import numpy as np
-from repoze.lru import lru_cache
+try:
+    # it's built-in on py3
+    from functools import lru_cache
+except ImportError:
+    # needs backports for py2
+    from backports.functools_lru_cache import lru_cache
+
 from colander import SchemaNode, Float, drop
 
-from gnome.utilities.serializable import Serializable, Field
-from gnome.environment import constant_wind, WindSchema, WaterSchema
+from gnome.environment import WindSchema, WaterSchema
 from gnome.constants import gravity
 from gnome import constants
 from .core import Weatherer
 from gnome.exceptions import GnomeRuntimeError
 
 from .core import WeathererSchema
+from gnome.persist.base_schema import GeneralGnomeObjectSchema
+from gnome.environment.gridded_objects_base import VectorVariableSchema
 
 
 class FayGravityViscousSchema(WeathererSchema):
-    thickness_limit = SchemaNode(Float(), missing=drop)
+    thickness_limit = SchemaNode(Float(), missing=drop, save=True, update=True)
+    water = WaterSchema(save=True, update=True)
 
 
-class FayGravityViscous(Weatherer, Serializable):
+class FayGravityViscous(Weatherer):
     '''
     Model the FayGravityViscous spreading of the oil. This assumes all LEs
     released together spread as a blob. The blob can be partitioned into 'N'
@@ -31,8 +38,6 @@ class FayGravityViscous(Weatherer, Serializable):
     compute thickness - whether 1 or 10 LEs is used to model the blob, the
     thickness remains the same.
     '''
-    _state = copy.deepcopy(Weatherer._state)
-    _state += Field('water', save=True, update=True, save_reference=True)
     _schema = FayGravityViscousSchema
 
     # object used to model spreading of oil and area computation
@@ -47,6 +52,7 @@ class FayGravityViscous(Weatherer, Serializable):
 
         # need water temp to get initial viscosity of oil so thickness_limit
         # can be set
+        # fixme: can use nominal viscosity!
         self.water = water
         self.array_types.update({'fay_area', 'area', 'spill_num',
                                  'bulk_init_volume', 'age', 'density'})
@@ -85,7 +91,7 @@ class FayGravityViscous(Weatherer, Serializable):
         max_area = blob_init_vol / self.thickness_limit
         time = (max_area / (np.pi * self.spreading_const[1] ** 2) *
                 (np.sqrt(water_viscosity) /
-                 (blob_init_vol ** 2 * constants.gravity * rel_buoy)) ** (1./3)
+                 (blob_init_vol ** 2 * constants.gravity * rel_buoy)) ** (1. / 3)
                 ) ** 2
 
         return time
@@ -224,12 +230,12 @@ class FayGravityViscous(Weatherer, Serializable):
         return area
 
     def update_area2(self,
-                    water_viscosity,
-                    relative_buoyancy,
-                    blob_init_volume,
-                    area,
-                    time_step,
-                    age):
+                     water_viscosity,
+                     relative_buoyancy,
+                     blob_init_volume,
+                     area,
+                     time_step,
+                     age):
         '''
         update area array in place, also return area array
         each blob is defined by its age. This updates the area of each blob,
@@ -300,39 +306,40 @@ class FayGravityViscous(Weatherer, Serializable):
                                                        blob_init_volume[m_age][0],
                                                        age[m_age][0])
 
-#                 blob_area2 = self._update_blob_area(water_viscosity,
-#                                                    relative_buoyancy,
-#                                                    blob_init_volume[m_age][0],
-#                                                    age[m_age][0]/2)
+                    # blob_area2 = self._update_blob_area(water_viscosity,
+                    #                                     relative_buoyancy,
+                    #                                     blob_init_volume[m_age][0],
+                    #                                     age[m_age][0]/2)
 
                 else:
                     blob_area4 = self._update_blob_area(water_viscosity,
-                                                       relative_buoyancy,
-                                                       blob_init_volume[m_age][0],
-                                                       age[m_age][0])
+                                                        relative_buoyancy,
+                                                        blob_init_volume[m_age][0],
+                                                        age[m_age][0])
 
                     C = (np.pi *
-                        self.spreading_const[1] ** 2 *
-                        (blob_init_volume[m_age][0] ** 2 *
-                        constants.gravity *
-                        relative_buoyancy /
-                        np.sqrt(water_viscosity)) ** (1. / 3.))
+                         self.spreading_const[1] ** 2 *
+                         (blob_init_volume[m_age][0] ** 2 *
+                          constants.gravity *
+                          relative_buoyancy /
+                          np.sqrt(water_viscosity)) ** (1. / 3.))
 
-                    #blob_area_fgv = .5 * C**2 / area[m_age].sum()	# make sure area > 0
-                    #blob_area_fgv = area[m_age][0] + .5 * (C**2 / area[m_age][0]) * time_step	# make sure area > 0
-                    #blob_area_fgv = area[m_age][0] + .5 * (C**2 / area[m_age][0]) * time_step	# make sure area > 0
+                    # blob_area_fgv = .5 * C**2 / area[m_age].sum()	# make sure area > 0
+                    # blob_area_fgv = area[m_age][0] + .5 * (C**2 / area[m_age][0]) * time_step	# make sure area > 0
+                    # blob_area_fgv = area[m_age][0] + .5 * (C**2 / area[m_age][0]) * time_step	# make sure area > 0
                     blob_area_fgv = area[m_age].sum() + .5 * (C**2 / area[m_age].sum()) * time_step	# make sure area > 0
-                    #blob_area_fgv = blob_area2 + .5 * (C**2 / blob_area2) * time_step	# make sure area > 0
+                    # blob_area_fgv = blob_area2 + .5 * (C**2 / blob_area2) * time_step	# make sure area > 0
 
                     K = 4 * np.pi * 2 * .033
-                    #blob_area_diffusion = (7 / 6) * K * (area[m_age].sum() / K) ** (1 / 7)
-                    blob_area_diffusion = area[m_age].sum() + ((7 / 6) * K * (area[m_age].sum() / K) ** (1 / 7)) * time_step
-                    #blob_area_diffusion = area[m_age][0] + ((7 / 6) * K * (area[m_age][0] / K) ** (1 / 7)) * time_step
-                    #blob_area_diffusion = blob_area2 + ((7 / 6) * K * (blob_area2 / K) ** (1 / 7)) * time_step
 
-                    #blob_area = blob_area_fgv
+                    # blob_area_diffusion = (7 / 6) * K * (area[m_age].sum() / K) ** (1 / 7)
+                    blob_area_diffusion = area[m_age].sum() + ((7 / 6) * K * (area[m_age].sum() / K) ** (1 / 7)) * time_step
+                    # blob_area_diffusion = area[m_age][0] + ((7 / 6) * K * (area[m_age][0] / K) ** (1 / 7)) * time_step
+                    # blob_area_diffusion = blob_area2 + ((7 / 6) * K * (blob_area2 / K) ** (1 / 7)) * time_step
+
+                    # blob_area = blob_area_fgv
                     blob_area = blob_area_fgv + blob_area_diffusion
-                    #blob_area = blob_area_diffusion
+                    # blob_area = blob_area_diffusion
 
                 if blob_area >= max_area:
                     area[m_age] = max_area / m_age.sum()
@@ -370,9 +377,10 @@ class FayGravityViscous(Weatherer, Serializable):
     def prepare_for_model_run(self, sc):
         '''
         Assumes only one type of substance is spilled
+
+        That's now TRUE!
         '''
         subs = sc.get_substances(False)
-
         if len(subs) > 0:
             vo = subs[0].kvis_at_temp(self.water.get('temperature'))
             # set thickness_limit
@@ -415,7 +423,7 @@ class FayGravityViscous(Weatherer, Serializable):
         if not self.on:
             return
 
-        # do this once incase there are any unit conversions, it only needs to
+        # do this once in case there are any unit conversions, it only needs to
         # happen once - for efficiency
         water_kvis = self.water.get('kinematic_viscosity',
                                     'square meter per second')
@@ -429,25 +437,22 @@ class FayGravityViscous(Weatherer, Serializable):
                 self._set_init_relative_buoyancy(substance)
 
             mask = data['fay_area'] == 0
-
+            # looping through spills, as each spill has a different initial volume
             for s_num in np.unique(data['spill_num'][mask]):
                 s_mask = np.logical_and(mask, data['spill_num'] == s_num)
-
                 # do the sum only once for efficiency
                 num = s_mask.sum()
 
+                # fixme: is this right? shouldn't initial volume be stored somewhere??
                 data['bulk_init_volume'][s_mask] = (data['mass'][s_mask][0] /
                                                     data['density'][s_mask][0]
                                                     ) * num
-
-                init_blob_area = \
-                    self.init_area(water_kvis,
-                                   self._init_relative_buoyancy,
-                                   data['bulk_init_volume'][s_mask][0])
-
+                init_blob_area = self.init_area(water_kvis,
+                                                self._init_relative_buoyancy,
+                                                data['bulk_init_volume'][s_mask][0])
+                # fixme: these are the same, yes???
                 data['fay_area'][s_mask] = init_blob_area / num
                 data['area'][s_mask] = init_blob_area / num
-
         sc.update_from_fatedataview()
 
     def weather_elements(self, sc, time_step, model_time):
@@ -485,7 +490,7 @@ class FayGravityViscous(Weatherer, Serializable):
         sc.update_from_fatedataview()
 
 
-class ConstantArea(Weatherer, Serializable):
+class ConstantArea(Weatherer):
     '''
     Used for testing and diagnostics
     - must be manually hooked up
@@ -530,16 +535,21 @@ class ConstantArea(Weatherer, Serializable):
         sc.update_from_fatedataview()
 
 
-class Langmuir(Weatherer, Serializable):
+class LangmuirSchema(WeathererSchema):
+    wind = GeneralGnomeObjectSchema(
+        acceptable_schemas=[WindSchema, VectorVariableSchema],
+        save=True, update=True, save_reference=True
+    )
+    water = WaterSchema(
+        save=True, update=True, save_reference=True
+    )
+
+
+class Langmuir(Weatherer):
     '''
     Easiest to define this as a weathering process that updates 'area' array
     '''
     _schema = WeathererSchema
-
-    _state = copy.deepcopy(Weatherer._state)
-    _state += [Field('wind', update=True, save=True, save_reference=True),
-               Field('water', update=True, save=True, save_reference=True)]
-
     _ref_as = 'langmuir'
 
     def __init__(self,
@@ -576,7 +586,7 @@ class Langmuir(Weatherer, Serializable):
                 np.pi ** 2 /
                 (thickness * rel_buoy * gravity)) ** (1. / 3.)
         cr_k[np.isnan(cr_k)] = 10.	# if density becomes equal to water density
-        cr_k[cr_k==0] = 1.	
+        cr_k[cr_k==0] = 1.
         frac_cov = 1. / cr_k
 
         frac_cov[frac_cov < 0.1] = 0.1

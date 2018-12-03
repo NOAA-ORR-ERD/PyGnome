@@ -1,17 +1,22 @@
 import copy
 
-from gnome.utilities.serializable import Serializable, Field
-from gnome.persist.base_schema import ObjType
+from colander import Float, SchemaNode
+
+from gnome.persist.base_schema import ObjTypeSchema
+from gnome.gnomeobject import GnomeId
+
+class SubstanceSchema(ObjTypeSchema):
+    standard_density = SchemaNode(
+        Float(), update=True, read_only=True
+    )
 
 
-class NonWeatheringSubstance(Serializable):
-    _state = copy.deepcopy(Serializable._state)
-    _state += [Field('standard_density', update=True, read=True)]
-    _schema = ObjType
+class NonWeatheringSubstance(GnomeId):
+    _schema = ObjTypeSchema
 
     def __init__(self,
                  standard_density=1000.0,
-                 pour_point=273.15):
+                 ):
         '''
         Non-weathering substance class for use with ElementType.
         - Right now, we consider our substance to have default properties
@@ -27,14 +32,6 @@ class NonWeatheringSubstance(Serializable):
         :type pour_point: Floating point decimal value
         '''
         self.standard_density = standard_density
-        self._pour_point = pour_point
-
-    def pour_point(self):
-        '''
-            We need to match the interface of the OilProps object, so we
-            define this as a read-only function
-        '''
-        return self._pour_point
 
     def density_at_temp(self):
         '''

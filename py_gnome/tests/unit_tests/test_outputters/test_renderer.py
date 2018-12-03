@@ -10,7 +10,6 @@ NOTE: some of these only really test if the code crashes
   -- It's a good idea to look at the output.
 
 """
-
 import os
 from os.path import basename
 
@@ -55,7 +54,6 @@ def test_exception(output_dir):
 
 def test_init(output_dir):
     r = Renderer(bna_sample, output_dir)
-    print r
 
     assert True
 
@@ -65,15 +63,14 @@ def test_file_delete(output_dir):
     output_dir = os.path.join(output_dir, 'clear_test')
 
     r = Renderer(bna_sample, output_dir)
-    bg_name = r.background_map_name
+    bg_name = r.background_map_name + "png"
     fg_format = r.foreground_filename_format
 
     # dump some files into output dir:
-
     open(os.path.join(output_dir, bg_name), 'w').write('some junk')
 
     for i in range(5):
-        open(os.path.join(output_dir, fg_format.format(i)), 'w'
+        open(os.path.join(output_dir, fg_format.format(i) + "png"), 'w'
              ).write('some junk')
 
     r.prepare_for_model_run(model_start_time=datetime.now())
@@ -82,7 +79,7 @@ def test_file_delete(output_dir):
     # so now there should only be a background image and the animated gif.
     files = sorted(os.listdir(output_dir))
     assert files == sorted([os.path.basename(r.anim_filename),
-                            r.background_map_name])
+                            r.background_map_name + "png"])
 
 
 def test_rewind(output_dir):
@@ -93,12 +90,11 @@ def test_rewind(output_dir):
     fg_format = r.foreground_filename_format
 
     # dump some files into output dir:
-
-    open(os.path.join(output_dir, bg_name), 'w').write('some junk')
+    open(os.path.join(output_dir, bg_name) + 'png', 'w').write('some junk')
 
     for i in range(5):
         open(os.path.join(output_dir,
-             fg_format.format(i)),
+             fg_format.format(i) + 'png'),
              'w'
              ).write('some junk')
 
@@ -109,8 +105,9 @@ def test_rewind(output_dir):
 
     # prepare for model run clears output dir, but adds in the background map
     files = sorted(os.listdir(output_dir))
+    # using defaults, so we know the file extension
     assert files == sorted([os.path.basename(r.anim_filename),
-                            r.background_map_name])
+                            r.background_map_name + 'png'])
 
     r.rewind()
 
@@ -122,12 +119,11 @@ def test_rewind(output_dir):
     # changed renderer and netcdf ouputter to delete old files in
     # prepare_for_model_run() rather than rewind()
     # -- rewind() was getting called a lot
-    # -- before there was time to change the ouput file names, etc.
+    # -- before there was time to change the output file names, etc.
     # So for this unit test, there should only be a background image now.
     files = sorted(os.listdir(output_dir))
     assert files == sorted([os.path.basename(r.anim_filename),
-                            r.background_map_name])
-
+                            r.background_map_name + 'png'])
 
 def test_render_basemap(output_dir):
     """
@@ -358,32 +354,17 @@ def test_draw_raster_map(output_dir):
     r.save_background(os.path.join(output_dir, 'raster_map_render.png'))
 
 
-@pytest.mark.parametrize(("json_"), ['save', 'webapi'])
-def test_serialize_deserialize(json_, output_dir):
+def test_serialize_deserialize(output_dir):
     # non-defaults to check properly..
     r = Renderer(map_filename=bna_sample,
                  output_dir=output_dir,
                  image_size=(1000, 800),
                  viewport=((-126.5, 47.5),
-                           (-126.0, 48.0)),
-                 )
+                           (-126.0, 48.0)))
 
-    toserial = r.serialize(json_)
-    print "surface_conc:", toserial["surface_conc"]
+    toserial = r.serialize()
 
-    dict_ = r.deserialize(toserial)
-
-    # check our Renderer attributes
-    if json_ == 'webapi':
-        assert toserial['map_filename'] == basename(toserial['map_filename'])
-    else:
-        # in save context, we expect a full path to file
-        assert toserial['map_filename'] != basename(toserial['map_filename'])
-
-    assert toserial['map_filename'] == dict_['map_filename']
-    dict_['map_filename'] = bna_sample  # put our full filename back in
-
-    r2 = Renderer.new_from_dict(dict_)
+    r2 = Renderer.deserialize(toserial)
 
     assert r == r2
 

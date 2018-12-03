@@ -11,6 +11,7 @@ import numpy as np
 
 from gnome import scripting
 from gnome.basic_types import datetime_value_2d
+from gnome.utilities.inf_datetime import InfDateTime
 
 from gnome.model import Model
 
@@ -25,6 +26,7 @@ from gnome.weatherers import Evaporation, ChemicalDispersion, Burn, Skimmer
 from gnome.outputters import WeatheringOutput, TrajectoryGeoJsonOutput
 
 from gnome.multi_model_broadcast import ModelBroadcaster
+
 from conftest import testdata, test_oil
 
 from pprint import PrettyPrinter
@@ -32,8 +34,6 @@ pp = PrettyPrinter(indent=2, width=120)
 
 pytestmark = pytest.mark.skipif("sys.platform=='win32'",
                                 reason="skip on windows")
-
-@pytest.mark.slow
 
 
 def make_model(uncertain=False,
@@ -97,15 +97,16 @@ def make_model(uncertain=False,
     skimmer = Skimmer(0.3 * amount,
                       units=units,
                       efficiency=0.3,
-                      active_start=skim_start,
-                      active_stop=skim_start + timedelta(hours=4))
+                      active_range=(skim_start,
+                                    skim_start + timedelta(hours=4)))
     # thickness = 1m so area is just 20% of volume
     volume = spill.get_mass() / spill.substance.density_at_temp()
     burn = Burn(0.2 * volume, 1.0,
-                active_start=skim_start, efficiency=.9)
+                active_range=(skim_start, InfDateTime('inf')),
+                efficiency=.9)
     c_disp = ChemicalDispersion(0.1, waves=waves, efficiency=0.5,
-                                active_start=skim_start,
-                                active_stop=skim_start + timedelta(hours=1))
+                                active_range=(skim_start,
+                                              skim_start + timedelta(hours=1)))
 
     model.weatherers += [Evaporation(water_env, wind),
                          c_disp,
@@ -143,6 +144,7 @@ def test_init():
     finally:
         model_broadcaster.stop()
 
+
 @pytest.mark.slow
 @pytest.mark.timeout(30)
 def test_uncertainty_array_size():
@@ -174,6 +176,7 @@ def test_uncertainty_array_size():
         assert len(model_broadcaster.tasks) == 9
     finally:
         model_broadcaster.stop()
+
 
 @pytest.mark.slow
 @pytest.mark.timeout(30)
@@ -244,7 +247,7 @@ def test_timeout(secs, timeout, expected_runtime, valid_func):
         # - the expected timeout plus a bit of overhead
         print 'runtime: ', rt
         assert rt >= expected_runtime
-        assert rt < expected_runtime + (expected_runtime * 0.03)
+        assert rt < expected_runtime + (expected_runtime * 0.06)
 
         assert valid_func(res)
     finally:
@@ -274,7 +277,7 @@ def test_timeout_2_times():
         rt = end - begin
 
         assert rt >= expected_runtime
-        assert rt < expected_runtime + (expected_runtime * 0.03)
+        assert rt < expected_runtime + (expected_runtime * 0.06)
         assert is_valid(res)
 
         #
@@ -291,11 +294,12 @@ def test_timeout_2_times():
         rt = end - begin
 
         assert rt >= expected_runtime
-        assert rt < expected_runtime + (expected_runtime * 0.03)
+        assert rt < expected_runtime + (expected_runtime * 0.06)
         assert is_valid(res)
 
     finally:
         model_broadcaster.stop()
+
 
 @pytest.mark.slow
 @pytest.mark.timeout(30)
@@ -359,6 +363,7 @@ def test_full_run():
     finally:
         model_broadcaster.stop()
 
+
 @pytest.mark.slow
 @pytest.mark.timeout(30)
 def test_cache_dirs():
@@ -377,6 +382,7 @@ def test_cache_dirs():
     finally:
         model_broadcaster.stop()
 
+
 @pytest.mark.slow
 @pytest.mark.timeout(30)
 def test_spill_containers_have_uncertainty_off():
@@ -393,6 +399,7 @@ def test_spill_containers_have_uncertainty_off():
         assert not any([r for r in res])
     finally:
         model_broadcaster.stop()
+
 
 @pytest.mark.slow
 @pytest.mark.timeout(30)
@@ -419,6 +426,7 @@ def test_weathering_output_only():
                     'WeatheringOutput' in r)]
     finally:
         model_broadcaster.stop()
+
 
 @pytest.mark.slow
 @pytest.mark.timeout(10)

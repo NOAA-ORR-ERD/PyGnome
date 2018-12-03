@@ -100,12 +100,13 @@ cdef class CyGridCurrentMover(CyCurrentMoverBase):
                                 to current flow
         :param current_scale: scale factor applied to current values
         """
-        super(CyGridCurrentMover, self).__init__(uncertain_duration=uncertain_duration,
-                                                 uncertain_time_delay=uncertain_time_delay,
-                                                 up_cur_uncertain=uncertain_along,
-                                                 down_cur_uncertain=-1*uncertain_along,
-                                                 right_cur_uncertain=uncertain_cross,
-                                                 left_cur_uncertain=-1*uncertain_cross)
+        (super(CyGridCurrentMover, self)
+         .__init__(uncertain_duration=uncertain_duration,
+                   uncertain_time_delay=uncertain_time_delay,
+                   up_cur_uncertain=uncertain_along,
+                   down_cur_uncertain=-1*uncertain_along,
+                   right_cur_uncertain=uncertain_cross,
+                   left_cur_uncertain=-1*uncertain_cross))
 
         self.grid_current.fCurScale = current_scale
         self.grid_current.fIsOptimizedForStep = 0

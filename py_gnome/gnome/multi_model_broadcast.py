@@ -212,6 +212,7 @@ class ModelBroadcaster(GnomeId):
         self.context = None
         self.consumers = []
         self.tasks = []
+        self.task_files = []
         self.lookup = {}
 
         self._get_available_ports(wind_speed_uncertainties,
@@ -336,7 +337,7 @@ class ModelBroadcaster(GnomeId):
             reraise(*response)
 
     def stop(self):
-        if len(self.tasks) > 0:
+        if hasattr(self, 'tasks') and len(self.tasks) > 0:
             try:
                 [t.send(dumps(None)) for t in self.tasks]
             except zmq.ZMQError as e:
@@ -353,9 +354,22 @@ class ModelBroadcaster(GnomeId):
 
             self.context.term()
 
+            self.clean_task_files()
             self.consumers = []
             self.tasks = []
             self.lookup = {}
+
+    def clean_task_files(self):
+        for f in self.task_files:
+            try:
+                os.remove(f)
+            except OSError as e:
+                if e.errno == 2:
+                    pass
+                else:
+                    raise
+
+        self.task_files = []
 
     def _get_available_ports(self,
                              wind_speed_uncertainties,
@@ -380,12 +394,15 @@ class ModelBroadcaster(GnomeId):
 
         for p in self.task_ports:
             task = self.context.socket(zmq.REQ)
-            task.connect('ipc://{0}/Task-{1}'.format(self.ipc_folder, p))
+            task_file = '{}/Task-{}'.format(self.ipc_folder, p)
+
+            task.connect('ipc://{}'.format(task_file))
 
             task.setsockopt(zmq.RCVTIMEO, 10 * 1000)
             task.setsockopt(zmq.LINGER, 5)
 
             self.tasks.append(task)
+            self.task_files.append(task_file)
 
     def _set_uncertainty(self,
                          wind_speed_uncertainty,

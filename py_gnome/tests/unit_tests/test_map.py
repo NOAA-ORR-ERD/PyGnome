@@ -10,7 +10,6 @@ from __future__ import division
 import os
 
 import numpy as np
-import pytest
 
 import gnome.map
 from gnome.basic_types import oil_status, status_code_type
@@ -143,45 +142,11 @@ class Test_GnomeMap:
     def test_update_from_dict(self):
         gmap = GnomeMap()
 
-        json_ = gmap.serialize('save')
-        json_['map_bounds'] = [(-10, 10), (10, 10),
-                               (10, -10), (-10, -10)]
-
-        dict_ = gnome.map.GnomeMap.deserialize(json_)
-
-        gmap.update_from_dict(dict_)
-        u_json_ = gmap.serialize('save')
-
-        for key in json_:
-            assert u_json_[key] == json_[key]
-
-    @pytest.mark.parametrize("json_", ({'name': u'GnomeMap',
-                                        'obj_type': u'gnome.map.GnomeMap',
-                                        'json_': u'save',
-                                        'map_bounds': [(-10.0, 10.0),
-                                                       (10.0, 10.0),
-                                                       (10.0, -10.0),
-                                                       (-10.0, -10.0)],
-                                        'spillable_area': [[(-360.0, -90.0),
-                                                            (-360.0, 90.0),
-                                                            (360.0, 90.0),
-                                                            (360.0, -90.0)]]
-                                        },
-                                       {'obj_type': u'gnome.map.GnomeMap',
-                                        'json_': u'webapi',
-                                        },
-                                       )
-                             )
-    def test_new_from_dict(self, json_):
-        context = json_['json_']
-
-        dict_ = GnomeMap.deserialize(json_)
-        gmap = GnomeMap.new_from_dict(dict_)
-
-        u_json_ = gmap.serialize(context)
-
-        for key in json_:
-            assert u_json_[key] == json_[key]
+        json_ = {'map_bounds': [(-10, 10), (10, 10),
+                                (10, -10), (-10, -10)]}
+        assert np.all(gmap.map_bounds != json_['map_bounds'])
+        gmap.update_from_dict(json_)
+        assert np.all(gmap.map_bounds == json_['map_bounds'])
 
 
 class Test_ParamMap:
@@ -229,37 +194,27 @@ class Test_ParamMap:
                 for c in coord_coll[0]:
                     assert len(c) == 2
 
+    def test_serialize_deserialize_param(self):
+        """
+        test create new ParamMap from deserialized dict
+        """
+        pmap = gnome.map.ParamMap((5, 5), 12000, 40)
 
-@pytest.mark.parametrize("json_", ('save', 'webapi'))
-def test_serialize_deserialize_param(json_):
-    """
-    test create new ParamMap from deserialized dict
-    """
-    gmap = gnome.map.ParamMap((5, 5), 12000, 40)
-    print gmap.land_polys._PointsArray
+        serial = pmap.serialize()
+        pmap2 = gnome.map.ParamMap.deserialize(serial)
 
-    serial = gmap.serialize(json_)
-    serial['distance'] = 20000
-    print serial
-    dict_ = gnome.map.ParamMap.deserialize(serial)
-    map2 = gnome.map.ParamMap.new_from_dict(dict_)
-    print map2
+        assert pmap == pmap2
 
-    assert gmap == map2
+    def test_update_from_dict_param(self):
+        """
+        test create new ParamMap from deserialized dict
+        """
+        map1 = gnome.map.ParamMap((5, 5), 12000, 40)
+        assert map1.center == (5, 5, 0)
 
-
-@pytest.mark.parametrize("json_", ('save', 'webapi'))
-def test_update_from_dict_param(json_):
-    """
-    test create new ParamMap from deserialized dict
-    """
-    map1 = gnome.map.ParamMap((5, 5), 12000, 40)
-    serial = map1.serialize(json_)
-    map2 = gnome.map.ParamMap((6, 6), 20000, 40)
-    dict_ = gnome.map.ParamMap.deserialize(serial)
-    map2.update_from_dict(dict_)
-
-    assert map1 == map2
+        json_ = {'center': [6, 6]}
+        map1.update_from_dict(json_)
+        assert map1.center == (6, 6, 0)
 
 
 class Test_RasterMap:
@@ -304,7 +259,7 @@ class Test_RasterMap:
         assert rmap._off_bitmap((-1000, -2000))
         assert rmap._off_bitmap((1000, 2000))
 
-    def test_save_as_image(self, dump):
+    def test_save_as_image(self, dump_folder):
         """
         only tests that it doesn't crash -- you need to look at the
         image to see if it's right
@@ -315,7 +270,7 @@ class Test_RasterMap:
                                      (50, 30), (50, -30)),
                          projection=NoProjection())
 
-        rmap.save_as_image(os.path.join(dump, 'raster_map_image.png'))
+        rmap.save_as_image(os.path.join(dump_folder, 'raster_map_image.png'))
 
         assert True
 
@@ -629,36 +584,30 @@ class Test_MapfromBNA:
                 for c in coord_coll[0]:
                     assert len(c) == 2
 
+    def test_serialize_deserialize(self):
+        """
+        test create new object from to_dict
+        """
+        gmap = gnome.map.MapFromBNA(testbnamap, 6)
 
-@pytest.mark.parametrize("json_", ('save', 'webapi'))
-def test_serialize_deserialize(json_):
-    """
-    test create new object from to_dict
-    """
-    gmap = gnome.map.MapFromBNA(testbnamap, 6)
+        serial = gmap.serialize()
+        map2 = gnome.map.MapFromBNA.deserialize(serial)
 
-    serial = gmap.serialize(json_)
-    dict_ = gnome.map.MapFromBNA.deserialize(serial)
-    map2 = gmap.new_from_dict(dict_)
+        assert gmap == map2
 
-    assert gmap == map2
+    def test_update_from_dict_MapFromBNA(self):
+        'test update_from_dict for MapFromBNA'
+        gmap = gnome.map.MapFromBNA(testbnamap, 6)
 
+        dict_ = {}
+        dict_['map_bounds'] = [(-10, 10), (10, 10), (10, -10), (-10, -10)]
+        dict_['spillable_area'] = [[(-5, 5), (5, 5), (5, -5), (-5, -5)]]
+        dict_['refloat_halflife'] = 2
+        assert np.all(gmap.map_bounds != dict_['map_bounds'])
 
-def test_update_from_dict_MapFromBNA():
-    'test update_from_dict for MapFromBNA'
-    gmap = gnome.map.MapFromBNA(testbnamap, 6)
-
-    serial = gmap.serialize('webapi')
-    dict_ = gnome.map.MapFromBNA.deserialize(serial)
-    dict_['map_bounds'] = [(-10, 10), (10, 10), (10, -10), (-10, -10)]
-    dict_['spillable_area'] = [[(-5, 5), (5, 5), (5, -5), (-5, -5)]]
-    dict_['refloat_halflife'] = 2
-
-    gmap.update_from_dict(dict_)
-    u_json = gmap.serialize('webapi')
-
-    for key in dict_:
-        assert u_json[key] == dict_[key]
+        gmap.update_from_dict(dict_)
+        assert gmap.map_bounds is not dict_['map_bounds']
+        assert np.all(gmap.map_bounds == dict_['map_bounds'])
 
 
 class Test_full_move:
@@ -971,7 +920,7 @@ class Test_lake():
         # print len(gj.features)
 
         # has only the land polys in there.
-        assert len(gj['features']) == 1
+        assert len(gj['features']) == 2
 
         land_polys = gj['features'][0]
         assert land_polys['geometry']['type'] == "MultiPolygon"
@@ -985,7 +934,7 @@ class Test_lake():
 
 if __name__ == '__main__':
 
-    map = test_bna_no_map_bounds()
+    map_ = test_bna_no_map_bounds()
 
     # tester = Test_MapfromBNA()
     # print "running test"

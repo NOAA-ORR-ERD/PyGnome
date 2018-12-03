@@ -4,31 +4,26 @@ from colander import (SchemaNode, Float)
 
 from gnome.basic_types import world_point, world_point_type
 from gnome.cy_gnome.cy_rise_velocity_mover import CyRiseVelocityMover
-from gnome.utilities import serializable
 
 from gnome.movers import CyMover, ProcessSchema
-from gnome.persist.base_schema import ObjType
+from gnome.persist.base_schema import ObjTypeSchema
 
 
-class RiseVelocityMoverSchema(ObjType, ProcessSchema):
-    water_density = SchemaNode(Float())
-    water_viscosity = SchemaNode(Float())
+class RiseVelocityMoverSchema(ProcessSchema):
+    water_density = SchemaNode(Float(), save=True, update=True)
+    water_viscosity = SchemaNode(Float(), save=True, update=True)
 
 
-class RiseVelocityMover(CyMover, serializable.Serializable):
-
+class RiseVelocityMover(CyMover):
     """
     This mover class inherits from CyMover and contains CyRiseVelocityMover
 
     The real work is done by CyRiseVelocityMover.
     CyMover sets everything up that is common to all movers.
     """
-
-    _state = copy.deepcopy(CyMover._state)
     _schema = RiseVelocityMoverSchema
 
-    def __init__(self,
-                 **kwargs):
+    def __init__(self, **kwargs):
         """
         Uses super to invoke base class __init__ method.
 
@@ -51,8 +46,8 @@ class RiseVelocityMover(CyMover, serializable.Serializable):
         .. todo::
             We probably want to include more information.
         """
-        return ('RiseVelocityMover(active_start={0}, active_stop={1}, on={2})'
-                .format(self.active_start, self.active_stop, self.on))
+        return ('RiseVelocityMover(active_range={0}, on={1})'
+                .format(self.active_range, self.on))
 
     def get_move(self, sc, time_step, model_time_datetime):
         """

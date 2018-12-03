@@ -2,7 +2,6 @@
 Ship drift mover
 '''
 import os
-import copy
 
 import numpy as np
 
@@ -14,35 +13,33 @@ from gnome.basic_types import (velocity_rec,
                                status_code_type,
                                oil_status)
 from gnome.utilities import projections
-from gnome.utilities import serializable, rand
+from gnome.utilities import rand
 
 from gnome.environment import Grid
 from gnome.movers import Mover, ProcessSchema
 
-from gnome.persist.base_schema import ObjType
+
+class ShipDriftMoverSchema(ProcessSchema):
+    wind_file = SchemaNode(String(), save=True, missing=drop, isdatafile=True,
+                           test_equal=False)
+    topology_file = SchemaNode(String(), missing=drop, save=True,
+                               isdatafile=True, test_equal=False)
+    wind_scale = SchemaNode(Float(), missing=drop, save=True, update=True)
+    grid_type = SchemaNode(Float(), missing=drop, save=True, update=True)
+    drift_angle = SchemaNode(Float(), missing=drop, save=True, update=True)
 
 
-class ShipDriftMoverSchema(ObjType, ProcessSchema):
-    wind_file = SchemaNode(String(), missing=drop)
-    topology_file = SchemaNode(String(), missing=drop)
-    wind_scale = SchemaNode(Float(), missing=drop)
-    grid_type = SchemaNode(Float(), missing=drop)
-    drift_angle = SchemaNode(Float(), missing=drop)
-
-
-class ShipDriftMover(Mover, serializable.Serializable):
-    _state = copy.deepcopy(Mover._state)
-    _state.add(update=['wind_scale', 'grid_type', 'drift_angle'],
-               save=['wind_scale', 'grid_type', 'drift_angle'])
-    _state.add_field([serializable.Field('wind_file', save=True,
-                     read=True, isdatafile=True, test_for_eq=False),
-                     serializable.Field('topology_file', save=True,
-                     read=True, isdatafile=True, test_for_eq=False)])
+class ShipDriftMover(Mover):
 
     _schema = ShipDriftMoverSchema
 
-    def __init__(self, wind_file, topology_file=None, grid_type=1,
-                 drift_angle=0, extrapolate=False, time_offset=0,
+    def __init__(self,
+                 wind_file=None,
+                 topology_file=None,
+                 grid_type=1,
+                 drift_angle=0,
+                 extrapolation_is_allowed=False,
+                 time_offset=0,
                  **kwargs):
         """
         :param wind_file: file containing wind data on a grid
@@ -56,7 +53,6 @@ class ShipDriftMover(Mover, serializable.Serializable):
         Pass optional arguments to base class
         uses super: super(ShipDriftMover,self).__init__(\*\*kwargs)
         """
-
         if not os.path.exists(wind_file):
             raise ValueError('Path for wind file does not exist: {0}'
                              .format(wind_file))
@@ -100,20 +96,17 @@ class ShipDriftMover(Mover, serializable.Serializable):
             We probably want to include more information.
         """
         return ('ShipDriftMover('
-                'active_start={1.active_start}, '
-                'active_stop={1.active_stop}, '
-                'on={1.on})'.format(self.mover, self))
+                'active_range={0.active_range}, '
+                'on={0.on})'.format(self, self.mover))
 
     def __str__(self):
         return ('ShipDriftMover - current _state.\n'
-                '  active_start time={1.active_start}\n'
-                '  active_stop time={1.active_stop}\n'
+                '  active_range time={1.active_range}\n'
                 '  current on/off status={1.on}'
-                .format(self.mover, self))
+                .format(self, self.mover))
 
     wind_scale = property(lambda self: self._wind_scale,
-                          lambda self, val: setattr(self,
-                                                    'wind_scale', val))
+                          lambda self, val: setattr(self, 'wind_scale', val))
 
     extrapolate = property(lambda self: self.grid.extrapolate,
                            lambda self, val: setattr(self.grid,
@@ -187,7 +180,7 @@ class ShipDriftMover(Mover, serializable.Serializable):
             self.status_codes = sc['status_codes']
         except KeyError, err:
             raise ValueError('The spill container does not have the required'
-                             'data arrays\n' + err.message)
+                             'data arrays\n' + str(err))
 
         self.positions = (self.positions.view(dtype=world_point)
                           .reshape((len(self.positions),)))

@@ -5,9 +5,11 @@ of gnome specific types
 import datetime
 
 import numpy as np
+import six
+import os
 
 from colander import (Float, DateTime, Sequence, Tuple, List,
-                      TupleSchema, SequenceSchema, null)
+                      TupleSchema, SequenceSchema, null, SchemaNode, String, Invalid)
 
 import gnome.basic_types
 from gnome.utilities import inf_datetime
@@ -88,7 +90,7 @@ class NumpyArray(List):
         if appstruct is null:  # colander.null
             return null
 
-        return super(NumpyArray, self).serialize(node, appstruct.tolist())
+        return super(NumpyArray, self).serialize(node, np.array(appstruct).tolist())
 
     def deserialize(self, node, cstruct):
         if cstruct is null:
@@ -168,10 +170,42 @@ class TimeDelta(Float):
 
     def deserialize(self, *args, **kwargs):
         sec = super(TimeDelta, self).deserialize(*args, **kwargs)
+
         if sec is not null:
             return datetime.timedelta(seconds=sec)
         else:
             return sec
+
+#
+# class Filename(Sequence):
+#     def __init__(self, *args, **kwargs):
+#         if 'accept_scalar' not in kwargs:
+#             kwargs['accept_scalar'] = True
+#         super(Filename, self).__init__(*args, **kwargs)
+#
+#     def serialize(self, node, appstruct):
+#         rv = super(Filename, self).serialize(node, appstruct)
+#         if rv and len(rv) == 1:
+#             rv = rv[0]
+#         return rv
+#
+#     def deserialize(self, node, cstruct):
+#         if isinstance(cstruct, six.string_types):
+#             return cstruct
+#         else:
+#             return super(Filename, self).deserialize(node, cstruct)
+
+
+class OrderedCollectionType(Sequence):
+    #identical to SequenceSchema except it can tolerate a 'get'
+    def _validate(self, node, value, accept_scalar):
+        if (hasattr(value, '__iter__') and
+            not isinstance(value, six.string_types)):
+            return list(value)
+        if accept_scalar:
+            return [value]
+        else:
+            raise Invalid(node, '{0} is not iterable'.format(value))
 
 
 """
@@ -180,6 +214,65 @@ serialize/deserialize is called correctly.
 
 Specifically a new DefaultTypeSchema and a DatetimeValue2dArraySchema
 """
+
+class FilenameSchema(SequenceSchema):
+    def __init__(self, *args, **kwargs):
+        kwargs['typ'] = Sequence(accept_scalar=True)
+        super(FilenameSchema, self).__init__(SchemaNode(String()), *args, **kwargs)
+
+    def serialize(self, appstruct, options=None):
+        rv = super(FilenameSchema, self).serialize(appstruct)
+        if rv and options is not None:
+            if not options.get('raw_paths', True):
+                for i, filename in enumerate(rv):
+                    rv[i] = os.path.split(filename)[1]
+        if rv and len(rv) == 1:
+            return rv[0]
+
+    def deserialize(self, cstruct):
+        if cstruct is None or cstruct is null:
+            return None
+        rv = super(FilenameSchema, self).deserialize(cstruct)
+        if len(rv) == 1:
+            return rv[0]
+        else:
+            return rv
+
+'''
+np_array = NumpyArraySchema(
+    Float(), save=True
+)
+'''
+
+class NumpyArraySchema(SchemaNode):
+    '''
+    This schema cannot nest any further schemas inside since it does not follow
+    Colander convention for serializing and deserializing.
+
+    It will serialize a numpy array to nested lists of lists of numbers, using
+    array.tolist(). It will attempt to convert the array to the type specified
+    with the precision specified before doing so.
+
+    It deserializes lists of lists of numbers into a numpy array of dtype
+    specified with dtype length specified, if at all.
+    '''
+
+    def __init__(self, *args, **kwargs):
+        self.typ = np.float32
+        self.dtype = kwargs.pop('dtype', np.float32)
+        self.precision = kwargs.pop('precision', 8)
+
+    def serialize(self, appstruct):
+        if not isinstance(appstruct, (np.ndarray, list, tuple)):
+            raise ValueError('Cannot serialize: {0} is not a numpy array'.format(appstruct))
+        return np.round(np.array(appstruct).astype(self.dtype), self.precision).tolist()
+
+    def deserialize(self, cstruct):
+        return np.array(cstruct, dtype = self.dtype)
+
+
+class OrderedCollectionSchema(SequenceSchema):
+    schema_type = OrderedCollectionType
 
 
 class DefaultTupleSchema(TupleSchema):

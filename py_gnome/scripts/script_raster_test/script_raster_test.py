@@ -48,13 +48,13 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # draw_ontop can be 'uncertain' or 'forecast'
     # 'forecast' LEs are in black, and 'uncertain' are in red
     # default is 'forecast' LEs draw on top
-    renderer = Renderer(mapfile, images_dir, size=(800, 600),
+    renderer = Renderer(mapfile, images_dir, image_size=(800, 600),
                         output_timestep=timedelta(hours=1),
                         timestamp_attrib={'size': 'medium', 'color':'uncert_LE'})
     renderer.set_timestamp_attrib(format='%a %c')
     renderer.graticule.set_DMS(True)
 #     renderer.viewport = ((-124.25, 47.5), (-122.0, 48.70))
-    
+
 
     print 'adding outputters'
     model.outputters += renderer
@@ -69,23 +69,23 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                                                      0.0,
                                                      0.0),
                                      release_time=start_time)
-    
+
     model.spills += spill1
 
     print 'adding a RandomMover:'
     model.movers += RandomMover(diffusion_coef=50000)
 
     print 'adding a wind mover:'
-   
+
     model.movers += constant_wind_mover(13, 270, units='m/s')
 
     print 'adding a current mover:'
 #     curr_file = get_datafile(os.path.join(base_dir, 'COOPSu_CREOFS24.nc'))
-#   
+#
 #     # uncertain_time_delay in hours
 #     c_mover = GridCurrentMover(curr_file)
 #     c_mover.uncertain_cross = 0  # default is .25
-#   
+#
 #     model.movers += c_mover
 
     return model

@@ -343,5 +343,6 @@ default_array_types = {'positions': positions,
                        'mass': mass,
                        'init_mass': init_mass,
                        'age': age,
+                       'surface_concentration': surface_concentration
                        }
 

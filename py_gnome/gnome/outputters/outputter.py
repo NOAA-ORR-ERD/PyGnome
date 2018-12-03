@@ -17,38 +17,44 @@ from colander import SchemaNode, MappingSchema, Bool, drop, String
 
 
 from gnome.persist import base_schema, extend_colander, validators
-from gnome.utilities.serializable import Serializable, Field
 
 from gnome.utilities.surface_concentration import compute_surface_concentration
+from gnome.gnomeobject import GnomeId
 
 
-class BaseSchema(base_schema.ObjType, MappingSchema):
+class BaseOutputterSchema(base_schema.ObjTypeSchema):
     'Base schema for all outputters - they all contain the following'
-    on = SchemaNode(Bool(), missing=drop)
-    output_zero_step = SchemaNode(Bool())
-    output_last_step = SchemaNode(Bool())
-    output_timestep = SchemaNode(extend_colander.TimeDelta(), missing=drop)
-    output_start_time = SchemaNode(extend_colander.LocalDateTime(),
-                                   validator=validators.convertible_to_seconds,
-                                   missing=None)
-    surface_conc = SchemaNode(String(allow_empty=True), missing=drop)
+    on = SchemaNode(
+        Bool(), missing=drop, save=True, update=True
+    )
+    output_zero_step = SchemaNode(
+        Bool(), save=True, update=True
+    )
+    output_last_step = SchemaNode(
+        Bool(), save=True, update=True
+    )
+    output_timestep = SchemaNode(
+        extend_colander.TimeDelta(), missing=drop, save=True, update=True
+    )
+    output_start_time = SchemaNode(
+        extend_colander.LocalDateTime(),
+        validator=validators.convertible_to_seconds,
+        missing=drop , save=True, update=True
+    )
+    surface_conc = SchemaNode(
+        String(allow_empty=True), save=True, update=True
+    )
 
 
-class Outputter(Serializable):
+class Outputter(GnomeId):
     '''
-    base class for all outputters
+    Base class for all outputters
     Since this outputter doesn't do anything, it'll never be used as part
     of a gnome model. As such, it should never need to be serialized
     '''
-    _state = copy.deepcopy(Serializable._state)
-    _state += (Field('on', save=True, update=True),
-               Field('output_zero_step', save=True, update=True),
-               Field('output_last_step', save=True, update=True),
-               Field('output_timestep', save=True, update=True),
-               Field('output_start_time', save=True, update=True),
-               Field('surface_conc', save=True, update=True),
-               )
-    _schema = BaseSchema
+    _schema = BaseOutputterSchema
+
+    _surf_conc_computed = False
 
     def __init__(self,
                  cache=None,
@@ -57,12 +63,12 @@ class Outputter(Serializable):
                  output_zero_step=True,
                  output_last_step=True,
                  output_start_time=None,
-                 name='',
                  output_dir=None,
-                 surface_conc="",
+                 surface_conc=None,
+                 *args,
                  **kwargs):
         """
-        sets attributes for all outputters, like output_timestep, cache
+        Sets attributes for all outputters, like output_timestep, cache, etc.
 
         :param cache: sets the cache object from which to read data. The model
             will automatically set this param
@@ -85,8 +91,6 @@ class Outputter(Serializable):
             the model time
         :type output_start_time: datetime object
 
-        :param name='': name for outputter
-
         :param output_dir=None: directory to dump ouput in, if it needs to
                                 do this.
         :type output_dir: string (path)
@@ -96,9 +100,11 @@ class Outputter(Serializable):
                                   the surface concentration the contents of the
                                   string determine the algorithm used. "kde" is
                                   currently the only working option.
-        :type surface_conc" string
-
+        :type surface_conc: string
         """
+
+        super(Outputter, self).__init__(*args, **kwargs)
+
         self.cache = cache
         self.on = on
         self.output_zero_step = output_zero_step
@@ -115,8 +121,6 @@ class Outputter(Serializable):
             self.output_start_time = None
 
         self.sc_pair = None     # set in prepare_for_model_run
-
-        self.name = name
 
         # make sure the output_dir exists:
         if output_dir is not None:
@@ -150,7 +154,7 @@ class Outputter(Serializable):
         if value is None:
             self._output_timestep = None
         else:
-            self._output_timestep = value.seconds
+            self._output_timestep = value.total_seconds()
 
     def prepare_for_model_run(self,
                               model_start_time=None,
@@ -302,15 +306,21 @@ class Outputter(Serializable):
                              ' prior to calling write_output')
 
         # compute the surface_concentration if need be
-        # doing this here so that it will only happen if there is an output step
+        # doing this here so that it will only happen if there is an
+        # output step.
         # this updates the most recent one in the cache
-        if self._write_step and self.surface_conc and not self._surf_conc_computed:
+
+        if (self._write_step and
+                self.surface_conc and
+                not self._surf_conc_computed):
             # compute the surface concentration and put it in the cache
             try:
                 sc = self.cache.recent[step_num][0]  # only the certain one
-            except KeyError:  # not using the most recent one from cache
-                pass          # so no need to compute
-                              # fixme: it may not get into cache at all.
+            except KeyError:
+                # not using the most recent one from cache
+                # so no need to compute
+                # fixme: it may not get into cache at all.
+                pass
             else:
                 compute_surface_concentration(sc, self.surface_conc)
                 self._surf_conc_computed = True

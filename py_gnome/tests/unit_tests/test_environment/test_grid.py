@@ -27,9 +27,9 @@ def sg_topology():
 
 
 @pytest.fixture()
-def sg():
-    return PyGrid.from_netCDF(sg_data()[0], sg_data()[1],
-                              grid_topology=sg_topology())
+def sg(sg_data, sg_topology):
+    return PyGrid.from_netCDF(sg_data[0], sg_data[1],
+                              grid_topology=sg_topology)
 
 
 @pytest.fixture()
@@ -49,9 +49,9 @@ def ug_topology():
 
 
 @pytest.fixture()
-def ug():
-    return PyGrid.from_netCDF(ug_data()[0], ug_data()[1],
-                              grid_topology=ug_topology())
+def ug(ug_data, ug_topology):
+    return PyGrid.from_netCDF(ug_data[0], ug_data[1],
+                              grid_topology=ug_topology)
 
 
 class TestPyGrid_S:
@@ -88,12 +88,12 @@ class TestPyGrid_S:
         print sg2.serialize()['filename']
         assert sg.serialize()['filename'] == sg2.serialize()['filename']
 
-    def test_deserialize(self, sg, sg_data, sg_topology):
-        d_sg = Grid_S.new_from_dict(sg.serialize())
+    def test_deserialize(self, sg):
+        d_sg = Grid_S.deserialize(sg.serialize())
 
         pp.pprint(sg.serialize())
         pp.pprint(d_sg.serialize())
-        assert sg.name == d_sg.name
+        assert sg == d_sg
 
 
 class TestPyGrid_U:
@@ -130,9 +130,9 @@ class TestPyGrid_U:
         assert ug.serialize()['filename'] == ug2.serialize()['filename']
 
     def test_deserialize(self, ug, ug_data, ug_topology):
-        d_ug = Grid_U.new_from_dict(ug.serialize())
+        d_ug = Grid_U.deserialize(ug.serialize())
 
         pp.pprint(ug.serialize())
         pp.pprint(d_ug.serialize())
 
-        assert ug.name == d_ug.name
+        assert ug == d_ug

@@ -160,7 +160,7 @@ OSErr WindMover_c::ReallocateUncertainty(int numLEs, short* statusCodes)
     // remove off map LEs
 
 	long i, numrec = 0, uncertListSize, numLESetsStored;
-	OSErr err = 0;
+	//OSErr err = 0;
 
 	if (numLEs == 0 || ! statusCodes) return -1;	// shouldn't happen
 
@@ -204,8 +204,8 @@ OSErr WindMover_c::ReallocateUncertainty(int numLEs, short* statusCodes)
 OSErr WindMover_c::AllocateUncertainty(int numLESets, int* LESetsSizesList)
 {
 	// only passing in uncertainty list information
-	long i, j, numrec = 0;
-	OSErr err = 0;
+	long i, numrec = 0;
+	//OSErr err = 0;
 
 	this->DisposeUncertainty(); // get rid of any old values
 
@@ -301,7 +301,6 @@ OSErr WindMover_c::UpdateUncertainty(const Seconds& elapsedTime,
 
 		if (needToReAllocate) {
 			// move to separate function, and probably should combine with 
-			char errmsg[256] = "";
 			float cosTerm, sinTerm;
 
 			_SetHandleSize((Handle)fWindUncertaintyList, numrec * sizeof(LEWindUncertainRec));
@@ -365,7 +364,7 @@ OSErr WindMover_c::AddUncertainty(long setIndex, long leIndex,
 
 	double sqs, m, dtheta, x, w, s, t, costheta, sintheta;
 	double norm;
-	float rand1,rand2, eddyDiffusion = 100000, value;
+	float rand1,rand2/*, eddyDiffusion = 100000, value*/;
 
 	VelocityRec tempV = *patVel;
 	LEWindUncertainRec unrec;
@@ -479,8 +478,9 @@ OSErr WindMover_c::PrepareForModelStep(const Seconds& model_time,
 	}
 
 	err = this->GetTimeValue(model_time, &this->current_time_value);	
-
+#ifndef pyGNOME
 	if (err) printError("An error occurred in TWindMover::PrepareForModelStep");
+#endif
 
 	return err;
 }
@@ -556,7 +556,7 @@ OSErr WindMover_c::get_move(int n, Seconds model_time, Seconds step_len,
 	LERec rec;
 	prec = &rec;
 
-	WorldPoint3D zero_delta ={0,0,0.};
+	WorldPoint3D zero_delta ={{0,0},0.};
 
 	for (int i = 0; i < n; i++) {
 		// only operate on LE if the status is in water
@@ -591,8 +591,8 @@ WorldPoint3D WindMover_c::GetMove(const Seconds& model_time, Seconds timeStep,
 
 	double 	dLong, dLat;
 
-	VelocityRec	patVelocity, timeValue = { 0, 0 };
-	WorldPoint3D	deltaPoint ={0,0,0.};
+	VelocityRec	timeValue = { 0, 0 };
+	WorldPoint3D	deltaPoint ={{0,0},0.};
 	WorldPoint refPoint = (*theLE).p;	
 
 	if ((*theLE).z > 0) return deltaPoint; // wind doesn't act below surface

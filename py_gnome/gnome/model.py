@@ -1,116 +1,130 @@
 #!/usr/bin/env python
+
+# import pdb
+# import inspect
+
 import os
-import shutil
+
+# import shutil
 from datetime import datetime, timedelta
 import copy
-import inspect
 import zipfile
+
+# import collections
+from pprint import pformat
 
 import numpy as np
 
+
 from colander import (SchemaNode,
                       String, Float, Int, Bool, List,
-                      drop, OneOf)
+                      drop, OneOf,
+                      # SequenceSchema,
+                      )
 
 from gnome.environment import Environment
 
+
 import gnome.utilities.cache
-from gnome.utilities.time_utils import round_time
+from gnome.utilities.time_utils import round_time, asdatetime
 from gnome.utilities.orderedcollection import OrderedCollection
-from gnome.utilities.serializable import Serializable, Field
 
 from gnome.basic_types import oil_status, fate
+from gnome.gnomeobject import GnomeId, allowzip64, Refs
+from gnome.exceptions import ReferencedObjectNotSet, GnomeRuntimeError
+
+from gnome.map import (GnomeMapSchema,
+                       MapFromBNASchema,
+                       ParamMapSchema,
+                       MapFromUGridSchema)
+
+from gnome.environment import Environment, Wind
+
 from gnome.spill_container import SpillContainerPair
-from gnome.environment import Wind
+from gnome.spill.spill import SpillSchema
+
 from gnome.movers import Mover
 from gnome.weatherers import (weatherer_sort,
                               Weatherer,
                               WeatheringData,
                               FayGravityViscous,
-                              Langmuir)
+                              Langmuir,
+                              weatherer_schemas)
 from gnome.outputters import Outputter, NetCDFOutput, WeatheringOutput
+
 from gnome.persist import (extend_colander,
                            validators,
-                           References,
-                           class_from_objtype)
-from gnome.persist.base_schema import (ObjType,
-                                       CollectionItemsList)
+                           save_load)
+from gnome.persist.base_schema import (ObjTypeSchema,
+                                       CollectionItemsList,
+                                       GeneralGnomeObjectSchema)
 from gnome.exceptions import ReferencedObjectNotSet, GnomeRuntimeError
+from gnome.spill.spill import SpillSchema
+from gnome.gnomeobject import GnomeId, allowzip64, Refs
+
+from gnome.persist.extend_colander import OrderedCollectionSchema
 
 
-class ModelSchema(ObjType):
+class ModelSchema(ObjTypeSchema):
     'Colander schema for Model object'
-    time_step = SchemaNode(Float(), missing=drop)
-    weathering_substeps = SchemaNode(Int(), missing=drop)
-    start_time = SchemaNode(extend_colander.LocalDateTime(),
-                            validator=validators.convertible_to_seconds,
-                            missing=drop)
-    duration = SchemaNode(extend_colander.TimeDelta(), missing=drop)
-    uncertain = SchemaNode(Bool(), missing=drop)
-    cache_enabled = SchemaNode(Bool(), missing=drop)
-    num_time_steps = SchemaNode(Int(), missing=drop)
-    make_default_refs = SchemaNode(Bool(), missing=drop)
-    mode = SchemaNode(String(),
-                      validator=OneOf(['gnome', 'adios', 'roc']),
-                      missing=drop)
-    location = SchemaNode(List(), missing=drop)
+    time_step = SchemaNode(Float())
+    weathering_substeps = SchemaNode(Int())
+    start_time = SchemaNode(
+        extend_colander.LocalDateTime(),
+        validator=validators.convertible_to_seconds
+    )
+    duration = SchemaNode(
+        extend_colander.TimeDelta()
+    )
+    uncertain = SchemaNode(Bool())
+    cache_enabled = SchemaNode(Bool())
+    num_time_steps = SchemaNode(Int(), read_only=True)
+    make_default_refs = SchemaNode(Bool())
+    mode = SchemaNode(
+        String(), validator=OneOf(['gnome', 'adios', 'roc'])
+    )
+    location = SchemaNode(
+        List(), missing=drop,
 
-    def __init__(self, json_='webapi', *args, **kwargs):
-        '''
-        Add default schema for orderedcollections if oc_schema=True
-        The default schema works for 'save' files since it only keeps the same
-        info {'obj_type' and 'id'} for all elements in OC. For 'webapi', we
-        cannot do this and must deserialize each element of the collection
-        using the deserialize method of each object; so these are not added to
-        schema for 'webapi'
-        '''
-        if json_ == 'save':
-            self.add(CollectionItemsList(missing=drop, name='spills'))
-            self.add(CollectionItemsList(missing=drop,
-                     name='uncertain_spills'))
-            self.add(CollectionItemsList(missing=drop, name='movers'))
-            self.add(CollectionItemsList(missing=drop,
-                     name='weatherers'))
-            self.add(CollectionItemsList(missing=drop,
-                     name='environment'))
-            self.add(CollectionItemsList(missing=drop,
-                     name='outputters'))
-        super(ModelSchema, self).__init__(*args, **kwargs)
+    )
+    map = GeneralGnomeObjectSchema(
+        acceptable_schemas=(GnomeMapSchema,
+                            MapFromBNASchema,
+                            ParamMapSchema,
+                            MapFromUGridSchema),
+        save_reference=True
+    )
+    spills = OrderedCollectionSchema(
+        GeneralGnomeObjectSchema(acceptable_schemas=[SpillSchema]),
+        save_reference=True, test_equal=False
+    )
+#     uncertain_spills = OrderedCollectionSchema(
+#         GeneralGnomeObjectSchema(acceptable_schemas=[SpillSchema]),
+#         save_reference=True, test_equal=False
+#     )
+    movers = OrderedCollectionSchema(
+        GeneralGnomeObjectSchema(acceptable_schemas=gnome.movers.mover_schemas),
+        save_reference=True
+    )
+    weatherers = OrderedCollectionSchema(
+        GeneralGnomeObjectSchema(acceptable_schemas=weatherer_schemas),
+        save_reference=True
+    )
+    environment = OrderedCollectionSchema(
+        GeneralGnomeObjectSchema(acceptable_schemas=gnome.environment.schemas),
+        save_reference=True
+    )
+    outputters = OrderedCollectionSchema(
+        GeneralGnomeObjectSchema(acceptable_schemas=gnome.outputters.schemas),
+        save_reference=True
+    )
 
 
-class Model(Serializable):
+class Model(GnomeId):
     '''
     PyGnome Model Class
     '''
-    _update = ['time_step',
-               'weathering_substeps',
-               'start_time',
-               'duration',
-               'uncertain',
-               'cache_enabled',
-               'mode',
-               'map',
-               'movers',
-               'weatherers',
-               'environment',
-               'outputters',
-               'location']
-
-    _create = []
-    _create.extend(_update)
-    _state = copy.deepcopy(Serializable._state)
     _schema = ModelSchema
-
-    # no need to copy parent's _state in this case
-    _state.add(save=_create, update=_update)
-
-    # override __eq__ since 'spills' and 'uncertain_spills' need to be checked
-    # They both have _to_dict() methods to return underlying ordered
-    # collections and that would not be the correct way to check equality
-    _state += [Field('spills', save=True, update=True, test_for_eq=False),
-               Field('uncertain_spills', save=True, test_for_eq=False),
-               Field('num_time_steps', read=True),
-               Field('make_default_refs', save=True, update=True)]
 
     # list of OrderedCollections
     _oc_list = ['movers', 'weatherers', 'environment', 'outputters']
@@ -118,84 +132,33 @@ class Model(Serializable):
     modes = {'gnome', 'adios', 'roc'}
 
     @classmethod
-    def new_from_dict(cls, dict_):
-        'Restore model from previously persisted _state'
-        json_ = dict_.pop('json_')
-        l_env = dict_.pop('environment', [])
-        l_out = dict_.pop('outputters', [])
-        g_objects = dict_.pop('movers', [])
-        l_weatherers = dict_.pop('weatherers', [])
-        c_spills = dict_.pop('spills', [])
-
-        if 'uncertain_spills' in dict_:
-            u_spills = dict_.pop('uncertain_spills')
-            l_spills = zip(c_spills, u_spills)
-        else:
-            l_spills = c_spills
-
-        # define defaults for properties that a location file may not contain
-        kwargs = inspect.getargspec(cls.__init__)
-        default_restore = dict(zip(kwargs[0][1:], kwargs[3]))
-
-        if json_ == 'webapi':
-            # default is to disable cache
-            default_restore['cache_enabled'] = False
-
-        for key in default_restore:
-            default_restore[key] = dict_.pop(key, default_restore[key])
-
-        model = object.__new__(cls)
-        model.__restore__(**default_restore)
-
-        [model.environment.add(obj) for obj in l_env]
-        [model.outputters.add(obj) for obj in l_out]
-        [model.spills.add(obj) for obj in l_spills]
-        [model.movers.add(obj) for obj in g_objects]
-        [model.weatherers.add(obj) for obj in l_weatherers]
-
-        # register callbacks with OrderedCollections after objects are added
-        model._register_callbacks()
-
-        # OrderedCollections are being used so maintain order.
-        if json_ == 'webapi':
-            model.update_from_dict(dict_)
-        else:
-            cls._restore_attr_from_save(model, dict_)
-
-        # restore the spill data outside this method - let's not try to find
-        # the saveloc here
-        msg = ("{0._pid}'new_from_dict' created new model: "
-               "{0.name}").format(model)
-        model.logger.info(msg)
-        return model
-
-    @classmethod
     def load_savefile(cls, filename):
         """
-        load a model instance from a save file
+        Load a model instance from a save file
 
         :param filename: the filename of the save file -- usually a zip file,
                          but can also be a directry with the full contents of
                          a zip file
 
-        :returns: a model instance all set up from the savefile.
+        :return: a model instance all set up from the savefile.
 
-        This is simply a utility wrapper around:
-        ``gnome.persist.save_load.load()``
-
+        This is simply a utility wrapper around gnome.persist.save_load.load()
         """
-        model = gnome.persist.save_load.load(filename)
+
+        model = save_load.load(filename)
 
         # check that this actually loaded a model object
         #  load() will load any gnome object from json...
         if not isinstance(model, cls):
-            msg = "This does not appear to be a save file for a model\n"
-            msg += "loaded a %s instead" % type(model)
-            raise ValueError(msg)
+            raise ValueError('This does not appear to be a save file '
+                             'for a model\n'
+                             'loaded a {} instead'
+                             .format(type(model)))
         else:
             return model
 
     def __init__(self,
+                 name='Model',
                  time_step=None,
                  start_time=round_time(datetime.now(), 3600),
                  duration=timedelta(days=1),
@@ -203,15 +166,23 @@ class Model(Serializable):
                  map=None,
                  uncertain=False,
                  cache_enabled=False,
-                 name=None,
                  mode=None,
-                 location=[]):
+                 location=[],
+                 environment=[],
+                 outputters=[],
+                 movers=[],
+                 weatherers=[],
+                 spills=[],
+                 uncertain_spills=[],
+                 **kwargs):
         '''
         Initializes a model.
         All arguments have a default.
 
         :param time_step=timedelta(minutes=15): model time step in seconds
-                                                or as a timedelta object
+                                                or as a timedelta object. NOTE:
+                                                if you pass in a number, it WILL
+                                                be seconds
 
         :param start_time=datetime.now(): start time of model, datetime
                                           object. Rounded to the nearest hour.
@@ -219,7 +190,7 @@ class Model(Serializable):
         :param duration=timedelta(days=1): How long to run the model,
                                            a timedelta object.
 
-        :param int weathering_substeps=1: How many weathering substeps to
+        :param weathering_substeps=1: How many weathering substeps to
                                           run inside a single model time step.
 
         :param map=gnome.map.GnomeMap(): The land-water map.
@@ -233,10 +204,64 @@ class Model(Serializable):
                              This is a value that the Web Client uses to
                              decide which UI views it should present.
         '''
-        self.__restore__(time_step, start_time, duration,
-                         weathering_substeps,
-                         uncertain, cache_enabled, map, name, mode, location)
+        # making sure basic stuff is in place before properties are set
+        self.environment = OrderedCollection(dtype=Environment)
+        self.movers = OrderedCollection(dtype=Mover)
+        self.weatherers = OrderedCollection(dtype=Weatherer)
+        self.outputters = OrderedCollection(dtype=Outputter)
 
+        self.environment.add(environment)
+        self.movers.add(movers)
+        self.weatherers.add(weatherers)
+        self.outputters.add(outputters)
+
+        # contains both certain/uncertain spills
+        self.spills = SpillContainerPair(uncertain)
+        if len(uncertain_spills) > 0:
+            _spills = zip(spills, uncertain_spills)
+        else:
+            _spills = spills
+        self.spills.add(_spills)
+
+        self._cache = gnome.utilities.cache.ElementCache()
+        self._cache.enabled = cache_enabled
+
+        # default to now, rounded to the nearest hour
+        self.start_time = start_time
+        self._duration = duration
+        self.weathering_substeps = weathering_substeps
+
+        self._name = name
+
+        if not map:
+            map = gnome.map.GnomeMap()
+        self._map = map
+
+        if mode is not None:
+            if mode in Model.modes:
+                self.mode = mode
+            else:
+                raise ValueError('Model mode ({}) invalid, '
+                                 'should be one of {{{}}}'
+                                 .format(mode, ', '.join(Model.modes)))
+        else:
+            self.mode = 'gnome'
+
+        # reset _current_time_step
+        self._current_time_step = -1
+        self._time_step = None
+        if time_step is not None:
+            self.time_step = time_step  # this calls rewind() !
+        self._reset_num_time_steps()
+
+        # default is to zip save file
+        self.zipsave = True
+
+        # model creates references to weatherers/environment if
+        # make_default_refs is True
+        self.make_default_refs = True
+
+        self.location = location
         self._register_callbacks()
 
     def _register_callbacks(self):
@@ -256,67 +281,6 @@ class Model(Serializable):
         self.movers.register_callback(self._callback_add_spill,
                                       ('add', 'replace', 'remove'))
 
-    def __restore__(self, time_step, start_time, duration,
-                    weathering_substeps, uncertain, cache_enabled, map,
-                    name, mode, location):
-        '''
-        Take out initialization that does not register the callback here.
-        This is because new_from_dict will use this to restore the model _state
-        when doing a midrun persistence.
-        '''
-        # making sure basic stuff is in place before properties are set
-        self.environment = OrderedCollection(dtype=Environment)
-        self.movers = OrderedCollection(dtype=Mover)
-        self.weatherers = OrderedCollection(dtype=Weatherer)
-
-        # contains both certain/uncertain spills
-        self.spills = SpillContainerPair(uncertain)
-
-        self._cache = gnome.utilities.cache.ElementCache()
-        self._cache.enabled = cache_enabled
-
-        # list of output objects
-        self.outputters = OrderedCollection(dtype=Outputter)
-
-        # default to now, rounded to the nearest hour
-        self._start_time = start_time
-        self._duration = duration
-        self.weathering_substeps = weathering_substeps
-
-        if not map:
-            map = gnome.map.GnomeMap()
-
-        if name is not None:
-            self.name = name
-
-        if mode is not None:
-            if mode in self.modes:
-                self.mode = mode
-            else:
-                raise ValueError('Model mode ({}) invalid, '
-                                 'should be one of {{{}}}'
-                                 .format(mode, ', '.join(self.modes)))
-        else:
-            self.mode = 'gnome'
-
-        self._map = map
-
-        # reset _current_time_step
-        self._current_time_step = -1
-        self._time_step = None
-        if time_step is not None:
-            self.time_step = time_step  # this calls rewind() !
-        self._reset_num_time_steps()
-
-        # default is to zip save file
-        self.zipsave = True
-
-        # model creates references to weatherers/environment if
-        # make_default_refs is True
-        self.make_default_refs = True
-
-        self.location = location
-
     def reset(self, **kwargs):
         '''
         Resets model to defaults -- Caution -- clears all movers, spills, etc.
@@ -329,7 +293,7 @@ class Model(Serializable):
         Rewinds the model to the beginning (start_time)
         '''
         self._current_time_step = -1
-        self.model_time = self._start_time
+        self.model_time = self.start_time
 
         # fixme: do the movers need re-setting? -- or wait for
         #        prepare_for_model_run?
@@ -354,6 +318,61 @@ class Model(Serializable):
 #        write the already-cached data to an output files.
 #        """
 
+    def update_from_dict(self, dict_, refs=None):
+        """
+        functions in common_object.
+        """
+        if refs is None:
+            refs = Refs()
+            self._schema.register_refs(self._schema(), self, refs)
+        updatable = self._schema().get_nodes_by_attr('update')
+        attrs = copy.copy(dict_)
+        updated = False
+        for k in attrs.keys():
+            if k not in updatable:
+                attrs.pop(k)
+
+        for name in updatable:
+            node = self._schema().get(name)
+            if name in attrs:
+                if name != 'spills':
+                    attrs[name] = self._schema.process_subnode(node,
+                                                               self,
+                                                               getattr(self,
+                                                                       name),
+                                                               name,
+                                                               attrs,
+                                                               attrs[name],
+                                                               refs)
+                    if attrs[name] is drop:
+                        del attrs[name]
+                else:
+                    oldspills = OrderedCollection(self.spills
+                                                  ._spill_container.spills[:],
+                                                  dtype=(self.spills.
+                                                         _spill_container
+                                                         .spills.dtype))
+                    new_spills = ObjTypeSchema.process_subnode(node, self,
+                                                               self.spills
+                                                               ._spill_container
+                                                               .spills,
+                                                               'spills',
+                                                               attrs,
+                                                               attrs[name],
+                                                               refs)
+                    if not updated and self._attr_changed(oldspills,
+                                                          new_spills):
+                        updated = True
+
+                    attrs.pop(name)
+
+        for k, v in attrs.items():
+            if hasattr(self, k):
+                if not updated and self._attr_changed(getattr(self, k), v):
+                    updated = True
+                setattr(self, k, v)
+        return updated
+
     @property
     def uncertain(self):
         '''
@@ -369,6 +388,10 @@ class Model(Serializable):
         if self.spills.uncertain != uncertain_value:
             self.spills.uncertain = uncertain_value  # update uncertainty
             self.rewind()
+
+    @property
+    def uncertain_spills(self):
+        return self.spills.to_dict().get('uncertain_spills', [])
 
     @property
     def cache_enabled(self):
@@ -390,8 +413,7 @@ class Model(Serializable):
                      for s in self.spills]) or
                  any([w.speed_uncertainty_scale > 0.0
                      for w in self.environment
-                     if isinstance(w, Wind)]))
-                )
+                     if isinstance(w, Wind)])))
 
     @property
     def start_time(self):
@@ -402,7 +424,7 @@ class Model(Serializable):
 
     @start_time.setter
     def start_time(self, start_time):
-        self._start_time = start_time
+        self._start_time = asdatetime(start_time)
         self.rewind()
 
     @property
@@ -437,7 +459,7 @@ class Model(Serializable):
 
     @current_time_step.setter
     def current_time_step(self, step):
-        self.model_time = self._start_time + timedelta(seconds=step *
+        self.model_time = self.start_time + timedelta(seconds=step *
                                                        self.time_step)
         self._current_time_step = step
 
@@ -562,13 +584,13 @@ class Model(Serializable):
                             return item
             except AttributeError:
                 pass
-        items = None if items == [] else items
 
-        return items
+        return None if items == [] else items
 
     def _order_weatherers(self):
         'use weatherer_sort to sort the weatherers'
         s_weatherers = sorted(self.weatherers, key=weatherer_sort)
+
         if self.weatherers.values() != s_weatherers:
             self.weatherers.clear()
             self.weatherers += s_weatherers
@@ -800,9 +822,8 @@ class Model(Serializable):
         '''
         for sc in self.spills.items():
             if sc.num_released > 0:  # can this check be removed?
-
                 # possibly refloat elements
-                self.map.refloat_elements(sc, self.time_step)
+                self.map.refloat_elements(sc, self.time_step, self.model_time)
 
                 # reset next_positions
                 (sc['next_positions'])[:] = sc['positions']
@@ -812,13 +833,15 @@ class Model(Serializable):
                     delta = m.get_move(sc, self.time_step, self.model_time)
                     sc['next_positions'] += delta
 
-                self.map.beach_elements(sc)
+                self.map.beach_elements(sc, self.model_time)
 
                 # let model mark these particles to be removed
                 tbr_mask = sc['status_codes'] == oil_status.off_maps
                 sc['status_codes'][tbr_mask] = oil_status.to_be_removed
 
-                self._update_fate_status(sc)
+                substances = sc.get_substances(False)
+                if len(substances) > 0:
+                    self._update_fate_status(sc)
 
                 # the final move to the new positions
                 (sc['positions'])[:] = sc['next_positions']
@@ -836,9 +859,9 @@ class Model(Serializable):
             sc['fate_status'][non_w_mask] = fate.non_weather
 
             w_mask = ((sc['status_codes'] == oil_status.in_water)
-                 & ~(sc['fate_status'] & fate.skim == fate.skim)
-                 & ~(sc['fate_status'] & fate.burn == fate.burn)
-                 & ~(sc['fate_status'] & fate.disperse == fate.disperse))
+                      & ~(sc['fate_status'] & fate.skim == fate.skim)
+                      & ~(sc['fate_status'] & fate.burn == fate.burn)
+                      & ~(sc['fate_status'] & fate.disperse == fate.disperse))
 
             surf_mask = np.logical_and(w_mask, sc['positions'][:, 2] == 0)
             subs_mask = np.logical_and(w_mask, sc['positions'][:, 2] > 0)
@@ -1042,7 +1065,11 @@ class Model(Serializable):
 
         :return: the step number
         '''
-        return self.step()
+        try:
+            return self.step()
+        except StopIteration:
+            self.post_model_run()
+            raise
 
     def full_run(self, rewind=True):
         '''
@@ -1060,11 +1087,11 @@ class Model(Serializable):
         while True:
             try:
                 results = self.step()
-                self.logger.info(results)
-
+                self.logger.info(pformat(results))
                 output_data.append(results)
             except StopIteration:
-                self.logger.info('Run Complete: Stop Iteration')
+                self.post_model_run()
+                self.logger.info('** Run Complete **')
                 break
 
         return output_data
@@ -1136,11 +1163,6 @@ class Model(Serializable):
     Following methods are for saving a Model instance or creating a new
     model instance from a saved location
     '''
-    def spills_to_dict(self):
-        '''
-        return the spills ordered collection for serialization
-        '''
-        return self.spills.to_dict()['spills']
 
     def spills_update_from_dict(self, value):
         'invoke SpillContainerPair().update_from_dict'
@@ -1148,17 +1170,6 @@ class Model(Serializable):
         # put an update_from_dict method in the SpillContainerPair. Keep the
         # interface for this the same, so make it a dict
         return self.spills.update_from_dict({'spills': value})
-
-    def uncertain_spills_to_dict(self):
-        '''
-        return the uncertain_spills ordered collection for serialization/save
-        files
-        '''
-        if self.uncertain:
-            dict_ = self.spills.to_dict()
-            return dict_['uncertain_spills']
-
-        return None
 
     def _create_zip(self, saveloc, name):
         '''
@@ -1182,7 +1193,7 @@ class Model(Serializable):
 
         return saveloc
 
-    def save(self, saveloc, references=None, name=None):
+    def save(self, saveloc='.', refs=None, overwrite=True):
         '''
         save the model state in saveloc. If self.zipsave is True, then a
         zip archive is created and model files are saved to the archive.
@@ -1196,11 +1207,12 @@ class Model(Serializable):
             stored here. The files are clobbered when save() is called.
         :type saveloc: A path as a string or unicode
 
-        :param name=None: If data is saved to zipfile (default behavior), then
-            this is name of zip file. For a zipfile, the model's state is
-            always contained in Model.json. If zipsave is False, then model's
-            json is stored in name.json
-        :type name: str
+        :param filename=None: If data is saved to zipfile (default behavior),
+                              then this is filename of zip file. For a zipfile,
+                              the model's state is always contained in
+                              Model.json. If zipsave is False, then model's
+                              json is stored in filename.json
+        :type filename: str
 
         :param references: dict of references mapping 'id' to a string used for
             the reference. The value could be a unique integer or it could be
@@ -1209,32 +1221,13 @@ class Model(Serializable):
 
         :returns: references
         '''
-        # if zipsave is on, the create zip and update saveloc
-        saveloc = self._create_zip(saveloc, name)
+        json_, saveloc, refs = super(Model, self).save(saveloc=saveloc,
+                                                       refs=refs,
+                                                       overwrite=overwrite)
 
-        # Note: Defining references=References() in the function definition
-        # keeps the references object in memory between tests - it changes the
-        # scope of References() to be outside the Model() instance. We don't
-        # want this so define the default here
-        references = (references, References())[references is None]
-        json_ = self.serialize('save')
-
-        # map is the only nested structure - let's manually call
-        # _move_data_file on it
-        self.map._move_data_file(saveloc, json_['map'])
-
-        for oc in self._oc_list:
-            coll_ = getattr(self, oc)
-            self._save_collection(saveloc, coll_, references, json_[oc])
-
-        for sc in self.spills.items():
-            if sc.uncertain:
-                key = 'uncertain_spills'
-            else:
-                key = 'spills'
-
-            self._save_collection(saveloc, sc.spills, references, json_[key])
-
+        # because a model can be saved mid-run and the SpillContainer data
+        # required to reload is not covered in the schema, need to add the
+        # SpillContainer data afterwards
         if self.current_time_step > -1:
             '''
             hard code the filename - can make this an attribute if user wants
@@ -1242,65 +1235,97 @@ class Model(Serializable):
             '''
             self._save_spill_data(saveloc, 'spills_data_arrays.nc')
 
-        # if saved as zipfile, then store model's json in Model.json - this is
-        # default if name is None
-        mdl_name = 'Model.json' if self.zipsave or name is None else name
-        self._json_to_saveloc(json_, saveloc, references, mdl_name)
+        return json_, saveloc, refs
 
-        return references
-
-    def _save_spill_data(self, saveloc, nc_file):
+    def _save_spill_data(self, saveloc, nc_filename):
         """
         save the data arrays for current timestep to NetCDF
         If saveloc is zipfile, then move NetCDF to zipfile
         """
-        zipname = None
-        if zipfile.is_zipfile(saveloc):
-            saveloc, zipname = os.path.split(saveloc)
-
-        datafile = os.path.join(saveloc, nc_file)
-        nc_out = NetCDFOutput(datafile, which_data='all', cache=self._cache)
+        nc_out = NetCDFOutput(nc_filename, which_data='all', cache=self._cache)
         nc_out.prepare_for_model_run(model_start_time=self.start_time,
                                      uncertain=self.uncertain,
                                      spills=self.spills)
         nc_out.write_output(self.current_time_step)
-        if zipname is not None:
-            with zipfile.ZipFile(os.path.join(saveloc, zipname), 'a',
+
+        if isinstance(saveloc, zipfile.ZipFile):
+            saveloc.write(nc_filename, nc_filename)
+            if self.uncertain:
+                u_file = nc_out.uncertain_filename
+                saveloc.write(u_file, os.path.split(u_file)[1])
+        elif zipfile.is_zipfile(saveloc):
+            with zipfile.ZipFile(saveloc, 'a',
                                  compression=zipfile.ZIP_DEFLATED,
-                                 allowZip64=self._allowzip64) as z:
-                z.write(datafile, nc_file)
-                os.remove(datafile)
+                                 allowZip64=allowzip64) as z:
+                z.write(nc_filename, nc_filename)
                 if self.uncertain:
                     u_file = nc_out.uncertain_filename
                     z.write(u_file, os.path.split(u_file)[1])
-                    os.remove(u_file)
+        if self.uncertain:
+            os.remove(u_file)
+        os.remove(nc_filename)
 
-    def _load_spill_data(self, saveloc, nc_file):
+    @classmethod
+    def load(cls, saveloc='.', filename=None, refs=None):
+        '''
+        Load an instance of this class from an archive or folder
+
+        :param saveloc: Can be an open zipfile.ZipFile archive, a folder, or a
+                        filename. If it is an open zipfile or folder, it must
+                        contain a ``.json`` file that describes an instance of
+                        this object type. If ``filename`` is not specified, it
+                        will load the first instance of this object discovered.
+                        If a filename, it must be a zip archive or a json file
+                        describing an object of this type.
+
+        :param filename: If saveloc is an open zipfile or folder,
+                         this indicates the name of the file to be loaded.
+                         If saveloc is a filename, is parameter is ignored.
+
+        :param refs: A dictionary of id -> object instances that will be used
+                     to complete references, if available.
+        '''
+        new_model = super(Model, cls).load(saveloc=saveloc,
+                                           filename=filename,
+                                           refs=refs)
+        # Since the model may have saved mid-run, need to try and load
+        # spill data
+        # new_model._load_spill_data(saveloc, filename,
+        #                            'spills_data_arrays.nc')
+
+        return new_model
+
+    def _load_spill_data(self, saveloc, filename, nc_file):
         """
         load NetCDF file and add spill data back in - designed for savefiles
         """
-        if zipfile.is_zipfile(saveloc):
-            with zipfile.ZipFile(saveloc, 'r') as z:
-                if nc_file not in z.namelist():
-                    return
+        spill_data = None
+        if isinstance(saveloc, zipfile.ZipFile):
+            # saveloc is an open zipfile instance
+            if nc_file not in saveloc.namelist():
+                return
 
-                saveloc = os.path.split(saveloc)[0]
-                z.extract(nc_file, saveloc)
-                if self.uncertain:
-                    spill_data_fname, ext = os.path.splitext(nc_file)
-                    fname = '{0}_uncertain{1}'.format(spill_data_fname, ext)
-                    z.extract(fname, saveloc)
+            spill_data = saveloc.extract(nc_file)
+            if self.uncertain:
+                spill_data_fname, ext = os.path.splitext(nc_file)
+                ufname = '{0}_uncertain{1}'.format(spill_data_fname, ext)
+                u_spill_data = saveloc.extract(ufname)
+        else:
+            if os.path.isdir(saveloc):
+                if filename:
+                    saveloc = os.path.join(saveloc, filename)
+                    with zipfile.ZipFile(saveloc, 'r') as z:
+                        if nc_file not in z.namelist():
+                            return
+                        spill_data = z.extract(nc_file)
+                        if self.uncertain:
+                            spill_data_fname, ext = os.path.splitext(nc_file)
+                            fname = ('{0}_uncertain{1}'
+                                     .format(spill_data_fname, ext))
+                            u_spill_data = z.extract(fname)
 
-        spill_data = os.path.join(saveloc, nc_file)
-        if not os.path.exists(spill_data):
+        if spill_data is None:
             return
-
-        if self.uncertain:
-            spill_data_fname, ext = os.path.splitext(nc_file)
-            u_spill_data = os.path.join(saveloc,
-                                        '{0}_uncertain{1}'
-                                        .format(spill_data_fname, ext))
-
         array_types = set()
 
         for m in self.movers:
@@ -1328,139 +1353,6 @@ class Model(Serializable):
         os.remove(spill_data)
         if self.uncertain:
             os.remove(u_spill_data)
-
-    # todo: remove following
-
-    def _empty_save_dir(self, saveloc):
-        '''
-        Remove all files, directories under saveloc
-
-        First clean out directory, then add new save files
-        This should only be called by self.save()
-        '''
-        (dirpath, dirnames, filenames) = os.walk(saveloc).next()
-
-        if dirnames:
-            for dir_ in dirnames:
-                shutil.rmtree(os.path.join(dirpath, dir_))
-
-        if filenames:
-            for file_ in filenames:
-                os.remove(os.path.join(dirpath, file_))
-
-    def serialize(self, json_='webapi'):
-        '''
-        Serialize Model object
-        treat special-case attributes of Model.
-        '''
-        toserial = self.to_serialize(json_)
-        schema = self.__class__._schema(json_)
-
-        o_json_ = schema.serialize(toserial)
-        o_json_['map'] = self.map.serialize(json_)
-
-        if json_ == 'webapi':
-            # for webapi, we serialize forecast spills just like all other
-            # collections - ignore spills in uncertain spill container
-            for attr in ('environment', 'outputters', 'weatherers', 'movers',
-                         'spills'):
-                o_json_[attr] = self.serialize_oc(getattr(self, attr), json_)
-
-            o_json_['valid'] = True
-            o_json_['messages'] = []
-            # validate and send validation flag
-#             (msgs, isvalid) = self.validate()
-#             o_json_['valid'] = isvalid
-#             if len(msgs) > 0:
-#                 o_json_['messages'] = msgs
-#             else:
-#                 o_json_['messages'] = []
-
-        return o_json_
-
-    @classmethod
-    def deserialize(cls, json_):
-        '''
-        treat special-case attributes of Model.
-        '''
-        schema = cls._schema(json_['json_'])
-        deserial = schema.deserialize(json_)
-
-        if 'map' in json_:
-            # d_item = cls._deserialize_nested_obj(json_['map'])
-            # deserial['map'] = d_item
-            # map will be deserialized later - no need to do it twice
-            # todo: clean this up
-            deserial['map'] = json_['map']
-
-        if json_['json_'] == 'webapi':
-            for attr in ('environment', 'outputters', 'weatherers', 'movers',
-                         'spills'):
-                if attr in json_:
-                    '''
-                    even if list is empty, deserialize it because we still need
-                    to sync up with client
-                    '''
-                    deserial[attr] = cls.deserialize_oc(json_[attr])
-
-        return deserial
-
-    @classmethod
-    def loads(cls, json_data, saveloc, references=None):
-        '''
-        loads a model from json_data
-
-        - load json for references from files
-        - update paths of datafiles if needed
-        - deserialize json_data
-        - and create object with new_from_dict()
-
-        :param saveloc: location of data files
-
-        Optional parameter
-
-        :param references: references object - if this is called by the Model,
-            it will pass a references object. It is not required.
-        '''
-        references = (references, References())[references is None]
-        ref_dict = cls._load_refs(json_data, saveloc, references)
-
-        # there are no datafiles for model properties; so no need for following
-        # at present
-        cls._update_datafile_path(json_data, saveloc)
-
-        # deserialize after removing references
-        _to_dict = cls.deserialize(json_data)
-
-        if ref_dict:
-            _to_dict.update(ref_dict)
-
-        # load nested map object and add it - currently, 'load' is only used
-        # for laoding save files/location files, so it assumes:
-        # json_data['json_'] == 'save'
-        if ('map' in json_data):
-            mapcls = class_from_objtype(json_data['map'].pop('obj_type'))
-            map_obj = mapcls.loads(json_data['map'], saveloc, references)
-            _to_dict['map'] = map_obj
-
-        # load collections
-        for oc in cls._oc_list:
-            if oc in _to_dict:
-                _to_dict[oc] = cls._load_collection(saveloc,
-                                                    _to_dict[oc],
-                                                    references)
-        for spill in ['spills', 'uncertain_spills']:
-            if spill in _to_dict:
-                _to_dict[spill] = cls._load_collection(saveloc,
-                                                       _to_dict[spill],
-                                                       references)
-            # also need to load spill data for mid-run save!
-
-        model = cls.new_from_dict(_to_dict)
-
-        model._load_spill_data(saveloc, 'spills_data_arrays.nc')
-
-        return model
 
     def merge(self, model):
         '''
@@ -1508,6 +1400,7 @@ class Model(Serializable):
             msg = None
             if spill.on:
                 num_spills_on += 1
+
                 if spill.release_time < self.start_time + self.duration:
                     someSpillIntersectsModel = True
 
@@ -1527,13 +1420,10 @@ class Model(Serializable):
                                 .format(self.__class__.__name__, msg))
                     isvalid = False
 
-                if spill.substance is not None:
-                    # min_k1 = spill.substance.get('pour_point_min_k')
-                    pour_point = spill.substance.pour_point()
-
-                    if spill.water is not None:
-                        water_temp = spill.water.get('temperature')
-
+                if spill.substance is not None and spill.water is not None:
+                    water_temp = spill.water.get('temperature')
+                    try:
+                        pour_point = spill.substance.pour_point()
                         if water_temp < pour_point[0]:
                             msg = ('The water temperature, {0} K, '
                                    'is less than the minimum pour point '
@@ -1546,11 +1436,13 @@ class Model(Serializable):
 
                         rho_h2o = spill.water.get('density')
                         rho_oil = spill.substance.density_at_temp(water_temp)
-
                         if np.any(rho_h2o < rho_oil):
                             msg = ('Found particles with '
                                    'relative_buoyancy < 0. Oil is a sinker')
                             raise GnomeRuntimeError(msg)
+                    except AttributeError:
+                        pass
+
 
         if num_spills_on > 0 and not someSpillIntersectsModel:
             if num_spills > 1:
@@ -1661,8 +1553,7 @@ class Model(Serializable):
         Convenience method to allow user to look up properties of a spill.
         User can specify ucert as 'ucert' or 1
         '''
-        if ucert == 'ucert':
-            ucert = 1
+        ucert = 1 if ucert == 'ucert' else 0
         return self.spills.items()[ucert][prop_name]
 
     def get_spill_data(self, target_properties, conditions, ucert=0):
@@ -1753,79 +1644,3 @@ class Model(Serializable):
                         break
                 else:
                     self.environment.add(item)
-
-#     def env_from_netCDF(self, filename=None, dataset=None, grid_file=None, data_file=None, _cls_list=None, **kwargs):
-#         def attempt_from_netCDF(cls, **kwargs):
-#             obj = None
-#             try:
-#                 obj = c.from_netCDF(filename=filename, dataset=dataset, grid_file=grid_file, data_file=data_file, **clskwargs)
-#             except Exception as e:
-#                 self.logger.warn('''Class {0} could not be constituted from netCDF file
-#                                         Exception: {1}'''.format(c.__name__, e))
-#             return obj
-#
-#         from gnome.utilities.file_tools.data_helpers import _get_dataset
-#         from gnome.environment.environment_objects import GriddedProp, GridVectorProp
-#         from gnome.environment import PyGrid
-#
-#         if filename is not None:
-#             data_file = filename
-#             grid_file = filename
-#
-#         ds = None
-#         dg = None
-#         if dataset is None:
-#             if grid_file == data_file:
-#                 ds = dg = _get_dataset(grid_file)
-#             else:
-#                 ds = _get_dataset(data_file)
-#                 dg = _get_dataset(grid_file)
-#         else:
-#             if grid_file is not None:
-#                 dg = _get_dataset(grid_file)
-#             else:
-#                 dg = dataset
-#             ds = dataset
-#         dataset = ds
-#
-#         grid = kwargs.pop('grid', None)
-#         if grid is None:
-#             grid = PyGrid.from_netCDF(filename=filename, dataset=dg, **kwargs)
-#             kwargs['grid'] = grid
-#         scs = copy.copy(Environment._subclasses) if _cls_list is None else _cls_list
-#         for c in scs:
-#             if issubclass(c, (GriddedProp, GridVectorProp)) and not any([isinstance(o, c) for o in self.environment]):
-#                 clskwargs = copy.copy(kwargs)
-#                 obj = None
-#                 try:
-#                     req_refs = c._req_refs
-#                 except AttributeError:
-#                     req_refs = None
-#
-#                 if req_refs is not None:
-#                     for ref, klass in req_refs.items():
-#                         for o in self.environment:
-#                             if isinstance(o, klass):
-#                                 clskwargs[ref] = o
-#                                 break
-#                         if ref in clskwargs.keys():
-#                             continue
-#                         else:
-#                             obj = attempt_from_netCDF(c, filename=filename, dataset=dataset, grid_file=grid_file, data_file=data_file, **clskwargs)
-#                             clskwargs[ref] = obj
-#                             self.environment.append(obj)
-#
-#                 obj = attempt_from_netCDF(c, filename=filename, dataset=dataset, grid_file=grid_file, data_file=data_file, **clskwargs)
-#                 if obj is not None:
-#                     self.environment.append(obj)
-#
-#     def ice_env_from_netCDF(self, filename=None, **kwargs):
-#         cls_list = Environment._subclasses
-#         ice_cls_list = self.find_by_attr('_ref_as', 'ice_aware', cls_list, allitems=True)
-# #         for c in cls_list:
-# #             if hasattr(c, '_ref_as'):
-# #                 if ((not isinstance(c._ref_as, basestring) and
-# #                         any(['ice_aware' in r for r in c._ref_as])) or
-# #                         'ice_aware' in c._ref_as):
-# #                     ice_cls_list.append(c)
-#         self.env_from_netCDF(filename=filename, _cls_list=ice_cls_list, **kwargs)

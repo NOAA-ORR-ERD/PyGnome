@@ -1,6 +1,9 @@
 # NOTES:
 #  - Should we just use non-projected coordinates for the raster map?
 #    It makes for a little less computation at every step.
+from gnome.gnomeobject import GnomeId
+from gnome.environment.gridded_objects_base import PyGrid
+from __builtin__ import property
 
 """
 An implementation of the GNOME land-water map.
@@ -15,7 +18,6 @@ Features:
    extra space is not in the land map
 
 """
-import copy
 import os
 import math
 # from osgeo import ogr
@@ -25,9 +27,9 @@ import py_gd
 
 import numpy as np
 
-from colander import SchemaNode, String, Float, drop, Integer
+from colander import SchemaNode, String, Float, Integer
 
-from geojson import FeatureCollection, Feature, MultiPolygon, MultiLineString
+from geojson import FeatureCollection, Feature, MultiPolygon
 
 import unit_conversion as uc
 
@@ -38,25 +40,25 @@ from gnome.utilities.projections import (FlatEarthProjection,
                                          RectangularGridProjection,
                                          RegularGridProjection)
 from gnome.utilities.map_canvas import MapCanvas
-from gnome.utilities.serializable import Serializable, Field
 from gnome.utilities.file_tools import haz_files
 # from gnome.utilities.file_tools.osgeo_helpers import (ogr_layers)
 # from gnome.utilities.file_tools.osgeo_helpers import (ogr_features)
 # from gnome.utilities.file_tools.osgeo_helpers import (ogr_open_file)
 
 from gnome.utilities.geometry.polygons import PolygonSet
-from gnome.utilities.geometry import points_in_poly, point_in_poly, is_clockwise
+from gnome.utilities.geometry import points_in_poly, point_in_poly
 
 from gnome.cy_gnome.cy_land_check import check_land_layers, move_particles
 
 
-import gnome.map
 from gnome.persist import base_schema
 
 
-class GnomeMapSchema(base_schema.ObjType):
-    map_bounds = base_schema.LongLatBounds(missing=drop)
-    spillable_area = base_schema.PolygonSet(missing=drop)
+class GnomeMapSchema(base_schema.ObjTypeSchema):
+    map_bounds = base_schema.LongLatBounds(save_reference=False)
+    # .MetaDataList is not serialized at all
+    spillable_area = base_schema.PolygonSetSchema(save_reference=False,
+                                                  test_equal=False)
     # land_polys = base_schema.PolygonSet(missing=drop)
 
 
@@ -68,16 +70,19 @@ class ParamMapSchema(GnomeMapSchema):
 
 
 class MapFromBNASchema(GnomeMapSchema):
-    filename = SchemaNode(String())
-    refloat_halflife = SchemaNode(Float(), missing=drop)
+    filename = SchemaNode(
+        String(), isdatafile=True, test_equal=False)
+    refloat_halflife = SchemaNode(Float())
 
 
 class MapFromUGridSchema(GnomeMapSchema):
-    filename = SchemaNode(String())
-    refloat_halflife = SchemaNode(Float(), missing=drop)
+    filename = SchemaNode(
+        String(), read_only=True, isdatafile=True, test_equal=False
+    )
+    refloat_halflife = SchemaNode(Float())
 
 
-class GnomeMap(Serializable):
+class GnomeMap(GnomeId):
     """
     The very simplest map for GNOME -- all water
     with only a bounding box for the map bounds.
@@ -85,14 +90,9 @@ class GnomeMap(Serializable):
     This also serves as a description of the interface and
     base class for more complex maps
     """
-    _update = ['map_bounds', 'spillable_area']
-    _create = []
-    _create.extend(_update)
-    _state = copy.deepcopy(Serializable._state)
-    _state.add(save=_create, update=_update)
     _schema = GnomeMapSchema
 
-    refloat_halflife = None  # note -- no land, so never used
+    refloat_halflife = None
 
     def __init__(self, map_bounds=None, spillable_area=None, land_polys=None,
                  name=None):
@@ -129,14 +129,7 @@ class GnomeMap(Serializable):
                                         (360, 90), (360, -90)),
                                        dtype=np.float64)
 
-        if spillable_area is None or len(spillable_area) == 0:
-            self.spillable_area = PolygonSet()
-            self.spillable_area.append(self.map_bounds)
-        else:
-            if not isinstance(spillable_area, PolygonSet):
-                spillable_area = self._polygon_set_from_points(spillable_area)
-
-            self.spillable_area = spillable_area
+        self.spillable_area = spillable_area
 
         if land_polys is None:
             # empty set, no land
@@ -150,6 +143,11 @@ class GnomeMap(Serializable):
         polys['map_bounds'] = self.map_bounds
         polys['land_polys'] = self.land_polys
         return polys
+
+#     def to_dict(self, json_=None):
+#         dict_ = super(GnomeMap, self).to_dict(json_=json_)
+#         dict_['spillable_area'] = [poly.points.tolist() for poly in self.spillable_area]
+#         return dict_
 
     def _polygon_set_from_points(self, poly):
         '''
@@ -174,38 +172,40 @@ class GnomeMap(Serializable):
         '''
         return np.asarray(l_, dtype=np.float64).reshape(-1, 2)
 
-    def map_bounds_to_dict(self):
-        'convert numpy array to a list for serializing'
-        return self._attr_array_to_dict(self.map_bounds)
+    @property
+    def map_bounds(self):
+        return self._map_bounds
 
-    def map_bounds_update_from_dict(self, val):
-        'convert list of tuples back to numpy array'
-        new_arr = self._attr_from_list_to_array(val)
+    @map_bounds.setter
+    def map_bounds(self, mb):
+        if mb is None:
+            mb = np.array(((-360, -90), (-360, 90),
+                           (360, 90), (360, -90)),
+                           dtype=np.float64)
+        self._map_bounds = np.array(mb)
 
-        if np.any(self.map_bounds != new_arr):
-            self.map_bounds = new_arr
-            return True
+    @property
+    def spillable_area(self):
+        return self._spillable_area
 
-        return False
-
-    def spillable_area_to_dict(self):
-        'convert numpy array to a list for serializing'
-        return [poly.points.tolist() for poly in self.spillable_area]
-
-    def spillable_area_update_from_dict(self, poly_set):
-        'convert list of tuples back to numpy array'
-        # since metadata will not match, let's create a new PolygonSet,
-        # check equality on _PointsArray and update if not equal
+    @spillable_area.setter
+    def spillable_area(self, sa):
+        if sa is None or (isinstance(sa, list) and len(sa) == 0):
+            sa = np.array([[(-360, -90), (-360, 90),
+                           (360, 90), (360, -90)]],
+                           dtype=np.float64)
+        if isinstance(sa, PolygonSet):
+            self._spillable_area = sa
+            return
         ps = PolygonSet()
-        for poly in poly_set:
+        try:
+            sa[0][0][0]
+        except TypeError:
+            # probably a single polygon -- put it in a list
+            sa = [sa]
+        for poly in sa:
             ps.append(poly)
-
-        if not np.array_equal(self.spillable_area._PointsArray,
-                              ps._PointsArray):
-            self.spillable_area = ps
-            return True
-
-        return False
+        self._spillable_area = ps
 
     def on_map(self, coords):
         """
@@ -284,7 +284,7 @@ class GnomeMap(Serializable):
         # let model decide if we want to remove elements marked as off-map
         status_codes[off_map] = oil_status.off_maps
 
-    def beach_elements(self, spill):
+    def beach_elements(self, sc, model_time=None):
         """
         Determines which LEs were or weren't beached or moved off_map.
         status_code is changed to oil_status.off_maps if off the map.
@@ -304,10 +304,10 @@ class GnomeMap(Serializable):
 
         are called.
         """
-        self.resurface_airborne_elements(spill)
-        self._set_off_map_status(spill)
+        self.resurface_airborne_elements(sc)
+        self._set_off_map_status(sc)
 
-    def refloat_elements(self, spill_container, time_step):
+    def refloat_elements(self, spill_container, time_step, model_time=None):
         """
         This method performs the re-float logic -- changing the element
         status flag, and moving the element to the last known water position
@@ -343,31 +343,8 @@ class GnomeMap(Serializable):
         return FeatureCollection([])
 
 
+
 class ParamMap(GnomeMap):
-    _state = copy.deepcopy(GnomeMap._state)
-    _state.update(['map_bounds', 'spillable_area'], save=False)
-#     _state.add(save=['center', 'distance', 'bearing', 'units'],
-#                update=['center', 'distance', 'bearing', 'units'])
-    _state.add_field([Field('center',
-                            isdatafile=True,
-                            save=True,
-                            update=True,
-                            test_for_eq=False)])
-    _state.add_field([Field('distance',
-                            isdatafile=True,
-                            save=True,
-                            update=True,
-                            test_for_eq=False)])
-    _state.add_field([Field('bearing',
-                            isdatafile=True,
-                            save=True,
-                            update=True,
-                            test_for_eq=False)])
-    _state.add_field([Field('units',
-                            isdatafile=True,
-                            save=True,
-                            update=True,
-                            test_for_eq=False)])
 
     _schema = ParamMapSchema
 
@@ -401,7 +378,7 @@ class ParamMap(GnomeMap):
         self._check_units(self.units)
 
         if units is not 'm':
-            self._distance = uc.Convert("Length", self.units, 'm', distance)
+            self._distance = uc.convert("Length", self.units, 'm', distance)
         else:
             self._distance = distance
 
@@ -439,7 +416,7 @@ class ParamMap(GnomeMap):
 
     @property
     def distance(self):
-        return uc.Convert('Length', 'm', self.units, self._distance)
+        return uc.convert('Length', 'm', self.units, self._distance)
 
     def _check_units(self, units):
         """
@@ -516,8 +493,8 @@ class ParamMap(GnomeMap):
         if (coord == self.center):
             return True
         else:
-            print ('Only allowable location for spill is the center '
-                   'that this map was built with')
+            # Only allowable location for spill is the center
+            # that this map was built with
             return False
 
     def _set_off_map_status(self, spill):
@@ -539,7 +516,7 @@ class ParamMap(GnomeMap):
     def find_last_water_pos(self, starts, ends):
         return starts + (ends - starts) * 0.000001
 
-    def beach_elements(self, sc):
+    def beach_elements(self, sc, model_time=None):
         """
         Determines which LEs were or weren't beached or moved off_map.
         status_code is changed to oil_status.off_maps if off the map.
@@ -575,7 +552,7 @@ class ParamMap(GnomeMap):
         sc.mass_balance['off_maps'] += \
             sc['mass'][sc['status_codes'] == oil_status.off_maps].sum()
 
-    def refloat_elements(self, spill_container, time_step):
+    def refloat_elements(self, spill_container, time_step, model_time=None):
         """
         This method performs the re-float logic -- changing the element
         status flag, and moving the element to the last known water position
@@ -618,11 +595,11 @@ class ParamMap(GnomeMap):
                 'bearing' in data.keys() or
                 'units' in data.keys()):
             self.build(
-                data['center'] if 'center' in data.keys() else self.center,
-                data[
-                    'distance'] if 'distance' in data.keys() else self.distance,
-                data['bearing'] if 'bearing' in data.keys() else self.bearing,
-                data['units'] if 'units' in data.keys() else self.units)
+                data.pop('center', self.center),
+                data.pop('distance', self.distance),
+                data.pop('bearing', self.bearing),
+                data.pop('units', self.units)
+            )
         else:
             # for the case when instantiating a param map using new_from_dict,
             # since new_from_dict will call update_from_dict
@@ -778,7 +755,6 @@ class RasterMap(GnomeMap):
         np.putmask(bitmap, self.basebitmap > 0, 2)
 
         im = py_gd.from_array(bitmap)
-        print im.get_color_index('white')
 
         im.save(filename, 'bmp')
 
@@ -868,8 +844,7 @@ class RasterMap(GnomeMap):
             return self._in_water_pixel(self.projection.to_pixel(coord,
                                                                  asint=True)[0]
                                         )
-
-    def beach_elements(self, sc):
+    def beach_elements(self, sc, model_time=None):
         """
         Determines which elements were or weren't beached.
 
@@ -884,6 +859,7 @@ class RasterMap(GnomeMap):
             It must have the following data arrays:
             ('prev_position', 'positions', 'last_water_pt', 'status_code')
         """
+
         self.resurface_airborne_elements(sc)
 
         # pull the data from the sc
@@ -927,7 +903,7 @@ class RasterMap(GnomeMap):
         sc.mass_balance['off_maps'] += \
             sc['mass'][sc['status_codes'] == oil_status.off_maps].sum()
 
-    def refloat_elements(self, spill_container, time_step):
+    def refloat_elements(self, spill_container, time_step, model_time=None):
         """
         This method performs the re-float logic -- changing the element
         status flag, and moving the element to the last known water position
@@ -1021,14 +997,9 @@ class MapFromBNA(RasterMap):
 
     Currently only support BNA, but could be shapefile, or ???
     """
-    _state = copy.deepcopy(RasterMap._state)
-    _state.update(['map_bounds', 'spillable_area'], save=False)
-    _state.add(save=['refloat_halflife'], update=['refloat_halflife'])
-    _state.add_field(Field('filename', isdatafile=True, save=True, read=True,
-                           test_for_eq=False))
     _schema = MapFromBNASchema
 
-    def __init__(self, filename, raster_size=4096 * 4096, **kwargs):
+    def __init__(self, filename=None, raster_size=4096 * 4096, **kwargs):
         """
         Creates a GnomeMap (specifically a RasterMap) from a data file.
         It is expected that you will get the spillable area and map bounds
@@ -1099,8 +1070,7 @@ class MapFromBNA(RasterMap):
             else:
                 map_bounds = BB.AsPoly()
 
-        if spillable_area is None:
-            spillable_area = PolygonSet()
+        if len(spillable_area) == 0:
             spillable_area.append(map_bounds)
 
 
@@ -1240,24 +1210,38 @@ class MapFromBNA(RasterMap):
         FIXME: This really should export the map_bounds and spillable_area
         as well.
         """
-        polys = []
+        land_coords = []
+        lake_coords = []
+        crds=None
 
         for poly in self.land_polys:
-            p = poly.tolist()
-            p.append(p[0])  # first and last points must match in geojson
+            if poly.metadata[2] == '1':
+                crds = land_coords
+            elif poly.metadata[2] == '2':
+                crds = lake_coords
+            else:
+                continue
+            pts = poly.points.tolist()
+            pts.append(pts[0])
+            crds.append([pts])
             # FIXME: this is a good idea, but really slow...
             # the is_clockwise() code could be cythonized, maybe that would help?
             # # geojson polygons should be counter-clockwise
             # if is_clockwise(poly):
             #     p.reverse()
-            polys.append([p])
 
         features = []
-        if polys:
-            f = Feature(id="1",
+        if land_coords:
+            land = Feature(id="1",
                         properties={'name': 'Shoreline Polys'},
-                        geometry=MultiPolygon(coordinates=polys))
-            features.append(f)
+                        geometry=MultiPolygon(land_coords)
+                    )
+            lakes = Feature(id="2",
+                            properties={'name': 'Lakes'},
+                            geometry=MultiPolygon(lake_coords)
+                        )
+            features.append(land)
+            features.append(lakes)
         return FeatureCollection(features)
 
 
@@ -1265,11 +1249,6 @@ class MapFromUGrid(RasterMap):
     """
     A raster land-water map, created from netcdf File of a UGrid
     """
-    _state = copy.deepcopy(RasterMap._state)
-    _state.update(['map_bounds', 'spillable_area'], save=False)
-    _state.add(save=['refloat_halflife'], update=['refloat_halflife'])
-    _state.add_field(Field('filename', isdatafile=True, save=True, read=True,
-                           test_for_eq=False))
     _schema = MapFromUGridSchema
 
     def __init__(self, filename, raster_size=1024 * 1024, **kwargs):
@@ -1303,7 +1282,7 @@ class MapFromUGrid(RasterMap):
         """
         self.filename = filename
 
-        grid = pyugrid.UGrid.from_ncfile(filename)
+        grid = PyGrid.from_netCDF(filename)
 
         polygons = haz_files.ReadBNA(filename, 'PolygonSet')
         map_bounds = None
@@ -1434,7 +1413,7 @@ def map_from_rectangular_grid(mask, lon, lat, refine=1, **kwargs):
     # generating projection for raster map
     proj = RectangularGridProjection(lon, lat)
 
-    return gnome.map.RasterMap(grid, proj,
+    return RasterMap(grid, proj,
                                map_bounds=map_bounds,
                                **kwargs)
 
@@ -1551,5 +1530,5 @@ def map_from_regular_grid(grid_mask, lon, lat, refine=4, refloat_halflife=1,
     proj = RegularGridProjection(bounding_box,
                                  image_size=bitmap_array.shape)
 
-    return gnome.map.RasterMap(bitmap_array, proj,
+    return RasterMap(bitmap_array, proj,
                                refloat_halflife=refloat_halflife)

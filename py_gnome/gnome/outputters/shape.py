@@ -1,34 +1,31 @@
 """
 shapefile  outputter
 """
-import copy
 import os
 import zipfile
 
-from colander import SchemaNode, String, Boolean, drop
+from colander import SchemaNode, Boolean, drop
 import shapefile as shp
-
-from gnome.utilities.serializable import Serializable, Field
-
-from .outputter import Outputter, BaseSchema
+from gnome.persist.extend_colander import FilenameSchema
 
 
-class ShapeSchema(BaseSchema):
-    filename = SchemaNode(String(), missing=drop)
-    zip_output = SchemaNode(Boolean(), missing=drop)
+from .outputter import Outputter, BaseOutputterSchema
 
 
-class ShapeOutput(Outputter, Serializable):
+class ShapeSchema(BaseOutputterSchema):
+    filename = FilenameSchema(
+        missing=drop, save=True, update=True, test_equal=False
+    )
+    zip_output = SchemaNode(
+        Boolean(), missing=drop, save=True, update=True
+    )
+
+
+class ShapeOutput(Outputter):
     '''
     class that outputs GNOME results (particles) in a shapefile format.
 
     '''
-    _state = copy.deepcopy(Outputter._state)
-
-    # need a schema and also need to override save so output_dir
-    # is saved correctly - maybe point it to saveloc
-    _state += [Field('filename', update=True, save=True), ]
-    _state += [Field('zip_output', update=True, save=True), ]
     _schema = ShapeSchema
 
     time_formatter = '%m/%d/%Y %H:%M'
@@ -50,6 +47,7 @@ class ShapeOutput(Outputter, Serializable):
 
         self.zip_output = zip_output
 
+        surface_conc = "kde"  # force this, as it will try!
         super(ShapeOutput, self).__init__(surface_conc=surface_conc, **kwargs)
 
     def prepare_for_model_run(self,
@@ -115,7 +113,7 @@ class ShapeOutput(Outputter, Serializable):
             w.field('Depth', 'N')
             w.field('Mass', 'N')
             w.field('Age', 'N')
-            w.field('Surf_Conc', 'F', 10, 5)
+            w.field('Surf_Conc', 'F')
             w.field('Status_Code', 'N')
 
             if sc.uncertain:
@@ -124,7 +122,7 @@ class ShapeOutput(Outputter, Serializable):
                 self.w = w
 
     def write_output(self, step_num, islast_step=False):
-        """dump a timestep's data into the kmz file"""
+        """dump a timestep's data into the shape file"""
 
         super(ShapeOutput, self).write_output(step_num, islast_step)
 

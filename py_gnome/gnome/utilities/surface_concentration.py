@@ -20,7 +20,7 @@ def compute_surface_concentration(sc, algorithm):
 
     :param algorithm: algorithm to use -- currently only "kde" is supported
     """
-    if sc['positions'].shape[0] == 0:  # nothing to be done
+    if sc['positions'].shape[0] == 0 or not algorithm:  # nothing to be done
         return
     if algorithm == 'kde':
         surface_conc_kde(sc)
@@ -43,16 +43,23 @@ def surface_conc_kde(sc):
 
     :param sc: spill container that you want the concentrations computed on
     """
-    lon = sc['positions'][:, 0]
-    lat = sc['positions'][:, 1]
-    lon0, lat0 = min(lon), min(lat)
-    # FIXME: should use projection code to get this right.
-    x = (lon - lon0) * 111325 * np.cos(lat0 * np.pi / 180)
-    y = (lat - lat0) * 111325
-    xy = np.vstack([x, y])
-    c = gaussian_kde(xy)(xy)  # units??
-    # this is assuming unit mass per point, so we need to scale it
-    mass = sc['mass']
-    c *= mass.sum() / mass.shape[0]
+    positions = sc['positions']
+    if positions.shape[0] > 2:  # can't compute a kde for less than 3 points!
+        lon = positions[:, 0]
+        lat = positions[:, 1]
+        mass = sc['mass']
+        if len(np.unique(lat))>2 or len(np.unique(lon))>2:
+            lon0, lat0 = min(lon), min(lat)
+            # FIXME: should use projection code to get this right.
+            x = (lon - lon0) * 111325 * np.cos(lat0 * np.pi / 180)
+            y = (lat - lat0) * 111325
+            xy = np.vstack([x, y])
+            c = gaussian_kde(xy)(xy)  # units??
+            # this is assuming unit mass per point, so we need to scale it
+            c *= mass.sum()# / mass.shape[0]
+        else:
+            c = np.ones((positions.shape[0],))*mass.sum()
+    else:
+        c = np.zeros((positions.shape[0],))
 
     sc['surface_concentration'] = c

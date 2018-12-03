@@ -7,20 +7,27 @@ import numpy as np
 
 from gnome import constants
 from gnome.basic_types import oil_status
-from gnome.utilities.serializable import Serializable, Field
 from gnome.exceptions import ReferencedObjectNotSet
 
 from .core import WeathererSchema
 from gnome.weatherers import Weatherer
 from gnome.environment import (WindSchema,
                                WaterSchema)
+from gnome.persist.base_schema import GeneralGnomeObjectSchema
+from gnome.environment.gridded_objects_base import VectorVariableSchema
 
 
-class Evaporation(Weatherer, Serializable):
-    _state = copy.deepcopy(Weatherer._state)
-    _state += [Field('water', save=True, update=True, save_reference=True),
-               Field('wind', save=True, update=True, save_reference=True)]
-    _schema = WeathererSchema
+class EvaporationSchema(WeathererSchema):
+    water = WaterSchema(
+        save=True, update=True, save_reference=True
+    )
+    wind = GeneralGnomeObjectSchema(
+        acceptable_schemas=[WindSchema, VectorVariableSchema],
+        save=True, update=True, save_reference=True
+    )
+
+class Evaporation(Weatherer):
+    _schema = EvaporationSchema
 
     def __init__(self,
                  water=None,

@@ -17,7 +17,7 @@ from gnome.movers import PyMover
 def test_exceptions():
     with raises(ValueError):
         now = datetime.now()
-        _mover = PyMover(active_start=now, active_stop=now)
+        _mover = PyMover(active_range=(now, now))
 
 
 def test_default_properties():
@@ -26,23 +26,12 @@ def test_default_properties():
     assert mover.name == 'PyMover'
     assert mover.on is True
 
-    assert mover.active_start == InfDateTime('-inf')
-    assert mover.active_stop == InfDateTime('inf')
+    assert mover.active_range == (InfDateTime('-inf'), InfDateTime('inf'))
 
     assert mover.array_types == set()
     assert mover.make_default_refs is True
 
     assert mover.default_num_method == 'RK2'
-
-
-def test_real_data_start_stop():
-    mover = PyMover()
-
-    with raises(NotImplementedError):
-        _data_start = mover.data_start
-
-    with raises(NotImplementedError):
-        _data_stop = mover.data_stop
 
 
 class TestActive:
@@ -52,59 +41,68 @@ class TestActive:
     mv = PyMover()
 
     def test_active_default(self):
-        mv = PyMover()
+        mv = PyMover()  # active range defaults to (-Inf, Inf)
         mv.prepare_for_model_step(self.sc, self.time_step, self.model_time)
 
-        assert mv.active is True  # model_time = active_start
+        # model_time should be within range at any datetime.
+        assert mv.active is True
 
     def test_active_start_modeltime(self):
-        mv = PyMover(active_start=self.model_time)
+        mv = PyMover(active_range=(self.model_time, InfDateTime('inf')))
         mv.prepare_for_model_step(self.sc, self.time_step, self.model_time)
 
-        assert mv.active is True  # model_time = active_start
+        # model_time should be within active range
+        assert mv.active is True
 
     def test_active_start_after_one_timestep(self):
         start_time = self.model_time + timedelta(seconds=self.time_step)
 
-        mv = PyMover(active_start=start_time)
+        mv = PyMover(active_range=(start_time, InfDateTime('inf')))
+
         mv.prepare_for_model_step(self.sc, self.time_step, self.model_time)
 
-        assert mv.active is False  # model_time + time_step = active_start
+        # model_time + time_step should be within active range
+        assert mv.active is False
 
     def test_active_start_after_half_timestep(self):
-        self.mv.active_start = \
-            self.model_time + timedelta(seconds=self.time_step / 2)
+        self.mv.active_range = ((self.model_time +
+                                 timedelta(seconds=self.time_step / 2)),
+                                InfDateTime('inf'))
+
         self.mv.prepare_for_model_step(self.sc, self.time_step,
                                        self.model_time)
 
-        # model_time + time_step / 2 = active_start
+        # model_time + time_step / 2 should be within active range
         assert self.mv.active is True
 
     # Next test just some more borderline cases that active is set correctly
     def test_active_stop_greater_than_timestep(self):
-        self.mv.active_start = self.model_time
-        self.mv.active_stop = (self.model_time +
-                               timedelta(seconds=1.5 * self.time_step))
+        self.mv.active_range = (self.model_time,
+                                (self.model_time +
+                                 timedelta(seconds=1.5 * self.time_step)))
+
         self.mv.prepare_for_model_step(self.sc, self.time_step,
                                        self.model_time)
 
-        # model_time + 1.5 * time_step = active_stop
+        # model_time + 1.5 * time_step should be within active range
         assert self.mv.active is True
 
     def test_active_stop_after_half_timestep(self):
-        self.mv.active_start = self.model_time
-        self.mv.active_stop = (self.model_time +
-                               timedelta(seconds=0.5 * self.time_step))
+        self.mv.active_range = (self.model_time,
+                                (self.model_time +
+                                 timedelta(seconds=0.5 * self.time_step)))
+
         self.mv.prepare_for_model_step(self.sc, self.time_step,
                                        self.model_time)
 
-        # model_time + 1.5 * time_step = active_stop
+        # model_time + 1.5 * time_step should be within active range
         assert self.mv.active is True
 
     def test_active_stop_less_than_half_timestep(self):
-        self.mv.active_start = self.model_time
-        self.mv.active_stop = (self.model_time +
-                               timedelta(seconds=0.25 * self.time_step))
+        self.mv.active_range = (self.model_time,
+                                (self.model_time +
+                                 timedelta(seconds=0.25 * self.time_step)))
+
         self.mv.prepare_for_model_step(self.sc, self.time_step,
                                        self.model_time)
 

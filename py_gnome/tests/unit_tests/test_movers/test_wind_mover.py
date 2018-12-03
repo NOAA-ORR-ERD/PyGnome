@@ -1,8 +1,5 @@
-import os
 from datetime import timedelta, datetime
-import shutil
 
-import pytest
 from pytest import raises
 
 import numpy as np
@@ -27,7 +24,6 @@ from gnome.spill.elements import floating
 from gnome.movers import (WindMover,
                           constant_wind_mover,
                           wind_mover_from_file)
-from gnome.persist import References, load
 from gnome.exceptions import ReferencedObjectNotSet
 
 from ..conftest import sample_sc_release, testdata
@@ -48,7 +44,7 @@ def test_exceptions():
         wm = WindMover()
         wm.prepare_for_model_run()
 
-    print excinfo.value.message
+    print excinfo.value
 
     with raises(TypeError):
         """
@@ -202,10 +198,10 @@ class TestPrepareForModelStep:
             old_windages = np.copy(self.sc['windages'])
             wm.prepare_for_model_step(self.sc, self.time_step, curr_time)
 
-            mask = [self.sc['windage_persist'] == -1]
+            mask = self.sc['windage_persist'] == -1
             assert np.all(self.sc['windages'][mask] == old_windages[mask])
 
-            mask = [self.sc['windage_persist'] > 0]
+            mask = self.sc['windage_persist'] > 0
             assert np.all(self.sc['windages'][mask] != old_windages[mask])
 
     def test_constant_wind_before_model_time(self):
@@ -235,10 +231,10 @@ class TestPrepareForModelStep:
             old_windages = np.copy(self.sc['windages'])
             wm.prepare_for_model_step(self.sc, self.time_step, curr_time)
 
-            mask = [self.sc['windage_persist'] == -1]
+            mask = self.sc['windage_persist'] == -1
             assert np.all(self.sc['windages'][mask] == old_windages[mask])
 
-            mask = [self.sc['windage_persist'] > 0]
+            mask = self.sc['windage_persist'] > 0
             assert np.all(self.sc['windages'][mask] != old_windages[mask])
 
     def test_constant_wind_after_model_time(self):
@@ -268,10 +264,10 @@ class TestPrepareForModelStep:
             old_windages = np.copy(self.sc['windages'])
             wm.prepare_for_model_step(self.sc, self.time_step, curr_time)
 
-            mask = [self.sc['windage_persist'] == -1]
+            mask = self.sc['windage_persist'] == -1
             assert np.all(self.sc['windages'][mask] == old_windages[mask])
 
-            mask = [self.sc['windage_persist'] > 0]
+            mask = self.sc['windage_persist'] > 0
             assert np.all(self.sc['windages'][mask] != old_windages[mask])
 
     def test_variable_wind_before_model_time(self):
@@ -367,10 +363,10 @@ class TestPrepareForModelStep:
             old_windages = np.copy(self.sc['windages'])
             wm.prepare_for_model_step(self.sc, self.time_step, curr_time)
 
-            mask = [self.sc['windage_persist'] == -1]
+            mask = self.sc['windage_persist'] == -1
             assert np.all(self.sc['windages'][mask] == old_windages[mask])
 
-            mask = [self.sc['windage_persist'] > 0]
+            mask = self.sc['windage_persist'] > 0
             assert np.all(self.sc['windages'][mask] != old_windages[mask])
 
     def test_variable_wind_after_model_time_with_extrapolation(self):
@@ -406,10 +402,10 @@ class TestPrepareForModelStep:
             old_windages = np.copy(self.sc['windages'])
             wm.prepare_for_model_step(self.sc, self.time_step, curr_time)
 
-            mask = [self.sc['windage_persist'] == -1]
+            mask = self.sc['windage_persist'] == -1
             assert np.all(self.sc['windages'][mask] == old_windages[mask])
 
-            mask = [self.sc['windage_persist'] > 0]
+            mask = self.sc['windage_persist'] > 0
             assert np.all(self.sc['windages'][mask] != old_windages[mask])
 
 
@@ -563,7 +559,8 @@ def test_timespan():
 
     wm = WindMover(Wind(timeseries=time_val,
                         units='meter per second'),
-                   active_start=model_time + timedelta(seconds=time_step))
+                   active_range=(model_time + timedelta(seconds=time_step),
+                                 InfDateTime('inf')))
 
     wm.prepare_for_model_run()
     wm.prepare_for_model_step(sc, time_step, model_time)
@@ -574,7 +571,8 @@ def test_timespan():
     assert wm.active is False
     assert np.all(delta == 0)  # model_time + time_step = active_start
 
-    wm.active_start = model_time - timedelta(seconds=time_step / 2)
+    wm.active_range = (model_time - timedelta(seconds=time_step / 2),
+                       InfDateTime('inf'))
     wm.prepare_for_model_step(sc, time_step, model_time)
 
     delta = wm.get_move(sc, time_step, model_time)
@@ -669,39 +667,37 @@ def test_serialize_deserialize(wind_circ):
     """
     wind = Wind(filename=file_)
     wm = WindMover(wind)
-    serial = wm.serialize('webapi')
+    serial = wm.serialize()
     assert 'wind' in serial
 
-    dict_ = wm.deserialize(serial)
-    dict_['wind'] = wind_circ['wind']
-    wm.update_from_dict(dict_)
+    wm2 = wm.deserialize(serial)
 
-    assert wm.wind == wind_circ['wind']
+    assert wm == wm2
 
 
-@pytest.mark.parametrize("save_ref", [False, True])
-def test_save_load(save_ref, saveloc_):
-    """
-    tests and illustrates the functionality of save/load for
-    WindMover
-    """
-    wind = Wind(filename=file_)
-    wm = WindMover(wind)
-    wm_fname = 'WindMover_save_test.json'
-    refs = None
-    if save_ref:
-        w_fname = 'Wind.json'
-        refs = References()
-        refs.reference(wind, w_fname)
-        wind.save(saveloc_, refs, w_fname)
-
-    wm.save(saveloc_, references=refs, name=wm_fname)
-
-    l_refs = References()
-    obj = load(os.path.join(saveloc_, wm_fname), l_refs)
-    assert (obj == wm and obj is not wm)
-    assert (obj.wind == wind and obj.wind is not wind)
-    shutil.rmtree(saveloc_)  # clean-up
+# @pytest.mark.parametrize("save_ref", [False, True])
+# def test_save_load(save_ref, saveloc_):
+#     """
+#     tests and illustrates the functionality of save/load for
+#     WindMover
+#     """
+#     wind = Wind(filename=file_)
+#     wm = WindMover(wind)
+#     wm_fname = 'WindMover_save_test.json'
+#     refs = None
+#     if save_ref:
+#         w_fname = 'Wind.json'
+#         refs = References()
+#         refs.reference(wind, w_fname)
+#         wind.save(saveloc_, refs, w_fname)
+#
+#     wm.save(saveloc_, references=refs, filename=wm_fname)
+#
+#     l_refs = References()
+#     obj = load(os.path.join(saveloc_, wm_fname), l_refs)
+#     assert (obj == wm and obj is not wm)
+#     assert (obj.wind == wind and obj.wind is not wind)
+#     shutil.rmtree(saveloc_)  # clean-up
 
 
 def test_array_types():

@@ -3,11 +3,7 @@ model dispersion process
 '''
 from __future__ import division
 
-import copy
-
 import numpy as np
-
-import gnome    # required by deserialize
 
 from gnome import constants
 from gnome.cy_gnome.cy_weatherers import disperse_oil
@@ -19,19 +15,22 @@ from gnome.array_types import (viscosity,
                                frac_water,
                                droplet_avg_size)
 
-from gnome.utilities.serializable import Serializable, Field
 
 from .core import WeathererSchema
 from gnome.weatherers import Weatherer
+from gnome.environment.water import WaterSchema
+from gnome.environment.waves import WavesSchema
 
 g = constants.gravity  # the gravitational constant.
 
 
+class NaturalDispersionSchema(WeathererSchema):
+    water = WaterSchema(save=True, update=True, save_reference=True)
+    waves = WavesSchema(save=True, update=True, save_reference=True)
+
+
 class NaturalDispersion(Weatherer):
-    _state = copy.deepcopy(Weatherer._state)
-    _state += [Field('water', save=True, update=True, save_reference=True),
-               Field('waves', save=True, update=True, save_reference=True)]
-    _schema = WeathererSchema
+    _schema = NaturalDispersionSchema
 
     def __init__(self,
                  waves=None,
@@ -77,9 +76,6 @@ class NaturalDispersion(Weatherer):
                                                               time_step,
                                                               model_time)
 
-        if not self.active:
-            return
-
     def weather_elements(self, sc, time_step, model_time):
         '''
         weather elements over time_step
@@ -90,7 +86,6 @@ class NaturalDispersion(Weatherer):
 
         if sc.num_released == 0:
             return
-
 
         for substance, data in sc.itersubstancedata(self.array_types):
             if len(data['mass']) == 0:
@@ -115,7 +110,8 @@ class NaturalDispersion(Weatherer):
             sed = np.zeros((len(data['mass'])), dtype=np.float64)
             droplet_avg_size = data['droplet_avg_size']
 
-            #print 'dispersion: mass_components = ', data['mass_components'].sum(1)
+            # print ('dispersion: mass_components = {}'
+            #        .format(data['mass_components'].sum(1)))
 
             disperse_oil(time_step,
                          data['frac_water'],
@@ -139,6 +135,7 @@ class NaturalDispersion(Weatherer):
 
             if data['mass'].sum() > 0:
                 disp_mass_frac = np.sum(disp[:]) / data['mass'].sum()
+
                 if disp_mass_frac > 1:
                     disp_mass_frac = 1
             else:
@@ -152,6 +149,7 @@ class NaturalDispersion(Weatherer):
 
             if data['mass'].sum() > 0:
                 sed_mass_frac = np.sum(sed[:]) / data['mass'].sum()
+
                 if sed_mass_frac > 1:
                     sed_mass_frac = 1
             else:
@@ -165,7 +163,8 @@ class NaturalDispersion(Weatherer):
                               .format(self._pid,
                                       substance.name,
                                       sc.mass_balance['natural_dispersion']))
-            #print 'dispersion: mass_components = ', data['mass_components'].sum(1)
+            # print ('dispersion: mass_components = {}'
+            #        .format(data['mass_components'].sum(1)))
 
         sc.update_from_fatedataview()
 

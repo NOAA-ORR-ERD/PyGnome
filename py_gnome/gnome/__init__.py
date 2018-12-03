@@ -4,28 +4,27 @@
 from itertools import chain
 
 import sys
-import os
+
 import logging
 import json
 import warnings
-import pkg_resources
+
 import importlib
 
 import unit_conversion as uc
 
+# just so it will be in the namespace.
 from gnomeobject import GnomeId, AddLogger
 # from gnomeobject import init_obj_log
 
 # using a PEP 404 compliant version name
-__version__ = '0.6.1'
+__version__ = '0.6.2'
 
 
 # a few imports so that the basic stuff is there
 
 def check_dependency_versions():
     """
-    much simpler method :-)
-
     Checks the versions of the following libraries:
         gridded
         oillibrary
@@ -33,8 +32,8 @@ def check_dependency_versions():
     If the version is not at least as current as what's defined here
     a warning is displayed
     """
-    libs = [('gridded', '0.0.9'),
-            ('oil_library', '1.0.6'),
+    libs = [('gridded', '0.1.5'),
+            ('oil_library', '1.1.1'),
             ('unit_conversion', '2.6.0')]
 
     for name, version in libs:

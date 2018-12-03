@@ -181,12 +181,12 @@ def test_projection(output_dir):
 #     assert np.isclose(rounded, exp, rel_tol=1e-14)
 
 
-# def test_render(dump):
+# def test_render(dump_folder):
 #     """
 #     tests the ability to render a basemap from a bna
 #     """
 
-#     map_canvas.make_map(input_file, os.path.join(dump, 'map_sample.png'))
+#     map_canvas.make_map(input_file, os.path.join(dump_folder, 'map_sample.png'))
 
 #     assert True
 
@@ -209,7 +209,8 @@ def test_projection(output_dir):
 #     assert True
 
 
-# def test_basemap_square(dump):
+# def test_basemap_square(dump_folder):
+
 #     p1 = Polygon([[0, 45], [1, 45], [1, 46], [0, 46]], metadata=('name'
 #                  , 'land', '1'))
 
@@ -218,11 +219,11 @@ def test_projection(output_dir):
 
 #     gmap = map_canvas.MapCanvas((300, 300), land_polygons=poly_set)
 #     gmap.draw_background()
-#     gmap.save_background(os.path.join(dump, 'background_square.png'))
+#     gmap.save_background(os.path.join(dump_folder, 'background_square.png'))
 #     assert True
 
 
-# def test_basemap_square2(dump):
+# def test_basemap_square2(dump_folder):
 #     p1 = Polygon([[0, 45], [1, 45], [1, 46], [0, 46]], metadata=('name'
 #                  , 'land', '1'))
 
@@ -231,12 +232,12 @@ def test_projection(output_dir):
 
 #     gmap = map_canvas.MapCanvas((100, 300), poly_set)
 #     gmap.draw_background()
-#     gmap.save_background(os.path.join(dump, 'background_square2.png'
+#     gmap.save_background(os.path.join(dump_folder, 'background_square2.png'
 #                          ))
 #     assert True
 
 
-# def test_basemap_square3(dump):
+# def test_basemap_square3(dump_folder):
 #     p1 = Polygon([[0, 45], [1, 45], [1, 46], [0, 46]], metadata=('name'
 #                  , 'land', '1'))
 
@@ -245,30 +246,30 @@ def test_projection(output_dir):
 
 #     gmap = map_canvas.MapCanvas((300, 100), land_polygons=poly_set)
 #     gmap.draw_background()
-#     gmap.save_background(os.path.join(dump, 'background_square3.png'))
+#     gmap.save_background(os.path.join(dump_folder, 'background_square3.png'))
 #     assert True
 
 
-# def test_basemap(dump):
+# def test_basemap(dump_folder):
 #     polygons = haz_files.ReadBNA(input_file, 'PolygonSet')
 
 #     gmap = map_canvas.MapCanvas((400, 800), polygons)
 #     gmap.draw_background()
-#     gmap.save_background(os.path.join(dump, 'background1.png'))
+#     gmap.save_background(os.path.join(dump_folder, 'background1.png'))
 #     assert True
 
 
-# def test_basemap_wide(dump):
+# def test_basemap_wide(dump_folder):
 #     polygons = haz_files.ReadBNA(input_file, 'PolygonSet')
 
 #     gmap = map_canvas.MapCanvas((800, 400), polygons)
 #     gmap.draw_background()
-#     gmap.save_background(os.path.join(dump, 'background2.png'))
+#     gmap.save_background(os.path.join(dump_folder, 'background2.png'))
 
 #     assert True
 
 
-# def test_draw_raster_map(dump):
+# def test_draw_raster_map(dump_folder):
 #     """
 #     tests drawing the raster map
 #     """
@@ -284,4 +285,4 @@ def test_projection(output_dir):
 
 #     gmap.draw_raster_map(raster_map, outline=True)
 
-#     gmap.save_background(os.path.join(dump, 'raster.png'))
+#     gmap.save_background(os.path.join(dump_folder, 'raster.png'))
