@@ -343,7 +343,7 @@ class CyMover(Mover):
                 msg = ('No available data in the time interval '
                        'that is being modeled\n'
                        '\tModel time: {}\n'
-                       '\tData available from {} to {}'
+                       '\tData available from {} to {}\n'
                        '\tMover: {} of type {}\n'
                        '\tError: {}'
                        .format(model_time_datetime,
