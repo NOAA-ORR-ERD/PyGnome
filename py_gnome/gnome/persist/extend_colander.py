@@ -28,6 +28,11 @@ class LocalDateTime(DateTime):
         return _datetime
 
     def serialize(self, node, appstruct):
+        """
+        Serialize a DateTime object
+
+        returns an iso formatted string
+        """
         if isinstance(appstruct, datetime.datetime):
             appstruct = self.strip_timezone(appstruct)
 
@@ -69,6 +74,9 @@ class NumpyFixedLen(Tuple):
     have a fixed size like WorldPoint, 3D velocity of SimpleMover.
     """
     def serialize(self, node, appstruct):
+        """
+        Serialize a fixed length numpy array
+        """
         if appstruct is null:  # colander.null
             return null
 
@@ -87,6 +95,9 @@ class NumpyArray(List):
     numpy array of greater than length 1.
     """
     def serialize(self, node, appstruct):
+        """
+        Serialize a numpy array
+        """
         if appstruct is null:  # colander.null
             return null
 
@@ -112,6 +123,9 @@ class DatetimeValue2dArray(Sequence):
         efficient.
     """
     def serialize(self, node, appstruct):
+        """
+        Serialize a 2D Datetime value array
+        """
         if appstruct is null:  # colander.null
             return null
 
@@ -230,6 +244,9 @@ class FilenameSchema(SequenceSchema):
             return rv[0]
 
     def deserialize(self, cstruct):
+        """
+        Deserialize a file name
+        """
         if cstruct is None or cstruct is null:
             return None
         rv = super(FilenameSchema, self).deserialize(cstruct)
@@ -263,12 +280,22 @@ class NumpyArraySchema(SchemaNode):
         self.precision = kwargs.pop('precision', 8)
 
     def serialize(self, appstruct):
+        """
+        Serialize a numpy array
+
+        returns data as a list
+        """
         if not isinstance(appstruct, (np.ndarray, list, tuple)):
             raise ValueError('Cannot serialize: {0} is not a numpy array'.format(appstruct))
         return np.round(np.array(appstruct).astype(self.dtype), self.precision).tolist()
 
     def deserialize(self, cstruct):
-        return np.array(cstruct, dtype = self.dtype)
+        """
+        Deserialize a numpy array
+
+        returns a numpy array from a list
+        """
+        return np.array(cstruct, dtype=self.dtype)
 
 
 class OrderedCollectionSchema(SequenceSchema):

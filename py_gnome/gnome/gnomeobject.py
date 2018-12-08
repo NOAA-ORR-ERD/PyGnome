@@ -575,7 +575,7 @@ class GnomeId(AddLogger):
 
     def save(self, saveloc='.', refs=None, overwrite=True):
         """
-        save object state as json to user specified saveloc
+        Save object state as json to user specified saveloc
 
         :param saveloc: A directory, file path, open zipfile.ZipFile, or None.
                         If a directory, it will place the zip file there,
@@ -583,11 +583,12 @@ class GnomeId(AddLogger):
 
                         If a file path, it will write the file there
                         as follows:
-                        - If the file does not exist, it will create the zip
-                          archive there. If the saveloc is a zip file or
-                          ``zipfile.Zipfile`` object and overwrite is False,
-                          it will append there. Otherwise, it will overwrite
-                          the file if allowed.
+
+                        If the file does not exist, it will create the zip
+                        archive there. If the saveloc is a zip file or
+                        ``zipfile.Zipfile`` object and overwrite is False,
+                        it will append there. Otherwise, it will overwrite
+                        the file if allowed.
 
                         If set to None, this function will instead return an
                         open ``zipfile.Zipfile`` object linked to a temporary

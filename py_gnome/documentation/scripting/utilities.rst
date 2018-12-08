@@ -20,7 +20,7 @@ Examples in this document will use the ``import *`` approach
 
 .. note::
 
-The scripting utilities are under active development as we determine which helper functions will be useful to make setting up and running pyGNOME easier.
+    The scripting utilities are under active development as we determine which helper functions will be useful to make setting up and running pyGNOME easier.
 
 
 :mod:`gnome.scripting.time_utils`
