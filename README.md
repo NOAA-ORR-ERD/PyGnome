@@ -4,7 +4,7 @@
 
 # PyGnome
 
-## [Project Documentation](http://noaa-orr-erd.github.io/PyGnome/) ##
+## [Project Documentation](https://gnome.orr.noaa.gov/doc/pygnome/index.html) ##
 ## [FAQ -- Troubleshoot](https://github.com/NOAA-ORR-ERD/GNOME2/wiki/FAQ---Troubleshoot) ##
 
 **GNOME** (General NOAA Operational Modeling Environment) is a modeling tool
@@ -26,8 +26,7 @@ And this is a python package that encapsulates GNOME's functionality.
 ## Installation Instructions ##
 
 We have put some effort into making this package reasonably easy,
-or at least possible, to install in a number of
-ways on a few different computing platforms.
+or at least possible, to install in a number of ways on a few different computing platforms.
 
 First, there are two python distributions that we currently support.
 Their respective installation guides are here:
