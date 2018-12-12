@@ -36,6 +36,8 @@ from .utilities import (make_images_dir,
                         set_verbose,
                         )
 
+from gnome.utilities.time_utils import asdatetime
+
 from .time_utils import (seconds,
                          minutes,
                          hours,

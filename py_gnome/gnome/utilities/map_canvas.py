@@ -197,9 +197,8 @@ class MapCanvas(object):
         """
         Add a list of colors to the pallette
 
-        :param color_list: list of colors:
-                           each element of the list is a 2-tuple:
-                             ('color_name', (r,g,b))
+        :param color_list: list of colors. Each element of the list is a 2-tuple:
+                           ('color_name', (r,g,b))
         """
         self.fore_image.add_colors(color_list)
         self.back_image.add_colors(color_list)

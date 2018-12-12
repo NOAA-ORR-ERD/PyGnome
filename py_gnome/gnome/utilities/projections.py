@@ -374,9 +374,7 @@ class FlatEarthProjection(GeoProjection):
         :type ref_positions: NX3, numpy array (Only lat is used here)
 
         :returns delta_lon_lat: Differential (delta) positional values
-                                Nx3 numpy array of (delta-lon,
-                                                    delta-lat,
-                                                    delta-z)
+                                Nx3 numpy array of (delta-lon, delta-lat, delta-z)
         """
 
         # make a copy -- don't change meters
