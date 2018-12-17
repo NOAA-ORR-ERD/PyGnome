@@ -284,7 +284,7 @@ def wind_mover_from_file(filename, **kwargs):
 
     :returns mover: returns a wind mover, built from the file
     """
-    w = Wind(filename=filename, format='r-theta')
+    w = Wind(filename=filename, coord_sys='r-theta')
 
     return WindMover(w, name=w.name, **kwargs)
 

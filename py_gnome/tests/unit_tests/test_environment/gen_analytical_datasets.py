@@ -386,7 +386,7 @@ def gen_all(base_path=None):
         filenames = [os.path.join(base_path, fn) for fn in filenames]
 
     for fn, func in zip(filenames, (gen_sinusoid, gen_vortex_3D, gen_ring)):
-        log.info('generating ' + fn)
+        print('generating ' + fn)
         func(fn)
 
 
