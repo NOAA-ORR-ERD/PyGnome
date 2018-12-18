@@ -352,7 +352,7 @@ cdef class CyComponentMover(CyCurrentMover):
                              " or 'uncertainty' - you've chosen: "
                              + str(spill_type))
 
-    def _get_velocity_handle(self):
+    def _get_velocity_handle(self, pat):
         """
             Invokes the GetVelocityHdl method of TriGridVel_c object
             to get the velocities for the grid
@@ -362,7 +362,10 @@ cdef class CyComponentMover(CyCurrentMover):
         cdef cnp.ndarray[VelocityFRec, ndim = 1] vels
 
         # allocate memory and copy it over
-        vel_hdl = self.component.GetVelocityHdl()
+        vel_hdl = self.component.GetVelocityHdl(pat)
+        if not vel_hdl:
+            return 0
+
         sz = _GetHandleSize(<Handle>vel_hdl)
 
         # will this always work?
@@ -451,3 +454,8 @@ cdef class CyComponentMover(CyCurrentMover):
         memcpy(&top[0], top_hdl[0], sz)
 
         return top
+
+    def get_optimize_value(self, model_time, pattern_num):
+        return self.component.GetOptimizeValue(model_time, pattern_num)
+
+

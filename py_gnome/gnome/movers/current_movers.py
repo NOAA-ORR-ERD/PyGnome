@@ -1312,8 +1312,28 @@ class ComponentMover(CurrentMoversBase):
     def get_center_points(self):
         return self.get_triangle_center_points()
 
+    def get_optimize_values(self, model_time):
+        optimize_pat1 = self.mover.get_optimize_value(model_time, 1)
+        optimize_pat2 = self.mover.get_optimize_value(model_time, 2)
+        return optimize_pat1, optimize_pat2
+
     def get_scaled_velocities(self, model_time):
         """
-        Get file values scaled to ref pt value, with tide applied (if any)
+        Get file values scaled to optimized
+        check if pat2 exists
         """
-        return self.mover._get_velocity_handle()
+        pat = 1
+        vels_pat1 = self.mover._get_velocity_handle(pat)
+        pat = 2
+        vels_pat2 = self.mover._get_velocity_handle(pat)
+
+        optimize_pat1, optimize_pat2 = self.get_optimize_values(model_time)
+
+        vels_pat1['u'] = vels_pat1['u'] * optimize_pat1
+        vels_pat1['v'] = vels_pat1['v'] * optimize_pat1
+
+        if vels_pat2 != 0 and optimize_pat2 != 0:
+            vels_pat1['u'] = vels_pat1['u'] + vels_pat2['u'] * optimize_pat2
+            vels_pat1['v'] = vels_pat1['v'] + vels_pat2['v'] * optimize_pat2
+
+        return vels_pat1

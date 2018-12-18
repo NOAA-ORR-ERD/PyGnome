@@ -940,11 +940,22 @@ OSErr ComponentMover_c::TextRead(char *cats_path1, char *cats_path2)
 }
 #endif
 
-VelocityFH ComponentMover_c::GetVelocityHdl(void)
+VelocityFH ComponentMover_c::GetVelocityHdl(short pattern)
 {
 	// need to turn this into a combo of pattern 1 and pattern 2
 	//return dynamic_cast<TriGridVel_c *>(fGrid)->GetVelocityHdl();
-	return pattern1->GetVelocityHdl();
+	if (pattern==1)
+	{
+		if (pattern1)
+			return pattern1->GetVelocityHdl();
+	}
+	else if (pattern==2)
+	{
+		if (pattern2)
+			return pattern2->GetVelocityHdl();
+	}
+	else
+		return 0;
 }
 
 LongPointHdl ComponentMover_c::GetPointsHdl(void)
@@ -971,4 +982,24 @@ WORLDPOINTH	ComponentMover_c::GetTriangleCenters()
 	//return dynamic_cast<TriGridVel_c *>(fGrid)->GetCenterPointsHdl();
 }
 
+double ComponentMover_c::GetOptimizeValue(Seconds model_time, short pattern)
+{
+	OSErr err = 0;
+	char errmsg[256];
+	Seconds time_step = 900; // not used
+
+	if (!fOptimize.isOptimizedForStep)
+	{
+		err = SetOptimizeVariables (errmsg, model_time, time_step);
+		if (err)
+			return 0;
+	}
+
+	if (pattern==1)		
+		return fOptimize.pat1ValScale;
+	if (pattern==2)		
+		return fOptimize.pat2ValScale;
+	else
+		return 0;
+}
 

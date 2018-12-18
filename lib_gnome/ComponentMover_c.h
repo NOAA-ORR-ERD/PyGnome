@@ -105,11 +105,12 @@ public:
 	void				SetTimeFile (TOSSMTimeValue *newTimeFile);
 	TOSSMTimeValue		*GetTimeFile () { return (timeFile); }
 	
-	VelocityFH GetVelocityHdl();
+	VelocityFH GetVelocityHdl(short pattern);
 	LongPointHdl GetPointsHdl(void);
 	WORLDPOINTH GetWorldPointsHdl(void);
 	TopologyHdl GetTopologyHdl(void);
 	WORLDPOINTH	GetTriangleCenters();
+	double GetOptimizeValue(Seconds model_time, short pattern);
 
 	//virtual	OSErr TextRead(vector<string> &linesInFile);
 #ifdef pyGNOME
