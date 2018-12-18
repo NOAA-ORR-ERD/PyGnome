@@ -1,5 +1,6 @@
 import os
 from datetime import datetime, timedelta
+import logging
 
 import numpy as np
 import netCDF4 as nc4
@@ -7,6 +8,8 @@ import netCDF4 as nc4
 from gnome.environment.gridded_objects_base import Grid_S, PyGrid
 from gnome.environment import GridCurrent
 
+
+log = logging.getLogger(__name__)
 
 def gen_vortex_3D(filename=None):
     x, y = np.mgrid[-30:30:61j, -30:30:61j]
@@ -383,6 +386,7 @@ def gen_all(base_path=None):
         filenames = [os.path.join(base_path, fn) for fn in filenames]
 
     for fn, func in zip(filenames, (gen_sinusoid, gen_vortex_3D, gen_ring)):
+        print('generating ' + fn)
         func(fn)
 
 

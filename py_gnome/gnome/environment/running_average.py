@@ -107,7 +107,7 @@ class RunningAverage(Environment):
             moving_ts = (wind.ossm
                          .create_running_average(self._past_hours_to_average))
         else:
-            self.wind = Wind(timeseries, units='mps', format='uv')
+            self.wind = Wind(timeseries, units='mps', coord_sys='uv')
             moving_ts = (self.wind.ossm
                          .create_running_average(self._past_hours_to_average))
 
