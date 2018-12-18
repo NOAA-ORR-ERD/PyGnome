@@ -66,6 +66,6 @@ jupyter
 # required to build docs
 sphinx
 sphinx_rtd_theme
-nbsphinx
+nbsphinx=0.3.*
 
 
