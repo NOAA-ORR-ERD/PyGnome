@@ -77,9 +77,10 @@ cdef extern from "ComponentMover_c.h":
 
         LongPointHdl  GetPointsHdl()
         WORLDPOINTH  GetWorldPointsHdl()
-        VelocityFH  GetVelocityHdl()
+        VelocityFH  GetVelocityHdl(short pattern)
         TopologyHdl  GetTopologyHdl()
         WORLDPOINTH  GetTriangleCenters()
+        double  GetOptimizeValue(unsigned long model_time, short pattern)
 
 
 cdef extern from "GridCurrentMover_c.h":

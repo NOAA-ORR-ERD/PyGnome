@@ -258,6 +258,7 @@ def get_testdata():
     most of these are used in multiple modules. Some are not, but let's just
     define them all in one place, ie here.
     '''
+    env_data = os.path.join(base_dir, 'test_environment', 'sample_data')
     s_data = os.path.join(base_dir, 'sample_data')
     lis = os.path.join(s_data, 'long_island_sound')
     bos = os.path.join(s_data, 'boston_data')
@@ -269,6 +270,10 @@ def get_testdata():
     bna_sample = os.path.join(s_data, 'MapBounds_2Spillable2Islands2Lakes.bna')
 
     data = dict()
+
+    get_datafile(os.path.join(env_data, 'staggered_sine_channel.nc'))
+    get_datafile(os.path.join(env_data, '3D_circular.nc'))
+    get_datafile(os.path.join(env_data, 'tri_ring.nc'))
 
     data['CatsMover'] = \
         {'curr': get_datafile(os.path.join(lis, 'tidesWAC.CUR')),

@@ -51,8 +51,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     model.spills += spill1
 
-    print 'adding a RandomMover:'
-    model.movers += gs.RandomMover(diffusion_coef=10000)
+
 
     print 'adding the ice movers'
     fn = [gs.get_datafile('arctic_avg2_0001_gnome.nc'),
@@ -77,6 +76,11 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     ice_aware_curr.grid.node_lon = ice_aware_curr.grid.node_lon[:] - 360
     model.movers += i_c_mover
     model.movers += i_w_mover
+
+    print 'adding an Ice RandomMover:'
+    model.movers += IceAwareRandomMover(ice_concentration=ice_aware_curr.ice_concentration,
+                                        diffusion_coef=50000)
+
 
     # to visualize the grid and currents
 #     renderer.add_grid(ice_aware_curr.grid)

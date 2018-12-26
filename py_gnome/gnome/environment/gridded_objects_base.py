@@ -288,6 +288,11 @@ class Grid_R(gridded.grids.Grid_R, GnomeId):
         rv = cls.from_netCDF(**dict_)
         return rv
 
+    def get_metadata(self):
+        json_ = {}
+        json_['shape'] = self.nodes.shape
+        return json_
+
     def get_nodes(self):
         return self.nodes.reshape(-1, 2)
 
