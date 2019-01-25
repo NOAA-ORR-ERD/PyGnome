@@ -140,6 +140,7 @@ class Spill(GnomeId):
             self.release = release
         else:
             self.release = release
+            num_elements = release.num_elements
         self.num_elements = num_elements
 
         self.units = units

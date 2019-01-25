@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from gnome.spill.spill import (Spill)
 from gnome.spill.substance import NonWeatheringSubstance
 from gnome.spill.release import PointLineRelease
+from gnome.spill_container import SpillContainer
 
 import pytest
 
@@ -75,13 +76,16 @@ class TestSpill(object):
                                    num_elements=1000,
                                    end_release_time=end_time)
         sp = Spill(release=release)
+        sc = SpillContainer()
+        sc.spills += sp
+        sc.prepare_for_model_run(array_types=sp.array_types)
         sp.prepare_for_model_run({}, 900)
         for ix in range(5):
             model_time = self.rel_time + timedelta(seconds=900 * ix)
-            to_rel = sp.release_elements(model_time, 900)
+            to_rel = sp.release_elements(sc, model_time, 900)
             if model_time < sp.end_release_time:
                 assert to_rel == 250
-                assert sp.num_released == min((ix+1) * 250, 1000)
+                assert len(sc['spill_num']) == min((ix+1) * 250, 1000)
             else:
                 assert to_rel == 0
 
@@ -105,10 +109,8 @@ class TestSpill(object):
         with pytest.raises(ValueError):
             sp.units = 'inches'
 
-    def test_prepare_for_model_run(self, sp):
-        sp.prepare_for_model_run({}, 1)
-        #prepare with windages, verify initializers exist on substance
-
+    #These are for when SpillContainer is removed
+    @pytest.mark.xfail()
     @pytest.mark.parametrize('spill', [inst_point_spill(),
                                        inst_point_line_spill(),
                                        cont_point_spill(),

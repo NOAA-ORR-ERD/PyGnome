@@ -54,7 +54,8 @@ class PointLineReleaseSchema(BaseReleaseSchema):
         validator=convertible_to_seconds,
         save=True, update=True
     )
-    num_elements = SchemaNode(Int())
+    num_elements = SchemaNode(Int(), missing=drop)
+    num_per_timestep = SchemaNode(Int(), missing=drop)
     release_mass = SchemaNode(
         Float()
     )
@@ -91,12 +92,11 @@ class Release(GnomeId):
                  release_mass=0,
                  **kwargs):
 
-        super(Release, self).__init__(**kwargs)
-
         self.num_elements = num_elements
         self.release_time = asdatetime(release_time)
         self.release_mass = release_mass
         self.rewind()
+        super(Release, self).__init__(**kwargs)
         self.array_types.update({'positions': gat('positions'),
                                  'mass': gat('mass'),
                                  'init_mass': gat('mass')})
@@ -518,6 +518,22 @@ class SpatialRelease(Release):
 
         return self.num_elements
 
+    def rewind(self):
+        self._prepared = False
+        self._mass_per_le = 0
+
+    def prepare_for_model_run(self, ts):
+        '''
+        :param ts: integer seconds
+        :param amount: integer kilograms
+        '''
+        if self._prepared:
+            self.rewind()
+        max_release = self.num_elements
+
+        self._prepared = True
+        self._mass_per_le = self.release_mass*1.0 / max_release
+
     def initialize_LEs(self, to_rel, data, current_time, time_step):
         """
         set positions for new elements added by the SpillContainer
@@ -525,7 +541,11 @@ class SpatialRelease(Release):
         .. note:: this releases all the elements at their initial positions at
             the release_time
         """
-        data['positions'][-to_rel:] = self.start_position
+        sl = slice(-to_rel, None, 1)
+        data['positions'][sl] = self.start_position
+
+        data['mass'][sl] = self._mass_per_le
+        data['init_mass'][sl] = self._mass_per_le
 
 
 def GridRelease(release_time, bounds, resolution):

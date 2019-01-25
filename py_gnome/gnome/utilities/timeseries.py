@@ -24,12 +24,8 @@ class TimeseriesError(Exception):
 class Timeseries(GnomeId):
     _schema = ObjTypeSchema
 
-    def __init__(self,
-                 timeseries=None,
-                 filename=None,
-                 coord_sys='uv',
-                 extrapolation_is_allowed=False,
-                 **kwargs):
+    def __init__(self, timeseries=None, filename=None, coord_sys='uv',
+                 extrapolation_is_allowed=False, **kwargs):
         """
         Initializes a timeseries object from either a timeseries or datafile
         containing the timeseries. If both timeseries and file are given,

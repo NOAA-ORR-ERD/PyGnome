@@ -23,7 +23,8 @@ from gnome.basic_types import oil_status, fate
 from gnome.map import (GnomeMapSchema,
                        MapFromBNASchema,
                        ParamMapSchema,
-                       MapFromUGridSchema)
+                       MapFromUGridSchema,
+                       GnomeMap)
 
 from gnome.environment import Environment, Wind
 from gnome.array_types import gat
@@ -79,10 +80,10 @@ class ModelSchema(ObjTypeSchema):
                             MapFromUGridSchema),
         save_reference=True
     )
-    spills = OrderedCollectionSchema(
-        GeneralGnomeObjectSchema(acceptable_schemas=[SpillSchema]),
-        save_reference=True, test_equal=False
-    )
+#     spills = OrderedCollectionSchema(
+#         GeneralGnomeObjectSchema(acceptable_schemas=[SpillSchema]),
+#         save_reference=True, test_equal=False
+#     )
 #     uncertain_spills = OrderedCollectionSchema(
 #         GeneralGnomeObjectSchema(acceptable_schemas=[SpillSchema]),
 #         save_reference=True, test_equal=False
@@ -143,7 +144,7 @@ class Model(GnomeId):
 
     def __init__(self,
                  name='Model',
-                 time_step=None,
+                 time_step=900,
                  start_time=round_time(datetime.now(), 3600),
                  duration=timedelta(days=1),
                  weathering_substeps=1,
@@ -1390,8 +1391,6 @@ class Model(GnomeId):
                             msg = ('Found particles with '
                                    'relative_buoyancy < 0. Oil is a sinker')
                             raise GnomeRuntimeError(msg)
-                    except AttributeError:
-                        pass
 
         if num_spills_on > 0 and not someSpillIntersectsModel:
             if num_spills > 1:
