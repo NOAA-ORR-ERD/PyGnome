@@ -46,6 +46,7 @@ class Process(GnomeId):
 
     def __init__(self,
                  make_default_refs=True,
+                 active_range=(InfDateTime('-inf'), InfDateTime('inf')),
                  **kwargs):  # default min + max values for timespan
         """
         Initialize default Mover/Weatherer parameters
@@ -61,9 +62,6 @@ class Process(GnomeId):
 
         self.on = kwargs.pop('on', True)
         self._active = self.on
-
-        active_range = kwargs.pop('active_range',
-                                  (InfDateTime('-inf'), InfDateTime('inf')))
 
         self._check_active_startstop(*active_range)
 

@@ -22,7 +22,6 @@ from gnome.spill import (Spill,
                          SpatialRelease,
                          point_line_release_spill,
                          Release)
-from gnome.spill.elements import floating
 
 from gnome.movers import SimpleMover, RandomMover, WindMover, CatsMover
 
@@ -35,6 +34,7 @@ from gnome.weatherers import (HalfLifeWeatherer,
 from gnome.outputters import Renderer, TrajectoryGeoJsonOutput
 
 from conftest import sample_model_weathering, testdata, test_oil
+from gnome.spill.substance import NonWeatheringSubstance
 
 
 @pytest.fixture(scope='function')
@@ -81,22 +81,6 @@ def test_init():
     model = Model()
 
     assert True
-
-
-def test_update_model():
-    mdl = Model()
-    d = {'name': 'Model2'}
-
-    assert mdl.name == 'Model'
-
-    upd = mdl.update(d)
-    assert mdl.name == d['name']
-    assert upd is True
-
-    d['duration'] = 43200
-    upd = mdl.update(d)
-
-    assert mdl.duration.seconds == 43200
 
 
 def test_update_model():
@@ -376,7 +360,7 @@ def test_simple_run_with_image_output(tmpdir):
     start_points[:, 1] = np.linspace(47.93, 48.1, N)
     # print start_points
 
-    spill = Spill(SpatialRelease(start_position=start_points,
+    spill = Spill(release=SpatialRelease(start_position=start_points,
                                  release_time=start_time))
 
     model.spills += spill
@@ -635,10 +619,12 @@ def test_linearity_of_wind_movers(wind_persist):
     model1.duration = timedelta(hours=1)
     model1.time_step = timedelta(hours=1)
     model1.start_time = start_time
-    model1.spills += point_line_release_spill(num_elements=num_LEs,
-                                              start_position=(1., 2., 0.),
-                                              release_time=start_time,
-                                              element_type=element_type)
+    sp = point_line_release_spill(num_elements=num_LEs,
+                                 start_position=(1., 2., 0.),
+                                 release_time=start_time,
+                                 substance=NonWeatheringSubstance(windage_persist=wind_persist))
+    model1.spills += sp
+
 
     model1.movers += WindMover(Wind(timeseries=series1, units=units),
                                make_default_refs=False)
@@ -650,7 +636,7 @@ def test_linearity_of_wind_movers(wind_persist):
     model2.spills += point_line_release_spill(num_elements=num_LEs,
                                               start_position=(1., 2., 0.),
                                               release_time=start_time,
-                                              element_type=element_type)
+                                              substance=NonWeatheringSubstance(windage_persist=wind_persist))
 
     # todo: CHECK RANDOM SEED
     # model2.movers += WindMover(Wind(timeseries=series1, units=units))

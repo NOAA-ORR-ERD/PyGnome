@@ -11,14 +11,15 @@ from gnome.basic_types import world_point_type, oil_status, \
     status_code_type
 
 from gnome.array_types import ArrayType
-from gnome.array_types import (reset_to_defaults,
-                               age,
-                               mass,
-                               mass_components)
+from gnome.array_types import gat, reset_to_defaults
 from pytest import mark, raises
 
 from testfixtures import log_capture
 
+
+age = gat('age')
+mass = gat('mass')
+mass_components = gat('mass_components')
 
 def test_reset_to_defaults():
     '''

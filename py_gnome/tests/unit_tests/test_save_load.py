@@ -42,11 +42,11 @@ from gnome import map, spill
 # following is modified for testing only
 from gnome.persist import save_load
 
-from conftest import testdata, test_oil
+from conftest import testdata
 
 import pytest
 from testfixtures import LogCapture
-from tests.unit_tests.conftest import test_oil
+from .conftest import test_oil
 
 
 def test_warning_logged():
@@ -163,12 +163,10 @@ g_objects = (
     spill.substance.Substance(windage_range=(0.05, 0.07)),
     spill.substance.GnomeOil(test_oil, windage_range=(0.05, 0.07)),
     spill.substance.NonWeatheringSubstance(windage_range=(0.05, 0.07)),
-    Skimmer(100, 'kg', 0.3, datetime(2014, 1, 1, 0, 0),
-                       datetime(2014, 1, 1, 4, 0)),
-    Burn(100, 1, datetime(2014, 1, 1, 0, 0),
+    Skimmer(100, 'kg', 0.3, (datetime(2014, 1, 1, 0, 0), datetime(2014, 1, 1, 4, 0))),
+    Burn(100, 1, (datetime(2014, 1, 1, 0, 0), datetime(2014, 1, 1, 4, 0)),
                     efficiency=.9),
-    ChemicalDispersion(.2, datetime(2014, 1, 1, 0, 0),
-                                  datetime(2014, 1, 1, 4, 0),
+    ChemicalDispersion(.2, (datetime(2014, 1, 1, 0, 0), datetime(2014, 1, 1, 4, 0)),
                                   efficiency=.3),
     # todo: ask Caitlin how to fix
     # movers.RiseVelocityMover(),
