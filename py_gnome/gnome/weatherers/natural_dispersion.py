@@ -25,6 +25,8 @@ class NaturalDispersionSchema(WeathererSchema):
 
 class NaturalDispersion(Weatherer):
     _schema = NaturalDispersionSchema
+    _ref_as = 'dispersion'
+    _req_refs = ['waves', 'water']
 
     def __init__(self,
                  waves=None,

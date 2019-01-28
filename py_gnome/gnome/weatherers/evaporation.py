@@ -29,6 +29,8 @@ class EvaporationSchema(WeathererSchema):
 
 class Evaporation(Weatherer):
     _schema = EvaporationSchema
+    _ref_as = 'evaporation'
+    _req_refs = ['water', 'wind']
 
     def __init__(self,
                  water=None,

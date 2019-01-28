@@ -11,7 +11,6 @@ from gnome.spill import point_line_release_spill
 from gnome.environment import constant_wind, Water, Wind
 from gnome.weatherers import Evaporation
 from gnome.outputters import WeatheringOutput
-from gnome.spill.elements import floating
 from gnome.basic_types import oil_status
 
 from conftest import weathering_data_arrays, test_oil
@@ -44,13 +43,12 @@ def test_evaporation(oil, temp, num_elems, on):
     '''
     still working on tests ..
     '''
-    et = floating(substance=oil)
     time_step = 15. * 60
 
     evap = Evaporation(Water(), wind=constant_wind(1., 0))
     evap.on = on
 
-    sc = weathering_data_arrays(evap.array_types, evap.water, time_step, et)[0]
+    sc = weathering_data_arrays(evap.array_types, evap.water, time_step)[0]
 
     model_time = (sc.spills[0].release_time +
                   timedelta(seconds=time_step))

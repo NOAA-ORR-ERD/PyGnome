@@ -401,7 +401,7 @@ class Spill(GnomeId):
         should_exist = self.release.num_elements_after_time(current_time, time_step)
         cur_exist = len(sc['spill_num'] == idx)
         to_rel = should_exist - cur_exist
-        if to_rel == 0:
+        if to_rel <= 0:
             return 0 #nothing to release, so end early
         sc._append_data_arrays(to_rel)
 
@@ -491,7 +491,7 @@ def surface_point_line_spill(num_elements,
                  units=units,
                  name=name,
                  on=on)
-    retv.substance.windage_range = windage_range,
+    retv.substance.windage_range = windage_range
     retv.substance.windage_persist = windage_persist
     return retv
 
@@ -557,7 +557,7 @@ def grid_spill(bounds,
                  units=units,
                  name=name,
                  on=on)
-    retv.substance.windage_range = windage_range,
+    retv.substance.windage_range = windage_range
     retv.substance.windage_persist = windage_persist
     return retv
 
@@ -654,7 +654,7 @@ def subsurface_plume_spill(num_elements,
                  name=name,
                  on=on)
     retv.substance.initializers = inits
-    retv.substance.windage_range = windage_range,
+    retv.substance.windage_range = windage_range
     retv.substance.windage_persist = windage_persist
     return retv
 
@@ -688,7 +688,7 @@ def subsurface_plume_spill(num_elements,
 #                  units=units,
 #                  name=name,
 #                  on=on)
-#     retv.substance.windage_range = windage_range,
+#     retv.substance.windage_range = windage_range
 #     retv.substance.windage_persist = windage_persist
 #     return retv
 
@@ -721,7 +721,7 @@ def point_line_release_spill(num_elements,
                  units=units,
                  name=name,
                  on=on)
-    retv.substance.windage_range = windage_range,
+    retv.substance.windage_range = windage_range
     retv.substance.windage_persist = windage_persist
     return retv
 
@@ -751,6 +751,6 @@ def spatial_release_spill(start_positions,
                  units=units,
                  name=name,
                  on=on)
-    retv.substance.windage_range = windage_range,
+    retv.substance.windage_range = windage_range
     retv.substance.windage_persist = windage_persist
     return retv

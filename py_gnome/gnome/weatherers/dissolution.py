@@ -47,6 +47,9 @@ class Dissolution(Weatherer):
 
     _schema = DissolutionSchema
 
+    _ref_as = 'dissolution'
+    _req_refs = ['waves', 'wind']
+
     def __init__(self, waves=None, wind=None, **kwargs):
         '''
             :param waves: waves object for obtaining wave_height, etc. at a

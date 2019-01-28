@@ -613,7 +613,6 @@ def test_linearity_of_wind_movers(wind_persist):
                        dtype=datetime_value_2d).reshape((1, ))
 
     num_LEs = 1000
-    element_type = floating(windage_persist=wind_persist)
 
     model1 = Model(name='model1')
     model1.duration = timedelta(hours=1)
@@ -1136,12 +1135,10 @@ def test_two_substance_same(sample_model_fcn, s0=test_oil, s1=test_oil):
     rel_time = model.spills[0].release_time
     model.duration = timedelta(days=1)
 
-    et = floating(substance=s1)
     cs = point_line_release_spill(500, (0, 0, 0),
                                   rel_time,
                                   end_release_time=(rel_time +
                                                     timedelta(hours=1)),
-                                  element_type=et,
                                   amount=1,
                                   units='tonnes')
 
@@ -1218,12 +1215,10 @@ def test_two_substance_different(sample_model_fcn, s0=test_oil, s1="ARABIAN MEDI
     rel_time = model.spills[0].release_time
     model.duration = timedelta(days=1)
 
-    et = floating(substance=s1)
     cs = point_line_release_spill(500, (0, 0, 0),
                                   rel_time,
                                   end_release_time=(rel_time +
                                                     timedelta(hours=1)),
-                                  element_type=et,
                                   amount=1,
                                   units='tonnes')
 

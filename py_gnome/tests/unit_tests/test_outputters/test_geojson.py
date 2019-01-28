@@ -13,7 +13,6 @@ from gnome.spill import SpatialRelease, Spill, point_line_release_spill
 from gnome.basic_types import oil_status
 from gnome.environment import constant_wind, Water
 from gnome.weatherers import Evaporation
-from gnome.spill.elements import floating
 
 from ..conftest import sample_model, sample_model_weathering, test_oil
 

@@ -248,12 +248,14 @@ class SkimmerSchema(WeathererSchema):
 class Skimmer(CleanUpBase):
 
     _schema = SkimmerSchema
+    _ref_as = 'skimmer'
+    _req_refs = ['water']
 
     def __init__(self,
                  amount,
-                 units,
                  efficiency,
                  active_range,
+                 units=None,
                  water=None,
                  **kwargs):
         '''
@@ -418,6 +420,8 @@ class BurnSchema(WeathererSchema):
 
 class Burn(CleanUpBase):
     _schema = BurnSchema
+    _ref_as = 'burn'
+    _req_refs = ['water', 'wind']
 
     # save active stop once burn duration is known - not update able but is
     # returned in webapi json_ so make it readable
@@ -756,6 +760,9 @@ class ChemicalDispersionSchema(WeathererSchema):
 
 class ChemicalDispersion(CleanUpBase):
     _schema = ChemicalDispersionSchema
+
+    _ref_as = 'chem_dispersion'
+    _req_refs = ['waves']
 
     def __init__(self,
                  fraction_sprayed,

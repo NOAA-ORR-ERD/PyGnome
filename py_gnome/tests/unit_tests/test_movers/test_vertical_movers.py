@@ -45,13 +45,13 @@ sc = sample_sc_release(5, (3., 6., 0.),
                        rel_time,
                        uncertain=False,
                        arr_types={'rise_vel'},
-                       substance=NonWeatheringSubstance(initializers))
+                       substance=NonWeatheringSubstance(initializers=initializers))
 initializers = [InitRiseVelFromDist(distribution=UniformDistribution())]
 u_sc = sample_sc_release(5, (3., 6., 0.),
                          rel_time,
                          uncertain=True,
                          arr_types={'rise_vel'},
-                       substance=NonWeatheringSubstance(initializers))
+                       substance=NonWeatheringSubstance(initializers=initializers))
 model_time = rel_time
 
 
