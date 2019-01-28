@@ -226,18 +226,18 @@ class GnomeOil(OilProps, Substance):
             self.logger.warning('No water provided for substance initialization, using default Water object')
             water = Water()
 
-        water_temp = self.water.get('temperature', 'K')
+        water_temp = water.get('temperature', 'K')
         density = self.density_at_temp(water_temp)
         if density > water.get('density'):
             msg = ("{0} will sink at given water temperature: {1} {2}. "
                    "Set density to water density"
                    .format(self.name,
-                           self.water.get('temperature',
+                           water.get('temperature',
                                           self.water.units['temperature']),
-                           self.water.units['temperature']))
+                           water.units['temperature']))
             self.logger.error(msg)
 
-            arrs['density'][sl] = self.water.get('density')
+            arrs['density'][sl] = water.get('density')
         else:
             arrs['density'][sl] = density
 
@@ -291,7 +291,7 @@ class NonWeatheringSubstance(Substance):
         sl = slice(-to_rel, None, 1)
         arrs['density'][sl] = self.standard_density
 
-    def density_at_temp(self, temp):
+    def density_at_temp(self, temp=273.15):
         '''
             For non-weathering substance, we just return the standard density.
         '''
