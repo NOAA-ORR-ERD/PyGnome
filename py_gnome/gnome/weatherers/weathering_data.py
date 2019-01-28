@@ -44,6 +44,7 @@ class WeatheringData(Weatherer):
     '''
 
     _schema = WeatheringDataSchema
+    _ref_as = 'weathering_data'
     _req_refs = ['water']
 
     def __init__(self,
@@ -91,7 +92,7 @@ class WeatheringData(Weatherer):
                     'avg_viscosity'):
             sc.mass_balance[key] = 0.0
 
-    def initialize_data(self, spill, num_released):
+    def initialize_data(self, sc, num_released):
         '''
         If on is False, then arrays should not be included - don't initialize
 
@@ -101,8 +102,8 @@ class WeatheringData(Weatherer):
         if not self.on:
             return
 
-        data = spill.data
-        substance = spill.substance
+        data = sc.data_arrays
+        substance = sc.get_substances()[0]
 
         'update properties only if elements are released'
         if len(data['density']) == 0:
@@ -146,7 +147,7 @@ class WeatheringData(Weatherer):
         data['fate_status'][sl] = np.choose(fates, [fate.subsurf_weather, fate.surface_weather])
 
         # also initialize/update aggregated data
-        self._aggregated_data(data, num_released)
+        self._aggregated_data(sc, num_released)
 
     def weather_elements(self, sc, time_step, model_time):
         '''

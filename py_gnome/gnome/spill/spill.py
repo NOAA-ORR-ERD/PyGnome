@@ -399,7 +399,7 @@ class Spill(GnomeId):
             return 0
         idx = sc.spills.index(self)
         should_exist = self.release.num_elements_after_time(current_time, time_step)
-        cur_exist = len(sc['spill_num'] == idx)
+        cur_exist = len(np.where(sc['spill_num'] == idx)[0])
         to_rel = should_exist - cur_exist
         if to_rel <= 0:
             return 0 #nothing to release, so end early

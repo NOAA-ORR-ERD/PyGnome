@@ -61,7 +61,8 @@ class FayGravityViscous(Weatherer):
                                  'area': gat('area'),
                                  'bulk_init_volume': gat('bulk_init_volume'),
                                  'age': gat('age'),
-                                 'density': gat('density')})
+                                 'density': gat('density'),
+                                 'frac_coverage': gat('frac_coverage')})
         # relative_buoyancy - use density at release time. For now
         # temperature is fixed so just compute once and store. When temperature
         # varies over time, may want to do something different
@@ -433,33 +434,31 @@ class FayGravityViscous(Weatherer):
         # happen once - for efficiency
         water_kvis = self.water.get('kinematic_viscosity',
                                     'square meter per second')
+        substance = sc.get_substances()[0]
+        data = sc.data_arrays
 
-        for substance, data in sc.itersubstancedata(self.array_types):
-            if len(data['fay_area']) == 0:
-                # no particles released yet
-                continue
 
-            if self._init_relative_buoyancy is None:
-                self._set_init_relative_buoyancy(substance)
+        if self._init_relative_buoyancy is None:
+            self._set_init_relative_buoyancy(substance)
 
-            mask = data['fay_area'] == 0
-            # looping through spills, as each spill has a different initial volume
-            for s_num in np.unique(data['spill_num'][mask]):
-                s_mask = np.logical_and(mask, data['spill_num'] == s_num)
-                # do the sum only once for efficiency
-                num = s_mask.sum()
+        mask = data['fay_area'] == 0
+        # looping through spills, as each spill has a different initial volume
+        for s_num in np.unique(data['spill_num'][mask]):
+            s_mask = np.logical_and(mask, data['spill_num'] == s_num)
+            # do the sum only once for efficiency
+            num = s_mask.sum()
 
-                # fixme: is this right? shouldn't initial volume be stored somewhere??
-                data['bulk_init_volume'][s_mask] = (data['mass'][s_mask][0] /
-                                                    data['density'][s_mask][0]
-                                                    ) * num
-                init_blob_area = self.init_area(water_kvis,
-                                                self._init_relative_buoyancy,
-                                                data['bulk_init_volume'][s_mask][0])
-                # fixme: these are the same, yes???
-                data['fay_area'][s_mask] = init_blob_area / num
-                data['area'][s_mask] = init_blob_area / num
-        sc.update_from_fatedataview()
+            # fixme: is this right? shouldn't initial volume be stored somewhere??
+            data['bulk_init_volume'][s_mask] = (data['mass'][s_mask][0] /
+                                                data['density'][s_mask][0]
+                                                ) * num
+            init_blob_area = self.init_area(water_kvis,
+                                            self._init_relative_buoyancy,
+                                            data['bulk_init_volume'][s_mask][0])
+            # fixme: these are the same, yes???
+            data['fay_area'][s_mask] = init_blob_area / num
+            data['area'][s_mask] = init_blob_area / num
+        #sc.update_from_fatedataview()
 
     def weather_elements(self, sc, time_step, model_time):
         '''
@@ -467,31 +466,30 @@ class FayGravityViscous(Weatherer):
         The updated 'area', 'fay_area' is associated with age of particles at:
             model_time + time_step
         '''
-        if not self.active:
+        if not self.active or not sc.get_substances()[0].is_weatherable:
             return
 
         water_kvis = self.water.get('kinematic_viscosity',
                                     'square meter per second')
-        for _, data in sc.itersubstancedata(self.array_types):
-            if len(data['fay_area']) == 0:
-                continue
 
-            for s_num in np.unique(data['spill_num']):
-                s_mask = data['spill_num'] == s_num
-                data['fay_area'][s_mask] = \
-                    self.update_area2(water_kvis,
-                                     self._init_relative_buoyancy,
-                                     data['bulk_init_volume'][s_mask],
-                                     data['fay_area'][s_mask],
-                                     time_step,
-                                     data['age'][s_mask] + time_step)
+        data = sc.data_arrays
+
+        for s_num in np.unique(data['spill_num']):
+            s_mask = data['spill_num'] == s_num
+            data['fay_area'][s_mask] = \
+                self.update_area2(water_kvis,
+                                 self._init_relative_buoyancy,
+                                 data['bulk_init_volume'][s_mask],
+                                 data['fay_area'][s_mask],
+                                 time_step,
+                                 data['age'][s_mask] + time_step)
 #                     self.update_area(water_kvis,
 #                                      self._init_relative_buoyancy,
 #                                      data['bulk_init_volume'][s_mask],
 #                                      data['fay_area'][s_mask],
 #                                      data['age'][s_mask] + time_step)
 
-                data['area'][s_mask] = data['fay_area'][s_mask]
+            data['area'][s_mask] = data['fay_area'][s_mask]
 
         sc.update_from_fatedataview()
 

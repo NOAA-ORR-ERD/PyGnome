@@ -1030,6 +1030,7 @@ class Model(GnomeId):
         if rewind:
             self.rewind()
 
+        self.setup_model_run()
         # run the model
         output_data = []
         while True:
