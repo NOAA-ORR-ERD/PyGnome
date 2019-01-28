@@ -10,7 +10,6 @@ import numpy as np
 
 from gnome.utilities.inf_datetime import InfDateTime
 
-from gnome.spill.elements import floating
 from gnome.environment import Water
 
 from oil_library import get_oil_props
@@ -49,8 +48,7 @@ class TestWeatherer:
         weatherer = HalfLifeWeatherer(half_lives=hl)
         sc = weathering_data_arrays(weatherer.array_types,
                                     Water(),
-                                    time_step,
-                                    element_type=floating(substance=subs))[0]
+                                    time_step)[0]
 
         print '\nsc["mass"]:\n', sc['mass']
 

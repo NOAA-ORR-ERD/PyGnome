@@ -10,13 +10,13 @@ from gnome.environment import constant_wind, Water, Waves
 from gnome.weatherers import (Emulsification,
                               Evaporation)
 from gnome.outputters import WeatheringOutput
-from gnome.spill.elements import floating
 
 from conftest import weathering_data_arrays
 
 from ..conftest import (sample_model_weathering,
                         sample_model_weathering2,
                         test_oil)
+from gnome.spill.substance import GnomeOil
 
 
 water = Water()
@@ -43,8 +43,7 @@ def test_emulsification(oil, temp, num_elems, on):
 
     (sc, time_step) = \
         weathering_data_arrays(emul.array_types,
-                               water,
-                               element_type=floating(substance=oil))[:2]
+                               water)[:2]
     model_time = (sc.spills[0].release_time +
                   timedelta(seconds=time_step))
 
@@ -132,11 +131,10 @@ def test_bulltime():
     '''
     user set time to start emulsification
     '''
-
-    et = floating(substance=test_oil)
-    assert et.substance.bulltime == -999
-    et.substance.bulltime = 3600
-    assert et.substance.bulltime == 3600
+    oil = GnomeOil(test_oil)
+    assert oil.bulltime == -999
+    oil.bulltime = 3600
+    assert oil.bulltime == 3600
 
 
 def test_bullwinkle():
@@ -144,13 +142,13 @@ def test_bullwinkle():
     user set emulsion constant
     '''
 
-    et = floating(substance=test_oil)
+    oil = GnomeOil(test_oil)
 
     # our test_oil is the sample oile
-    assert np.isclose(et.substance.bullwinkle, 0.1937235)
+    assert np.isclose(oil.bullwinkle, 0.1937235)
 
-    et.substance.bullwinkle = .4
-    assert et.substance.bullwinkle == .4
+    oil.bullwinkle = .4
+    assert oil.bullwinkle == .4
 
 @pytest.mark.skipif(reason="serialization for weatherers overall needs review")
 def test_serialize_deseriailize():

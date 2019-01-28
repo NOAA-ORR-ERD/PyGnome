@@ -23,6 +23,8 @@ from .environment import Environment
 from .water import WaterSchema
 
 from wind import WindSchema
+from gnome.environment.wind import Wind
+from gnome.environment.water import Water
 
 g = constants.gravity  # the gravitational constant.
 
@@ -46,6 +48,7 @@ class Waves(Environment):
     variable, but may be extended in the future
     """
     _ref_as = 'waves'
+    _req_refs = ['wind', 'water']
     _schema = WavesSchema
 
     def __init__(self, wind=None, water=None, **kwargs):

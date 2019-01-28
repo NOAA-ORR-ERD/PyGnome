@@ -26,6 +26,8 @@ class EmulsificationSchema(WeathererSchema):
 
 class Emulsification(Weatherer):
     _schema = EmulsificationSchema
+    _ref_as = 'emulsification'
+    _req_refs = ['waves']
 
     def __init__(self,
                  waves=None,

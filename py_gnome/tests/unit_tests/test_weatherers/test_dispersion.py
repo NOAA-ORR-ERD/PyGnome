@@ -8,7 +8,6 @@ import numpy as np
 
 from gnome.utilities.inf_datetime import InfDateTime
 
-from gnome.spill.elements import floating
 from gnome.environment import constant_wind, Water, Waves
 from gnome.weatherers import (NaturalDispersion,
                               Evaporation,
@@ -38,11 +37,9 @@ def test_dispersion(oil, temp, num_elems, on):
     '''
     Fuel Oil #6 does not exist...
     '''
-    et = floating(substance=oil)
     disp = NaturalDispersion(waves, water)
     (sc, time_step) = weathering_data_arrays(disp.array_types,
-                                             water,
-                                             element_type=et)[:2]
+                                             water)[:2]
     model_time = (sc.spills[0].release_time +
                   timedelta(seconds=time_step))
 
@@ -74,8 +71,7 @@ def test_dispersion_not_active(oil, temp, num_elems):
     disp = NaturalDispersion(waves, water)
     (sc, time_step) = \
         weathering_data_arrays(disp.array_types,
-                               water,
-                               element_type=floating(substance=oil))[:2]
+                               water)[:2]
 
     sc.amount = 10000
     model_time = (sc.spills[0].release_time +

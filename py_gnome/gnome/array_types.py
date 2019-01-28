@@ -332,14 +332,13 @@ gat = get_array_type
 
 
 #    define a function to reset all ArrayTypes to defaults
-def reset_to_defaults(names=_default_values.keys()):
-    for name in names:
+def reset_to_defaults(at):
         try:
-            obj = gat(name)
-            obj.shape = _default_values[name][0]
-            obj.dtype = _default_values[name][1]
-            obj.name = _default_values[name][2]
-            obj.initial_value = _default_values[name][3]
+            obj = at
+            obj.shape = _default_values[at.name][0]
+            obj.dtype = _default_values[at.name][1]
+            obj.name = _default_values[at.name][2]
+            obj.initial_value = _default_values[at.name][3]
 
         except AttributeError:
             # name is not part of the defaults - ignore it
