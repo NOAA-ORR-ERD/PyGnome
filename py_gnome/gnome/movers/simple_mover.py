@@ -59,7 +59,7 @@ class SimpleMover(Mover):
     _schema = SimpleMoverSchema
 
     def __init__(self,
-                 velocity,
+                 velocity=0,
                  uncertainty_scale=0.5,
                  **kwargs):
         """

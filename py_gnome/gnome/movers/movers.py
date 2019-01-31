@@ -45,6 +45,7 @@ class Process(GnomeId):
     """
 
     def __init__(self,
+                 on=True,
                  make_default_refs=True,
                  active_range=(InfDateTime('-inf'), InfDateTime('inf')),
                  **kwargs):  # default min + max values for timespan
@@ -60,7 +61,7 @@ class Process(GnomeId):
         """
         super(Process, self).__init__(**kwargs)
 
-        self.on = kwargs.pop('on', True)
+        self.on = on
         self._active = self.on
 
         self._check_active_startstop(*active_range)

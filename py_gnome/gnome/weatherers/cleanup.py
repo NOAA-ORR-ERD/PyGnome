@@ -252,9 +252,9 @@ class Skimmer(CleanUpBase):
     _req_refs = ['water']
 
     def __init__(self,
-                 amount,
-                 efficiency,
-                 active_range,
+                 amount=0,
+                 efficiency=1.0,
+                 active_range=(InfDateTime('-inf'), InfDateTime('inf')),
                  units=None,
                  water=None,
                  **kwargs):
@@ -403,11 +403,11 @@ class BurnSchema(WeathererSchema):
     thickness = SchemaNode(Float(), save=True, update=True)
     area_units = SchemaNode(String(), save=True, update=True)
     thickness_units = SchemaNode(String(), save=True, update=True)
-    _oilwater_thickness = SchemaNode(Float(), save=True, update=True,
+    _oilwater_thickness = SchemaNode(Float(), save=True, update=True, read_only=True,
                                      missing=drop)
-    _oilwater_thick_burnrate = SchemaNode(Float(), save=True, update=True,
+    _oilwater_thick_burnrate = SchemaNode(Float(), save=True, update=True, read_only=True,
                                           missing=drop)
-    _oil_vol_burnrate = SchemaNode(Float(), save=True, update=True,
+    _oil_vol_burnrate = SchemaNode(Float(), save=True, update=True, read_only=True,
                                    missing=drop)
     efficiency = SchemaNode(Float(), missing=None, save=True, update=True)
     wind = GeneralGnomeObjectSchema(acceptable_schemas=[WindSchema,
@@ -430,9 +430,9 @@ class Burn(CleanUpBase):
     valid_length_units = _valid_units('Length')
 
     def __init__(self,
-                 area,
-                 thickness,
-                 active_range,
+                 area=None,
+                 thickness=None,
+                 active_range=(InfDateTime('-inf'), InfDateTime('inf')),
                  area_units='m^2',
                  thickness_units='m',
                  efficiency=1.0,
@@ -766,7 +766,7 @@ class ChemicalDispersion(CleanUpBase):
 
     def __init__(self,
                  fraction_sprayed,
-                 active_range,
+                 active_range=(InfDateTime('-inf'), InfDateTime('inf')),
                  waves=None,
                  efficiency=1.0,
                  **kwargs):

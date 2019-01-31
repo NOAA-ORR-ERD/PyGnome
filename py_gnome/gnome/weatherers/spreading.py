@@ -388,7 +388,7 @@ class FayGravityViscous(Weatherer):
         That's now TRUE!
         '''
         subs = sc.get_substances(False)
-        if len(subs) > 0:
+        if len(subs) > 0 and subs[0].is_weatherable:
             vo = subs[0].kvis_at_temp(self.water.get('temperature'))
             # set thickness_limit
             self._set_thickness_limit(vo)
@@ -427,8 +427,6 @@ class FayGravityViscous(Weatherer):
 
         If on is False, then arrays should not be included - dont' initialize
         '''
-        if not self.on:
-            return
 
         # do this once in case there are any unit conversions, it only needs to
         # happen once - for efficiency
@@ -436,6 +434,8 @@ class FayGravityViscous(Weatherer):
                                     'square meter per second')
         substance = sc.get_substances()[0]
         data = sc.data_arrays
+        if not self.on or not substance.is_weatherable:
+            return
 
 
         if self._init_relative_buoyancy is None:

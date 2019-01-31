@@ -638,7 +638,7 @@ class ObjTypeSchema(MappingSchema):
     #       should not rely on any unique object identifiers
     id = SchemaNode(String(), save=True, read_only=True)
 
-    name = SchemaNode(String())
+    name = SchemaNode(String(), test_equal=False)
 
     def __init__(self, *args, **kwargs):
         super(ObjTypeSchema, self).__init__(*args, **kwargs)
