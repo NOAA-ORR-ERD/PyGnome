@@ -64,7 +64,6 @@ class AddLogger(object):
         if ('json_' in kwargs):
             # because old save files
             kwargs.pop('json_')
-
         super(AddLogger, self).__init__(**kwargs)
 
     @property
@@ -350,16 +349,7 @@ class GnomeId(AddLogger):
 
         [dict_.pop(n, None) for n in read_only_attrs]
 
-        try:
-            new_obj = cls(**dict_)
-        except Exception as e:
-            # The exception generated here is typically a TypeError with
-            # no useful information for tracking down which class raised it.
-            # So we try to capture the class name and re-raise it.
-            # Note: Directly accessing e.message is deprecated, which is why
-            #       we go through this bizarre machination.
-            raise e.__class__('Exception in {}.__init__(): {}'
-                              .format(cls.__name__, e))
+        new_obj = cls(**dict_)
 
         msg = "constructed object {0}".format(new_obj.__class__.__name__)
         new_obj.logger.debug(new_obj._pid + msg)

@@ -180,32 +180,36 @@ class Evaporation(Weatherer):
         if sc.num_released == 0:
             return
 
-        for substance, data in sc.itersubstancedata(self.array_types):
-            if len(data['mass']) is 0:
-                continue
+        data = sc.data_arrays
+        substance = sc.get_substances()[0]
+        if not substance.is_weatherable:
+            return;
 
-            points = data['positions']
-            # set evap_decay_constant array
-            self._set_evap_decay_constant(points, model_time, data,
-                                          substance, time_step)
-            mass_remain = self._exp_decay(data['mass_components'],
-                                          data['evap_decay_constant'],
-                                          time_step)
+        if len(data['mass']) is 0:
+            return
 
-            sc.mass_balance['evaporated'] += \
-                np.sum(data['mass_components'][:, :] - mass_remain[:, :])
+        points = data['positions']
+        # set evap_decay_constant array
+        self._set_evap_decay_constant(points, model_time, data,
+                                      substance, time_step)
+        mass_remain = self._exp_decay(data['mass_components'],
+                                      data['evap_decay_constant'],
+                                      time_step)
 
-            # log amount evaporated at each step
-            self.logger.debug(self._pid + 'amount evaporated for {0}: {1}'.
-                              format(substance.name,
-                                     np.sum(data['mass_components'][:, :] -
-                                            mass_remain[:, :])))
+        sc.mass_balance['evaporated'] += \
+            np.sum(data['mass_components'][:, :] - mass_remain[:, :])
 
-            data['mass_components'][:] = mass_remain
-            data['mass'][:] = data['mass_components'].sum(1)
+        # log amount evaporated at each step
+        self.logger.debug(self._pid + 'amount evaporated for {0}: {1}'.
+                          format(substance.name,
+                                 np.sum(data['mass_components'][:, :] -
+                                        mass_remain[:, :])))
 
-            # add frac_lost
-            data['frac_lost'][:] = 1 - data['mass']/data['init_mass']
+        data['mass_components'][:] = mass_remain
+        data['mass'][:] = data['mass_components'].sum(1)
+
+        # add frac_lost
+        data['frac_lost'][:] = 1 - data['mass']/data['init_mass']
         sc.update_from_fatedataview()
 
 

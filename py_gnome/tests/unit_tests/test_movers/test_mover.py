@@ -23,7 +23,6 @@ def test_exceptions():
 def test_default_properties():
     mover = Mover()
 
-    assert mover.name == 'Mover'
     assert mover.on is True
 
     assert mover.active_range == (InfDateTime('-inf'),

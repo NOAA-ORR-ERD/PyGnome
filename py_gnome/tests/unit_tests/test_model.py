@@ -1275,16 +1275,6 @@ def test_weathering_data_attr():
 
     assert sc.mass_balance == {}
 
-    # weathering data is now empty for all steps
-    del model.weatherers[0]
-
-    for ix in xrange(2):
-        model.step()
-        for sc in model.spills.items():
-            assert len(sc.mass_balance) == 2
-            assert (len(set(sc.mass_balance.keys()) -
-                        {'beached', 'off_maps'}) == 0)
-
 
 def test_run_element_type_no_initializers(model):
     '''
@@ -1365,7 +1355,7 @@ def test_weatherer_sort():
     '''
     model = Model()
 
-    skimmer = Skimmer(100, 'kg', efficiency=0.3,
+    skimmer = Skimmer(amount=100, units='kg', efficiency=0.3,
                       active_range=(datetime(2014, 1, 1, 0, 0),
                                     datetime(2014, 1, 1, 0, 3)))
     burn = Burn(100, 1,
@@ -1433,7 +1423,7 @@ class TestValidateModel():
         model.spills += Spill(Release(self.start_time + timedelta(hours=1), 1))
         (msgs, isvalid) = model.check_inputs()
 
-        assert len(msgs) == 1 and isvalid
+        assert len(msgs) == 2 and isvalid
         assert ('{} has release time after model start time'
                 .format(model.spills[0].name)
                 in msgs[0])

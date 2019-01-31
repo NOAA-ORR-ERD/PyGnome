@@ -606,6 +606,7 @@ class SpillContainer(AddLogger, SpillContainerData):
             overwritten.
         '''
         for array in array_types:
+            print array_types
             if isinstance(array, basestring):
                 # allow user to override an array_type that might already exist
                 # in self._array_types
@@ -880,10 +881,10 @@ class SpillContainer(AddLogger, SpillContainerData):
         # let's keep those. A rewind will reset data_arrays.
         if array_types is None:
             array_types = dict()
-        self._append_array_types(array_types)
         #self._append_initializer_array_types(array_types)
         for s in self.spills:
             s.prepare_for_model_run(array_types, time_step)
+        self._append_array_types(array_types)
 
         # if self._substances_spills is None:
         #     self._set_substancespills()

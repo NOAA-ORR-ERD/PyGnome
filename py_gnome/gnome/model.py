@@ -80,10 +80,10 @@ class ModelSchema(ObjTypeSchema):
                             MapFromUGridSchema),
         save_reference=True
     )
-#     spills = OrderedCollectionSchema(
-#         GeneralGnomeObjectSchema(acceptable_schemas=[SpillSchema]),
-#         save_reference=True, test_equal=False
-#     )
+    spills = OrderedCollectionSchema(
+        GeneralGnomeObjectSchema(acceptable_schemas=[SpillSchema]),
+        save_reference=True, test_equal=False
+    )
 #     uncertain_spills = OrderedCollectionSchema(
 #         GeneralGnomeObjectSchema(acceptable_schemas=[SpillSchema]),
 #         save_reference=True, test_equal=False
@@ -152,6 +152,7 @@ class Model(GnomeId):
                  uncertain=False,
                  cache_enabled=False,
                  mode=None,
+                 make_default_refs=True,
                  location=[],
                  environment=[],
                  outputters=[],
@@ -323,14 +324,34 @@ class Model(GnomeId):
             node = self._schema().get(name)
             if name in attrs:
                 if name != 'spills':
-                    attrs[name] = self._schema.process_subnode(node, self, getattr(self, name), name, attrs, attrs[name], refs)
+                    attrs[name] = self._schema.process_subnode(node,
+                                                               self,
+                                                               getattr(self,
+                                                                       name),
+                                                               name,
+                                                               attrs,
+                                                               attrs[name],
+                                                               refs)
                     if attrs[name] is drop:
                         del attrs[name]
                 else:
-                    oldspills = OrderedCollection(self.spills._spill_container.spills[:], dtype=self.spills._spill_container.spills.dtype)
-                    new_spills = ObjTypeSchema.process_subnode(node, self, self.spills._spill_container.spills, 'spills', attrs, attrs[name], refs)
-                    if not updated and self._attr_changed(oldspills, new_spills):
+                    oldspills = OrderedCollection(self.spills
+                                                  ._spill_container.spills[:],
+                                                  dtype=(self.spills.
+                                                         _spill_container
+                                                         .spills.dtype))
+                    new_spills = ObjTypeSchema.process_subnode(node, self,
+                                                               self.spills
+                                                               ._spill_container
+                                                               .spills,
+                                                               'spills',
+                                                               attrs,
+                                                               attrs[name],
+                                                               refs)
+                    if not updated and self._attr_changed(oldspills,
+                                                          new_spills):
                         updated = True
+
                     attrs.pop(name)
 
         for k, v in attrs.items():
@@ -769,9 +790,8 @@ class Model(GnomeId):
         '''
         for sc in self.spills.items():
             if sc.num_released > 0:  # can this check be removed?
-
                 # possibly refloat elements
-                self.map.refloat_elements(sc, self.time_step)
+                self.map.refloat_elements(sc, self.time_step, self.model_time)
 
                 # reset next_positions
                 (sc['next_positions'])[:] = sc['positions']
@@ -781,14 +801,14 @@ class Model(GnomeId):
                     delta = m.get_move(sc, self.time_step, self.model_time)
                     sc['next_positions'] += delta
 
-                self.map.beach_elements(sc)
+                self.map.beach_elements(sc, self.model_time)
 
                 # let model mark these particles to be removed
                 tbr_mask = sc['status_codes'] == oil_status.off_maps
                 sc['status_codes'][tbr_mask] = oil_status.to_be_removed
 
                 substances = sc.get_substances(False)
-                if len(substances)>0:
+                if len(substances) > 0:
                     self._update_fate_status(sc)
 
                 # the final move to the new positions
@@ -801,6 +821,7 @@ class Model(GnomeId):
         so just let model do this for now. Eventually, we want to get rid
         of 'fate_status' array and only manipulate 'status_codes'. Until then,
         update fate_status in move_elements
+        '''
         '''
         if 'fate_status' in sc:
             non_w_mask = sc['status_codes'] == oil_status.on_land
@@ -816,7 +837,7 @@ class Model(GnomeId):
 
             sc['fate_status'][surf_mask] = fate.surface_weather
             sc['fate_status'][subs_mask] = fate.subsurf_weather
-
+'''
     def weather_elements(self):
         '''
         Weathers elements:

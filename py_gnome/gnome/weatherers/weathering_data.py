@@ -104,6 +104,9 @@ class WeatheringData(Weatherer):
 
         data = sc.data_arrays
         substance = sc.get_substances()[0]
+        if not substance.is_weatherable:
+            self._aggregated_data(sc, num_released)
+            return;
 
         'update properties only if elements are released'
         if len(data['density']) == 0:
@@ -162,57 +165,60 @@ class WeatheringData(Weatherer):
 
         water_rho = self.water.get('density')
 
-        for substance, data in sc.itersubstancedata(self.array_types):
-        #for substance, data in sc.itersubstancedata(self.array_types,
-                                                    #fate_status='all'):
-            'update properties only if elements are released'
-            if len(data['density']) == 0:
-                continue
+        data = sc.data_arrays
+        substance = sc.get_substances()[0]
+        if not substance.is_weatherable:
+            self._aggregated_data(sc, 0)
+            return;
 
-            k_rho = self._get_k_rho_weathering_dens_update(substance)
+        'update properties only if elements are released'
+        if len(data['density']) == 0:
+            return
 
-            # sub-select mass_components array by substance.num_components.
-            # Currently, physics for modeling multiple spills with different
-            # substances is not correctly done in the same model. However,
-            # let's put some basic code in place so the data arrays can infact
-            # contain two substances and the code does not raise exceptions.
-            # mass_components are zero padded for substance which has fewer
-            # psuedocomponents. Subselecting mass_components array by
-            # [mask, :substance.num_components] ensures numpy operations work
-            mass_frac = \
-                (data['mass_components'][:, :substance.num_components] /
-                 data['mass'].reshape(len(data['mass']), -1))
+        k_rho = self._get_k_rho_weathering_dens_update(substance)
 
-            # check if density becomes > water, set it equal to water in this
-            # case - 'density' is for the oil-water emulsion
-            oil_rho = k_rho*(substance.component_density * mass_frac).sum(1)
+        # sub-select mass_components array by substance.num_components.
+        # Currently, physics for modeling multiple spills with different
+        # substances is not correctly done in the same model. However,
+        # let's put some basic code in place so the data arrays can infact
+        # contain two substances and the code does not raise exceptions.
+        # mass_components are zero padded for substance which has fewer
+        # psuedocomponents. Subselecting mass_components array by
+        # [mask, :substance.num_components] ensures numpy operations work
+        mass_frac = \
+            (data['mass_components'][:, :substance.num_components] /
+             data['mass'].reshape(len(data['mass']), -1))
 
-            # oil/water emulsion density
-            new_rho = (data['frac_water'] * water_rho +
-                       (1 - data['frac_water']) * oil_rho)
+        # check if density becomes > water, set it equal to water in this
+        # case - 'density' is for the oil-water emulsion
+        oil_rho = k_rho*(substance.component_density * mass_frac).sum(1)
 
-            if np.any(new_rho > self.water.density):
-                new_rho[new_rho > self.water.density] = self.water.density
-                self.logger.info('{0} during update, density is larger '
-                                 'than water density - set to water density'
-                                 .format(self._pid))
+        # oil/water emulsion density
+        new_rho = (data['frac_water'] * water_rho +
+                   (1 - data['frac_water']) * oil_rho)
 
-            data['density'] = new_rho
-            data['oil_density'] = oil_rho
+        if np.any(new_rho > self.water.density):
+            new_rho[new_rho > self.water.density] = self.water.density
+            self.logger.info('{0} during update, density is larger '
+                             'than water density - set to water density'
+                             .format(self._pid))
 
-            # following implementation results in an extra array called
-            # fw_d_fref but is easy to read
-            v0 = substance.kvis_at_temp(self.water.get('temperature', 'K'))
+        data['density'] = new_rho
+        data['oil_density'] = oil_rho
 
-            if v0 is not None:
-                kv1 = self._get_kv1_weathering_visc_update(v0)
-                fw_d_fref = data['frac_water'] / self.visc_f_ref
+        # following implementation results in an extra array called
+        # fw_d_fref but is easy to read
+        v0 = substance.kvis_at_temp(self.water.get('temperature', 'K'))
 
-                data['viscosity'] = (v0 *
-                                     np.exp(kv1 * data['frac_lost']) *
-                                     (1 + (fw_d_fref / (1.187 - fw_d_fref))) ** 2.49
-                                     )
-                data['oil_viscosity'] = (v0 * np.exp(kv1 * data['frac_lost']))
+        if v0 is not None:
+            kv1 = self._get_kv1_weathering_visc_update(v0)
+            fw_d_fref = data['frac_water'] / self.visc_f_ref
+
+            data['viscosity'] = (v0 *
+                                 np.exp(kv1 * data['frac_lost']) *
+                                 (1 + (fw_d_fref / (1.187 - fw_d_fref))) ** 2.49
+                                 )
+            data['oil_viscosity'] = (v0 * np.exp(kv1 * data['frac_lost']))
 
         #sc.update_from_fatedataview(fate_status='all')
         sc.update_from_fatedataview()
@@ -272,8 +278,7 @@ class WeatheringData(Weatherer):
 
         # add 'non_weathering' key if any mass is released for nonweathering
         # particles.
-        nonweather = data['mass'][data['fate_status'] == fate.non_weather].sum()
-        data.mass_balance['non_weathering'] = nonweather
+        data.mass_balance['non_weathering'] = data['mass'][data['fate_status'] == fate.non_weather].sum()
 
         if new_LEs > 0:
             amount_released = np.sum(data['mass'][-new_LEs:])

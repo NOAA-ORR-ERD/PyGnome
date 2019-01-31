@@ -35,7 +35,8 @@ from gnome.environment.water import WaterSchema
 from gnome.spill.substance import (SubstanceSchema,
                                    Substance,
                                    NonWeatheringSubstance,
-                                   GnomeOil)
+                                   GnomeOil, GnomeOilSchema,
+    NonWeatheringSubstanceSchema)
 from gnome.spill.initializers import plume_initializers
 
 
@@ -64,7 +65,11 @@ class SpillSchema(ObjTypeSchema):
     water = WaterSchema(
         missing=drop, save=True, update=True, save_reference=True
     )
-    substance = SubstanceSchema()
+    substance = GeneralGnomeObjectSchema(
+        acceptable_schemas=[GnomeOilSchema,
+                            NonWeatheringSubstanceSchema],
+        save=True, update=True, save_reference=True
+    )
 
 
 class Spill(GnomeId):
@@ -404,6 +409,8 @@ class Spill(GnomeId):
         if to_rel <= 0:
             return 0 #nothing to release, so end early
         sc._append_data_arrays(to_rel)
+
+        sc['spill_num'][-to_rel:] = idx
 
         #Partial initialization from various objects
         self.release.initialize_LEs(to_rel, sc, current_time, time_step)

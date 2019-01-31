@@ -269,7 +269,9 @@ class NonWeatheringSubstance(Substance):
         '''
         super(NonWeatheringSubstance, self).__init__(**kwargs)
         self.standard_density = standard_density
-        self.array_types['density'] = gat('density')
+        self.array_types.update({
+            'density': gat('density'),
+            'fate_status': gat('fate_status')})
 
     @property
     def is_weatherable(self):
@@ -290,6 +292,7 @@ class NonWeatheringSubstance(Substance):
         super(NonWeatheringSubstance, self).initialize_LEs(to_rel, arrs, env)
         sl = slice(-to_rel, None, 1)
         arrs['density'][sl] = self.standard_density
+        arrs['fate_status'][sl] = fate.non_weather
 
     def density_at_temp(self, temp=273.15):
         '''
