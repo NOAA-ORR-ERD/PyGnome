@@ -138,7 +138,8 @@ def skip_serial(request):
     here. For now, moved this to unit_tests/conftest.py since all tests are
     contained here
     '''
-    if (request.node.get_marker('serial') and
+    if (hasattr(request.node, 'get_marker') and
+        request.node.get_marker('serial') and
         getattr(request.config, 'slaveinput', {}).get('slaveid', 'local') !=
             'local'):
         # under xdist and serial so skip the test
