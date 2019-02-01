@@ -498,8 +498,9 @@ def surface_point_line_spill(num_elements,
                  units=units,
                  name=name,
                  on=on)
-    retv.substance.windage_range = windage_range
-    retv.substance.windage_persist = windage_persist
+    if substance is None:
+        retv.substance.windage_range = windage_range
+        retv.substance.windage_persist = windage_persist
     return retv
 
 
@@ -564,8 +565,9 @@ def grid_spill(bounds,
                  units=units,
                  name=name,
                  on=on)
-    retv.substance.windage_range = windage_range
-    retv.substance.windage_persist = windage_persist
+    if substance is None:
+        retv.substance.windage_range = windage_range
+        retv.substance.windage_persist = windage_persist
     return retv
 
 
@@ -661,8 +663,9 @@ def subsurface_plume_spill(num_elements,
                  name=name,
                  on=on)
     retv.substance.initializers = inits
-    retv.substance.windage_range = windage_range
-    retv.substance.windage_persist = windage_persist
+    if substance is None:
+        retv.substance.windage_range = windage_range
+        retv.substance.windage_persist = windage_persist
     return retv
 
 # def continuous_release_spill(initial_elements,
@@ -728,8 +731,9 @@ def point_line_release_spill(num_elements,
                  units=units,
                  name=name,
                  on=on)
-    retv.substance.windage_range = windage_range
-    retv.substance.windage_persist = windage_persist
+    if substance is None:
+        retv.substance.windage_range = windage_range
+        retv.substance.windage_persist = windage_persist
     return retv
 
 
@@ -758,6 +762,7 @@ def spatial_release_spill(start_positions,
                  units=units,
                  name=name,
                  on=on)
-    retv.substance.windage_range = windage_range
-    retv.substance.windage_persist = windage_persist
+    if substance is None:
+        retv.substance.windage_range = windage_range
+        retv.substance.windage_persist = windage_persist
     return retv

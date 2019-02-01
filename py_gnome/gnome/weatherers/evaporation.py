@@ -175,41 +175,36 @@ class Evaporation(Weatherer):
         L becomes::
             L = (1 - fw) * area * K * vp/(gas_constant * water_temp * sum_m_mw)
         '''
-        if not self.active:
-            return
-        if sc.num_released == 0:
-            return
 
-        data = sc.data_arrays
-        substance = sc.get_substances()[0]
-        if not substance.is_weatherable:
-            return;
-
-        if len(data['mass']) is 0:
+        if not self.active or sc.num_released == 0 or not sc.substance.is_weatherable:
             return
 
-        points = data['positions']
-        # set evap_decay_constant array
-        self._set_evap_decay_constant(points, model_time, data,
-                                      substance, time_step)
-        mass_remain = self._exp_decay(data['mass_components'],
-                                      data['evap_decay_constant'],
-                                      time_step)
+        for substance, data in sc.itersubstancedata(self.array_types):
+            if len(data['mass']) is 0:
+                return
 
-        sc.mass_balance['evaporated'] += \
-            np.sum(data['mass_components'][:, :] - mass_remain[:, :])
+            points = data['positions']
+            # set evap_decay_constant array
+            self._set_evap_decay_constant(points, model_time, data,
+                                          substance, time_step)
+            mass_remain = self._exp_decay(data['mass_components'],
+                                          data['evap_decay_constant'],
+                                          time_step)
 
-        # log amount evaporated at each step
-        self.logger.debug(self._pid + 'amount evaporated for {0}: {1}'.
-                          format(substance.name,
-                                 np.sum(data['mass_components'][:, :] -
-                                        mass_remain[:, :])))
+            sc.mass_balance['evaporated'] += \
+                np.sum(data['mass_components'][:, :] - mass_remain[:, :])
 
-        data['mass_components'][:] = mass_remain
-        data['mass'][:] = data['mass_components'].sum(1)
+            # log amount evaporated at each step
+            self.logger.debug(self._pid + 'amount evaporated for {0}: {1}'.
+                              format(substance.name,
+                                     np.sum(data['mass_components'][:, :] -
+                                            mass_remain[:, :])))
 
-        # add frac_lost
-        data['frac_lost'][:] = 1 - data['mass']/data['init_mass']
+            data['mass_components'][:] = mass_remain
+            data['mass'][:] = data['mass_components'].sum(1)
+
+            # add frac_lost
+            data['frac_lost'][:] = 1 - data['mass']/data['init_mass']
         sc.update_from_fatedataview()
 
 

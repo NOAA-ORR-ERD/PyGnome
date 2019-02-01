@@ -205,7 +205,7 @@ def test_full_run(sample_model_fcn, oil, temp):
     This test also checks the evap_decay_constant for elements that are not
     in water is 0 so mass is unchanged.
     '''
-    model = sample_model_weathering(sample_model_fcn, oil, temp, 1)
+    model = sample_model_weathering(sample_model_fcn, oil, temp, 10)
     model.environment += [Water(temp), constant_wind(1., 0)]
     model.weatherers += [Evaporation(model.environment[-2],
                                      model.environment[-1])]
