@@ -181,7 +181,10 @@ class Evaporation(Weatherer):
 
         for substance, data in sc.itersubstancedata(self.array_types):
             if len(data['mass']) is 0:
-                return
+                continue
+            if np.any(data['status_codes'] == 3):
+                import pdb
+                pdb.set_trace()
 
             points = data['positions']
             # set evap_decay_constant array
