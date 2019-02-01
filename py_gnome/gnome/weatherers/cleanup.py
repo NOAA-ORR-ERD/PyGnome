@@ -856,8 +856,6 @@ class ChemicalDispersion(CleanUpBase):
     def weather_elements(self, sc, time_step, model_time):
         'for now just take away 0.1% at every step'
         if not self.active or len(sc) == 0 or not sc.substance.is_weatherable:
-            import pdb
-            pdb.set_trace()
             return
 
         for substance, data in sc.itersubstancedata(self.array_types, fate_status='disperse'):
@@ -877,10 +875,6 @@ class ChemicalDispersion(CleanUpBase):
             data['mass_components'] = \
                 (1 - rm_mass_frac) * data['mass_components']
             data['mass'] = data['mass_components'].sum(1)
-
-            if (rm_mass == 0):
-                import pdb
-                pdb.set_trace()
 
             sc.mass_balance['chem_dispersed'] += rm_mass
             self.logger.debug('{0} amount chemically dispersed for '

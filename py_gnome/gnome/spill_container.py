@@ -895,6 +895,7 @@ class SpillContainer(AddLogger, SpillContainerData):
 
         # 'substance' data_array may have been added so initialize after
         # _set_substancespills() is invoked
+        self._set_substancespills()
         self.initialize_data_arrays()
 
         # todo: maybe better to let map do this, but it does not have a

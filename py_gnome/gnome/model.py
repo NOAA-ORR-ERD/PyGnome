@@ -614,6 +614,28 @@ class Model(GnomeId):
                      all_spills]:
             for item in coll:
                 item._attach_default_refs(ref_dict)
+                if coll == 'weatherers':
+                    # by default turn WeatheringData and spreading object
+                    # off                    if isinstance(item, WeatheringData):
+                    item.on = False
+                    wd = item
+
+                try:
+                    if item._ref_as == 'spreading':
+                        item.on = False
+                        spread = item
+
+                except AttributeError:
+                    pass
+
+                try:
+                    if item._ref_as == 'langmuir':
+                        item.on = False
+                        langmuir = item
+
+                except AttributeError:
+                    pass
+
 
     def setup_model_run(self):
         '''
@@ -737,6 +759,7 @@ class Model(GnomeId):
         # have been updated.
         for outputter in self.outputters:
             outputter.prepare_for_model_run(model_start_time=self.start_time,
+                                            cache=self._cache,
                                             uncertain=self.uncertain,
                                             spills=self.spills,
                                             model_time_step=self.time_step)
