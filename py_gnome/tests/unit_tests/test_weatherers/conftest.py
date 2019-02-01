@@ -12,6 +12,7 @@ from ..conftest import test_oil, sample_sc_release
 # when tests are run from test_weatherers/subdirectory
 from ..conftest import sample_model_fcn, sample_model_fcn2
 from gnome.spill.substance import GnomeOil
+import six
 
 
 def weathering_data_arrays(n_arrays,
@@ -35,6 +36,8 @@ def weathering_data_arrays(n_arrays,
     for wd in rqd_weatherers:
         arrays.update(wd.array_types)
 
+    if isinstance(substance, six.string_types):
+        substance = GnomeOil(substance)
     if substance is None:
         substance = GnomeOil(test_oil)
 

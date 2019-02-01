@@ -90,21 +90,20 @@ class Emulsification(Weatherer):
         - sets 'water_content' in sc.mass_balance
         '''
 
-        if not self.active:
-            return
-        if sc.num_released == 0:
+        if not self.active or sc.num_released == 0 or not sc.substance.is_weatherable:
             return
 
         for substance, data in sc.itersubstancedata(self.array_types):
+
             if len(data['age']) == 0:
             #if len(data['frac_water']) == 0:
                 # substance does not contain any surface_weathering LEs
-                continue
+                return
 
             product_type = substance.get('product_type')
             if product_type == 'Refined':
                 data['frac_water'][:] = 0.0	# since there can only be one product type this could be return...
-                continue	# since there can only be one product type this could be return...
+                return	# since there can only be one product type this could be return...
 
             # compute energy dissipation rate (m^2/s^3) based on wave height
             wave_height = self.waves.get_value(model_time)[0]
@@ -112,7 +111,7 @@ class Emulsification(Weatherer):
                 eps = (.0355 * wave_height ** .215) / ((np.log(6.31 / wave_height ** 1.45)) ** 3)
             else:
                 #eps = 0.
-                continue
+                return
 
             water_temp = self.waves.water.get('temperature', 'K')
             rho_oil = substance.density_at_temp(water_temp)
@@ -127,7 +126,7 @@ class Emulsification(Weatherer):
             if wave_height > 0:
                 delta_T_emul = 1630 + 450 / wave_height ** (1.5)
             else:
-                continue
+                return
 
             visc_min = .00001 # 10 cSt
             visc_max = .01 # 10000 cSt
@@ -165,7 +164,7 @@ class Emulsification(Weatherer):
 
             f_res2 = resin_mask * data['mass_components']
             if data['mass'].sum() == 0:
-                continue
+                return
             f_res3 = (resin_mask * data['mass_components']).sum(axis=1) / data['mass'].sum()
             f_asph3 = (asphaltene_mask * data['mass_components']).sum(axis=1) / data['mass'].sum()
 
@@ -173,9 +172,9 @@ class Emulsification(Weatherer):
                 r_oil = f_asph / f_res
             else:
                 #r_oil = 0
-                continue
+                return
             if f_asph <= 0:
-                continue
+                return
             r_oil3 = np.where(f_res3 > 0, f_asph3 / f_res3, 0)	# check if limits are just for S_b calculation
 
             Y_max = .61 + .5 * r_oil - .28 * r_oil **2
@@ -236,7 +235,7 @@ class Emulsification(Weatherer):
 
             # doesn't emulsify, avoid the nans
             if Y_max <= 0:
-                continue
+                return
             S_max = (6. / constants.drop_min) * (Y_max / (1.0 - Y_max))
 
             #sc.mass_balance['water_content'] += \
@@ -251,9 +250,7 @@ class Emulsification(Weatherer):
             self.logger.debug(self._pid + 'water_content for {0}: {1}'.
                               format(substance.name,
                                      sc.mass_balance['water_content']))
-
         sc.update_from_fatedataview()
-
 
     def weather_elements_adios2(self, sc, time_step, model_time):
         '''
@@ -261,16 +258,15 @@ class Emulsification(Weatherer):
         - sets 'water_content' in sc.mass_balance
         '''
 
-        if not self.active:
-            return
-        if sc.num_released == 0:
+        if not self.active or sc.num_released == 0 or not sc.substance.is_weatherable:
             return
 
         for substance, data in sc.itersubstancedata(self.array_types):
+
             if len(data['age']) == 0:
             #if len(data['frac_water']) == 0:
                 # substance does not contain any surface_weathering LEs
-                continue
+                return
 
             points = data['positions']
             k_emul = self._water_uptake_coeff(points, model_time, substance)
@@ -288,7 +284,7 @@ class Emulsification(Weatherer):
 
             # doesn't emulsify, avoid the nans
             if Y_max <= 0:
-                continue
+                return
             S_max = (6. / constants.drop_min) * (Y_max / (1.0 - Y_max))
 
             emulsify_oil(time_step,
@@ -316,7 +312,6 @@ class Emulsification(Weatherer):
             self.logger.debug(self._pid + 'water_content for {0}: {1}'.
                               format(substance.name,
                                      sc.mass_balance['water_content']))
-
         sc.update_from_fatedataview()
 
     def weather_elements(self, sc, time_step, model_time):
@@ -325,9 +320,7 @@ class Emulsification(Weatherer):
         - sets 'water_content' in sc.mass_balance
         '''
 
-        if not self.active:
-            return
-        if sc.num_released == 0:
+        if not self.active or sc.num_released == 0 or not sc.substance.is_weatherable:
             return
 
         use_new_algorithm = False

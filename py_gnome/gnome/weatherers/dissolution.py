@@ -464,16 +464,14 @@ class Dissolution(Weatherer):
         '''
             weather elements over time_step
         '''
-        if not self.active:
-            return
-
-        if sc.num_released == 0:
+        if not self.active or sc.num_released == 0 or not sc.substance.is_weatherable:
             return
 
         for substance, data in sc.itersubstancedata(self.array_types):
+
             if len(data['mass']) == 0:
                 # data does not contain any surface_weathering LEs
-                continue
+                return
 
             # print ('dissolution: mass_components = {}'
             #        .format(data['mass_components'].sum(1)))
@@ -497,6 +495,5 @@ class Dissolution(Weatherer):
                                       sc.mass_balance['dissolution']))
             # print ('dissolution: mass_components = {}'
             #        .format(data['mass_components'].sum(1)))
-
         sc.update_from_fatedataview()
 

@@ -110,13 +110,14 @@ def test_dissolution_k_ow(oil, temp, num_elems, k_ow, on):
     disp = NaturalDispersion(waves, water)
     (sc, time_step) = weathering_data_arrays(diss.array_types,
                                              water,
+                                             substance=oil,
                                              num_elements=num_elems)[:2]
 
     print 'num spills:', len(sc.spills)
     print 'spill[0] amount:', sc.spills[0].amount
 
     # we don't want to query the oil database, but get the sample oil
-    assert sc.spills[0].element_type.substance.record.id is None
+    assert sc.spills[0].substance.record.id is None
 
     model_time = (sc.spills[0].release_time +
                   timedelta(seconds=time_step))
@@ -167,7 +168,7 @@ def test_dissolution_droplet_size(oil, temp, num_elems, drop_size, on):
     print 'time_step = ', time_step
 
     # we don't want to query the oil database, but get the sample oil
-    assert sc.spills[0].element_type.substance.record.id is None
+    assert sc.spills[0].substance.record.id is None
 
     disp.on = on
     diss.on = on
@@ -248,7 +249,7 @@ def test_dissolution_mass_balance(oil, temp, wind_speed,
     print
 
     # we don't want to query the oil database, but get the sample oil
-    assert sc.spills[0].element_type.substance.record.id is None
+    assert sc.spills[0].substance.record.id is None
 
     initial_amount = sc.spills[0].amount
     model_time = (sc.spills[0].release_time +
@@ -314,7 +315,7 @@ def test_full_run(sample_model_fcn2, oil, temp, expected_balance):
         original_amount = sc.spills[0].amount
 
         # we don't want to query the oil database, but get the sample oil
-        assert sc.spills[0].element_type.substance.record.id is None
+        assert sc.spills[0].substance.record.id is None
 
     # set make_default_refs to True for objects contained in model after adding
     # objects to the model

@@ -716,8 +716,8 @@ class SpillContainer(AddLogger, SpillContainerData):
         if self.substance is None:
             return []
         else:
-            data = self.data_arrays
-            #data = self._fate_data_view.get_data(self, array_types, fate_status)
+            #data = self.data_arrays
+            data = self._fate_data_view.get_data(self, array_types, fate_status)
             return [(self.substance, data)]
 
         # if self._substances_spills is None:
@@ -920,6 +920,20 @@ class SpillContainer(AddLogger, SpillContainerData):
                 self._data_arrays[name] = atype.initialize_null(shape=(num_comp,))
             else:
                 self._data_arrays[name] = atype.initialize_null()
+
+    def _get_fate_mask(self, fate):
+        '''
+        get fate_status mask over SC - only include LEs with 'mass' > 0.0
+        '''
+        if fate == 'all':
+            # look at all fate data
+            w_mask = np.asarray([True] * len(self))
+        else:
+            w_mask = (self['fate_status'] & getattr(bt_fate, fate) ==
+                      getattr(bt_fate, fate))
+
+        w_mask = np.logical_and(w_mask, self['mass'] > 0.0)
+        return w_mask
 
     def release_elements(self, time_step, model_time):
         """

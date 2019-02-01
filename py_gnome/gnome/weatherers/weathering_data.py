@@ -102,55 +102,55 @@ class WeatheringData(Weatherer):
         if not self.on:
             return
 
-        data = sc.data_arrays
-        substance = sc.get_substances()[0]
-        if not substance.is_weatherable:
+        for substance, data in sc.itersubstancedata(self.array_types, fate_status='all'):
+            'update properties only if elements are released'
+            if len(data['density']) == 0:
+                continue
+
+            'update properties only if elements are released'
+            if len(data['density']) == 0:
+                return
+            sl = slice(-num_released, None, 1)
+
+            water_temp = self.water.get('temperature', 'K')
+            density = substance.density_at_temp(water_temp)
+
+            if density > self.water.get('density'):
+                msg = ("{0} will sink at given water temperature: {1} {2}. "
+                       "Set density to water density"
+                       .format(substance.name,
+                               self.water.get('temperature',
+                                              self.water.units['temperature']),
+                               self.water.units['temperature']))
+                self.logger.error(msg)
+
+                data['oil_density'][sl] = self.water.get('density')
+            else:
+                data['oil_density'][sl] = density
+
+            # initialize mass_components
+            data['mass_components'][sl] = \
+                (np.asarray(substance.mass_fraction, dtype=np.float64) *
+                 (data['mass'][sl].reshape(len(data['mass'][sl]), -1)))
+
+            data['init_mass'][sl] = data['mass'][sl]
+
+            substance_kvis = substance.kvis_at_temp(water_temp)
+            if substance_kvis is not None:
+                'make sure we do not add NaN values'
+                data['oil_viscosity'][sl] = substance_kvis
+
+            # initialize the fate_status array based on positions and status_codes
+
+            fates = np.logical_and(data['positions'][sl, 2] == 0,
+                                       data['status_codes'][sl] == oil_status.in_water)
+
+            # set status for new_LEs correctly
+            data['fate_status'][sl] = np.choose(fates, [fate.subsurf_weather, fate.surface_weather])
+
+            # also initialize/update aggregated data
             self._aggregated_data(sc, num_released)
-            return;
-
-        'update properties only if elements are released'
-        if len(data['density']) == 0:
-            return
-        sl = slice(-num_released, None, 1)
-
-        water_temp = self.water.get('temperature', 'K')
-        density = substance.density_at_temp(water_temp)
-
-        if density > self.water.get('density'):
-            msg = ("{0} will sink at given water temperature: {1} {2}. "
-                   "Set density to water density"
-                   .format(substance.name,
-                           self.water.get('temperature',
-                                          self.water.units['temperature']),
-                           self.water.units['temperature']))
-            self.logger.error(msg)
-
-            data['oil_density'][sl] = self.water.get('density')
-        else:
-            data['oil_density'][sl] = density
-
-        # initialize mass_components
-        data['mass_components'][sl] = \
-            (np.asarray(substance.mass_fraction, dtype=np.float64) *
-             (data['mass'][sl].reshape(len(data['mass'][sl]), -1)))
-
-        data['init_mass'][sl] = data['mass'][sl]
-
-        substance_kvis = substance.kvis_at_temp(water_temp)
-        if substance_kvis is not None:
-            'make sure we do not add NaN values'
-            data['oil_viscosity'][sl] = substance_kvis
-
-        # initialize the fate_status array based on positions and status_codes
-
-        fates = np.logical_and(data['positions'][sl, 2] == 0,
-                                   data['status_codes'][sl] == oil_status.in_water)
-
-        # set status for new_LEs correctly
-        data['fate_status'][sl] = np.choose(fates, [fate.subsurf_weather, fate.surface_weather])
-
-        # also initialize/update aggregated data
-        self._aggregated_data(sc, num_released)
+        sc.update_from_fatedataview()
 
     def weather_elements(self, sc, time_step, model_time):
         '''
@@ -165,66 +165,64 @@ class WeatheringData(Weatherer):
 
         water_rho = self.water.get('density')
 
-        data = sc.data_arrays
-        substance = sc.get_substances()[0]
-        if not substance.is_weatherable:
+        for substance, data in sc.itersubstancedata(self.array_types, fate_status='all'):
+            if not substance.is_weatherable:
+                self._aggregated_data(sc, 0)
+                return;
+
+            'update properties only if elements are released'
+            if len(data['density']) == 0:
+                continue
+
+            k_rho = self._get_k_rho_weathering_dens_update(substance)
+
+            # sub-select mass_components array by substance.num_components.
+            # Currently, physics for modeling multiple spills with different
+            # substances is not correctly done in the same model. However,
+            # let's put some basic code in place so the data arrays can infact
+            # contain two substances and the code does not raise exceptions.
+            # mass_components are zero padded for substance which has fewer
+            # psuedocomponents. Subselecting mass_components array by
+            # [mask, :substance.num_components] ensures numpy operations work
+            mass_frac = \
+                (data['mass_components'][:, :substance.num_components] /
+                 data['mass'].reshape(len(data['mass']), -1))
+
+            # check if density becomes > water, set it equal to water in this
+            # case - 'density' is for the oil-water emulsion
+            oil_rho = k_rho*(substance.component_density * mass_frac).sum(1)
+
+            # oil/water emulsion density
+            new_rho = (data['frac_water'] * water_rho +
+                       (1 - data['frac_water']) * oil_rho)
+
+            if np.any(new_rho > self.water.density):
+                new_rho[new_rho > self.water.density] = self.water.density
+                self.logger.info('{0} during update, density is larger '
+                                 'than water density - set to water density'
+                                 .format(self._pid))
+
+            data['density'] = new_rho
+            data['oil_density'] = oil_rho
+
+            # following implementation results in an extra array called
+            # fw_d_fref but is easy to read
+            v0 = substance.kvis_at_temp(self.water.get('temperature', 'K'))
+
+            if v0 is not None:
+                kv1 = self._get_kv1_weathering_visc_update(v0)
+                fw_d_fref = data['frac_water'] / self.visc_f_ref
+
+                data['viscosity'] = (v0 *
+                                     np.exp(kv1 * data['frac_lost']) *
+                                     (1 + (fw_d_fref / (1.187 - fw_d_fref))) ** 2.49
+                                     )
+                data['oil_viscosity'] = (v0 * np.exp(kv1 * data['frac_lost']))
+
+            sc.update_from_fatedataview(fate_status='all')
+
+            # also initialize/update aggregated data
             self._aggregated_data(sc, 0)
-            return;
-
-        'update properties only if elements are released'
-        if len(data['density']) == 0:
-            return
-
-        k_rho = self._get_k_rho_weathering_dens_update(substance)
-
-        # sub-select mass_components array by substance.num_components.
-        # Currently, physics for modeling multiple spills with different
-        # substances is not correctly done in the same model. However,
-        # let's put some basic code in place so the data arrays can infact
-        # contain two substances and the code does not raise exceptions.
-        # mass_components are zero padded for substance which has fewer
-        # psuedocomponents. Subselecting mass_components array by
-        # [mask, :substance.num_components] ensures numpy operations work
-        mass_frac = \
-            (data['mass_components'][:, :substance.num_components] /
-             data['mass'].reshape(len(data['mass']), -1))
-
-        # check if density becomes > water, set it equal to water in this
-        # case - 'density' is for the oil-water emulsion
-        oil_rho = k_rho*(substance.component_density * mass_frac).sum(1)
-
-        # oil/water emulsion density
-        new_rho = (data['frac_water'] * water_rho +
-                   (1 - data['frac_water']) * oil_rho)
-
-        if np.any(new_rho > self.water.density):
-            new_rho[new_rho > self.water.density] = self.water.density
-            self.logger.info('{0} during update, density is larger '
-                             'than water density - set to water density'
-                             .format(self._pid))
-
-        data['density'] = new_rho
-        data['oil_density'] = oil_rho
-
-        # following implementation results in an extra array called
-        # fw_d_fref but is easy to read
-        v0 = substance.kvis_at_temp(self.water.get('temperature', 'K'))
-
-        if v0 is not None:
-            kv1 = self._get_kv1_weathering_visc_update(v0)
-            fw_d_fref = data['frac_water'] / self.visc_f_ref
-
-            data['viscosity'] = (v0 *
-                                 np.exp(kv1 * data['frac_lost']) *
-                                 (1 + (fw_d_fref / (1.187 - fw_d_fref))) ** 2.49
-                                 )
-            data['oil_viscosity'] = (v0 * np.exp(kv1 * data['frac_lost']))
-
-        #sc.update_from_fatedataview(fate_status='all')
-        sc.update_from_fatedataview()
-
-        # also initialize/update aggregated data
-        self._aggregated_data(sc, 0)
 
     def _aggregated_data(self, data, new_LEs):
         '''

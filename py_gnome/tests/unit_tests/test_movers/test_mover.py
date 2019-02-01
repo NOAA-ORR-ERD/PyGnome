@@ -28,7 +28,7 @@ def test_default_properties():
     assert mover.active_range == (InfDateTime('-inf'),
                                   InfDateTime('inf'))
 
-    assert mover.array_types == set()
+
     assert mover.make_default_refs is True
 
 
