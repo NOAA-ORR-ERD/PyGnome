@@ -163,10 +163,10 @@ g_objects = (
     spill.substance.Substance(windage_range=(0.05, 0.07)),
     spill.substance.GnomeOil(test_oil, windage_range=(0.05, 0.07)),
     spill.substance.NonWeatheringSubstance(windage_range=(0.05, 0.07)),
-    Skimmer(100, 0.3, (datetime(2014, 1, 1, 0, 0), datetime(2014, 1, 1, 4, 0)), units='kg'),
-    Burn(100, 1, (datetime(2014, 1, 1, 0, 0), datetime(2014, 1, 1, 4, 0)),
+    Skimmer(amount=100, efficiency=0.3, active_range=(datetime(2014, 1, 1, 0, 0), datetime(2014, 1, 1, 4, 0)), units='kg'),
+    Burn(area=100, thickness=1, active_range=(datetime(2014, 1, 1, 0, 0), datetime(2014, 1, 1, 4, 0)),
                     efficiency=.9),
-    ChemicalDispersion(.2, (datetime(2014, 1, 1, 0, 0), datetime(2014, 1, 1, 4, 0)),
+    ChemicalDispersion(fraction_sprayed=.2, active_range=(datetime(2014, 1, 1, 0, 0), datetime(2014, 1, 1, 4, 0)),
                                   efficiency=.3),
     # todo: ask Caitlin how to fix
     # movers.RiseVelocityMover(),

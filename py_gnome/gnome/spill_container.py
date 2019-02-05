@@ -21,6 +21,7 @@ from gnome.utilities.orderedcollection import OrderedCollection
 import gnome.spill
 from gnome import AddLogger
 from gnome.exceptions import GnomeRuntimeError
+from gnome.spill.substance import NonWeatheringSubstance
 
 
 # Organize information about spills per substance
@@ -482,7 +483,7 @@ class SpillContainer(AddLogger, SpillContainerData):
             self._oil_comp_array_len = 1
 
         # it will be False if there are no spills
-        self.substance = None if substance is False else substance
+        self.substance = NonWeatheringSubstance() if substance is False else substance
 
         #     new_subs = spill.substance
         #     if new_subs in subs:

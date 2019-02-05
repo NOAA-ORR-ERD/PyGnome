@@ -99,7 +99,8 @@ class WeatheringData(Weatherer):
         1. initialize all weathering data arrays
         2. update aggregated data in sc.mass_balance dict
         '''
-        if not self.on:
+        if not self.on or not sc.substance.is_weatherable:
+            self._aggregated_data(sc, num_released)
             return
 
         for substance, data in sc.itersubstancedata(self.array_types, fate_status='all'):

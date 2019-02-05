@@ -461,6 +461,7 @@ class FayGravityViscous(Weatherer):
                 # fixme: these are the same, yes???
                 data['fay_area'][s_mask] = init_blob_area / num
                 data['area'][s_mask] = init_blob_area / num
+
         sc.update_from_fatedataview()
 
     def weather_elements(self, sc, time_step, model_time):

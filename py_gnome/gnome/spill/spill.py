@@ -394,6 +394,7 @@ class Spill(GnomeId):
         array_types.update(self.array_types)
         array_types.update(self.substance.array_types)
         array_types.update(self.release.array_types)
+        return array_types
         #self.data.prepare_for_model_run(array_types, self.substance)
 
     def release_elements(self, sc, current_time, time_step):
