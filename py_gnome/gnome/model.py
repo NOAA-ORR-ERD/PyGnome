@@ -49,6 +49,7 @@ from gnome.exceptions import ReferencedObjectNotSet, GnomeRuntimeError
 from gnome.spill.spill import SpillSchema
 from gnome.gnomeobject import GnomeId, allowzip64, Refs
 from gnome.persist.extend_colander import OrderedCollectionSchema
+from gnome.spill.substance import NonWeatheringSubstance
 
 
 class ModelSchema(ObjTypeSchema):
@@ -614,27 +615,6 @@ class Model(GnomeId):
                      all_spills]:
             for item in coll:
                 item._attach_default_refs(ref_dict)
-                if coll == 'weatherers':
-                    # by default turn WeatheringData and spreading object
-                    # off                    if isinstance(item, WeatheringData):
-                    item.on = False
-                    wd = item
-
-                try:
-                    if item._ref_as == 'spreading':
-                        item.on = False
-                        spread = item
-
-                except AttributeError:
-                    pass
-
-                try:
-                    if item._ref_as == 'langmuir':
-                        item.on = False
-                        langmuir = item
-
-                except AttributeError:
-                    pass
 
 
     def setup_model_run(self):
@@ -709,9 +689,8 @@ class Model(GnomeId):
         self._order_weatherers()
 
         '''Step 3: Compile array_types and run setup on spills'''
-        array_types = {}
-        for oc in [self.movers, self.weatherers,
-                   self.outputters, self.environment]:
+        array_types = dict()
+        for oc in [self.movers, self.outputters, self.environment, self.weatherers, self.spills]:
             for item in oc:
                 array_types.update(item.array_types)
 
@@ -845,10 +824,10 @@ class Model(GnomeId):
         of 'fate_status' array and only manipulate 'status_codes'. Until then,
         update fate_status in move_elements
         '''
-        '''
+
         if 'fate_status' in sc:
-            non_w_mask = sc['status_codes'] == oil_status.on_land
-            sc['fate_status'][non_w_mask] = fate.non_weather
+            on_land_mask = sc['status_codes'] == oil_status.on_land
+            sc['fate_status'][on_land_mask] = fate.non_weather
 
             w_mask = ((sc['status_codes'] == oil_status.in_water)
                       & ~(sc['fate_status'] & fate.skim == fate.skim)
@@ -860,7 +839,12 @@ class Model(GnomeId):
 
             sc['fate_status'][surf_mask] = fate.surface_weather
             sc['fate_status'][subs_mask] = fate.subsurf_weather
-'''
+            for i, sp in enumerate(sc.spills):
+                if isinstance(sp.substance, NonWeatheringSubstance):
+                    nw_mask = sc['spill_num'] == i
+                    sc['fate_status'][nw_mask] = fate.non_weather
+
+
     def weather_elements(self):
         '''
         Weathers elements:

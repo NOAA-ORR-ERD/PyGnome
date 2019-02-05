@@ -235,14 +235,6 @@ def sample_sc_release(num_elements=10,
     if current_time is None:
         current_time = spill.release_time
 
-    # fixme -- maybe this is not the place for the default arrays?
-    always = {'windages', 'windage_range', 'windage_persist'}
-    if arr_types is None:
-        # default always has standard windage parameters required by wind_mover
-        arr_types = always
-    else:
-        arr_types.update(always)
-
     if windage_range is not None:
         spill.substance.windage_range = windage_range
 
@@ -801,7 +793,7 @@ def sample_model_weathering2(sample_model_fcn2, oil, temp=311.16):
     sub = gnome.spill.substance.GnomeOil(oil)
     start_time = model.start_time
     end_time = start_time
-    spill = gnome.spill.point_line_release_spill(10,
+    spill = gnome.spill.point_line_release_spill(100,
                                                  rel_pos,
                                                  start_time,
                                                  end_release_time=end_time,

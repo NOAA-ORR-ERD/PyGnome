@@ -63,6 +63,9 @@ class ArrayType(AddLogger):
         self.initial_value = initial_value
         self.name = name
 
+    def __repr__(self):
+        return "ArrayType(name={0}, initial_value={1}, shape={2}, dtype={3}".format(self.name, self.initial_value, self.shape, self.dtype)
+
     def initialize_null(self, shape=None):
         """
         initialize array with 0 elements. Used so SpillContainer can

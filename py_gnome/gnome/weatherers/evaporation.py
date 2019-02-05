@@ -120,10 +120,12 @@ class Evaporation(Weatherer):
         # Do computation together so we don't need to make intermediate copies
         # of data - left sum_frac_mw, which is a copy but easier to
         # read/understand
-        data['evap_decay_constant'][:, :len(vp)] = \
-            ((-data['area'] * f_diff * K /
+        edc = ((-data['area'] * f_diff * K /
               (constants.gas_constant * water_temp * sum_mi_mw)).reshape(-1, 1)
              * vp)
+
+        data['evap_decay_constant'][:, :len(vp)] = edc
+
 
         self.logger.debug(self._pid + 'max decay: {0}, min decay: {1}'.
                           format(np.max(data['evap_decay_constant']),
@@ -182,9 +184,6 @@ class Evaporation(Weatherer):
         for substance, data in sc.itersubstancedata(self.array_types):
             if len(data['mass']) is 0:
                 continue
-            if np.any(data['status_codes'] == 3):
-                import pdb
-                pdb.set_trace()
 
             points = data['positions']
             # set evap_decay_constant array

@@ -859,7 +859,7 @@ class ChemicalDispersion(CleanUpBase):
             return
 
         for substance, data in sc.itersubstancedata(self.array_types, fate_status='disperse'):
-            if len(data['mass'] == 0):
+            if len(data['mass']) is 0:
                 continue
 
             points = sc['positions']

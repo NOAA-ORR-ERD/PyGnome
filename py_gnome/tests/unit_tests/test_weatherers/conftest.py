@@ -31,7 +31,7 @@ def weathering_data_arrays(n_arrays,
     if water is None:
         water = Water()
     rqd_weatherers = [WeatheringData(water), FayGravityViscous(water)]
-    arrays = set()
+    arrays = dict()
     arrays.update(n_arrays)
     for wd in rqd_weatherers:
         arrays.update(wd.array_types)
@@ -40,6 +40,7 @@ def weathering_data_arrays(n_arrays,
         substance = GnomeOil(substance)
     if substance is None:
         substance = GnomeOil(test_oil)
+    arrays.update(substance.array_types)
 
     sc = sample_sc_release(num_elements=num_elements,
                            substance=substance,

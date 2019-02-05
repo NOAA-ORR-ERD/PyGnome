@@ -165,7 +165,10 @@ class GnomeOil(OilProps, Substance):
         Substance.__init__(self, *args, **kwargs)
         #add the array types that this substance DIRECTLY initializes
         self.array_types.update({'density': gat('density'),
-                                 'viscosity': gat('viscosity')})
+                                 'viscosity': gat('viscosity'),
+                                 'mass_components': gat('mass_components')})
+        self.array_types['mass_components'].shape = (self.num_components,)
+        self.array_types['mass_components'].initial_value = (self.mass_fraction,)
 
     def __eq__(self, other):
         t1 = Substance.__eq__(self, other)
