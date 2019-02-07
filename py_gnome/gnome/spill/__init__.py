@@ -11,5 +11,9 @@ from release import (Release,
                      GridRelease,
                      VerticalPlumeRelease,
                      InitElemsFromFile)
+from substance import (GnomeOil,
+                       GnomeOilSchema,
+                       NonWeatheringSubstance,
+                       NonWeatheringSubstanceSchema)
 from le import LEData
 

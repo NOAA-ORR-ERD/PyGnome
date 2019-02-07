@@ -18,7 +18,7 @@ from gnomeobject import GnomeId, AddLogger
 # from gnomeobject import init_obj_log
 
 # using a PEP 404 compliant version name
-__version__ = '0.6.2'
+__version__ = '0.6.4'
 
 
 # a few imports so that the basic stuff is there
