@@ -1,7 +1,7 @@
 import copy
 import six
 
-from colander import Float, SchemaNode, SequenceSchema
+from colander import Float, SchemaNode, SequenceSchema, Boolean
 import numpy as np
 import warnings
 from gnome.basic_types import fate, oil_status
@@ -29,6 +29,7 @@ class SubstanceSchema(ObjTypeSchema):
         ),
         save=True, update=True, save_reference=True
     )
+    is_weatherable = SchemaNode(Boolean(), read_only=True)
 
 class GnomeOilSchema(SubstanceSchema):
     standard_density = SchemaNode(Float(), read_only=True)
