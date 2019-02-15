@@ -161,7 +161,10 @@ class Release(GnomeId):
         '''
         calculates how many time steps it takes to complete the release duration
         '''
-        return int(ceil(self.release_duration / ts))
+        rts = int(ceil(self.release_duration / ts))
+        if rts == 0:
+            rts = 1
+        return rts
 
 
 class PointLineRelease(Release):
@@ -278,7 +281,7 @@ class PointLineRelease(Release):
     @property
     def end_release_time(self):
         if self._end_release_time is None:
-            return self.release_time + timedelta(seconds=1)
+            return self.release_time
         else:
             return self._end_release_time
 
@@ -297,8 +300,6 @@ class PointLineRelease(Release):
         if val is not None and self.release_time > val:
             raise ValueError('end_release_time must be greater than '
                              'release_time')
-        if val == self.release_time:
-            val += timedelta(seconds=1)
 
         self._end_release_time = val
 
@@ -394,7 +395,10 @@ class PointLineRelease(Release):
         if num_ts == 1:
             #This is a special case, when the release is short enough a single
             #timestep encompasses the whole thing.
-            t = Time([self.release_time, self.end_release_time])
+            if self.release_duration == 0:
+                t = Time([self.release_time, self.end_release_time+timedelta(seconds=1)])
+            else:
+                t = Time([self.release_time, self.end_release_time])
         else:
             t = Time([self.release_time + timedelta(seconds=ts * step) for step in range(0,num_ts + 1)])
             t.data[-1] = self.end_release_time

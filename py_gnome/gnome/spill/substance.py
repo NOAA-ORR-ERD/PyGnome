@@ -30,7 +30,17 @@ class SubstanceSchema(ObjTypeSchema):
         save=True, update=True, save_reference=True
     )
     is_weatherable = SchemaNode(Boolean(), read_only=True)
+
+class GnomeOilSchema(SubstanceSchema):
     standard_density = SchemaNode(Float(), read_only=True)
+
+class NonWeatheringSubstanceSchema(SubstanceSchema):
+    standard_density = SchemaNode(Float(), read_only=True)
+
+    def __init__(self, unknown='preserve', *args, **kwargs):
+        super(SubstanceSchema, self).__init__(*args, **kwargs)
+        self.typ = ObjType(unknown)
+
 
 class Substance(GnomeId):
     _schema = SubstanceSchema
@@ -135,53 +145,25 @@ class Substance(GnomeId):
             init.initialize(to_rel, arrs, env, self)
 
 
-class GnomeOilSchema(SubstanceSchema):
-    standard_density = SchemaNode(Float(), read_only=True)
-    api = SchemaNode(Float())
-    pour_point = SchemaNode(Float())
-
-
 class GnomeOil(OilProps, Substance):
     _schema = GnomeOilSchema
 
     def __init__(self,
-                 api=None,
-                 pour_point=None,
-                 solubility=None,  # kg/m^3
-                 # emulsification properties
-                 bullwinkle_fraction=None,
-                 bullwinkle_time=None,
-                 emulsion_water_fraction_max=None,
-                 standard_density=None,
-                 densities=None,
-                 density_ref_temps=None,
-                 kvis=None,
-                 kvis_ref_temp=None,
-                 # PCs:
-                 mass_fractions=None,
-                 boiling_points=None,
-                 molecular_weights=None,
-                 component_densities=None,
-                 sara_types=None,
+                 name=None,
+                 *args,
                   **kwargs):
 
-        super(GnomeOil, self).__init__(**kwargs)
-
-        self.api = api
-        self.pour_point = pour_point
-        self.solubility = solubility
-        self.bullwinkle_fraction = bullwinkle_fraction
-        self.bullwinkle_time = bullwinkle_time
-        self.emulsion_water_fraction_max = emulsion_water_fraction_max
-        self.standard_density = standard_density
-        self.densities = densities
-        self.density_ref_temps = density_ref_temps
-        self.mass_fractions = mass_fractions
-        self.boiling_points = boiling_points
-        self.molecular_weights = molecular_weights
-        self.component_densities = component_densities
-        self.sara_types = sara_types
-
+        if isinstance(name, six.string_types):
+            #GnomeOil('oil_name_here')
+            oil_obj = get_oil(name)
+        elif isinstance(name, Oil):
+            oil_obj = name
+        else:
+            raise ValueError('Must provide an oil name or OilLibrary.Oil to GnomeOil init')
+#         super(GnomeOil, self).__init__(oil_obj)
+        #must call separately because OilProps only takes a single arg
+        OilProps.__init__(self, oil_obj)
+        Substance.__init__(self, *args, **kwargs)
         #add the array types that this substance DIRECTLY initializes
         self.array_types.update({'density': gat('density'),
                                  'viscosity': gat('viscosity'),
@@ -267,10 +249,6 @@ class GnomeOil(OilProps, Substance):
         if substance_kvis is not None:
             'make sure we do not add NaN values'
             arrs['viscosity'][sl] = substance_kvis
-
-
-class NonWeatheringSubstanceSchema(SubstanceSchema):
-    pass
 
 
 class NonWeatheringSubstance(Substance):
