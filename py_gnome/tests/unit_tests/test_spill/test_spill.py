@@ -111,11 +111,11 @@ class TestSpill(object):
 
     #These are for when SpillContainer is removed
     @pytest.mark.xfail()
-    @pytest.mark.parametrize('spill', [inst_point_spill(),
-                                       inst_point_line_spill(),
-                                       cont_point_spill(),
-                                       cont_point_line_spill(),
-                                       cont_point_spill_le_per_ts()])
+    @pytest.mark.parametrize('spill', [inst_point_spill,
+                                       inst_point_line_spill,
+                                       cont_point_spill,
+                                       cont_point_line_spill,
+                                       cont_point_spill_le_per_ts])
     def test_spill_behavior(self, spill):
         '''
         Validates spill behavior for a number of example spills.
