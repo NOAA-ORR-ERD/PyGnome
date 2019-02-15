@@ -18,7 +18,6 @@ from gnome.environment.water import Water
 from gnome.spill.initializers import (floating_initializers,
                                       InitWindagesSchema,
                                       DistributionBaseSchema)
-from _bsddb import api
 
 
 class SubstanceSchema(ObjTypeSchema):
