@@ -139,7 +139,7 @@ class Substance(GnomeId):
 class GnomeOilSchema(SubstanceSchema):
     standard_density = SchemaNode(Float(), read_only=True)
     api = SchemaNode(Float())
-    pour_point = SchemaNode(Float(),
+    pour_point = SchemaNode(Float())
 
 
 class GnomeOil(OilProps, Substance):
