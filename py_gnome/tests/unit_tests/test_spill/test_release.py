@@ -158,7 +158,7 @@ class TestPointLineRelease:
         assert len(r3._pos_ts.time) == 11
         assert np.all(r1._pos_ts.at(None, r3.release_time + timedelta(seconds=900)*5) == np.array([(5.,15.,25.)]))
 
-    @pytest.mark.parametrize('r1', [r1(), r3()])
+    @pytest.mark.parametrize('r1', [r1, r3])
     def test_num_elements_after_time(self, r1):
 
         #not _prepared yet so it should return 0 for anything
