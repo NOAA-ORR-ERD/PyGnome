@@ -158,26 +158,26 @@ class TestPointLineRelease:
         assert len(r3._pos_ts.time) == 11
         assert np.all(r1._pos_ts.at(None, r3.release_time + timedelta(seconds=900)*5) == np.array([(5.,15.,25.)]))
 
-    @pytest.mark.parametrize('r1', [r1, r3])
-    def test_num_elements_after_time(self, r1):
+    @pytest.mark.parametrize('r', [r1, r3])
+    def test_num_elements_after_time(self, r):
 
         #not _prepared yet so it should return 0 for anything
-        assert r1.num_elements_after_time(r1.end_release_time, 0) == 0
-        assert r1.num_elements_after_time(r1.release_time, 900) == 0
+        assert r.num_elements_after_time(r.end_release_time, 0) == 0
+        assert r.num_elements_after_time(r.release_time, 900) == 0
 
-        r1.prepare_for_model_run(900)
-        assert r1.num_elements_after_time(r1.release_time, 0) == 0
-        assert r1.num_elements_after_time(r1.release_time, 150) == int(r1._release_ts.data[1] * 150./900)
-        assert r1.num_elements_after_time(r1.end_release_time, 10) == r1._release_ts.data[-1]
+        r.prepare_for_model_run(900)
+        assert r.num_elements_after_time(r.release_time, 0) == 0
+        assert r.num_elements_after_time(r.release_time, 150) == int(r._release_ts.data[1] * 150./900)
+        assert r.num_elements_after_time(r.end_release_time, 10) == r._release_ts.data[-1]
 
-        assert r1.num_elements_after_time(r1.release_time - timedelta(seconds=450), 900) == int(r1._release_ts.data[1]/2)
-    def test_rewind(self, r1):
-        r1.prepare_for_model_run(900)
-        assert r1._prepared == True
-        assert r1._release_ts is not None
-        r1.rewind()
-        assert r1._prepared == False
-        assert r1._release_ts is None
+        assert r.num_elements_after_time(r.release_time - timedelta(seconds=450), 900) == int(r._release_ts.data[1]/2)
+    def test_rewind(self, r):
+        r.prepare_for_model_run(900)
+        assert r._prepared == True
+        assert r._release_ts is not None
+        r.rewind()
+        assert r._prepared == False
+        assert r._release_ts is None
 
     def test__eq__(self, r1, r2):
         assert r1 != r2

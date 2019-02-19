@@ -34,12 +34,12 @@ class SubstanceSchema(ObjTypeSchema):
 class GnomeOilSchema(SubstanceSchema):
     standard_density = SchemaNode(Float(), read_only=True)
 
-class NonWeatheringSubstanceSchema(SubstanceSchema):
-    standard_density = SchemaNode(Float(), read_only=True)
-
     def __init__(self, unknown='preserve', *args, **kwargs):
         super(SubstanceSchema, self).__init__(*args, **kwargs)
         self.typ = ObjType(unknown)
+
+class NonWeatheringSubstanceSchema(SubstanceSchema):
+    standard_density = SchemaNode(Float(), read_only=True)
 
 
 class Substance(GnomeId):
@@ -148,22 +148,33 @@ class Substance(GnomeId):
 class GnomeOil(OilProps, Substance):
     _schema = GnomeOilSchema
 
-    def __init__(self,
-                 name=None,
-                 *args,
-                  **kwargs):
+    def __init__(self, **kwargs):
+
+        name = kwargs.get('name', None)
 
         if isinstance(name, six.string_types):
-            #GnomeOil('oil_name_here')
-            oil_obj = get_oil(name)
+            if kwargs.get('adios_oil_id', False):
+                #init the oilprops from dictionary
+                oil_obj = get_oil(kwargs)
+            else:
+                #GnomeOil('oil_name_here')
+                oil_obj = get_oil(name)
+            OilProps.__init__(self, oil_obj)
         elif isinstance(name, Oil):
             oil_obj = name
+            OilProps.__init__(self, oil_obj)
         else:
             raise ValueError('Must provide an oil name or OilLibrary.Oil to GnomeOil init')
-#         super(GnomeOil, self).__init__(oil_obj)
-        #must call separately because OilProps only takes a single arg
-        OilProps.__init__(self, oil_obj)
-        Substance.__init__(self, *args, **kwargs)
+
+        #because passing oilLibrary kwargs makes problem up the tree, only pass
+        #up the kwargs specified in the schema
+        keys = self._schema().get_nodes_by_attr('all')
+        k2 = dict([(key, kwargs.get(key)) for key in keys])
+        read_only_attrs = GnomeOil._schema().get_nodes_by_attr('read_only')
+        for n in read_only_attrs:
+            k2.pop(n, None)
+        Substance.__init__(self, **k2)
+
         #add the array types that this substance DIRECTLY initializes
         self.array_types.update({'density': gat('density'),
                                  'viscosity': gat('viscosity'),
