@@ -199,8 +199,8 @@ class GnomeOil(OilProps, Substance):
         return GnomeOil(oil_)
 
 
-    def serialize(self, options={}):
-        json_ = super(GnomeOil, self).serialize(options=options)
+    def to_dict(self, json_=None):
+        json_ = super(GnomeOil, self).to_dict(json_=json_)
         substance_json = self.tojson()
 
         #the old 'prune_substance' function from Spill
