@@ -157,6 +157,7 @@ class GnomeOil(OilProps, Substance):
                 #GnomeOil('oil_name_here')
                 oil_obj = get_oil(name)
             OilProps.__init__(self, oil_obj)
+            kwargs['name'] = name
         elif isinstance(name, Oil):
             oil_obj = name
             OilProps.__init__(self, oil_obj)
@@ -165,7 +166,6 @@ class GnomeOil(OilProps, Substance):
 
         #because passing oilLibrary kwargs makes problem up the tree, only pass
         #up the kwargs specified in the schema
-        kwargs['name'] = name
         keys = self._schema().get_nodes_by_attr('all')
         k2 = dict([(key, kwargs.get(key)) for key in keys])
         read_only_attrs = GnomeOil._schema().get_nodes_by_attr('read_only')
