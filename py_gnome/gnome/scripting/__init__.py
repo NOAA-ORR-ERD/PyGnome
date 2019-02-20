@@ -34,6 +34,7 @@ from gnome.model import Model
 from .utilities import (make_images_dir,
                         remove_netcdf,
                         set_verbose,
+                        PrintFinder,
                         )
 
 from gnome.utilities.time_utils import asdatetime
@@ -75,6 +76,7 @@ from gnome.movers import (RandomMover,
                           RiseVelocityMover,
                           PyWindMover,
                           PyCurrentMover,
+                          IceAwareRandomMover
                           )
 
 from gnome.utilities.remote_data import get_datafile
