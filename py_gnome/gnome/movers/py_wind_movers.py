@@ -29,8 +29,6 @@ class PyWindMoverSchema(ObjTypeSchema):
     filename = FilenameSchema(save=True, update=False, isdatafile=True,
                               missing=drop)
     wind_scale = SchemaNode(Float(), save=True, update=True, missing=drop)
-    extrapolation_is_allowed = SchemaNode(Bool(), save=True, update=True,
-                                          missing=drop)
     time_offset = SchemaNode(Float(), save=True, update=True, missing=drop)
     on = SchemaNode(Bool(), save=True, update=True, missing=drop)
     active_range = TimeRangeSchema()
@@ -57,7 +55,6 @@ class PyWindMover(movers.PyMover):
                  uncertain_angle_scale=0.4,
                  wind_scale=1,
                  default_num_method='RK2',
-                 extrapolation_is_allowed=False,
                  **kwargs):
         """
         Initialize a PyWindMover
@@ -97,7 +94,6 @@ class PyWindMover(movers.PyMover):
                 self.wind = GridWind.from_netCDF(filename=self.filename,
                                                  **kwargs)
 
-        self.extrapolation_is_allowed = extrapolation_is_allowed
         self.uncertain_duration = uncertain_duration
         self.uncertain_time_delay = uncertain_time_delay
         self.uncertain_speed_scale = uncertain_speed_scale
