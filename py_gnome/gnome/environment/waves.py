@@ -23,6 +23,7 @@ from .environment import Environment
 from .water import WaterSchema
 
 from wind import WindSchema
+from gnome.environment.gridded_objects_base import VectorVariableSchema
 
 g = constants.gravity  # the gravitational constant.
 
@@ -33,8 +34,9 @@ class WavesSchema(base_schema.ObjTypeSchema):
     water = WaterSchema(
         save=True, update=True, save_reference=True
     )
-    wind = WindSchema(
-        save=True, update=True, save_reference=True
+    wind = base_schema.GeneralGnomeObjectSchema(
+            acceptable_schemas=[WindSchema, VectorVariableSchema],
+            save_reference=True
     )
 
 
