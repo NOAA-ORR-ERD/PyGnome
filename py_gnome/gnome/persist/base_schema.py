@@ -128,8 +128,8 @@ class ObjType(SchemaType):
 
     def serialize(self, node, appstruct, options=None):
         def callback(subnode, subappstruct):
-            if (isinstance(subnode.typ,(Sequence, OrderedCollectionType)) and
-                isinstance(subnode.children[0], ObjTypeSchema)):
+            if (isinstance(subnode.typ, (Sequence, OrderedCollectionType)) and
+                    isinstance(subnode.children[0], ObjTypeSchema)):
                 scalar = (hasattr(subnode.typ, 'accept_scalar') and
                           subnode.typ.accept_scalar)
 
@@ -185,8 +185,8 @@ class ObjType(SchemaType):
             else:
                 # This needs to become more flexible! It needs to detect
                 # subclasses of Sequence!
-                if (isinstance(subnode.typ,(Sequence, OrderedCollectionType)) and
-                    isinstance(subnode.children[0], ObjTypeSchema)):
+                if (isinstance(subnode.typ, (Sequence, OrderedCollectionType)) and
+                        isinstance(subnode.children[0], ObjTypeSchema)):
                     # To deal with iterable schemas that do not have
                     # a deserialize with refs function
                     scalar = (hasattr(subnode.typ, 'accept_scalar') and
@@ -368,8 +368,8 @@ class ObjType(SchemaType):
             if not hasattr(subnode, '_save'):
                 # This happens when it goes into non-gnome object attributes
                 # (Strings, Numbers, etc)
-                if (isinstance(subnode.typ,(Sequence, OrderedCollectionType)) and
-                    isinstance(subnode.children[0], ObjTypeSchema)):
+                if (isinstance(subnode.typ, (Sequence, OrderedCollectionType)) and
+                        isinstance(subnode.children[0], ObjTypeSchema)):
                     # To be able to continue saving inside iterables,
                     # whose schema does not contain a save function,
                     # call the subnode typ _impl with this function as callback
@@ -419,8 +419,8 @@ class ObjType(SchemaType):
         def callback(subnode, subcstruct):
             if not hasattr(subnode, 'load'):
                 # This is the path for non-gnome attributes
-                if (isinstance(subnode.typ,(Sequence, OrderedCollectionType)) and
-                    isinstance(subnode.children[0], ObjTypeSchema)):
+                if (isinstance(subnode.typ, (Sequence, OrderedCollectionType)) and
+                        isinstance(subnode.children[0], ObjTypeSchema)):
                     # To deal with iterable schemas that do not have a
                     # load function
                     scalar = (hasattr(subnode.typ, 'accept_scalar') and
