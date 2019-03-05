@@ -1,7 +1,7 @@
 import copy
 import six
 
-from colander import Float, SchemaNode, SequenceSchema, Boolean
+from colander import Float, SchemaNode, SequenceSchema, Boolean, Sequence, Tuple, null
 import numpy as np
 import warnings
 from gnome.basic_types import fate, oil_status
@@ -11,6 +11,7 @@ from gnome.persist.base_schema import (ObjTypeSchema,
                                        ObjType,
                                        GeneralGnomeObjectSchema)
 from gnome.gnomeobject import GnomeId
+from gnome.persist.base_schema import OrderedCollectionType
 from oil_library.oil_props import OilProps
 from oil_library.factory import get_oil
 from oil_library.models import Oil
@@ -31,12 +32,40 @@ class SubstanceSchema(ObjTypeSchema):
     )
     is_weatherable = SchemaNode(Boolean(), read_only=True)
 
+class GnomeOilType(ObjType):
+
+    def _prepare_save(self, node, raw_object, saveloc, refs):
+        #Gets the json for the object, as if this were being serialized
+        obj_json = None
+        if hasattr(raw_object, 'to_dict'):
+            #Passing the 'save' in case a class wants to do some special stuff on
+            #saving specifically.
+            dict_ = raw_object.to_dict('save')
+
+            #Skip the following because this has loads of properties not covered
+            #in the schema
+#             for k in dict_.keys():
+#                 if dict_[k] is None:
+#                     dict_[k] = null
+            return dict_
+        else:
+            raise TypeError('Object does not have a to_dict function')
+        #also adds the object to refs by id
+        refs[raw_object.id] = raw_object
+
+        #note you cannot immediately strip out attributes that wont get saved here
+        #because they are still needed by _impl
+        return obj_json
+
 class GnomeOilSchema(SubstanceSchema):
     standard_density = SchemaNode(Float(), read_only=True)
 
     def __init__(self, unknown='preserve', *args, **kwargs):
         super(SubstanceSchema, self).__init__(*args, **kwargs)
-        self.typ = ObjType(unknown)
+        self.typ = GnomeOilType(unknown)
+
+    def _save(self, obj, zipfile_=None, refs=None):
+        return SubstanceSchema._save(self, obj, zipfile_=zipfile_, refs=refs)
 
 class NonWeatheringSubstanceSchema(SubstanceSchema):
     standard_density = SchemaNode(Float(), read_only=True)
@@ -167,6 +196,10 @@ class GnomeOil(OilProps, Substance):
         #because passing oilLibrary kwargs makes problem up the tree, only pass
         #up the kwargs specified in the schema
         keys = self._schema().get_nodes_by_attr('all')
+        if 'windage_range' in kwargs:
+            keys.append('windage_range')
+        if 'windage_persist' in kwargs:
+            keys.append('windage_persist')
         k2 = dict([(key, kwargs.get(key)) for key in keys])
         read_only_attrs = GnomeOil._schema().get_nodes_by_attr('read_only')
         for n in read_only_attrs:
@@ -204,6 +237,7 @@ class GnomeOil(OilProps, Substance):
         #the old 'prune_substance' function from Spill
         del substance_json['imported_record_id']
         del substance_json['estimated_id']
+        del substance_json['id']
 
         for attr in ('kvis', 'densities', 'cuts',
                      'molecular_weights',

@@ -1009,7 +1009,8 @@ class Model(GnomeId):
             # this
             if num_released > 0:
                 for item in self.weatherers:
-                    item.initialize_data(sc, num_released)
+                    if item.on:
+                        item.initialize_data(sc, num_released)
 
             self.logger.debug("{1._pid} released {0} new elements for step:"
                               " {1.current_time_step} for {1.name}".
