@@ -19,6 +19,22 @@ from gnome.spill_container import SpillContainerPair
 from gnome.movers import RandomMover, constant_wind_mover
 from gnome.model import Model
 
+# kludge to get a unique ID for each file
+# just in case they are running in parallel
+#  This may not work if they are a separate process ...
+# fixme: this should be all in conftest!
+
+
+def get_id():
+    id = 0
+    while True:
+        id += 1
+        yield id
+
+
+id = get_id()
+
+
 def local_dirname():
     dirname = os.path.split(__file__)[0]
     dirname = os.path.join(dirname, "output_kmz")
@@ -37,10 +53,13 @@ def output_filename(output_dir, request):
         os.mkdir(dirname)
 
     file_name = request.function.func_name
-    if request._pyfuncitem._genid is None:
-        file_name += '_sample.kmz'
-    else:
-        file_name += '_' + request._pyfuncitem._genid + '_sample.kmz'
+    # # _genid is not longer in pytest
+    # if request._pyfuncitem._genid is None:
+    #     file_name += '_sample.kmz'
+    # else:
+    #     file_name += '_' + request._pyfuncitem._genid + '_sample.kmz'
+
+    file_name = "{}_{}_sample.kmz".format(file_name, next(id))
 
     return os.path.join(dirname, file_name)
 
