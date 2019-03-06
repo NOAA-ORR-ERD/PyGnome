@@ -579,18 +579,35 @@ class Langmuir(Weatherer):
         the bounds of (0.1, or 1.0), then limit it to:
             0.1 <= frac_cov <= 1.0
         '''
-        v_max = np.max(self.get_wind_speed(points, model_time)*.005)
-        #v_max = self.wind.get_value(model_time)[0] * 0.005
-        cr_k = (v_max ** 2 *
-                4 *
-                np.pi ** 2 /
-                (thickness * rel_buoy * gravity)) ** (1. / 3.)
-        cr_k[np.isnan(cr_k)] = 10.	# if density becomes equal to water density
-        cr_k[cr_k==0] = 1.
-        frac_cov = 1. / cr_k
+        # fixme: sometimes get v_max of zero
+        #        probably shouldn't
+        v_max = np.max(self.get_wind_speed(points, model_time) * .005)
 
-        frac_cov[frac_cov < 0.1] = 0.1
-        frac_cov[frac_cov > 1.0] = 1.0
+        # cr_k = (v_max ** 2 *
+        #         4 *
+        #         np.pi ** 2 /
+        #         (thickness * rel_buoy * gravity)) ** (1. / 3.)
+        # cr_k[np.isnan(cr_k)] = 10.  # if density becomes equal to water density
+        # cr_k[cr_k == 0] = 1.
+        # frac_cov = 1. / cr_k
+
+        # refactored to compute more directly:
+        # fixme: we are getting warnings when rel_buoy <= 0.0
+        #        that is, when the density of the oil is >= water
+        #        this gets caught in the next line, but the warnings
+        #        are kind of annoying -- can we catch this sooner?
+        #        and is this doing the right thing for a "sinking" oil?
+        frac_cov = (v_max ** 2 *
+                    4 *
+                    np.pi ** 2 /
+                    (thickness * rel_buoy * gravity)) ** (-1. / 3.)
+        # due to oil density > water density
+        frac_cov[np.isnan(frac_cov)] = 0.1
+
+        # clip takes care of inf
+        np.clip(frac_cov, 0.1, 1.0, out=frac_cov)
+        # frac_cov[frac_cov < 0.1] = 0.1
+        # frac_cov[frac_cov > 1.0] = 1.0
 
         return frac_cov
 
