@@ -5,18 +5,6 @@ common fixture for output_dirs required by different outputters
 import os
 import pytest
 
-# kludge to get a unique ID for each file
-# just in case they are running in parallel
-#  This may not work if they are a separate process ...
-
-def get_id():
-    id = 0
-    while True:
-        id += 1
-        yield id
-
-id = get_id()
-
 
 @pytest.fixture(scope='function')
 def tmp_output_dir(tmpdir, request):
@@ -50,27 +38,30 @@ def output_dir(request):
     try:
         os.mkdir(name)
     except OSError:
-        pass # already there
+        pass  # already there
 
     return name
+
 
 @pytest.fixture(scope='function')
 def output_filename(output_dir, request):
     '''
-    trying to create a unique file for tests so pytest_xdist doesn't have
-    issues.
+    trying to create a unique file for tests so pytest_xdist doesn't
+    have issues.
     '''
     dirname = output_dir
     if not os.path.exists(dirname):
         os.mkdir(dirname)
 
     file_name = request.function.func_name
-    # # ._genid is an internal attribute, and no longer there in pytest
-    # if request._pyfuncitem._genid is None:
-    #     file_name += '_sample.nc'
-    # else:
-    #     file_name += '_' + request._pyfuncitem._genid + '_sample.nc'
-
-    file_name = "{}_{}_sample.nc".format(file_name, next(id))
+    extension = request.module.FILE_EXTENSION
+    #  This may capture multi-processing pytests
+    #  and create a new filename from the process id
+    # the previous code used request._pyfuncitem._genid
+    #  which is no longer available in pytest
+    if request._pyfuncitem.funcargs['skip_serial'] is not None:
+        file_name = "{}_{}_sample.{}".format(file_name, os.getpid(), extension)
+    else:
+        file_name = "{}_sample{}".format(file_name, extension)
 
     return os.path.join(dirname, file_name)

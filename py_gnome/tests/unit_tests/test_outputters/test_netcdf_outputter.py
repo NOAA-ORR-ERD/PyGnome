@@ -23,24 +23,9 @@ from gnome.outputters import NetCDFOutput
 from gnome.model import Model
 from ..conftest import test_oil
 
-
-# @pytest.fixture(scope='function')
-# def output_filename(output_dir, request):
-#     '''
-#     trying to create a unique file for tests so pytest_xdist doesn't have
-#     issues.
-#     '''
-#     dirname = output_dir
-#     if not os.path.exists(dirname):
-#         os.mkdir(dirname)
-
-#     file_name = request.function.func_name
-#     if request._pyfuncitem._genid is None:
-#         file_name += '_sample.nc'
-#     else:
-#         file_name += '_' + request._pyfuncitem._genid + '_sample.nc'
-
-#     return os.path.join(dirname, file_name)
+# file extension to use for test output files
+#  this is used by the output_filename fixture in conftest:
+FILE_EXTENSION = ".nc"
 
 
 @pytest.fixture(scope='function')
