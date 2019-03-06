@@ -5,6 +5,18 @@ common fixture for output_dirs required by different outputters
 import os
 import pytest
 
+# kludge to get a unique ID for each file
+# just in case they are running in parallel
+#  This may not work if they are a separate process ...
+
+def get_id():
+    id = 0
+    while True:
+        id += 1
+        yield id
+
+id = get_id()
+
 
 @pytest.fixture(scope='function')
 def tmp_output_dir(tmpdir, request):
@@ -53,9 +65,12 @@ def output_filename(output_dir, request):
         os.mkdir(dirname)
 
     file_name = request.function.func_name
-    if request._pyfuncitem._genid is None:
-        file_name += '_sample.nc'
-    else:
-        file_name += '_' + request._pyfuncitem._genid + '_sample.nc'
+    # # ._genid is an internal attribute, and no longer there in pytest
+    # if request._pyfuncitem._genid is None:
+    #     file_name += '_sample.nc'
+    # else:
+    #     file_name += '_' + request._pyfuncitem._genid + '_sample.nc'
+
+    file_name = "{}_{}_sample.nc".format(file_name, next(id))
 
     return os.path.join(dirname, file_name)

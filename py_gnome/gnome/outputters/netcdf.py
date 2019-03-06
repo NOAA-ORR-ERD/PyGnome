@@ -1,7 +1,6 @@
 '''
 NetCDF outputter - write the nc_particles netcdf file format
 '''
-import copy
 import os
 from datetime import datetime
 
@@ -158,7 +157,7 @@ var_attributes = {
 
 class NetCDFOutputSchema(BaseOutputterSchema):
     'colander schema for serialize/deserialize object'
-    netcdf_filename = FilenameSchema(
+    filename = FilenameSchema(
         missing=drop, save=True, update=False, test_equal=False
     )
     which_data = SchemaNode(
@@ -265,7 +264,7 @@ class NetCDFOutput(Outputter):
     _schema = NetCDFOutputSchema
 
     def __init__(self,
-                 netcdf_filename,
+                 filename,
                  which_data='standard',
                  compress=True,
                  # FIXME: this should not be default, but since we don't have
@@ -278,9 +277,9 @@ class NetCDFOutput(Outputter):
         Constructor for Net_CDFOutput object. It reads data from cache and
         writes it to a NetCDF4 format file using the CF convention
 
-        :param netcdf_filename: Required parameter. The filename in which to
+        :param filename: Required parameter. The filename in which to
             store the NetCDF data.
-        :type netcdf_filename: str. or unicode
+        :type filename: str. or unicode
 
         :param which_data='standard':
             If 'standard', write only standard data.
@@ -313,14 +312,14 @@ class NetCDFOutput(Outputter):
 
         use super to pass optional kwargs to base class __init__ method
         """
-        self._check_filename(netcdf_filename)
-        self._netcdf_filename = netcdf_filename
+        self._check_filename(filename)
+        self._filename = filename
 
         # uncertain file is only written out if model is uncertain
-        name, ext = os.path.splitext(self.netcdf_filename)
-        self._u_netcdf_filename = '{0}_uncertain{1}'.format(name, ext)
+        name, ext = os.path.splitext(self.filename)
+        self._u_filename = '{0}_uncertain{1}'.format(name, ext)
 
-        self.name = os.path.split(netcdf_filename)[1]
+        self.name = os.path.split(filename)[1]
 
         # flag to keep track of _state of the object - is True after calling
         # prepare_for_model_run
@@ -370,24 +369,24 @@ class NetCDFOutput(Outputter):
         return self._middle_of_run
 
     @property
-    def netcdf_filename(self):
-        return self._netcdf_filename
+    def filename(self):
+        return self._filename
 
-    @netcdf_filename.setter
-    def netcdf_filename(self, new_name):
+    @filename.setter
+    def filename(self, new_name):
         if self.middle_of_run:
             raise AttributeError('This attribute cannot be changed in the '
                                  'middle of a run')
         else:
             self._check_filename(new_name)
-            self._netcdf_filename = new_name
+            self._filename = new_name
 
     @property
     def uncertain_filename(self):
         '''
         if uncertain SpillContainer is present, write its data out to this file
         '''
-        return self._u_netcdf_filename
+        return self._u_filename
 
     @property
     def which_data(self):
@@ -531,7 +530,7 @@ class NetCDFOutput(Outputter):
         identical _data_arrays in both certain and uncertain SpillContainers,
         the data itself is different, but they contain the same type of data
         arrays. If uncertain, then datay arrays for uncertain spill container
-        are written to netcdf_filename + '_uncertain.nc'
+        are written to filename + '_uncertain.nc'
 
         :param spills: If 'which_data' flag is set to 'all' or 'most', then
             model must provide the model.spills object
@@ -562,9 +561,9 @@ class NetCDFOutput(Outputter):
 
         for sc in self.sc_pair.items():
             if sc.uncertain:
-                file_ = self._u_netcdf_filename
+                file_ = self._u_filename
             else:
-                file_ = self.netcdf_filename
+                file_ = self.filename
 
             self._file_exists_error(file_)
 
@@ -699,10 +698,10 @@ class NetCDFOutput(Outputter):
             return None
 
         for sc in self.cache.load_timestep(step_num).items():
-            if sc.uncertain and self._u_netcdf_filename is not None:
-                file_ = self._u_netcdf_filename
+            if sc.uncertain and self._u_filename is not None:
+                file_ = self._u_filename
             else:
-                file_ = self.netcdf_filename
+                file_ = self.filename
 
             time_stamp = sc.current_time_stamp
 
@@ -743,8 +742,8 @@ class NetCDFOutput(Outputter):
 
         self._start_idx = _end_idx  # set _start_idx for the next timestep
 
-        return {'netcdf_filename': (self.netcdf_filename,
-                                    self._u_netcdf_filename),
+        return {'filename': (self.filename,
+                             self._u_filename),
                 'time_stamp': time_stamp}
 
     def clean_output_files(self):
@@ -756,12 +755,12 @@ class NetCDFOutput(Outputter):
         here in case it needs to be called from elsewhere
         '''
         try:
-            os.remove(self.netcdf_filename)
+            os.remove(self.filename)
         except OSError:
             pass  # it must not be there
 
         try:
-            os.remove(self._u_netcdf_filename)
+            os.remove(self._u_filename)
         except OSError:
             pass  # it must not be there
 
@@ -793,18 +792,21 @@ class NetCDFOutput(Outputter):
                                 the data
 
         :param time: timestamp at which the data is desired. Looks in
-                              the netcdf data's 'time' array and finds the closest
-                              time to this and outputs this data. If both 'time'
-                              and 'index' are None, return data if file only contains
-                              one 'time' else raise an error
+                              the netcdf data's 'time' array and finds the
+                              closest time to this and outputs this data.
+                              If both 'time' and 'index' are None, return data
+                              if file only contains one 'time' else raise an
+                              error
 
         :param int index: Index of the 'time' variable (or time_step). This is
-                          only used if 'time' is None. If both 'time' and 'index'
-                          are None,return data if file only contains one 'time' else
-                          raise an error
+                          only used if 'time' is None.
+                          If both 'time' and 'index' are None,return data
+                          if file only contains one 'time' else raise an error
 
-        :param which_data='standard': Which data arrays are desired. Options are:
-                                      ('standard', 'most', 'all', [list_of_array_names])
+        :param which_data='standard': Which data arrays are desired.
+                                      Options are:
+                                      ('standard', 'most', 'all',
+                                       [list_of_array_names])
         :type which_data: string or sequence of strings.
 
         :return: A dict containing standard data closest to the indicated
@@ -938,5 +940,5 @@ class NetCDFOutput(Outputter):
     def to_dict(self, json_=None):
         dict_ = super(NetCDFOutput, self).to_dict(json_)
         if json_ == 'save':
-            dict_['netcdf_filename'] = os.path.join('./', dict_['netcdf_filename'])
+            dict_['filename'] = os.path.join('./', dict_['filename'])
         return dict_

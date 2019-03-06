@@ -10,10 +10,9 @@ module to define classes for GNOME output:
 
 """
 import os
-import copy
 from datetime import timedelta
 
-from colander import SchemaNode, MappingSchema, Bool, drop, String
+from colander import SchemaNode, Bool, drop, String
 
 
 from gnome.persist import base_schema, extend_colander, validators
@@ -39,7 +38,7 @@ class BaseOutputterSchema(base_schema.ObjTypeSchema):
     output_start_time = SchemaNode(
         extend_colander.LocalDateTime(),
         validator=validators.convertible_to_seconds,
-        missing=drop , save=True, update=True
+        missing=drop, save=True, update=True
     )
     surface_conc = SchemaNode(
         String(allow_empty=True), save=True, update=True

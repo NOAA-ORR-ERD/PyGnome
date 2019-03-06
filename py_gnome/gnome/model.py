@@ -314,9 +314,11 @@ class Model(GnomeId):
         if refs is None:
             refs = Refs()
             self._schema.register_refs(self._schema(), self, refs)
+
         updatable = self._schema().get_nodes_by_attr('update')
         attrs = copy.copy(dict_)
         updated = False
+
         for k in attrs.keys():
             if k not in updatable:
                 attrs.pop(k)
