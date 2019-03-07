@@ -23,6 +23,9 @@ from .core import WeathererSchema
 from gnome.persist.base_schema import GeneralGnomeObjectSchema
 from gnome.environment.gridded_objects_base import VectorVariableSchema
 
+PI = np.pi
+PISQUARED = np.pi ** 2
+
 
 class FayGravityViscousSchema(WeathererSchema):
     thickness_limit = SchemaNode(Float(), missing=drop, save=True, update=True)
@@ -89,7 +92,7 @@ class FayGravityViscous(Weatherer):
         All inputs are scalars
         '''
         max_area = blob_init_vol / self.thickness_limit
-        time = (max_area / (np.pi * self.spreading_const[1] ** 2) *
+        time = (max_area / (PI * self.spreading_const[1] ** 2) *
                 (np.sqrt(water_viscosity) /
                  (blob_init_vol ** 2 * constants.gravity * rel_buoy)) ** (1. / 3)
                 ) ** 2
@@ -115,7 +118,7 @@ class FayGravityViscous(Weatherer):
 
         Equation for gravity spreading:
         ::
-            A0 = np.pi*(k2**4/k1**2)*((V0**5*g*dbuoy)/(nu_h2o**2))**(1./6.)
+            A0 = PI*(k2**4/k1**2)*((V0**5*g*dbuoy)/(nu_h2o**2))**(1./6.)
         '''
         a0 = (np.pi *
               (self.spreading_const[1] ** 4 / self.spreading_const[0] ** 2) *
@@ -135,7 +138,7 @@ class FayGravityViscous(Weatherer):
 
     def _update_blob_area(self, water_viscosity, relative_buoyancy,
                           blob_init_volume, age):
-        area = (np.pi *
+        area = (PI *
                 self.spreading_const[1] ** 2 *
                 (blob_init_volume ** 2 *
                  constants.gravity *
@@ -317,7 +320,7 @@ class FayGravityViscous(Weatherer):
                                                         blob_init_volume[m_age][0],
                                                         age[m_age][0])
 
-                    C = (np.pi *
+                    C = (PI *
                          self.spreading_const[1] ** 2 *
                          (blob_init_volume[m_age][0] ** 2 *
                           constants.gravity *
@@ -330,7 +333,7 @@ class FayGravityViscous(Weatherer):
                     blob_area_fgv = area[m_age].sum() + .5 * (C**2 / area[m_age].sum()) * time_step	# make sure area > 0
                     # blob_area_fgv = blob_area2 + .5 * (C**2 / blob_area2) * time_step	# make sure area > 0
 
-                    K = 4 * np.pi * 2 * .033
+                    K = 4 * PI * 2 * .033
 
                     # blob_area_diffusion = (7 / 6) * K * (area[m_age].sum() / K) ** (1 / 7)
                     blob_area_diffusion = area[m_age].sum() + ((7 / 6) * K * (area[m_age].sum() / K) ** (1 / 7)) * time_step
@@ -579,18 +582,33 @@ class Langmuir(Weatherer):
         the bounds of (0.1, or 1.0), then limit it to:
             0.1 <= frac_cov <= 1.0
         '''
-        v_max = np.max(self.get_wind_speed(points, model_time)*.005)
-        #v_max = self.wind.get_value(model_time)[0] * 0.005
-        cr_k = (v_max ** 2 *
-                4 *
-                np.pi ** 2 /
-                (thickness * rel_buoy * gravity)) ** (1. / 3.)
-        cr_k[np.isnan(cr_k)] = 10.	# if density becomes equal to water density
-        cr_k[cr_k==0] = 1.
-        frac_cov = 1. / cr_k
+        # fixme: sometimes get v_max of zero
+        #        probably shouldn't
+        v_max = np.max(self.get_wind_speed(points, model_time) * .005)
 
-        frac_cov[frac_cov < 0.1] = 0.1
-        frac_cov[frac_cov > 1.0] = 1.0
+        # cr_k = (v_max ** 2 *
+        #         4 *
+        #         PI ** 2 /
+        #         (thickness * rel_buoy * gravity)) ** (1. / 3.)
+        # cr_k[np.isnan(cr_k)] = 10.  # if density becomes equal to water density
+        # cr_k[cr_k == 0] = 1.
+        # frac_cov = 1. / cr_k
+
+        # refactored to compute more directly:
+        # fixme: we are getting warnings when rel_buoy <= 0.0
+        #        that is, when the density of the oil is >= water
+        #        this gets caught in the next line, but the warnings
+        #        are kind of annoying -- can we catch this sooner?
+        #        and is this doing the right thing for a "sinking" oil?
+        frac_cov = (v_max ** 2 *
+                    4 *
+                    PISQUARED /
+                    (thickness * rel_buoy * gravity)) ** (-0.3333333333333333)
+        # due to oil density > water density
+        frac_cov[np.isnan(frac_cov)] = 0.1
+
+        # clip takes care of inf
+        np.clip(frac_cov, 0.1, 1.0, out=frac_cov)
 
         return frac_cov
 
@@ -601,9 +619,9 @@ class Langmuir(Weatherer):
             0.1 <= frac_coverage <= 1.0
         '''
         v_min = np.sqrt(1.0 * thickness * rel_buoy * gravity /
-                        (4 * np.pi ** 2)) / 0.005
+                        (4 * PISQUARED)) / 0.005
         v_max = np.sqrt((1. / 0.1) ** 3 * thickness * rel_buoy * gravity /
-                        (4 * np.pi ** 2)) / 0.005
+                        (4 * PISQUARED)) / 0.005
 
         return (v_min, v_max)
 

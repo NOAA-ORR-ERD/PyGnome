@@ -19,20 +19,9 @@ from gnome.spill_container import SpillContainerPair
 from gnome.movers import RandomMover, constant_wind_mover
 from gnome.model import Model
 
-# kludge to get a unique ID for each file
-# just in case they are running in parallel
-#  This may not work if they are a separate process ...
-# fixme: this should be all in conftest!
-
-
-def get_id():
-    id = 0
-    while True:
-        id += 1
-        yield id
-
-
-id = get_id()
+# file extension to use for test output files
+#  this is used by the output_filename fixture in conftest:
+FILE_EXTENSION = ".kmz"
 
 
 def local_dirname():
@@ -41,28 +30,6 @@ def local_dirname():
     if not os.path.exists(dirname):
         os.mkdir(dirname)
     return dirname
-
-@pytest.fixture(scope='function')
-def output_filename(output_dir, request):
-    '''
-    trying to create a unique file for tests so pytest_xdist doesn't have
-    issues.
-    '''
-    dirname = output_dir
-    if not os.path.exists(dirname):
-        os.mkdir(dirname)
-
-    file_name = request.function.func_name
-    # # _genid is not longer in pytest
-    # if request._pyfuncitem._genid is None:
-    #     file_name += '_sample.kmz'
-    # else:
-    #     file_name += '_' + request._pyfuncitem._genid + '_sample.kmz'
-
-    file_name = "{}_{}_sample.kmz".format(file_name, next(id))
-
-    return os.path.join(dirname, file_name)
-
 
 
 @pytest.fixture(scope='function')
