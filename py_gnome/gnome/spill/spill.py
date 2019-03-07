@@ -248,7 +248,7 @@ class Spill(GnomeId):
 
     @property
     def amount(self):
-        rel_mass = self.release.release_mass #kg
+        rel_mass = self._release_mass #kg
 
         if self.units in self.valid_vol_units:
             std_density = self.substance.standard_density #kg/m3
@@ -272,7 +272,7 @@ class Spill(GnomeId):
 
         if self.units in self.valid_mass_units:
             rel_mass = uc.convert(self.units, 'kg', val)
-        self.release.release_mass = rel_mass
+        self._release_mass = rel_mass
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
@@ -326,7 +326,7 @@ class Spill(GnomeId):
         If volume is given, then use density to find mass. Density is always
         at 15degC, consistent with API definition
         """
-        return self.release.release_mass
+        return self._release_mass
 
     def uncertain_copy(self):
         """
@@ -389,7 +389,7 @@ class Spill(GnomeId):
         array_types comes from all the other objects above in the model such as
         movers, weatherers, etc. The ones from the substance still need to be added
         '''
-        self.release.prepare_for_model_run(timestep)
+        self.release.prepare_for_model_run(timestep, self._release_mass)
 
         array_types.update(self.array_types)
         array_types.update(self.substance.array_types)

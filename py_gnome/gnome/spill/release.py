@@ -56,9 +56,6 @@ class PointLineReleaseSchema(BaseReleaseSchema):
     )
     num_elements = SchemaNode(Int(), missing=drop)
     num_per_timestep = SchemaNode(Int(), missing=drop)
-    release_mass = SchemaNode(
-        Float()
-    )
     description = 'PointLineRelease object schema'
 
 
@@ -89,12 +86,10 @@ class Release(GnomeId):
     def __init__(self,
                  release_time=None,
                  num_elements=0,
-                 release_mass=0,
                  **kwargs):
 
         self.num_elements = num_elements
         self.release_time = asdatetime(release_time)
-        self.release_mass = release_mass
         self.rewind()
         super(Release, self).__init__(**kwargs)
         self.array_types.update({'positions': gat('positions'),
@@ -182,7 +177,6 @@ class PointLineRelease(Release):
                  num_per_timestep=None,
                  end_release_time=None,
                  end_position=None,
-                 release_mass=0,
                  **kwargs):
         """
         Required Arguments:
@@ -228,7 +222,6 @@ class PointLineRelease(Release):
             num_elements = 1000
         super(PointLineRelease, self).__init__(release_time=release_time,
                                                num_elements=num_elements,
-                                               release_mass = release_mass,
                                                **kwargs)
 
         if num_elements is not None and num_per_timestep is not None:
@@ -424,7 +417,7 @@ class PointLineRelease(Release):
         self._release_ts = None
         self._pos_ts = None
 
-    def prepare_for_model_run(self, ts):
+    def prepare_for_model_run(self, ts, release_mass):
         '''
         :param ts: integer seconds
         :param amount: integer kilograms
@@ -444,7 +437,7 @@ class PointLineRelease(Release):
 
         self.generate_release_timeseries(num_ts, max_release, ts)
         self._prepared = True
-        self._mass_per_le = self.release_mass*1.0 / max_release
+        self._mass_per_le = release_mass*1.0 / max_release
 
     def num_elements_after_time(self, current_time, time_step):
         '''
@@ -492,7 +485,6 @@ class SpatialRelease(Release):
     def __init__(self,
                  release_time=None,
                  start_position=None,
-                 release_mass=0,
                  **kwargs):
         """
         :param release_time: time the LEs are released
@@ -510,7 +502,6 @@ class SpatialRelease(Release):
                                           dtype=world_point_type)
                                .reshape((-1, 3)))
         self.num_elements = len(self.start_position)
-        self.release_mass = release_mass
 
     def num_elements_after_time(self, current_time, time_step):
         """
@@ -526,7 +517,7 @@ class SpatialRelease(Release):
         self._prepared = False
         self._mass_per_le = 0
 
-    def prepare_for_model_run(self, ts):
+    def prepare_for_model_run(self, ts, release_mass):
         '''
         :param ts: integer seconds
         :param amount: integer kilograms
@@ -536,7 +527,7 @@ class SpatialRelease(Release):
         max_release = self.num_elements
 
         self._prepared = True
-        self._mass_per_le = self.release_mass*1.0 / max_release
+        self._mass_per_le = release_mass*1.0 / max_release
 
     def initialize_LEs(self, to_rel, data, current_time, time_step):
         """

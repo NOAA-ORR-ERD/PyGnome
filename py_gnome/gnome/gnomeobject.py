@@ -64,7 +64,16 @@ class AddLogger(object):
         if ('json_' in kwargs):
             # because old save files
             kwargs.pop('json_')
-        super(AddLogger, self).__init__(**kwargs)
+        try:
+            super(AddLogger, self).__init__(**kwargs)
+        except TypeError as e:
+            import pdb
+            pdb.set_trace()
+            if e.message == "object.__init__() takes no parameters":
+                self.logger.error(kwargs.items())
+            raise e
+
+
 
     @property
     def logger(self):

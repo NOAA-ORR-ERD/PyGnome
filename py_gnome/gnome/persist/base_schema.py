@@ -79,6 +79,7 @@ class ObjType(SchemaType):
                 subval = value.get(name, None)
             else:
                 subval = value.pop(name, None)
+
             if subval is None: #deserialization
                 if subnode.missing == drop:
                     continue
