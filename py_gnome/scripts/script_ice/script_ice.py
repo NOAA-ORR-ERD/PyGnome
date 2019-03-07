@@ -14,6 +14,9 @@ import os
 base_dir = os.path.dirname(__file__)
 
 
+gs.PrintFinder()
+
+
 def make_model(images_dir=os.path.join(base_dir, 'images')):
     print 'initializing the model'
 
@@ -32,7 +35,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     renderer = gs.Renderer(mapfile, images_dir, image_size=(1024, 768))
     renderer.set_viewport(((-165, 69), (-161.5, 70)))
 
-    # model.outputters += renderer
+    model.outputters += renderer
 
     netcdf_file = os.path.join(base_dir, 'script_ice.nc')
     gs.remove_netcdf(netcdf_file)
@@ -51,8 +54,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     model.spills += spill1
 
-    print 'adding a RandomMover:'
-    model.movers += gs.RandomMover(diffusion_coef=10000)
+
 
     print 'adding the ice movers'
     fn = [gs.get_datafile('arctic_avg2_0001_gnome.nc'),
@@ -66,17 +68,19 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                                                     grid_topology=gt)
     ice_aware_wind = gs.IceAwareWind.from_netCDF(filename=fn,
                                                  grid=ice_aware_curr.grid,)
-    method = 'RK2'
 
-    i_c_mover = gs.PyCurrentMover(current=ice_aware_curr,
-                                  default_num_method=method)
-    i_w_mover = gs.PyWindMover(wind=ice_aware_wind,
-                               default_num_method=method)
+    i_c_mover = gs.PyCurrentMover(current=ice_aware_curr)
+    i_w_mover = gs.PyWindMover(wind=ice_aware_wind)
 
     # shifting to -360 to 0 longitude
     ice_aware_curr.grid.node_lon = ice_aware_curr.grid.node_lon[:] - 360
     model.movers += i_c_mover
     model.movers += i_w_mover
+
+    print 'adding an Ice RandomMover:'
+    model.movers += gs.IceAwareRandomMover(ice_concentration=ice_aware_curr.ice_concentration,
+                                           diffusion_coef=50000)
+
 
     # to visualize the grid and currents
 #     renderer.add_grid(ice_aware_curr.grid)

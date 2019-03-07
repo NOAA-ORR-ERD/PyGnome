@@ -25,7 +25,7 @@ class Timeseries(GnomeId):
     _schema = ObjTypeSchema
 
     def __init__(self, timeseries=None, filename=None, coord_sys='uv',
-                 extrapolation_is_allowed=False):
+                 extrapolation_is_allowed=False, **kwargs):
         """
         Initializes a timeseries object from either a timeseries or datafile
         containing the timeseries. If both timeseries and file are given,
@@ -85,6 +85,7 @@ class Timeseries(GnomeId):
             Converts string to integer defined by
             gnome.basic_types.ts_format.*
         """
+        super(Timeseries, self).__init__(**kwargs)
         if (timeseries is None and filename is None):
             timeseries = np.array([(sec_to_date(zero_time()), [0.0, 0.0])],
                                   dtype=basic_types.datetime_value_2d)

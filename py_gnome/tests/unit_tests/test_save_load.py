@@ -107,7 +107,6 @@ def test_gnome_obj_reference():
     created for each
     '''
     objs = [constant_wind_mover(0, 0) for _i in range(2)]
-    assert objs[0] == objs[1]
     assert objs[0] is not objs[1]
 
     refs = References()

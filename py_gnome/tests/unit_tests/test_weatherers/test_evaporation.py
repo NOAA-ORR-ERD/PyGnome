@@ -234,6 +234,9 @@ def test_full_run(sample_model_fcn, oil, temp):
 
             print "Completed step: {0}\n".format(step['step_num'])
 
+    # print("failing on purpose")
+    # assert False
+
 
 def test_full_run_evap_not_active(sample_model_fcn):
     'no water/wind object'

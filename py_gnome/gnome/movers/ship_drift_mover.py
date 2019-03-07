@@ -38,7 +38,6 @@ class ShipDriftMover(Mover):
                  topology_file=None,
                  grid_type=1,
                  drift_angle=0,
-                 extrapolation_is_allowed=False,
                  time_offset=0,
                  **kwargs):
         """

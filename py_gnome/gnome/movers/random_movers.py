@@ -286,7 +286,7 @@ class RandomVerticalMover(CyMover):
                 .format(self.vertical_diffusion_coef_above_ml,
                         self.vertical_diffusion_coef_below_ml,
                         self.mixed_layer_depth,
-                        self.surface_is_allowed,
                         self.horizontal_diffusion_coef_above_ml,
                         self.horizontal_diffusion_coef_below_ml,
+                        self.surface_is_allowed,
                         self.active_range, self.on))

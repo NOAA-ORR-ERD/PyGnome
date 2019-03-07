@@ -1,7 +1,9 @@
 Examples
 ========
 
-Create GridCurrent from a netCDF file.::
+Create GridCurrent from a netCDF file:
+
+.. code-block::python
 
     import numpy as np
     import netCDF4 as nc4
@@ -11,7 +13,10 @@ Create GridCurrent from a netCDF file.::
     fn = ('my_current_file.nc')
     current = GridCurrent.from_netCDF(filename = fn)
 
-Create GridCurrent from a netCDF file, and specify grid topology.::
+
+Create GridCurrent from a netCDF file, and specify grid topology.
+
+.. code-block::python
 
     current = GridCurrent.from_netCDF(filename=fn,
                                       grid_topology={'node_lon':'lon',

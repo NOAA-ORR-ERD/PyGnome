@@ -13,30 +13,17 @@ from gnome.spill import point_line_release_spill
 from gnome.spill_container import SpillContainerPair
 
 
+# file extension to use for test output files
+#  this is used by the output_filename fixture in conftest:
+FILE_EXTENSION = ""
+
+
 def local_dirname():
     dirname = os.path.split(__file__)[0]
     dirname = os.path.join(dirname, "output_shape")
     if not os.path.exists(dirname):
         os.mkdir(dirname)
     return dirname
-
-@pytest.fixture(scope='function')
-def output_filename(output_dir, request):
-    '''
-    trying to create a unique file for tests so pytest_xdist doesn't have
-    issues.
-    '''
-    dirname = output_dir
-    if not os.path.exists(dirname):
-        os.mkdir(dirname)
-
-    file_name = request.function.func_name
-    if request._pyfuncitem._genid is None:
-        file_name += '_sample'
-    else:
-        file_name += '_' + request._pyfuncitem._genid + '_sample'
-
-    return os.path.join(dirname, file_name)
 
 
 @pytest.fixture(scope='function')

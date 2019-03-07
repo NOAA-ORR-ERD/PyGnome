@@ -31,8 +31,6 @@ class PyCurrentMoverSchema(ObjTypeSchema):
                               missing=drop)
     current_scale = SchemaNode(Float(), save=True, update=True,
                                missing=drop)
-    extrapolation_is_allowed = SchemaNode(Bool(), save=True, update=True,
-                                          missing=drop)
     on = SchemaNode(Bool(), missing=drop, save=True, update=True)
     active_range = TimeRangeSchema()
     data_start = SchemaNode(LocalDateTime(), read_only=True,
@@ -60,7 +58,6 @@ class PyCurrentMover(movers.PyMover):
                  uncertain_across=.25,
                  uncertain_cross=.25,
                  default_num_method='RK2',
-                 extrapolation_is_allowed=False,
                  **kwargs
                  ):
         """
@@ -98,7 +95,6 @@ class PyCurrentMover(movers.PyMover):
                 self.current = GridCurrent.from_netCDF(filename=self.filename,
                                                        **kwargs)
 
-        self.extrapolation_is_allowed = extrapolation_is_allowed
         self.current_scale = current_scale
 
         self.uncertain_along = uncertain_along

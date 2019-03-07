@@ -1,16 +1,11 @@
 #!/usr/bin/env python
 
-# import pdb
-# import inspect
-
 import os
 
-# import shutil
 from datetime import datetime, timedelta
 import copy
 import zipfile
 
-# import collections
 from pprint import pformat
 
 import numpy as np
@@ -22,16 +17,12 @@ from colander import (SchemaNode,
                       # SequenceSchema,
                       )
 
-from gnome.environment import Environment
-
 
 import gnome.utilities.cache
 from gnome.utilities.time_utils import round_time, asdatetime
 from gnome.utilities.orderedcollection import OrderedCollection
 
 from gnome.basic_types import oil_status, fate
-from gnome.gnomeobject import GnomeId, allowzip64, Refs
-from gnome.exceptions import ReferencedObjectNotSet, GnomeRuntimeError
 
 from gnome.map import (GnomeMapSchema,
                        MapFromBNASchema,
@@ -41,7 +32,6 @@ from gnome.map import (GnomeMapSchema,
 from gnome.environment import Environment, Wind
 
 from gnome.spill_container import SpillContainerPair
-from gnome.spill.spill import SpillSchema
 
 from gnome.movers import Mover
 from gnome.weatherers import (weatherer_sort,
@@ -56,7 +46,6 @@ from gnome.persist import (extend_colander,
                            validators,
                            save_load)
 from gnome.persist.base_schema import (ObjTypeSchema,
-                                       CollectionItemsList,
                                        GeneralGnomeObjectSchema)
 from gnome.exceptions import ReferencedObjectNotSet, GnomeRuntimeError
 from gnome.spill.spill import SpillSchema
@@ -181,8 +170,8 @@ class Model(GnomeId):
 
         :param time_step=timedelta(minutes=15): model time step in seconds
                                                 or as a timedelta object. NOTE:
-                                                if you pass in a number, it WILL
-                                                be seconds
+                                                if you pass in a number,
+                                                it WILL be seconds
 
         :param start_time=datetime.now(): start time of model, datetime
                                           object. Rounded to the nearest hour.
@@ -325,9 +314,11 @@ class Model(GnomeId):
         if refs is None:
             refs = Refs()
             self._schema.register_refs(self._schema(), self, refs)
+
         updatable = self._schema().get_nodes_by_attr('update')
         attrs = copy.copy(dict_)
         updated = False
+
         for k in attrs.keys():
             if k not in updatable:
                 attrs.pop(k)
@@ -459,8 +450,8 @@ class Model(GnomeId):
 
     @current_time_step.setter
     def current_time_step(self, step):
-        self.model_time = self.start_time + timedelta(seconds=step *
-                                                       self.time_step)
+        self.model_time = (self.start_time +
+                           timedelta(seconds=step * self.time_step))
         self._current_time_step = step
 
     @property
@@ -1442,7 +1433,6 @@ class Model(GnomeId):
                             raise GnomeRuntimeError(msg)
                     except AttributeError:
                         pass
-
 
         if num_spills_on > 0 and not someSpillIntersectsModel:
             if num_spills > 1:
