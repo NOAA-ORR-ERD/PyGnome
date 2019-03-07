@@ -188,7 +188,8 @@ class TrajectoryGeoJsonOutput(Outputter):
         This is partly to make sure the dtype of the list elements is a python
         data type else geojson fails
         '''
-        p_type = type(data_array.item(0))
+        # p_type = type(data_array.item(0))
+        p_type = type(np.zeros((1,), dtype=data_array.dtype).item(0))
 
         if p_type is long:
             'geojson expects int - it fails for a long'
