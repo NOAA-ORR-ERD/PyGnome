@@ -188,17 +188,25 @@ class TrajectoryGeoJsonOutput(Outputter):
         This is partly to make sure the dtype of the list elements is a python
         data type else geojson fails
         '''
-        # p_type = type(data_array.item(0))
-        p_type = type(np.zeros((1,), dtype=data_array.dtype).item(0))
+        # # p_type = type(data_array.item(0))
+        # p_type = type(np.zeros((1,), dtype=data_array.dtype).item(0))
 
-        if p_type is long:
-            'geojson expects int - it fails for a long'
-            p_type = int
+        # if p_type is long:
+        #     'geojson expects int - it fails for a long'
+        #     p_type = int
 
-        if p_type is float and self.round_data:
-            data = data_array.round(self.round_to).astype(p_type).tolist()
+        # if p_type is float and self.round_data:
+        #     data = data_array.round(self.round_to).astype(p_type).tolist()
+        # else:
+        #     data = data_array.astype(p_type).tolist()
+
+        # refactored to simplyuse the correct python type:
+        if issubclass(data_array.dtype.type, np.float):
+            data = data_array.round(self.round_to).astype(float).tolist()
+        elif issubclass(data_array.dtype.type, np.integer):
+            data = data_array.astype(int).tolist()
         else:
-            data = data_array.astype(p_type).tolist()
+            raise TypeError("geojon can only handle float or integer types")
 
         return data
 
