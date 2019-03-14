@@ -38,24 +38,30 @@ def output_dir(request):
     try:
         os.mkdir(name)
     except OSError:
-        pass # already there
+        pass  # already there
 
     return name
+
 
 @pytest.fixture(scope='function')
 def output_filename(output_dir, request):
     '''
-    trying to create a unique file for tests so pytest_xdist doesn't have
-    issues.
+    trying to create a unique file for tests so pytest_xdist doesn't
+    have issues.
     '''
     dirname = output_dir
     if not os.path.exists(dirname):
         os.mkdir(dirname)
 
     file_name = request.function.func_name
-    if request._pyfuncitem._genid is None:
-        file_name += '_sample.nc'
+    extension = request.module.FILE_EXTENSION
+    #  This may capture multi-processing pytests
+    #  and create a new filename from the process id
+    # the previous code used request._pyfuncitem._genid
+    #  which is no longer available in pytest
+    if request._pyfuncitem.funcargs['skip_serial'] is not None:
+        file_name = "{}_{}_sample.{}".format(file_name, os.getpid(), extension)
     else:
-        file_name += '_' + request._pyfuncitem._genid + '_sample.nc'
+        file_name = "{}_sample{}".format(file_name, extension)
 
     return os.path.join(dirname, file_name)
