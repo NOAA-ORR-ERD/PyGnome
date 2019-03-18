@@ -784,7 +784,7 @@ class IceAwareCurrent(GridCurrent):
         interp_mask = interp_mask.reshape(-1)
 
         if len(interp > 0.2):
-            ice_mask = interp >= 0.8
+            ice_mask = interp.reshape(-1) >= 0.8
 
             water_v = (super(IceAwareCurrent, self)
                        .at(points, time, units=units, **kwargs))
@@ -794,13 +794,15 @@ class IceAwareCurrent(GridCurrent):
             interp = (interp - 0.2) * 10 / 6.
 
             vels = water_v.copy()
+
+            #deals with the >0.8 concentration case
             vels[ice_mask] = ice_v[ice_mask]
 
             diff_v = ice_v
             diff_v -= water_v
 
             vels[interp_mask] += (diff_v[interp_mask] *
-                                  interp[interp_mask][:, np.newaxis])
+                                  interp[interp_mask])
 
             return vels
         else:
