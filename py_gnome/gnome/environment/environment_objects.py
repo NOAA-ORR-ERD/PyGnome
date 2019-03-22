@@ -850,10 +850,10 @@ class IceAwareWind(GridWind):
                                            extrapolate=extrapolate, **kwargs)
 
         interp_mask = np.logical_and(interp >= 0.2, interp < 0.8)
-        interp_mask = interp_mask
+        interp_mask = interp_mask.reshape(-1)
 
         if len(interp >= 0.2) != 0:
-            ice_mask = interp >= 0.8
+            ice_mask = interp.reshape(-1) >= 0.8
 
             wind_v = (super(IceAwareWind, self)
                       .at(points, time, units, **kwargs))
@@ -865,7 +865,7 @@ class IceAwareWind(GridWind):
 
             # scale winds from 100-0% depending on ice coverage
             vels[interp_mask] = (vels[interp_mask] *
-                                 (1 - interp[interp_mask])[:, np.newaxis])
+                                 (1 - interp[interp_mask]))
 
             return vels
         else:
