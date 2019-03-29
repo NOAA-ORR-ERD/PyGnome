@@ -146,19 +146,17 @@ class IceAwareRandomMover(RandomMover):
         interp_mask = np.logical_and(interp >= 0.2, interp < 0.8)
 
         if len(np.where(interp_mask)[0]) != 0:
-            ice_mask = interp >= 0.8
+            ice_mask = interp.reshape(-1) >= 0.8
 
             deltas = (super(IceAwareRandomMover, self)
                       .get_move(sc, time_step, model_time_datetime))
 
-            interp -= 0.2
-            interp *= 1.25
-            interp *= 1.3333333333
+            interp = (interp - 0.2) * 10 / 6.
 
             deltas[:, 0:2][ice_mask] = 0
 
             # scale winds from 100-0% depending on ice coverage
-            deltas[:, 0:2][interp_mask] *= (1 - interp[interp_mask][:, np.newaxis])
+            deltas[:, 0:2][interp_mask] *= (1 - interp[interp_mask])
             deltas[status] = (0, 0, 0)
 
             return deltas
