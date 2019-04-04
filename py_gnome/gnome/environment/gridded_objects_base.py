@@ -417,7 +417,7 @@ class Variable(gridded.Variable, GnomeId):
         if self.time.min_time == self.time.max_time or self.extrapolation_is_allowed:
             return InfDateTime("inf")
         else:
-            return self.time.min_time.replace(tzinfo=None)
+            return self.time.max_time.replace(tzinfo=None)
 
 
 class DepthBase(gridded.depth.DepthBase, GnomeId):
@@ -547,7 +547,7 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
         if self.time.min_time == self.time.max_time or self.extrapolation_is_allowed:
             return InfDateTime("inf")
         else:
-            return self.time.min_time.replace(tzinfo=None)
+            return self.time.max_time.replace(tzinfo=None)
 
     @classmethod
     def _get_shared_vars(cls, *sh_args):
