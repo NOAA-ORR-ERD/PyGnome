@@ -19,7 +19,7 @@ from gnome.persist.base_schema import ObjTypeSchema
 from gnome.persist.validators import convertible_to_seconds
 from gnome.persist.extend_colander import LocalDateTime, FilenameSchema
 from gnome.persist.base_schema import GeneralGnomeObjectSchema
-from gnome.environment.gridded_objects_base import VectorVariableSchema
+from gnome.environment.gridded_objects_base import Grid_U, VectorVariableSchema
 
 
 class PyWindMoverSchema(ObjTypeSchema):
@@ -169,6 +169,44 @@ class PyWindMover(movers.PyMover):
                                     sc['windages'],
                                     sc['windage_persist'],
                                     time_step)
+
+    def get_grid_data(self):
+        """
+            The main function for getting grid data from the mover
+        """
+        if isinstance(self.wind.grid, Grid_U):
+            return self.wind.grid.nodes[self.wind.grid.faces[:]]
+        else:
+            lons = self.wind.grid.node_lon
+            lats = self.wind.grid.node_lat
+
+            return np.column_stack((lons.reshape(-1), lats.reshape(-1)))
+
+    def get_center_points(self):
+        if (hasattr(self.wind.grid, 'center_lon') and
+                self.wind.grid.center_lon is not None):
+            lons = self.wind.grid.center_lon
+            lats = self.wind.grid.center_lat
+
+            return np.column_stack((lons.reshape(-1), lats.reshape(-1)))
+        else:
+            lons = self.wind.grid.node_lon
+            lats = self.wind.grid.node_lat
+
+            if len(lons.shape) == 1:
+                # we are ugrid
+                triangles = self.wind.grid.nodes[self.wind.grid.faces[:]]
+                centroids = np.zeros((self.wind.grid.faces.shape[0], 2))
+                centroids[:, 0] = np.sum(triangles[:, :, 0], axis=1) / 3
+                centroids[:, 1] = np.sum(triangles[:, :, 1], axis=1) / 3
+
+            else:
+                c_lons = (lons[0:-1, :] + lons[1:, :]) / 2
+                c_lats = (lats[:, 0:-1] + lats[:, 1:]) / 2
+                centroids = np.column_stack((c_lons.reshape(-1),
+                                             c_lats.reshape(-1)))
+
+            return centroids
 
     def get_move(self, sc, time_step, model_time_datetime, num_method=None):
         """
