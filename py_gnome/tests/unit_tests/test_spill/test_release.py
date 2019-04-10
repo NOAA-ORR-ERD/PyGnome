@@ -193,59 +193,61 @@ class TestPointLineRelease:
         deser = PointLineRelease.deserialize(ser)
         assert deser == r1
 
-    @pytest.mark.parametrize('r', [r1(), r3()])
-    def test_LE_initialization(self, r):
-        #initialize_LEs(self, to_rel, data, current_time, time_step)
-        data = LEData()
-        ts = 900
-        r.prepare_for_model_run(ts)
-        data.prepare_for_model_run(r.array_types, None)
-        data.extend_data_arrays(10)
-        #initialize over the time interval 0-10%
-        r.initialize_LEs(10, data, r.release_time, ts)
+    #This isn't supported yet in pytest????
+    #@pytest.mark.parametrize('r', [r1, r3])
+    def test_LE_initialization(self, r1, r3):
+        for r in [r1, r3]:
+            #initialize_LEs(self, to_rel, data, current_time, time_step)
+            data = LEData()
+            ts = 900
+            r.prepare_for_model_run(ts)
+            data.prepare_for_model_run(r.array_types, None)
+            data.extend_data_arrays(10)
+            #initialize over the time interval 0-10%
+            r.initialize_LEs(10, data, r.release_time, ts)
 
-        #particles should have positions spread over 0-10% (frac) of the
-        #line from start_position to end_position
-        assert len(data['positions']) == 10
-        for pos in data['positions']:
-            for d in [0,1,2]:
-                assert pos[d] >= r.start_position[d]
-                #only 1 time step out of 10, so particles should only be on 10% of the line
-                assert pos[d] <= r.start_position[d] + (r.end_position[d] - r.start_position[d]) / 10
+            #particles should have positions spread over 0-10% (frac) of the
+            #line from start_position to end_position
+            assert len(data['positions']) == 10
+            for pos in data['positions']:
+                for d in [0,1,2]:
+                    assert pos[d] >= r.start_position[d]
+                    #only 1 time step out of 10, so particles should only be on 10% of the line
+                    assert pos[d] <= r.start_position[d] + (r.end_position[d] - r.start_position[d]) / 10
 
-        assert np.all(data['mass'] == r._mass_per_le)
+            assert np.all(data['mass'] == r._mass_per_le)
 
-        #reset and try overlap beginning
-        data.rewind()
-        data.prepare_for_model_run(r.array_types, None)
-        data.extend_data_arrays(100)
-        #initialize 100 LEs overlapping the start of the release
-        r.initialize_LEs(100, data, r.release_time - timedelta(seconds=ts/2), ts)
-        for pos in data['positions']:
-            for d in [0,1,2]:
-                assert pos[d] >= r.start_position[d]
-                #only 1/2 time step out of 10, so particles should only be on 5% of the line
-                assert pos[d] <= r.start_position[d] + (r.end_position[d] - r.start_position[d]) / 20
+            #reset and try overlap beginning
+            data.rewind()
+            data.prepare_for_model_run(r.array_types, None)
+            data.extend_data_arrays(100)
+            #initialize 100 LEs overlapping the start of the release
+            r.initialize_LEs(100, data, r.release_time - timedelta(seconds=ts/2), ts)
+            for pos in data['positions']:
+                for d in [0,1,2]:
+                    assert pos[d] >= r.start_position[d]
+                    #only 1/2 time step out of 10, so particles should only be on 5% of the line
+                    assert pos[d] <= r.start_position[d] + (r.end_position[d] - r.start_position[d]) / 20
 
-        assert np.all(data['mass'] == r._mass_per_le)
+            assert np.all(data['mass'] == r._mass_per_le)
 
-        data.extend_data_arrays(900)
-        #Should be fine initializing over a longer or shorter time interval than was prepared with
-        r.initialize_LEs(1000, data, r.release_time - timedelta(seconds=ts/2), 10000)
-        for pos in data['positions']:
-            for d in [0,1,2]:
-                assert pos[d] >= r.start_position[d]
-                assert pos[d] <= r.end_position[d]
-        assert data['mass'].sum() == 5000
+            data.extend_data_arrays(900)
+            #Should be fine initializing over a longer or shorter time interval than was prepared with
+            r.initialize_LEs(1000, data, r.release_time - timedelta(seconds=ts/2), 10000)
+            for pos in data['positions']:
+                for d in [0,1,2]:
+                    assert pos[d] >= r.start_position[d]
+                    assert pos[d] <= r.end_position[d]
+            assert data['mass'].sum() == 5000
 
-        data.rewind()
-        data.prepare_for_model_run(r.array_types, None)
-        data.extend_data_arrays(100)
-        r.initialize_LEs(100, data, r.release_time + timedelta(seconds=ts/4), 225)
-        for pos in data['positions']:
-            for d in [0,1,2]:
-                assert pos[d] >= r._pos_ts.at(None, r.release_time + timedelta(seconds=ts/4))[d]
-                assert pos[d] <= r._pos_ts.at(None, r.release_time + timedelta(seconds=ts/2))[d]
+            data.rewind()
+            data.prepare_for_model_run(r.array_types, None)
+            data.extend_data_arrays(100)
+            r.initialize_LEs(100, data, r.release_time + timedelta(seconds=ts/4), 225)
+            for pos in data['positions']:
+                for d in [0,1,2]:
+                    assert pos[d] >= r._pos_ts.at(None, r.release_time + timedelta(seconds=ts/4))[d]
+                    assert pos[d] <= r._pos_ts.at(None, r.release_time + timedelta(seconds=ts/2))[d]
 
 
 def test_release_from_splot_data():
