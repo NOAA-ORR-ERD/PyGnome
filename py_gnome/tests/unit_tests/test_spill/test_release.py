@@ -193,9 +193,8 @@ class TestPointLineRelease:
         deser = PointLineRelease.deserialize(ser)
         assert deser == r1
 
-    @pytest.mark.parametrize('r', [r1, r3])
+    @pytest.mark.parametrize('r', [r1(), r3()])
     def test_LE_initialization(self, r):
-        r = r()
         #initialize_LEs(self, to_rel, data, current_time, time_step)
         data = LEData()
         ts = 900
