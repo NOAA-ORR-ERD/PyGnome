@@ -419,7 +419,7 @@ class Spill(GnomeId):
         if 'frac_coverage' in sc:
             sc['frac_coverage'][-to_rel:] = self.frac_coverage
 
-        self.substance.initialize_LEs(to_rel, sc, [])
+        self.substance.initialize_LEs(to_rel, sc)
         #empty list above should be model environment collection eventually??
         #weatherers may still initialize further, but this is triggered from Model
         return to_rel
@@ -441,6 +441,11 @@ class Spill(GnomeId):
             by SpillContainer to initialize all data_arrays.
         """
         return self.release.num_elements_to_release(current_time, time_step)
+
+    def _attach_default_refs(self, ref_dict):
+        self.release._attach_default_refs(ref_dict)
+        self.substance._attach_default_refs(ref_dict)
+        return GnomeId._attach_default_refs(self, ref_dict)
 
 
 """ Helper functions """

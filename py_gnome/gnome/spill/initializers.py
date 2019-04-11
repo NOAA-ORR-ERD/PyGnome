@@ -109,7 +109,7 @@ class InitWindages(InitBaseClass):
     def to_dict(self, json_=None):
         return InitBaseClass.to_dict(self, json_=json_)
 
-    def initialize(self, num_new_particles, data_arrays, env, substance):
+    def initialize(self, num_new_particles, data_arrays, substance):
         """
         Since windages exists in data_arrays, so must windage_range and
         windage_persist if this initializer is used/called
@@ -129,7 +129,8 @@ class InitWindages(InitBaseClass):
 
 # do following two classes work for a time release spill?
 
-
+#TODO: Get the distribution objects into this as first class objects, not
+#shoehorned in the initialize()
 class InitMassFromPlume(InitBaseClass):
     """
     Initialize the 'mass' array based on mass flux from the plume spilled
@@ -144,15 +145,15 @@ class InitMassFromPlume(InitBaseClass):
         self.array_types['mass'] = gat('mass')
         self.name = 'mass'
 
-    def initialize(self, num_new_particles, data_arrays, env, substance):
+    def initialize(self, num_new_particles, data_arrays, substance):
         if any([k not in data_arrays for k in self.array_types.keys()]):
             return
-        if env.plume_gen is None:
+        if substance.plume_gen is None:
             raise ValueError('plume_gen attribute of spill is None - cannot'
                              ' compute mass without plume mass flux')
 
         data_arrays['mass'][-num_new_particles:] = \
-            env.plume_gen.mass_of_an_le * 1000
+            substance.plume_gen.mass_of_an_le * 1000
 
 
 class DistributionBaseSchema(base_schema.ObjTypeSchema):
@@ -207,7 +208,7 @@ class InitRiseVelFromDist(DistributionBase):
         self.array_types['rise_vel'] = gat('rise_vel')
         self.name = 'rise_vel'
 
-    def initialize(self, num_new_particles, data_arrays, env, substance):
+    def initialize(self, num_new_particles, data_arrays, substance):
         if any([k not in data_arrays for k in self.array_types.keys()]):
             return
         'Update values of "rise_vel" data array for new particles'
@@ -259,7 +260,7 @@ class InitRiseVelFromDropletSizeFromDist(DistributionBase):
                                  'droplet_diameter': gat('droplet_diameter')})
         self.name = 'rise_vel'
 
-    def initialize(self, num_new_particles, data_arrays, env, substance):
+    def initialize(self, num_new_particles, data_arrays, substance):
         """
         Update values of 'rise_vel' and 'droplet_diameter' data arrays for
         new particles. First create a droplet_size array sampled from specified
@@ -280,11 +281,10 @@ class InitRiseVelFromDropletSizeFromDist(DistributionBase):
         # Don't require a water object
         # water_temp = spill.water.get('temperature')
         # le_density[:] = substance.density_at_temp(water_temp)
-        water = None
-        for e in env:
-            if e.obj_type.contains('Water'):
-                water = e
-                break
+        if hasattr(substance, 'water'):
+            water = substance.water
+        else:
+            water = None
         if water is not None:
             water_temp = water.get('temperature')
             le_density[:] = substance.density_at_temp(water_temp)

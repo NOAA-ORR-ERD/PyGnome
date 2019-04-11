@@ -15,7 +15,7 @@ from gnome.persist.base_schema import OrderedCollectionType
 from oil_library.oil_props import OilProps
 from oil_library.factory import get_oil
 from oil_library.models import Oil
-from gnome.environment.water import Water
+from gnome.environment.water import Water, WaterSchema
 from gnome.spill.initializers import (floating_initializers,
                                       InitWindagesSchema,
                                       DistributionBaseSchema)
@@ -59,6 +59,7 @@ class GnomeOilType(ObjType):
 
 class GnomeOilSchema(SubstanceSchema):
     standard_density = SchemaNode(Float(), read_only=True)
+    water = WaterSchema(save_reference=True, test_equal=False)
 
     def __init__(self, unknown='preserve', *args, **kwargs):
         super(SubstanceSchema, self).__init__(*args, **kwargs)
@@ -73,6 +74,7 @@ class NonWeatheringSubstanceSchema(SubstanceSchema):
 
 class Substance(GnomeId):
     _schema = SubstanceSchema
+    _ref_as = 'substance'
 
     def __init__(self,
                  initializers=None,
@@ -164,20 +166,25 @@ class Substance(GnomeId):
                 return True
 
         return False
-    def initialize_LEs(self, to_rel, arrs, env):
+    def initialize_LEs(self, to_rel, arrs):
         '''
         :param to_rel - number of new LEs to initialize
         :param arrs - dict-like of data arrays representing LEs
-        :param env - collection of gnome.environment objects
         '''
         for init in self.initializers:
-            init.initialize(to_rel, arrs, env, self)
+            init.initialize(to_rel, arrs, self)
+
+    def _attach_default_refs(self, ref_dict):
+        for i in self.initializers:
+            i._attach_default_refs(ref_dict)
+        return GnomeId._attach_default_refs(self, ref_dict)
 
 
 class GnomeOil(OilProps, Substance):
     _schema = GnomeOilSchema
+    _req_refs = ['water']
 
-    def __init__(self, name=None, **kwargs):
+    def __init__(self, name=None, water=None, **kwargs):
         if isinstance(name, six.string_types):
             if kwargs.get('adios_oil_id', False):
                 #init the oilprops from dictionary
@@ -186,7 +193,7 @@ class GnomeOil(OilProps, Substance):
                 #GnomeOil('oil_name_here')
                 oil_obj = get_oil(name)
             OilProps.__init__(self, oil_obj)
-            kwargs['name'] = name
+            kwargs['name'] = name #this is important; it passes name up to GnomeId to be handled there!
         elif isinstance(name, Oil):
             oil_obj = name
             OilProps.__init__(self, oil_obj)
@@ -204,7 +211,10 @@ class GnomeOil(OilProps, Substance):
         read_only_attrs = GnomeOil._schema().get_nodes_by_attr('read_only')
         for n in read_only_attrs:
             k2.pop(n, None)
+        k2.pop('water')
         Substance.__init__(self, **k2)
+
+        self.water = water
 
         #add the array types that this substance DIRECTLY initializes
         self.array_types.update({'density': gat('density'),
@@ -255,19 +265,13 @@ class GnomeOil(OilProps, Substance):
 #         substance = cls.get_GnomeOil(dict_)
 #         return substance
 
-    def initialize_LEs(self, to_rel, arrs, env):
+    def initialize_LEs(self, to_rel, arrs):
         '''
         :param to_rel - number of new LEs to initialize
         :param arrs - dict-like of data arrays representing LEs
-        :param env - collection of gnome.environment objects
         '''
-        super(GnomeOil, self).initialize_LEs(to_rel, arrs, env)
         sl = slice(-to_rel, None, 1)
-        water = None
-        for e in env:
-            if e.obj_type.contains('Water'):
-                water = e
-                break
+        water = self.water
         if water is None:
             #LEs released at standard temperature and pressure
             self.logger.warning('No water provided for substance initialization, using default Water object')
@@ -292,6 +296,7 @@ class GnomeOil(OilProps, Substance):
         if substance_kvis is not None:
             'make sure we do not add NaN values'
             arrs['viscosity'][sl] = substance_kvis
+        super(GnomeOil, self).initialize_LEs(to_rel, arrs)
 
 
 class NonWeatheringSubstance(Substance):
@@ -330,16 +335,15 @@ class NonWeatheringSubstance(Substance):
     def is_weatherable(self, val):
         self.logger.warn('This substance {0} cannot be set to be weathering')
 
-    def initialize_LEs(self, to_rel, arrs, env):
+    def initialize_LEs(self, to_rel, arrs):
         '''
         :param to_rel - number of new LEs to initialize
         :param arrs - dict-like of data arrays representing LEs
-        :param env - collection of gnome.environment objects
         '''
-        super(NonWeatheringSubstance, self).initialize_LEs(to_rel, arrs, env)
         sl = slice(-to_rel, None, 1)
         arrs['density'][sl] = self.standard_density
         arrs['fate_status'][sl] = fate.non_weather
+        super(NonWeatheringSubstance, self).initialize_LEs(to_rel, arrs)
 
     def density_at_temp(self, temp=273.15):
         '''
