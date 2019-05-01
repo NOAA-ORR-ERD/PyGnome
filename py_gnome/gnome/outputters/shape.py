@@ -33,11 +33,15 @@ class ShapeOutput(Outputter):
     def __init__(self, filename, zip_output=True, surface_conc="kde",
                  **kwargs):
         '''
-        :param str output_dir=None: output directory for shape files
+        :param filename: full path and basename of the shape file.
 
-        :param zip_output=True: whether to zip up the ouput shape files
+        :param zip_output=True: whether to zip up the output shape files
+
+        :param surface_conc="kde": method to use to compute surface concentration
+                                   current options are: 'kde' and None
+
         '''
-        # # a little check:
+        # a little check:
         self._check_filename(filename)
 
         filename = filename.split(".zip")[0].split(".shp")[0]

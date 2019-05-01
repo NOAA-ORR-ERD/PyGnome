@@ -242,6 +242,7 @@ class FilenameSchema(SequenceSchema):
                     rv[i] = os.path.split(filename)[1]
         if rv and len(rv) == 1:
             return rv[0]
+        return rv
 
     def deserialize(self, cstruct):
         """
