@@ -86,8 +86,12 @@ def random_with_persistance(
         """
         if persistence == time_step, then no need to scale the [low, high]
         interval
+
+        assume any persistence greater than 1 hour is meant to be infinite
+        interface should only allow 15 minute or infinite
         """
-        u_mask = (persistence > 0)  # update mask for values to be changed
+        #u_mask = (persistence > 0) # update mask for values to be changed
+        u_mask = (persistence > 0) & (persistence <= 900) # update mask for values to be changed
 
         if np.any(u_mask):
             if np.any(persistence[u_mask] != time_step):
