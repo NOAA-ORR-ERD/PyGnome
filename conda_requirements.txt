@@ -49,7 +49,7 @@ zope.sqlalchemy>=0.7.7
 zope.interface>=4.1
 
 # required for building
-# note: cython 0.26 introduced a incompatiblity that we shuld address at some point
+# note: cython 0.26 introduced a incompatiblity that we should address at some point
 cython=0.25.*
 
 # needed to run tests
