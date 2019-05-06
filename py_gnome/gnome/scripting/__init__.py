@@ -74,7 +74,7 @@ from gnome.environment import (GridCurrent,
                                )
 
 from gnome.movers import (RandomMover,
-                          RandomVerticalMover,
+                          RandomMover3D,
                           WindMover,
                           RiseVelocityMover,
                           PyWindMover,

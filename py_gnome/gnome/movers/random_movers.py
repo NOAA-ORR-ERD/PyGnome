@@ -7,7 +7,7 @@ from colander import (SchemaNode, Float, Boolean, drop)
 
 from gnome.basic_types import oil_status
 from gnome.cy_gnome.cy_random_mover import CyRandomMover
-from gnome.cy_gnome.cy_random_vertical_mover import CyRandomVerticalMover
+from gnome.cy_gnome.cy_random_mover_3d import CyRandomMover3D
 
 from gnome.environment import IceConcentration
 from gnome.environment.gridded_objects_base import PyGrid
@@ -165,7 +165,7 @@ class IceAwareRandomMover(RandomMover):
                     .get_move(sc, time_step, model_time_datetime))
 
 
-class RandomVerticalMoverSchema(ProcessSchema):
+class RandomMover3DSchema(ProcessSchema):
     vertical_diffusion_coef_above_ml = SchemaNode(
         Float(), missing=drop, save=True, update=True
     )
@@ -184,14 +184,14 @@ class RandomVerticalMoverSchema(ProcessSchema):
     surface_is_allowed = SchemaNode(Boolean())
 
 
-class RandomVerticalMover(CyMover):
+class RandomMover3D(CyMover):
     """
-    This mover class inherits from CyMover and contains CyRandomVerticalMover
+    This mover class inherits from CyMover and contains CyRandomMover3D
 
-    The real work is done by CyRandomVerticalMoraneomver.
+    The real work is done by CyRandomMover3D.
     CyMover sets everything up that is common to all movers.
     """
-    _schema = RandomVerticalMoverSchema
+    _schema = RandomMover3DSchema
 
     def __init__(self, **kwargs):
         """
@@ -218,13 +218,13 @@ class RandomVerticalMover(CyMover):
         Remaining kwargs are passed onto Mover's __init__ using super.
         See Mover documentation for remaining valid kwargs.
         """
-        self.mover = CyRandomVerticalMover(vertical_diffusion_coef_above_ml=kwargs.pop('vertical_diffusion_coef_above_ml', 5),
+        self.mover = CyRandomMover3D(vertical_diffusion_coef_above_ml=kwargs.pop('vertical_diffusion_coef_above_ml', 5),
                                            vertical_diffusion_coef_below_ml=kwargs.pop('vertical_diffusion_coef_below_ml', .11),
                                            horizontal_diffusion_coef_above_ml=kwargs.pop('horizontal_diffusion_coef_above_ml', 100000),
                                            horizontal_diffusion_coef_below_ml=kwargs.pop('horizontal_diffusion_coef_below_ml', 126),
                                            mixed_layer_depth=kwargs.pop('mixed_layer_depth', 10.),
                                            surface_is_allowed=kwargs.pop('surface_is_allowed', False))
-        super(RandomVerticalMover, self).__init__(**kwargs)
+        super(RandomMover3D, self).__init__(**kwargs)
 
     @property
     def horizontal_diffusion_coef_above_ml(self):
@@ -275,7 +275,7 @@ class RandomVerticalMover(CyMover):
         self.mover.surface_is_allowed = value
 
     def __repr__(self):
-        return ('RandomVerticalMover(vertical_diffusion_coef_above_ml={0}, '
+        return ('RandomMover3D(vertical_diffusion_coef_above_ml={0}, '
                 'vertical_diffusion_coef_below_ml={1}, mixed_layer_depth={2}, '
                 'horizontal_diffusion_coef_above_ml={3}, '
                 'horizontal_diffusion_coef_below_ml={4}, '
