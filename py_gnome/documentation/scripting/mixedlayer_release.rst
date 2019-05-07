@@ -24,7 +24,7 @@ with and without a rise velocity.
     from gnome.spill import point_line_release_spill
     from gnome.movers import (
                               RiseVelocityMover,
-                              RandomVerticalMover,
+                              RandomMover3D,
                               )
     
     def make_model(rise_vel):
@@ -54,8 +54,8 @@ with and without a rise velocity.
         if rise_vel:
             model.movers += RiseVelocityMover()
     
-        # print 'adding a RandomVerticalMover:'
-        model.movers += RandomVerticalMover(vertical_diffusion_coef_above_ml=50,
+        # print 'adding a RandomMover3D:'
+        model.movers += RandomMover3D(vertical_diffusion_coef_above_ml=50,
                                             vertical_diffusion_coef_below_ml=.11,
                                             mixed_layer_depth=10)
     

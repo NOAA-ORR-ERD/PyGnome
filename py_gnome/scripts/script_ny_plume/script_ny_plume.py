@@ -30,7 +30,7 @@ from gnome.spill import point_line_release_spill
 from gnome.scripting import subsurface_plume_spill
 from gnome.movers import (RandomMover,
                           RiseVelocityMover,
-                          RandomVerticalMover,
+                          RandomMover3D,
                           SimpleMover)
 
 from gnome.outputters import Renderer
@@ -125,8 +125,8 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     print 'adding a RiseVelocityMover:'
     model.movers += RiseVelocityMover()
 
-    print 'adding a RandomVerticalMover:'
-#     model.movers += RandomVerticalMover(vertical_diffusion_coef_above_ml=5,
+    print 'adding a RandomMover3D:'
+#     model.movers += RandomMover3D(vertical_diffusion_coef_above_ml=5,
 #                                         vertical_diffusion_coef_below_ml=.11,
 #                                         mixed_layer_depth=10)
 
