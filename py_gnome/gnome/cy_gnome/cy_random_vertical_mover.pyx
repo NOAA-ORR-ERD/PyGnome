@@ -14,7 +14,7 @@ for each mover
 cdef extern from *:
     RandomVertical_c* dynamic_cast_ptr "dynamic_cast<RandomVertical_c *>" (Mover_c *) except NULL
 
-cdef class CyRandomVerticalMover(cy_mover.CyMover):
+cdef class CyRandomMover3D(cy_mover.CyMover):
 
     cdef RandomVertical_c *rand
 
@@ -42,27 +42,27 @@ cdef class CyRandomVerticalMover(cy_mover.CyMover):
         Default surface_is_allowed = False
         """
         if vertical_diffusion_coef_above_ml < 0:
-            raise ValueError('CyRandomVerticalMover must have a value '
+            raise ValueError('CyRandomMover3D must have a value '
                              'greater than or equal to 0 '
                              'for vertical_diffusion_coef above mixed layer')
 
         if vertical_diffusion_coef_below_ml < 0:
-            raise ValueError('CyRandomVerticalMover must have a value '
+            raise ValueError('CyRandomMover3D must have a value '
                              'greater than or equal to 0 '
                              'for vertical_diffusion_coef below mixed layer')
 
         if mixed_layer_depth < 0:
-            raise ValueError('CyRandomVerticalMover must have a value '
+            raise ValueError('CyRandomMover3D must have a value '
                              'greater than or equal to 0 '
                              'for mixed_layer_depth')
 
         if horizontal_diffusion_coef_above_ml < 0:
-            raise ValueError('CyRandomVerticalMover must have a value '
+            raise ValueError('CyRandomMover3D must have a value '
                              'greater than or equal to 0 '
                              'for horizontal_diffusion_coef_above_ml')
 
         if horizontal_diffusion_coef_below_ml < 0:
-            raise ValueError('CyRandomVerticalMover must have a value '
+            raise ValueError('CyRandomMover3D must have a value '
                              'greater than or equal to 0 '
                              'for horizontal_diffusion_coef_below_ml')
 
@@ -79,7 +79,7 @@ cdef class CyRandomVerticalMover(cy_mover.CyMover):
 
         def __set__(self, value):
             if value < 0:
-                raise ValueError('CyRandomVerticalMover must have a value '
+                raise ValueError('CyRandomMover3D must have a value '
                                  'greater than or equal to 0 '
                                  'for vertical_diffusion_coef '
                                  'above mixed layer')
@@ -91,7 +91,7 @@ cdef class CyRandomVerticalMover(cy_mover.CyMover):
 
         def __set__(self, value):
             if value < 0:
-                raise ValueError('CyRandomVerticalMover must have a value '
+                raise ValueError('CyRandomMover3D must have a value '
                                  'greater than or equal to 0 '
                                  'for vertical_diffusion_coef '
                                  'below mixed layer')
@@ -103,7 +103,7 @@ cdef class CyRandomVerticalMover(cy_mover.CyMover):
 
         def __set__(self, value):
             if value < 0:
-                raise ValueError('CyRandomVerticalMover must have a value '
+                raise ValueError('CyRandomMover3D must have a value '
                                  'greater than or equal to 0 '
                                  'for mixed_layer_depth')
             self.rand.fMixedLayerDepth = value
@@ -114,7 +114,7 @@ cdef class CyRandomVerticalMover(cy_mover.CyMover):
 
         def __set__(self, value):
             if value < 0:
-                raise ValueError('CyRandomVerticalMover must have a value '
+                raise ValueError('CyRandomMover3D must have a value '
                                  'greater than or equal to 0 '
                                  'for horizontal_diffusion_coef_above_ml')
             self.rand.fHorizontalDiffusionCoefficient = value
@@ -125,7 +125,7 @@ cdef class CyRandomVerticalMover(cy_mover.CyMover):
 
         def __set__(self, value):
             if value < 0:
-                raise ValueError('CyRandomVerticalMover must have a value '
+                raise ValueError('CyRandomMover3D must have a value '
                                  'greater than or equal to 0 '
                                  'for horizontal_diffusion_coef_below_ml')
             self.rand.fHorizontalDiffusionCoefficientBelowML = value
@@ -141,7 +141,7 @@ cdef class CyRandomVerticalMover(cy_mover.CyMover):
         """
         unambiguous repr of object, reuse for str() method
         """
-        return ('CyRandomVerticalMover('
+        return ('CyRandomMover3D('
                 'vertical_diffusion_coef_above_ml={0}, '
                 'vertical_diffusion_coef_below_ml={1}, '
                 'horizontal_diffusion_coef_above_ml={2}, '

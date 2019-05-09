@@ -93,12 +93,12 @@ Randoms movers can be added to simulate both horizontal and vertical turbulent m
 Diffusion coefficients can be explicity specified or default values will be used. For 
 example::
 
-    from gnome.movers import RandomMover, RandomVerticalMover
+    from gnome.movers import RandomMover, RandomMover3D
     
     random_mover = RandomMover(diffusion_coef=10,000) #in cm/s
     model.movers += random_mover
     
-    random_vert_mover = RandomVerticalMover(vertical_diffusion_coef_above_ml=10,vertical_diffusion_coef_below_ml=0.2,\
+    random_vert_mover = RandomMover3D(vertical_diffusion_coef_above_ml=10,vertical_diffusion_coef_below_ml=0.2,\
     mixed_layer_depth=10) #diffusion coefficients in cm/s, MLD in meters
     model.movers += random_vert_mover
 

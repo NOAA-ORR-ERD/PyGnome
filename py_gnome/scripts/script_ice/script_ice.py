@@ -45,7 +45,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     print 'adding a spill'
     # For a subsurfce spill, you would need to add vertical movers:
     # - gs.RiseVelocityMover
-    # - gs.RandomVerticalMover
+    # - gs.RandomMover3D
     spill1 = gs.point_line_release_spill(num_elements=1000,
                                          start_position=(-163.75,
                                                          69.75,
