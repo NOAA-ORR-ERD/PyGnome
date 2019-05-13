@@ -34,7 +34,7 @@ from gnome.spill import point_line_release_spill
 from gnome.scripting import subsurface_plume_spill
 from gnome.movers import (RandomMover,
                           TamocRiseVelocityMover,
-                          RandomVerticalMover,
+                          RandomMover3D,
                           SimpleMover,
                           GridCurrentMover,
                           PyCurrentMover,
@@ -106,7 +106,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # Horizontal Diffusion
     #model.movers += RandomMover(diffusion_coef=100000)
     # vertical diffusion (different above and below the mixed layer)
-    model.movers += RandomVerticalMover(vertical_diffusion_coef_above_ml=50,
+    model.movers += RandomMover3D(vertical_diffusion_coef_above_ml=50,
                                         vertical_diffusion_coef_below_ml=10,
                                         horizontal_diffusion_coef_above_ml=100000,
                                         horizontal_diffusion_coef_below_ml=100,

@@ -253,6 +253,8 @@ class PyCurrentMover(movers.PyMover):
             else:
                 deltas = res
 
+            deltas *= self.current_scale
+
             deltas = FlatEarthProjection.meters_to_lonlat(deltas, positions)
             deltas[status] = (0, 0, 0)
         else:

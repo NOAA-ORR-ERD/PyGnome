@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 
 """
-tests for the RandomVerticalMover in random_movers.py
+tests for the RandomMover3D in random_movers.py
 """
 
 import datetime
 import numpy as np
 import pytest
 
-from gnome.movers.random_movers import RandomVerticalMover
+from gnome.movers.random_movers import RandomMover3D
 
 from ..conftest import sample_sc_release
 # some helpful parameters:
@@ -21,13 +21,13 @@ def test_init():
     """
     test the varios ways it can be initilized
     """
-    mv = RandomVerticalMover()
+    mv = RandomMover3D()
 
-    mv = RandomVerticalMover(vertical_diffusion_coef_above_ml=10.0) # cm^2/s
+    mv = RandomMover3D(vertical_diffusion_coef_above_ml=10.0) # cm^2/s
 
-    mv = RandomVerticalMover(vertical_diffusion_coef_below_ml=2.0) # cm^2/s
+    mv = RandomMover3D(vertical_diffusion_coef_below_ml=2.0) # cm^2/s
 
-    mv = RandomVerticalMover(mixed_layer_depth=20) # m
+    mv = RandomMover3D(mixed_layer_depth=20) # m
 
     assert True
 
@@ -36,7 +36,7 @@ def test_horizontal_zero():
     """
     checks that there is no horizontal movement
     """
-    mv = RandomVerticalMover() # all defaults
+    mv = RandomMover3D() # all defaults
 
     num_elements = 100
 
@@ -65,7 +65,7 @@ def test_vertical_zero():
     """
     checks that there is no vertical movement
     """
-    mv = RandomVerticalMover(mixed_layer_depth=10.0) # mostly defaults
+    mv = RandomMover3D(mixed_layer_depth=10.0) # mostly defaults
 
     num_elements = 100
 
@@ -103,7 +103,7 @@ def test_bottom_layer():
     num_elements = 100
     num_timesteps = total_time // time_step
 
-    mv = RandomVerticalMover(vertical_diffusion_coef_below_ml=D_lower) # m
+    mv = RandomMover3D(vertical_diffusion_coef_below_ml=D_lower) # m
 
     sc = sample_sc_release(num_elements=num_elements,
                            start_pos=(0.0, 0.0, 0.0),
@@ -151,7 +151,7 @@ def test_mixed_layer():
     num_elements = 1000
     num_timesteps = total_time // time_step
 
-    mv = RandomVerticalMover(vertical_diffusion_coef_above_ml=D_mixed,
+    mv = RandomMover3D(vertical_diffusion_coef_above_ml=D_mixed,
                              mixed_layer_depth=1000, # HUGE to avoid surface effects.
                              ) # m
 
@@ -198,7 +198,7 @@ def test_mixed_layer2():
     num_elements = 1000
     num_timesteps = total_time // time_step
 
-    mv = RandomVerticalMover(vertical_diffusion_coef_above_ml=D_mixed,
+    mv = RandomMover3D(vertical_diffusion_coef_above_ml=D_mixed,
                              vertical_diffusion_coef_below_ml=0.0,
                              mixed_layer_depth=mixed_layer_depth,
                              ) # m

@@ -281,17 +281,7 @@ class ObjType(SchemaType):
             fname = refs[json_['id']]
         else:
             fname = str(json_['name']) + '.json'
-            if fname in zipfile_.namelist():
-                # file already exists. This happens for example if a WindMover
-                # is named X, and it's wind is also named X.
-                # Add sub name to refs in case this object gets referenced
-                # elsewhere in future
-                # Note: This kinda sucks.  The unique id should not be used
-                #       in the actual name of the .json file.
-                #       We used to simply increment a simple number for
-                #       multiple instances of a particular type of object.
-                fname = ('{}__{}__.json'.format(fname.split('.json')[0],
-                                                json_['id']))
+            fname = gen_unique_filename(fname, zipfile_)
 
             refs[json_['id']] = fname
         #strips out any entries that do not need saving. They're still in refs,
@@ -905,3 +895,28 @@ class ImageSize(TupleSchema):
     'Only contains 2D (long, lat) positions'
     width = SchemaNode(Int())
     height = SchemaNode(Int())
+
+'''
+The following two functions have analogues in the webgnomeAPI
+'''
+def get_file_name_ext(filename_in):
+    # in case a path was passed as the name
+    base_name = os.path.basename(filename_in)
+    file_name, extension = os.path.splitext(base_name)
+
+    return file_name, extension
+def gen_unique_filename(filename_in, zipfile_):
+    # add uuid to the file name in case the user accidentally uploads
+    # multiple files with the same name for different objects.
+    existing_files = zipfile_.namelist()
+    file_name, extension = get_file_name_ext(filename_in)
+    fmtstring = file_name + '{0}' + extension
+    new_fn = fmtstring.format('')
+    i = 1;
+    while i < 255:
+        if new_fn not in existing_files:
+            return new_fn
+        else:
+            new_fn = fmtstring.format(' ('+ str(i) + ')')
+            i+=1
+    raise ValueError('File saved too many times')
