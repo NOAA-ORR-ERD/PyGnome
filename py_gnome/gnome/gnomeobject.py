@@ -786,4 +786,3 @@ class GnomeId(AddLogger):
         else:
             raise ValueError('saveloc was not a string path '
                              'or an open zipfile.ZipFile object')
-        pass

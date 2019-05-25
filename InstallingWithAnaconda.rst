@@ -158,19 +158,15 @@ for PyGNOME::
 
 This will create an environment called "gnome" with Python2 and the core
 pieces you need to run conda. To use that environment, you activate it
-with (for Linux or OS-X)::
+with::
 
-    source activate gnome
+    conda activate gnome
 
-or on Windows::
-
-    activate gnome
 
 and when you are done, you can deactivate it with::
 
-    source deactivate
+    conda deactivate
 
-(or just ``deactivate`` on Windows)
 
 After activating the environment, you can proceed with these instructions,
 and all the packages ``py_gnome`` needs will be installed into that environment

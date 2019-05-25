@@ -98,9 +98,9 @@ example::
     random_mover = RandomMover(diffusion_coef=10,000) #in cm/s
     model.movers += random_mover
     
-    random_vert_mover = RandomMover3D(vertical_diffusion_coef_above_ml=10,vertical_diffusion_coef_below_ml=0.2,\
+    random_mover_3d = RandomMover3D(vertical_diffusion_coef_above_ml=10,vertical_diffusion_coef_below_ml=0.2,\
     mixed_layer_depth=10) #diffusion coefficients in cm/s, MLD in meters
-    model.movers += random_vert_mover
+    model.movers += random_mover_3d
 
 Rise velocity movers
 --------------------

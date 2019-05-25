@@ -7,7 +7,7 @@ from colander import (SchemaNode, Float, Boolean, drop)
 
 from gnome.basic_types import oil_status
 from gnome.cy_gnome.cy_random_mover import CyRandomMover
-from gnome.cy_gnome.cy_random_vertical_mover import CyRandomMover3D
+from gnome.cy_gnome.cy_random_mover_3d import CyRandomMover3D
 
 from gnome.environment import IceConcentration
 from gnome.environment.gridded_objects_base import PyGrid
@@ -188,7 +188,7 @@ class RandomMover3D(CyMover):
     """
     This mover class inherits from CyMover and contains CyRandomMover3D
 
-    The real work is done by CyRandomVerticalMoraneomver.
+    The real work is done by CyRandomMover3D.
     CyMover sets everything up that is common to all movers.
     """
     _schema = RandomMover3DSchema
