@@ -117,7 +117,7 @@ class WindSchema(base_schema.ObjTypeSchema):
     time = TimeSchema(
         #this is only for duck-typing the new-style environment objects,
         #so only provide to the client
-        save=False, update=True, save_reference=False
+        save=False, update=False, save_reference=False, read_only=True
     )
 
 
@@ -149,7 +149,6 @@ class Wind(Timeseries, Environment):
         """
         self.updated_at = kwargs.pop('updated_at', None)
         self.source_id = kwargs.pop('source_id', 'undefined')
-        self.time = kwargs.pop('time', None)
 
         self.longitude = longitude
         self.latitude = latitude
@@ -192,6 +191,7 @@ class Wind(Timeseries, Environment):
                 self.set_wind_data(timeseries, units, coord_sys)
 
         self.extrapolation_is_allowed = extrapolation_is_allowed
+        self.time = kwargs.pop('time', None)
         self._time = Time(data=self.timeseries['time'].astype(datetime.datetime))
 
     def _check_units(self, units):
