@@ -149,6 +149,7 @@ class Wind(Timeseries, Environment):
         """
         self.updated_at = kwargs.pop('updated_at', None)
         self.source_id = kwargs.pop('source_id', 'undefined')
+        self.time = kwargs.pop('time', None)
 
         self.longitude = longitude
         self.latitude = latitude
@@ -218,6 +219,9 @@ class Wind(Timeseries, Environment):
 
     @time.setter
     def time(self, t):
+        if t is None:
+            self._time = None
+            return
         if self.timeseries is not None and len(t) != len(self.timeseries):
             warnings.warn("Data/time interval mismatch, doing nothing")
             return
