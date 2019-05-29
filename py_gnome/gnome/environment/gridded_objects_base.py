@@ -31,6 +31,12 @@ class TimeSchema(base_schema.ObjTypeSchema):
             DateTime(default_tzinfo=None)
         )
     )
+    min_time = SchemaNode(
+        DateTime(default_tzinfo=None), read_only=True
+    )
+    max_time = SchemaNode(
+        DateTime(default_tzinfo=None), read_only=True
+    )
 
 
 class GridSchema(base_schema.ObjTypeSchema):
@@ -275,7 +281,6 @@ class Grid_S(GnomeId, gridded.grids.Grid_S):
         ver_lens = ver_lines.shape[1] * np.ones(ver_lines.shape[0],
                                                 dtype=np.int32)
         lens = np.concatenate((hor_lens, ver_lens))
-
         return (lens, [hor_lines, ver_lines])
 
 
