@@ -407,14 +407,14 @@ class Variable(gridded.Variable, GnomeId):
 
     @property
     def data_start(self):
-        if self.time.min_time == self.time.max_time or self.extrapolation_is_allowed:
+        if self.time.min_time == self.time.max_time:
             return InfDateTime("-inf")
         else:
             return self.time.min_time.replace(tzinfo=None)
 
     @property
     def data_stop(self):
-        if self.time.min_time == self.time.max_time or self.extrapolation_is_allowed:
+        if self.time.min_time == self.time.max_time:
             return InfDateTime("inf")
         else:
             return self.time.min_time.replace(tzinfo=None)
@@ -537,14 +537,14 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
 
     @property
     def data_start(self):
-        if self.time.min_time == self.time.max_time or self.extrapolation_is_allowed:
+        if self.time.min_time == self.time.max_time:
             return InfDateTime("-inf")
         else:
             return self.time.min_time.replace(tzinfo=None)
 
     @property
     def data_stop(self):
-        if self.time.min_time == self.time.max_time or self.extrapolation_is_allowed:
+        if self.time.min_time == self.time.max_time:
             return InfDateTime("inf")
         else:
             return self.time.max_time.replace(tzinfo=None)
