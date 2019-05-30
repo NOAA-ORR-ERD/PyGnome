@@ -18,8 +18,8 @@ from random_movers import (RandomMover,
                            RandomMoverSchema,
                            IceAwareRandomMover,
                            IceAwareRandomMoverSchema,
-                           RandomVerticalMover,
-                           RandomVerticalMoverSchema)
+                           RandomMover3D,
+                           RandomMover3DSchema)
 
 from current_movers import (CatsMover,
                             CatsMoverSchema,
@@ -48,7 +48,7 @@ mover_schemas = [
     SimpleMoverSchema,
     RandomMoverSchema,
     IceAwareRandomMoverSchema,
-    RandomVerticalMoverSchema,
+    RandomMover3DSchema,
     CatsMoverSchema,
     ComponentMoverSchema,
     GridCurrentMoverSchema,

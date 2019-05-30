@@ -9,7 +9,7 @@ import numpy as np
 from gnome.basic_types import spill_type, world_point, world_point_type
 
 from gnome.cy_gnome.cy_helpers import srand
-from gnome.cy_gnome.cy_random_vertical_mover import CyRandomVerticalMover
+from gnome.cy_gnome.cy_random_mover_3d import CyRandomMover3D
 import cy_fixtures
 
 import pytest
@@ -21,7 +21,7 @@ def test_exceptions():
     """
 
     with pytest.raises(ValueError):
-        CyRandomVerticalMover(vertical_diffusion_coef_above_ml=-1000)
+        CyRandomMover3D(vertical_diffusion_coef_above_ml=-1000)
 
 
 class TestRandomVertical:
@@ -29,7 +29,7 @@ class TestRandomVertical:
     msg = 'vertical_diffusion_coef_above_ml = {0.vertical_diffusion_coef_above_ml},vertical_diffusion_coef_below_ml = {0.vertical_diffusion_coef_below_ml}'
     cm = cy_fixtures.CyTestMove()
     cm.ref['z'][:]=.1
-    rm = CyRandomVerticalMover(vertical_diffusion_coef_above_ml=5,vertical_diffusion_coef_below_ml=.11)
+    rm = CyRandomMover3D(vertical_diffusion_coef_above_ml=5,vertical_diffusion_coef_below_ml=.11)
 
     def move(self, delta):
         self.rm.prepare_for_model_run()
