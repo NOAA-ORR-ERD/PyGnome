@@ -300,7 +300,7 @@ class Model(GnomeId):
         for outputter in self.outputters:
             outputter.rewind()
 
-        self.logger.info(self._pid + "rewound model - " + self.name)
+        #self.logger.info(self._pid + "rewound model - " + self.name)
 
 #    def write_from_cache(self, filetype='netcdf', time_step='all'):
 #        """
