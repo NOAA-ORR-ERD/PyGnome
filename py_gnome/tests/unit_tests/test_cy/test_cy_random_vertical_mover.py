@@ -9,7 +9,7 @@ import numpy as np
 from gnome.basic_types import spill_type, world_point, world_point_type
 
 from gnome.cy_gnome.cy_helpers import srand
-from gnome.cy_gnome.cy_random_vertical_mover import CyRandomMover3D
+from gnome.cy_gnome.cy_random_mover_3d import CyRandomMover3D
 import cy_fixtures
 
 import pytest

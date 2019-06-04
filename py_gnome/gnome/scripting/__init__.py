@@ -5,7 +5,7 @@ write scripts.
 The ultimate goal is to be able to run py_gnome for the "common" use cases
 with only functions available in this module
 
-Helper functions are imported from various py_gnome modules
+Classes and helper functions are imported from various py_gnome modules
 (spill, environment, movers etc).
 
 we recommend that this module be used like so::
@@ -44,12 +44,16 @@ from .time_utils import (seconds,
                          hours,
                          days,
                          weeks,
-                         now)
+                         now,
+                         )
+from gnome.utilities.inf_datetime import MinusInfTime, InfTime
+
 
 from gnome.spill.spill import (point_line_release_spill,
                                surface_point_line_spill,
                                subsurface_plume_spill,
                                grid_spill,
+                               spatial_release_spill,
                                )
 
 from gnome.environment.wind import constant_wind

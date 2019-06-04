@@ -370,10 +370,13 @@ class ObjType(SchemaType):
                     #the serialization of this non-GNOME object.
                     return subnode.serialize(subappstruct)
             else:
-                #This is the path for Gnome objects
-                return subnode._save(subappstruct,
-                                    zipfile_=zipfile_,
-                                    refs=refs)
+                # This is the path for Gnome objects
+                if subnode.save is True:
+                    return subnode._save(subappstruct,
+                                         zipfile_=zipfile_,
+                                         refs=refs)
+                else:
+                    logging.info('skipped {0}'.format(subnode))
 
         #gets the dictionary representation of the object, 'save' is passed
         dict_ = self._prepare_save(node, appstruct, zipfile_, refs)

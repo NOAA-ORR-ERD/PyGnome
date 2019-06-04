@@ -300,7 +300,7 @@ class Model(GnomeId):
         for outputter in self.outputters:
             outputter.rewind()
 
-        self.logger.info(self._pid + "rewound model - " + self.name)
+        #self.logger.info(self._pid + "rewound model - " + self.name)
 
 #    def write_from_cache(self, filetype='netcdf', time_step='all'):
 #        """
@@ -950,7 +950,7 @@ class Model(GnomeId):
     def step(self):
         '''
         Steps the model forward (or backward) in time. Needs testing for
-        hind casting.
+        hindcasting.
         '''
         isvalid = True
         for sc in self.spills.items():
@@ -1066,7 +1066,8 @@ class Model(GnomeId):
         while True:
             try:
                 results = self.step()
-                self.logger.info(pformat(results))
+                self.logger.info("ran step: {}".format(self._current_time_step))
+                self.logger.debug(pformat(results))
                 output_data.append(results)
             except StopIteration:
                 self.post_model_run()
