@@ -189,11 +189,13 @@ class Grid_S(GnomeId, gridded.grids.Grid_S):
     def __init__(self, use_masked_boundary=True, *args, **kwargs):
         super(Grid_S, self).__init__(*args, use_masked_boundary=use_masked_boundary, **kwargs)
 
+        '''
         #This is for the COOPS case, where their coordinates go from 0-360 starting at prime meridian
         for lon in [self.node_lon, self.center_lon, self.edge1_lon, self.edge2_lon]:
             if lon is not None and lon.max() > 180:
                 self.logger.warn('Detected longitudes > 180 in {0}. Rotating -360 degrees'.format(self.name))
                 lon -= 360
+        '''
 
     '''hack to avoid problems when registering object in webgnome'''
     @property
