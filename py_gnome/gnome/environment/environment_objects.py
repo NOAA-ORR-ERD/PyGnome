@@ -514,11 +514,12 @@ class GridCurrent(VelocityGrid, Environment):
             y = raw_u[:] * np.sin(raw_ang) + raw_v[:] * np.cos(raw_ang)
             yt = y.shape[0]
             x = x.filled(0).reshape(xt, -1)
-            x = np.ma.MaskedArray(x, mask = self.grid._masks['node'][0])
-            x = x.compressed().reshape(xt, -1)
             y = y.filled(0).reshape(yt, -1)
-            y = np.ma.MaskedArray(y, mask = self.grid._masks['node'][0])
-            y = y.compressed().reshape(yt,-1)
+            if hasattr(self.grid.node_lon[:], 'mask') and self.grid.node_lon[:].mask is not False and not np.all(self.grid.node_lon[:].mask == False):
+                x = np.ma.MaskedArray(x, mask = self.grid._masks['node'][0])
+                x = x.compressed().reshape(xt, -1)
+                y = np.ma.MaskedArray(y, mask = self.grid._masks['node'][0])
+                y = y.compressed().reshape(yt,-1)
             #r = np.ma.stack((x, y)) change to this when numpy 1.15 becomes norm.
             r = np.concatenate((x[None,:], y[None,:]))
             return np.ascontiguousarray(r.astype(np.float32)) # r.compressed().astype(np.float32)
