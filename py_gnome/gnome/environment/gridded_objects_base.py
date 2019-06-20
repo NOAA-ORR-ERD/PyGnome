@@ -2,6 +2,7 @@ import datetime
 import StringIO
 import copy
 import numpy as np
+import logging
 from functools import wraps
 
 from colander import (SchemaNode, SequenceSchema,
@@ -30,6 +31,12 @@ class TimeSchema(base_schema.ObjTypeSchema):
         SchemaNode(
             DateTime(default_tzinfo=None)
         )
+    )
+    min_time = SchemaNode(
+        DateTime(default_tzinfo=None), read_only=True
+    )
+    max_time = SchemaNode(
+        DateTime(default_tzinfo=None), read_only=True
     )
 
 
@@ -110,6 +117,15 @@ class Grid_U(gridded.grids.Grid_U, GnomeId):
 
     _schema = GridSchema
 
+    def __init__(self, **kwargs):
+        super(Grid_U, self).__init__(**kwargs)
+
+        #This is for the COOPS case, where their coordinates go from 0-360 starting at prime meridian
+        for lon in [self.node_lon,]:
+            if lon is not None and lon.max() > 180:
+                self.logger.warn('Detected longitudes > 180 in {0}. Rotating -360 degrees'.format(self.name))
+                lon -= 360
+
     def draw_to_plot(self, ax, features=None, style=None):
         import matplotlib
         def_style = {'color': 'blue',
@@ -172,6 +188,14 @@ class Grid_S(GnomeId, gridded.grids.Grid_S):
 
     def __init__(self, use_masked_boundary=True, *args, **kwargs):
         super(Grid_S, self).__init__(*args, use_masked_boundary=use_masked_boundary, **kwargs)
+
+        '''
+        #This is for the COOPS case, where their coordinates go from 0-360 starting at prime meridian
+        for lon in [self.node_lon, self.center_lon, self.edge1_lon, self.edge2_lon]:
+            if lon is not None and lon.max() > 180:
+                self.logger.warn('Detected longitudes > 180 in {0}. Rotating -360 degrees'.format(self.name))
+                lon -= 360
+        '''
 
     '''hack to avoid problems when registering object in webgnome'''
     @property
@@ -275,7 +299,6 @@ class Grid_S(GnomeId, gridded.grids.Grid_S):
         ver_lens = ver_lines.shape[1] * np.ones(ver_lines.shape[0],
                                                 dtype=np.int32)
         lens = np.concatenate((hor_lens, ver_lens))
-
         return (lens, [hor_lines, ver_lines])
 
 
@@ -407,14 +430,14 @@ class Variable(gridded.Variable, GnomeId):
 
     @property
     def data_start(self):
-        if self.time.min_time == self.time.max_time or self.extrapolation_is_allowed:
+        if self.time.min_time == self.time.max_time:
             return InfDateTime("-inf")
         else:
             return self.time.min_time.replace(tzinfo=None)
 
     @property
     def data_stop(self):
-        if self.time.min_time == self.time.max_time or self.extrapolation_is_allowed:
+        if self.time.min_time == self.time.max_time:
             return InfDateTime("inf")
         else:
             return self.time.min_time.replace(tzinfo=None)
@@ -537,14 +560,14 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
 
     @property
     def data_start(self):
-        if self.time.min_time == self.time.max_time or self.extrapolation_is_allowed:
+        if self.time.min_time == self.time.max_time:
             return InfDateTime("-inf")
         else:
             return self.time.min_time.replace(tzinfo=None)
 
     @property
     def data_stop(self):
-        if self.time.min_time == self.time.max_time or self.extrapolation_is_allowed:
+        if self.time.min_time == self.time.max_time:
             return InfDateTime("inf")
         else:
             return self.time.max_time.replace(tzinfo=None)

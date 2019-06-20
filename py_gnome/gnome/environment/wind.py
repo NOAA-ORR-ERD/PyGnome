@@ -35,6 +35,7 @@ from gnome.persist.validators import convertible_to_seconds
 from gnome.persist import validators, base_schema
 
 from .environment import Environment
+from gnome.environment.gridded_objects_base import Time, TimeSchema
 from .. import _valid_units
 
 
@@ -113,6 +114,11 @@ class WindSchema(base_schema.ObjTypeSchema):
                             validator=convertible_to_seconds)
     data_stop = SchemaNode(LocalDateTime(), read_only=True,
                            validator=convertible_to_seconds)
+    time = TimeSchema(
+        #this is only for duck-typing the new-style environment objects,
+        #so only provide to the client
+        save=False, update=False, save_reference=False, read_only=True
+    )
 
 
 class Wind(Timeseries, Environment):
@@ -185,6 +191,8 @@ class Wind(Timeseries, Environment):
                 self.set_wind_data(timeseries, units, coord_sys)
 
         self.extrapolation_is_allowed = extrapolation_is_allowed
+        self.time = kwargs.pop('time', None)
+        self._time = Time(data=self.timeseries['time'].astype(datetime.datetime))
 
     def _check_units(self, units):
         '''
@@ -205,6 +213,27 @@ class Wind(Timeseries, Environment):
                 .format(self, self_ts))
 
     @property
+    def time(self):
+        #This duck-types the API of the timeseries_objecs_base.TimeseriesVector object
+        return self._time
+
+    @time.setter
+    def time(self, t):
+        if t is None:
+            self._time = None
+            return
+        if self.timeseries is not None and len(t) != len(self.timeseries):
+            warnings.warn("Data/time interval mismatch, doing nothing")
+            return
+
+        if isinstance(t, Time):
+            self._time = t
+        elif isinstance(t, collections.Iterable):
+            self._time = Time(t)
+        else:
+            raise ValueError('Object being assigned must be an iterable '
+                             'or a Time object')
+    @property
     def timeseries(self):
         '''
         returns entire timeseries in 'r-theta' coordinate system in the units
@@ -220,6 +249,7 @@ class Wind(Timeseries, Environment):
         C++ object stores timeseries in 'm/s'
         '''
         self.set_wind_data(value, units=self.units)
+        self.time.data = self.timeseries['time'].astype(datetime.datetime)
 
     @property
     def data_start(self):
