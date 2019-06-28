@@ -55,8 +55,9 @@ class Environment(GnomeId):
 
         :param name=None:
         '''
-        super(Environment, self).__init__(**kwargs)
         self.make_default_refs = make_default_refs
+        self.array_types = {}
+        super(Environment, self).__init__(**kwargs)
 
     @property
     def data_start(self):

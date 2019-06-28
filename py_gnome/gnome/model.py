@@ -1,39 +1,36 @@
 #!/usr/bin/env python
 
 import os
-
 from datetime import datetime, timedelta
-import copy
 import zipfile
-
 from pprint import pformat
+import copy
 
 import numpy as np
 
 
 from colander import (SchemaNode,
                       String, Float, Int, Bool, List,
-                      drop, OneOf,
-                      # SequenceSchema,
-                      )
+                      drop, OneOf)
 
-
-import gnome.utilities.cache
 from gnome.utilities.time_utils import round_time, asdatetime
+import gnome.utilities.rand
+from gnome.utilities.cache import ElementCache
 from gnome.utilities.orderedcollection import OrderedCollection
-
+from gnome.spill_container import SpillContainerPair
 from gnome.basic_types import oil_status, fate
 
 from gnome.map import (GnomeMapSchema,
                        MapFromBNASchema,
                        ParamMapSchema,
-                       MapFromUGridSchema)
+                       MapFromUGridSchema,
+                       GnomeMap)
 
 from gnome.environment import Environment, Wind
+from gnome.array_types import gat
+from gnome.environment import schemas as env_schemas
 
-from gnome.spill_container import SpillContainerPair
-
-from gnome.movers import Mover
+from gnome.movers import Mover, mover_schemas
 from gnome.weatherers import (weatherer_sort,
                               Weatherer,
                               WeatheringData,
@@ -41,17 +38,18 @@ from gnome.weatherers import (weatherer_sort,
                               Langmuir,
                               weatherer_schemas)
 from gnome.outputters import Outputter, NetCDFOutput, WeatheringOutput
-
+from gnome.outputters import schemas as out_schemas
 from gnome.persist import (extend_colander,
                            validators,
-                           save_load)
+                           References)
 from gnome.persist.base_schema import (ObjTypeSchema,
+                                       CollectionItemsList,
                                        GeneralGnomeObjectSchema)
 from gnome.exceptions import ReferencedObjectNotSet, GnomeRuntimeError
 from gnome.spill.spill import SpillSchema
 from gnome.gnomeobject import GnomeId, allowzip64, Refs
-
 from gnome.persist.extend_colander import OrderedCollectionSchema
+from gnome.spill.substance import NonWeatheringSubstance
 
 
 class ModelSchema(ObjTypeSchema):
@@ -92,7 +90,7 @@ class ModelSchema(ObjTypeSchema):
 #         save_reference=True, test_equal=False
 #     )
     movers = OrderedCollectionSchema(
-        GeneralGnomeObjectSchema(acceptable_schemas=gnome.movers.mover_schemas),
+        GeneralGnomeObjectSchema(acceptable_schemas=mover_schemas),
         save_reference=True
     )
     weatherers = OrderedCollectionSchema(
@@ -100,11 +98,11 @@ class ModelSchema(ObjTypeSchema):
         save_reference=True
     )
     environment = OrderedCollectionSchema(
-        GeneralGnomeObjectSchema(acceptable_schemas=gnome.environment.schemas),
+        GeneralGnomeObjectSchema(acceptable_schemas=env_schemas),
         save_reference=True
     )
     outputters = OrderedCollectionSchema(
-        GeneralGnomeObjectSchema(acceptable_schemas=gnome.outputters.schemas),
+        GeneralGnomeObjectSchema(acceptable_schemas=out_schemas),
         save_reference=True
     )
 
@@ -133,8 +131,7 @@ class Model(GnomeId):
 
         This is simply a utility wrapper around gnome.persist.save_load.load()
         """
-
-        model = save_load.load(filename)
+        model = cls.load(filename)
 
         # check that this actually loaded a model object
         #  load() will load any gnome object from json...
@@ -148,7 +145,7 @@ class Model(GnomeId):
 
     def __init__(self,
                  name='Model',
-                 time_step=None,
+                 time_step=900,
                  start_time=round_time(datetime.now(), 3600),
                  duration=timedelta(days=1),
                  weathering_substeps=1,
@@ -156,6 +153,7 @@ class Model(GnomeId):
                  uncertain=False,
                  cache_enabled=False,
                  mode=None,
+                 make_default_refs=True,
                  location=[],
                  environment=[],
                  outputters=[],
@@ -194,6 +192,7 @@ class Model(GnomeId):
                              decide which UI views it should present.
         '''
         # making sure basic stuff is in place before properties are set
+        super(Model, self).__init__(**kwargs)
         self.environment = OrderedCollection(dtype=Environment)
         self.movers = OrderedCollection(dtype=Mover)
         self.weatherers = OrderedCollection(dtype=Weatherer)
@@ -212,7 +211,7 @@ class Model(GnomeId):
             _spills = spills
         self.spills.add(_spills)
 
-        self._cache = gnome.utilities.cache.ElementCache()
+        self._cache = ElementCache()
         self._cache.enabled = cache_enabled
 
         # default to now, rounded to the nearest hour
@@ -223,7 +222,7 @@ class Model(GnomeId):
         self._name = name
 
         if not map:
-            map = gnome.map.GnomeMap()
+            map = GnomeMap()
         self._map = map
 
         if mode is not None:
@@ -252,6 +251,7 @@ class Model(GnomeId):
 
         self.location = location
         self._register_callbacks()
+        self.array_types.update({'age': gat('age')})
 
     def _register_callbacks(self):
 
@@ -314,11 +314,9 @@ class Model(GnomeId):
         if refs is None:
             refs = Refs()
             self._schema.register_refs(self._schema(), self, refs)
-
         updatable = self._schema().get_nodes_by_attr('update')
         attrs = copy.copy(dict_)
         updated = False
-
         for k in attrs.keys():
             if k not in updatable:
                 attrs.pop(k)
@@ -586,144 +584,130 @@ class Model(GnomeId):
             self.weatherers.clear()
             self.weatherers += s_weatherers
 
-    def _attach_references(self):
+    def _attach_default_refs(self, ref_dict):
         '''
-        attach references
+        Model invokes the default reference attachment system. Please note the
+        structure of this function as an example of how to extend the system
+        to contained child objects.
         '''
-        attr = {}
-        attr['wind'] = self.find_by_attr('_ref_as', 'wind', self.environment)
-        attr['water'] = self.find_by_attr('_ref_as', 'water', self.environment)
-        attr['waves'] = self.find_by_attr('_ref_as', 'waves', self.environment)
-        attr['current'] = self.find_by_attr('_ref_as', 'current', self.environment)
+        #Begin by attaching references to self. Model doesn't need any special
+        #behavior, so just call super. If special behavior is necessary beyond
+        #simply going for the first-in-line, it is defined here.
+        super(Model, self)._attach_default_refs(ref_dict)
 
-        weather_data = set()
+        #gathering references IS OPTIONAL. If you are expecting relevant refs
+        #to have already been collected by a parent, this may be skipped.
+        #Since Model is top-level, it should gather what it can
+        self.gather_ref_as(self.environment, ref_dict)
+        self.gather_ref_as(self.map, ref_dict)
+        self.gather_ref_as(self.movers, ref_dict)
+        self.gather_ref_as(self.weatherers, ref_dict)
+        self.gather_ref_as(self.outputters, ref_dict)
+
+        #Provide the references to all contained objects that also use the
+        #default references system by calling _attach_default_refs on each
+        #instance
+        all_spills = [sp for sc in self.spills.items() for sp in sc.spills.values()]
+        for coll in [self.environment,
+                     self.weatherers,
+                     self.movers,
+                     self.outputters,
+                     all_spills]:
+            for item in coll:
+                item._attach_default_refs(ref_dict)
+
+
+    def setup_model_run(self):
+        '''
+        Runs the setup procedure preceding a model run. When complete, the
+        model should be ready to run to completion without additional prep
+        Currently this function consists of the following operations:
+
+        1. Set up special objects.
+            Some weatherers currently require other weatherers to exist. This
+            step satisfies those requirements
+        2. Remake collections in case ordering constraints apply (weatherers)
+        3. Compile array_types and run setup procedure on spills
+            array_types defines what data arrays are required by the various
+            components of the model
+        4. Attach default references
+        5. Call prepare_for_model_run on all relevant objects
+        6. Conduct miscellaneous prep items. See section in code for details.
+        '''
+
+        '''Step 1: Set up special objects'''
+        weather_data = dict()
         wd = None
         spread = None
         langmuir = None
-        for coll in ('environment', 'weatherers', 'movers'):
-            for item in getattr(self, coll):
-                if hasattr(item, '_req_refs'):
-                    ref_dict = {}
-                    for var in item._req_refs.keys():
-                        inst = self.find_by_attr('_ref_as', var,
-                                                 self.environment)
-                        if inst is not None:
-                            ref_dict[var] = inst
-                    if len(ref_dict) > 0:
-                        item._attach_default_refs(ref_dict)
-                else:
-                    if coll == 'weatherers':
-                        # by default turn WeatheringData and spreading object
-                        # off
-                        if isinstance(item, WeatheringData):
-                            item.on = False
-                            wd = item
+        for item in self.weatherers:
+            if item.on:
+                weather_data.update(item.array_types)
 
-                        try:
-                            if item._ref_as == 'spreading':
-                                item.on = False
-                                spread = item
-
-                        except AttributeError:
-                            pass
-
-                        try:
-                            if item._ref_as == 'langmuir':
-                                item.on = False
-                                langmuir = item
-
-                        except AttributeError:
-                            pass
-
-                        if item.on:
-                            weather_data.update(item.array_types)
-
-                    if hasattr(item, 'on') and not item.on:
-                        # no need to setup references if item is not on
-                        continue
-
-                    for name, val in attr.iteritems():
-                        if (hasattr(item, name) and
-                                getattr(item, name) is None and
-                                item.make_default_refs):
-                            setattr(item, name, val)
-
-        all_spills = [sp
-                      for sc in self.spills.items()
-                      for sp in sc.spills.values()]
-
-        for spill in all_spills:
-            for name, val in attr.iteritems():
-                if (hasattr(spill, name) and
-                        getattr(spill, name) is None and
-                        spill.make_default_refs):
-                    setattr(spill, name, val)
+            if isinstance(item, WeatheringData):
+                item.on = False
+                wd = item
+            try:
+                if item._ref_as == 'spreading':
+                    item.on = False
+                    spread = item
+                if item._ref_as == 'langmuir':
+                    item.on = False
+                    langmuir = item
+            except AttributeError:
+                pass
 
         # if WeatheringData object and FayGravityViscous (spreading object)
         # are not defined by user, add them automatically because most
         # weatherers will need these
         if len(weather_data) > 0:
             if wd is None:
-                self.weatherers += WeatheringData(attr['water'])
+                self.weatherers += WeatheringData()
             else:
-                # turn mass_balance on and make references
+                # turn WD back on
                 wd.on = True
-                if wd.make_default_refs:
-                    wd.water = attr['water']
 
         # if a weatherer is using 'area' array, make sure it is being set.
         # Objects that set 'area' are referenced as 'spreading'
         if 'area' in weather_data:
             if spread is None:
-                self.weatherers += FayGravityViscous(attr['water'])
+                self.weatherers += FayGravityViscous()
             else:
-                # turn spreading on and make references
+                # turn spreading back on
                 spread.on = True
-                if spread.make_default_refs:
-                    for at in attr:
-                        if hasattr(spread, at):
-                            spread.water = attr['water']
 
             if langmuir is None:
-                self.weatherers += Langmuir(attr['water'], attr['wind'])
+                self.weatherers += Langmuir()
             else:
-                # turn spreading on and make references
+                # turn langmuir back on
                 langmuir.on = True
-                if langmuir.make_default_refs:
-                    for at in attr:
-                        if hasattr(langmuir, at):
-                            langmuir.water = attr['water']
-                            langmuir.wind = attr['wind']
 
-    def setup_model_run(self):
-        '''
-        Sets up each mover for the model run
-        '''
-        # use a set since we only want to add unique 'names' for data_arrays
-        # that will be added
-        array_types = set()
-
-        # attach references so objects don't raise ReferencedObjectNotSet error
-        # in prepare_for_model_run()
-        self._attach_references()
-        self.spills.rewind()  # why is rewind for spills here?
-
-        # remake orderedcollections defined by model
+        '''Step 2: Remake and reorganize collections'''
         for oc in [self.movers, self.weatherers,
                    self.outputters, self.environment]:
             oc.remake()
-
-        for op in self.outputters:
-            array_types.update(op.array_types)
-
-        # order weatherers collection
         self._order_weatherers()
+
+        '''Step 3: Compile array_types and run setup on spills'''
+        array_types = dict()
+        for oc in [self.movers, self.outputters, self.environment, self.weatherers, self.spills]:
+            for item in oc:
+                if (hasattr(item, 'array_types')):
+                    array_types.update(item.array_types)
+
+        for sc in self.spills.items():
+            sc.prepare_for_model_run(array_types, self.time_step)
+
+        '''Step 4: Attach default references'''
+        ref_dict = {}
+        self._attach_default_refs(ref_dict)
+
+        '''Step 5 & 6: Call prepare_for_model_run and misc setup'''
         transport = False
         for mover in self.movers:
             if mover.on:
                 mover.prepare_for_model_run()
                 transport = True
-                array_types.update(mover.array_types)
 
         weathering = False
         for w in self.weatherers:
@@ -733,7 +717,6 @@ class Model(GnomeId):
                 if w.on:
                     w.prepare_for_model_run(sc)
                     weathering = True
-                    array_types.update(w.array_types)
 
         for environment in self.environment:
             environment.prepare_for_model_run(self.start_time)
@@ -751,9 +734,6 @@ class Model(GnomeId):
                 # simple case with no weatherers or movers
                 self._time_step = 900
             self._reset_num_time_steps()
-
-        for sc in self.spills.items():
-            sc.prepare_for_model_run(array_types)
 
         # outputters need array_types, so this needs to come after those
         # have been updated.
@@ -845,9 +825,10 @@ class Model(GnomeId):
         of 'fate_status' array and only manipulate 'status_codes'. Until then,
         update fate_status in move_elements
         '''
+
         if 'fate_status' in sc:
-            non_w_mask = sc['status_codes'] == oil_status.on_land
-            sc['fate_status'][non_w_mask] = fate.non_weather
+            on_land_mask = sc['status_codes'] == oil_status.on_land
+            sc['fate_status'][on_land_mask] = fate.non_weather
 
             w_mask = ((sc['status_codes'] == oil_status.in_water)
                       & ~(sc['fate_status'] & fate.skim == fate.skim)
@@ -859,6 +840,11 @@ class Model(GnomeId):
 
             sc['fate_status'][surf_mask] = fate.surface_weather
             sc['fate_status'][subs_mask] = fate.subsurf_weather
+            for i, sp in enumerate(sc.spills):
+                if isinstance(sp.substance, NonWeatheringSubstance):
+                    nw_mask = sc['spill_num'] == i
+                    sc['fate_status'][nw_mask] = fate.non_weather
+
 
     def weather_elements(self):
         '''
@@ -1024,7 +1010,8 @@ class Model(GnomeId):
             # this
             if num_released > 0:
                 for item in self.weatherers:
-                    item.initialize_data(sc, num_released)
+                    if item.on:
+                        item.initialize_data(sc, num_released)
 
             self.logger.debug("{1._pid} released {0} new elements for step:"
                               " {1.current_time_step} for {1.name}".
@@ -1073,6 +1060,7 @@ class Model(GnomeId):
         if rewind:
             self.rewind()
 
+        self.setup_model_run()
         # run the model
         output_data = []
         while True:
@@ -1412,10 +1400,13 @@ class Model(GnomeId):
                                 .format(self.__class__.__name__, msg))
                     isvalid = False
 
-                if spill.substance is not None and spill.water is not None:
-                    water_temp = spill.water.get('temperature')
-                    try:
-                        pour_point = spill.substance.pour_point()
+                if spill.substance.is_weatherable:
+                    # min_k1 = spill.substance.get('pour_point_min_k')
+                    pour_point = spill.substance.pour_point()
+
+                    if spill.water is not None:
+                        water_temp = spill.water.get('temperature')
+
                         if water_temp < pour_point[0]:
                             msg = ('The water temperature, {0} K, '
                                    'is less than the minimum pour point '
@@ -1432,8 +1423,6 @@ class Model(GnomeId):
                             msg = ('Found particles with '
                                    'relative_buoyancy < 0. Oil is a sinker')
                             raise GnomeRuntimeError(msg)
-                    except AttributeError:
-                        pass
 
         if num_spills_on > 0 and not someSpillIntersectsModel:
             if num_spills > 1:

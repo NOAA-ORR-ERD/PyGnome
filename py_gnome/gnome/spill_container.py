@@ -13,18 +13,7 @@ import numpy as np
 
 from gnome.basic_types import fate as bt_fate
 from gnome.basic_types import oil_status
-import gnome.array_types as gat
-from gnome.array_types import (positions,
-                               next_positions,
-                               last_water_positions,
-                               status_codes,
-                               spill_num,
-                               id,
-                               mass,
-                               init_mass,
-                               age,
-                               density,
-                               # substance,
+from gnome.array_types import (gat,
                                ArrayType,
                                default_array_types)
 
@@ -32,6 +21,7 @@ from gnome.utilities.orderedcollection import OrderedCollection
 import gnome.spill
 from gnome import AddLogger
 from gnome.exceptions import GnomeRuntimeError
+from gnome.spill.substance import NonWeatheringSubstance
 
 
 # Organize information about spills per substance
@@ -83,7 +73,7 @@ class FateDataView(AddLogger):
     def _set_data(self, sc, array_types, fate_mask, fate_status):
         '''
         Set the data arrays in the FateDataView
-        
+
         fate_mask is the data already masked for the desired 'fate' option
 
         fate_status is the status the mask is for ('surface_weather', etc.)
@@ -114,8 +104,6 @@ class FateDataView(AddLogger):
         Options are: 'all', 'surface_weather', 'subsurf_weather', 'skim', 'non_weather',
         'burn'
         '''
-        # always add 'id' to array_types
-        array_types.add('id')
         self._set_data(sc,
                        array_types,
                        self._get_fate_mask(sc, fate_status),
@@ -394,7 +382,7 @@ class SpillContainer(AddLogger, SpillContainerData):
     """
     def __init__(self, uncertain=False):
         super(SpillContainer, self).__init__(uncertain=uncertain)
-        self.spills = OrderedCollection(dtype=gnome.spill.spill.BaseSpill)
+        self.spills = OrderedCollection(dtype=gnome.spill.spill.Spill)
         self.spills.register_callback(self._spills_changed,
                                       ('add', 'replace', 'remove'))
         self.rewind()
@@ -461,7 +449,7 @@ class SpillContainer(AddLogger, SpillContainerData):
         '''
         _substances could change when spills are added/deleted
         using _spills_changed callback to reset self._substance_spills to None
-        
+
         This checks to make sure that the substance s set correctly and that
         there is not more than one substance
 
@@ -495,7 +483,7 @@ class SpillContainer(AddLogger, SpillContainerData):
             self._oil_comp_array_len = 1
 
         # it will be False if there are no spills
-        self.substance = None if substance is False else substance
+        self.substance = NonWeatheringSubstance() if substance is False else substance
 
         #     new_subs = spill.substance
         #     if new_subs in subs:
@@ -537,7 +525,7 @@ class SpillContainer(AddLogger, SpillContainerData):
 
     def _set_fate_data(self):
         '''
-        If the substance is not None, initialize the FateDataView object. 
+        If the substance is not None, initialize the FateDataView object.
         '''
         # self._fate_data_list = []
         # for s_id, subs in zip(self._substances_spills.s_id,
@@ -619,11 +607,12 @@ class SpillContainer(AddLogger, SpillContainerData):
             overwritten.
         '''
         for array in array_types:
+            print array_types
             if isinstance(array, basestring):
                 # allow user to override an array_type that might already exist
                 # in self._array_types
                 try:
-                    array = getattr(gat, array)
+                    array = gat(array)
                 except AttributeError:
                     msg = ("Skipping {0} - not found in gnome.array_types;"
                            " and ArrayType is not provided.").format(array)
@@ -682,7 +671,7 @@ class SpillContainer(AddLogger, SpillContainerData):
                           array_types,
                           fate='surface_weather'):
         '''
-        Only one substance now! 
+        Only one substance now!
         todo: fix this so it works for type of fate requested
         return the data for specified substance
         data must contain array names specified in 'array_types'
@@ -711,7 +700,7 @@ class SpillContainer(AddLogger, SpillContainerData):
 
         returns (substance, substance_data)
 
-        This is used by weatherers - if a substance is None, StopIteration is raised 
+        This is used by weatherers - if a substance is None, StopIteration is raised
 
         :param array_types: iterable containing array that should be in the
             data. This could be a set of strings corresponding with array names
@@ -728,6 +717,7 @@ class SpillContainer(AddLogger, SpillContainerData):
         if self.substance is None:
             return []
         else:
+            #data = self.data_arrays
             data = self._fate_data_view.get_data(self, array_types, fate_status)
             return [(self.substance, data)]
 
@@ -853,7 +843,7 @@ class SpillContainer(AddLogger, SpillContainerData):
 
         return u_sc
 
-    def prepare_for_model_run(self, array_types=None):
+    def prepare_for_model_run(self, array_types=None, time_step=300):
         """
         called when setting up the model prior to 1st time step
         This is considered 0th timestep by model
@@ -891,9 +881,11 @@ class SpillContainer(AddLogger, SpillContainerData):
         # No! If user made modifications to _array_types before running model,
         # let's keep those. A rewind will reset data_arrays.
         if array_types is None:
-            array_types = set()
+            array_types = dict()
+        #self._append_initializer_array_types(array_types)
+        for s in self.spills:
+            s.prepare_for_model_run(array_types, time_step)
         self._append_array_types(array_types)
-        self._append_initializer_array_types(array_types)
 
         # if self._substances_spills is None:
         #     self._set_substancespills()
@@ -907,10 +899,9 @@ class SpillContainer(AddLogger, SpillContainerData):
         self._set_substancespills()
         self.initialize_data_arrays()
 
-        # fixme: maybe better to let map do this, but it does not have a
-        #       prepare_for_model_run() yet so can't do it there
-        #       need 'amount_released' here as well
-        #       better to have one place where mass_balance is initialized.
+        # todo: maybe better to let map do this, but it does not have a
+        # prepare_for_model_run() yet so can't do it there
+        # need 'amount_released' here as well
         self.mass_balance['beached'] = 0.0
         self.mass_balance['off_maps'] = 0.0
 
@@ -932,6 +923,20 @@ class SpillContainer(AddLogger, SpillContainerData):
             else:
                 self._data_arrays[name] = atype.initialize_null()
 
+    def _get_fate_mask(self, fate):
+        '''
+        get fate_status mask over SC - only include LEs with 'mass' > 0.0
+        '''
+        if fate == 'all':
+            # look at all fate data
+            w_mask = np.asarray([True] * len(self))
+        else:
+            w_mask = (self['fate_status'] & getattr(bt_fate, fate) ==
+                      getattr(bt_fate, fate))
+
+        w_mask = np.logical_and(w_mask, self['mass'] > 0.0)
+        return w_mask
+
     def release_elements(self, time_step, model_time):
         """
         Called at the end of a time step
@@ -945,27 +950,31 @@ class SpillContainer(AddLogger, SpillContainerData):
         will need to define it in particle units or something along those lines
         """
         total_rel = 0
-
+        # substance index - used label elements from same substance
+        # used internally only by SpillContainer - could be a strided array.
+        # Simpler to define it only in SpillContainer as opposed to ArrayTypes
+        # 'substance': ((), np.uint8, 0)
         for spill in self.spills:
             # only want to include the spills that are turned on.
             if not spill.on:
                 continue
-            num_rel = spill.num_elements_to_release(model_time, time_step)
+            num_rel = spill.release_elements(self, model_time, time_step)
+            print('spill id: {0} released {1}'.format(spill.id, num_rel))
             if num_rel > 0:
                 # update 'spill_num' ArrayType's initial_value so it
                 # corresponds with spill number for this set of released
                 # particles - just another way to set value of spill_num
                 # correctly
-                self._array_types['spill_num'].initial_value = self.spills.index(spill)
+                self._array_types['spill_num'].initial_value = \
+                    self.spills.index(spill)
 
                 if len(self['spill_num']) > 0:
                     # unique identifier for each new element released
                     # this adjusts the _array_types initial_value since the
                     # initialize function just calls:
                     #  range(initial_value, num_released + initial_value)
-                    # fixme -- why can't we just set this??
-                    #   maybe in the spill object instead?
-                    self._array_types['id'].initial_value = self['id'][-1] + 1
+                    self._array_types['id'].initial_value = \
+                        self['id'][-1] + 1
                 else:
                     # always reset value of first particle released to 0!
                     # The array_types are shared globally. To initialize
@@ -973,72 +982,14 @@ class SpillContainer(AddLogger, SpillContainerData):
                     # To be safe, always reset to 0 when no
                     # particles are released
                     self._array_types['id'].initial_value = 0
-                # append to data arrays
-                self._append_data_arrays(num_rel)
-                spill.set_newparticle_values(num_rel,
-                                             model_time,
-                                             time_step,
-                                             self._data_arrays)
+
+                # append to data arrays - number of oil components is
+                # currently the same for all spills
                 total_rel += num_rel
 
-        # reset fate_data_view at each step - do it after release elements
+            # reset fate_dataview at each step - do it after release elements
         self.reset_fate_dataview()
         return total_rel
-
-        # substance index - used label elements from same substance
-        # used internally only by SpillContainer - could be a strided array.
-        # Simpler to define it only in SpillContainer as opposed to ArrayTypes
-        # 'substance': ((), np.uint8, 0)
-
-        # for ix, spills in enumerate(self.iterspillsbysubstance()):
-        #     num_rel_by_substance = 0
-        #     for spill in spills:
-        #         # only spills that are included here - no need to check
-        #         # spill.on flag
-        #         num_rel = spill.num_elements_to_release(model_time, time_step)
-        #         if num_rel > 0:
-        #             # update 'spill_num' ArrayType's initial_value so it
-        #             # corresponds with spill number for this set of released
-        #             # particles - just another way to set value of spill_num
-        #             # correctly
-        #             self._array_types['spill_num'].initial_value = \
-        #                 self.spills.index(spill)
-
-        #             if len(self['spill_num']) > 0:
-        #                 # unique identifier for each new element released
-        #                 # this adjusts the _array_types initial_value since the
-        #                 # initialize function just calls:
-        #                 #  range(initial_value, num_released + initial_value)
-        #                 self._array_types['id'].initial_value = \
-        #                     self['id'][-1] + 1
-        #             else:
-        #                 # always reset value of first particle released to 0!
-        #                 # The array_types are shared globally. To initialize
-        #                 # uncertain spills correctly, reset this to 0.
-        #                 # To be safe, always reset to 0 when no
-        #                 # particles are released
-        #                 self._array_types['id'].initial_value = 0
-
-        #             # append to data arrays - number of oil components is
-        #             # currently the same for all spills
-        #             self._append_data_arrays(num_rel)
-        #             spill.set_newparticle_values(num_rel,
-        #                                          model_time,
-        #                                          time_step,
-        #                                          self._data_arrays)
-        #             num_rel_by_substance += num_rel
-
-        #     # always reset data arrays else the changing arrays are stale
-        #     self._set_substance_array(ix, num_rel_by_substance)
-
-        #     # reset fate_data_view at each step - do it after release elements
-        #     self.reset_fate_dataview()
-
-        #     # update total elements released for substance
-        #     total_released += num_rel_by_substance
-
-
-        # return total_released
 
     def split_element(self, ix, num, l_frac=None):
         '''

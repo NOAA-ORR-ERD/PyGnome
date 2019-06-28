@@ -43,7 +43,12 @@ class Process(GnomeId):
     NOTE: Since base class is not Serializable, it does not need
           a class level _schema attribute.
     """
-    def __init__(self, **kwargs):
+
+    def __init__(self,
+                 on=True,
+                 make_default_refs=True,
+                 active_range=(InfDateTime('-inf'), InfDateTime('inf')),
+                 **kwargs):  # default min + max values for timespan
         """
         Initialize default Mover/Weatherer parameters
 
@@ -54,21 +59,17 @@ class Process(GnomeId):
                              active
         :type active_range: 2-tuple of datetimes
         """
-        self.name = kwargs.pop('name', self.__class__.__name__)
+        super(Process, self).__init__(**kwargs)
 
-        self.on = kwargs.pop('on', True)
+        self.on = on
         self._active = self.on
-
-        active_range = kwargs.pop('active_range',
-                                  (InfDateTime('-inf'), InfDateTime('inf')))
 
         self._check_active_startstop(*active_range)
 
         self._active_range = active_range
 
         # empty dict since no array_types required for all movers at present
-        self.array_types = set()
-        self.make_default_refs = kwargs.pop('make_default_refs', True)
+        self.make_default_refs = make_default_refs
 
     def _check_active_startstop(self, active_start, active_stop):
         # there are no swapped-argument versions of the comare operations,
@@ -167,6 +168,7 @@ class Process(GnomeId):
 
 
 class Mover(Process):
+
     def get_move(self, sc, time_step, model_time_datetime):
         """
         Compute the move in (long,lat,z) space. It returns the delta move

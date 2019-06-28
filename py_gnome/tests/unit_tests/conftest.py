@@ -22,14 +22,15 @@ from gnome.basic_types import datetime_value_2d
 from gnome.map import MapFromBNA
 from gnome.model import Model
 
-from gnome.spill_container import SpillContainer
 
 from gnome.movers import SimpleMover
 # from gnome.weatherers import Skimmer
 from gnome.environment import constant_wind, Water, Waves
 from gnome.utilities.remote_data import get_datafile
-import gnome.array_types as gat
+from gnome.array_types import gat
 from gnome.gnomeobject import class_from_objtype, GnomeId
+from gnome.spill.substance import NonWeatheringSubstance
+from gnome.spill_container import SpillContainer
 
 
 base_dir = os.path.dirname(__file__)
@@ -197,17 +198,17 @@ def mock_append_data_arrays(array_types, num_elements, data_arrays={}):
 
 
 def sample_sc_release(num_elements=10,
-                      start_pos=(0.0, 0.0, 0.0),
-                      release_time=datetime(2000, 1, 1, 1),
-                      uncertain=False,
-                      time_step=360,
-                      spill=None,
-                      element_type=None,
-                      current_time=None,
-                      arr_types=None,
-                      windage_range=None,
-                      units='g',
-                      amount_per_element=1.0):
+                         start_pos=(0.0, 0.0, 0.0),
+                         release_time=datetime(2000, 1, 1, 1),
+                         uncertain=False,
+                         time_step=360,
+                         spill=None,
+                         substance=None,
+                         current_time=None,
+                         arr_types=None,
+                         windage_range=None,
+                         units='g',
+                         amount_per_element=1.0):
     """
     Initialize a Spill of type 'spill', add it to a SpillContainer.
     Invoke release_elements on SpillContainer, then return the spill container
@@ -222,26 +223,20 @@ def sample_sc_release(num_elements=10,
     if spill is None:
         spill = gnome.spill.point_line_release_spill(num_elements,
                                                      start_pos,
-                                                     release_time)
+                                                     release_time,
+                                                     amount=0)
     spill.units = units
     spill.amount = amount_per_element * num_elements
 
-    if element_type is not None:
-        spill.element_type = element_type
+    if substance is None:
+        substance = NonWeatheringSubstance()
+    spill.substance = substance
 
     if current_time is None:
         current_time = spill.release_time
 
-    # fixme -- maybe this is not the place for the default arrays?
-    always = {'windages', 'windage_range', 'windage_persist'}
-    if arr_types is None:
-        # default always has standard windage parameters required by wind_mover
-        arr_types = always
-    else:
-        arr_types.update(always)
-
     if windage_range is not None:
-        spill.windage_range = windage_range
+        spill.substance.windage_range = windage_range
 
     sc = SpillContainer(uncertain)
     sc.spills.add(spill)
@@ -769,14 +764,14 @@ def sample_model_weathering(sample_model_fcn,
     model.uncertain = False     # fixme: with uncertainty, copying spill fails!
     model.duration = timedelta(hours=4)
 
-    et = gnome.spill.elements.floating(substance=oil)
+    sub = gnome.spill.substance.GnomeOil(oil)
     start_time = model.start_time + timedelta(hours=1)
     end_time = start_time + timedelta(seconds=model.time_step * 3)
     spill = gnome.spill.point_line_release_spill(num_les,
                                                  rel_pos,
                                                  start_time,
                                                  end_release_time=end_time,
-                                                 element_type=et,
+                                                 substance=sub,
                                                  amount=100,
                                                  units='kg')
     model.spills += spill
@@ -795,14 +790,14 @@ def sample_model_weathering2(sample_model_fcn2, oil, temp=311.16):
     model.uncertain = False     # fixme: with uncertainty, copying spill fails!
     model.duration = timedelta(hours=24)
 
-    et = gnome.spill.elements.floating(substance=oil)
+    sub = gnome.spill.substance.GnomeOil(oil)
     start_time = model.start_time
     end_time = start_time
-    spill = gnome.spill.point_line_release_spill(10,
+    spill = gnome.spill.point_line_release_spill(100,
                                                  rel_pos,
                                                  start_time,
                                                  end_release_time=end_time,
-                                                 element_type=et,
+                                                 substance=sub,
                                                  amount=10000,
                                                  units='kg')
     model.spills += spill
