@@ -343,11 +343,13 @@ class Spill(GnomeId):
 
         So we copy them temporarily to local variables before we deepcopy
         our Spill object.
-        """
+        
         u_copy = copy.deepcopy(self)
         self.logger.debug(self._pid + "deepcopied spill {0}".format(self.id))
 
         return u_copy
+        """
+        return self
 
     def set_amount_uncertainty(self, up_or_down=None):
         '''

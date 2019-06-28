@@ -27,7 +27,7 @@ import py_gd
 
 import numpy as np
 
-from colander import SchemaNode, String, Float, Integer
+from colander import SchemaNode, String, Float, Integer, Boolean
 
 from geojson import FeatureCollection, Feature, MultiPolygon
 
@@ -60,6 +60,7 @@ class GnomeMapSchema(base_schema.ObjTypeSchema):
     spillable_area = base_schema.PolygonSetSchema(save_reference=False,
                                                   test_equal=False)
     # land_polys = base_schema.PolygonSet(missing=drop)
+    #crosses_dateline = SchemaNode(Boolean(), test_equal=False, read_only=True, save=False),
 
 
 class ParamMapSchema(GnomeMapSchema):
