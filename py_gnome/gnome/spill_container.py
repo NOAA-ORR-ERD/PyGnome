@@ -607,7 +607,6 @@ class SpillContainer(AddLogger, SpillContainerData):
             overwritten.
         '''
         for array in array_types:
-            print array_types
             if isinstance(array, basestring):
                 # allow user to override an array_type that might already exist
                 # in self._array_types

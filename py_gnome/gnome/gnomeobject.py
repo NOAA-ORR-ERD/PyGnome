@@ -688,6 +688,8 @@ class GnomeId(AddLogger):
 
         obj_json = self._schema()._save(self, zipfile_=zipfile_, refs=refs)
 
+        zipfile_.writestr('version.txt', '1')
+
         if saveloc is None:
             log.info('Returning open zipfile in memory')
             return (obj_json, zipfile_, refs)
