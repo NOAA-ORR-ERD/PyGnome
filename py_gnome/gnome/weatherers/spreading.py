@@ -49,7 +49,7 @@ class FayGravityViscous(Weatherer):
     _ref_as = 'spreading'
     _req_refs = ['water']
 
-    def __init__(self, water=None, **kwargs):
+    def __init__(self, water=None, thickness_limit=None, **kwargs):
         '''
         initialize object - invoke super, add required data_arrays.
         '''
@@ -71,7 +71,7 @@ class FayGravityViscous(Weatherer):
         # temperature is fixed so just compute once and store. When temperature
         # varies over time, may want to do something different
         self._init_relative_buoyancy = None
-        self.thickness_limit = None
+        self.thickness_limit = thickness_limit
         self.is_first_step = True
 
     @lru_cache(4)
