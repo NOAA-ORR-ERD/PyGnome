@@ -318,13 +318,9 @@ class Spill(GnomeId):
             self._check_units(units)  # check validity before setting
         self._units = units
 
-    def get_mass(self, units=None):
+    def get_mass(self):
         """
-        Return the mass released during the spill.
-        User can also specify desired output units in the function.
-        If units are not specified, then return in 'SI' units ('kg')
-        If volume is given, then use density to find mass. Density is always
-        at 15degC, consistent with API definition
+        Return the total mass released during the spill.
         """
         return self.release.release_mass
 
@@ -343,7 +339,7 @@ class Spill(GnomeId):
 
         So we copy them temporarily to local variables before we deepcopy
         our Spill object.
-        
+
         u_copy = copy.deepcopy(self)
         self.logger.debug(self._pid + "deepcopied spill {0}".format(self.id))
 

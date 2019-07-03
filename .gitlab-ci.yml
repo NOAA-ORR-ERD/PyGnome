@@ -8,23 +8,17 @@ test:
     - production
   image: gitlab.orr.noaa.gov:5002/oillibrary:latest
   script:
-  - yum update -y
-  - yum install gcc gcc-c++ -y
-  - yum install netcdf-devel -y # needed by the C++ code -- it can't find the conda versions
-  - yum install libXext libSM libXrender -y  # needed by matplotlib on CentOS
+    - yum install gcc gcc-c++ -y
+    - yum install netcdf-devel -y # needed by the C++ code -- it can't find the conda versions
+    # we're shouldn't need matplotlib for tests or deployment ...
+    - yum install libXext libSM libXrender -y  # needed by matplotlib on CentOS
 
-  # make sure the conda channels are set up right
-  # the last channel you add will be first on the list
-  - conda config --add channels defaults
-  - conda config --add channels NOAA-ORR-ERD
-  - conda config --add channels conda-forge
+    # install the requirements
+    - conda install --file conda_requirements.txt
 
-  # install the requirements
-  - conda install --file conda_requirements.txt
-
-  - cd ./py_gnome
-  - python ./setup.py install
-  - py.test
+    - cd ./py_gnome
+    - python ./setup.py install
+    - cd py_gnome/tests/unit_tests && pytest
 
   tags:
     - docker
@@ -35,23 +29,17 @@ test_production:
   - production
   image: gitlab.orr.noaa.gov:5002/oillibrary:production
   script:
-  - yum update -y
-  - yum install gcc gcc-c++ -y
-  - yum install netcdf-devel -y # needed by the C++ code -- it can't find the conda versions
-  - yum install libXext libSM libXrender -y  # needed by matplotlib on CentOS
+    - yum install gcc gcc-c++ -y
+    - yum install netcdf-devel -y # needed by the C++ code -- it can't find the conda versions
+    # we're shouldn't need matplotlib for tests or deployment ...
+    - yum install libXext libSM libXrender -y  # needed by matplotlib on CentOS
 
-  # make sure the conda channels are set up right
-  # the last channel you add will be first on the list
-  - conda config --add channels defaults
-  - conda config --add channels NOAA-ORR-ERD
-  - conda config --add channels conda-forge
+    # install the requirements
+    - conda install --file conda_requirements.txt
 
-  # install the requirements
-  - conda install --file conda_requirements.txt
-
-  - cd ./py_gnome
-  - python ./setup.py install
-  - py.test
+    - cd ./py_gnome
+    - python ./setup.py install
+    - cd py_gnome/tests/unit_tests && pytest
 
   tags:
     - docker

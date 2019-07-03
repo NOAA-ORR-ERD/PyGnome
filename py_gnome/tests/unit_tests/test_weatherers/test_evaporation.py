@@ -170,7 +170,7 @@ class TestDecayConst:
 
 def assert_helper(sc, new_p):
     'common assertions for spills and data in SpillContainer'
-    total_mass = sum([spill.get_mass('kg') for spill in sc.spills])
+    total_mass = sum([spill.get_mass() for spill in sc.spills])
     arrays = {'evap_decay_constant', 'mass_components', 'mass', 'status_codes'}
 
     substances_list = sc.itersubstancedata(arrays)
