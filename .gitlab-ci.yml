@@ -18,7 +18,7 @@ test:
 
     - cd ./py_gnome
     - python ./setup.py install
-    - cd py_gnome/tests/unit_tests && pytest
+    - cd tests/unit_tests && pytest
 
   tags:
     - docker
