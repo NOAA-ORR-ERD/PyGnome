@@ -136,10 +136,10 @@ class Spill(GnomeId):
         """
         super(Spill, self).__init__(**kwargs)
         self.on = on
-        self.substance=substance
+        self.substance = substance
         if release is None:
             release = PointLineRelease(release_time=datetime.now(),
-                                       start_position=(0,0,0),
+                                       start_position=(0, 0, 0),
                                        num_elements=num_elements
                                        )
             self.release = release
@@ -153,7 +153,6 @@ class Spill(GnomeId):
 
 #         self.data = LEData()
         self.water = water
-
 
         self.amount_uncertainty_scale = amount_uncertainty_scale
 

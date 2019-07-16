@@ -1,17 +1,14 @@
-import copy
 import six
 
-from colander import Float, SchemaNode, SequenceSchema, Boolean, Sequence, Tuple, null
+from colander import Float, SchemaNode, SequenceSchema, Boolean
 import numpy as np
-import warnings
-from gnome.basic_types import fate, oil_status
+from gnome.basic_types import fate
 from gnome.array_types import gat
 
 from gnome.persist.base_schema import (ObjTypeSchema,
                                        ObjType,
                                        GeneralGnomeObjectSchema)
 from gnome.gnomeobject import GnomeId
-from gnome.persist.base_schema import OrderedCollectionType
 from oil_library.oil_props import OilProps
 from oil_library.factory import get_oil
 from oil_library.models import Oil
@@ -32,30 +29,31 @@ class SubstanceSchema(ObjTypeSchema):
     )
     is_weatherable = SchemaNode(Boolean(), read_only=True)
 
-class GnomeOilType(ObjType):
 
+class GnomeOilType(ObjType):
     def _prepare_save(self, node, raw_object, saveloc, refs):
-        #Gets the json for the object, as if this were being serialized
+        # Gets the json for the object, as if this were being serialized
         obj_json = None
         if hasattr(raw_object, 'to_dict'):
-            #Passing the 'save' in case a class wants to do some special stuff on
-            #saving specifically.
+            # Passing the 'save' in case a class wants to do some special stuff
+            # specifically upon saving.
             dict_ = raw_object.to_dict('save')
 
-            #Skip the following because this has loads of properties not covered
-            #in the schema
-#             for k in dict_.keys():
-#                 if dict_[k] is None:
-#                     dict_[k] = null
+            # Skip the following because this has loads of properties not
+            # covered in the schema
+            # for k in dict_.keys():
+            #     if dict_[k] is None:
+            #         dict_[k] = null
             return dict_
         else:
             raise TypeError('Object does not have a to_dict function')
-        #also adds the object to refs by id
+        # also adds the object to refs by id
         refs[raw_object.id] = raw_object
 
-        #note you cannot immediately strip out attributes that wont get saved here
-        #because they are still needed by _impl
+        # note you cannot immediately strip out attributes that wont get
+        # saved here because they are still needed by _impl
         return obj_json
+
 
 class GnomeOilSchema(SubstanceSchema):
     standard_density = SchemaNode(Float(), read_only=True)
@@ -67,6 +65,7 @@ class GnomeOilSchema(SubstanceSchema):
 
     def _save(self, obj, zipfile_=None, refs=None):
         return SubstanceSchema._save(self, obj, zipfile_=zipfile_, refs=refs)
+
 
 class NonWeatheringSubstanceSchema(SubstanceSchema):
     standard_density = SchemaNode(Float(), read_only=True)
@@ -82,13 +81,13 @@ class Substance(GnomeId):
                  windage_persist=900,
                  *args,
                  **kwargs):
-        super(Substance, self).__init__(*args,**kwargs)
+        super(Substance, self).__init__(*args, **kwargs)
         if not initializers:
             initializers = floating_initializers(windage_range=windage_range,
                                                  windage_persist=windage_persist)
         self.initializers = initializers
-        #add the types from initializers
-        self._windage_init=None
+        # add the types from initializers
+        self._windage_init = None
         for i in self.initializers:
             self.array_types.update(i.array_types)
             if 'windages' in i.array_types:
@@ -166,6 +165,7 @@ class Substance(GnomeId):
                 return True
 
         return False
+
     def initialize_LEs(self, to_rel, arrs):
         '''
         :param to_rel - number of new LEs to initialize
@@ -187,21 +187,26 @@ class GnomeOil(OilProps, Substance):
     def __init__(self, name=None, water=None, **kwargs):
         if isinstance(name, six.string_types):
             if kwargs.get('adios_oil_id', False):
-                #init the oilprops from dictionary
+                # init the oilprops from dictionary
                 oil_obj = get_oil(kwargs)
             else:
-                #GnomeOil('oil_name_here')
+                # GnomeOil('oil_name_here')
                 oil_obj = get_oil(name)
+
             OilProps.__init__(self, oil_obj)
-            kwargs['name'] = name #this is important; it passes name up to GnomeId to be handled there!
+
+            # this is important;
+            # it passes name up to GnomeId to be handled there!
+            kwargs['name'] = name
         elif isinstance(name, Oil):
             oil_obj = name
             OilProps.__init__(self, oil_obj)
         else:
-            raise ValueError('Must provide an oil name or OilLibrary.Oil to GnomeOil init')
+            raise ValueError('Must provide an oil name or OilLibrary.Oil '
+                             'to GnomeOil init')
 
-        #because passing oilLibrary kwargs makes problem up the tree, only pass
-        #up the kwargs specified in the schema
+        # because passing oilLibrary kwargs makes problem up the tree,
+        # only pass up the kwargs specified in the schema
         keys = self._schema().get_nodes_by_attr('all')
         if 'windage_range' in kwargs:
             keys.append('windage_range')
@@ -216,7 +221,7 @@ class GnomeOil(OilProps, Substance):
 
         self.water = water
 
-        #add the array types that this substance DIRECTLY initializes
+        # add the array types that this substance DIRECTLY initializes
         self.array_types.update({'density': gat('density'),
                                  'viscosity': gat('viscosity'),
                                  'mass_components': gat('mass_components')})
@@ -239,12 +244,11 @@ class GnomeOil(OilProps, Substance):
         oil_ = get_oil(oil_info, max_cuts)
         return GnomeOil(oil_)
 
-
     def to_dict(self, json_=None):
         json_ = super(GnomeOil, self).to_dict(json_=json_)
         substance_json = self.tojson()
 
-        #the old 'prune_substance' function from Spill
+        # the old 'prune_substance' function from Spill
         del substance_json['imported_record_id']
         del substance_json['estimated_id']
         del substance_json['id']
@@ -273,8 +277,9 @@ class GnomeOil(OilProps, Substance):
         sl = slice(-to_rel, None, 1)
         water = self.water
         if water is None:
-            #LEs released at standard temperature and pressure
-            self.logger.warning('No water provided for substance initialization, using default Water object')
+            # LEs released at standard temperature and pressure
+            self.logger.warning('No water provided for substance '
+                                'initialization, using default Water object')
             water = Water()
 
         water_temp = water.get('temperature', 'K')
@@ -284,7 +289,7 @@ class GnomeOil(OilProps, Substance):
                    "Set density to water density"
                    .format(self.name,
                            water.get('temperature',
-                                          self.water.units['temperature']),
+                                     self.water.units['temperature']),
                            water.units['temperature']))
             self.logger.error(msg)
 
