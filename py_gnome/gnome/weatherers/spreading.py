@@ -579,6 +579,9 @@ class Langmuir(Weatherer):
                                  'area': gat('area'),
                                  'bulk_init_volume': gat('bulk_init_volume'),
                                  'age': gat('age'),
+                                 'positions': gat('positions'),
+                                 'spill_num': gat('spill_num'),
+                                 'frac_coverage': gat('frac_coverage'),
                                  'density': gat('density')})
 
         self.wind = wind

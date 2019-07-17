@@ -64,8 +64,7 @@ class FateDataView(AddLogger):
             # look at all fate data
             w_mask = np.asarray([True] * len(sc))
         else:
-            w_mask = (sc['fate_status'] & getattr(bt_fate, fate) ==
-                      getattr(bt_fate, fate))
+            w_mask = (sc['fate_status'] & getattr(bt_fate, fate) == getattr(bt_fate, fate))
 
         w_mask = np.logical_and(w_mask, sc['mass'] > 0.0)
         return w_mask
@@ -82,6 +81,7 @@ class FateDataView(AddLogger):
         # if 'substance' in sc:
         #     fate_mask = np.logical_and(sc['substance'] == self.substance_id,
         #                                fate_mask)
+
 
         if np.all(fate_mask):
             # no need to make a copy of array
@@ -387,28 +387,13 @@ class SpillContainer(AddLogger, SpillContainerData):
                                       ('add', 'replace', 'remove'))
         self.rewind()
 
-    def __setitem__(self, data_name, array):
-        """
-        Invoke base class __setitem__ method so the _data_array is set
-        correctly.  In addition, create the appropriate ArrayType if it wasn't
-        created by the user.
-        """
-        super(SpillContainer, self).__setitem__(data_name, array)
-        if data_name not in self._array_types:
-            shape = self._data_arrays[data_name].shape[1:]
-            dtype = self._data_arrays[data_name].dtype.type
-
-            self._array_types[data_name] = ArrayType(shape, dtype,
-                                                     name=data_name)
-
     def _reset_arrays(self):
         '''
         reset _array_types dict so it contains default keys/values
         '''
-        gnome.array_types.reset_to_defaults(['spill_num', 'id'])
 
         # copy, cause we don't want to change the defaults!
-        self._array_types = default_array_types.copy()
+        self._array_types = {}
         self._data_arrays = {}
 
 
@@ -589,46 +574,6 @@ class SpillContainer(AddLogger, SpillContainerData):
         else:
             return at.name
 
-    def _append_array_types(self, array_types):
-        '''
-        append to self.array_types the input array_types.
-
-        :param array_types: set of array_types to be appended
-        :type array_types: set()
-
-        The set contains either a name as a string, say: 'rise_vel'
-        In this case, get the ArrayType from gnome.array_types.rise_vel
-        Set elements could also be tuples, say: ('rise_vel': ArrayType())
-        In this case the user name of the data_array and its array_type is
-        specified by the tuple so append it.
-
-        .. note:: If a tuple: ('name', ArrayType()), is given and an ArrayType
-            with that name already exists in self._array_types, then it is
-            overwritten.
-        '''
-        for array in array_types:
-            if isinstance(array, basestring):
-                # allow user to override an array_type that might already exist
-                # in self._array_types
-                try:
-                    array = gat(array)
-                except AttributeError:
-                    msg = ("Skipping {0} - not found in gnome.array_types;"
-                           " and ArrayType is not provided.").format(array)
-                    self.logger.error(msg)
-                    raise GnomeRuntimeError(msg)
-
-            # must be an ArrayType of an object
-            self._array_types[array.name] = array
-
-    def _append_initializer_array_types(self, array_types):
-        # for each array_types, use the name to get the associated initializer
-        for name in array_types:
-            for spill in self.spills:
-                if spill.has_initializer(name):
-                    self._append_array_types(spill.get_initializer(name).
-                                             array_types)
-
     def _append_data_arrays(self, num_released):
         """
         initialize data arrays once spill has spawned particles
@@ -798,7 +743,7 @@ class SpillContainer(AddLogger, SpillContainerData):
         This returns a new dict so user cannot add/delete an ArrayType in
         middle of run. Use prepare_for_model_run() to do add an ArrayType.
         """
-        return dict(self._array_types)
+        return self._array_types
 
     def rewind(self):
         """
@@ -823,7 +768,6 @@ class SpillContainer(AddLogger, SpillContainerData):
         self._reset__substances_spills()
         self._reset__fate_data_view()
         self._set_substancespills()
-        self.initialize_data_arrays()
         self.mass_balance = {}  # reset to empty dict
 
     def get_spill_mask(self, spill):
@@ -880,11 +824,14 @@ class SpillContainer(AddLogger, SpillContainerData):
         # No! If user made modifications to _array_types before running model,
         # let's keep those. A rewind will reset data_arrays.
         if array_types is None:
-            array_types = dict()
+            array_types = {}
+
         #self._append_initializer_array_types(array_types)
         for s in self.spills:
-            s.prepare_for_model_run(array_types, time_step)
-        self._append_array_types(array_types)
+            s.prepare_for_model_run(time_step)
+        ats = default_array_types.copy()
+        ats.update(array_types)
+        self._array_types = ats
 
         # if self._substances_spills is None:
         #     self._set_substancespills()

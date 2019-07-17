@@ -99,59 +99,7 @@ class WeatheringData(Weatherer):
         1. initialize all weathering data arrays
         2. update aggregated data in sc.mass_balance dict
         '''
-        if not self.on or not sc.substance.is_weatherable:
-            self._aggregated_data(sc, num_released)
-            return
-
-        for substance, data in sc.itersubstancedata(self.array_types, fate_status='all'):
-            'update properties only if elements are released'
-            if len(data['density']) == 0:
-                continue
-
-            'update properties only if elements are released'
-            if len(data['density']) == 0:
-                return
-            sl = slice(-num_released, None, 1)
-
-            water_temp = self.water.get('temperature', 'K')
-            density = substance.density_at_temp(water_temp)
-
-            if density > self.water.get('density'):
-                msg = ("{0} will sink at given water temperature: {1} {2}. "
-                       "Set density to water density"
-                       .format(substance.name,
-                               self.water.get('temperature',
-                                              self.water.units['temperature']),
-                               self.water.units['temperature']))
-                self.logger.error(msg)
-
-                data['oil_density'][sl] = self.water.get('density')
-            else:
-                data['oil_density'][sl] = density
-
-            # initialize mass_components
-            data['mass_components'][sl] = \
-                (np.asarray(substance.mass_fraction, dtype=np.float64) *
-                 (data['mass'][sl].reshape(len(data['mass'][sl]), -1)))
-
-            data['init_mass'][sl] = data['mass'][sl]
-
-            substance_kvis = substance.kvis_at_temp(water_temp)
-            if substance_kvis is not None:
-                'make sure we do not add NaN values'
-                data['oil_viscosity'][sl] = substance_kvis
-
-            # initialize the fate_status array based on positions and status_codes
-
-            fates = np.logical_and(data['positions'][sl, 2] == 0,
-                                       data['status_codes'][sl] == oil_status.in_water)
-
-            # set status for new_LEs correctly
-            data['fate_status'][sl] = np.choose(fates, [fate.subsurf_weather, fate.surface_weather])
-
-            # also initialize/update aggregated data
-            self._aggregated_data(sc, num_released)
-        sc.update_from_fatedataview()
+        self._aggregated_data(sc, num_released)
 
     def weather_elements(self, sc, time_step, model_time):
         '''
@@ -219,6 +167,11 @@ class WeatheringData(Weatherer):
                                      (1 + (fw_d_fref / (1.187 - fw_d_fref))) ** 2.49
                                      )
                 data['oil_viscosity'] = (v0 * np.exp(kv1 * data['frac_lost']))
+
+            #sc.data_arrays['fate_status'][:] = np.choose(np.isclose(sc.data_arrays['mass'], 0), [sc.data_arrays['fate_status'], fate.non_weather])
+            #zeros = np.isclose(sc.data_arrays['mass'], 0)
+            #sc.data_arrays['mass'][zeros] = 0
+            #sc.data_arrays['mass_components'][zeros] = 0
 
             sc.update_from_fatedataview(fate_status='all')
 

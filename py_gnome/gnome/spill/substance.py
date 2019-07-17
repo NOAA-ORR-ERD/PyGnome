@@ -98,6 +98,16 @@ class Substance(GnomeId):
             self.windage_persist = windage_persist
 
     @property
+    def all_array_types(self):
+        '''
+        Need to add array types from Release and Substance
+        '''
+        arr = self.array_types.copy()
+        for init in self.initializers:
+            arr.update(init.all_array_types)
+        return arr
+
+    @property
     def is_weatherable(self):
         if not hasattr(self, '_is_weatherable'):
             self._is_weatherable = True
@@ -298,9 +308,16 @@ class GnomeOil(OilProps, Substance):
             arrs['density'][sl] = density
 
         substance_kvis = self.kvis_at_temp(water_temp)
+        
+        fates = np.logical_and(arrs['positions'][sl, 2] == 0, arrs['status_codes'][sl] == oil_status.in_water)
+
+        # set status for new_LEs correctly
+        arrs['fate_status'][sl] = np.choose(fates, [fate.subsurf_weather, fate.surface_weather])
         if substance_kvis is not None:
-            'make sure we do not add NaN values'
             arrs['viscosity'][sl] = substance_kvis
+        
+        # initialize mass_components
+        arrs['mass_components'][sl] = (np.asarray(self.mass_fraction, dtype=np.float64) * (arrs['mass'][sl].reshape(len(arrs['mass'][sl]), -1)))
         super(GnomeOil, self).initialize_LEs(to_rel, arrs)
 
 

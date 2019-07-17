@@ -228,7 +228,7 @@ class ArrayTypeDivideOnSplit(ArrayType):
 # to default values
 _default_values = {'positions': ((3,), world_point_type, 'positions',
                                  (0., 0., 0.)),
-                   'next_positions': ((3,), world_point_type, 'next_positiosn',
+                   'next_positions': ((3,), world_point_type, 'next_positions',
                                       (0., 0., 0.)),
                    'last_water_positions': ((3,), world_point_type,
                                             'last_water_positions',
