@@ -13,6 +13,7 @@ from gnome.utilities.distributions import UniformDistribution
 
 from ..conftest import sample_sc_release
 from gnome.spill.substance import NonWeatheringSubstance
+from gnome.array_types import gat
 
 
 def test_init():
@@ -44,13 +45,13 @@ initializers = [InitRiseVelFromDist(distribution=UniformDistribution())]
 sc = sample_sc_release(5, (3., 6., 0.),
                        rel_time,
                        uncertain=False,
-                       arr_types={'rise_vel'},
+                       arr_types={'rise_vel': gat('rise_vel')},
                        substance=NonWeatheringSubstance(initializers=initializers))
 initializers = [InitRiseVelFromDist(distribution=UniformDistribution())]
 u_sc = sample_sc_release(5, (3., 6., 0.),
                          rel_time,
                          uncertain=True,
-                         arr_types={'rise_vel'},
+                         arr_types={'rise_vel': gat('rise_vel')},
                        substance=NonWeatheringSubstance(initializers=initializers))
 model_time = rel_time
 
