@@ -10,6 +10,7 @@ from testfixtures import log_capture
 from gnome.environment import Water
 from gnome.weatherers import WeatheringData, FayGravityViscous
 from gnome.spill import point_line_release_spill
+from gnome.spill.substance import GnomeOil
 from gnome.spill_container import SpillContainer
 from gnome.basic_types import oil_status, fate as bt_fate
 
@@ -267,7 +268,7 @@ class TestWeatheringData:
                   ]
         sc = SpillContainer()
         sc.spills += spills
-        at = set()
+        at = dict()
         for w in weatherers:
             at.update(w.array_types)
 
@@ -382,26 +383,30 @@ class TestWeatheringData:
         (sc, wd) = self.sample_sc_intrinsic(100, rel_time)
         wd.water.set('temperature', 288, 'K')
         wd.water.set('salinity', 0, 'psu')
-        new_subs = 'TEXTRACT, STAR ENTERPRISE'
+        new_subs = GnomeOil('TEXTRACT, STAR ENTERPRISE')
+        new_subs.water = wd.water
         sc.spills[0].substance = new_subs
+        ats = {}
+        ats.update(sc.spills[0].all_array_types)
+        ats.update(wd.all_array_types)
 
         # substance changed - do a rewind
         sc.rewind()
-        sc.prepare_for_model_run(wd.array_types)
+        sc.prepare_for_model_run(ats)
+        l.install()
 
         num = sc.release_elements(default_ts, rel_time)
 
         # only capture and test density error
-        l.install()
 
         if num > 0:
             wd.initialize_data(sc, num)
 
         msg = ("{0} will sink at given water temperature: {1} {2}. "
-               "Set density to water density".format(new_subs,
+               "Set density to water density".format(new_subs.name,
                                                      288.0,
                                                      'K'))
-        l.check(('gnome.weatherers.weathering_data.WeatheringData',
+        l.check_present(('gnome.spill.substance.GnomeOil',
                  'ERROR',
                  msg))
 

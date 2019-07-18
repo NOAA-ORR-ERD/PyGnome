@@ -73,7 +73,7 @@ class ObjForTests:
         '''
         # print '\n------------\n', 'reset_and_release', '\n------------'
         self.sc.rewind()
-        at = set()
+        at = dict()
         for wd in self.weatherers:
             wd.prepare_for_model_run(self.sc)
             at.update(wd.array_types)

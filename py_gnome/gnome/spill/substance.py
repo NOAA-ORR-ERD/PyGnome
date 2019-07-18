@@ -2,7 +2,7 @@ import six
 
 from colander import Float, SchemaNode, SequenceSchema, Boolean
 import numpy as np
-from gnome.basic_types import fate
+from gnome.basic_types import fate, oil_status
 from gnome.array_types import gat
 
 from gnome.persist.base_schema import (ObjTypeSchema,
@@ -312,9 +312,10 @@ class GnomeOil(OilProps, Substance):
         fates = np.logical_and(arrs['positions'][sl, 2] == 0, arrs['status_codes'][sl] == oil_status.in_water)
 
         # set status for new_LEs correctly
-        arrs['fate_status'][sl] = np.choose(fates, [fate.subsurf_weather, fate.surface_weather])
-        if substance_kvis is not None:
-            arrs['viscosity'][sl] = substance_kvis
+        if ('fate_status' in arrs):
+            arrs['fate_status'][sl] = np.choose(fates, [fate.subsurf_weather, fate.surface_weather])
+            if substance_kvis is not None:
+                arrs['viscosity'][sl] = substance_kvis
         
         # initialize mass_components
         arrs['mass_components'][sl] = (np.asarray(self.mass_fraction, dtype=np.float64) * (arrs['mass'][sl].reshape(len(arrs['mass'][sl]), -1)))
@@ -364,7 +365,8 @@ class NonWeatheringSubstance(Substance):
         '''
         sl = slice(-to_rel, None, 1)
         arrs['density'][sl] = self.standard_density
-        arrs['fate_status'][sl] = fate.non_weather
+        if ('fate_status' in arrs):
+            arrs['fate_status'][sl] = fate.non_weather
         super(NonWeatheringSubstance, self).initialize_LEs(to_rel, arrs)
 
     def density_at_temp(self, temp=273.15):

@@ -197,7 +197,7 @@ def test_release_end_of_step(duration):
     print '\n---------------------------------------------'
     print 'model_start_time: {0}'.format(model.start_time)
 
-    prev_rel = len(model.spills.LE('positions'))
+    prev_rel = 0
     for step in model:
         new_particles = len(model.spills.LE('positions')) - prev_rel
         if new_particles > 0:
