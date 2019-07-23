@@ -271,8 +271,24 @@ class GnomeOil(OilProps, Substance):
                     if sub_item in item:
                         del item[sub_item]
 
+        #special case for bullwinkle
+        #This is necessary because OilProps.tojson uses self.record, ignoring any
+        #attributes set directly on the instance. self._bulltime REALLY needs
+        #to be renamed to 'bullwinkle_time' in OilProps
+        substance_json['bullwinkle_time'] = self._bulltime
+        substance_json['bullwinkle_fraction'] = self.bullwinkle
+
         json_.update(substance_json)
         return json_
+
+    def update_from_dict(self, dict_, refs=None):
+        #special case for bullwinkle
+        #because there's no schema, this hackery is necessary...
+        self.bulltime = dict_.get('bullwinkle_time', self.bulltime)
+        self.bullwinkle = dict_.get('bullwinkle_fraction', self.bullwinkle)
+
+        super(GnomeOil, self).update_from_dict(dict_=dict_, refs=refs)
+
 
 #     @classmethod
 #     def new_from_dict(cls, dict_):
