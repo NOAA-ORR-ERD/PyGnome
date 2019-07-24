@@ -136,10 +136,10 @@ class Spill(GnomeId):
         """
         super(Spill, self).__init__(**kwargs)
         self.on = on
-        self.substance=substance
+        self.substance = substance
         if release is None:
             release = PointLineRelease(release_time=datetime.now(),
-                                       start_position=(0,0,0),
+                                       start_position=(0, 0, 0),
                                        num_elements=num_elements
                                        )
             self.release = release
@@ -154,12 +154,21 @@ class Spill(GnomeId):
 #         self.data = LEData()
         self.water = water
 
-
         self.amount_uncertainty_scale = amount_uncertainty_scale
 
         # fixme: why is fractional area part of spill???
         # fraction of area covered by oil
         self.frac_coverage = 1.0
+
+    @property
+    def all_array_types(self):
+        '''
+        Need to add array types from Release and Substance
+        '''
+        arr = self.array_types.copy()
+        arr.update(self.release.all_array_types)
+        arr.update(self.substance.all_array_types)
+        return arr
 
     @property
     def substance(self):
@@ -382,18 +391,12 @@ class Spill(GnomeId):
         self.release.rewind()
 #         self.data.rewind()
 
-    def prepare_for_model_run(self, array_types, timestep):
+    def prepare_for_model_run(self, timestep):
         '''
         array_types comes from all the other objects above in the model such as
         movers, weatherers, etc. The ones from the substance still need to be added
         '''
         self.release.prepare_for_model_run(timestep)
-
-        array_types.update(self.array_types)
-        array_types.update(self.substance.array_types)
-        array_types.update(self.release.array_types)
-        return array_types
-        #self.data.prepare_for_model_run(array_types, self.substance)
 
     def release_elements(self, sc, current_time, time_step):
         """

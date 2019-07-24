@@ -238,6 +238,10 @@ def sample_sc_release(num_elements=10,
     if windage_range is not None:
         spill.substance.windage_range = windage_range
 
+    if arr_types is None:
+        arr_types = {}
+    arr_types.update(spill.all_array_types)
+
     sc = SpillContainer(uncertain)
     sc.spills.add(spill)
 

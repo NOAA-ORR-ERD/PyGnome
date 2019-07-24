@@ -120,9 +120,7 @@ class Evaporation(Weatherer):
         # Do computation together so we don't need to make intermediate copies
         # of data - left sum_frac_mw, which is a copy but easier to
         # read/understand
-        edc = ((-data['area'] * f_diff * K /
-              (constants.gas_constant * water_temp * sum_mi_mw)).reshape(-1, 1)
-             * vp)
+        edc = ((-data['area'] * f_diff * K / (constants.gas_constant * water_temp * sum_mi_mw)).reshape(-1, 1)* vp)
 
         data['evap_decay_constant'][:, :len(vp)] = edc
 
@@ -133,6 +131,9 @@ class Evaporation(Weatherer):
         if np.any(data['evap_decay_constant'] > 0.0):
             raise ValueError("Error in Evaporation routine. One of the"
                              " exponential decay constant is positive")
+        if np.any(np.isnan(data['evap_decay_constant'])):
+            raise ValueError("Error in Evaporation routine. One of the"
+                             " exponential decay constant is NaN")
 
     def weather_elements(self, sc, time_step, model_time):
         '''
@@ -189,9 +190,7 @@ class Evaporation(Weatherer):
             # set evap_decay_constant array
             self._set_evap_decay_constant(points, model_time, data,
                                           substance, time_step)
-            mass_remain = self._exp_decay(data['mass_components'],
-                                          data['evap_decay_constant'],
-                                          time_step)
+            mass_remain = self._exp_decay(data['mass_components'], data['evap_decay_constant'], time_step)
 
             sc.mass_balance['evaporated'] += \
                 np.sum(data['mass_components'][:, :] - mass_remain[:, :])

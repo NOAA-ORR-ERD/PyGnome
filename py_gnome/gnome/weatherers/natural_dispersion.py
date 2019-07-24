@@ -108,24 +108,27 @@ class NaturalDispersion(Weatherer):
 
             # print ('dispersion: mass_components = {}'
             #        .format(data['mass_components'].sum(1)))
-
-            disperse_oil(time_step,
-                         data['frac_water'],
-                         data['mass'],
-                         data['viscosity'],
-                         data['density'],
-                         data['area'],
-                         disp,
-                         sed,
-                         droplet_avg_size,
-                         frac_breaking_waves,
-                         disp_wave_energy,
-                         wave_height,
-                         visc_w,
-                         rho_w,
-                         sediment,
-                         V_entrain,
-                         ka)
+            try:
+                disperse_oil(time_step,
+                            data['frac_water'],
+                            data['mass'],
+                            data['viscosity'],
+                            data['density'],
+                            data['area'],
+                            disp,
+                            sed,
+                            droplet_avg_size,
+                            frac_breaking_waves,
+                            disp_wave_energy,
+                            wave_height,
+                            visc_w,
+                            rho_w,
+                            sediment,
+                            V_entrain,
+                            ka)
+            except: 
+                import pdb
+                pdb.post_mortem()
 
             sc.mass_balance['natural_dispersion'] += np.sum(disp[:])
 

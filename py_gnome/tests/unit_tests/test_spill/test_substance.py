@@ -80,6 +80,20 @@ class TestGnomeOil(object):
         json_, savefile, refs = test_obj.save(saveloc_)
         test_obj2 = test_obj.__class__.load(savefile)
         assert test_obj == test_obj2
+
+    def test_set_emulsification_constants(self):
+        test_obj = GnomeOil(u'oil_ans_mp')
+        assert test_obj._bulltime is None
+        assert test_obj.bullwinkle < 0.5 and test_obj.bullwinkle is test_obj.record.bullwinkle_fraction
+        d = test_obj.serialize()
+        d['bullwinkle_time'] = 60
+        d['bullwinkle_fraction'] = 0.7
+        test_obj.update_from_dict(d)
+        assert test_obj.bullwinkle == 0.7
+        assert test_obj.serialize()['bullwinkle_fraction'] == 0.7
+        assert test_obj.bulltime == 60
+        assert test_obj.serialize()['bullwinkle_time'] == 60
+
 class TestNonWeatheringSubstance(object):
 
     def test_init(self):

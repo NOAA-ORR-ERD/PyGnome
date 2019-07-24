@@ -693,7 +693,9 @@ class Model(GnomeId):
         for oc in [self.movers, self.outputters, self.environment, self.weatherers, self.spills]:
             for item in oc:
                 if (hasattr(item, 'array_types')):
-                    array_types.update(item.array_types)
+                    array_types.update(item.all_array_types)
+
+        self.logger.debug(array_types)
 
         for sc in self.spills.items():
             sc.prepare_for_model_run(array_types, self.time_step)

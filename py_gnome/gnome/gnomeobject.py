@@ -141,6 +141,15 @@ class GnomeId(AddLogger):
         self.array_types = dict()
 
     @property
+    def all_array_types(self):
+        '''
+        If this object contains or is composed of other gnome objects (Spill->Substance->Initializers for example)
+        then override this function to ensure all array types get presented at the top level. See Spill for an example
+        '''
+        return self.array_types.copy()
+
+
+    @property
     def id(self):
         '''
         Override this method for more exotic forms of identification.

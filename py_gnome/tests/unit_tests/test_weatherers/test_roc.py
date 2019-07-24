@@ -49,7 +49,7 @@ class ROCTests:
         self.model.rewind()
         self.model.rewind()
 
-        at = set()
+        at = dict()
 
         for wd in self.model.weatherers:
             wd.prepare_for_model_run(self.sc)

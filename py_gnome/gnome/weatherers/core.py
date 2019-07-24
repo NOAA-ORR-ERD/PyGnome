@@ -38,6 +38,7 @@ class Weatherer(Process):
 
         # arrays that all weatherers will update - use this to ask
         self.array_types.update({'mass_components': gat('mass_components'),
+                                 'fate_status': gat('fate_status'),
                                  'mass': gat('mass'),
                                  'init_mass': gat('init_mass')})
 

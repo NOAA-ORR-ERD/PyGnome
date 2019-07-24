@@ -79,7 +79,7 @@ class TestSpill(object):
         sc = SpillContainer()
         sc.spills += sp
         sc.prepare_for_model_run(array_types=sp.array_types)
-        sp.prepare_for_model_run({}, 900)
+        sp.prepare_for_model_run(900)
         for ix in range(5):
             model_time = self.rel_time + timedelta(seconds=900 * ix)
             to_rel = sp.release_elements(sc, model_time, 900)
@@ -138,7 +138,7 @@ class TestSpill(object):
         tsd = timedelta(seconds=ts)
         model_time = spill.release_time - tsd
 
-        spill.prepare_for_model_run({},900)
+        spill.prepare_for_model_run(900)
         le_per_ts = spill.release.LE_timestep_ratio(900)
         mass_per_le = spill.release._mass_per_le
         for ix in range(0,20):
@@ -161,7 +161,7 @@ class TestSpill(object):
         assert spill.release._prepared == False
 
         model_time = spill.release_time - timedelta(seconds=ts*4/3)
-        spill.prepare_for_model_run({}, 900)
+        spill.prepare_for_model_run(900)
         le_per_ts = spill.release.LE_timestep_ratio(900)
         mass_per_le = spill.release._mass_per_le
         for ix in range(0,20):
