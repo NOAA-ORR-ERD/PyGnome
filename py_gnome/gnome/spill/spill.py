@@ -159,6 +159,7 @@ class Spill(GnomeId):
         # fixme: why is fractional area part of spill???
         # fraction of area covered by oil
         self.frac_coverage = 1.0
+        self._num_released = 0
 
     @property
     def all_array_types(self):
@@ -214,14 +215,6 @@ class Spill(GnomeId):
     @property
     def release_duration(self):
         return self.release.release_duration
-
-    @property
-    def start_time_invalid(self):
-        return self.release.start_time_invalid
-    # any reason to set this on a spill??
-    # @start_time_invalid.setter
-    # def start_time_invalid(self, rd):
-    #     self.release.start_time_invalid = rd
 
     @property
     def num_elements(self):
@@ -388,6 +381,7 @@ class Spill(GnomeId):
         released).
         """
         self.array_types = {}
+        self._num_released = 0
         self.release.rewind()
 #         self.data.rewind()
 
@@ -405,12 +399,13 @@ class Spill(GnomeId):
         if not self.on:
             return 0
         idx = sc.spills.index(self)
-        should_exist = self.release.num_elements_after_time(current_time, time_step)
-        cur_exist = len(np.where(sc['spill_num'] == idx)[0])
-        to_rel = should_exist - cur_exist
+        expected_num_release = self.release.num_elements_after_time(current_time, time_step)
+        actual_num_release = self._num_released
+        to_rel = expected_num_release - actual_num_release
         if to_rel <= 0:
             return 0 #nothing to release, so end early
         sc._append_data_arrays(to_rel)
+        self._num_released += to_rel
 
         sc['spill_num'][-to_rel:] = idx
 
