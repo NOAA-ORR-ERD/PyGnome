@@ -96,8 +96,7 @@ class GnomeMap(GnomeId):
     refloat_halflife = None  # note -- no land, so never used
     _ref_as = 'map'
 
-    def __init__(self, map_bounds=None, spillable_area=None, land_polys=None,
-                 name=None):
+    def __init__(self, map_bounds=None, spillable_area=None, land_polys=None, **kwargs):
         """
         This __init__ will be different for other implementations
 
@@ -122,6 +121,7 @@ class GnomeMap(GnomeId):
             An NX2 array of points that describe a polygon
             if no map bounds is provided -- the whole world is valid
         """
+        super(GnomeMap, self).__init__(**kwargs)
         if map_bounds is not None:
             self.map_bounds = np.asarray(map_bounds,
                                          dtype=np.float64).reshape(-1, 2)
