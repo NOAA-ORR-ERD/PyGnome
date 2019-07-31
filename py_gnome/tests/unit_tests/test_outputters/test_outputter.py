@@ -8,7 +8,6 @@ import math
 
 import pytest
 
-from gnome.spill.elements import floating
 
 from gnome.spill import point_line_release_spill
 from gnome.outputters import Outputter
@@ -28,7 +27,7 @@ def model(sample_model):
                         start_position=sample_model['release_start_pos'],
                         release_time=model.start_time,
                         end_release_time=model.start_time + model.duration,
-                        element_type=floating(windage_persist=-1))
+                        windage_persist=-1)
 
     return model
 

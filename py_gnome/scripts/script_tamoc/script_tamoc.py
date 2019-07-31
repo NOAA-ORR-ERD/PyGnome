@@ -22,7 +22,7 @@ import numpy as np
 from datetime import datetime, timedelta
 
 from gnome import scripting
-from gnome.spill.elements import plume
+# from gnome.spill.elements import plume
 from gnome.utilities.distributions import WeibullDistribution
 from gnome.environment.gridded_objects_base import Variable, Time, Grid_S
 from gnome.environment import GridCurrent
@@ -100,11 +100,12 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     print "adding Horizontal and Vertical diffusion"
 
     # Horizontal Diffusion
-    # model.movers += RandomMover(diffusion_coef=5)
+    # model.movers += RandomMover(diffusion_coef=1.e8)
     # vertical diffusion (different above and below the mixed layer)
-    model.movers += RandomMover3D(vertical_diffusion_coef_above_ml=5,
-                                        vertical_diffusion_coef_below_ml=.11,
-                                        mixed_layer_depth=10)
+    model.movers += RandomMover3D(horizontal_diffusion_coef_above_ml=10000,                                     horizontal_diffusion_coef_below_ml=10000,
+                                  vertical_diffusion_coef_above_ml=5,
+                                  vertical_diffusion_coef_below_ml=.11,
+                                  mixed_layer_depth=10)
 
     print 'adding Rise Velocity'
     # droplets rise as a function of their density and radius
@@ -112,9 +113,9 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     print 'adding a circular current and eastward current'
     # This is .3 m/s south
-    model.movers += PyCurrentMover(current=vg,
-                                       default_num_method='RK2',
-                                       extrapolate=True)
+    #model.movers += PyCurrentMover(current=vg,
+    #                                   default_num_method='RK2',
+    #                                   extrapolate=True)
     model.movers += SimpleMover(velocity=(0., -0.1, 0.))
 
     # Now to add in the TAMOC "spill"
@@ -138,8 +139,8 @@ if __name__ == "__main__":
     for step in model:
         if step['step_num'] == 23:
             print 'running tamoc again'
-            import pdb
-            pdb.set_trace()
+            #import pdb
+            #pdb.set_trace()
             sp = model.spills[0]
 #            sp.tamoc_parameters['release_phi'] = -np.pi / 4
 #            sp.tamoc_parameters['release_theta'] = -np.pi

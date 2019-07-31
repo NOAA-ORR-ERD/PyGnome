@@ -9,6 +9,7 @@ import copy
 from colander import SchemaNode, String, Float, drop, Boolean
 
 import gnome
+from gnome.utilities.time_utils import sec_to_datetime
 from gnome.utilities.inf_datetime import InfDateTime
 from gnome.persist.validators import convertible_to_seconds
 from gnome.persist.extend_colander import LocalDateTime
@@ -107,11 +108,17 @@ class Tide(Environment):
 
     @property
     def data_start(self):
-        return InfDateTime("-inf")
+        if isinstance(self.cy_obj, CyShioTime):
+            return InfDateTime("-inf")
+        else:
+            return sec_to_datetime(self.cy_obj.get_start_time())
 
     @property
     def data_stop(self):
-        return InfDateTime("inf")
+        if isinstance(self.cy_obj, CyShioTime):
+            return InfDateTime("inf")
+        else:
+            return sec_to_datetime(self.cy_obj.get_end_time())
 
     @property
     def yeardata(self):

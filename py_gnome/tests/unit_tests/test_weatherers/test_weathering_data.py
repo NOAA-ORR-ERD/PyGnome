@@ -10,6 +10,7 @@ from testfixtures import log_capture
 from gnome.environment import Water
 from gnome.weatherers import WeatheringData, FayGravityViscous
 from gnome.spill import point_line_release_spill
+from gnome.spill.substance import GnomeOil
 from gnome.spill_container import SpillContainer
 from gnome.basic_types import oil_status, fate as bt_fate
 
@@ -194,7 +195,7 @@ class TestWeatheringData:
         # need at least 4 LEs so one released in each timestep
         # to compare the 'mass' in each timestep is equal irrespective of LE
         # using less than 4 LEs will fail some asserts
-        (sc1, wd1, spread1) = self.sample_sc_wd_spreading(4, rel_time)
+        (sc1, wd1, spread1) = self.sample_sc_wd_spreading(40, rel_time)
         (sc2, wd2, spread2) = self.sample_sc_wd_spreading(100, rel_time)
 
         ts = 900
@@ -251,14 +252,14 @@ class TestWeatheringData:
 
         rel_time = datetime.now().replace(microsecond=0)
         end_time = rel_time + timedelta(hours=1)
-        spills = [point_line_release_spill(10,
+        spills = [point_line_release_spill(100,
                                            (0, 0, 0),
                                            rel_time,
                                            end_release_time=end_time,
                                            amount=100,
                                            units='kg',
                                            substance=test_oil),
-                  point_line_release_spill(5,
+                  point_line_release_spill(50,
                                            (0, 0, 0),
                                            rel_time + timedelta(hours=.25),
                                            substance=test_oil,
@@ -267,7 +268,7 @@ class TestWeatheringData:
                   ]
         sc = SpillContainer()
         sc.spills += spills
-        at = set()
+        at = dict()
         for w in weatherers:
             at.update(w.array_types)
 
@@ -331,9 +332,9 @@ class TestWeatheringData:
         it should be based on water temperature at release time.
         '''
         rel_time = datetime.now().replace(microsecond=0)
-        (sc, wd, spread) = self.sample_sc_wd_spreading(1, rel_time)
+        (sc, wd, spread) = self.sample_sc_wd_spreading(100, rel_time)
         sc.spills[0].end_release_time = None
-        sc.spills += point_line_release_spill(1, (0, 0, 0),
+        sc.spills += point_line_release_spill(100, (0, 0, 0),
                                               rel_time,
                                               amount=10,
                                               units='kg',
@@ -355,8 +356,10 @@ class TestWeatheringData:
         # bulk_init_volume is set in same order as b_init_vol
         print sc['bulk_init_volume']
         print b_init_vol
-        assert np.all(sc['bulk_init_volume'] == b_init_vol)
-        assert sc['fay_area'][0] != sc['fay_area'][1]
+        mask = sc['spill_num'] == 0
+        assert np.all(sc['bulk_init_volume'][mask] == b_init_vol[0])
+        assert np.all(sc['bulk_init_volume'][~mask] == b_init_vol[1])
+        assert np.all(sc['fay_area'][mask] != sc['fay_area'][~mask])
         i_area = sc['fay_area'].copy()
 
         # update age and test fay_area update remains unequal
@@ -365,7 +368,7 @@ class TestWeatheringData:
         for w in (wd, spread):
             self.step(w, sc, rel_time)
 
-        assert sc['fay_area'][0] != sc['fay_area'][1]
+        assert np.all(sc['fay_area'][mask] != sc['fay_area'][~mask])
         assert np.all(sc['fay_area'] > i_area)
 
     @log_capture()
@@ -377,29 +380,33 @@ class TestWeatheringData:
         '''
         l.uninstall()
         rel_time = datetime.now().replace(microsecond=0)
-        (sc, wd) = self.sample_sc_intrinsic(1, rel_time)
+        (sc, wd) = self.sample_sc_intrinsic(100, rel_time)
         wd.water.set('temperature', 288, 'K')
         wd.water.set('salinity', 0, 'psu')
-        new_subs = 'TEXTRACT, STAR ENTERPRISE'
+        new_subs = GnomeOil('TEXTRACT, STAR ENTERPRISE')
+        new_subs.water = wd.water
         sc.spills[0].substance = new_subs
+        ats = {}
+        ats.update(sc.spills[0].all_array_types)
+        ats.update(wd.all_array_types)
 
         # substance changed - do a rewind
         sc.rewind()
-        sc.prepare_for_model_run(wd.array_types)
+        sc.prepare_for_model_run(ats)
+        l.install()
 
         num = sc.release_elements(default_ts, rel_time)
 
         # only capture and test density error
-        l.install()
 
         if num > 0:
             wd.initialize_data(sc, num)
 
         msg = ("{0} will sink at given water temperature: {1} {2}. "
-               "Set density to water density".format(new_subs,
+               "Set density to water density".format(new_subs.name,
                                                      288.0,
                                                      'K'))
-        l.check(('gnome.weatherers.weathering_data.WeatheringData',
+        l.check_present(('gnome.spill.substance.GnomeOil',
                  'ERROR',
                  msg))
 
@@ -411,7 +418,7 @@ class TestWeatheringData:
         anything.
         '''
         rel_time = datetime.now().replace(microsecond=0)
-        (sc, wd) = self.sample_sc_intrinsic(1, rel_time)
+        (sc, wd) = self.sample_sc_intrinsic(100, rel_time)
         sc.spills[0].substance = None
         # substance changed - do a rewind
         sc.rewind()

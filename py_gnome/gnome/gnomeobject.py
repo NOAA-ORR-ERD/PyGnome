@@ -64,7 +64,6 @@ class AddLogger(object):
         if ('json_' in kwargs):
             # because old save files
             kwargs.pop('json_')
-
         super(AddLogger, self).__init__(**kwargs)
 
     @property
@@ -139,6 +138,16 @@ class GnomeId(AddLogger):
             if isinstance(name, six.string_types) and '/' in name or '\\' in name:
                 raise ValueError("Invalid slash character in {0}".format(name))
             self.name = name
+        self.array_types = dict()
+
+    @property
+    def all_array_types(self):
+        '''
+        If this object contains or is composed of other gnome objects (Spill->Substance->Initializers for example)
+        then override this function to ensure all array types get presented at the top level. See Spill for an example
+        '''
+        return self.array_types.copy()
+
 
     @property
     def id(self):
@@ -225,19 +234,56 @@ class GnomeId(AddLogger):
     def name(self, val):
         self._name = val
 
+    def gather_ref_as(self, src, refs):
+        '''
+        Gathers refs from single or collection of GnomeId objects.
+        :param src: GnomeId object or collection of GnomeId
+        :param refs: dictionary of str->list of GnomeId
+        :returns {'ref1': [list of GnomeId],
+                  'ref2 : [list of GnomeId],
+                  ...}
+        '''
+        if isinstance(src, GnomeId):
+            src = [src,]
+        for ob in src:
+            if hasattr(ob, '_ref_as'):
+                names = ob._ref_as
+                if not isinstance(names, list):
+                    names = [names,]
+                for n in names:
+                    if n in refs:
+                        if ob not in refs[n]:
+                            #only add if it doesn't already exist in the list
+                            refs[n].append(ob)
+                    else:
+                        refs[n] = [ob,]
+
     def _attach_default_refs(self, ref_dict):
         '''
-        If provided a dictionary of references this function will validate it
-        against the _req_refs specified by the class, and if a match is found
-        and the instance's reference is None, it will set it to the instance
-        from ref_dict
+        !!!IMPORTANT!!!
+        If this object requires default references (self._req_refs exists), this
+        function will use the name of the references as keys into a reference
+        dictionary to get a list of satisfactory references (objects that have
+        obj._ref_as == self._req_refs). It will then attach the first object in
+        the reference list to that attribute on this object.
+
+        This behavior can be overridden if the object needs more specific
+        attachment behavior than simply 'first in line'
+
+        In addition, this function SHOULD BE EXTENDED if this object should
+        provide default references to any contained child objects. When doing
+        so, please be careful to respect already existing references. The
+        reference attachment system should only act if the requested reference
+        'is None' when the function is invoked. See Model._attach_default_refs()
+        for an example.
         '''
-        if not hasattr(self, '_req_refs'):
+        if not hasattr(self, '_req_refs') or not self.make_default_refs:
             return
         else:
-            for var in ref_dict.keys():
-                if getattr(self, var) is None:
-                    setattr(self, var, ref_dict[var])
+            for refname in self._req_refs:
+                reflist = ref_dict.get(refname, [])
+                if len(reflist) > 0 and getattr(self, refname) is None:
+                    setattr(self, refname, reflist[0])
 
     def validate_refs(self, refs=['wind', 'water', 'waves']):
         '''
@@ -312,16 +358,7 @@ class GnomeId(AddLogger):
 
         [dict_.pop(n, None) for n in read_only_attrs]
 
-        try:
-            new_obj = cls(**dict_)
-        except Exception as e:
-            # The exception generated here is typically a TypeError with
-            # no useful information for tracking down which class raised it.
-            # So we try to capture the class name and re-raise it.
-            # Note: Directly accessing e.message is deprecated, which is why
-            #       we go through this bizarre machination.
-            raise e.__class__('Exception in {}.__init__(): {}'
-                              .format(cls.__name__, e))
+        new_obj = cls(**dict_)
 
         msg = "constructed object {0}".format(new_obj.__class__.__name__)
         new_obj.logger.debug(new_obj._pid + msg)
@@ -659,6 +696,8 @@ class GnomeId(AddLogger):
             refs = Refs()
 
         obj_json = self._schema()._save(self, zipfile_=zipfile_, refs=refs)
+
+        zipfile_.writestr('version.txt', '1')
 
         if saveloc is None:
             log.info('Returning open zipfile in memory')

@@ -16,6 +16,7 @@ from colander import SchemaNode, Bool, drop, String
 
 
 from gnome.persist import base_schema, extend_colander, validators
+from gnome.array_types import gat
 
 from gnome.utilities.surface_concentration import compute_surface_concentration
 from gnome.gnomeobject import GnomeId
@@ -131,7 +132,7 @@ class Outputter(GnomeId):
         self.output_dir = output_dir
 
         self.surface_conc = surface_conc
-        self.array_types = set()
+        self.array_types = dict()
 
         # reset internally used variables
         self.rewind()
@@ -349,7 +350,7 @@ class Outputter(GnomeId):
         self._is_first_output = True
         self._surf_conc_computed = True
         if self.surface_conc:
-            self.array_types.add("surface_concentration")
+            self.array_types['surface_concentration'] = gat('surface_concentration')
 
     def write_output_post_run(self,
                               model_start_time,

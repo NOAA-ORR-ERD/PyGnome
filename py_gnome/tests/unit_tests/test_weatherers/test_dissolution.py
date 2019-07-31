@@ -9,7 +9,6 @@ import numpy as np
 
 from gnome.environment import constant_wind, Water, Waves
 from gnome.outputters import WeatheringOutput
-from gnome.spill.elements import floating
 from gnome.weatherers import (Evaporation,
                               NaturalDispersion,
                               Dissolution,
@@ -83,15 +82,10 @@ def test__deserialize():
 
 def test_prepare_for_model_run():
     'test sort order for Dissolution weatherer'
-    et = floating(substance='oil_bahia')
     diss = Dissolution(waves, wind)
 
-    # we don't want to query the oil database, but get the sample oil
-    assert et.substance.record.id is None
-
     (sc, _time_step) = weathering_data_arrays(diss.array_types,
-                                              water,
-                                              element_type=et)[:2]
+                                              water)[:2]
 
     assert 'partition_coeff' in sc.data_arrays
     assert 'dissolution' not in sc.mass_balance
@@ -112,19 +106,18 @@ def test_dissolution_k_ow(oil, temp, num_elems, k_ow, on):
         Note: for now droplets are calculated in natural dispersion so
         natural dispersion is required for the dissolution algorithm
     '''
-    et = floating(substance=oil)
     diss = Dissolution(waves, wind)
     disp = NaturalDispersion(waves, water)
     (sc, time_step) = weathering_data_arrays(diss.array_types,
                                              water,
-                                             element_type=et,
+                                             substance=oil,
                                              num_elements=num_elems)[:2]
 
     print 'num spills:', len(sc.spills)
     print 'spill[0] amount:', sc.spills[0].amount
 
     # we don't want to query the oil database, but get the sample oil
-    assert sc.spills[0].element_type.substance.record.id is None
+    assert sc.spills[0].substance.record.id is None
 
     model_time = (sc.spills[0].release_time +
                   timedelta(seconds=time_step))
@@ -158,14 +151,12 @@ def test_dissolution_droplet_size(oil, temp, num_elems, drop_size, on):
         Here we are testing that the molar averaged oil/water partition
         coefficient (K_ow) is getting calculated with reasonable values
     '''
-    et = floating(substance=oil)
 
     disp = NaturalDispersion(waves, water)
     diss = Dissolution(waves, wind)
 
     (sc, time_step) = weathering_data_arrays(diss.array_types,
                                              water,
-                                             element_type=et,
                                              num_elements=num_elems)[:2]
 
     print 'num_spills:', len(sc.spills)
@@ -177,7 +168,7 @@ def test_dissolution_droplet_size(oil, temp, num_elems, drop_size, on):
     print 'time_step = ', time_step
 
     # we don't want to query the oil database, but get the sample oil
-    assert sc.spills[0].element_type.substance.record.id is None
+    assert sc.spills[0].substance.record.id is None
 
     disp.on = on
     diss.on = on
@@ -230,7 +221,6 @@ def test_dissolution_mass_balance(oil, temp, wind_speed,
       distribution.
     Fuel Oil #6 does not exist...
     '''
-    et = floating(substance=oil)
 
     waves = build_waves_obj(wind_speed, 'knots', 270, temp)
     wind = waves.wind
@@ -243,7 +233,6 @@ def test_dissolution_mass_balance(oil, temp, wind_speed,
 
     (sc, time_step) = weathering_data_arrays(all_array_types,
                                              water,
-                                             element_type=et,
                                              num_elements=num_elems,
                                              units='kg',
                                              amount_per_element=1.0
@@ -260,7 +249,7 @@ def test_dissolution_mass_balance(oil, temp, wind_speed,
     print
 
     # we don't want to query the oil database, but get the sample oil
-    assert sc.spills[0].element_type.substance.record.id is None
+    assert sc.spills[0].substance.record.id is None
 
     initial_amount = sc.spills[0].amount
     model_time = (sc.spills[0].release_time +
@@ -326,7 +315,7 @@ def test_full_run(sample_model_fcn2, oil, temp, expected_balance):
         original_amount = sc.spills[0].amount
 
         # we don't want to query the oil database, but get the sample oil
-        assert sc.spills[0].element_type.substance.record.id is None
+        assert sc.spills[0].substance.record.id is None
 
     # set make_default_refs to True for objects contained in model after adding
     # objects to the model

@@ -8,10 +8,12 @@ import pytest
 import numpy as np
 
 from gnome.movers import RiseVelocityMover
-from gnome.spill.elements import ElementType, InitRiseVelFromDist
+from gnome.spill.initializers import InitRiseVelFromDist
 from gnome.utilities.distributions import UniformDistribution
 
 from ..conftest import sample_sc_release
+from gnome.spill.substance import NonWeatheringSubstance
+from gnome.array_types import gat
 
 
 def test_init():
@@ -39,16 +41,18 @@ def test_props():
 
 time_step = 15 * 60  # seconds
 rel_time = datetime(2012, 8, 20, 13)  # yyyy/month/day/hr/min/sec
+initializers = [InitRiseVelFromDist(distribution=UniformDistribution())]
 sc = sample_sc_release(5, (3., 6., 0.),
                        rel_time,
                        uncertain=False,
-                       arr_types={'rise_vel'},
-                       element_type=ElementType([InitRiseVelFromDist(distribution=UniformDistribution())]))
+                       arr_types={'rise_vel': gat('rise_vel')},
+                       substance=NonWeatheringSubstance(initializers=initializers))
+initializers = [InitRiseVelFromDist(distribution=UniformDistribution())]
 u_sc = sample_sc_release(5, (3., 6., 0.),
                          rel_time,
                          uncertain=True,
-                         arr_types={'rise_vel'},
-                         element_type=ElementType([InitRiseVelFromDist(distribution=UniformDistribution())]))
+                         arr_types={'rise_vel': gat('rise_vel')},
+                       substance=NonWeatheringSubstance(initializers=initializers))
 model_time = rel_time
 
 

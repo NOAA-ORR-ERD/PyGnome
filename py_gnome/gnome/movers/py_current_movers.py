@@ -85,6 +85,8 @@ class PyCurrentMover(movers.PyMover):
                            Choices:('Euler', 'RK2', 'RK4')
                            Default: RK2
         """
+
+        (super(PyCurrentMover, self).__init__(default_num_method=default_num_method, **kwargs))
         self.filename = filename
         self.current = current
 
@@ -104,14 +106,8 @@ class PyCurrentMover(movers.PyMover):
 
         self.model_time = 0
 
-        self.positions = np.zeros((0, 3), dtype=world_point_type)
-        self.delta = np.zeros((0, 3), dtype=world_point_type)
-        self.status_codes = np.zeros((0, 1), dtype=status_code_type)
-
         # either a 1, or 2 depending on whether spill is certain or not
         self.spill_type = 0
-        (super(PyCurrentMover, self)
-         .__init__(default_num_method=default_num_method, **kwargs))
 
 
     @classmethod

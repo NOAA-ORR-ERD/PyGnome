@@ -12,13 +12,7 @@ from gnome.utilities.weathering import (BanerjeeHuibers, Stokes,
                                         DingFarmer, DelvigneSweeney,
                                         PiersonMoskowitz)
 
-from gnome.array_types import (area,
-                               mass,
-                               positions,
-                               density,
-                               viscosity,
-                               partition_coeff,
-                               droplet_avg_size)
+from gnome.array_types import gat
 
 from .core import WeathererSchema
 from gnome.weatherers import Weatherer
@@ -53,6 +47,9 @@ class Dissolution(Weatherer):
 
     _schema = DissolutionSchema
 
+    _ref_as = 'dissolution'
+    _req_refs = ['waves', 'wind']
+
     def __init__(self, waves=None, wind=None, **kwargs):
         '''
             :param waves: waves object for obtaining wave_height, etc. at a
@@ -68,13 +65,13 @@ class Dissolution(Weatherer):
 
         super(Dissolution, self).__init__(make_default_refs=make_default_refs, **kwargs)
 
-        self.array_types.update({'area': area,
-                                 'mass':  mass,
-                                 'density': density,
-                                 'positions': positions,
-                                 'viscosity': viscosity,
-                                 'partition_coeff': partition_coeff,
-                                 'droplet_avg_size': droplet_avg_size
+        self.array_types.update({'area': gat('area'),
+                                 'mass': gat('mass'),
+                                 'density': gat('density'),
+                                 'positions': gat('positions'),
+                                 'viscosity': gat('viscosity'),
+                                 'partition_coeff': gat('partition_coeff'),
+                                 'droplet_avg_size': gat('droplet_avg_size')
                                  })
 
     def prepare_for_model_run(self, sc):
@@ -467,16 +464,14 @@ class Dissolution(Weatherer):
         '''
             weather elements over time_step
         '''
-        if not self.active:
-            return
-
-        if sc.num_released == 0:
+        if not self.active or sc.num_released == 0 or not sc.substance.is_weatherable:
             return
 
         for substance, data in sc.itersubstancedata(self.array_types):
+
             if len(data['mass']) == 0:
                 # data does not contain any surface_weathering LEs
-                continue
+                return
 
             # print ('dissolution: mass_components = {}'
             #        .format(data['mass_components'].sum(1)))
@@ -500,6 +495,5 @@ class Dissolution(Weatherer):
                                       sc.mass_balance['dissolution']))
             # print ('dissolution: mass_components = {}'
             #        .format(data['mass_components'].sum(1)))
-
         sc.update_from_fatedataview()
 

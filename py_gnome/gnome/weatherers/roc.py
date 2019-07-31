@@ -19,7 +19,7 @@ from colander import (drop, SchemaNode, MappingSchema, OneOf,
 
 from gnome import _valid_units
 from gnome.basic_types import oil_status, fate as bt_fate
-from gnome.array_types import mass, density, fay_area, frac_water
+from gnome.array_types import gat
 
 
 from gnome.weatherers import Weatherer
@@ -638,6 +638,8 @@ class Disperse(Response):
     _si_units = dict([(k, v[0]) for k, v in _attr.items()])
     _units_type = dict([(k, (v[1], v[2])) for k, v in _attr.items()])
 
+    _ref_as = 'roc_disperse'
+    _req_refs = ['wind']
     _schema = DisperseSchema
 
     wind_eff_list = [15, 30, 45, 60, 70, 78, 80, 82,
@@ -747,7 +749,9 @@ class Disperse(Response):
                                         self._dosage_m)
 
         self.report = []
-        self.array_types.update({'area', 'density', 'viscosity'})
+        self.array_types.update({'area': gat('area'),
+                                 'density': gat('density'),
+                                 'viscosity': gat('viscosity')})
 
     def get_mission_data(self,
                          dosage=None,
@@ -1680,6 +1684,7 @@ class Burn(Response):
                    'speed': ('velocity', _valid_vel_units),
                    '_boom_capacity_max': ('volume', _valid_vol_units)}
 
+    _ref_as = 'roc_burn'
     _schema = BurnSchema
 
     def __init__(self,
@@ -1693,9 +1698,9 @@ class Burn(Response):
                  **kwargs):
         super(Burn, self).__init__(**kwargs)
 
-        self.array_types.update({'mass':  mass,
-                                 'density': density,
-                                 'frac_water': frac_water})
+        self.array_types.update({'mass':  gat('mass'),
+                                 'density': gat('density'),
+                                 'frac_water': gat('frac_water')})
 
         self._units = dict(self._si_units)
         self.units = units
