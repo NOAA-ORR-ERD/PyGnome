@@ -341,13 +341,16 @@ class Spill(GnomeId):
 
         So we copy them temporarily to local variables before we deepcopy
         our Spill object.
-
+        """
+        '''
+        TODO: Refactor spill container so it calls this only when the model is about to run
+        in prepare_for_model_run, and cleans up afterwards. Currently it calls it when a
+        spill is added to the spill container pair(?)
+        '''
         u_copy = copy.deepcopy(self)
         self.logger.debug(self._pid + "deepcopied spill {0}".format(self.id))
 
         return u_copy
-        """
-        return self
 
     def set_amount_uncertainty(self, up_or_down=None):
         '''
