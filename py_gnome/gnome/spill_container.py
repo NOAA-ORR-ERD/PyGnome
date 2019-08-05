@@ -905,7 +905,7 @@ class SpillContainer(AddLogger, SpillContainerData):
             if not spill.on:
                 continue
             num_rel = spill.release_elements(self, model_time, time_step)
-            print('spill id: {0} released {1}'.format(spill.id, num_rel))
+            # print('spill id: {0} released {1}'.format(spill.id, num_rel))
             if num_rel > 0:
                 # update 'spill_num' ArrayType's initial_value so it
                 # corresponds with spill number for this set of released
