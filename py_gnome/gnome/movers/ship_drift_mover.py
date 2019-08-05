@@ -12,6 +12,8 @@ from gnome.basic_types import (velocity_rec,
                                world_point_type,
                                status_code_type,
                                oil_status)
+from gnome.array_types import gat
+
 from gnome.utilities import projections
 from gnome.utilities import rand
 
@@ -85,9 +87,9 @@ class ShipDriftMover(Mover):
         self.delta = np.zeros((0, 3), dtype=world_point_type)
         self.status_codes = np.zeros((0, 1), dtype=status_code_type)
 
-        self.array_types.update({'windages',
-                                 'windage_range',
-                                 'windage_persist'})
+        self.array_types.update({'windages':gat('windages'),
+                                 'windage_range':gat('windage_range'),
+                                 'windage_persist':gat('windage_persist')})
 
     def __repr__(self):
         """

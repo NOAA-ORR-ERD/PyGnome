@@ -7,6 +7,7 @@ import numpy as np
 
 from gnome import constants
 from gnome.basic_types import oil_status
+from gnome.array_types import gat
 from gnome.exceptions import ReferencedObjectNotSet
 
 from .core import WeathererSchema
@@ -28,6 +29,8 @@ class EvaporationSchema(WeathererSchema):
 
 class Evaporation(Weatherer):
     _schema = EvaporationSchema
+    _ref_as = 'evaporation'
+    _req_refs = ['water', 'wind']
 
     def __init__(self,
                  water=None,
@@ -48,8 +51,12 @@ class Evaporation(Weatherer):
             make_default_refs = True
 
         super(Evaporation, self).__init__(make_default_refs=make_default_refs, **kwargs)
-        self.array_types.update({'positions', 'area', 'evap_decay_constant',
-                                 'frac_water', 'frac_lost', 'init_mass'})
+        self.array_types.update({'positions': gat('positions'),
+                                 'area': gat('area'),
+                                 'evap_decay_constant': gat('evap_decay_constant'),
+                                 'frac_water': gat('frac_water'),
+                                 'frac_lost': gat('frac_lost'),
+                                 'init_mass': gat('init_mass')})
 
     def prepare_for_model_run(self, sc):
         '''
@@ -113,10 +120,10 @@ class Evaporation(Weatherer):
         # Do computation together so we don't need to make intermediate copies
         # of data - left sum_frac_mw, which is a copy but easier to
         # read/understand
-        data['evap_decay_constant'][:, :len(vp)] = \
-            ((-data['area'] * f_diff * K /
-              (constants.gas_constant * water_temp * sum_mi_mw)).reshape(-1, 1)
-             * vp)
+        edc = ((-data['area'] * f_diff * K / (constants.gas_constant * water_temp * sum_mi_mw)).reshape(-1, 1)* vp)
+
+        data['evap_decay_constant'][:, :len(vp)] = edc
+
 
         self.logger.debug(self._pid + 'max decay: {0}, min decay: {1}'.
                           format(np.max(data['evap_decay_constant']),
@@ -124,6 +131,9 @@ class Evaporation(Weatherer):
         if np.any(data['evap_decay_constant'] > 0.0):
             raise ValueError("Error in Evaporation routine. One of the"
                              " exponential decay constant is positive")
+        if np.any(np.isnan(data['evap_decay_constant'])):
+            raise ValueError("Error in Evaporation routine. One of the"
+                             " exponential decay constant is NaN")
 
     def weather_elements(self, sc, time_step, model_time):
         '''
@@ -168,9 +178,8 @@ class Evaporation(Weatherer):
         L becomes::
             L = (1 - fw) * area * K * vp/(gas_constant * water_temp * sum_m_mw)
         '''
-        if not self.active:
-            return
-        if sc.num_released == 0:
+
+        if not self.active or sc.num_released == 0 or not sc.substance.is_weatherable:
             return
 
         for substance, data in sc.itersubstancedata(self.array_types):
@@ -181,9 +190,7 @@ class Evaporation(Weatherer):
             # set evap_decay_constant array
             self._set_evap_decay_constant(points, model_time, data,
                                           substance, time_step)
-            mass_remain = self._exp_decay(data['mass_components'],
-                                          data['evap_decay_constant'],
-                                          time_step)
+            mass_remain = self._exp_decay(data['mass_components'], data['evap_decay_constant'], time_step)
 
             sc.mass_balance['evaporated'] += \
                 np.sum(data['mass_components'][:, :] - mass_remain[:, :])

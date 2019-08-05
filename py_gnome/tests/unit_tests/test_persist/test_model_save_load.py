@@ -328,7 +328,7 @@ class TestWebApi:
                 self._dump_collection(sc.spills)
                 # dump release object and element_type object
                 for idx, spill in enumerate(sc.spills):
-                    for obj in ['release', 'element_type']:
+                    for obj in ['release', 'substance']:
                         serial = getattr(spill, obj).serialize()
                         fname = os.path.join(self.webapi_files,
                                              'Spill{}_{}.json'.format(idx, obj)

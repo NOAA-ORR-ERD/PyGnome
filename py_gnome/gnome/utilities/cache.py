@@ -12,8 +12,7 @@ import shutil
 import copy
 from multiprocessing import Lock
 
-import numpy
-np = numpy
+import numpy as np
 
 from gnome.spill_container import (SpillContainerData,
                                    SpillContainerPairData)
@@ -178,7 +177,7 @@ class ElementCache(object):
             # not in the recent dict: try to load from disk
             try:
                 data_arrays = \
-                    dict(np.load(self._make_filename(step_num)))
+                    dict(np.load(self._make_filename(step_num), allow_pickle=True))
             except IOError:
                 raise CacheError('step: {0} is not in the cache'
                                  .format(step_num))

@@ -14,9 +14,8 @@ from gnome.utilities.compute_fraction import fraction_below_d
 
 
 class UniformDistributionSchema(ObjTypeSchema):
-    name = 'uniform'
     low = SchemaNode(
-        Float(), name='low', default=0.0,
+        Float(), default=0.0,
         description='lower bound for uniform distribution',
         save=True, update=True
     )
@@ -28,14 +27,13 @@ class UniformDistributionSchema(ObjTypeSchema):
 
 
 class NormalDistributionSchema(ObjTypeSchema):
-    name = 'normal'
     mean = SchemaNode(
-        Float(), name='mean',
+        Float(),
         description='mean for normal distribution',
         save=True, update=True
     )
     sigma = SchemaNode(
-        Float(), name='sigma',
+        Float(),
         description='standard deviation for normal distribution',
         save=True, update=True
     )
@@ -48,28 +46,27 @@ class LogNormalDistributionSchema(NormalDistributionSchema):
         keep in its own class since serialize/deserialize automatically
         looks for this class name. Helps keep things consistent.
     '''
-    name = 'lognormal'
+    pass
 
 
 class WeibullDistributionSchema(ObjTypeSchema):
-    name = 'weibull'
     alpha = SchemaNode(
-        Float(), name='alpha',
+        Float(),
         description='shape parameter for weibull distribution',
         save=True, update=True
     )
     lambda_ = SchemaNode(
-        Float(), name='lambda_', default=1.0,
+        Float(), default=1.0,
         description='scale parameter for weibull distribution',
         save=True, update=True
     )
     min_ = SchemaNode(
-        Float(), name='min_',
+        Float(),
         description='lower bound? for weibull distribution',
         missing=drop, save=True, update=True
     )
     max_ = SchemaNode(
-        Float(), name='max_',
+        Float(),
         description='upper bound? for weibull distribution',
         missing=drop, save=True, update=True
     )

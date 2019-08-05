@@ -220,16 +220,6 @@ class CatsMover(CurrentMoversBase):
         self.mover.text_read(filename)
         if 'name' not in kwargs:
             kwargs['name'] = os.path.split(filename)[1]
-        super(CatsMover, self).__init__(uncertain_duration=uncertain_duration,
-                                        **kwargs)
-
-        self._tide = None
-        if tide is not None:
-            self.tide = tide
-
-        self.scale = kwargs.pop('scale', self.mover.scale_type)
-        self.scale_value = kwargs.get('scale_value',
-                                      self.mover.scale_value)
 
         self.up_cur_uncertain = kwargs.pop('up_cur_uncertain', .3)
         self.down_cur_uncertain = kwargs.pop('down_cur_uncertain', -.3)
@@ -238,12 +228,22 @@ class CatsMover(CurrentMoversBase):
         self.uncertain_eddy_diffusion = kwargs.pop('uncertain_eddy_diffusion',
                                                    0)
         self.uncertain_eddy_v0 = kwargs.pop('uncertain_eddy_v0', .1)
+
+        self.scale = kwargs.pop('scale', self.mover.scale_type)
+        self.scale_value = kwargs.pop('scale_value',
+                                      self.mover.scale_value)
         # TODO: no need to check for None since properties that are None
         # are not persisted
 
         if 'scale_refpoint' in kwargs:
             self.scale_refpoint = kwargs.pop('scale_refpoint')
             self.mover.compute_velocity_scale()
+        super(CatsMover, self).__init__(uncertain_duration=uncertain_duration,
+                                        **kwargs)
+
+        self._tide = None
+        if tide is not None:
+            self.tide = tide
 
         if (self.scale and
             self.scale_value != 0.0 and
@@ -428,6 +428,7 @@ class GridCurrentMover(CurrentMoversBase):
                  current_scale=1,
                  uncertain_along=0.5,
                  uncertain_across=0.25,
+                 uncertain_cross=0.25,
                  num_method='Euler',
                  **kwargs):
         """
@@ -482,6 +483,7 @@ class GridCurrentMover(CurrentMoversBase):
         self.current_scale = current_scale
         self.uncertain_along = uncertain_along
         self.uncertain_across = uncertain_across
+        self.uncertain_cross = uncertain_cross
 
         self.mover.text_read(filename, topology_file)
         self.mover.extrapolate_in_time(extrapolate)

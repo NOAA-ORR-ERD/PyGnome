@@ -13,6 +13,8 @@ except ImportError:
 
 from colander import SchemaNode, Float, drop
 
+from gnome.array_types import gat
+
 from gnome.environment import WindSchema, WaterSchema
 from gnome.constants import gravity
 from gnome import constants
@@ -45,8 +47,9 @@ class FayGravityViscous(Weatherer):
 
     # object used to model spreading of oil and area computation
     _ref_as = 'spreading'
+    _req_refs = ['water']
 
-    def __init__(self, water=None, **kwargs):
+    def __init__(self, water=None, thickness_limit=None, **kwargs):
         '''
         initialize object - invoke super, add required data_arrays.
         '''
@@ -57,13 +60,18 @@ class FayGravityViscous(Weatherer):
         # can be set
         # fixme: can use nominal viscosity!
         self.water = water
-        self.array_types.update({'fay_area', 'area', 'spill_num',
-                                 'bulk_init_volume', 'age', 'density'})
+        self.array_types.update({'fay_area': gat('fay_area'),
+                                 'area': gat('area'),
+                                 'bulk_init_volume': gat('bulk_init_volume'),
+                                 'age': gat('age'),
+                                 'density': gat('density'),
+                                 'frac_coverage': gat('frac_coverage'),
+                                 'spill_num': gat('spill_num')})
         # relative_buoyancy - use density at release time. For now
         # temperature is fixed so just compute once and store. When temperature
         # varies over time, may want to do something different
         self._init_relative_buoyancy = None
-        self.thickness_limit = None
+        self.thickness_limit = thickness_limit
         self.is_first_step = True
 
     @lru_cache(4)
@@ -384,7 +392,7 @@ class FayGravityViscous(Weatherer):
         That's now TRUE!
         '''
         subs = sc.get_substances(False)
-        if len(subs) > 0:
+        if len(subs) > 0 and subs[0].is_weatherable:
             vo = subs[0].kvis_at_temp(self.water.get('temperature'))
             # set thickness_limit
             self._set_thickness_limit(vo)
@@ -423,19 +431,19 @@ class FayGravityViscous(Weatherer):
 
         If on is False, then arrays should not be included - dont' initialize
         '''
-        if not self.on:
-            return
 
         # do this once in case there are any unit conversions, it only needs to
         # happen once - for efficiency
         water_kvis = self.water.get('kinematic_viscosity',
-                                    'square meter per second')
+                                    'square meter per second')\
+
+        if not self.on or not sc.substance.is_weatherable:
+            return
 
         for substance, data in sc.itersubstancedata(self.array_types):
             if len(data['fay_area']) == 0:
                 # no particles released yet
                 continue
-
             if self._init_relative_buoyancy is None:
                 self._set_init_relative_buoyancy(substance)
 
@@ -456,6 +464,7 @@ class FayGravityViscous(Weatherer):
                 # fixme: these are the same, yes???
                 data['fay_area'][s_mask] = init_blob_area / num
                 data['area'][s_mask] = init_blob_area / num
+
         sc.update_from_fatedataview()
 
     def weather_elements(self, sc, time_step, model_time):
@@ -464,12 +473,13 @@ class FayGravityViscous(Weatherer):
         The updated 'area', 'fay_area' is associated with age of particles at:
             model_time + time_step
         '''
-        if not self.active:
+        if not self.active or not sc.substance.is_weatherable:
             return
 
         water_kvis = self.water.get('kinematic_viscosity',
                                     'square meter per second')
-        for _, data in sc.itersubstancedata(self.array_types):
+
+        for substance, data in sc.itersubstancedata(self.array_types):
             if len(data['fay_area']) == 0:
                 continue
 
@@ -482,11 +492,11 @@ class FayGravityViscous(Weatherer):
                                      data['fay_area'][s_mask],
                                      time_step,
                                      data['age'][s_mask] + time_step)
-#                     self.update_area(water_kvis,
-#                                      self._init_relative_buoyancy,
-#                                      data['bulk_init_volume'][s_mask],
-#                                      data['fay_area'][s_mask],
-#                                      data['age'][s_mask] + time_step)
+    #                     self.update_area(water_kvis,
+    #                                      self._init_relative_buoyancy,
+    #                                      data['bulk_init_volume'][s_mask],
+    #                                      data['fay_area'][s_mask],
+    #                                      data['age'][s_mask] + time_step)
 
                 data['area'][s_mask] = data['fay_area'][s_mask]
 
@@ -504,7 +514,8 @@ class ConstantArea(Weatherer):
         self.area = area
         super(ConstantArea, self).__init__(**kwargs)
 
-        self.array_types.update({'fay_area'})
+        self.array_types.update({'area': gat('area'),
+                                 'fay_area': gat('fay_area')})
 
     def initialize_data(self, sc):
         '''
@@ -554,6 +565,7 @@ class Langmuir(Weatherer):
     '''
     _schema = WeathererSchema
     _ref_as = 'langmuir'
+    _req_refs = ['water', 'wind']
 
     def __init__(self,
                  water=None,
@@ -563,7 +575,14 @@ class Langmuir(Weatherer):
         initialize wind to (0, 0) if it is None
         '''
         super(Langmuir, self).__init__(**kwargs)
-        self.array_types.update(('area', 'fay_area', 'frac_coverage', 'spill_num', 'bulk_init_volume', 'density', 'positions'))
+        self.array_types.update({'fay_area': gat('fay_area'),
+                                 'area': gat('area'),
+                                 'bulk_init_volume': gat('bulk_init_volume'),
+                                 'age': gat('age'),
+                                 'positions': gat('positions'),
+                                 'spill_num': gat('spill_num'),
+                                 'frac_coverage': gat('frac_coverage'),
+                                 'density': gat('density')})
 
         self.wind = wind
 

@@ -126,7 +126,8 @@ class Water(Environment):
                  wave_height=None,
                  fetch=None,
                  units=None,
-                 name='Water'):
+                 name='Water',
+                 **kwargs):
         '''
         Assume units are SI for all properties. 'units' attribute assumes SI
         by default. This can be changed, but initialization takes SI.
@@ -145,6 +146,7 @@ class Water(Environment):
         if units is not None:
             # self.units is a property, so this is non-destructive
             self.units = units
+        super(Water, self).__init__(**kwargs)
 
     def __repr__(self):
         info = ("{0.__class__.__module__}.{0.__class__.__name__}"

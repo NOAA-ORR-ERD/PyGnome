@@ -13,7 +13,6 @@ from gnome.spill import SpatialRelease, Spill, point_line_release_spill
 from gnome.basic_types import oil_status
 from gnome.environment import constant_wind, Water
 from gnome.weatherers import Evaporation
-from gnome.spill.elements import floating
 
 from ..conftest import sample_model, sample_model_weathering, test_oil
 
@@ -31,8 +30,6 @@ def model(sample_model, output_dir):
     model.environment += [water, wind]
     model.weatherers += Evaporation(water=water, wind=wind)
 
-    et = model.spills[0].element_type
-
     N = 10  # a line of ten points
     line_pos = np.zeros((N, 3), dtype=np.float64)
     line_pos[:, 0] = np.linspace(rel_start_pos[0], rel_end_pos[0], N)
@@ -44,7 +41,7 @@ def model(sample_model, output_dir):
                                              start_position=rel_start_pos,
                                              release_time=model.start_time,
                                              end_position=rel_end_pos,
-                                             element_type=et,
+                                             substance=model.spills[0].substance,
                                              amount=100,
                                              units='tons')
 

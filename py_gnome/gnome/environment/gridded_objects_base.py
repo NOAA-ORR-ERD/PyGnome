@@ -440,7 +440,7 @@ class Variable(gridded.Variable, GnomeId):
         if self.time.min_time == self.time.max_time:
             return InfDateTime("inf")
         else:
-            return self.time.min_time.replace(tzinfo=None)
+            return self.time.max_time.replace(tzinfo=None)
 
 
 class DepthBase(gridded.depth.DepthBase, GnomeId):

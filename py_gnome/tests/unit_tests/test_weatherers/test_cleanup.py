@@ -65,7 +65,6 @@ class ObjForTests:
                                               amount=amount,
                                               units='kg',
                                               water=water)
-        print "spill container substance is:", sc.substance
         return (sc, weatherers)
 
     def prepare_test_objs(self, obj_arrays=None):
@@ -74,7 +73,7 @@ class ObjForTests:
         '''
         # print '\n------------\n', 'reset_and_release', '\n------------'
         self.sc.rewind()
-        at = set()
+        at = dict()
         for wd in self.weatherers:
             wd.prepare_for_model_run(self.sc)
             at.update(wd.array_types)
@@ -171,7 +170,7 @@ class TestSkimmer(ObjForTests):
     (sc, weatherers) = ObjForTests.mk_test_objs()
 
     skimmer = Skimmer(amount,
-                      'kg',
+                      units='kg',
                       efficiency=0.3,
                       active_range=active_range,
                       water=weatherers[0].water)
@@ -611,7 +610,6 @@ class TestChemicalDispersion(ObjForTests):
     spill_pct = 0.2  # 20%
     c_disp = ChemicalDispersion(spill_pct,
                                 active_range,
-                                units='m^3',
                                 efficiency=0.3)
 
     def test_prepare_for_model_run(self):

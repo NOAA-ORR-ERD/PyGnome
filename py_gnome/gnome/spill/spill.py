@@ -8,9 +8,9 @@ and
 Element_types -- what the types of the elements are.
 
 """
-from datetime import timedelta
+from datetime import timedelta, datetime
 import copy
-from inspect import getmembers, ismethod
+import numpy as np
 
 
 import unit_conversion as uc
@@ -21,151 +21,23 @@ from colander import (SchemaNode, Bool, String, Float, drop)
 from gnome.gnomeobject import GnomeId
 from gnome.persist.base_schema import ObjTypeSchema, GeneralGnomeObjectSchema
 
-from . import elements
-from .release import (PointLineRelease,
-                      ContinuousRelease,
+
+from .release import (Release,
+                      PointLineRelease,
                       GridRelease,
                       SpatialRelease)
 from .. import _valid_units
-from gnome.spill.release import BaseReleaseSchema, PointLineReleaseSchema,\
-    ContinuousReleaseSchema, SpatialReleaseSchema
-from gnome.spill.elements.element_type import ElementTypeSchema
+from gnome.spill.release import (BaseReleaseSchema,
+                                 PointLineReleaseSchema,
+                                 SpatialReleaseSchema)
 from gnome.environment.water import WaterSchema
-
-
-class BaseSpill(GnomeId):
-    """
-    A base class for spills -- so we can check for them, etc.
-
-    and as a spec for the API.
-    """
-    def __init__(self, **kwargs):
-        """
-        initialize -- sub-classes will probably have a lot more to do
-        """
-        super(BaseSpill, self).__init__(**kwargs)
-
-    @property
-    def release_time(self):
-        return self._release_time
-
-    @release_time.setter
-    def release_time(self, rt):
-        self._release_time = asdatetime(rt)
-
-    @property
-    def substance(self):
-        return None
-
-    def __repr__(self):
-        return ('{0.__class__.__module__}.{0.__class__.__name__}()'
-                .format(self))
-
-    # what is this for??
-    def get_mass(self, units=None):
-        '''
-        Return the mass released during the spill.
-        User can also specify desired output units in the function.
-        If units are not specified, then return in 'SI' units ('kg')
-        If volume is given, then use density to find mass. Density is always
-        at 15degC, consistent with API definition
-        '''
-        # first convert amount to 'kg'
-        if self.units in self.valid_mass_units:
-            mass = uc.convert('Mass', self.units, 'kg', self.amount_released)
-
-        if units is None or units == 'kg':
-            return mass
-        else:
-            self._check_units(units)
-            return uc.convert('Mass', 'kg', units, mass)
-
-    def uncertain_copy(self):
-        """
-        Returns a deepcopy of this spill for the uncertainty runs
-
-        The copy has everything the same, including the spill_num,
-        but it is a new object with a new id.
-
-        Not much to this method, but it could be overridden to do something
-        fancier in the future or a subclass.
-
-        There are a number of python objects that cannot be deepcopied.
-        - Logger objects
-
-        So we copy them temporarily to local variables before we deepcopy
-        our Spill object.
-        """
-        u_copy = copy.deepcopy(self)
-        self.logger.debug(self._pid + "deepcopied spill {0}".format(self.id))
-
-        return u_copy
-
-    def rewind(self):
-        """
-        rewinds the release to original status (before anything has been
-        released).
-        """
-        raise NotImplementedError
-
-    def num_elements_to_release(self, current_time, time_step):
-        """
-        Determines the number of elements to be released during:
-        current_time + time_step
-
-        It invokes the num_elements_to_release method for the the unerlying
-        release object: self.release.num_elements_to_release()
-
-        :param current_time: current time
-        :type current_time: datetime.datetime
-        :param int time_step: the time step, sometimes used to decide how many
-            should get released.
-
-        :returns: the number of elements that will be released. This is taken
-            by SpillContainer to initialize all data_arrays.
-        """
-        if not self.on:
-            return 0
-
-        raise NotImplementedError
-
-    def set_newparticle_values(self, num_new_particles, current_time,
-                               time_step, data_arrays):
-        """
-        SpillContainer will release elements and initialize all data_arrays
-        to default initial value. The SpillContainer gets passed as input and
-        the data_arrays for 'position' get initialized correctly by the release
-        object: self.release.set_newparticle_positions()
-
-        If a Spill Amount is given, the Spill object also sets the 'mass' data
-        array; else 'mass' array remains '0'
-
-        :param int num_new_particles: number of new particles that were added.
-            Always greater than 0
-        :param current_time: current time
-        :type current_time: datetime.datetime
-        :param time_step: the time step, sometimes used to decide how many
-            should get released.
-        :type time_step: integer seconds
-        :param data_arrays: dict of data_arrays provided by the SpillContainer.
-            Look for 'positions' array in the dict and update positions for
-            latest num_new_particles that are released
-        :type data_arrays: dict containing numpy arrays for values
-
-        Also, the set_newparticle_values() method for all element_type gets
-        called so each element_type sets the values for its own data correctly
-        """
-        raise NotImplementedError
-
-    def has_initializer(self, name):
-        '''
-        Returns True if an initializer is present in the list which sets the
-        data_array corresponding with 'name', otherwise returns False
-
-        Override with a real implimentaitn if you are using initializers
-        '''
-
-        return False
+#from gnome.spill.le import LEData
+from gnome.spill.substance import (SubstanceSchema,
+                                   Substance,
+                                   NonWeatheringSubstance,
+                                   GnomeOil, GnomeOilSchema,
+    NonWeatheringSubstanceSchema)
+from gnome.spill.initializers import plume_initializers
 
 
 class SpillSchema(ObjTypeSchema):
@@ -178,12 +50,11 @@ class SpillSchema(ObjTypeSchema):
     release = GeneralGnomeObjectSchema(
         acceptable_schemas=[BaseReleaseSchema,
                             PointLineReleaseSchema,
-                            ContinuousReleaseSchema,
                             SpatialReleaseSchema],
         save=True, update=True, save_reference=True
     )
     amount = SchemaNode(
-        Float(), missing=drop, save=True, update=True
+        Float(), missing=0, save=True, update=True
     )
     units = SchemaNode(
         String(), missing=drop, save=True, update=True
@@ -191,20 +62,19 @@ class SpillSchema(ObjTypeSchema):
     amount_uncertainty_scale = SchemaNode(
         Float(), missing=drop, save=True, update=True
     )
-#     frac_coverage = SchemaNode(
-#         Float(), missing=drop, save=True, update=True
-#     )
-    element_type = ElementTypeSchema(
-        save=True, update=True, save_reference=True
-    )
     water = WaterSchema(
         missing=drop, save=True, update=True, save_reference=True
     )
+    substance = GeneralGnomeObjectSchema(
+        acceptable_schemas=[GnomeOilSchema,
+                            NonWeatheringSubstanceSchema],
+        save=True, update=True, save_reference=True
+    )
 
 
-class Spill(BaseSpill):
+class Spill(GnomeId):
     """
-    Models a spill by combining Release and ElementType objects
+    Models a spill by combining Release and Substance objects
     """
     _schema = SpillSchema
 
@@ -217,13 +87,13 @@ class Spill(BaseSpill):
     # _name = 'Spill'
 
     def __init__(self,
+                 on=True,
+                 num_elements=1000,
+                 amount=0,  # could be volume or mass
+                 units='kg',
+                 substance=None,
                  release=None,
                  water=None,
-                 element_type=None,
-                 substance=None,
-                 on=True,
-                 amount=None,  # could be volume or mass
-                 units=None,
                  amount_uncertainty_scale=0.0,
                  **kwargs):
         """
@@ -265,40 +135,67 @@ class Spill(BaseSpill):
             (ie. 'windages')
         """
         super(Spill, self).__init__(**kwargs)
-        self.water = water
-        self.release = release
+        self.on = on
+        self.substance = substance
+        if release is None:
+            release = PointLineRelease(release_time=datetime.now(),
+                                       start_position=(0, 0, 0),
+                                       num_elements=num_elements
+                                       )
+            self.release = release
+        else:
+            self.release = release
+            num_elements = release.num_elements
+        self.num_elements = num_elements
 
-        if element_type is None:
-            element_type = elements.floating(substance=substance)
-        elif substance is not None:
-            raise ValueError('Substance and element_type cannot both be '
-                             'specified')
-
-        self.element_type = element_type
-
-        self.on = on  # spill is active or not
-        # raise Exception("stopping")
-
-        # fixme: shouldn't units default to 'kg'?
-        self.units = None
-        # fixme -- and amount always be in kg?
+        self.units = units
         self.amount = amount
 
-        if amount is not None:
-            if units is None:
-                raise TypeError("Units must be provided with amount spilled")
-            else:
-                self.units = units
+#         self.data = LEData()
+        self.water = water
 
         self.amount_uncertainty_scale = amount_uncertainty_scale
 
         # fixme: why is fractional area part of spill???
         # fraction of area covered by oil
         self.frac_coverage = 1.0
+        self._num_released = 0
 
+    @property
+    def all_array_types(self):
+        '''
+        Need to add array types from Release and Substance
+        '''
+        arr = self.array_types.copy()
+        arr.update(self.release.all_array_types)
+        arr.update(self.substance.all_array_types)
+        return arr
 
-# fixme: a bunch of these properties should really be defined in subclasses
-# that use them
+    @property
+    def substance(self):
+        return self._substance
+
+    @substance.setter
+    def substance(self, val):
+        '''
+        first try to use get_oil_props using 'val'. If this fails, then assume
+        user has provided a valid OilProps object and use it as is
+        '''
+        if val is None:
+            self._substance = NonWeatheringSubstance()
+            return
+        elif isinstance(val, Substance):
+            self._substance = val
+        try:
+            self._substance = GnomeOil.get_GnomeOil(val)
+        except Exception:
+            if isinstance(val, basestring):
+                raise
+
+            self.logger.info('Failed to get_oil_props for {0}. Use as is '
+                             'assuming has OilProps interface'.format(val))
+            self._substance = val
+
     @property
     def release_time(self):
         return self.release.release_time
@@ -320,14 +217,6 @@ class Spill(BaseSpill):
         return self.release.release_duration
 
     @property
-    def start_time_invalid(self):
-        return self.release.start_time_invalid
-    # any reason to set this on a spill??
-    # @start_time_invalid.setter
-    # def start_time_invalid(self, rd):
-    #     self.release.start_time_invalid = rd
-
-    @property
     def num_elements(self):
         return self.release.num_elements
 
@@ -336,9 +225,9 @@ class Spill(BaseSpill):
         self.release.num_elements = ne
 
     # doesn't seem like this should be set on the spill object!
-    @property
-    def num_released(self):
-        return self.release.num_released
+#     @property
+#     def num_released(self):
+#         return len(self.data)
     # @num_released.setter
     # def num_released(self, ne):
     #     self.release.num_released = ne
@@ -360,33 +249,36 @@ class Spill(BaseSpill):
         self.release.end_position = sp
 
     @property
-    def array_types(self):
-        return self.element_type.array_types
+    def amount(self):
+        rel_mass = self.release.release_mass #kg
 
-    @array_types.setter
-    def array_types(self, at):
-        self.element_type.array_types = at
+        if self.units in self.valid_vol_units:
+            std_density = self.substance.standard_density #kg/m3
+            vol = rel_mass / std_density
+            return uc.convert('m^3', self.units, vol)
 
-    @property
-    def windage_range(self):
-        return self.element_type.windage_range
+        if self.units in self.valid_mass_units:
+            return uc.convert('kg', self.units, rel_mass)
 
-    @windage_range.setter
-    def windage_range(self, at):
-        self.element_type.windage_range = at
+    @amount.setter
+    def amount(self, val):
+        if val < 0:
+            raise ValueError('amount cannot be less than 0')
+        rel_mass = val
 
-    @property
-    def windage_persist(self):
-        return self.element_type.windage_persist
+        if self.units in self.valid_vol_units:
+            #need to get mass
+            vol = uc.convert(self.units, 'm^3', val)
+            std_density = self.substance.standard_density #kg/m3
+            rel_mass = vol * std_density
 
-    @windage_persist.setter
-    def windage_persist(self, wp):
-        self.element_type.windage_persist = wp
+        if self.units in self.valid_mass_units:
+            rel_mass = uc.convert(self.units, 'kg', val)
+        self.release.release_mass = rel_mass
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
                 'release={0.release!r}, '
-                'element_type={0.element_type}, '
                 'on={0.on}, '
                 'amount={0.amount}, '
                 'units="{0.units}", '
@@ -411,221 +303,6 @@ class Spill(BaseSpill):
             self.logger.exception(ex, exc_info=True)
             raise ex  # this should be raised since run will fail otherwise
 
-    def _get_all_props(self):
-        # fixme: why is this needed???
-
-        'return all properties accessible through get'
-        all_props = []
-
-        # release properties
-        rel_props = getmembers(self.release,
-                               predicate=lambda p: (not ismethod(p)))
-        rel_props = [a[0] for a in rel_props if not a[0].startswith('_')]
-
-        all_props.extend(rel_props)
-
-        # element_type properties
-        et_props = getmembers(self.element_type,
-                              predicate=lambda p: (not ismethod(p)))
-        'remove _state - update this after we change _state to _state'
-        et_props = [a[0] for a in et_props
-                    if not a[0].startswith('_') and a[0] != '_state']
-
-        all_props.extend(et_props)
-
-        # properties for each of the initializer objects
-        i_props = []
-        for val in self.element_type.initializers:
-            toadd = getmembers(val, lambda p: (not ismethod(p)))
-            i_props.extend([a[0] for a in toadd
-                            if not a[0].startswith('_') and a[0] != '_state'])
-
-            all_props.extend(i_props)
-        return all_props
-
-    def _elem_mass(self, num_new_particles, current_time, time_step):
-        '''
-        get the mass of each element released in duration specified by
-        'time_step'
-        Function is only called if num_new_particles > 0 - no check is made
-        for this case
-        '''
-        # set 'mass' data array if amount is given
-        le_mass = 0.
-        _mass = self.get_mass('kg')
-        self.logger.debug(self._pid + "spill mass (kg): {0}".format(_mass))
-
-        if _mass is not None:
-            rd_sec = self.release_duration
-            if rd_sec == 0:
-                try:
-                    le_mass = _mass / self.num_elements
-                except TypeError:
-                    le_mass = _mass / self.num_per_timestep
-            else:
-                time_at_step_end = current_time + timedelta(seconds=time_step)
-                if self.release_time > current_time:
-                    # first time_step in which particles are released
-                    time_step = (time_at_step_end -
-                                 self.release_time).total_seconds()
-                if self.end_release_time < time_at_step_end:
-                    time_step = (self.end_release_time -
-                                 current_time).total_seconds()
-
-                _mass_in_ts = _mass / rd_sec * time_step
-                le_mass = _mass_in_ts / num_new_particles
-
-        self.logger.debug(self._pid + "LE mass (kg): {0}".format(le_mass))
-
-        return le_mass
-
-    def contains_object(self, obj_id):
-        for o in (self.element_type, self.release):
-            if o.id == obj_id:
-                return True
-
-            if (hasattr(o, 'contains_object') and
-                    o.contains_object(obj_id)):
-                return True
-
-        return False
-
-    # NOTE: this has been moved to properties
-    # def __getattr__(self, prop=None):
-    #     """
-    #     implementing this so that attributes can be pulled from the enclosed
-    #     objects
-
-    #     this replaces the old "get()" method
-
-    #     Return all properties of embedded release object and
-    #     element_type initializer objects. If 'prop' is not None, then return
-    #     the property
-
-    #     For example: Spill.windage_range returns the 'windage_range'
-    #                  from element_type assuming
-    #                  the element_type = floating()
-
-    #     .. todo::
-    #         There is an issue in that if two initializers have the same
-    #         property - could be the case if they both define a
-    #                    'distribution',
-    #         then it does not know which one to return
-    #     """
-    #     print "in __getattr__, getting: %s" % prop
-    #     try:
-    #         return getattr(self.release, prop)
-    #     except AttributeError:
-    #         pass
-
-    #     try:
-    #         return getattr(self.element_type, prop)
-    #     except AttributeError:
-    #         pass
-
-    #     for init in self.element_type.initializers:
-    #         try:
-    #             return getattr(init, prop)
-    #         except AttributeError:
-    #             pass
-
-    #     # nothing returned, then property was not found
-    #     msg = ("{0} attribute does not exist in element_type"
-    #            " or release object or initializers".format(prop))
-    #     self.logger.warning(msg)
-
-    #     raise AttributeError(msg)
-
-    def get_initializer_by_name(self, name):
-        ''' get first initializer in list whose name matches 'name' '''
-        init = [i for i in enumerate(self.element_type.initializers)
-                if i.name == name]
-
-        if len(init) == 0:
-            return None
-        else:
-            return init[0]
-
-    def has_initializer(self, name):
-        '''
-        Returns True if an initializer is present in the list which sets the
-        data_array corresponding with 'name', otherwise returns False
-        '''
-        for i in self.element_type.initializers:
-            if name in i.array_types:
-                return True
-
-        return False
-
-    def get_initializer(self, name=None):
-        '''
-        If name is None, return list of all initializers else return
-        initializer that sets given 'name'.
-        'name' refers to the data_array initialized by initializer.
-        For instance, if name='rise_vel', function will look in all
-        initializers to find the one whose array_types contain 'rise_vel'.
-
-        If multiple initializers set 'name', then return the first one in the
-        list. Although nothing prevents the user from having two initializers
-        for the same data_array, it doesn't make much sense.
-
-        The default 'name' of an initializer is the data_array that a mover
-        requires and that the initializer is setting. For instance,
-
-            init = InitRiseVelFromDist()
-            init.name is 'rise_vel' by default
-
-        is an initializer that sets the 'rise_vel' if a RiseVelocityMover is
-        included in the Model. User can change the name of the initializer
-
-        '''
-        if name is None:
-            return self.element_type.initializers
-
-        init = None
-        for i in self.element_type.initializers:
-            if name in i.array_types:
-                return i
-
-        return init
-
-    def set_initializer(self, init):
-        '''
-        set/add given initializer. Function looks for first initializer in list
-        with same array_types and replaces it if found else it appends this to
-        list of initializers.
-
-        .. note::
-            nothing prevents user from defining two initializers that
-            set the same data_arrays; however, there isn't a use case for it
-
-        '''
-        ix = [ix for ix, i in enumerate(self.element_type.initializers)
-              if sorted(i.array_types) == sorted(init.array_types)]
-        if len(ix) == 0:
-            self.element_type.initializers.append(init)
-        else:
-            self.element_type.initializers[ix[0]] = init
-
-    def del_initializer(self, name):
-        '''
-        delete the initializer with given 'name'
-
-        The default 'name' of an initializer is the data_array that a mover
-        requires and that the initializer is setting. For instance,
-        the following is an initializer that sets the 'rise_vel' if a
-        RiseVelocityMover is included in the Model.
-
-            init = InitRiseVelFromDist()
-            init.name is 'rise_vel' by default
-
-        If name = 'rise_vel', all initializers with this name will be deleted
-        '''
-        ixs = [ix for ix, i in enumerate(self.element_type.initializers)
-               if i.name == name]
-        for ix in ixs:
-            del self.element_type.initializers[ix]
-
     @property
     def units(self):
         """
@@ -643,54 +320,11 @@ class Spill(BaseSpill):
             self._check_units(units)  # check validity before setting
         self._units = units
 
-    @property
-    def substance(self):
-        return self.element_type.substance
-        # try:
-        #     return self.element_type.substance
-        # except AttributeError:
-        #     return None
-
-    @substance.setter
-    def substance(self, subs):
-        self.element_type.substance = subs
-
-    def get_mass(self, units=None):
+    def get_mass(self):
         """
-        Return the mass released during the spill.
-        User can also specify desired output units in the function.
-        If units are not specified, then return in 'SI' units ('kg')
-        If volume is given, then use density to find mass. Density is always
-        at 15degC, consistent with API definition
+        Return the total mass released during the spill.
         """
-        # fixme: This really should be re-factored to always store mass.
-        if self.amount is None:
-            return self.amount
-
-        if self.units in self.valid_mass_units:
-            # first convert amount to 'kg'
-            mass = uc.convert('Mass', self.units, 'kg', self.amount)
-        elif self.units in self.valid_vol_units:
-            # need to convert to mass
-                # DO NOT change this back!
-                # for the UI to be consistent, the conversion needs to use
-                # standard density -- not the current water temp.
-                # water_temp = self.water.get('temperature')
-                # substance has a "standard_density" attribute
-                # for this.
-            std_rho = self.element_type.standard_density
-
-            vol = uc.convert('Volume', self.units, 'm^3', self.amount)
-            mass = std_rho * vol
-        else:
-            raise ValueError("{} is not a valid mass or Volume unit"
-                             .format(self.units))
-
-        if units is None or units == 'kg':
-            return mass
-        else:
-            self._check_units(units)
-            return uc.convert('Mass', 'kg', units, mass)
+        return self.release.release_mass
 
     def uncertain_copy(self):
         """
@@ -708,6 +342,11 @@ class Spill(BaseSpill):
         So we copy them temporarily to local variables before we deepcopy
         our Spill object.
         """
+        '''
+        TODO: Refactor spill container so it calls this only when the model is about to run
+        in prepare_for_model_run, and cleans up afterwards. Currently it calls it when a
+        spill is added to the spill container pair(?)
+        '''
         u_copy = copy.deepcopy(self)
         self.logger.debug(self._pid + "deepcopied spill {0}".format(self.id))
 
@@ -744,7 +383,45 @@ class Spill(BaseSpill):
         rewinds the release to original status (before anything has been
         released).
         """
+        self.array_types = {}
+        self._num_released = 0
         self.release.rewind()
+#         self.data.rewind()
+
+    def prepare_for_model_run(self, timestep):
+        '''
+        array_types comes from all the other objects above in the model such as
+        movers, weatherers, etc. The ones from the substance still need to be added
+        '''
+        self.release.prepare_for_model_run(timestep)
+
+    def release_elements(self, sc, current_time, time_step):
+        """
+        Releases and partially initializes new LEs
+        """
+        if not self.on:
+            return 0
+        idx = sc.spills.index(self)
+        expected_num_release = self.release.num_elements_after_time(current_time, time_step)
+        actual_num_release = self._num_released
+        to_rel = expected_num_release - actual_num_release
+        if to_rel <= 0:
+            return 0 #nothing to release, so end early
+        sc._append_data_arrays(to_rel)
+        self._num_released += to_rel
+
+        sc['spill_num'][-to_rel:] = idx
+
+        #Partial initialization from various objects
+        self.release.initialize_LEs(to_rel, sc, current_time, time_step)
+
+        if 'frac_coverage' in sc:
+            sc['frac_coverage'][-to_rel:] = self.frac_coverage
+
+        self.substance.initialize_LEs(to_rel, sc)
+        #empty list above should be model environment collection eventually??
+        #weatherers may still initialize further, but this is triggered from Model
+        return to_rel
 
     def num_elements_to_release(self, current_time, time_step):
         """
@@ -764,46 +441,10 @@ class Spill(BaseSpill):
         """
         return self.release.num_elements_to_release(current_time, time_step)
 
-    def set_newparticle_values(self, num_new_particles, current_time,
-                               time_step, data_arrays):
-        """
-        SpillContainer will release elements and initialize all data_arrays
-        to default initial value. The SpillContainer gets passed as input and
-        the data_arrays for 'position' get initialized correctly by the release
-        object: self.release.set_newparticle_positions()
-
-        If a Spill Amount is given, the Spill object also sets the 'mass' data
-        array; else 'mass' array remains '0'
-
-        :param int num_new_particles: number of new particles that were added.
-            Always greater than 0
-        :param current_time: current time
-        :type current_time: datetime.datetime
-        :param time_step: the time step, sometimes used to decide how many
-            should get released.
-        :type time_step: integer seconds
-        :param data_arrays: dict of data_arrays provided by the SpillContainer.
-            Look for 'positions' array in the dict and update positions for
-            latest num_new_particles that are released
-        :type data_arrays: dict containing numpy arrays for values
-
-        Also, the set_newparticle_values() method for all element_type gets
-        called so each element_type sets the values for its own data correctly
-        """
-        if self.element_type is not None:
-            self.element_type.set_newparticle_values(num_new_particles, self,
-                                                     data_arrays)
-
-        self.release.set_newparticle_positions(num_new_particles, current_time,
-                                               time_step, data_arrays)
-
-        data_arrays['mass'][-num_new_particles:] = \
-            self._elem_mass(num_new_particles, current_time, time_step)
-
-        # set arrays that are spill specific - 'frac_coverage'
-        if 'frac_coverage' in data_arrays:
-            data_arrays['frac_coverage'][-num_new_particles:] = \
-                self.frac_coverage
+    def _attach_default_refs(self, ref_dict):
+        self.release._attach_default_refs(ref_dict)
+        self.substance._attach_default_refs(ref_dict)
+        return GnomeId._attach_default_refs(self, ref_dict)
 
 
 """ Helper functions """
@@ -815,8 +456,10 @@ def surface_point_line_spill(num_elements,
                              end_position=None,
                              end_release_time=None,
                              substance=None,
-                             amount=None,
-                             units=None,
+                             amount=0,
+                             units='kg',
+                             water=None,
+                             on=True,
                              windage_range=(.01, .04),
                              windage_persist=900,
                              name='Surface Point or Line Release'):
@@ -853,23 +496,27 @@ def surface_point_line_spill(num_elements,
                                end_position=end_position,
                                end_release_time=end_release_time)
 
-    element_type = elements.floating(windage_range=windage_range,
-                                     windage_persist=windage_persist,
-                                     substance=substance)
-
-    return Spill(release=release,
-                 element_type=element_type,
+    retv = Spill(release=release,
+                 water=water,
+                 substance=substance,
                  amount=amount,
                  units=units,
-                 name=name)
+                 name=name,
+                 on=on)
+    if substance is None:
+        retv.substance.windage_range = windage_range
+        retv.substance.windage_persist = windage_persist
+    return retv
 
 
 def grid_spill(bounds,
                resolution,
                release_time,
                substance=None,
-               amount=None,
-               units=None,
+               amount=0,
+               units='kg',
+               on=True,
+               water=None,
                windage_range=(.01, .04),
                windage_persist=900,
                name='Surface Grid Spill'):
@@ -916,15 +563,17 @@ def grid_spill(bounds,
                           bounds,
                           resolution)
 
-    element_type = elements.floating(windage_range=windage_range,
-                                     windage_persist=windage_persist,
-                                     substance=substance)
-
-    return Spill(release=release,
-                 element_type=element_type,
+    retv = Spill(release=release,
+                 water=water,
+                 substance=substance,
                  amount=amount,
                  units=units,
-                 name=name)
+                 name=name,
+                 on=on)
+    if substance is None:
+        retv.substance.windage_range = windage_range
+        retv.substance.windage_persist = windage_persist
+    return retv
 
 
 def subsurface_plume_spill(num_elements,
@@ -934,10 +583,10 @@ def subsurface_plume_spill(num_elements,
                            distribution_type='droplet_size',
                            end_release_time=None,
                            substance=None,
-                           density=None,
-                           density_units='kg/m^3',
-                           amount=None,
-                           units=None,
+                           amount=0,
+                           units='kg',
+                           water=None,
+                           on=True,
                            windage_range=(.01, .04),
                            windage_persist=900,
                            name='Subsurface plume'):
@@ -1006,49 +655,57 @@ def subsurface_plume_spill(num_elements,
     # helper function which will do the work.
     # But this way user can just specify all parameters for release and
     # element_type in one go...
-    element_type = elements.plume(distribution_type=distribution_type,
-                                  distribution=distribution,
-                                  substance_name=substance,
-                                  windage_range=windage_range,
-                                  windage_persist=windage_persist,
-                                  density=density,
-                                  density_units=density_units)
+    inits = plume_initializers(distribution_type=distribution_type,
+                               distribution=distribution,
+                               windage_range=windage_range,
+                               windage_persist=windage_persist)
 
-    return Spill(release=release,
-                 element_type=element_type,
+    retv = Spill(release=release,
+                 water=water,
+                 substance=substance,
                  amount=amount,
                  units=units,
-                 name=name)
+                 name=name,
+                 on=on)
+    retv.substance.initializers = inits
+    if substance is None:
+        retv.substance.windage_range = windage_range
+        retv.substance.windage_persist = windage_persist
+    return retv
 
-
-def continuous_release_spill(initial_elements,
-                             num_elements,
-                             start_position,
-                             release_time,
-                             end_position=None,
-                             end_release_time=None,
-                             element_type=None,
-                             substance=None,
-                             on=True,
-                             amount=None,
-                             units=None,
-                             name='Point or Line Release'):
-    '''
-    Helper function returns a Spill object containing a point or line release
-    '''
-    release = ContinuousRelease(initial_elements=initial_elements,
-                                release_time=release_time,
-                                start_position=start_position,
-                                num_elements=num_elements,
-                                end_position=end_position,
-                                end_release_time=end_release_time)
-    return Spill(release,
-                 element_type,
-                 substance,
-                 on,
-                 amount,
-                 units,
-                 name=name)
+# def continuous_release_spill(initial_elements,
+#                              num_elements,
+#                              start_position,
+#                              release_time,
+#                              end_position=None,
+#                              end_release_time=None,
+#                              water=None,
+#                              substance=None,
+#                              on=True,
+#                              amount=None,
+#                              units=None,
+#                              windage_range=(.01, .04),
+#                              windage_persist=900,
+#                              name='Point or Line Release'):
+#     '''
+#     Helper function returns a Spill object containing a point or line release
+#     '''
+#     release = ContinuousRelease(initial_elements=initial_elements,
+#                                 release_time=release_time,
+#                                 start_position=start_position,
+#                                 num_elements=num_elements,
+#                                 end_position=end_position,
+#                                 end_release_time=end_release_time)
+#     retv = Spill(release=release,
+#                  water=water,
+#                  substance=substance,
+#                  amount=amount,
+#                  units=units,
+#                  name=name,
+#                  on=on)
+#     retv.substance.windage_range = windage_range
+#     retv.substance.windage_persist = windage_persist
+#     return retv
 
 
 def point_line_release_spill(num_elements,
@@ -1057,11 +714,12 @@ def point_line_release_spill(num_elements,
                              end_position=None,
                              end_release_time=None,
                              water=None,
-                             element_type=None,
                              substance=None,
                              on=True,
-                             amount=None,
-                             units=None,
+                             amount=0,
+                             units='kg',
+                             windage_range=(.01, .04),
+                             windage_persist=900,
                              name='Point or Line Release'):
     '''
     Helper function returns a Spill object containing a point or line release
@@ -1071,26 +729,28 @@ def point_line_release_spill(num_elements,
                                num_elements=num_elements,
                                end_position=end_position,
                                end_release_time=end_release_time)
-    spill = Spill(release,
-                  water=water,
-                  element_type=element_type,
-                  substance=substance,
-                  on=on,
-                  amount=amount,
-                  units=units,
-                  name=name)
-
-    return spill
+    retv = Spill(release=release,
+                 water=water,
+                 substance=substance,
+                 amount=amount,
+                 units=units,
+                 name=name,
+                 on=on)
+    if substance is None:
+        retv.substance.windage_range = windage_range
+        retv.substance.windage_persist = windage_persist
+    return retv
 
 
 def spatial_release_spill(start_positions,
                           release_time,
-                          element_type=None,
                           substance=None,
                           water=None,
                           on=True,
-                          amount=None,
-                          units=None,
+                          amount=0,
+                          units='kg',
+                          windage_range=(.01, .04),
+                          windage_persist=900,
                           name='spatial_release'):
     '''
     Helper function returns a Spill object containing a spatial release
@@ -1100,13 +760,14 @@ def spatial_release_spill(start_positions,
     release = SpatialRelease(release_time=release_time,
                              start_position=start_positions,
                              name=name)
-    spill = Spill(release=release,
-                  water=water,
-                  element_type=element_type,
-                  substance=substance,
-                  on=on,
-                  amount=amount,
-                  units=units,
-                  name=name)
-
-    return spill
+    retv = Spill(release=release,
+                 water=water,
+                 substance=substance,
+                 amount=amount,
+                 units=units,
+                 name=name,
+                 on=on)
+    if substance is None:
+        retv.substance.windage_range = windage_range
+        retv.substance.windage_persist = windage_persist
+    return retv

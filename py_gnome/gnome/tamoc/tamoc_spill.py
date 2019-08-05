@@ -127,7 +127,7 @@ def fake_tamoc_results(num_droplets=10):
     return results
 
 
-class TamocSpill(gnome.spill.spill.BaseSpill):
+class TamocSpill(gnome.spill.spill.Spill):
     """
     Models a spill
 
