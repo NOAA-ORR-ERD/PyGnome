@@ -207,6 +207,10 @@ class WindMover(WindMoversBase):
     """
     _schema = WindMoverSchema
 
+    _ref_as = 'wind_mover'
+
+    _req_refs = {'wind': Wind}
+
     def __init__(self, wind=None, **kwargs):
         """
         Uses super to call CyMover base class __init__
