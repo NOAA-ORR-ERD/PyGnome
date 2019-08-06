@@ -115,12 +115,9 @@ class WeatheringData(Weatherer):
         water_rho = self.water.get('density')
 
         for substance, data in sc.itersubstancedata(self.array_types, fate_status='all'):
-            if not substance.is_weatherable:
+            
+            if not substance.is_weatherable or len(data['density']) == 0:
                 self._aggregated_data(sc, 0)
-                return;
-
-            'update properties only if elements are released'
-            if len(data['density']) == 0:
                 continue
 
             k_rho = self._get_k_rho_weathering_dens_update(substance)
