@@ -31,6 +31,8 @@ py_gnome scripts with, e.g.::
 import gnome
 from gnome.model import Model
 
+from gnome.basic_types import oil_status_map
+
 from .utilities import (make_images_dir,
                         remove_netcdf,
                         set_verbose,
