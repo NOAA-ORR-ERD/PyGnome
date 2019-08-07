@@ -69,7 +69,7 @@ from gnome.environment import (IceAwareCurrent,
 
 from gnome.outputters import Renderer, NetCDFOutput, KMZOutput
 
-from gnome.map import MapFromBNA
+from gnome.map import MapFromBNA, GnomeMap
 
 from gnome.environment import (GridCurrent,
                                IceAwareCurrent,
@@ -82,7 +82,8 @@ from gnome.movers import (RandomMover,
                           RiseVelocityMover,
                           PyWindMover,
                           PyCurrentMover,
-                          IceAwareRandomMover
+                          IceAwareRandomMover,
+                          SimpleMover,
                           )
 
 from gnome.utilities.remote_data import get_datafile
