@@ -87,7 +87,7 @@ class Spill(GnomeId):
     # _name = 'Spill'
 
     def __init__(self,
-                 on=True,
+                 on=True,  # fixme: this shouldn't be the first parameter!
                  num_elements=1000,
                  amount=0,  # could be volume or mass
                  units='kg',
@@ -152,7 +152,7 @@ class Spill(GnomeId):
         self.amount = amount
 
 #         self.data = LEData()
-        self.water = water
+        # self.water = water
 
         self.amount_uncertainty_scale = amount_uncertainty_scale
 

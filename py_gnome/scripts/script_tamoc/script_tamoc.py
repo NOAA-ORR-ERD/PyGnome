@@ -152,22 +152,20 @@ def make_model():
     # Add a spill object
     print '\n-- Adding a Point Spill           --'
     end_release_time = model.start_time + gs.hours(12)
-    point_source = ts.well_blowout(num_elements=100,
-                 start_position=(0.0, 0.0, 1000.),
-                 release_time=start_time,
-                 end_release_time=end_release_time,
-                 water=None,
-                 substance='AD01554',
-                 on=True,
-                 amount=20000.,
-                 units='bbl/d',
-                 gor=500.,
-                 d0=0.5,
-                 phi_0=-np.pi / 2.,
-                 theta_0=0.,
-                 windage_range=(0.01, 0.04),
-                 windage_persist=900,
-                 name='Oil Well Blowout')
+    point_source = ts.TamocSpill(num_elements=100,
+                                 start_position=(0.0, 0.0, 1000.),
+                                 release_duration=gs.hours(24),
+                                 release_time=start_time,
+                                 substance='AD01554',
+                                 release_rate=20000.,
+                                 units='bbl/d',
+                                 gor=500.,
+                                 d0=0.5,
+                                 phi_0=-np.pi / 2.,
+                                 theta_0=0.,
+                                 windage_range=(0.01, 0.04),
+                                 windage_persist=900,
+                                 name='Oil Well Blowout')
 
     model.spills += point_source
 
