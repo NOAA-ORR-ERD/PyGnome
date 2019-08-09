@@ -6,7 +6,7 @@ run the simulation in a seemless integration with GNOME.
 
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import unit_conversion as uc
 
@@ -14,6 +14,7 @@ from gnome.utilities.time_utils import asdatetime
 
 from gnome.spill.release import Release
 from gnome.spill.spill import SpillSchema, Spill
+from gnome.spill.substance import Substance, GnomeOil
 from gnome.utilities.time_utils import asdatetime
 from gnome.gnomeobject import GnomeId
 from gnome import _valid_units
@@ -35,33 +36,45 @@ class TamocSpill(Spill):
                  start_position=(0.0, 0.0, 1000.),
                  release_time=datetime.now(),  # just so it gets something...
                  release_rate=0.0,
-                 release_duration=0.0,
-                 units='bbl/d',
+                 release_duration=timedelta(hours=1),
+                 units='bbl/day',
                  substance=None,
                  release=None,
                  water=None,
                  gor=None,
-                 d0=0.,
-                 phi_0=-np.pi/2.,
-                 theta_0=0.,
+                 d0=0.0,
+                 phi_0=-np.pi / 2.0,
+                 theta_0=0.0,
                  windage_range=(0.01, 0.04),
                  windage_persist=900,
                  on=True,
-                 name=None):
+                 name=None, **kwargs):
 
+        self.substance = substance
         # compute the total release amount
+        # this is all pretty kludgy
+        # but I think we are expecting a Spill to have a total amount
+        # we may be able to relax that later.
         release_time = asdatetime(release_time)
         end_release_time = release_time + release_duration
 
-        release_rate = uc.convert(units, "kg/s", release_rate)
-        amount = release_rate * release_duration.total_seconds
+        try:
+            # if it was provided in mass discharge units:
+            release_rate = uc.convert(units, "kg/s", release_rate)
+        except uc.NotSupportedUnitError:  # Trying volume discharge units
+            # must be in volume discharge
+            release_rate = uc.convert(units, "m^3/s", release_rate)
+            # convert to kg/s discharge with density
+            release_rate = release_rate * self.substance.standard_density
+        amount = release_rate * release_duration.total_seconds()
+
 
         super(TamocSpill, self).__init__(num_elements=num_elements,
                                          amount=amount,  # could be volume or mass
                                          units='kg',
                                          substance=substance,
                                          release=None,
-                                         on=on
+                                         on=on,
                                          **kwargs)
 
         self.release_time = release_time
@@ -70,6 +83,32 @@ class TamocSpill(Spill):
 
         self.frac_coverage = 1.0
         self._num_released = 0
+
+    ## this copied from Spill -- it really should be kept there
+    ## but I needed it to get the density for the flow conversion
+    @property
+    def substance(self):
+        return self._substance
+    @substance.setter
+    def substance(self, val):
+        '''
+        first try to use get_oil_props using 'val'. If this fails, then assume
+        user has provided a valid OilProps object and use it as is
+        '''
+        if val is None:
+            self._substance = NonWeatheringSubstance()
+            return
+        elif isinstance(val, Substance):
+            self._substance = val
+        try:
+            self._substance = GnomeOil.get_GnomeOil(val)
+        except Exception:
+            if isinstance(val, basestring):
+                raise
+
+            self.logger.info('Failed to get_oil_props for {0}. Use as is '
+                             'assuming has OilProps interface'.format(val))
+            self._substance = val
 
 
 class WellBlowoutRelease(Release):
@@ -124,7 +163,7 @@ def well_blowout(num_elements,
                  release_duration,
                  substance='AD01554',
                  release_rate=0.,
-                 units='bbl/d',
+                 units='bbl/day',
                  gor=0.,
                  d0=0.,
                  phi_0=-np.pi / 2.,
@@ -158,7 +197,7 @@ def well_blowout(num_elements,
     on : bool
         Flag indicating that this spill object is currently active
     amount : float
-        Flow rate of the release at standard conditions (bbl/d)
+        Flow rate of the release at standard conditions (bbl/day)
     units : str
         Units for the amount attribute
     gor : float

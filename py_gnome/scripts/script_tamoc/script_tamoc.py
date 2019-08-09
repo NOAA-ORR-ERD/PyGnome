@@ -158,7 +158,7 @@ def make_model():
                                  release_time=start_time,
                                  substance='AD01554',
                                  release_rate=20000.,
-                                 units='bbl/d',
+                                 units='bbl/day',
                                  gor=500.,
                                  d0=0.5,
                                  phi_0=-np.pi / 2.,
@@ -195,7 +195,10 @@ def make_model():
 
     # Add rise velocity for droplets
     print '\n-- Adding Particle Rise Velocity  --'
-    slip_velocity = SimpleMover(velocity=(0.0, 0.0, -0.1))
+    # fixme: we do have code for rise velocity:
+    #  gnome.movers.RiseVelocityMover
+    #  let's test that later
+    slip_velocity = gs.SimpleMover(velocity=(0.0, 0.0, -0.1))
     model.movers += slip_velocity
 
 
