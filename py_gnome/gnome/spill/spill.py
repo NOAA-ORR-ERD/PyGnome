@@ -157,7 +157,7 @@ class Spill(BaseSpill):
         self.amount = amount
 
 #         self.data = LEData()
-        # self.water = water
+        self.water = water
 
         self.amount_uncertainty_scale = amount_uncertainty_scale
 
