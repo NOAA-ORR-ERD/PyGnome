@@ -1406,8 +1406,8 @@ class Model(GnomeId):
                     # min_k1 = spill.substance.get('pour_point_min_k')
                     pour_point = spill.substance.pour_point()
 
-                    if spill.water is not None:
-                        water_temp = spill.water.get('temperature')
+                    if spill.substance.water is not None:
+                        water_temp = spill.substance.water.get('temperature')
 
                         if water_temp < pour_point[0]:
                             msg = ('The water temperature, {0} K, '
@@ -1419,11 +1419,12 @@ class Model(GnomeId):
                             self.logger.warning(msg)
                             msgs.append(self._warn_pre + msg)
 
-                        rho_h2o = spill.water.get('density')
+                        rho_h2o = spill.substance.water.get('density')
                         rho_oil = spill.substance.density_at_temp(water_temp)
                         if np.any(rho_h2o < rho_oil):
                             msg = ('Found particles with '
                                    'relative_buoyancy < 0. Oil is a sinker')
+                            isvalid = False
                             raise GnomeRuntimeError(msg)
 
         if num_spills_on > 0 and not someSpillIntersectsModel:
