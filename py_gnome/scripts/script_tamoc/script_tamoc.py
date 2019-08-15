@@ -17,8 +17,10 @@ But it's enough to see if the coupling with TAMOC works.
 """
 
 import gnome.scripting as gs
-import gnome.tamoc.tamoc_spill as ts
+import gnome.tamoc.tamoc_spill_obj as ts
 
+from gnome.map import GnomeMap
+from gnome.movers import SimpleMover
 from gnome.environment import (Water, Waves)
 from gnome.weatherers import (Evaporation, Dissolution)
 
@@ -128,7 +130,7 @@ def make_model():
 
     # Add a map
     print '\n-- Adding a Map                   --'
-    model.map = gs.GnomeMap()
+    model.map = GnomeMap()
 
     # Add image output
     print '\n-- Adding Image Outputters        --'
@@ -140,34 +142,12 @@ def make_model():
 
     # Add NetCDF output
     print '\n-- Adding NetCDF Outputter        --'
-    if not os.path.exists(outfiles_dir):
-        os.mkdir(outfiles_dir)
     netcdf_file = os.path.join(outfiles_dir, 'script_tamoc.nc')
     gs.remove_netcdf(netcdf_file)
     file_writer = gs.NetCDFOutput(netcdf_file,
                                   which_data='all',
                                   output_timestep=gs.hours(2))
     model.outputters += file_writer
-
-    # Add a spill object
-    print '\n-- Adding a Point Spill           --'
-    end_release_time = model.start_time + gs.hours(12)
-    point_source = ts.TamocSpill(num_elements=100,
-                                 start_position=(0.0, 0.0, 1000.),
-                                 release_duration=gs.hours(24),
-                                 release_time=start_time,
-                                 substance='AD01554',
-                                 release_rate=20000.,
-                                 units='bbl/day',
-                                 gor=500.,
-                                 d0=0.5,
-                                 phi_0=-np.pi / 2.,
-                                 theta_0=0.,
-                                 windage_range=(0.01, 0.04),
-                                 windage_persist=900,
-                                 name='Oil Well Blowout')
-
-    model.spills += point_source
 
     # Create an ocean environment
     water, wind, waves = base_environment(water_temp=273.15+21.,
@@ -176,8 +156,29 @@ def make_model():
 
     # Add a uniform current in the easterly direction
     print '\n-- Adding Currents                --'
-    uniform_current = gs.SimpleMover(velocity=(0.1, 0.0, 0.))
+    uniform_current = SimpleMover(velocity=(0.1, 0.0, 0.))
     model.movers += uniform_current
+
+    # Add a spill object
+    print '\n-- Adding a Point Spill           --'
+    end_release_time = model.start_time + gs.hours(12)
+    model.spills += ts.TamocSpill(num_elements=1000,
+                                    start_position=(0.0,
+                                                    0.0,
+                                                    10.),
+                                    release_time=start_time,
+                                    release_duration=gs.hours(12),
+                                    tamoc_time_delta=gs.hours(6),
+                                    substance='AD01554',
+                                    release_rate=20000.,
+                                    release_units='bbl/day',
+                                    gor=500.,
+                                    d0=0.05,
+                                    phi_0=-np.pi / 2.,
+                                    theta_0=0.,
+                                    current=uniform_current,
+                                    on=True,
+                                    name='My blowout')
 
     # Add a wind mover
     wind_mover = gs.WindMover(wind)
@@ -198,19 +199,18 @@ def make_model():
     # fixme: we do have code for rise velocity:
     #  gnome.movers.RiseVelocityMover
     #  let's test that later
-    slip_velocity = gs.SimpleMover(velocity=(0.0, 0.0, -0.1))
+    slip_velocity = SimpleMover(velocity=(0.0, 0.0, -0.1))
     model.movers += slip_velocity
 
-
     # Add dissolution
-    print '\n-- Adding Weathering              --'
-    evaporation = Evaporation(water=water,
-                              wind=wind)
-    model.weatherers += evaporation
-
-    dissolution = Dissolution(waves=waves,
-                              wind=wind)
-    model.weatherers += dissolution
+    #print '\n-- Adding Weathering              --'
+    #evaporation = Evaporation(water=water,
+    #                          wind=wind)
+    #model.weatherers += evaporation
+    #
+    #dissolution = Dissolution(waves=waves,
+    #                          wind=wind)
+    #model.weatherers += dissolution
 
     return model
 
@@ -246,4 +246,4 @@ if  __name__ == '__main__':
     model = make_model()
 
     # Run the model
-    #model = run_model(model)
+    model = run_model(model)
