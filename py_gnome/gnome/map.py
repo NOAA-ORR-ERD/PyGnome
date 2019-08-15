@@ -663,7 +663,7 @@ class RasterMap(GnomeMap):
     def __init__(self,
                  bitmap_array=None,
                  projection=None,
-                 refloat_halflife=1
+                 refloat_halflife=1,
                  **kwargs):
         """
         create a new RasterMap
@@ -1066,7 +1066,8 @@ class MapFromBNA(RasterMap):
         polygons = haz_files.ReadBNA(filename, 'PolygonSet')
         map_bounds = None
 
-        self.name = kwargs.pop('name', os.path.split(filename)[1])
+        if kwargs.get('name', False):
+            self.name = os.path.split(filename)[1]
 
         # find the spillable area and map bounds:
         # and create a new polygonset without them
@@ -1156,6 +1157,50 @@ class MapFromBNA(RasterMap):
         # get the basebitmap as a numpy array:
         bitmap_array = canvas.back_asarray()
 
+        super(MapFromBNA, self).__init__(
+            bitmap_array=bitmap_array,
+            projection=canvas.projection,
+            map_bounds=map_bounds,
+            spillable_area=spillable_area,
+            land_polys=land_polys,
+            **kwargs)
+        return None
+
+    def build_raster(self):
+        """
+        Build the underlying raster used for the map
+
+        This should be called if the resolution or land polygons change
+        """
+        # now draw the raster map with a map_canvas:
+        # determine the size:
+
+
+        # stretch the bounding box, to get approximate aspect ratio in
+        # projected coords.
+
+        BB = self.BB
+        raster_size = self.raster_size
+
+        aspect_ratio = (np.cos(BB.Center[1] * np.pi / 180) *
+                        (BB.Width / BB.Height))
+
+        w = int(np.sqrt(raster_size * aspect_ratio))
+        h = int(raster_size / w)
+
+        canvas = MapCanvas(image_size=(w, h),
+                           preset_colors=None,
+                           background_color='water',
+                           viewport=BB)
+        # color doesn't matter here, only index
+        canvas.add_colors((('water', (0, 255, 255)),  # aqua
+                           ('land', (255, 204, 153)),  # brown
+                           ))
+        canvas.clear_background()
+
+                # get the basebitmap as a numpy array:
+        bitmap_array = canvas.back_asarray()
+
         RasterMap.__init__(self,
                            bitmap_array=bitmap_array,
                            projection=canvas.projection,
@@ -1179,119 +1224,6 @@ class MapFromBNA(RasterMap):
     def raster_size(self, size):
         if size != self._raster_size:
             self._raster_size = size
-
-
-    # # keeping this around just in case, but this method is deprecated
-    # # writing the geojson directly from polygons is faster and less
-    # # requiremetns on a complex dependency.
-    # def to_geojson(self):
-    #     """
-    #     Output the vector version of the map
-
-    #     This is what gets drawn in the WebGNOME client, for example
-    #     """
-    #     map_file = ogr_open_file('BNA:' + self.filename)
-    #     polys = []
-
-    #     line_strings = []
-
-    #     for layer in ogr_layers(map_file):
-    #         for f in ogr_features(layer):
-    #             primary_id = f.GetFieldAsString('Primary ID')
-
-    #             # robust but slow solution ~ 1 second processing time
-    #             # if primary_id == 'SpillableArea':
-    #             #     spillarea_features.append(json.loads(f.ExportToJson()))
-    #             # elif primary_id == 'Map Bounds':
-    #             #     bounds_features.append(json.loads(f.ExportToJson()))
-    #             # else:
-    #             #     shoreline_features.append(json.loads(f.ExportToJson()))
-    #             #     shoreline_geo.append(json.loads(f.GetGeometryRef().ExportToJson())['coordinates'][0])
-
-    #             # only doing what we need at the moment
-    #             # in the future we might need the other layers
-    #             if primary_id not in ('SpillableArea', 'Map Bounds'):
-    #                 # apparently this is how you get to the actual
-    #                 # map coordinates using OGR.  It seems a bit brittle.
-    #                 # But this is much more efficient than exporting
-    #                 # to json.
-    #                 geom = f.GetGeometryRef()
-    #                 geo_type = geom.GetGeometryName()
-
-    #                 if geo_type == 'MULTIPOLYGON':
-    #                     poly = geom.GetGeometryRef(0)
-    #                     ring = poly.GetGeometryRef(0)
-
-    #                     polys.append([ring.GetPoints()])
-    #                 elif geo_type == 'LINESTRING':
-    #                     line_strings.append(geom.GetPoints())
-    #                 else:
-    #                     print 'unknown type: ', geo_type
-
-    #     features = []
-
-    #     if polys:
-    #         f = Feature(id="1",
-    #                     properties={'name': 'Shoreline Polys'},
-    #                     geometry=MultiPolygon(coordinates=polys))
-    #         features.append(f)
-    #     if line_strings:
-    #         f = Feature(id="2",
-    #                     properties={'name': 'Shoreline Lines'},
-    #                     geometry=MultiLineString(coordinates=line_strings))
-    #         features.append(f)
-
-    #     return FeatureCollection(features)
-
-    def to_geojson(self):
-        """
-        Output the vector version of the shoreline polygons.
-
-        This is what gets drawn in the WebGNOME client, for example
-
-        This version directly writes the polygons already stored in the map
-        object -- keeping the door open to that data coming from something
-        other than a bna file.
-
-        FIXME: Technically, geojson recommends ccw polygons -- but putting that
-               check in was pretty slow, so it's commented out.
-
-        FIXME: This really should export the map_bounds and spillable_area
-        as well.
-        """
-        land_coords = []
-        lake_coords = []
-        crds=None
-
-        for poly in self.land_polys:
-            if poly.metadata[2] == '1':
-                crds = land_coords
-            elif poly.metadata[2] == '2':
-                crds = lake_coords
-            else:
-                continue
-            pts = poly.points.tolist()
-            pts.append(pts[0])
-            crds.append([pts])
-            # FIXME: this is a good idea, but really slow...
-            # the is_clockwise() code could be cythonized, maybe that would help?
-            # # geojson polygons should be counter-clockwise
-            # if is_clockwise(poly):
-            #     p.reverse()
-
-        features = []
-        if land_coords:
-            land = Feature(id="1",
-                        properties={'name': 'Shoreline Polys'},
-                        geometry=MultiPolygon(land_coords)
-                    )
-            lakes = Feature(id="2",
-                            properties={'name': 'Lakes'},
-                            geometry=MultiPolygon(lake_coords)
-                        )
-            features.append(land)
-            features.append(lakes)
-        return FeatureCollection(features)
 
 
 class MapFromUGrid(RasterMap):
