@@ -42,7 +42,7 @@ from gnome.spill.initializers import plume_initializers
 
 class BaseSpill(GnomeId):
     """
-    Base class for a SPill object
+    Base class for a Spill object
 
     Mostly to make it clear what the Spill API is
 
@@ -50,10 +50,12 @@ class BaseSpill(GnomeId):
     overriding its methods.
 
     """
+    valid_vol_units = _valid_units('Volume')
+    valid_mass_units = _valid_units('Mass')
 
     def __init__(self,
                  num_elements=1000,
-                 substance=NonWeatheringSubstance(),
+                 substance=None,
                  amount=0,  # could be volume or mass
                  units='kg',
                  name=None,
@@ -81,41 +83,62 @@ class BaseSpill(GnomeId):
         """
         super(BaseSpill, self).__init__(name, **kwargs)
 
-
         self.on = on
-        self.substance = substance
+        self.substance = substance if substance is not None else NonWeatheringSubstance()
         self.units = units
         self.amount = amount
 
     # fixme: We store in standard units! i.e. kilograms!
-    #        so the getter shold jsut return that value.
+    #        so the getter should jsut return that value.
     @property
     def amount(self):
-        rel_mass = self.rel_mass #kg
+        """
+        Property for the amount of a Spill
 
+        This will return the amount in the type of units it was originally specified in
+        using the units attribute of the Spill.
+
+        So:
+        If it was originally specified in volume, it will return m^3
+        If it was originally specified in mass, it will return kg
+
+        """
         if self.units in self.valid_vol_units:
-            std_density = self.substance.standard_density #kg/m3
-            vol = rel_mass / std_density
+            vol = self.get_mass() / self.substance.standard_density  # kg/m3
             return uc.convert('m^3', self.units, vol)
-
-        if self.units in self.valid_mass_units:
-            return uc.convert('kg', self.units, rel_mass)
+        elif self.units in self.valid_mass_units:
+            return uc.convert('kg', self.units, self.get_mass())
 
     @amount.setter
     def amount(self, val):
         if val < 0:
             raise ValueError('amount cannot be less than 0')
-        rel_mass = val
 
         if self.units in self.valid_vol_units:
-            #need to get mass
             vol = uc.convert(self.units, 'm^3', val)
-            std_density = self.substance.standard_density #kg/m3
-            rel_mass = vol * std_density
+            self._set_mass(vol * self.substance.standard_density)  # kg/m3
+        elif self.units in self.valid_mass_units:
+            self._set_mass(uc.convert(self.units, 'kg', val))
+        else:
+            raise ValueError("{} is not a valid unit for a Spill amount".format(self.units))
 
-        if self.units in self.valid_mass_units:
-            rel_mass = uc.convert(self.units, 'kg', val)
-        self.rel_mass = rel_mass
+    def get_mass(self):
+        """
+        Return the total mass to be released during the spill.
+        """
+        return self._mass
+
+    def _set_mass(self, mass):
+        """
+        here for internal use -- only because we didn't make mass a property
+
+        and/or have a very wierd "amount" property
+
+        mass should alwyas be in kg
+        """
+        self._mass = mass
+
+
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
@@ -159,12 +182,6 @@ class BaseSpill(GnomeId):
         if units is not None:
             self._check_units(units)  # check validity before setting
         self._units = units
-
-    def get_mass(self):
-        """
-        Return the total mass released during the spill.
-        """
-        return self.release.release_mass
 
     def uncertain_copy(self):
         """
@@ -276,15 +293,12 @@ class SpillSchema(ObjTypeSchema):
     )
 
 
-
 class Spill(BaseSpill):
     """
     Models a spill by combining Release and Substance objects
     """
     _schema = SpillSchema
 
-    valid_vol_units = _valid_units('Volume')
-    valid_mass_units = _valid_units('Mass')
     # attributes that need to be there for the __setattr__ magic to work
     # release = None  # just to make sure it's there.
     # element_type = None
@@ -298,7 +312,7 @@ class Spill(BaseSpill):
                  units='kg',
                  substance=None,
                  release=None,
-                 water=None,
+                 # water=None,
                  amount_uncertainty_scale=0.0,
                  **kwargs):
         """
@@ -339,12 +353,6 @@ class Spill(BaseSpill):
             If amount property is None, then just floating elements
             (ie. 'windages')
         """
-        super(Spill, self).__init__(num_elements=num_elements,
-                                    substance=substance,
-                                    amount=amount,
-                                    units=units,
-                                    on=on,
-                                    **kwargs)
         if release is None:
             release = PointLineRelease(release_time=datetime.now(),
                                        start_position=(0, 0, 0),
@@ -355,8 +363,15 @@ class Spill(BaseSpill):
             self.release = release
             num_elements = release.num_elements
 
+        super(Spill, self).__init__(num_elements=num_elements,
+                                    substance=substance,
+                                    amount=amount,
+                                    units=units,
+                                    on=on,
+                                    **kwargs)
+
         ## fixme -- will we really need this?
-        self.water = water
+        # self.water = water
 
         self.amount_uncertainty_scale = amount_uncertainty_scale
 
@@ -375,30 +390,30 @@ class Spill(BaseSpill):
         arr.update(self.substance.all_array_types)
         return arr
 
-    # @property
-    # def substance(self):
-    #     return self._substance
+    @property
+    def substance(self):
+        return self._substance
 
-    # @substance.setter
-    # def substance(self, val):
-    #     '''
-    #     first try to use get_oil_props using 'val'. If this fails, then assume
-    #     user has provided a valid OilProps object and use it as is
-    #     '''
-    #     if val is None:
-    #         self._substance = NonWeatheringSubstance()
-    #         return
-    #     elif isinstance(val, Substance):
-    #         self._substance = val
-    #     try:
-    #         self._substance = GnomeOil.get_GnomeOil(val)
-    #     except Exception:
-    #         if isinstance(val, basestring):
-    #             raise
+    @substance.setter
+    def substance(self, val):
+        '''
+        first try to use get_oil_props using 'val'. If this fails, then assume
+        user has provided a valid OilProps object and use it as is
+        '''
+        if val is None:
+            self._substance = NonWeatheringSubstance()
+            return
+        elif isinstance(val, Substance):
+            self._substance = val
+        try:
+            self._substance = GnomeOil.get_GnomeOil(val)
+        except Exception:
+            if isinstance(val, basestring):
+                raise
 
-    #         self.logger.info('Failed to get_oil_props for {0}. Use as is '
-    #                          'assuming has OilProps interface'.format(val))
-    #         self._substance = val
+            self.logger.info('Failed to get_oil_props for {0}. Use as is '
+                             'assuming has OilProps interface'.format(val))
+            self._substance = val
 
     @property
     def release_time(self):
@@ -489,11 +504,22 @@ class Spill(BaseSpill):
     #         self._check_units(units)  # check validity before setting
     #     self._units = units
 
-    # def get_mass(self):
-    #     """
-    #     Return the total mass released during the spill.
-    #     """
-    #     return self.release.release_mass
+    def get_mass(self):
+        """
+        Return the total mass released during the spill.
+        """
+        return self.release.release_mass
+
+    def _set_mass(self, mass):
+        """
+        here for internal use -- only because we didn't make mass a property
+
+        and/or have a very wierd "amount" property
+
+        mass should alwyas be in kg
+        """
+        self.release.release_mass = mass
+
 
     # def uncertain_copy(self):
     #     """

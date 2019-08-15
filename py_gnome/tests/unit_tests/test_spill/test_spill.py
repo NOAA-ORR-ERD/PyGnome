@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from gnome.spill.spill import (Spill)
+from gnome.spill.spill import BaseSpill, Spill
 from gnome.spill.substance import NonWeatheringSubstance
 from gnome.spill.release import PointLineRelease
 from gnome.spill_container import SpillContainer
@@ -10,6 +10,11 @@ import pytest
 @pytest.fixture('function')
 def sp():
     return Spill()
+
+@pytest.fixture('function')
+def base_spill():
+    return BaseSpill()
+
 
 rel_time = datetime(2014, 1, 1, 0, 0)
 end_rel_time = rel_time + timedelta(seconds=9000)
@@ -56,6 +61,44 @@ def cont_point_spill_le_per_ts():
                  amount=5000)
 
 
+class TestBaseSpill(object):
+    #rel_time = datetime(2014, 1, 1, 0, 0)
+    #pos = (0, 1, 2)
+
+    def test__init(self):
+        sp = BaseSpill()
+        # assert default construction
+        # really jsut to make sure it can be initialized empty
+        assert sp.substance and isinstance(sp.substance, NonWeatheringSubstance)
+
+
+    def test_amount(self, base_spill):
+        sp = base_spill
+        assert sp.amount == 0
+        assert sp.get_mass() == 0
+        sp.units = 'm^3'
+        sp.amount = 10
+        assert sp.get_mass() == 10 * sp.substance.standard_density
+        assert sp.amount == 10
+        assert sp.units == 'm^3'
+
+    def test_amount_negative(self, base_spill):
+
+        with pytest.raises(ValueError):
+            base_spill.amount = -1
+
+    def test_units_setting(self, base_spill):
+        assert base_spill.units == 'kg'
+        base_spill.units = 'lb'
+        assert base_spill.units == 'lb'
+        base_spill.units = 'gal'
+        assert base_spill.units == 'gal'
+
+    def test_units_setting_bad(self, base_spill):
+        with pytest.raises(ValueError):
+            base_spill.units = 'inches'
+
+
 class TestSpill(object):
     rel_time = datetime(2014, 1, 1, 0, 0)
     pos = (0, 1, 2)
@@ -65,6 +108,18 @@ class TestSpill(object):
         #assert default construction
         assert sp.substance and isinstance(sp.substance, NonWeatheringSubstance)
         assert sp.release  and isinstance(sp.release, PointLineRelease)
+
+
+    def test_amount(self, sp):
+        assert sp.amount == 0
+        assert sp.get_mass() == 0
+        sp.units = 'm^3'
+        sp.amount = 10
+        assert sp.get_mass() == 10 * sp.substance.standard_density
+        assert sp.amount == 10
+        assert sp.units == 'm^3'
+
+
 
     def test_num_per_timestep_release_elements(self):
         'release elements in the context of a spill container'
@@ -89,25 +144,6 @@ class TestSpill(object):
             else:
                 assert to_rel == 0
 
-    def test_amount(self, sp):
-        assert sp.amount == 0
-        assert sp.release.release_mass == 0
-        sp.units = 'm^3'
-        sp.amount = 10
-        assert sp.release.release_mass == 10 * sp.substance.standard_density
-        assert sp.amount == 10
-
-        with pytest.raises(ValueError):
-            sp.amount = -1
-
-    def test_units(self, sp):
-        assert sp.units == 'kg'
-        sp.units = 'lb'
-        assert sp.units == 'lb'
-        sp.units = 'gal'
-        assert sp.units == 'gal'
-        with pytest.raises(ValueError):
-            sp.units = 'inches'
 
     #These are for when SpillContainer is removed
     @pytest.mark.xfail()

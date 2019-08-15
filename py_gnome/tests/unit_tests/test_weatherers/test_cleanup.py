@@ -64,7 +64,8 @@ class ObjForTests:
                                               substance=test_oil,
                                               amount=amount,
                                               units='kg',
-                                              water=water)
+                                              # water=water,
+                                              )
         return (sc, weatherers)
 
     def prepare_test_objs(self, obj_arrays=None):
