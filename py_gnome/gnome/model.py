@@ -26,7 +26,7 @@ from gnome.map import (GnomeMapSchema,
                        MapFromUGridSchema,
                        GnomeMap)
 
-from gnome.environment import Environment, Wind
+from gnome.environment import Environment, Wind, Water
 from gnome.array_types import gat
 from gnome.environment import schemas as env_schemas
 
@@ -1103,6 +1103,17 @@ class Model(GnomeId):
             if obj_added.current.id not in self.environment:
                 self.environment += obj_added.current
 
+    def _find_in_environ_collec(self, env_type):
+        """
+        finds the first environemtn object of the given type
+        """
+        print "looking for:", env_type
+        for env_obj in self.environment:
+            print env_obj
+            if isinstance(env_obj, env_type):
+                return env_obj
+        return None
+
     def _callback_add_mover(self, obj_added):
         'Callback after mover has been added'
         self._add_to_environ_collec(obj_added)
@@ -1406,8 +1417,13 @@ class Model(GnomeId):
                     # min_k1 = spill.substance.get('pour_point_min_k')
                     pour_point = spill.substance.pour_point()
 
-                    if spill.water is not None:
-                        water_temp = spill.water.get('temperature')
+                    # *maybe* put this back -- but using a better water object
+
+                    print self.environment
+
+                    water = self._find_in_environ_collec(Water)
+                    if water is not None:
+                        water_temp = water.get('temperature')
 
                         if water_temp < pour_point[0]:
                             msg = ('The water temperature, {0} K, '
@@ -1419,7 +1435,7 @@ class Model(GnomeId):
                             self.logger.warning(msg)
                             msgs.append(self._warn_pre + msg)
 
-                        rho_h2o = spill.water.get('density')
+                        rho_h2o = water.get('density')
                         rho_oil = spill.substance.density_at_temp(water_temp)
                         if np.any(rho_h2o < rho_oil):
                             msg = ('Found particles with '
