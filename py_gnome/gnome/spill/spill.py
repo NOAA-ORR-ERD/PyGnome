@@ -54,7 +54,7 @@ class BaseSpill(GnomeId):
     valid_mass_units = _valid_units('Mass')
 
     def __init__(self,
-                 num_elements=1000,
+                 num_elements=100,
                  substance=None,
                  amount=0,  # could be volume or mass
                  units='kg',
@@ -62,9 +62,11 @@ class BaseSpill(GnomeId):
                  on=True,
                  **kwargs):
         """
-        what is needed for initialization will depend on
+        What is needed for initialization will depend on
+        the needs of the subclassed spill. But all Spills
+        should have these parameters
 
-        the needs of the subclassed spill
+        :param num_elements:
 
         :param bool on=True: Toggles the spill on/off.
 

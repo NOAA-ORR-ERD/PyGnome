@@ -56,8 +56,6 @@ class ObjForTests:
         weatherers = [WeatheringData(water), FayGravityViscous(water)]
         weatherers.sort(key=weatherer_sort)
         sc = SpillContainer()
-        print "******************"
-        print "Adding a spill to spill container"
         sc.spills += point_line_release_spill(10,
                                               (0, 0, 0),
                                               rel_time,

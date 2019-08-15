@@ -1105,11 +1105,16 @@ class Model(GnomeId):
 
     def _find_in_environ_collec(self, env_type):
         """
-        finds the first environemtn object of the given type
+        Finds the first Environment object of the given type
+
+        :param env_type: The class of the environment object you want
+
+        For exampmle:
+
+        self._find_in_environ_collec(Water) will return the first water
+        object currently in the model's environment
         """
-        print "looking for:", env_type
         for env_obj in self.environment:
-            print env_obj
             if isinstance(env_obj, env_type):
                 return env_obj
         return None
