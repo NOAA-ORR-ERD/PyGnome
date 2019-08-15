@@ -96,11 +96,13 @@ class GnomeMap(GnomeId):
     refloat_halflife = None  # note -- no land, so never used
     _ref_as = 'map'
 
-    def __init__(self, map_bounds=None, spillable_area=None, land_polys=None, **kwargs):
+    def __init__(self,
+                 map_bounds=None,
+                 spillable_area=None,
+                 land_polys=None,
+                 **kwargs):
         """
         This __init__ will be different for other implementations
-
-        Optional parameters (kwargs)
 
         :param map_bounds: The polygon bounding the map if any elements are
                            outside the map bounds, they are removed from the
@@ -132,12 +134,7 @@ class GnomeMap(GnomeId):
                                        dtype=np.float64)
 
         self.spillable_area = spillable_area
-
-        if land_polys is None:
-            # empty set, no land
-            self.land_polys = PolygonSet()
-        else:
-            self.land_polys = land_polys
+        self.land_polys = land_polys
 
     def get_polygons(self):
         polys = {}
@@ -208,6 +205,27 @@ class GnomeMap(GnomeId):
         for poly in sa:
             ps.append(poly)
         self._spillable_area = ps
+
+    @property
+    def land_polys(self):
+        return self._land_polys
+
+    @land_polys.setter
+    def land_polys(self, sa):
+        if sa is None or (isinstance(sa, list) and len(sa) == 0):
+            sa = PolygonSet()
+        if isinstance(sa, PolygonSet):
+            self._land_polys = sa
+            return
+        ps = PolygonSet()
+        try:
+            sa[0][0][0]
+        except TypeError:
+            # probably a single polygon -- put it in a list
+            sa = [sa]
+        for poly in sa:
+            ps.append(poly)
+        self._land_polys = ps
 
     def on_map(self, coords):
         """
@@ -642,7 +660,11 @@ class RasterMap(GnomeMap):
 
     land_flag = 1
 
-    def __init__(self, bitmap_array, projection, **kwargs):
+    def __init__(self,
+                 bitmap_array=None,
+                 projection=None,
+                 refloat_halflife=1
+                 **kwargs):
         """
         create a new RasterMap
 
@@ -677,7 +699,7 @@ class RasterMap(GnomeMap):
 
         :type id: string
         """
-        refloat_halflife = kwargs.pop('refloat_halflife', 1)
+        super(RasterMap, self).__init__(**kwargs)
         self._refloat_halflife = refloat_halflife * self.seconds_in_hour
 
         self.basebitmap = np.ascontiguousarray(bitmap_array)
@@ -689,10 +711,7 @@ class RasterMap(GnomeMap):
         else:
             self.ratios = np.array((16, 1,), dtype=np.int32)
 
-        self.build_coarser_bitmaps()
         self.projection = projection
-
-        GnomeMap.__init__(self, **kwargs)
 
     def build_coarser_bitmaps(self):
         """
@@ -736,6 +755,15 @@ class RasterMap(GnomeMap):
 
         self.layers.append(self.basebitmap)
         self.layers = np.array(self.layers)
+
+    @property
+    def basebitmap(self):
+        return self._basebitmap
+
+    @basebitmap_array.setter
+    def basebitmap(self, arr):
+        self._basebitmap = np.ascontiguousarray(arr)
+        self.build_coarser_bitmaps()
 
     @property
     def refloat_halflife(self):
@@ -1001,7 +1029,10 @@ class MapFromBNA(RasterMap):
     """
     _schema = MapFromBNASchema
 
-    def __init__(self, filename=None, raster_size=4096 * 4096, **kwargs):
+    def __init__(self,
+                 filename=None,
+                 raster_size=4096 * 4096,
+                 **kwargs):
         """
         Creates a GnomeMap (specifically a RasterMap) from a data file.
         It is expected that you will get the spillable area and map bounds
@@ -1126,13 +1157,29 @@ class MapFromBNA(RasterMap):
         bitmap_array = canvas.back_asarray()
 
         RasterMap.__init__(self,
-                           bitmap_array,
-                           canvas.projection,
+                           bitmap_array=bitmap_array,
+                           projection=canvas.projection,
                            map_bounds=map_bounds,
                            spillable_area=spillable_area,
                            land_polys=land_polys,
                            **kwargs)
         return None
+
+    def gen_bitmap(self):
+        BB = self.land_polys.g
+
+    @property
+    def raster_size(self):
+        '''
+        Maximum physical size of the raster in bytes
+        '''
+        return self._raster_size
+    
+    @raster_size.setter
+    def raster_size(self, size):
+        if size != self._raster_size:
+            self._raster_size = size
+
 
     # # keeping this around just in case, but this method is deprecated
     # # writing the geojson directly from polygons is faster and less
