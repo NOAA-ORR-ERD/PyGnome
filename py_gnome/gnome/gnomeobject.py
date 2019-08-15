@@ -60,11 +60,15 @@ class AddLogger(object):
     '''
     _log = None
 
-    def __init__(self, *args, **kwargs):
-        if ('json_' in kwargs):
-            # because old save files
-            kwargs.pop('json_')
-        super(AddLogger, self).__init__(**kwargs)
+    # ## no need for a __init__ if it doesn't do anything!
+    # def __init__(self, *args, **kwargs):
+    #     if ('json_' in kwargs):
+    #         # because old save files
+    #         kwargs.pop('json_')
+    #     if kwargs:  # there should be no unprocessed arguments
+    #         raise TypeError("object.__init__() takes no parameters. "
+    #                         "Got: {}".format(kwargs))
+    #     super(AddLogger, self).__init__(**kwargs)
 
     @property
     def logger(self):

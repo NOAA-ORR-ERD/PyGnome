@@ -182,6 +182,8 @@ class SpillContainerData(object):
     Think of it as a read-only SpillContainer.
 
     Designed primarily to hold data retrieved from cache
+
+    But can also be used for testing, etc.
     """
     def __init__(self, data_arrays=None, uncertain=False):
         """

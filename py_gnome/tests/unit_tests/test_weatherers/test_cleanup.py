@@ -64,7 +64,7 @@ class ObjForTests:
                                               substance=test_oil,
                                               amount=amount,
                                               units='kg',
-                                              # water=water,
+                                              #water=water,
                                               )
         return (sc, weatherers)
 
@@ -268,7 +268,8 @@ class TestBurn(ObjForTests):
     (sc, weatherers) = ObjForTests.mk_test_objs()
     spill = sc.spills[0]
     op = spill.substance
-    volume = spill.get_mass() / op.density_at_temp(spill.water.temperature)
+    water = weatherers[0].water
+    volume = spill.get_mass() / op.density_at_temp(water.temperature)
 
     thick = 1
     area = (0.5 * volume) / thick

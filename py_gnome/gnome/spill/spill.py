@@ -30,7 +30,7 @@ from .. import _valid_units
 from gnome.spill.release import (BaseReleaseSchema,
                                  PointLineReleaseSchema,
                                  SpatialReleaseSchema)
-from gnome.environment.water import WaterSchema
+# from gnome.environment.water import WaterSchema
 #from gnome.spill.le import LEData
 from gnome.spill.substance import (SubstanceSchema,
                                    Substance,
@@ -283,9 +283,9 @@ class SpillSchema(ObjTypeSchema):
     amount_uncertainty_scale = SchemaNode(
         Float(), missing=drop, save=True, update=True
     )
-    water = WaterSchema(
-        missing=drop, save=True, update=True, save_reference=True
-    )
+    # water = WaterSchema(
+    #     missing=drop, save=True, update=True, save_reference=True
+    # )
     substance = GeneralGnomeObjectSchema(
         acceptable_schemas=[GnomeOilSchema,
                             NonWeatheringSubstanceSchema],
@@ -652,7 +652,7 @@ def surface_point_line_spill(num_elements,
                              substance=None,
                              amount=0,
                              units='kg',
-                             water=None,
+                             # water=None,
                              on=True,
                              windage_range=(.01, .04),
                              windage_persist=900,
@@ -691,7 +691,7 @@ def surface_point_line_spill(num_elements,
                                end_release_time=end_release_time)
 
     retv = Spill(release=release,
-                 water=water,
+                 # water=water,
                  substance=substance,
                  amount=amount,
                  units=units,
@@ -710,7 +710,7 @@ def grid_spill(bounds,
                amount=0,
                units='kg',
                on=True,
-               water=None,
+               # water=None,
                windage_range=(.01, .04),
                windage_persist=900,
                name='Surface Grid Spill'):
@@ -758,7 +758,7 @@ def grid_spill(bounds,
                           resolution)
 
     retv = Spill(release=release,
-                 water=water,
+                 # water=water,
                  substance=substance,
                  amount=amount,
                  units=units,
@@ -779,7 +779,7 @@ def subsurface_plume_spill(num_elements,
                            substance=None,
                            amount=0,
                            units='kg',
-                           water=None,
+                           # water=None,
                            on=True,
                            windage_range=(.01, .04),
                            windage_persist=900,
@@ -855,7 +855,7 @@ def subsurface_plume_spill(num_elements,
                                windage_persist=windage_persist)
 
     retv = Spill(release=release,
-                 water=water,
+                 # water=water,
                  substance=substance,
                  amount=amount,
                  units=units,
@@ -907,7 +907,7 @@ def point_line_release_spill(num_elements,
                              release_time,
                              end_position=None,
                              end_release_time=None,
-                             water=None,
+                             # water=None,
                              substance=None,
                              on=True,
                              amount=0,
@@ -924,7 +924,7 @@ def point_line_release_spill(num_elements,
                                end_position=end_position,
                                end_release_time=end_release_time)
     retv = Spill(release=release,
-                 water=water,
+                 # water=water,
                  substance=substance,
                  amount=amount,
                  units=units,
@@ -939,7 +939,7 @@ def point_line_release_spill(num_elements,
 def spatial_release_spill(start_positions,
                           release_time,
                           substance=None,
-                          water=None,
+                          # water=None,
                           on=True,
                           amount=0,
                           units='kg',
@@ -955,7 +955,7 @@ def spatial_release_spill(start_positions,
                              start_position=start_positions,
                              name=name)
     retv = Spill(release=release,
-                 water=water,
+                 # water=water,
                  substance=substance,
                  amount=amount,
                  units=units,
