@@ -41,6 +41,8 @@ class RiseVelocityMover(CyMover):
         super(RiseVelocityMover, self).__init__(**kwargs)
 
         self.array_types['rise_vel'] = gat('rise_vel')
+        self.array_types['droplet_diameter'] = gat('droplet_diameter')
+
 
     def __repr__(self):
         """

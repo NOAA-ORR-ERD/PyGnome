@@ -61,13 +61,15 @@ class AddLogger(object):
     _log = None
 
     # ## no need for a __init__ if it doesn't do anything!
+    # # is this needed here ???
     # def __init__(self, *args, **kwargs):
     #     if ('json_' in kwargs):
     #         # because old save files
     #         kwargs.pop('json_')
     #     if kwargs:  # there should be no unprocessed arguments
     #         raise TypeError("object.__init__() takes no parameters. "
-    #                         "Got: {}".format(kwargs))
+    #                         "Got: {}\n"
+    #                         "initializing: {}".format(kwargs, type(self)))
     #     super(AddLogger, self).__init__(**kwargs)
 
     @property
@@ -139,6 +141,7 @@ class GnomeId(AddLogger):
         self.__class__._instance_count += 1
 
         if name:
+            # Fixme: what the heck else type should a name be????
             if isinstance(name, six.string_types) and '/' in name or '\\' in name:
                 raise ValueError("Invalid slash character in {0}".format(name))
             self.name = name

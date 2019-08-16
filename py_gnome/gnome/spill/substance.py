@@ -324,7 +324,7 @@ class GnomeOil(OilProps, Substance):
             arrs['density'][sl] = density
 
         substance_kvis = self.kvis_at_temp(water_temp)
-        
+
         fates = np.logical_and(arrs['positions'][sl, 2] == 0, arrs['status_codes'][sl] == oil_status.in_water)
 
         # set status for new_LEs correctly
@@ -332,7 +332,7 @@ class GnomeOil(OilProps, Substance):
             arrs['fate_status'][sl] = np.choose(fates, [fate.subsurf_weather, fate.surface_weather])
             if substance_kvis is not None:
                 arrs['viscosity'][sl] = substance_kvis
-        
+
         # initialize mass_components
         arrs['mass_components'][sl] = (np.asarray(self.mass_fraction, dtype=np.float64) * (arrs['mass'][sl].reshape(len(arrs['mass'][sl]), -1)))
         super(GnomeOil, self).initialize_LEs(to_rel, arrs)
@@ -377,7 +377,7 @@ class NonWeatheringSubstance(Substance):
     def initialize_LEs(self, to_rel, arrs):
         '''
         :param to_rel - number of new LEs to initialize
-        :param arrs - dict-like of data arrays representing LEs
+        :param arrs - dict-like of data arrays representing LEs. Usually a SpillContainer
         '''
         sl = slice(-to_rel, None, 1)
         arrs['density'][sl] = self.standard_density
@@ -390,3 +390,5 @@ class NonWeatheringSubstance(Substance):
             For non-weathering substance, we just return the standard density.
         '''
         return self.standard_density
+
+

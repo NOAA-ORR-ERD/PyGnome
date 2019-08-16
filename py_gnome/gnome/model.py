@@ -690,10 +690,14 @@ class Model(GnomeId):
 
         '''Step 3: Compile array_types and run setup on spills'''
         array_types = dict()
-        for oc in [self.movers, self.outputters, self.environment, self.weatherers, self.spills]:
+        print "***** updating array types *****"
+        for oc in [self.movers,
+                   self.outputters,
+                   self.environment,
+                   self.weatherers,
+                   self.spills]:
             for item in oc:
-                if (hasattr(item, 'array_types')):
-                    array_types.update(item.all_array_types)
+                array_types.update(item.all_array_types)
 
         self.logger.debug(array_types)
 

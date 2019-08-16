@@ -163,22 +163,22 @@ def make_model():
     print '\n-- Adding a Point Spill           --'
     end_release_time = model.start_time + gs.hours(12)
     model.spills += ts.TamocSpill(num_elements=1000,
-                                    start_position=(0.0,
-                                                    0.0,
-                                                    10.),
-                                    release_time=start_time,
-                                    release_duration=gs.hours(12),
-                                    tamoc_time_delta=gs.hours(6),
-                                    substance='AD01554',
-                                    release_rate=20000.,
-                                    release_units='bbl/day',
-                                    gor=500.,
-                                    d0=0.05,
-                                    phi_0=-np.pi / 2.,
-                                    theta_0=0.,
-                                    current=uniform_current,
-                                    on=True,
-                                    name='My blowout')
+                                  start_position=(0.0,
+                                                  0.0,
+                                                  10.),
+                                  release_time=start_time,
+                                  release_duration=gs.hours(12),
+                                  tamoc_time_delta=gs.hours(6),
+                                  substance='AD01554',
+                                  release_rate=20000.,
+                                  release_units='bbl/day',
+                                  gor=500.,
+                                  d0=0.05,
+                                  phi_0=-np.pi / 2.,
+                                  theta_0=0.,
+                                  current=uniform_current,
+                                  on=True,
+                                  name='My blowout')
 
     # Add a wind mover
     wind_mover = gs.WindMover(wind)
@@ -196,11 +196,13 @@ def make_model():
 
     # Add rise velocity for droplets
     print '\n-- Adding Particle Rise Velocity  --'
-    # fixme: we do have code for rise velocity:
-    #  gnome.movers.RiseVelocityMover
-    #  let's test that later
-    slip_velocity = SimpleMover(velocity=(0.0, 0.0, -0.1))
-    model.movers += slip_velocity
+    # slip_velocity = SimpleMover(velocity=(0.0, 0.0, -0.1))
+    # model.movers += slip_velocity
+
+    # We do have code for rise velocity:
+    model.movers += gs.RiseVelocityMover()
+
+
 
     # Add dissolution
     #print '\n-- Adding Weathering              --'

@@ -53,6 +53,8 @@ class BaseSpill(GnomeId):
     valid_vol_units = _valid_units('Volume')
     valid_mass_units = _valid_units('Mass')
 
+    array_types = {}
+
     def __init__(self,
                  num_elements=100,
                  substance=None,
@@ -89,6 +91,20 @@ class BaseSpill(GnomeId):
         self.substance = substance if substance is not None else NonWeatheringSubstance()
         self.units = units
         self.amount = amount
+
+    @property
+    def all_array_types(self):
+        '''
+        Need to add array types from Substance
+        '''
+        print "******* BaseSpill all_array_types property called"
+        print self.array_types
+        print vars(self).keys()
+        print self.__class__.array_types
+        arr = self.array_types.copy()
+        arr.update(self.substance.all_array_types)
+        print "all_array_types:", arr.keys()
+        return arr
 
     # fixme: We store in standard units! i.e. kilograms!
     #        so the getter should jsut return that value.
@@ -140,6 +156,31 @@ class BaseSpill(GnomeId):
         """
         self._mass = mass
 
+    # FIXME: this logic really should be somewhere else -- maybe the substance module?
+    @property
+    def substance(self):
+        return self._substance
+
+    @substance.setter
+    def substance(self, val):
+        '''
+        first try to use substance using 'val'. If this fails, then assume
+        user has provided a valid substance object and use it as is
+        '''
+        if val is None:
+            self._substance = NonWeatheringSubstance()
+            return
+        elif isinstance(val, Substance):
+            self._substance = val
+        try:
+            self._substance = GnomeOil.get_GnomeOil(val)
+        except Exception:
+            if isinstance(val, basestring):
+                raise
+
+            self.logger.info('Failed to get_oil_props for {0}. Use as is '
+                             'assuming has OilProps interface'.format(val))
+            self._substance = val
 
 
     def __repr__(self):
@@ -222,7 +263,7 @@ class BaseSpill(GnomeId):
         rewinds the release to original status (before anything has been
         released).
         """
-        self.array_types = {}
+        self._num_released = 0
 
     def prepare_for_model_run(self, timestep):
         '''
@@ -392,30 +433,30 @@ class Spill(BaseSpill):
         arr.update(self.substance.all_array_types)
         return arr
 
-    @property
-    def substance(self):
-        return self._substance
+    # @property
+    # def substance(self):
+    #     return self._substance
 
-    @substance.setter
-    def substance(self, val):
-        '''
-        first try to use get_oil_props using 'val'. If this fails, then assume
-        user has provided a valid OilProps object and use it as is
-        '''
-        if val is None:
-            self._substance = NonWeatheringSubstance()
-            return
-        elif isinstance(val, Substance):
-            self._substance = val
-        try:
-            self._substance = GnomeOil.get_GnomeOil(val)
-        except Exception:
-            if isinstance(val, basestring):
-                raise
+    # @substance.setter
+    # def substance(self, val):
+    #     '''
+    #     first try to use get_oil_props using 'val'. If this fails, then assume
+    #     user has provided a valid OilProps object and use it as is
+    #     '''
+    #     if val is None:
+    #         self._substance = NonWeatheringSubstance()
+    #         return
+    #     elif isinstance(val, Substance):
+    #         self._substance = val
+    #     try:
+    #         self._substance = GnomeOil.get_GnomeOil(val)
+    #     except Exception:
+    #         if isinstance(val, basestring):
+    #             raise
 
-            self.logger.info('Failed to get_oil_props for {0}. Use as is '
-                             'assuming has OilProps interface'.format(val))
-            self._substance = val
+    #         self.logger.info('Failed to get_oil_props for {0}. Use as is '
+    #                          'assuming has OilProps interface'.format(val))
+    #         self._substance = val
 
     @property
     def release_time(self):
@@ -580,7 +621,6 @@ class Spill(BaseSpill):
         rewinds the release to original status (before anything has been
         released).
         """
-        self.array_types = {}
         self._num_released = 0
         self.release.rewind()
 
@@ -594,23 +634,33 @@ class Spill(BaseSpill):
     def release_elements(self, sc, current_time, time_step):
         """
         Releases and partially initializes new LEs
+
+        Some documentation please!
         """
         if not self.on:
             return 0
-        idx = sc.spills.index(self)
+
         expected_num_release = self.release.num_elements_after_time(current_time, time_step)
         actual_num_release = self._num_released
         to_rel = expected_num_release - actual_num_release
         if to_rel <= 0:
             return 0 #nothing to release, so end early
+        # fixme: if you are calling a private method, something is not clean
+
+        # extend the data arrays to make room for the new elements
         sc._append_data_arrays(to_rel)
         self._num_released += to_rel
 
+
+        # Fixme: couldn't a spill have an spill_num or something?
+        idx = sc.spills.index(self)
         sc['spill_num'][-to_rel:] = idx
 
-        #Partial initialization from various objects
+
+        # INitialize the positions, etc.
         self.release.initialize_LEs(to_rel, sc, current_time, time_step)
 
+        # fixme: this should not be here!
         if 'frac_coverage' in sc:
             sc['frac_coverage'][-to_rel:] = self.frac_coverage
 
