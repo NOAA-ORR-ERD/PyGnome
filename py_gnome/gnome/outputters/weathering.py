@@ -50,9 +50,9 @@ class WeatheringOutput(Outputter):
                  output_dir=None,   # default is to not output to file
                  **kwargs):
         '''
-        :param str output_dir='./': output directory for geojson files
+        :param str output_dir='./': output directory for gjson files
 
-        use super to pass optional \*\*kwargs to base class __init__ method
+        other argements as defined in the Outputter class
         '''
         self.output_dir = output_dir
         self.units = {'default': 'kg',

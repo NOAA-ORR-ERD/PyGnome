@@ -1,5 +1,5 @@
 '''
-tests for weathering outputter
+tests for oil budget outputter
 '''
 
 import os
@@ -15,7 +15,7 @@ from gnome.environment import constant_wind, Water, Waves
 from gnome.weatherers import Evaporation, ChemicalDispersion, Skimmer, Burn
 from gnome.spill import point_line_release_spill
 
-from gnome.outputters import WeatheringOutput
+from gnome.outputters import OilBudgetOutput
 
 from ..conftest import test_oil
 
