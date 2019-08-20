@@ -85,7 +85,7 @@ def model(sample_model):
                          burn,
                          skimmer]
 
-    model.outputters += WeatheringOutput()
+    model.outputters += OilBudgetOutput()
     model.rewind()
 
     return model
@@ -93,8 +93,7 @@ def model(sample_model):
 
 def test_init():
     'simple initialization passes'
-    g = WeatheringOutput()
-    assert g.output_dir is None
+    g = OilBudgetOutput()
 
 
 def test_model_webapi_output(model, output_dir):
