@@ -5,9 +5,11 @@ Outputter for dumping teh oil budget as a CSV file
 
 """
 
-from .outputter import Outputter
+from .weathering import BaseMassBalanceOutputter
+from .outputter import OutputterFilenameMixin
 
-class OilBudgetOutput(Outputter):
+
+class OilBudgetOutput(BaseMassBalanceOutputter, OutputterFilenameMixin):
     """
     Outputter for the oil budget table
     """
@@ -26,10 +28,10 @@ class OilBudgetOutput(Outputter):
             raise ValueError("Invalid format: {}\n"
                              "Formats allowed: {}".format(file_format,
                                                           self._valid_file_formats))
-        self.filename = filename
         self.file_format = file_format
 
-        super(OilBudgetOutput, self).__init__(cache=None,
+        super(OilBudgetOutput, self).__init__(filename=filename,
+                                              cache=None,
                                               on=True,
                                               output_timestep=output_timestep,
                                               # these always should be this way for this

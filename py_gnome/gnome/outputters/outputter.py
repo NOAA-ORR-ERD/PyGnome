@@ -63,6 +63,7 @@ class Outputter(GnomeId):
                  output_zero_step=True,
                  output_last_step=True,
                  output_start_time=None,
+                 # Fixme: this probably shouldnt be in the base class
                  output_dir=None,
                  surface_conc=None,
                  *args,
@@ -205,6 +206,13 @@ class Outputter(GnomeId):
         if model_start_time is None:
             raise TypeError("model_start_time is a required parameter")
 
+        print "in Outputter prepare_for_model_run"
+        print "about to call clean_output_files"
+        print self
+        print self.__class__.__mro__
+        print self.clean_output_files
+        self.clean_output_files()
+
         self._model_start_time = model_start_time
         self.model_timestep = model_time_step
 
@@ -218,6 +226,8 @@ class Outputter(GnomeId):
             self._write_step = True
 
         self._dt_since_lastoutput = 0
+        self._middle_of_run = True
+
 
     def prepare_for_model_step(self, time_step, model_time):
         """
@@ -334,15 +344,20 @@ class Outputter(GnomeId):
 
     def clean_output_files(self):
         '''
-        cleans out the output dir
+        Cleans out the output dir
 
         This should be implemented by subclasses that dump files.
 
-        but each outputter type dumps different types of files, and this should
-        only clear out those. So it has to be custom implemented
+        Each outputter type dumps different types of files, and this should
+        only clear out those.
+
+        See the OutputterFilenameMixin for a simple example.
+
         '''
-        raise NotImplementedError('This Outputter does not support '
-                                  'clearing out files')
+        pass
+
+        # super(Outputter, self).clean_output_files()
+
 
     def rewind(self):
         '''
@@ -422,6 +437,10 @@ class Outputter(GnomeId):
                           .items()[0]
                           .current_time_stamp)
 
+    @property
+    def middle_of_run(self):
+        return self._middle_of_run
+
     # Some utilities for checking valid filenames, etc...
     def _check_filename(self, filename):
         'basic checks to make sure the filename is valid'
@@ -452,11 +471,11 @@ class OutputterFilenameMixin(object):
     """
     mixin for outputter that output to a single file
     """
+
     def __init__(self, filename, *args, **kwargs):
 
-        self.filename = filename
-
         super(OutputterFilenameMixin, self).__init__()
+        self.filename = filename
 
     @property
     def filename(self):
@@ -470,6 +489,22 @@ class OutputterFilenameMixin(object):
         else:
             self._check_filename(new_name)
             self._filename = new_name
+
+    def clean_output_files(self):
+        '''
+        deletes output files that may be around
+
+        called by prepare_for_model_run
+
+        here in case it needs to be called from elsewhere
+        '''
+        # super(OutputterFilenameMixin, self).clean_output_files()
+        print " FileMixin clean_output_files called"
+        print self.filename
+        try:
+            os.remove(self.filename)
+        except OSError:
+            pass  # it must not be there
 
 
 

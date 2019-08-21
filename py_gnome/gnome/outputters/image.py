@@ -289,10 +289,6 @@ class IceImageOutput(Outputter):
                 "data:image/png;base64,{}".format(coverage_image),
                 mover_grid_bb)
 
-    def rewind(self):
-        'remove previously written files'
-        super(IceImageOutput, self).rewind()
-
     def ice_movers_to_dict(self):
         '''
         a dict containing 'obj_type' and 'id' for each object in

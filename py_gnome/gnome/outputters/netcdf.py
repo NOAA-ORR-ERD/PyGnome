@@ -364,11 +364,6 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
                                 'time': {'units': ''}
                                 }
 
-
-    @property
-    def middle_of_run(self):
-        return self._middle_of_run
-
     @property
     def uncertain_filename(self):
         '''
@@ -543,7 +538,8 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
         if not self.on:
             return
 
-        self.clean_output_files()
+        # this should have been called by the superclass version
+        # self.clean_output_files()
 
         self._update_var_attributes(spills)
 
@@ -620,7 +616,6 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
         # need to keep track of starting index for writing data since variable
         # number of particles are released
         self._start_idx = 0
-        self._middle_of_run = True
 
     def _create_nc_var(self, grp, var_name, dtype, shape, chunksz):
         # fixme: why is this even here? it's wrapping a single call???
@@ -742,10 +737,7 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
 
         here in case it needs to be called from elsewhere
         '''
-        try:
-            os.remove(self.filename)
-        except OSError:
-            pass  # it must not be there
+        OutputterFilenameMixin.clean_output_files(self)
 
         try:
             os.remove(self._u_filename)

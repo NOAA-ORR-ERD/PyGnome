@@ -93,6 +93,7 @@ def test_init():
     'simple initialization passes'
     g = OilBudgetOutput("a_sample_filename")
 
+
 def test_bad_format():
     """
     unknown file format
@@ -115,7 +116,8 @@ def test_model_full_run_output(model, output_dir):
 
     model.outputters += OilBudgetOutput(outfilename)
 
-    model.outputters[-1].output_dir = output_dir
+    print OilBudgetOutput.clean_output_files
+
     model.rewind()
 
     model.full_run()

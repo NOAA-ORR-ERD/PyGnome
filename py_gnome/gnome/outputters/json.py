@@ -250,9 +250,10 @@ class CurrentJsonOutput(Outputter):
     def get_matching_velocities(self, velocities, v):
         return np.where((velocities == v).all(axis=1))
 
-    def rewind(self):
-        'remove previously written files'
-        super(CurrentJsonOutput, self).rewind()
+    # # if all it does is call super, you don't need it!
+    # def rewind(self):
+    #     'remove previously written files'
+    #     super(CurrentJsonOutput, self).rewind()
 
     def current_movers_to_dict(self):
         '''
@@ -314,6 +315,14 @@ class IceJsonOutput(Outputter):
             self.ice_movers = tuple()
 
         super(IceJsonOutput, self).__init__(**kwargs)
+
+    def clean_output_files(self):
+        """
+        this outputter doesn't write any files
+
+        but this method needs to be here
+        """
+        pass
 
     def write_output(self, step_num, islast_step=False):
         'dump data in geojson format'
