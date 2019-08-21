@@ -103,7 +103,14 @@ class Outputter(GnomeId):
         :type surface_conc: string
         """
 
+        ## fixme -- why should this be initilaizable???
+        self._middle_of_run = kwargs.pop('_middle_of_run', False)
+
         super(Outputter, self).__init__(*args, **kwargs)
+
+        # flag to keep track of _state of the object - is True after calling
+        # prepare_for_model_run
+
 
         self.cache = cache
         self.on = on
@@ -349,6 +356,8 @@ class Outputter(GnomeId):
         self._write_step = True
         self._is_first_output = True
         self._surf_conc_computed = True
+        self._middle_of_run = False
+
         if self.surface_conc:
             self.array_types['surface_concentration'] = gat('surface_concentration')
 
@@ -437,3 +446,31 @@ class Outputter(GnomeId):
             raise ValueError('{0} file exists. Enter a filename that '
                              'does not exist in which to save data.'
                              .format(file_))
+
+
+class OutputterFilenameMixin(object):
+    """
+    mixin for outputter that output to a single file
+    """
+    def __init__(self, filename, *args, **kwargs):
+
+        self.filename = filename
+
+        super(OutputterFilenameMixin, self).__init__()
+
+    @property
+    def filename(self):
+        return self._filename
+
+    @filename.setter
+    def filename(self, new_name):
+        if self.middle_of_run:
+            raise AttributeError('This attribute cannot be changed in the '
+                                 'middle of a run')
+        else:
+            self._check_filename(new_name)
+            self._filename = new_name
+
+
+
+

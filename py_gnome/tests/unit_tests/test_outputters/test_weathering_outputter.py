@@ -10,6 +10,7 @@ import numpy as np
 import pytest
 
 from gnome.utilities.inf_datetime import InfDateTime
+from gnome.scripting import hours
 
 from gnome.environment import constant_wind, Water, Waves
 from gnome.weatherers import Evaporation, ChemicalDispersion, Skimmer, Burn
@@ -28,7 +29,7 @@ def model(sample_model):
     rel_start_pos = sample_model['release_start_pos']
     rel_end_pos = sample_model['release_end_pos']
 
-    model.cache_enabled = True
+    # model.cache_enabled = True # why use the cache -- it'll just slow things down!!!
     model.uncertain = False
 
     wind = constant_wind(1.0, 0.0)
@@ -40,18 +41,14 @@ def model(sample_model):
 
     print "the environment:", model.environment
 
-    N = 10  # a line of ten points
-    line_pos = np.zeros((N, 3), dtype=np.float64)
-    line_pos[:, 0] = np.linspace(rel_start_pos[0], rel_end_pos[0], N)
-    line_pos[:, 1] = np.linspace(rel_start_pos[1], rel_end_pos[1], N)
+    start_time = model.start_time
 
-    # print start_points
-    model.duration = timedelta(hours=6)
-    end_time = model.start_time + timedelta(hours=1)
-    spill = point_line_release_spill(1000,
+    model.duration = timedelta(hours=12)
+    end_time = start_time + timedelta(hours=1)
+    spill = point_line_release_spill(100,
                                      start_position=rel_start_pos,
-                                     release_time=model.start_time,
-                                     end_release_time=end_time,
+                                     release_time=start_time,
+                                     end_release_time=start_time + hours(1),
                                      end_position=rel_end_pos,
                                      substance=test_oil,
                                      amount=1000,
@@ -59,14 +56,17 @@ def model(sample_model):
     model.spills += spill
 
     # figure out mid-run save for weathering_data attribute, then add this in
-    rel_time = model.spills[0].release_time
-    skim_start = rel_time + timedelta(hours=1)
+    # rel_time = model.spills[0].release_time
+
+    skim_start = start_time + timedelta(hours=1)
     amount = model.spills[0].amount
     units = model.spills[0].units
 
-    skimmer = Skimmer(.3 * amount, units=units, efficiency=0.3,
+    skimmer = Skimmer(.3 * amount,
+                      units=units,
+                      efficiency=0.3,
                       active_range=(skim_start,
-                                    skim_start + timedelta(hours=1)))
+                                    skim_start + hours(1)))
 
     # thickness = 1m so area is just 20% of volume
     volume = spill.get_mass() / spill.substance.density_at_temp()
