@@ -12,6 +12,10 @@ import json
 import numpy as np
 from scipy.optimize import curve_fit
 
+from colander import (SchemaNode, Int, String, Float, drop)
+
+from gnome.persist.base_schema import ObjTypeSchema
+
 
 class Density():
 
