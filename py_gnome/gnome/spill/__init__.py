@@ -17,3 +17,14 @@ from substance import (GnomeOil,
                        NonWeatheringSubstanceSchema)
 from le import LEData
 
+import sample_oils
+
+from sample_oils.oil_benzene import oil_benzene
+from sample_oils.oil_4 import oil_4
+from sample_oils.oil_6 import oil_6
+from sample_oils.oil_ans_mp import oil_ans_mp
+from sample_oils.oil_bahia import oil_bahia
+from sample_oils.oil_crude import oil_crude
+from sample_oils.oil_diesel import oil_diesel
+from sample_oils.oil_jetfuels import oil_jetfuels
+from sample_oils.oil_gas import oil_gas
