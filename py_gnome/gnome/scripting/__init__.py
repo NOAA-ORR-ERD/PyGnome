@@ -63,17 +63,19 @@ from gnome.movers.wind_movers import (constant_wind_mover,
                                       wind_mover_from_file,
                                       )
 
-from gnome.environment import (IceAwareCurrent,
-                               IceAwareWind,
-                               )
-
-from gnome.outputters import Renderer, NetCDFOutput, KMZOutput
+from gnome.outputters import (Renderer,
+                              NetCDFOutput,
+                              KMZOutput,
+                              OilBudgetOutput,
+                              )
 
 from gnome.map import MapFromBNA, GnomeMap
 
 from gnome.environment import (GridCurrent,
                                IceAwareCurrent,
                                IceAwareWind,
+                               Water,
+                               Waves,
                                )
 
 from gnome.movers import (RandomMover,

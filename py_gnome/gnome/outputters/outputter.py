@@ -206,11 +206,6 @@ class Outputter(GnomeId):
         if model_start_time is None:
             raise TypeError("model_start_time is a required parameter")
 
-        print "in Outputter prepare_for_model_run"
-        print "about to call clean_output_files"
-        print self
-        print self.__class__.__mro__
-        print self.clean_output_files
         self.clean_output_files()
 
         self._model_start_time = model_start_time
@@ -356,9 +351,6 @@ class Outputter(GnomeId):
         '''
         pass
 
-        # super(Outputter, self).clean_output_files()
-
-
     def rewind(self):
         '''
         Called by model.rewind()
@@ -499,8 +491,6 @@ class OutputterFilenameMixin(object):
         here in case it needs to be called from elsewhere
         '''
         # super(OutputterFilenameMixin, self).clean_output_files()
-        print " FileMixin clean_output_files called"
-        print self.filename
         try:
             os.remove(self.filename)
         except OSError:

@@ -36,7 +36,10 @@ from gnome.weatherers import (weatherer_sort,
                               WeatheringData,
                               FayGravityViscous,
                               Langmuir,
-                              weatherer_schemas)
+                              weatherer_schemas,
+                              weatherers_by_name,
+                              standard_weatherering_sets,
+                              )
 from gnome.outputters import Outputter, NetCDFOutput, WeatheringOutput
 from gnome.outputters import schemas as out_schemas
 from gnome.persist import (extend_colander,
@@ -269,6 +272,46 @@ class Model(GnomeId):
 
         self.movers.register_callback(self._callback_add_spill,
                                       ('add', 'replace', 'remove'))
+
+    def add_weathering(self, which='standard'):
+        """
+        Add the weatherers
+
+        :param which='standard': which weatheres to add. Default is 'standard',
+                                 which will add all the standard weathering algorithms
+                                 if you don't want them all, you can speicfy a list:
+                                 ['evaporation', 'dispersion'].
+
+                                 Options are:
+                                  - 'evaporation'
+                                  - 'dispersion'
+                                  - 'emulsification'
+                                  - 'dissolution': Dissolution,
+                                  - 'half_life_weatherer'
+
+                                 see: ``gnome.weatherers.__init__.py`` for the full list
+
+        """
+        names = weatherers_by_name.keys()
+        try:
+            which = standard_weatherering_sets[which]
+        except (TypeError, KeyError):
+            # assume it's a list passed in.
+            pass
+        for wx_name in which:
+            print "trying to add: ", wx_name
+            try:
+                self.weatherers += weatherers_by_name[wx_name.lower()]()
+            except KeyError:
+                print weatherers_by_name
+                raise ValueError("{} is not a valid weatherer. \n"
+                                 "The options are:"
+                                 " {}".format(wx_name,
+                                              weatherers_by_name.keys()))
+
+
+
+
 
     def reset(self, **kwargs):
         '''
