@@ -10,7 +10,7 @@ import numpy as np
 import pytest
 
 from gnome.utilities.inf_datetime import InfDateTime
-from gnome.scripting import hours
+import gnome.scripting as gs
 
 
 from gnome.environment import constant_wind, Water, Waves
@@ -50,54 +50,26 @@ def model(sample_model):
 
     start_time = model.start_time
 
-    model.duration = timedelta(hours=12)
-    end_time = start_time + timedelta(hours=1)
+    model.duration = gs.days(1)
+    end_time = start_time + gs.hours(1)
+
     spill = point_line_release_spill(100,
                                      start_position=rel_start_pos,
                                      release_time=start_time,
-                                     end_release_time=start_time + hours(1),
+                                     end_release_time=start_time + gs.hours(1),
                                      end_position=rel_end_pos,
                                      substance=test_oil,
                                      amount=1000,
                                      units='kg')
     model.spills += spill
 
-    # figure out mid-run save for weathering_data attribute, then add this in
-    # rel_time = model.spills[0].release_time
-
-    skim_start = start_time + timedelta(hours=1)
-    amount = model.spills[0].amount
-    units = model.spills[0].units
-
-    skimmer = Skimmer(.3 * amount,
-                      units=units,
-                      efficiency=0.3,
-                      active_range=(skim_start,
-                                    skim_start + hours(1)))
-
-    # thickness = 1m so area is just 20% of volume
-    volume = spill.get_mass() / spill.substance.density_at_temp()
-
-    burn = Burn(0.2 * volume, 1.0,
-                active_range=(skim_start, InfDateTime('inf')),
-                efficiency=0.9)
-
-    c_disp = ChemicalDispersion(.1, efficiency=0.5,
-                                active_range=(skim_start,
-                                              skim_start + timedelta(hours=1)),
-                                waves=waves)
-
-    # model.weatherers += [Evaporation(),
-    #                      Disp
-    #                      c_disp,
-    #                      burn,
-    #                      skimmer]
+    model.add_weathering(which='standard')
 
     return model
 
 
 def test_init():
-    'simple initialization passes'
+    'Simple initialization passes'
     g = OilBudgetOutput("a_sample_filename")
 
 
@@ -111,31 +83,86 @@ def test_bad_format():
                             )
 
 
+def test_model_full_run_output(model, output_dir):
+    '''
+    Test weathering outputter with a model since simplest to do that
 
-# def test_model_full_run_output(model, output_dir):
-#     '''
-#     Test weathering outputter with a model since simplest to do that
+    (I'm being impatient -- I hope I don't regret that)
+    '''
 
-#     (I'm being impatient -- I hope I don't regret that)
-#     '''
+    outfilename = os.path.join(output_dir, "test_oil_budget.csv")
 
-#     outfilename = "test_oil_budget.csv"
+    model.outputters += OilBudgetOutput(outfilename,
+                                        output_timestep=gs.hours(1))
 
-#     model.outputters += OilBudgetOutput(outfilename)
+    print OilBudgetOutput.clean_output_files
 
-#     print OilBudgetOutput.clean_output_files
+    model.rewind()
 
-#     model.rewind()
+    model.full_run()
 
-#     model.full_run()
+    # was the file created?
 
-#     # was the file created?
+    out_filename = os.path.join(output_dir, outfilename)
+    assert os.path.isfile(out_filename)
 
-#     assert os.path.isfile(os.path.join(output_dir, outfilename))
 
-#     # test some output here!
-#     assert False
+    # read the file in and test a couple things
+    csv_file = open(out_filename).readlines()
 
+    print len(csv_file)
+
+    assert len(csv_file) == 26
+
+    assert csv_file[0].split(",")[0] == "Model Time"
+
+    assert csv_file[1].split(",")[0].strip() == "0:00"
+    assert csv_file[2].split(",")[0].strip() == "1:00"
+
+    assert csv_file[-1].split(",")[0].strip() == "24:00"
+
+
+def test_model_full_run_output_short_interval(model, output_dir):
+    '''
+    Test weathering outputter with a model since simplest to do that
+
+    (I'm being impatient -- I hope I don't regret that)
+    '''
+
+    outfilename = os.path.join(output_dir, "test_oil_budget2.csv")
+
+    model.outputters += OilBudgetOutput(outfilename,
+                                        output_timestep=gs.minutes(30))
+
+    print OilBudgetOutput.clean_output_files
+
+    model.rewind()
+
+    model.full_run()
+
+    # was the file created?
+
+    out_filename = os.path.join(output_dir, outfilename)
+    assert os.path.isfile(out_filename)
+
+
+    # read the file in and test a couple things
+    csv_file = open(out_filename).readlines()
+
+    print "file is:",
+    print csv_file
+
+    print len(csv_file)
+
+    assert len(csv_file) == 50
+
+    assert csv_file[0].split(",")[0] == "Model Time"
+
+    assert csv_file[1].split(",")[0].strip() == "0:00"
+    assert csv_file[2].split(",")[0].strip() == "0:30"
+
+    print csv_file[-1]
+    assert csv_file[-1].split(",")[0].strip() == "24:00"
 
     # # floating mass at beginning of step - though tests will only pass for
     # # nominal values

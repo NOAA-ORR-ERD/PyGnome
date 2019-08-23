@@ -26,7 +26,7 @@ def make_model():
 
     print 'adding outputters'
 
-    model.outputters += gs.OilBudgetOutput("")
+    model.outputters += gs.OilBudgetOutput("GNOME_oil_budget.csv")
 
     print 'adding a spill'
     # We need a spill at the very least
@@ -62,5 +62,6 @@ def make_model():
 
 if __name__ == "__main__":
     model = make_model()
+    print "running the model"
     model.full_run()
-    model.save('.')
+    model.save(saveloc="WeatheringRun.gnome")

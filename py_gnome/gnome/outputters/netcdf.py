@@ -142,7 +142,6 @@ var_attributes = {
     'non_weathering': {
         'long_name': 'total mass of oil that does not weather after each time step',
         'units': 'kg'},
-
     'chem_dispersed': {
         'long_name': 'total mass chemically dispersed since beginning of model run',
         'units': 'kilograms'},

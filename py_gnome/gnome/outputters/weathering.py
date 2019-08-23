@@ -27,7 +27,7 @@ class BaseMassBalanceOutputter(Outputter):
         # only applies to forecast spill_container (Not uncertain)
         sc = self.cache.load_timestep(step_num).items()[0]
 
-        output_info = {'time_stamp': sc.current_time_stamp.isoformat()}
+        output_info = {'model_time': sc.current_time_stamp}
         output_info.update(sc.mass_balance)
 
         self.logger.debug(self._pid + 'step_num: {0}'.format(step_num))
@@ -89,6 +89,8 @@ class WeatheringOutput(BaseMassBalanceOutputter):
             return None
 
         output_info = self.gather_mass_balance_data(step_num)
+        # convert to string
+        output_info['time_stamp'] = output_info.pop('model_time').isoformat()
 
         if self.output_dir:
             output_filename = self.output_to_file(output_info, step_num)

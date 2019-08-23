@@ -17,18 +17,28 @@ class OilBudgetOutput(BaseMassBalanceOutputter, OutputterFilenameMixin):
     """
     _valid_file_formats = ('csv')
 
-    # Fixme: what is the 'non_weathering' field ??
-    budget_categories = ['beached',
-                         'dispersed'
-                         'chem_dispersed',
-                         'amount_released',
-                         'off_maps',
-                         'skimmed',
-                         'burned',
+    # These go in the oil budget table
+    # note: these need to be kept insync!
+    budget_categories = ['amount_released',
                          'evaporated',
-                         'floating']
+                         'natural_dispersion',
+                         'sedimentation',
+                         'beached',
+                         'floating',
+                         'off_maps',
+                         ]
+    header_row = ['Model Time',
+                  'Hours Since Model Start',
+                  'Amount Released',
+                         'Evaporated',
+                         'Dispersed',
+                         'Sedimentation',
+                         'Beached',
+                         'Floating',
+                         'Off_maps',
+                         ]
 
-    #                    'time_stamp',
+
 
     def __init__(self,
                  filename="gnome_oil_budget.csv",
@@ -65,8 +75,13 @@ class OilBudgetOutput(BaseMassBalanceOutputter, OutputterFilenameMixin):
         """
         start the csv file
         """
+        super(OilBudgetOutput, self).prepare_for_model_run(model_start_time,
+                                                           spills,
+                                                           **kwargs)
         outfile = open(self.filename, 'w')
         self.csv_writer = csv.writer(outfile)
+        # write the header
+        self.csv_writer.writerow(self.header_row)
 
     def write_output(self, step_num, islast_step=False):
         """
@@ -76,17 +91,38 @@ class OilBudgetOutput(BaseMassBalanceOutputter, OutputterFilenameMixin):
         cloned models that are modeling weathering uncertainty do not include
         the uncertain spill container.
         """
-        if not self._write_step:
-            return None
+
         super(OilBudgetOutput, self).write_output(step_num, islast_step)
+
+        # print "self._model_start_time:", self._model_start_time
+
+        if self.on is False or not self._write_step:
+            return None
 
         mass_balance_data = self.gather_mass_balance_data(step_num)
 
-        print "data:"
-        print mass_balance_data.keys()
-        print mass_balance_data['non_weathering']
+        # print "data:"
+        # print mass_balself._model_start_time).total_seconds() / 3600
+        model_time = mass_balance_data['model_time']
+        run_time = (model_time - self._model_start_time).total_seconds()
+        hours = int(run_time / 3600)
+        minutes = int((run_time - hours * 3600) / 60)
+        row = ["{}:{:02d}".format(hours, minutes),
+               model_time.strftime("%Y-%m-%d %H:%M")]
+        for category in self.budget_categories:
+            row.append(mass_balance_data[category])
+        self.csv_writer.writerow(row)
 
-    # write the header:
+    def post_model_run(self):
+        """
+        Called  after a model run is complete
+
+        remove the csv file - hopefully resulting
+        in the file being closed.
+
+        """
+        self.csv_writer = None
+
 
 
 
