@@ -12,6 +12,7 @@ from json import (IceJsonOutput,
 from kmz import KMZOutput
 from image import IceImageOutput
 from shape import ShapeOutput
+from oil_budget import OilBudgetOutput
 
 # NOTE: no need for __all__ if you want export everything!
 outputters = [Outputter,

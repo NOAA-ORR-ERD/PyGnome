@@ -12,7 +12,7 @@ from gnome.utilities import time_utils
 from gnome.environment import Tide
 from gnome.spill import SpatialRelease, Spill, point_line_release_spill
 from gnome.movers import CatsMover
-from gnome.outputters import CurrentJsonOutput
+from gnome.outputters.json import CurrentJsonOutput
 
 from ..conftest import testdata
 

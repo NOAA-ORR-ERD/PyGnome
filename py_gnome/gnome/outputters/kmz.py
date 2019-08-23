@@ -11,7 +11,7 @@ from colander import SchemaNode, String, drop
 
 from gnome.basic_types import oil_status
 
-from .outputter import Outputter, BaseOutputterSchema
+from .outputter import Outputter, OutputterFilenameMixin, BaseOutputterSchema
 from gnome.persist.extend_colander import FilenameSchema
 
 from . import kmz_templates
@@ -28,7 +28,7 @@ class KMZSchema(BaseOutputterSchema):
     )
 
 
-class KMZOutput(Outputter):
+class KMZOutput(OutputterFilenameMixin, Outputter):
     '''
     class that outputs GNOME results in a kmz format.
 
@@ -49,12 +49,14 @@ class KMZOutput(Outputter):
         self._check_filename(filename)
 
         # strip off the .kml or .kmz
-        filename = filename.rstrip(".kml").rstrip(".kmz")
+        filename = filename[:-4] if filename.endswith(".kml") else filename
+        filename = filename[:-4] if filename.endswith(".kmz") else filename
+        filename += ".kmz"
 
-        self.filename = filename + ".kmz"
         self.kml_name = os.path.split(filename)[-1] + ".kml"
 
-        super(KMZOutput, self).__init__(**kwargs)
+        super(KMZOutput, self).__init__(filename=filename,
+                                        **kwargs)
 
     def prepare_for_model_run(self,
                               model_start_time,
@@ -91,14 +93,12 @@ class KMZOutput(Outputter):
             interface the same for all outputters, define kwargs in case
             future outputters require different arguments.
         """
-        super(KMZOutput, self).prepare_for_model_run(model_start_time,
-                                                     spills,
-                                                     **kwargs)
-
         if not self.on:
             return
 
-        self.delete_output_files()
+        super(KMZOutput, self).prepare_for_model_run(model_start_time,
+                                                     spills,
+                                                     **kwargs)
 
         # shouldn't be required if the above worked!
         self._file_exists_error(self.filename)
@@ -170,21 +170,21 @@ class KMZOutput(Outputter):
         '''
         super(KMZOutput, self).rewind()
 
-        self._middle_of_run = False
         self._start_idx = 0
 
-    def delete_output_files(self):
-        '''
-        deletes ouput files that may be around
+    # def clean_output_files(self):
+    #     # fixme: this could use the FileNameMixin
+    #     '''
+    #     deletes ouput files that may be around
 
-        called by prepare_for_model_run
+    #     called by prepare_for_model_run
 
-        here in case it needs to be called from elsewhere
-        '''
-        try:
-            os.remove(self.filename)
-        except OSError:
-            pass  # it must not be there
+    #     here in case it needs to be called from elsewhere
+    #     '''
+    #     try:
+    #         os.remove(self.filename)
+    #     except OSError:
+    #         pass  # it must not be there
 
 
 # These icons were encoded by the "build_icons" script
