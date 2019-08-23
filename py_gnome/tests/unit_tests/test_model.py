@@ -37,6 +37,7 @@ from gnome.outputters import Renderer, TrajectoryGeoJsonOutput
 from conftest import sample_model_weathering, testdata, test_oil
 from gnome.spill.substance import NonWeatheringSubstance
 
+from gnome.exceptions import ReferencedObjectNotSet
 
 @pytest.fixture(scope='function')
 def model(sample_model_fcn, tmpdir):
@@ -1546,7 +1547,8 @@ class Test_add_weathering(object):
     def test_water_missing(self):
         model = Model()
         model.add_weathering(['evaporation'])
-        model.full_run()
+        with pytest.raises(ReferencedObjectNotSet):
+            model.full_run()
 
 
 if __name__ == '__main__':

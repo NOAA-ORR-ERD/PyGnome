@@ -100,7 +100,7 @@ def test_compute_H_fetch_huge():
     With a huge fetch, should be same as fetch-unlimited
     """
     water = copy(default_water)
-    water.fetch = 1e100  # 10km
+    water.fetch = 1e100  # km
 
     w = Waves(test_wind_5, water)
 
