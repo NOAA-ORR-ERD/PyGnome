@@ -1137,8 +1137,7 @@ class MapFromBNA(RasterMap):
             spillable_area.append(map_bounds)
 
         # get the raster as a numpy array:
-        raster = self.build_raster(land_polys, BB)
-        projection = FlatEarthProjection()
+        raster, projection = self.build_raster(land_polys, BB)
 
         super(MapFromBNA, self).__init__(
             raster=raster,
@@ -1202,7 +1201,9 @@ class MapFromBNA(RasterMap):
                 # get the raster as a numpy array:
         raster_array = canvas.back_asarray()
 
-        return raster_array
+        # need to return and use projection used to create the raster, or the to_pixel/from_pixel functions
+        # will give incorrect results going forward.
+        return raster_array, canvas.projection
 
     @property
     def raster_size(self):
@@ -1216,7 +1217,7 @@ class MapFromBNA(RasterMap):
         if size != self._raster_size:
             self._raster_size = size
             #should trigger base class to recreate coarser rasters
-            self.raster = self.build_raster()
+            self.raster, self.projection = self.build_raster()
 
     def to_geojson(self):
         """
