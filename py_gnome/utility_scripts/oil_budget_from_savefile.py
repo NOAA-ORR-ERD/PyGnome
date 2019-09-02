@@ -7,7 +7,7 @@ script that loads a save file and outputs the oil budget table
 import sys
 
 import gnome.scripting as gs
-from gnome.outputters.weathering import WeatheringOutput
+from gnome.outputters import WeatheringOutput, OilBudgetOutput
 
 try:
     savefile = sys.argv[1]
@@ -19,7 +19,14 @@ except IndexError:
 print "Loading:", savefile
 
 model = gs.Model.load_savefile(savefile)
-model.outputters = OilBudgetOutput(filename="TestRun1.csv")
+model.outputters += WeatheringOutput(output_dir="NewModel",
+                                     output_timestep=gs.hours(1),
+                                     something='nothing')
+
+print "running model"
+model.full_run()
+
+
 
 
 
