@@ -21,7 +21,7 @@ print "Loading:", savefile
 model = gs.Model.load_savefile(savefile)
 model.outputters += WeatheringOutput(output_dir="NewModel",
                                      output_timestep=gs.hours(1),
-                                     something='nothing')
+                                     )
 
 print "running model"
 model.full_run()
