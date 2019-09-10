@@ -517,7 +517,7 @@ class ConstantArea(Weatherer):
         self.array_types.update({'area': gat('area'),
                                  'fay_area': gat('fay_area')})
 
-    def initialize_data(self, sc):
+    def initialize_data(self, sc, num_released):
         '''
         If on is False, then arrays should not be included - dont' initialize
         '''
@@ -544,7 +544,8 @@ class ConstantArea(Weatherer):
             if len(data['fay_area']) == 0:
                 continue
 
-            data['fay_area'] = self.area
+            data['fay_area'][:] = self.area
+            data['area'][:] = self.area
 
         sc.update_from_fatedataview()
 

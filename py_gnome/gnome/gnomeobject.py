@@ -428,8 +428,9 @@ class GnomeId(AddLogger):
                 try:
                     setattr(self, k, v)
                 except AttributeError:
-                    raise AttributeError('Failed to set {} on {} to {}'
+                    self.logger.error('Failed to set {} on {} to {}'
                                          .format(k, self, v))
+                    raise
 
         return updated
 
