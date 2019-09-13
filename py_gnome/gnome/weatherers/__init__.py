@@ -66,6 +66,19 @@ weatherer_schemas = list(weatherer_schemas)
 
 weatherers_idx = dict([(v, i) for i, v in enumerate(sort_order)])
 
+# fixme: decide what to do about spreading ...
+weatherers_by_name = {'evaporation': Evaporation,
+                      'dispersion': NaturalDispersion,
+                      'emulsification': Emulsification,
+                      'dissolution': Dissolution,
+                      'half_life_weatherer': HalfLifeWeatherer,
+                      #  'OPA': OilParticleAggregation,
+                      #  'biodegradation': Biodegradation,
+                      }
+standard_weatherering_sets = {'standard': ('evaporation',
+                                           'dispersion',
+                                           'emulsification')}
+
 
 def weatherer_sort(weatherer):
     '''

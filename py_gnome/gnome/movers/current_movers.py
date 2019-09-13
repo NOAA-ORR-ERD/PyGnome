@@ -958,6 +958,10 @@ class CurrentCycleMoverSchema(GridCurrentMoverSchema):
 class CurrentCycleMover(GridCurrentMover):
     _schema = CurrentCycleMoverSchema
 
+    _ref_as = 'current_cycle_mover'
+
+    _req_refs = {'tide': Tide}
+
     def __init__(self,
                  filename=None,
                  topology_file=None,
@@ -1113,6 +1117,10 @@ class ComponentMoverSchema(ProcessSchema):
 
 class ComponentMover(CurrentMoversBase):
     _schema = ComponentMoverSchema
+
+    _ref_as = 'component_mover'
+
+    _req_refs = {'wind': Wind}
 
     def __init__(self,
                  filename1=None,

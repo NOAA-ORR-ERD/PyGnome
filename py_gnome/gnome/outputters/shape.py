@@ -89,16 +89,15 @@ class ShapeOutput(Outputter):
             interface the same for all outputters, define kwargs in case
             future outputters require different arguments.
         """
+        if not self.on:
+            return
+
         super(ShapeOutput, self).prepare_for_model_run(model_start_time,
                                                        spills,
                                                        **kwargs)
 
-        if not self.on:
-            return
 
-        self.delete_output_files()
-
-        # shouldn't be required if the above worked!
+        # shouldn't be required if prepare_for_model_ run cleaned them out.
         self._file_exists_error(self.filename + '.zip')
 
         # info for prj file
@@ -217,7 +216,7 @@ class ShapeOutput(Outputter):
         self._middle_of_run = False
         self._start_idx = 0
 
-    def delete_output_files(self):
+    def clean_output_files(self):
         '''
         deletes ouput files that may be around
 

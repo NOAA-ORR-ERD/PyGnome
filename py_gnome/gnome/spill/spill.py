@@ -72,7 +72,12 @@ class SpillSchema(ObjTypeSchema):
     )
 
 
-class Spill(GnomeId):
+class BaseSpill(GnomeId):
+    """
+    A base class for spill, with only what we really need
+    """
+
+class Spill(BaseSpill):
     """
     Models a spill by combining Release and Substance objects
     """
@@ -87,7 +92,7 @@ class Spill(GnomeId):
     # _name = 'Spill'
 
     def __init__(self,
-                 on=True,
+                 on=True,  # fixme: this shouldn't be the first parameter!
                  num_elements=1000,
                  amount=0,  # could be volume or mass
                  units='kg',
@@ -248,6 +253,8 @@ class Spill(GnomeId):
     def end_position(self, sp):
         self.release.end_position = sp
 
+    # fixme: We store in standard units! i.e. kilograms!
+    #        so the getter shold jsut return that value.
     @property
     def amount(self):
         rel_mass = self.release.release_mass #kg

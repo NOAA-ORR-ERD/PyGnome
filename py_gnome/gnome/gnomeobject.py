@@ -420,8 +420,9 @@ class GnomeId(AddLogger):
                 try:
                     setattr(self, k, v)
                 except AttributeError:
-                    raise AttributeError('Failed to set {} on {} to {}'
+                    self.logger.error('Failed to set {} on {} to {}'
                                          .format(k, self, v))
+                    raise
 
         return updated
 
@@ -668,7 +669,7 @@ class GnomeId(AddLogger):
                                        compression=zipfile.ZIP_DEFLATED,
                                        allowZip64=allowzip64)
         elif os.path.isdir(saveloc):
-            saveloc = os.path.join(saveloc, self.name + '.zip')
+            saveloc = os.path.join(saveloc, self.name + '.gnome')
 
             if os.path.exists(saveloc):
                 if not overwrite:
@@ -680,6 +681,8 @@ class GnomeId(AddLogger):
                                        allowZip64=allowzip64)
         else:
             # saveloc is file path
+            if not (saveloc.endswith(".zip") or saveloc.endswith(".gnome")):
+                saveloc = saveloc + ".gnome"
             if not overwrite:
                 if zipfile.is_zipfile(saveloc):
                     zipfile_ = zipfile.ZipFile(saveloc, 'a',

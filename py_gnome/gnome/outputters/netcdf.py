@@ -15,7 +15,7 @@ from gnome.basic_types import oil_status, world_point_type
 from gnome.persist.extend_colander import FilenameSchema
 
 
-from . import Outputter, BaseOutputterSchema
+from .outputter import Outputter, BaseOutputterSchema, OutputterFilenameMixin
 
 
 # Big dict that stores the attributes for the standard data arrays
@@ -142,7 +142,6 @@ var_attributes = {
     'non_weathering': {
         'long_name': 'total mass of oil that does not weather after each time step',
         'units': 'kg'},
-
     'chem_dispersed': {
         'long_name': 'total mass chemically dispersed since beginning of model run',
         'units': 'kilograms'},
@@ -174,7 +173,7 @@ class NetCDFOutputSchema(BaseOutputterSchema):
     )
 
 
-class NetCDFOutput(Outputter):
+class NetCDFOutput(Outputter, OutputterFilenameMixin):
     """
     A NetCDFOutput object is used to write the model's data to a NetCDF file.
     It inherits from Outputter class and implements the same interface.
@@ -312,18 +311,20 @@ class NetCDFOutput(Outputter):
 
         use super to pass optional kwargs to base class __init__ method
         """
-        self._check_filename(filename)
-        self._filename = filename
 
         # uncertain file is only written out if model is uncertain
+
+        ## why is this even here ?!?!
+        kwargs['_middle_of_run'] = _middle_of_run
+        super(NetCDFOutput, self).__init__(filename=filename,
+                                           surface_conc=surface_conc,
+                                           **kwargs)
+
         name, ext = os.path.splitext(self.filename)
         self._u_filename = '{0}_uncertain{1}'.format(name, ext)
 
+        # fixme: move to base class?
         self.name = os.path.split(filename)[1]
-
-        # flag to keep track of _state of the object - is True after calling
-        # prepare_for_model_run
-        self._middle_of_run = _middle_of_run
 
         if which_data.lower() in self.which_data_lu:
             self._which_data = which_data.lower()
@@ -361,25 +362,6 @@ class NetCDFOutput(Outputter):
         self._var_attributes = {'spill_num': {'spills_map': ''},
                                 'time': {'units': ''}
                                 }
-
-        super(NetCDFOutput, self).__init__(surface_conc=surface_conc, **kwargs)
-
-    @property
-    def middle_of_run(self):
-        return self._middle_of_run
-
-    @property
-    def filename(self):
-        return self._filename
-
-    @filename.setter
-    def filename(self, new_name):
-        if self.middle_of_run:
-            raise AttributeError('This attribute cannot be changed in the '
-                                 'middle of a run')
-        else:
-            self._check_filename(new_name)
-            self._filename = new_name
 
     @property
     def uncertain_filename(self):
@@ -555,7 +537,8 @@ class NetCDFOutput(Outputter):
         if not self.on:
             return
 
-        self.clean_output_files()
+        # this should have been called by the superclass version
+        # self.clean_output_files()
 
         self._update_var_attributes(spills)
 
@@ -632,7 +615,6 @@ class NetCDFOutput(Outputter):
         # need to keep track of starting index for writing data since variable
         # number of particles are released
         self._start_idx = 0
-        self._middle_of_run = True
 
     def _create_nc_var(self, grp, var_name, dtype, shape, chunksz):
         # fixme: why is this even here? it's wrapping a single call???
@@ -754,10 +736,7 @@ class NetCDFOutput(Outputter):
 
         here in case it needs to be called from elsewhere
         '''
-        try:
-            os.remove(self.filename)
-        except OSError:
-            pass  # it must not be there
+        OutputterFilenameMixin.clean_output_files(self)
 
         try:
             os.remove(self._u_filename)
@@ -771,7 +750,6 @@ class NetCDFOutput(Outputter):
         '''
         super(NetCDFOutput, self).rewind()
 
-        self._middle_of_run = False
         self._start_idx = 0
 
     # fixme: we should use the code in nc_particles for this!!!

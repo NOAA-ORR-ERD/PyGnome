@@ -63,6 +63,7 @@ class Outputter(GnomeId):
                  output_zero_step=True,
                  output_last_step=True,
                  output_start_time=None,
+                 # Fixme: this probably shouldnt be in the base class
                  output_dir=None,
                  surface_conc=None,
                  *args,
@@ -103,7 +104,14 @@ class Outputter(GnomeId):
         :type surface_conc: string
         """
 
+        ## fixme -- why should this be initilaizable???
+        self._middle_of_run = kwargs.pop('_middle_of_run', False)
+
         super(Outputter, self).__init__(*args, **kwargs)
+
+        # flag to keep track of _state of the object - is True after calling
+        # prepare_for_model_run
+
 
         self.cache = cache
         self.on = on
@@ -198,6 +206,8 @@ class Outputter(GnomeId):
         if model_start_time is None:
             raise TypeError("model_start_time is a required parameter")
 
+        self.clean_output_files()
+
         self._model_start_time = model_start_time
         self.model_timestep = model_time_step
 
@@ -211,6 +221,8 @@ class Outputter(GnomeId):
             self._write_step = True
 
         self._dt_since_lastoutput = 0
+        self._middle_of_run = True
+
 
     def prepare_for_model_step(self, time_step, model_time):
         """
@@ -327,15 +339,17 @@ class Outputter(GnomeId):
 
     def clean_output_files(self):
         '''
-        cleans out the output dir
+        Cleans out the output dir
 
         This should be implemented by subclasses that dump files.
 
-        but each outputter type dumps different types of files, and this should
-        only clear out those. So it has to be custom implemented
+        Each outputter type dumps different types of files, and this should
+        only clear out those.
+
+        See the OutputterFilenameMixin for a simple example.
+
         '''
-        raise NotImplementedError('This Outputter does not support '
-                                  'clearing out files')
+        pass
 
     def rewind(self):
         '''
@@ -349,6 +363,8 @@ class Outputter(GnomeId):
         self._write_step = True
         self._is_first_output = True
         self._surf_conc_computed = True
+        self._middle_of_run = False
+
         if self.surface_conc:
             self.array_types['surface_concentration'] = gat('surface_concentration')
 
@@ -413,6 +429,10 @@ class Outputter(GnomeId):
                           .items()[0]
                           .current_time_stamp)
 
+    @property
+    def middle_of_run(self):
+        return self._middle_of_run
+
     # Some utilities for checking valid filenames, etc...
     def _check_filename(self, filename):
         'basic checks to make sure the filename is valid'
@@ -437,3 +457,45 @@ class Outputter(GnomeId):
             raise ValueError('{0} file exists. Enter a filename that '
                              'does not exist in which to save data.'
                              .format(file_))
+
+
+class OutputterFilenameMixin(object):
+    """
+    mixin for outputter that output to a single file
+    """
+
+    def __init__(self, filename, *args, **kwargs):
+
+        super(OutputterFilenameMixin, self).__init__()
+        self.filename = filename
+
+    @property
+    def filename(self):
+        return self._filename
+
+    @filename.setter
+    def filename(self, new_name):
+        if self.middle_of_run:
+            raise AttributeError('This attribute cannot be changed in the '
+                                 'middle of a run')
+        else:
+            self._check_filename(new_name)
+            self._filename = new_name
+
+    def clean_output_files(self):
+        '''
+        deletes output files that may be around
+
+        called by prepare_for_model_run
+
+        here in case it needs to be called from elsewhere
+        '''
+        # super(OutputterFilenameMixin, self).clean_output_files()
+        try:
+            os.remove(self.filename)
+        except OSError:
+            pass  # it must not be there
+
+
+
+

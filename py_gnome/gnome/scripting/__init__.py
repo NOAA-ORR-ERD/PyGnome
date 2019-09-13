@@ -31,6 +31,8 @@ py_gnome scripts with, e.g.::
 import gnome
 from gnome.model import Model
 
+from gnome.basic_types import oil_status_map
+
 from .utilities import (make_images_dir,
                         remove_netcdf,
                         set_verbose,
@@ -61,17 +63,19 @@ from gnome.movers.wind_movers import (constant_wind_mover,
                                       wind_mover_from_file,
                                       )
 
-from gnome.environment import (IceAwareCurrent,
-                               IceAwareWind,
-                               )
+from gnome.outputters import (Renderer,
+                              NetCDFOutput,
+                              KMZOutput,
+                              OilBudgetOutput,
+                              )
 
-from gnome.outputters import Renderer, NetCDFOutput, KMZOutput
-
-from gnome.map import MapFromBNA
+from gnome.map import MapFromBNA, GnomeMap
 
 from gnome.environment import (GridCurrent,
                                IceAwareCurrent,
                                IceAwareWind,
+                               Water,
+                               Waves,
                                )
 
 from gnome.movers import (RandomMover,
@@ -80,7 +84,8 @@ from gnome.movers import (RandomMover,
                           RiseVelocityMover,
                           PyWindMover,
                           PyCurrentMover,
-                          IceAwareRandomMover
+                          IceAwareRandomMover,
+                          SimpleMover,
                           )
 
 from gnome.utilities.remote_data import get_datafile
