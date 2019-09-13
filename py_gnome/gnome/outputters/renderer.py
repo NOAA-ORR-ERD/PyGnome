@@ -516,7 +516,7 @@ class Renderer(Outputter, MapCanvas):
         if self.raster_map is not None:
             raster_map = self.raster_map
             projection = raster_map.projection
-            w, h = raster_map.basebitmap.shape
+            w, h = raster_map.raster.shape
 
             if self.raster_map_outline:
                 # vertical lines
@@ -537,7 +537,7 @@ class Renderer(Outputter, MapCanvas):
             if self.raster_map_fill:
                 for i in range(w):
                     for j in range(h):
-                        if raster_map.basebitmap[i, j] == 1:
+                        if raster_map.raster[i, j] == 1:
                             rect = (projection
                                     .to_lonlat(np.array(((i, j),
                                                          (i + 1, j),

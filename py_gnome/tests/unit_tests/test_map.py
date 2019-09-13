@@ -229,35 +229,35 @@ class Test_RasterMap:
     # set some land in middle:
     raster[6:13, 4:8] = 1
 
-    def test__off_bitmap(self):
+    def test__off_raster(self):
         """
-        test the _on_bitmap method
+        test the _on_raster method
         """
-        # overkill for just the bitmap..
+        # overkill for just the raster..
         rmap = RasterMap(refloat_halflife=6,
-                         bitmap_array=self.raster,
+                         raster=self.raster,
                          map_bounds=((-50, -30), (-50, 30),
                                      (50, 30), (50, -30)),
                          projection=NoProjection())
 
         # the corners
-        assert not rmap._off_bitmap((0, 0))
-        assert not rmap._off_bitmap((19, 0))
-        assert not rmap._off_bitmap((19, 11))
-        assert not rmap._off_bitmap((0, 11))
+        assert not rmap._off_raster((0, 0))
+        assert not rmap._off_raster((19, 0))
+        assert not rmap._off_raster((19, 11))
+        assert not rmap._off_raster((0, 11))
 
         # in the middle somewhere
-        assert not rmap._off_bitmap((10, 6))
+        assert not rmap._off_raster((10, 6))
 
         # just off the edges
-        assert rmap._off_bitmap((-1, 0))
-        assert rmap._off_bitmap((19, -1))
-        assert rmap._off_bitmap((20, 11))
-        assert rmap._off_bitmap((0, 12))
+        assert rmap._off_raster((-1, 0))
+        assert rmap._off_raster((19, -1))
+        assert rmap._off_raster((20, 11))
+        assert rmap._off_raster((0, 12))
 
         # way off -- just for the heck of it.
-        assert rmap._off_bitmap((-1000, -2000))
-        assert rmap._off_bitmap((1000, 2000))
+        assert rmap._off_raster((-1000, -2000))
+        assert rmap._off_raster((1000, 2000))
 
     def test_save_as_image(self, dump_folder):
         """
@@ -265,7 +265,7 @@ class Test_RasterMap:
         image to see if it's right
         """
         rmap = RasterMap(refloat_halflife=6,
-                         bitmap_array=self.raster,
+                         raster=self.raster,
                          map_bounds=((-50, -30), (-50, 30),
                                      (50, 30), (50, -30)),
                          projection=NoProjection())
@@ -275,7 +275,7 @@ class Test_RasterMap:
         assert True
 
     def test_on_map(self):
-        gmap = RasterMap(refloat_halflife=6, bitmap_array=self.raster,
+        gmap = RasterMap(refloat_halflife=6, raster=self.raster,
                          map_bounds=((-50, -30), (-50, 30),
                                      (50, 30), (50, -30)),
                          projection=NoProjection())  # hours
@@ -284,7 +284,7 @@ class Test_RasterMap:
         assert not gmap.on_map((55.0, 0., 0.))
 
     def test_on_land(self):
-        gmap = RasterMap(refloat_halflife=6, bitmap_array=self.raster,
+        gmap = RasterMap(refloat_halflife=6, raster=self.raster,
                          map_bounds=((-50, -30), (-50, 30),
                                      (50, 30), (50, -30)),
                          projection=NoProjection())
@@ -299,7 +299,7 @@ class Test_RasterMap:
     def test_spillable_area(self):
         # anywhere not on land is spillable...
         # in this case
-        gmap = RasterMap(refloat_halflife=6, bitmap_array=self.raster,
+        gmap = RasterMap(refloat_halflife=6, raster=self.raster,
                          map_bounds=((-50, -30), (-50, 30),
                                      (50, 30), (50, -30)),
                          projection=NoProjection())
@@ -314,7 +314,7 @@ class Test_RasterMap:
     def test_spillable_area2(self):
         # a test with a polygon spillable area
         poly = ((5, 2), (15, 2), (15, 10), (10, 10), (10, 5))
-        gmap = RasterMap(refloat_halflife=6, bitmap_array=self.raster,
+        gmap = RasterMap(refloat_halflife=6, raster=self.raster,
                          map_bounds=((-50, -30), (-50, 30),
                                      (50, 30), (50, -30)),
                          projection=NoProjection(),
@@ -351,7 +351,7 @@ class TestRefloat:
     # land/water irrelevant for this test
 
     map = RasterMap(refloat_halflife=time_step / 3600.,
-                    bitmap_array=np.zeros((20, 12), dtype=np.uint8),
+                    raster=np.zeros((20, 12), dtype=np.uint8),
                     projection=NoProjection(),
                     map_bounds=((-50, -30), (-50, 30),
                                 (50, 30), (50, -30)))
@@ -503,7 +503,7 @@ class Test_MapfromBNA:
         '''
         OnLand = (-127, 47.8, 0.)
         print "on land:", self.bna_map.on_land(OnLand)
-        print self.bna_map.basebitmap
+        print self.bna_map.raster
 
         assert self.bna_map.on_land(OnLand)
         assert not self.bna_map.in_water(OnLand)
@@ -624,7 +624,7 @@ class Test_full_move:
     raster[10, :] = 1
 
     def test_on_map(self):
-        gmap = RasterMap(refloat_halflife=6, bitmap_array=self.raster,
+        gmap = RasterMap(refloat_halflife=6, raster=self.raster,
                          map_bounds=((-50, -30), (-50, 30),
                                      (50, 30), (50, -30)),
                          projection=NoProjection())
@@ -634,7 +634,7 @@ class Test_full_move:
         assert gmap.on_map((0., 1., 0.))
 
     def test_on_land(self):
-        gmap = RasterMap(refloat_halflife=6, bitmap_array=self.raster,
+        gmap = RasterMap(refloat_halflife=6, raster=self.raster,
                          map_bounds=((-50, -30), (-50, 30),
                                      (50, 30), (50, -30)),
                          projection=NoProjection())
@@ -650,7 +650,7 @@ class Test_full_move:
         it last water position should be the same point.
         """
         gmap = RasterMap(refloat_halflife=6,
-                         bitmap_array=self.raster,
+                         raster=self.raster,
                          map_bounds=((-50, -30), (-50, 30),
                                      (50, 30), (50, -30)),
                          projection=NoProjection())
@@ -677,7 +677,7 @@ class Test_full_move:
         """
         try a single LE that should be crossing land
         """
-        gmap = RasterMap(refloat_halflife=6, bitmap_array=self.raster,
+        gmap = RasterMap(refloat_halflife=6, raster=self.raster,
                          map_bounds=((-50, -30), (-50, 30),
                                      (50, 30), (50, -30)),
                          projection=NoProjection())
@@ -700,7 +700,7 @@ class Test_full_move:
         """
         test a few LEs
         """
-        gmap = RasterMap(refloat_halflife=6, bitmap_array=self.raster,
+        gmap = RasterMap(refloat_halflife=6, raster=self.raster,
                          map_bounds=((-50, -30), (-50, 30),
                                      (50, 30), (50, -30)),
                          projection=NoProjection())
@@ -735,7 +735,7 @@ class Test_full_move:
         """
         test a few LEs
         """
-        gmap = RasterMap(refloat_halflife=6, bitmap_array=self.raster,
+        gmap = RasterMap(refloat_halflife=6, raster=self.raster,
                          map_bounds=((-50, -30), (-50, 30),
                                      (50, 30), (50, -30)),
                          projection=NoProjection())
@@ -773,7 +773,7 @@ class Test_full_move:
         test LEs starting form outside the raster bounds
         """
 
-        gmap = RasterMap(refloat_halflife=6, bitmap_array=self.raster,
+        gmap = RasterMap(refloat_halflife=6, raster=self.raster,
                          map_bounds=((-50, -30), (-50, 30),
                                      (50, 30), (50, -30)),
                          projection=NoProjection())
@@ -812,7 +812,7 @@ class Test_full_move:
         should get off_map flag - no longer setting to_be_removed flag. map
         simply sets the off_maps flag.
         """
-        gmap = RasterMap(refloat_halflife=6, bitmap_array=self.raster,
+        gmap = RasterMap(refloat_halflife=6, raster=self.raster,
                          map_bounds=((-50, -30), (-50, 30),
                                      (50, 30), (50, -30)),
                          projection=NoProjection())
