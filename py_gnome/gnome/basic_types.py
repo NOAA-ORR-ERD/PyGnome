@@ -26,6 +26,11 @@ oil_status = cbt.oil_status
 seconds = cbt.seconds
 spill_type = cbt.spill_type
 
+# this is a mapping of oil_status code to the meaningful name:
+oil_status_map = { num: name for name, num in vars(oil_status).items() if not name.startswith("_")}
+
+
+
 # Here we customize what a numpy 'long' type is....
 # We do this because numpy does different things with a long
 # that can mismatch what Cython does with the numpy ctypes.

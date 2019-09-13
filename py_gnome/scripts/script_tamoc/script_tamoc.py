@@ -2,11 +2,11 @@
 """
 Script to test GNOME with:
 
-TAMOC - Texas A&M Oilspill Calculator
+TAMOC - Texas A&M Oil spill Calculator
 
 https://github.com/socolofs/tamoc
 
-This is a very simpile environment:
+This is a very simple environment:
 
 Simple map (no land) and simple current mover (steady uniform current)
 
@@ -16,142 +16,234 @@ But it's enough to see if the coupling with TAMOC works.
 
 """
 
+import gnome.scripting as gs
+import gnome.tamoc.tamoc_spill as ts
+
+from gnome.environment import (Water, Waves)
+from gnome.weatherers import (Evaporation, Dissolution)
 
 import os
 import numpy as np
-from datetime import datetime, timedelta
-
-from gnome import scripting
-# from gnome.spill.elements import plume
-from gnome.utilities.distributions import WeibullDistribution
-from gnome.environment.gridded_objects_base import Variable, Time, Grid_S
-from gnome.environment import GridCurrent
-
-from gnome.model import Model
-from gnome.map import GnomeMap
-from gnome.spill import point_line_release_spill
-from gnome.scripting import subsurface_plume_spill
-from gnome.movers import (RandomMover,
-                          TamocRiseVelocityMover,
-                          RandomMover3D,
-                          SimpleMover,
-                          PyCurrentMover)
-
-from gnome.outputters import Renderer
-from gnome.outputters import NetCDFOutput
-from gnome.tamoc import tamoc_spill
-
-# define base directory
-base_dir = os.path.dirname(__file__)
-
-x, y = np.mgrid[-30:30:61j, -30:30:61j]
-y = np.ascontiguousarray(y.T)
-x = np.ascontiguousarray(x.T)
-# y += np.sin(x) / 1
-# x += np.sin(x) / 5
-g = Grid_S(node_lon=x,
-          node_lat=y)
-g.build_celltree()
-t = Time.constant_time()
-angs = -np.arctan2(y, x)
-mag = np.sqrt(x ** 2 + y ** 2)
-vx = np.cos(angs) * mag
-vy = np.sin(angs) * mag
-vx = vx[np.newaxis, :] * 5
-vy = vy[np.newaxis, :] * 5
-
-vels_x = Variable(name='v_x', units='m/s', time=t, grid=g, data=vx)
-vels_y = Variable(name='v_y', units='m/s', time=t, grid=g, data=vy)
-vg = GridCurrent(variables=[vels_y, vels_x], time=t, grid=g, units='m/s')
 
 
-def make_model(images_dir=os.path.join(base_dir, 'images')):
-    print 'initializing the model'
+def set_directory_structure():
+    """
+    Set up the base and output directories for a GNOME simulation
 
-    # set up the modeling environment
-    start_time = datetime(2004, 12, 31, 13, 0)
-    model = Model(start_time=start_time,
-                  duration=timedelta(days=3),
-                  time_step=30 * 60,
-                  uncertain=False)
+    Defines the directories for the base model run and the output.  If an
+    output directory does not exist, this function will create that
+    directory.
 
-    print 'adding the map'
-    model.map = GnomeMap()  # this is a "water world -- no land anywhere"
+    Returns
+    -------
+    base_dir : os.path
+        Directory path to the present directory where this file is stored.
+    images_dir : os.path
+        Directory path to the ./Images directory where visual output for
+        this simulation will be stored.
+    outfiles_dir : os.path
+        Directory path to the ./Output directory where NetCDF and other data
+        output for this simulation will be stored.
 
-    # renderere is only top-down view on 2d -- but it's something
-    renderer = Renderer(output_dir=images_dir,
-                        image_size=(1024, 768),
-                        output_timestep=timedelta(hours=1),
-                        )
-    renderer.viewport = ((-.15, -.35), (.15, .35))
+    """
+    # Define the present directory as the base directory
+    base_dir = os.path.dirname(__file__)
 
-    print 'adding outputters'
+    # Store output in directories directly under the base directory
+    images_dir = os.path.join(base_dir, 'Images')
+    if not os.path.exists(images_dir):
+        os.mkdir(images_dir)
+
+    outfiles_dir = os.path.join(base_dir, 'Output')
+    if not os.path.exists(outfiles_dir):
+        os.mkdir(outfiles_dir)
+
+    return (base_dir, images_dir, outfiles_dir)
+
+
+def base_environment(water_temp=280.928,
+                     salinity=34.5,
+                     wind_speed=5.,
+                     wind_dir=117.):
+    """
+    Create a minimalist ocean environment that allows for surface weathering
+
+    Create a water, wind, and waves environment for a GNOME simulation that
+    allows for surface weathering processes
+
+    Parameters
+    ----------
+    water_temp : float
+        Temperature of the surface water (K)
+    salinity : float
+        Salinity of the surface ocean water (psu)
+    wind_speed : float
+        Wind speed (kt)
+    wind_dir : float
+        Wind direction (deg from North).  Per atmospheric modeling
+        convention, this points in the direction from which the wind is
+        coming.
+
+    Returns
+    -------
+    water : gnome.environment.Water
+        GNOME environment object that contains the water temperature (K)
+    wind : gnome.environment.constant_wind
+        GNOME environment object that contains the local wind (speed in
+        knots and direction in deg from North)
+    waves : gnome.environment.Waves
+        GNOME environment object that uses the wind and water objects to
+        predict the wave conditions.
+
+    """
+    # Create an ocean environment using GNOME environment objects
+    water = Water(temperature=water_temp, salinity=salinity)
+    wind = gs.constant_wind(wind_speed,
+                            wind_dir,
+                            'knots')
+    waves = Waves(wind, water)
+
+    return (water, wind, waves)
+
+
+def make_model():
+    """
+    Set up a GNOME simulation that uses TAMOC
+
+    Set up a spill scenario in GNOME that uses TAMOC to simulate a subsurface
+    blowout and then pass the TAMOC solution to GNOME for the far-field
+    particle tracking
+
+    """
+    # Set up the directory structure for the model
+    base_dir, images_dir, outfiles_dir = set_directory_structure()
+
+    # Set up the modeling environment
+    print '\n-- Initializing the Model         --'
+    start_time = "2019-06-01T12:00"
+    model = gs.Model(start_time=start_time,
+                     duration=gs.days(3),
+                     time_step=gs.minutes(30),
+                     uncertain=False)
+
+    # Add a map
+    print '\n-- Adding a Map                   --'
+    model.map = gs.GnomeMap()
+
+    # Add image output
+    print '\n-- Adding Image Outputters        --'
+    renderer = gs.Renderer(output_dir=images_dir,
+                           image_size=(1024, 768),
+                           output_timestep=gs.hours(1),
+                           viewport=((-0.15, -0.35), (0.15, 0.35)))
     model.outputters += renderer
 
-    # Also going to write the results out to a netcdf file
-    netcdf_file = os.path.join(base_dir, 'script_plume.nc')
-    scripting.remove_netcdf(netcdf_file)
+    # Add NetCDF output
+    print '\n-- Adding NetCDF Outputter        --'
+    if not os.path.exists(outfiles_dir):
+        os.mkdir(outfiles_dir)
+    netcdf_file = os.path.join(outfiles_dir, 'script_tamoc.nc')
+    gs.remove_netcdf(netcdf_file)
+    file_writer = gs.NetCDFOutput(netcdf_file,
+                                  which_data='all',
+                                  output_timestep=gs.hours(2))
+    model.outputters += file_writer
 
-    model.outputters += NetCDFOutput(netcdf_file,
-                                     which_data='most',
-                                     # output most of the data associated with the elements
-                                     output_timestep=timedelta(hours=2))
+    # Add a spill object
+    print '\n-- Adding a Point Spill           --'
+    end_release_time = model.start_time + gs.hours(12)
+    point_source = ts.TamocSpill(num_elements=100,
+                                 start_position=(0.0, 0.0, 1000.),
+                                 release_duration=gs.hours(24),
+                                 release_time=start_time,
+                                 substance='AD01554',
+                                 release_rate=20000.,
+                                 units='bbl/day',
+                                 gor=500.,
+                                 d0=0.5,
+                                 phi_0=-np.pi / 2.,
+                                 theta_0=0.,
+                                 windage_range=(0.01, 0.04),
+                                 windage_persist=900,
+                                 name='Oil Well Blowout')
 
-    print "adding Horizontal and Vertical diffusion"
+    model.spills += point_source
 
-    # Horizontal Diffusion
-    # model.movers += RandomMover(diffusion_coef=1.e8)
-    # vertical diffusion (different above and below the mixed layer)
-    model.movers += RandomMover3D(horizontal_diffusion_coef_above_ml=10000,                                     horizontal_diffusion_coef_below_ml=10000,
-                                  vertical_diffusion_coef_above_ml=5,
-                                  vertical_diffusion_coef_below_ml=.11,
-                                  mixed_layer_depth=10)
+    # Create an ocean environment
+    water, wind, waves = base_environment(water_temp=273.15+21.,
+                                          wind_speed=5.,
+                                          wind_dir=225.)
 
-    print 'adding Rise Velocity'
-    # droplets rise as a function of their density and radius
-    model.movers += TamocRiseVelocityMover()
+    # Add a uniform current in the easterly direction
+    print '\n-- Adding Currents                --'
+    uniform_current = gs.SimpleMover(velocity=(0.1, 0.0, 0.))
+    model.movers += uniform_current
 
-    print 'adding a circular current and eastward current'
-    # This is .3 m/s south
-    #model.movers += PyCurrentMover(current=vg,
-    #                                   default_num_method='RK2',
-    #                                   extrapolate=True)
-    model.movers += SimpleMover(velocity=(0., -0.1, 0.))
+    # Add a wind mover
+    wind_mover = gs.WindMover(wind)
+    model.movers += wind_mover
 
-    # Now to add in the TAMOC "spill"
-    print "Adding TAMOC spill"
+    # Add particle diffusion...note, units are in cm^2/s
+    print '\n-- Adding Particle Diffusion      --'
+    particle_diffusion = gs.RandomMover3D(
+                         horizontal_diffusion_coef_above_ml=100000.,
+                         horizontal_diffusion_coef_below_ml=10000.,
+                         vertical_diffusion_coef_above_ml=100.,
+                         vertical_diffusion_coef_below_ml=10.,
+                         mixed_layer_depth=15.)
+    model.movers += particle_diffusion
 
-    model.spills += tamoc_spill.TamocSpill(release_time=start_time,
-                                           start_position=(0, 0, 1000),
-                                           num_elements=1000,
-                                           end_release_time=start_time + timedelta(days=1),
-                                           name='TAMOC plume',
-                                           TAMOC_interval=None,  # how often to re-run TAMOC
-                                           )
+    # Add rise velocity for droplets
+    print '\n-- Adding Particle Rise Velocity  --'
+    # fixme: we do have code for rise velocity:
+    #  gnome.movers.RiseVelocityMover
+    #  let's test that later
+    slip_velocity = gs.SimpleMover(velocity=(0.0, 0.0, -0.1))
+    model.movers += slip_velocity
+
+
+    # Add dissolution
+    print '\n-- Adding Weathering              --'
+    evaporation = Evaporation(water=water,
+                              wind=wind)
+    model.weatherers += evaporation
+
+    dissolution = Dissolution(waves=waves,
+                              wind=wind)
+    model.weatherers += dissolution
 
     return model
 
 
-if __name__ == "__main__":
-    scripting.make_images_dir()
-    model = make_model()
-    print "about to start running the model"
+def run_model(model):
+    """
+    Run a GNOME simulation
+
+    Steps through all of the simulation time steps of a gnome.Model object
+    simulation
+
+    Parameters
+    ----------
+    model : gnome.Model
+        A gnome.Model simulation object
+
+    Returns
+    -------
+    model : gnome.Model
+        A gnome.Model simulation object
+
+    """
+    print '\n-- RUNNING TAMOC-GNOME SIMULATION --'
     for step in model:
-        if step['step_num'] == 23:
-            print 'running tamoc again'
-            #import pdb
-            #pdb.set_trace()
-            sp = model.spills[0]
-#            sp.tamoc_parameters['release_phi'] = -np.pi / 4
-#            sp.tamoc_parameters['release_theta'] = -np.pi
-            sp.tamoc_parameters['ua'] = np.array([-0.05, -0.05])
-#            sp.tamoc_parameters['va'] = np.array([-1, -0.5, 0])
-#            sp.tamoc_parameters['wa'] = np.array([0.01, 0.01, 0.01])
-#            sp.tamoc_parameters['depths'] = np.array([0., 1000., 2000])
-            sp.droplets, sp.diss_components = sp._run_tamoc()
-        if step['step_num'] == 25:
-            sp = model.spills[0]
-            sp.tamoc_parameters['ua'] = np.array([0.05, 0.05])
-            sp.droplets, sp.diss_components = sp._run_tamoc()
-        print step
-        # model.
+        print '   Step: %.4i' % (step['step_num'])
+
+    return model
+
+
+if  __name__ == '__main__':
+
+    # Initialize the model
+    model = make_model()
+
+    # Run the model
+    #model = run_model(model)

@@ -286,6 +286,9 @@ class IceGeoJsonOutput(Outputter):
 
         super(IceGeoJsonOutput, self).__init__(**kwargs)
 
+    def clean_output_files(self):
+        pass
+
     def write_output(self, step_num, islast_step=False):
         'dump data in geojson format'
         super(IceGeoJsonOutput, self).write_output(step_num, islast_step)
@@ -294,6 +297,7 @@ class IceGeoJsonOutput(Outputter):
             return None
 
         for sc in self.cache.load_timestep(step_num).items():
+            # gets the current timestep ?
             pass
 
         model_time = date_to_sec(sc.current_time_stamp)

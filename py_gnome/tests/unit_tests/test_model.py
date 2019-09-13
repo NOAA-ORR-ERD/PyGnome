@@ -27,6 +27,7 @@ from gnome.movers import SimpleMover, RandomMover, WindMover, CatsMover
 
 from gnome.weatherers import (HalfLifeWeatherer,
                               Evaporation,
+                              NaturalDispersion,
                               ChemicalDispersion,
                               Burn,
                               Skimmer,
@@ -36,6 +37,7 @@ from gnome.outputters import Renderer, TrajectoryGeoJsonOutput
 from conftest import sample_model_weathering, testdata, test_oil
 from gnome.spill.substance import NonWeatheringSubstance
 
+from gnome.exceptions import ReferencedObjectNotSet
 
 @pytest.fixture(scope='function')
 def model(sample_model_fcn, tmpdir):
@@ -1501,6 +1503,52 @@ class TestValidateModel():
         model.weatherers += Evaporation(on=False)
 
         print model.validate()
+
+
+class Test_add_weathering(object):
+    """
+    tests for the add_weathering method
+    """
+    def test_add_standard(self):
+        model = Model()
+        model.add_weathering()
+
+        assert len(model.weatherers) == \
+            len(gnome.weatherers.standard_weatherering_sets['standard'])
+
+    def test_add_standard2(self):
+        model = Model()
+        model.add_weathering('standard')
+
+        assert len(model.weatherers) == \
+            len(gnome.weatherers.standard_weatherering_sets['standard'])
+
+    def test_add_invalid(self):
+        model = Model()
+        with pytest.raises(ValueError):
+            model.add_weathering('fred')
+
+    def test_add_one(self):
+        model = Model()
+        model.add_weathering(['evaporation'])
+
+        assert len(model.weatherers) == 1
+        assert isinstance(model.weatherers[0], Evaporation)
+
+    def test_add_two(self):
+        model = Model()
+        model.add_weathering(['evaporation',
+                              'dispersion'])
+
+        assert len(model.weatherers) == 2
+        assert isinstance(model.weatherers[0], Evaporation)
+        assert isinstance(model.weatherers[1], NaturalDispersion)
+
+    def test_water_missing(self):
+        model = Model()
+        model.add_weathering(['evaporation'])
+        with pytest.raises(ReferencedObjectNotSet):
+            model.full_run()
 
 
 if __name__ == '__main__':

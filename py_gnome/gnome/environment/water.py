@@ -108,6 +108,10 @@ class Water(Environment):
                    'density': ('density', _valid_density_units),
                    }
 
+    # Fixme: SI units are defined by an outside boy (that is, SI :-) )
+    #        we should not be redefining it locally
+    #        We *may* want to have system for "GNOME units" which is almost SI
+    #        But if so -- it should be somwhere central. This is NOT Water specific!
     # keep track of valid SI units for properties - these are used for
     # conversion since internal code uses SI units. Don't expect to change
     # these so make it a class level attribute
@@ -118,7 +122,8 @@ class Water(Environment):
                  'fetch': 'm',
                  'density': 'kg/m^3',
                  'kinematic_viscosity': 'm^2/s'}
-
+    # Fixme: we need a simple way for (scripting) users to use the units they want to create
+    #        a water object.
     def __init__(self,
                  temperature=300.0,
                  salinity=35.0,
@@ -131,7 +136,10 @@ class Water(Environment):
         '''
         Assume units are SI for all properties. 'units' attribute assumes SI
         by default. This can be changed, but initialization takes SI.
+
+        NOTE: Document this !!!!
         '''
+
         # define properties in SI units
         # ask if we want unit conversion implemented here?
         self.temperature = temperature

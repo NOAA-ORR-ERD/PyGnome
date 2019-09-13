@@ -36,7 +36,10 @@ from gnome.weatherers import (weatherer_sort,
                               WeatheringData,
                               FayGravityViscous,
                               Langmuir,
-                              weatherer_schemas)
+                              weatherer_schemas,
+                              weatherers_by_name,
+                              standard_weatherering_sets,
+                              )
 from gnome.outputters import Outputter, NetCDFOutput, WeatheringOutput
 from gnome.outputters import schemas as out_schemas
 from gnome.persist import (extend_colander,
@@ -269,6 +272,44 @@ class Model(GnomeId):
 
         self.movers.register_callback(self._callback_add_spill,
                                       ('add', 'replace', 'remove'))
+
+    def add_weathering(self, which='standard'):
+        """
+        Add the weatherers
+
+        :param which='standard': which weatheres to add. Default is 'standard',
+                                 which will add all the standard weathering algorithms
+                                 if you don't want them all, you can speicfy a list:
+                                 ['evaporation', 'dispersion'].
+
+                                 Options are:
+                                  - 'evaporation'
+                                  - 'dispersion'
+                                  - 'emulsification'
+                                  - 'dissolution': Dissolution,
+                                  - 'half_life_weatherer'
+
+                                 see: ``gnome.weatherers.__init__.py`` for the full list
+
+        """
+        names = weatherers_by_name.keys()
+        try:
+            which = standard_weatherering_sets[which]
+        except (TypeError, KeyError):
+            # assume it's a list passed in.
+            pass
+        for wx_name in which:
+            try:
+                self.weatherers += weatherers_by_name[wx_name.lower()]()
+            except KeyError:
+                raise ValueError("{} is not a valid weatherer. \n"
+                                 "The options are:"
+                                 " {}".format(wx_name,
+                                              weatherers_by_name.keys()))
+
+
+
+
 
     def reset(self, **kwargs):
         '''
@@ -1153,55 +1194,54 @@ class Model(GnomeId):
         # interface for this the same, so make it a dict
         return self.spills.update_from_dict({'spills': value})
 
-    def _create_zip(self, saveloc, name):
-        '''
-        create a zipfile and update saveloc to point to it. This is now
-        passed down to all the objects contained within the Model so they can
-        save themselves to zipfile
-        '''
-        if self.zipsave:
-            if name is None and self.name is None:
-                z_name = 'Model.zip'
-            else:
-                z_name = name if name is not None else self.name + '.zip'
+    ## removed, as the one in GnomeId is being used anyway
+    # def _create_zip(self, saveloc, name):
+    #     '''
+    #     create a zipfile and update saveloc to point to it. This is now
+    #     passed down to all the objects contained within the Model so they can
+    #     save themselves to zipfile
+    #     '''
+    #     if self.zipsave:
+    #         if name is None and self.name is None:
+    #             z_name = 'Model.gnome'
+    #         else:
+    #             z_name = name if name is not None else self.name + '.gnome'
 
-            # create the zipfile and update saveloc - _json_to_saveloc checks
-            # to see if saveloc is a zipfile
-            saveloc = os.path.join(saveloc, z_name)
-            z = zipfile.ZipFile(saveloc, 'w',
-                                compression=zipfile.ZIP_DEFLATED,
-                                allowZip64=self._allowzip64)
-            z.close()
+    #         # create the zipfile and update saveloc - _json_to_saveloc checks
+    #         # to see if saveloc is a zipfile
+    #         saveloc = os.path.join(saveloc, z_name)
+    #         z = zipfile.ZipFile(saveloc, 'w',
+    #                             compression=zipfile.ZIP_DEFLATED,
+    #                             allowZip64=self._allowzip64)
+    #         z.close()
 
-        return saveloc
+    #     return saveloc
 
     def save(self, saveloc='.', refs=None, overwrite=True):
         '''
         save the model state in saveloc. If self.zipsave is True, then a
         zip archive is created and model files are saved to the archive.
 
+        :param saveloc=".": a directory or filename. If a directory, then either
+                        the model is saved into that dir, or a zip archive is
+                        created in that dir (with a .gnome extension).
+
+                        The file(s) are clobbered when save() is called.
+        :type saveloc: A dir or file name (relative or full path) as a string.
+
+        :param refs=None: dict of references mapping 'id' to a string used for
+            the reference. The value could be a unique integer or it could be
+            a filename. It is up to the creator of the reference list to decide
+            how to reference a nested object.
+
+        :param overwrite=True:
+
+        :returns: references
+
         This overrides the base class save(). Model contains collections and
         model must invoke save for each object in the collection. It must also
         save the data in the SpillContainer's if it is a mid-run save.
 
-        :param saveloc: zip archive or a valid directory. Model files are
-            either persisted here or a new model is re-created from the files
-            stored here. The files are clobbered when save() is called.
-        :type saveloc: A path as a string or unicode
-
-        :param filename=None: If data is saved to zipfile (default behavior),
-                              then this is filename of zip file. For a zipfile,
-                              the model's state is always contained in
-                              Model.json. If zipsave is False, then model's
-                              json is stored in filename.json
-        :type filename: str
-
-        :param references: dict of references mapping 'id' to a string used for
-            the reference. The value could be a unique integer or it could be
-            a filename. It is upto the creator of the reference list to decide
-            how to reference a nested object.
-
-        :returns: references
         '''
         json_, saveloc, refs = super(Model, self).save(saveloc=saveloc,
                                                        refs=refs,
@@ -1406,8 +1446,8 @@ class Model(GnomeId):
                     # min_k1 = spill.substance.get('pour_point_min_k')
                     pour_point = spill.substance.pour_point()
 
-                    if spill.water is not None:
-                        water_temp = spill.water.get('temperature')
+                    if spill.substance.water is not None:
+                        water_temp = spill.substance.water.get('temperature')
 
                         if water_temp < pour_point[0]:
                             msg = ('The water temperature, {0} K, '
@@ -1419,11 +1459,12 @@ class Model(GnomeId):
                             self.logger.warning(msg)
                             msgs.append(self._warn_pre + msg)
 
-                        rho_h2o = spill.water.get('density')
+                        rho_h2o = spill.substance.water.get('density')
                         rho_oil = spill.substance.density_at_temp(water_temp)
                         if np.any(rho_h2o < rho_oil):
                             msg = ('Found particles with '
                                    'relative_buoyancy < 0. Oil is a sinker')
+                            isvalid = False
                             raise GnomeRuntimeError(msg)
 
         if num_spills_on > 0 and not someSpillIntersectsModel:

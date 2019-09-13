@@ -69,14 +69,18 @@ class ParamMapSchema(GnomeMapSchema):
     bearing = SchemaNode(Integer())
     units = SchemaNode(String())
 
+class RasterMapSchema(GnomeMapSchema):
+    pass
 
-class MapFromBNASchema(GnomeMapSchema):
+class MapFromBNASchema(RasterMapSchema):
     filename = SchemaNode(
         String(), isdatafile=True, test_equal=False)
     refloat_halflife = SchemaNode(Float())
+    raster_size = SchemaNode(Float())
+    approximate_raster_interval = SchemaNode(Float(), save=False, update=False, read_only=True)
 
 
-class MapFromUGridSchema(GnomeMapSchema):
+class MapFromUGridSchema(RasterMapSchema):
     filename = SchemaNode(
         String(), read_only=True, isdatafile=True, test_equal=False
     )
@@ -96,11 +100,13 @@ class GnomeMap(GnomeId):
     refloat_halflife = None  # note -- no land, so never used
     _ref_as = 'map'
 
-    def __init__(self, map_bounds=None, spillable_area=None, land_polys=None, **kwargs):
+    def __init__(self,
+                 map_bounds=None,
+                 spillable_area=None,
+                 land_polys=None,
+                 **kwargs):
         """
         This __init__ will be different for other implementations
-
-        Optional parameters (kwargs)
 
         :param map_bounds: The polygon bounding the map if any elements are
                            outside the map bounds, they are removed from the
@@ -132,12 +138,7 @@ class GnomeMap(GnomeId):
                                        dtype=np.float64)
 
         self.spillable_area = spillable_area
-
-        if land_polys is None:
-            # empty set, no land
-            self.land_polys = PolygonSet()
-        else:
-            self.land_polys = land_polys
+        self.land_polys = land_polys
 
     def get_polygons(self):
         polys = {}
@@ -208,6 +209,27 @@ class GnomeMap(GnomeId):
         for poly in sa:
             ps.append(poly)
         self._spillable_area = ps
+
+    @property
+    def land_polys(self):
+        return self._land_polys
+
+    @land_polys.setter
+    def land_polys(self, sa):
+        if sa is None or (isinstance(sa, list) and len(sa) == 0):
+            sa = PolygonSet()
+        if isinstance(sa, PolygonSet):
+            self._land_polys = sa
+            return
+        ps = PolygonSet()
+        try:
+            sa[0][0][0]
+        except TypeError:
+            # probably a single polygon -- put it in a list
+            sa = [sa]
+        for poly in sa:
+            ps.append(poly)
+        self._land_polys = ps
 
     def on_map(self, coords):
         """
@@ -634,7 +656,7 @@ class RasterMap(GnomeMap):
     #       if map is smaller than land polygons, no need for raster to be
     #       larger than map -- but no impimented yet.
 
-    # flags for what's in the basebitmap
+    # flags for what's in the raster
     # in theory -- it could be used for other data:
     #  refloat, other properties?
     # note the BW map_canvas only does 1, though.
@@ -642,16 +664,20 @@ class RasterMap(GnomeMap):
 
     land_flag = 1
 
-    def __init__(self, bitmap_array, projection, **kwargs):
+    def __init__(self,
+                 raster=None,
+                 projection=None,
+                 refloat_halflife=1,
+                 **kwargs):
         """
         create a new RasterMap
 
-        :param bitmap_array: A numpy array that stores the land-water map
+        :param raster: A numpy array that stores the land-water map
                              0 is water. 1 is land. In theory, other values
                              could be used for other purposes. If the array
                              is not C-contiguous, it will be copied to a
                              C-contiguus array.
-        :type bitmap_array: a (W,H) numpy array of type uint8
+        :type raster: a (W,H) numpy array of type uint8
 
         :param projection: A Projection object -- used to convert from
                            lat-long to pixels in the array
@@ -677,35 +703,28 @@ class RasterMap(GnomeMap):
 
         :type id: string
         """
-        refloat_halflife = kwargs.pop('refloat_halflife', 1)
+        super(RasterMap, self).__init__(**kwargs)
         self._refloat_halflife = refloat_halflife * self.seconds_in_hour
 
-        self.basebitmap = np.ascontiguousarray(bitmap_array)
-
-        if self.basebitmap.size > 16000000:
-            self.ratios = np.array((128, 32, 1,), dtype=np.int32)
-        elif self.basebitmap.size > 1000000:
-            self.ratios = np.array((32, 1,), dtype=np.int32)
+        if raster is None:
+            self.raster = np.zeros((1024, 1024))
         else:
-            self.ratios = np.array((16, 1,), dtype=np.int32)
+            self.raster = np.ascontiguousarray(raster)
 
-        self.build_coarser_bitmaps()
         self.projection = projection
 
-        GnomeMap.__init__(self, **kwargs)
-
-    def build_coarser_bitmaps(self):
+    def build_coarser_rasters(self):
         """
         Builds the list which contains the different resolution raster maps.
-        Scale -> bitmap
+        Scale -> raster
         example for base map of 1024 x 1024:
-        0 -> 1/16th bitmap 64 base cells per cell
-        1 -> 1/32nd bitmap 32:1
-        2 -> 1/64th bitmap 16:1
-        3 -> 1/128th bitmap 8:1
-        4 -> 1/256th bitmap 4:1
-        5 -> 1/512th bitmap 2:1
-        6 -> 1/1024th bitmap (== base map 1:1)
+        0 -> 1/16th raster 64 base cells per cell
+        1 -> 1/32nd raster 32:1
+        2 -> 1/64th raster 16:1
+        3 -> 1/128th raster 8:1
+        4 -> 1/256th raster 4:1
+        5 -> 1/512th raster 2:1
+        6 -> 1/1024th raster (== base map 1:1)
 
         The general idea is that the particle position (an int) can quickly
         be mapped into any scale and the path can begin from there.
@@ -717,9 +736,10 @@ class RasterMap(GnomeMap):
         In the end, if the scale decreases to 1:1 and there's still a land hit,
         then land was hit.
         """
+        self.logger.info('generating coarser rasters')
         self.layers = []
-        base_w = self.basebitmap.shape[0]
-        base_h = self.basebitmap.shape[1]
+        base_w = self.raster.shape[0]
+        base_h = self.raster.shape[1]
 
         for ratio in self.ratios[:-1]:
             genned_layer = np.zeros((int(math.ceil(float(base_w) / ratio)),
@@ -728,14 +748,41 @@ class RasterMap(GnomeMap):
 
             for j in range(0, genned_layer.shape[1]):
                 for i in range(0, genned_layer.shape[0]):
-                    genned_layer[i, j] = np.any(self.basebitmap[i * ratio:
+                    genned_layer[i, j] = np.any(self.raster[i * ratio:
                                                                 (i + 1) * ratio, j * ratio:
                                                                 (j + 1) * ratio])
 
             self.layers.append(genned_layer)
 
-        self.layers.append(self.basebitmap)
+        self.layers.append(self.raster)
         self.layers = np.array(self.layers)
+
+    @property
+    def ratios(self):
+        if self._ratios is None:
+            self._ratios = (16,1,)
+        return self._ratios
+    
+    @ratios.setter
+    def ratios(self, r):
+        self._ratios = r
+        self.build_coarser_rasters()
+
+    @property
+    def raster(self):
+        return self._raster
+
+    @raster.setter
+    def raster(self, arr):
+        if arr.size > 16000000:
+            self._ratios = np.array((128, 32, 1,), dtype=np.int32)
+        elif arr.size > 1000000:
+            self._ratios = np.array((32, 1,), dtype=np.int32)
+        else:
+            self._ratios = np.array((16, 1,), dtype=np.int32)
+
+        self._raster = np.ascontiguousarray(arr)
+        self.build_coarser_rasters()
 
     @property
     def refloat_halflife(self):
@@ -745,29 +792,38 @@ class RasterMap(GnomeMap):
     def refloat_halflife(self, value):
         self._refloat_halflife = value * self.seconds_in_hour
 
+    @property
+    def approximate_raster_interval(self):
+        orig, diag = self.projection.to_lonlat(np.array([(0,0),(1,1)]))
+        orig = np.r_[orig, 0] #make (lat, lon) into (lat, lon, z)
+        diag = np.r_[diag, 0]
+        diff = self.projection.lonlat_to_meters(orig-diag, orig)
+
+        return np.average(np.abs(diff))
+        
     def save_as_image(self, filename):
         '''
         Save the land-water raster as a PNG save_as_image
 
         :param filename: the name of the file to save to.
         '''
-        bitmap = self.basebitmap.copy()
+        raster = self.raster.copy()
 
         # change anything not zero to 255 - to get black and white
-        np.putmask(bitmap, self.basebitmap > 0, 2)
+        np.putmask(raster, self.raster > 0, 2)
 
-        im = py_gd.from_array(bitmap)
+        im = py_gd.from_array(raster)
 
         im.save(filename, 'bmp')
 
-    def _off_bitmap(self, coord):
+    def _off_raster(self, coord):
         """
-        are these pixel coordinates on the basebitmap
+        are these pixel coordinates on the raster
 
         We can't just use an IndexError, as negative
         indexes can be legal with numpy, but aren't expected here.
         """
-        shape = self.basebitmap.shape
+        shape = self.raster.shape
         return (coord[0] < 0 or
                 coord[1] < 0 or
                 coord[0] >= shape[0] or
@@ -783,12 +839,12 @@ class RasterMap(GnomeMap):
         .. note:: Only used internally or for testing -- no need for external
                   API to use pixel coordinates.
         """
-        # if pixel coords are negative, then off the basebitmap,
+        # if pixel coords are negative, then off the raster,
         # so can't be on land
-        if self._off_bitmap(coord):
+        if self._off_raster(coord):
             return False
         else:
-            return self.basebitmap[coord[0], coord[1]] & self.land_flag
+            return self.raster[coord[0], coord[1]] & self.land_flag
 
     def on_land(self, coord):
         """
@@ -808,14 +864,14 @@ class RasterMap(GnomeMap):
         """
         determines which LEs are on land
 
-        :param coords:  pixel coords matching the basebitmap
+        :param coords:  pixel coords matching the raster
         :type coords:  Nx2 numpy int array
 
         returns: a (N,) array of bools - true for particles that are on land
         """
         mask = map(point_in_poly, [self.map_bounds] * len(coords), coords)
         racpy = np.copy(coords)[mask]
-        mskgph = self.basebitmap[racpy[:, 0], racpy[:, 1]]
+        mskgph = self.raster[racpy[:, 0], racpy[:, 1]]
 
         chrmgph = np.array([0] * len(coords))
         chrmgph[np.array(mask)] = mskgph
@@ -823,12 +879,12 @@ class RasterMap(GnomeMap):
         return chrmgph
 
     def _in_water_pixel(self, coord):
-        # if  off the basebitmap, so must be in water,
+        # if  off the raster, so must be in water,
         # unless not on map, which should have already been checked.
-        if not self._off_bitmap:
+        if not self._off_raster:
             return True
         else:
-            return not self.basebitmap[coord[0], coord[1]] & self.land_flag
+            return not self.raster[coord[0], coord[1]] & self.land_flag
 
     def in_water(self, coord):
         """
@@ -983,7 +1039,7 @@ class RasterMap(GnomeMap):
 
     def to_pixel_array(self, coords):
         """
-        Projects an array of (lon, lat) tuples onto the basebitmap,
+        Projects an array of (lon, lat) tuples onto the raster,
         and modifies it in place to hold the corresponding projected values.
 
         :param coords:  a numpy array of (lon, lat, depth) points
@@ -1001,9 +1057,12 @@ class MapFromBNA(RasterMap):
     """
     _schema = MapFromBNASchema
 
-    def __init__(self, filename=None, raster_size=4096 * 4096, **kwargs):
+    def __init__(self,
+                 filename=None,
+                 raster_size=4096 * 4096,
+                 **kwargs):
         """
-        Creates a GnomeMap (specifically a RasterMap) from a data file.
+        Creates a RasterMap from a data file.
         It is expected that you will get the spillable area and map bounds
         from the data file -- if they exist
 
@@ -1030,12 +1089,14 @@ class MapFromBNA(RasterMap):
         :type id: string
         """
         self.filename = filename
+        self._raster_size = raster_size
 
         # fixme: do some file type checking here.
         polygons = haz_files.ReadBNA(filename, 'PolygonSet')
         map_bounds = None
 
-        self.name = kwargs.pop('name', os.path.split(filename)[1])
+        if kwargs.get('name', False):
+            self.name = os.path.split(filename)[1]
 
         # find the spillable area and map bounds:
         # and create a new polygonset without them
@@ -1075,18 +1136,36 @@ class MapFromBNA(RasterMap):
         if len(spillable_area) == 0:
             spillable_area.append(map_bounds)
 
+        # get the raster as a numpy array:
+        raster, projection = self.build_raster(land_polys, BB)
 
-        # user defined spillable_area, map_bounds overrides data obtained
-        # from polygons
+        super(MapFromBNA, self).__init__(
+            raster=raster,
+            projection=projection,
+            map_bounds=map_bounds,
+            spillable_area=spillable_area,
+            land_polys=land_polys,
+            **kwargs)
+        return None
 
-        # todo: should there be a check between spillable_area read from BNA
-        # versus what the user entered. if this is within spillable_area for
-        # BNA, then include it? else ignore
+    def build_raster(self, land_polys=None, BB=None):
+        """
+        Build the underlying raster used for the map
+
+        This should be called if the resolution or land polygons change
+        """
+        # now draw the raster map with a map_canvas:
+        # determine the size:
+
 
         # stretch the bounding box, to get approximate aspect ratio in
         # projected coords.
-        aspect_ratio = (np.cos(BB.Center[1] * np.pi / 180) *
-                        (BB.Width / BB.Height))
+
+        land_polys = self.land_polys if land_polys is None else land_polys
+        BB = land_polys.bounding_box if BB is None else BB
+        raster_size = self.raster_size
+
+        aspect_ratio = (np.cos(BB.Center[1] * np.pi / 180) *(BB.Width / BB.Height))
 
         w = int(np.sqrt(raster_size * aspect_ratio))
         h = int(raster_size / w)
@@ -1119,82 +1198,26 @@ class MapFromBNA(RasterMap):
                                     line_width=1,
                                     background=True)
 
-        # just for testing
-        # canvas.save_background("raster_map_test.png")
+                # get the raster as a numpy array:
+        raster_array = canvas.back_asarray()
 
-        # get the basebitmap as a numpy array:
-        bitmap_array = canvas.back_asarray()
+        # need to return and use projection used to create the raster, or the to_pixel/from_pixel functions
+        # will give incorrect results going forward.
+        return raster_array, canvas.projection
 
-        RasterMap.__init__(self,
-                           bitmap_array,
-                           canvas.projection,
-                           map_bounds=map_bounds,
-                           spillable_area=spillable_area,
-                           land_polys=land_polys,
-                           **kwargs)
-        return None
-
-    # # keeping this around just in case, but this method is deprecated
-    # # writing the geojson directly from polygons is faster and less
-    # # requiremetns on a complex dependency.
-    # def to_geojson(self):
-    #     """
-    #     Output the vector version of the map
-
-    #     This is what gets drawn in the WebGNOME client, for example
-    #     """
-    #     map_file = ogr_open_file('BNA:' + self.filename)
-    #     polys = []
-
-    #     line_strings = []
-
-    #     for layer in ogr_layers(map_file):
-    #         for f in ogr_features(layer):
-    #             primary_id = f.GetFieldAsString('Primary ID')
-
-    #             # robust but slow solution ~ 1 second processing time
-    #             # if primary_id == 'SpillableArea':
-    #             #     spillarea_features.append(json.loads(f.ExportToJson()))
-    #             # elif primary_id == 'Map Bounds':
-    #             #     bounds_features.append(json.loads(f.ExportToJson()))
-    #             # else:
-    #             #     shoreline_features.append(json.loads(f.ExportToJson()))
-    #             #     shoreline_geo.append(json.loads(f.GetGeometryRef().ExportToJson())['coordinates'][0])
-
-    #             # only doing what we need at the moment
-    #             # in the future we might need the other layers
-    #             if primary_id not in ('SpillableArea', 'Map Bounds'):
-    #                 # apparently this is how you get to the actual
-    #                 # map coordinates using OGR.  It seems a bit brittle.
-    #                 # But this is much more efficient than exporting
-    #                 # to json.
-    #                 geom = f.GetGeometryRef()
-    #                 geo_type = geom.GetGeometryName()
-
-    #                 if geo_type == 'MULTIPOLYGON':
-    #                     poly = geom.GetGeometryRef(0)
-    #                     ring = poly.GetGeometryRef(0)
-
-    #                     polys.append([ring.GetPoints()])
-    #                 elif geo_type == 'LINESTRING':
-    #                     line_strings.append(geom.GetPoints())
-    #                 else:
-    #                     print 'unknown type: ', geo_type
-
-    #     features = []
-
-    #     if polys:
-    #         f = Feature(id="1",
-    #                     properties={'name': 'Shoreline Polys'},
-    #                     geometry=MultiPolygon(coordinates=polys))
-    #         features.append(f)
-    #     if line_strings:
-    #         f = Feature(id="2",
-    #                     properties={'name': 'Shoreline Lines'},
-    #                     geometry=MultiLineString(coordinates=line_strings))
-    #         features.append(f)
-
-    #     return FeatureCollection(features)
+    @property
+    def raster_size(self):
+        '''
+        Maximum physical size of the raster in bytes
+        '''
+        return self._raster_size
+    
+    @raster_size.setter
+    def raster_size(self, size):
+        if size != self._raster_size:
+            self._raster_size = size
+            #should trigger base class to recreate coarser rasters
+            self.raster, self.projection = self.build_raster()
 
     def to_geojson(self):
         """
@@ -1245,6 +1268,7 @@ class MapFromBNA(RasterMap):
             features.append(land)
             features.append(lakes)
         return FeatureCollection(features)
+
 
 
 class MapFromUGrid(RasterMap):
@@ -1368,10 +1392,10 @@ class MapFromUGrid(RasterMap):
         # just for testing
         # canvas.save_background("raster_map_test.png")
 
-        # get the basebitmap as a numpy array:
-        bitmap_array = canvas.back_asarray()
+        # get the raster as a numpy array:
+        raster_array = canvas.back_asarray()
 
-        RasterMap.__init__(self, bitmap_array, canvas.projection,
+        RasterMap.__init__(self, raster_array, canvas.projection,
                            map_bounds=map_bounds,
                            spillable_area=spillable_area,
                            land_polys=land_polys,
@@ -1447,7 +1471,7 @@ def grid_from_nc(filename):
 
     # Re-shuffle for gnome raster map orientation:
     # create the raster
-    # bitmap_array = np.zeros( (nlon, nlat), dtype=np.uint8 )
+    # raster_array = np.zeros( (nlon, nlat), dtype=np.uint8 )
     mask = (mask == 0).astype(np.uint8)  # swap water/land
     mask = np.ascontiguousarray(np.fliplr(mask.T))  # to get oriented right.
 
@@ -1516,13 +1540,13 @@ def map_from_regular_grid(grid_mask, lon, lat, refine=4, refloat_halflife=1,
     dlat = (lat[-1] - lat[0]) / (len(lat) - 1)
 
     # create the raster
-    bitmap_array = np.zeros((nlon * resolution, nlat * resolution),
+    raster_array = np.zeros((nlon * resolution, nlat * resolution),
                             dtype=np.uint8)
 
     # add the land to the raster
     for i in range(resolution):
         for j in range(resolution):
-            bitmap_array[i::resolution, j::resolution] = grid_mask
+            raster_array[i::resolution, j::resolution] = grid_mask
 
     # compute projection
     bounding_box = np.array(((lon[0], lat[0]),
@@ -1530,7 +1554,9 @@ def map_from_regular_grid(grid_mask, lon, lat, refine=4, refloat_halflife=1,
                             dtype=np.float64)  # adjust for last grid cell
 
     proj = RegularGridProjection(bounding_box,
-                                 image_size=bitmap_array.shape)
+                                 image_size=raster_array.shape)
 
-    return RasterMap(bitmap_array, proj,
-                               refloat_halflife=refloat_halflife)
+    return RasterMap(
+        raster=raster_array,
+        projection=proj,
+        refloat_halflife=refloat_halflife)
