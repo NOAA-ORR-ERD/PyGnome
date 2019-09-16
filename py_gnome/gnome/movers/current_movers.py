@@ -1125,6 +1125,7 @@ class ComponentMover(CurrentMoversBase):
     def __init__(self,
                  filename1=None,
                  filename2=None,
+                 wind=None,
                  scale_refpoint=None,
                  pat1_angle=0,
                  pat1_speed=10,
@@ -1135,7 +1136,6 @@ class ComponentMover(CurrentMoversBase):
                  pat2_speed=10,
                  pat2_speed_units=2,
                  scale_by=0,
-                 wind=None,
                  **kwargs):
         """
         Uses super to invoke base class __init__ method.
