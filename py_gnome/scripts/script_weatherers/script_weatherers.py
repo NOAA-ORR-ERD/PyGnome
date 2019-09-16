@@ -14,6 +14,7 @@ from gnome import scripting
 from gnome.basic_types import datetime_value_2d
 
 from gnome.utilities.remote_data import get_datafile
+from gnome.utilities.inf_datetime import InfDateTime
 
 from gnome.model import Model
 
@@ -94,7 +95,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                                      units='bbl')
 
     # set bullwinkle to .303 to cause mass goes to zero bug at 24 hours (when continuous release ends)
-    spill.element_type._substance._bullwinkle = .303
+    spill.substance._bullwinkle = .303
     model.spills += spill
 
     print 'adding a RandomMover:'
@@ -116,19 +117,23 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # define skimmer/burn cleanup options
     skim1_start = start_time + timedelta(hours=15.58333)
     skim2_start = start_time + timedelta(hours=16)
+
+    skim1_active_range = (skim1_start, skim1_start + timedelta(hours=8.))
+    skim2_active_range = (skim2_start, skim2_start + timedelta(hours=12.))
+
     units = spill.units
+
     skimmer1 = Skimmer(80, units=units, efficiency=0.36,
-                      active_start=skim1_start,
-                      active_stop=skim1_start + timedelta(hours=8))
+                      active_range=skim1_active_range)
     skimmer2 = Skimmer(120, units=units, efficiency=0.2,
-                      active_start=skim2_start,
-                      active_stop=skim2_start + timedelta(hours=12))
+                      active_range=skim2_active_range)
 
     burn_start = start_time + timedelta(hours=36)
     burn = Burn(1000., .1,
-                active_start=burn_start, efficiency=.2)
+                active_range=(burn_start, InfDateTime('inf')), efficiency=.2)
 
     chem_start = start_time + timedelta(hours=24)
+    chem_active_range = (chem_start, chem_start + timedelta(hours=8))
 #     c_disp = ChemicalDispersion(0.5, efficiency=0.4,
 #                                 active_start=chem_start,
 #                                 active_stop=chem_start + timedelta(hours=8))
