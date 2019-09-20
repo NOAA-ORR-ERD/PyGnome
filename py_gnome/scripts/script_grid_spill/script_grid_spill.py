@@ -5,8 +5,8 @@ Example of a script using a "grid spill"
 
 This was used to do a forecast for where to drop a whale.
 
-We could then quickly see where a bunc of potential drop
-locations would end up lead.
+We could then quickly see where a bunch of potential drop
+locations would end up.
 
 Also uses:
 
@@ -19,14 +19,15 @@ optionally -- gridded winds and a point forecast -- switching between them.
 import os
 import gnome.scripting as gs
 
+# define base directory
+base_dir = os.path.dirname(__file__)
+images_dir = os.path.join(base_dir, 'images')
+
 WINDAGE = 0.03
 print "running with windage:", WINDAGE
 
 # gs.set_verbose('info')
 # pf = gs.PrintFinder()
-
-gs.get_datafile(os.path.join('.', 'CAROMS.nc'))
-
 
 rel_time = "2019-04-18T21:00:00"
 
@@ -36,7 +37,9 @@ model = gs.Model(name='Whale Drift',
                  duration=gs.days(3),
                  )
 
-model.map = gs.MapFromBNA("coast.bna",
+mapfile = gs.get_datafile(os.path.join(base_dir, 'coast.bna'))
+
+model.map = gs.MapFromBNA(mapfile,
                           refloat_halflife=float("inf")
                           )
 
@@ -49,14 +52,18 @@ model.map = gs.MapFromBNA("coast.bna",
 # model.movers += gfs
 
 
-forecast = gs.wind_mover_from_file("28NM SSW San Francisco CA-4-18.nws")
+windfile = gs.get_datafile(os.path.join(base_dir, '28NM SSW San Francisco CA-4-18.nws'))
+
+forecast = gs.wind_mover_from_file(windfile)
 #forecast.active_range = (gs.asdatetime("2019-04-19T22:01"),
 #                          gs.InfTime())
 model.movers += forecast
 
 
 
-roms = gs.PyCurrentMover("CAROMS.nc")
+currentfile = gs.get_datafile(os.path.join(base_dir, 'CAROMS.nc'))
+
+roms = gs.PyCurrentMover(currentfile)
 # extrapolate the currents
 roms.current.extrapolation_is_allowed = True
 # roms.active_range = (gs.MinusInfTime(), gs.asdatetime("2019-04-19T20:00"))
@@ -74,8 +81,8 @@ model.spills += gs.grid_spill(bounds=((-122.3, 37.0),
 model.movers += gs.RandomMover(diffusion_coef=10000)
 
 
-model.outputters += gs.Renderer(map_filename="coast.bna",
-                                output_dir='./images',
+model.outputters += gs.Renderer(map_filename=mapfile,
+                                output_dir=images_dir,
                                 image_size=(800, 800),
                                 projection=None,
                                 viewport=((-124.0, 36.0),
@@ -95,7 +102,8 @@ model.outputters += gs.Renderer(map_filename="coast.bna",
                                 )
 
 outfilename = "whale_run_windage_{:.1f}.nc".format(WINDAGE * 100)
-model.outputters += gs.NetCDFOutput(outfilename,
+netcdf_file = os.path.join(base_dir, outfilename)
+model.outputters += gs.NetCDFOutput(netcdf_file,
                                     which_data='standard',
                                     output_timestep=gs.hours(3),
                                     compress=True,
