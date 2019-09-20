@@ -452,8 +452,8 @@ def test_child_exception():
                                               ('down', 'normal', 'up'),
                                               ('down', 'normal', 'up'))
     except Exception as e:
-        assert type(e) == TypeError
-        #assert type(e) == ValueError
+        #assert type(e) == TypeError
+        assert type(e) == ValueError
 
         exc_type, exc_value, exc_traceback = sys.exc_info()
         fmt = traceback.format_exception(exc_type, exc_value, exc_traceback)
