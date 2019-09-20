@@ -54,7 +54,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     print 'adding a spill'
     end_time = start_time + timedelta(hours=6)
-    spill = point_line_release_spill(num_elements=10,
+    spill = point_line_release_spill(num_elements=20,
                                      start_position=(144.664166,
                                                      13.441944, 0.0),
                                      release_time=start_time,
