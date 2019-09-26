@@ -213,7 +213,16 @@ class CatsMover(CurrentMoversBase):
             raise ValueError('Path for Cats filename does not exist: {0}'
                              .format(filename))
 
-        self._filename = filename
+        f = open(filename, 'rU') 
+        header = f.readline()
+        f.close()
+        header.strip()
+        fields = header.split(' ')
+        if fields[0]!='DAG':
+            raise ValueError('File has incorrect header line for Cats format: {0}'
+                             .format(header))
+
+        self._filename = filename 
 
         # check if this is stored with cy_cats_mover?
         self.mover = CyCatsMover()
