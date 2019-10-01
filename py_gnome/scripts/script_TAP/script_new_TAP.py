@@ -126,8 +126,11 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
 #     i_c_mover = PyCurrentMover(current=ice_aware_curr)
 #     i_c_mover = PyCurrentMover(current=ice_aware_curr, default_num_method='Euler')
-    i_c_mover = PyCurrentMover(current=ice_aware_curr, default_num_method=method, extrapolate=True)
+   # i_c_mover = PyCurrentMover(current=ice_aware_curr, default_num_method=method, extrapolate=True)
+    i_c_mover = PyCurrentMover(current=ice_aware_curr, default_num_method=method)
     i_w_mover = PyWindMover(wind=ice_aware_wind, default_num_method=wind_method)
+
+    i_c_mover.current.grid.extrapolation_is_allowed = True
 
 #     ice_aware_curr.grid.node_lon = ice_aware_curr.grid.node_lon[:]-360
 #     ice_aware_curr.grid.build_celltree()

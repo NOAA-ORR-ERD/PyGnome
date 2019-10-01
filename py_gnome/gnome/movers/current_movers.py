@@ -213,7 +213,16 @@ class CatsMover(CurrentMoversBase):
             raise ValueError('Path for Cats filename does not exist: {0}'
                              .format(filename))
 
-        self._filename = filename
+        f = open(filename, 'rU') 
+        header = f.readline()
+        f.close()
+        header.strip()
+        fields = header.split(' ')
+        if fields[0]!='DAG':
+            raise ValueError('File has incorrect header line for Cats format: {0}'
+                             .format(header))
+
+        self._filename = filename 
 
         # check if this is stored with cy_cats_mover?
         self.mover = CyCatsMover()
@@ -1125,6 +1134,7 @@ class ComponentMover(CurrentMoversBase):
     def __init__(self,
                  filename1=None,
                  filename2=None,
+                 wind=None,
                  scale_refpoint=None,
                  pat1_angle=0,
                  pat1_speed=10,
@@ -1135,7 +1145,6 @@ class ComponentMover(CurrentMoversBase):
                  pat2_speed=10,
                  pat2_speed_units=2,
                  scale_by=0,
-                 wind=None,
                  **kwargs):
         """
         Uses super to invoke base class __init__ method.

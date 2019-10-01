@@ -23,7 +23,7 @@ def model(sample_model):
 
     model.cache_enabled = True
 
-    model.spills += point_line_release_spill(num_elements=5,
+    model.spills += point_line_release_spill(num_elements=10,
                         start_position=sample_model['release_start_pos'],
                         release_time=model.start_time,
                         end_release_time=model.start_time + model.duration,
