@@ -210,6 +210,16 @@ cdef class CyCatsMover(CyCurrentMover):
 
         return True
 
+    def unset_tide(self):
+        """
+        Undoes the above tide functions and returns the object to default
+        """
+        self.cats.SetTimeDep(NULL)
+        self.cats.bTimeFileActive = False
+        self.cats.scaleType = 0
+
+        self.ref_point = (-0.000999,-0.000999,-0.000999)
+
     def text_read(self, fname):
         """
         read the current file

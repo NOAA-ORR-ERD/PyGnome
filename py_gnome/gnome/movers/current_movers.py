@@ -340,6 +340,7 @@ class CatsMover(CurrentMoversBase):
     def tide(self, tide_obj):
         if tide_obj is None:
             self._tide = tide_obj
+            self.mover.unset_tide()
             return
         if not isinstance(tide_obj, Tide):
             raise TypeError('tide must be of type environment.Tide')
