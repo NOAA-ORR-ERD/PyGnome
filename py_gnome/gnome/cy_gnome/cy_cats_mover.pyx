@@ -124,7 +124,7 @@ cdef class CyCatsMover(CyCurrentMover):
                   CyShioTime.ref_point
             """
             ref = self.cats.GetRefPosition()
-            if int(ref.p.pLat) == -999:
+            if np.isclose(ref.p.pLat, -999.):
                 return None
             else:
                 return (ref.p.pLong / 1.e6, ref.p.pLat / 1.e6, ref.z)
