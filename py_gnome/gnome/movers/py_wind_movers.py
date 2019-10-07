@@ -29,7 +29,7 @@ class PyWindMoverSchema(ObjTypeSchema):
                                                         GridWind._schema])
     filename = FilenameSchema(save=True, update=False, isdatafile=True,
                               missing=drop)
-    wind_scale = SchemaNode(Float(), save=True, update=True, missing=drop)
+    scale_value = SchemaNode(Float(), save=True, update=True, missing=drop)
     time_offset = SchemaNode(Float(), save=True, update=True, missing=drop)
     on = SchemaNode(Bool(), save=True, update=True, missing=drop)
     active_range = TimeRangeSchema()
@@ -54,7 +54,7 @@ class PyWindMover(movers.PyMover):
                  uncertain_time_delay=0,
                  uncertain_speed_scale=2.,
                  uncertain_angle_scale=0.4,
-                 wind_scale=1,
+                 scale_value=1,
                  default_num_method='RK2',
                  **kwargs):
         """
@@ -71,7 +71,7 @@ class PyWindMover(movers.PyMover):
                              active
         :type active_range: 2-tuple of datetimes
 
-        :param wind_scale: Value to scale wind data
+        :param scale_value: Value to scale wind data
         :param uncertain_duration: how often does a given uncertain element
                                    get reset
         :param uncertain_time_delay: when does the uncertainly kick in.
@@ -100,7 +100,7 @@ class PyWindMover(movers.PyMover):
         self.uncertain_duration = uncertain_duration
         self.uncertain_time_delay = uncertain_time_delay
         self.uncertain_speed_scale = uncertain_speed_scale
-        self.wind_scale = wind_scale
+        self.scale_value = scale_value
         self.time_offset = time_offset
 
         # also sets self._uncertain_angle_units
@@ -114,7 +114,7 @@ class PyWindMover(movers.PyMover):
     def from_netCDF(cls,
                     filename=None,
                     time_offset=0,
-                    wind_scale=1,
+                    scale_value=1,
                     uncertain_duration=24 * 3600,
                     uncertain_time_delay=0,
                     uncertain_along=.5,
@@ -128,7 +128,7 @@ class PyWindMover(movers.PyMover):
         return cls(wind=wind,
                    filename=filename,
                    time_offset=time_offset,
-                   wind_scale=wind_scale,
+                   scale_value=scale_value,
                    uncertain_along=uncertain_along,
                    uncertain_across=uncertain_across,
                    uncertain_cross=uncertain_cross,
@@ -232,12 +232,12 @@ class PyWindMover(movers.PyMover):
             pos = positions[:]
 
             deltas = self.delta_method(num_method)(sc, time_step, model_time_datetime, pos, self.wind)
-            deltas[:, 0] *= sc['windages'] * self.wind_scale
-            deltas[:, 1] *= sc['windages'] * self.wind_scale
+            deltas[:, 0] *= sc['windages'] * self.scale_value
+            deltas[:, 1] *= sc['windages'] * self.scale_value
 
             deltas = FlatEarthProjection.meters_to_lonlat(deltas, positions)
             deltas[status] = (0, 0, 0)
         else:
             deltas = np.zeros_like(positions)
-
+            
         return deltas

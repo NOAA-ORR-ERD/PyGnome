@@ -68,7 +68,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     start_time = "2013-03-12T10:00"
     # 15 minutes in seconds
     # Default to now, rounded to the nearest hour
-    model = gs.Model(time_step=gs.minute(15),
+    model = gs.Model(time_step=gs.minutes(15),
                      start_time=start_time,
                      duration=gs.days(1),
                      map=gnome_map,
@@ -180,8 +180,8 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     print 'adding a spill'
 
-    end_time = gs.asdatetime(start_time) + hours(12)
-    spill = point_line_release_spill(num_elements=100,
+    end_time = gs.asdatetime(start_time) + gs.hours(12)
+    spill = gs.point_line_release_spill(num_elements=100,
                                      start_position=(-70.911432,
                                                      42.369142, 0.0),
                                      release_time=start_time,

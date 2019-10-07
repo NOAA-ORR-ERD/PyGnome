@@ -803,7 +803,7 @@ class IceAwareCurrent(GridCurrent):
             diff_v -= water_v
 
             vels[interp_mask] += (diff_v[interp_mask] *
-                                  interp[interp_mask])
+                                  interp[interp_mask][:, np.newaxis])
 
             return vels
         else:
@@ -866,7 +866,7 @@ class IceAwareWind(GridWind):
 
             # scale winds from 100-0% depending on ice coverage
             vels[interp_mask] = (vels[interp_mask] *
-                                 (1 - interp[interp_mask]))
+                                 (1 - interp[interp_mask][:, np.newaxis]))
 
             return vels
         else:

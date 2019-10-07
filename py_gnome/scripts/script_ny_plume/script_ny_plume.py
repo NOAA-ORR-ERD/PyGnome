@@ -21,7 +21,9 @@ from gnome.basic_types import datetime_value_2d, numerical_methods
 
 from gnome.utilities.remote_data import get_datafile
 
-from gnome.spill.elements import plume
+#from gnome.spill.elements import plume
+from gnome.spill.substance import GnomeOil
+from gnome.spill.initializers import plume_initializers
 from gnome.utilities.distributions import WeibullDistribution, UniformDistribution
 from gnome.map import MapFromBNA
 from gnome.model import Model
@@ -105,6 +107,8 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 #                              lambda_=.00456,
 #                              max_=.0002)  # 200 micron max
 
+    oil_name = 'ALASKA NORTH SLOPE (MIDDLE PIPELINE, 1997)'
+    
     wd = UniformDistribution(low=.0002,
                              high=.0002)
 
@@ -114,8 +118,9 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                                                      40.5,
                                                      7.2),
                                      release_time=start_time,
-                                     element_type=plume(distribution=wd,
-                                                        substance_name='ALASKA NORTH SLOPE (MIDDLE PIPELINE, 1997)')
+                                     substance = GnomeOil(oil_name,initializers=plume_initializers(distribution=wd))
+                                     #element_type=plume(distribution=wd,
+                                                        #substance_name='ALASKA NORTH SLOPE (MIDDLE PIPELINE, 1997)')
                                      )
     model.spills += spill
 
@@ -130,10 +135,12 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 #                                         vertical_diffusion_coef_below_ml=.11,
 #                                         mixed_layer_depth=10)
 
-    url = ('http://geoport.whoi.edu/thredds/dodsC/clay/usgs/users/jcwarner/Projects/Sandy/triple_nest/00_dir_NYB05.ncml')
-    gc = GridCurrent.from_netCDF(url)
-    u_mover = PyCurrentMover(gc, default_num_method='RK2')
-    model.movers += u_mover
+    # the url is broken, update and include the following four lines
+#     url = ('http://geoport.whoi.edu/thredds/dodsC/clay/usgs/users/jcwarner/Projects/Sandy/triple_nest/00_dir_NYB05.ncml')
+#     gc = GridCurrent.from_netCDF(url)
+#     u_mover = PyCurrentMover(gc, default_num_method='RK2')
+#     model.movers += u_mover
+
     # print 'adding a wind mover:'
 
     # series = np.zeros((2, ), dtype=gnome.basic_types.datetime_value_2d)

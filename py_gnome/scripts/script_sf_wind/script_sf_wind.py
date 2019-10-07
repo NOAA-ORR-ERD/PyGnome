@@ -1,13 +1,15 @@
 #!/usr/bin/env python
 """
 Script to test GNOME with san francisco bay data (NWS wind data)
+Uses NonweatheringSubstance. Sets windage range and uncertainty values
 """
 
 import os
 from datetime import datetime, timedelta
 
 from gnome import scripting
-from gnome.spill.elements import floating
+from gnome.spill.substance import NonWeatheringSubstance
+#from gnome.spill.elements import floating
 
 from gnome.utilities.remote_data import get_datafile
 
@@ -50,9 +52,10 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                                      start_position=(-123.57152, 37.369436,
                                                      0.0),
                                      release_time=start_time,
-                                     element_type=floating(windage_range=(0.01,
-                                                                          0.04)
-                                                           )
+                                     substance=NonWeatheringSubstance(windage_range=(0.01,.04))
+                                     #element_type=floating(windage_range=(0.01,
+                                     #                                     0.04)
+                                     #                      )
                                      )
     model.spills += spill
 
