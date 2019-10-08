@@ -25,7 +25,7 @@ Anaconda (and miniconda) can be installed in either single-user or multi-user mo
 
 https://docs.continuum.io/anaconda/install
 
-We (and Anaconda) recommend single-user mode -- that way, administrator privileges are not required for either initial installation or maintaining the system.
+We (and Anaconda) recommend single-user mode (Select an install for “Just Me”) -- that way, administrator privileges are not required for either initial installation or maintaining the system.
 
 Windows:
 ........
@@ -58,7 +58,7 @@ manager that Anaconda is built on. So when working with Anaconda, you
 use the conda package manager for installing conda packages. ``pip``
 can also be used with conda, but it's best to use use conda if you can.
 
-AS a rule, if you need a new package, you should try to conda install it, and then, if there is not conda package available, you can pip install it.
+As a rule, if you need a new package, you should try to conda install it, and then, if there is not conda package available, you can pip install it.
 
 We have made sure that every package you need is available for conda.
 
@@ -148,11 +148,13 @@ see:
 
 http://conda.pydata.org/docs/using/envs.html
 
-If you are only going to use Python / conda for PyGNOME, then you
-can ignore this. However, if you are using Anaconda for other projects
-that might depend on specific versions of specific libraries
-(like numpy, scipy, etc), then you may want create an environment
-for PyGNOME::
+NOTE: We highly recommend that you use an environment for GNOME.
+
+If you are only going to use Python / conda for PyGNOME, then you could use the base environment. However, py_gnome needs a number of specific package versions, so it is best to keep it separate from any other work you are doing.
+
+(NOTE: you can do these steps with the Anaconda Navigator GUI if you have that installed)
+
+Create an environment for PyGNOME::
 
     conda create --name gnome python=2
 
@@ -169,13 +171,10 @@ and when you are done, you can deactivate it with::
 
 
 After activating the environment, you can proceed with these instructions,
-and all the packages ``py_gnome`` needs will be installed into that environment
-and kept separate from your main Anaconda install.
+and all the packages ``py_gnome`` needs will be installed into that environment and kept separate from your main Anaconda install.
 
 You will need to activate the environment any time you want to work with
 ``py_gnome`` in the future
-
-**NOTE:** Again, if you are only using Python / conda for GNOME, it is not necessary to deal with the complications of environments.
 
 
 Download GNOME
@@ -192,6 +191,7 @@ You can either download a zip file of all the sources and unpack it, or
 you can "clone" the git repository. If you clone the repository, you will
 be able to update the code with the latest version with a simple command,
 rather than having to re-download the whole package.
+
 
 Downloading a single release
 ----------------------------
