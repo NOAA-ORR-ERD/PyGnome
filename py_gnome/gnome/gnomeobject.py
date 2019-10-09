@@ -61,10 +61,18 @@ class AddLogger(object):
     _log = None
 
     def __init__(self, *args, **kwargs):
-        if ('json_' in kwargs):
-            # because old save files
-            kwargs.pop('json_')
-        super(AddLogger, self).__init__(**kwargs)
+        # because old save files
+        kwargs.pop('json_', None)
+        try:
+            super(AddLogger, self).__init__(**kwargs)
+        # Due to super magic, the object __init__ does not always get called here
+        #   but if it does, and there are kwargs, you get a TypeError
+        #   trapping that allows a more meaningful message
+        except TypeError:
+            if kwargs:  # could it fail for some other reason? maybe???
+                msg = ("{} are invalid keyword arguments for:\n"
+                       "{}".format(kwargs.keys(), self.__class__))
+                raise TypeError(msg)
 
     @property
     def logger(self):
