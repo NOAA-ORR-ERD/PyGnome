@@ -67,6 +67,7 @@ from gnome.outputters import (Renderer,
                               NetCDFOutput,
                               KMZOutput,
                               OilBudgetOutput,
+                              ShapeOutput,
                               )
 
 from gnome.map import MapFromBNA, GnomeMap
