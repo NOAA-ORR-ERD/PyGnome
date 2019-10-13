@@ -46,7 +46,7 @@ class ShapeOutput(Outputter):
 
         filename = filename.split(".zip")[0].split(".shp")[0]
 
-        if "." in filename:
+        if "." in os.path.split(filename)[-1]:
             # anything after a doit gets removed
             # I *think* pyshp is doing that, but not sure.
             raise ValueError("shape files can't have a dot in the filename")
