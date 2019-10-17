@@ -52,7 +52,7 @@ def test_init(output_dir):
     shp = ShapeOutput(os.path.join(output_dir, 'test'))
 
 
-def test_init_exceptions():
+def test_init_filenname_exceptions():
     '''
     test exceptions raised during __init__
     '''
@@ -61,7 +61,13 @@ def test_init_exceptions():
         ShapeOutput(os.path.abspath(os.path.dirname(__file__)))
 
     with pytest.raises(ValueError):
-        ShapeOutput('invalid_path_to_file/file.kmz')
+        # path must exist
+        ShapeOutput('invalid_path_to_file/file.zip')
+
+    with pytest.raises(ValueError):
+        "can't have a dot in the middle of the filename"
+        ShapeOutput('file_with.dot.kmz')
+
 
 
 def test_exceptions(output_filename):
