@@ -541,6 +541,7 @@ OSErr CATSMover_c::TextRead(vector<string> &linesInFile)
 	else 
 	{
 		cerr << "File type is not supported" << endl;
+		err = -1;
 		goto done;
 	}
 
@@ -620,6 +621,7 @@ OSErr CATSMover_c::TextRead(vector<string> &linesInFile)
 	dagTree = new TDagTree(pts, topo, tree.treeHdl, velH, tree.numBranches);
 	if (!dagTree) {
 		printError("Unable to read Extended Topology file.");
+		err = -1;
 		goto done;
 	}
 
