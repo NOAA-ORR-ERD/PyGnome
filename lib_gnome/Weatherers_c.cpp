@@ -36,6 +36,10 @@ OSErr emulsify(int n, unsigned long step_len,
     double start, le_age;	// convert to double for calculations
     //char errmsg[256];
 
+
+	if (emul_time > 0)
+		emul_time *= 3600;	// convert hours to seconds
+		
     for (int i=0; i < n; i++)
     {
         S = interfacial_area[i];
@@ -45,7 +49,9 @@ OSErr emulsify(int n, unsigned long step_len,
         //sprintf(errmsg,"k_emul = %lf, emul_C = %lf, Y_max = %lf, S_max = %lf, drop_max = %lf\n",k_emul,emul_C,Y_max,S_max,drop_max);
         //printNote(errmsg);
         //if ((age[i] >= emul_time && emul_time >= 0.) || frac_evap[i] >= emul_C && emul_C > 0.)
-        if ((le_age >= emul_time && emul_time >= 0.) || (frac_evap[i] >= emul_C && emul_C > 0.))
+        // we don't have emul_C < 0 if user hasn't set it so this doesn't work right
+        //if ((le_age >= emul_time && emul_time >= 0.) || (frac_evap[i] >= emul_C && emul_C > 0.))
+        if ((le_age >= emul_time && emul_time >= 0.) || ((frac_evap[i] >= emul_C && emul_C > 0.) && emul_time < 0 ))
         {
             if (emul_time > 0.)	// user has set value
                 start = emul_time;
