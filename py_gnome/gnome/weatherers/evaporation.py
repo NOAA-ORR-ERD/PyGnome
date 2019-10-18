@@ -56,6 +56,7 @@ class Evaporation(Weatherer):
                                  'evap_decay_constant': gat('evap_decay_constant'),
                                  'frac_water': gat('frac_water'),
                                  'frac_lost': gat('frac_lost'),
+                                 'frac_evap': gat('frac_evap'),
                                  'init_mass': gat('init_mass')})
 
     def prepare_for_model_run(self, sc):
@@ -194,13 +195,14 @@ class Evaporation(Weatherer):
 
             sc.mass_balance['evaporated'] += \
                 np.sum(data['mass_components'][:, :] - mass_remain[:, :])
-
+  
             # log amount evaporated at each step
             self.logger.debug(self._pid + 'amount evaporated for {0}: {1}'.
                               format(substance.name,
                                      np.sum(data['mass_components'][:, :] -
                                             mass_remain[:, :])))
 
+            data['frac_evap'][:] += ((data['mass_components'][:, :] - mass_remain[:, :]).sum(1)/data['init_mass'])
             data['mass_components'][:] = mass_remain
             data['mass'][:] = data['mass_components'].sum(1)
 

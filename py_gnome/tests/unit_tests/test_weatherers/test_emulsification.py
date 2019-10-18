@@ -51,11 +51,11 @@ def test_emulsification(oil, temp, num_elems, on):
 
     # also want a test for a user set value for bulltime or bullwinkle
     if oil == s_oils[0]:
-        sc['frac_lost'][:] = .31
+        sc['frac_evap'][:] = .31
 
-    # sc['frac_lost'][:] = .35
-    print "sc['frac_lost'][:]"
-    print sc['frac_lost'][:]
+    # sc['frac_evap'][:] = .35
+    print "sc['frac_evap'][:]"
+    print sc['frac_evap'][:]
 
     emul.prepare_for_model_step(sc, time_step, model_time)
     emul.weather_elements(sc, time_step, model_time)
@@ -64,14 +64,14 @@ def test_emulsification(oil, temp, num_elems, on):
     print sc['frac_water'][:]
 
     if on:
-        assert np.all(sc['frac_lost'] > 0) and np.all(sc['frac_lost'] < 1.0)
+        assert np.all(sc['frac_evap'] > 0) and np.all(sc['frac_evap'] < 1.0)
         assert np.all(sc['frac_water'] > 0) and np.all(sc['frac_water'] <= .9)
     else:
         assert np.all(sc['frac_water'] == 0)
 
-    sc['frac_lost'][:] = .2
-    print "sc['frac_lost'][:]"
-    print sc['frac_lost'][:]
+    sc['frac_evap'][:] = .2
+    print "sc['frac_evap'][:]"
+    print sc['frac_evap'][:]
 
     emul.prepare_for_model_step(sc, time_step, model_time)
     emul.weather_elements(sc, time_step, model_time)
@@ -80,7 +80,7 @@ def test_emulsification(oil, temp, num_elems, on):
     print sc['frac_water'][:]
 
     if on:
-        assert np.all(sc['frac_lost'] > 0) and np.all(sc['frac_lost'] < 1.0)
+        assert np.all(sc['frac_evap'] > 0) and np.all(sc['frac_evap'] < 1.0)
         assert np.all(sc['frac_water'] > 0) and np.all(sc['frac_water'] <= .9)
     else:
         assert np.all(sc['frac_water'] == 0)
