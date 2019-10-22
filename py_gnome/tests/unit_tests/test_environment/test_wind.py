@@ -431,9 +431,7 @@ def test_constant_wind_bounds():
     """
     wind = constant_wind(10, 45, 'knots')
 
-    assert wind.data_start == InfDateTime("-inf")
-
-    assert wind.data_stop == InfDateTime("inf")
+    assert wind.data_start == wind.data_stop
 
 
 def test_eq():

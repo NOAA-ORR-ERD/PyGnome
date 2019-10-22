@@ -47,7 +47,7 @@ git+https://github.com/NOAA-ORR-ERD/py_gd.git@v0.1.8.1#egg=py_gd
 ## Adding in gridded directly from github to avoid conda-forge getting development
 ## hung up whenever we need to change something in gridded 
 
-git+https://github.com/NOAA-ORR-ERD/gridded.git@v0.2.1#egg=gridded
+git+https://github.com/NOAA-ORR-ERD/gridded.git@v0.2.2#egg=gridded
 
 ##    BINARY dependencies: probably cannot be pip installed
 ##    Following packages requires something more than pip install
