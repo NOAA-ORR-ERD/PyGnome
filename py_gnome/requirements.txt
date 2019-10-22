@@ -22,7 +22,7 @@ repoze.lru
 colander
 gsw             # Thermodynamic Equations Of Seawater - density computation
 pyshp
-gridded
+#gridded
 
 
 # Binary dependencies that can probably be pip installed
@@ -44,6 +44,10 @@ git+https://github.com/NOAA-ORR-ERD/OilLibrary.git@v1.0.0#egg=oil_library
 ## This may be easy to get for Linux, but on OS-X and Windows, you are better off using conda
 git+https://github.com/NOAA-ORR-ERD/py_gd.git@v0.1.8.1#egg=py_gd
 
+## Adding in gridded directly from github to avoid conda-forge getting development
+## hung up whenever we need to change something in gridded 
+
+git+https://github.com/NOAA-ORR-ERD/gridded.git@v0.2.1#egg=gridded
 
 ##    BINARY dependencies: probably cannot be pip installed
 ##    Following packages requires something more than pip install
