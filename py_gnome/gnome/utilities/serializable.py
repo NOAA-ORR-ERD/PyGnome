@@ -95,14 +95,14 @@ class Field(object):  # ,serializable.Serializable):
     def __repr__(self):
         'unambiguous object representation'
         attr_vals = ', '.join(['{0}={1}'.format(attr, val)
-                               for attr, val in self.__dict__.iteritems()])
+                               for attr, val in self.__dict__.items()])
 
         return ('{0.__class__.__module__}.{0.__class__.__name__}'
                 '({1})'.format(self, attr_vals))
 
     def __str__(self):
         attr_vals = ', '.join(['{0}={1}'.format(attr, val)
-                               for attr, val in self.__dict__.iteritems()])
+                               for attr, val in self.__dict__.items()])
 
         return ('Field Object: '
                 '{1}'.format(self, attr_vals))
@@ -151,7 +151,7 @@ class State(object):
         # Field object is in flux - more properties were added so make
         # _valid_field_attr dynamic
         test_obj = Field('test')
-        self._valid_field_attr = test_obj.__dict__.keys()
+        self._valid_field_attr = list(test_obj.__dict__.keys())
 
     def __deepcopy__(self, memo):
         '''
@@ -295,7 +295,7 @@ class State(object):
     def _check_inputs(self, vals):
         'check inputs and convert to a list'
         if vals is not None:
-            if isinstance(vals, basestring):
+            if isinstance(vals, str):
                 vals = [vals]
 
             if not isinstance(vals, (list, tuple)):
@@ -313,7 +313,7 @@ class State(object):
         l_names from the list.
         l_names is a list containing the names (string) of properties.
         """
-        if isinstance(l_names, basestring):
+        if isinstance(l_names, str):
             l_names = l_names,
 
         for name in l_names:
@@ -343,13 +343,13 @@ class State(object):
         .. note:: An exception will be raised if both 'read' and 'update' are
                   True for a given field
         """
-        for key in kwargs.keys():
+        for key in list(kwargs.keys()):
             if key not in self._valid_field_attr:
                 raise AttributeError('{0} is not a valid attribute '
                                      'of Field object. It cannot be updated.'
                                      .format(key))
 
-        if 'read' in kwargs.keys() and 'update' in kwargs.keys():
+        if 'read' in list(kwargs.keys()) and 'update' in list(kwargs.keys()):
             if kwargs.get('read') and kwargs.get('update'):
                 raise AttributeError("The 'read' and 'update' attribute "
                                      "cannot both be True")
@@ -365,7 +365,7 @@ class State(object):
         update_ = kwargs.pop('update', None)
 
         for field in l_field:
-            for (key, val) in kwargs.iteritems():
+            for (key, val) in kwargs.items():
                 setattr(field, key, val)
 
             if read_ is not None and update_ is not None:  # change them both
@@ -384,14 +384,14 @@ class State(object):
 
         read_ = None
 
-        if 'read' in kwargs.keys():
+        if 'read' in list(kwargs.keys()):
             read_ = kwargs.pop('read')
 
         for field in l_field:
             if read_ is not None:
                 setattr(field, 'read', read_)
 
-            for (key, val) in kwargs.iteritems():
+            for (key, val) in kwargs.items():
                 if key == 'update' and val is True:
                     if getattr(field, 'read'):
                         raise AttributeError("The 'read' and 'update' "
@@ -401,7 +401,7 @@ class State(object):
 
     def get_field_by_name(self, names):
         'get field object from list given a name or list of names'
-        if isinstance(names, basestring):
+        if isinstance(names, str):
             names = [names]
 
         out = [field for name in names
@@ -500,7 +500,7 @@ class Serializable(GnomeId, Savable):
 
         # set remaining attributes to restore state of object when it was
         # persisted to save files (ie could be mid-run)
-        for key in dict_.keys():
+        for key in list(dict_.keys()):
             if not hasattr(new_obj, key):
                 raise AttributeError('{0} is not an attribute '
                                      'of {1}'.format(key, cls.__name__))
@@ -667,7 +667,7 @@ class Serializable(GnomeId, Savable):
 
         if len(l_new_oc) != len(curr_oc):
             updated = True
-        elif any([x is not y for x, y in zip(curr_oc.values(), l_new_oc)]):
+        elif any([x is not y for x, y in zip(list(curr_oc.values()), l_new_oc)]):
             updated = True
 
         if updated:
@@ -721,7 +721,7 @@ class Serializable(GnomeId, Savable):
         return toserial
 
     def items(self):
-        return self.to_serialize().items()
+        return list(self.to_serialize().items())
 
     @classmethod
     def is_sparse(cls, json_):

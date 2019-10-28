@@ -112,7 +112,7 @@ class ShapeOutput(Outputter):
                      ',PRIMEM["Greenwich",0],'
                      'UNIT["degree",0.0174532925199433]]')
 
-        for sc in self.sc_pair.items():
+        for sc in list(self.sc_pair.items()):
             w = shp.Writer(shp.POINT)
             w.autobalance = 1
 
@@ -137,7 +137,7 @@ class ShapeOutput(Outputter):
         if not self.on or not self._write_step:
             return None
 
-        for sc in self.cache.load_timestep(step_num).items():
+        for sc in list(self.cache.load_timestep(step_num).items()):
             self._record_shape_entries(sc)
 
             if islast_step:
@@ -202,7 +202,7 @@ class ShapeOutput(Outputter):
             zipf = zipfile.ZipFile(zfilename, 'w')
 
             for suf in ['shp', 'prj', 'dbf', 'shx']:
-                print "filename is:", filename
+                print("filename is:", filename)
                 file_to_zip = os.path.split(filename)[-1] + '.' + suf
 
                 zipf.write(os.path.join(self.filedir, file_to_zip),

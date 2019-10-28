@@ -10,7 +10,7 @@ from gnome.basic_types import spill_type, world_point, world_point_type
 
 from gnome.cy_gnome.cy_helpers import srand
 from gnome.cy_gnome.cy_random_mover import CyRandomMover
-import cy_fixtures
+from . import cy_fixtures
 
 import pytest
 
@@ -54,10 +54,10 @@ class TestRandom:
         self.move(self.cm.delta)
         np.set_printoptions(precision=4)
 
-        print
-        print 'diffusion_coef = {0:0.1f}'.format(self.rm.diffusion_coef),
-        print 'get_move output:'
-        print self.cm.delta.view(dtype=np.float64).reshape(-1, 3)
+        print()
+        print('diffusion_coef = {0:0.1f}'.format(self.rm.diffusion_coef), end=' ')
+        print('get_move output:')
+        print(self.cm.delta.view(dtype=np.float64).reshape(-1, 3))
 
         assert np.all(self.cm.delta['lat'] != 0)
         assert np.all(self.cm.delta['long'] != 0)
@@ -97,23 +97,23 @@ class TestRandom:
         delta = np.zeros((self.cm.num_le, ), dtype=world_point)
         self.move(delta)  # get the move before changing the coefficient
 
-        print
-        print 'diffusion_coef = {0.diffusion_coef}'.format(self.rm),
-        print 'get_move output:'
-        print delta.view(dtype=np.float64).reshape(-1, 3)
+        print()
+        print('diffusion_coef = {0.diffusion_coef}'.format(self.rm), end=' ')
+        print('get_move output:')
+        print(delta.view(dtype=np.float64).reshape(-1, 3))
         self.rm.diffusion_coef = 10
         assert self.rm.diffusion_coef == 10
 
         srand(1)
         new_delta = np.zeros((self.cm.num_le, ), dtype=world_point)
         self.move(new_delta)  # get the move after changing coefficient
-        print
-        print 'diffusion_coef = {0.diffusion_coef}'.format(self.rm),
-        print 'get_move output:'
-        print new_delta.view(dtype=np.float64).reshape(-1, 3)
-        print
-        print '-- Norm of difference between movement vector --'
-        print self._diff(delta, new_delta).reshape(-1, 1)
+        print()
+        print('diffusion_coef = {0.diffusion_coef}'.format(self.rm), end=' ')
+        print('get_move output:')
+        print(new_delta.view(dtype=np.float64).reshape(-1, 3))
+        print()
+        print('-- Norm of difference between movement vector --')
+        print(self._diff(delta, new_delta).reshape(-1, 1))
         assert np.all(delta['lat'] != new_delta['lat'])
         assert np.all(delta['long'] != new_delta['long'])
 
@@ -131,16 +131,16 @@ class TestRandom:
         new_delta = np.zeros((self.cm.num_le, ), dtype=world_point)
         self.move(new_delta)
 
-        print
-        print '-- Do not reset seed and call get move again to get identical results --'
-        print 'get_move results 1st time:'
-        print delta.view(dtype=np.float64).reshape(-1, 3)
-        print 'get_move results 2nd time - same seed:'
-        print new_delta.view(dtype=np.float64).reshape(-1, 3)
-        print
-        print '-- Norm of difference between movement vector --'
-        print self._diff(delta, new_delta)
-        print delta['lat'], new_delta['lat']
+        print()
+        print('-- Do not reset seed and call get move again to get identical results --')
+        print('get_move results 1st time:')
+        print(delta.view(dtype=np.float64).reshape(-1, 3))
+        print('get_move results 2nd time - same seed:')
+        print(new_delta.view(dtype=np.float64).reshape(-1, 3))
+        print()
+        print('-- Norm of difference between movement vector --')
+        print(self._diff(delta, new_delta))
+        print(delta['lat'], new_delta['lat'])
         assert np.all(delta['lat'] == new_delta['lat'])
         assert np.all(delta['long'] == new_delta['long'])
 

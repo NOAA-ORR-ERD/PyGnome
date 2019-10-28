@@ -130,8 +130,8 @@ class DatetimeValue2dArray(Sequence):
             return null
 
         # getting serialized by PyGnome so data should be correct
-        series = zip(appstruct['time'].astype(object),
-                     appstruct['value'].tolist())
+        series = list(zip(appstruct['time'].astype(object),
+                     appstruct['value'].tolist()))
 
         return super(DatetimeValue2dArray, self).serialize(node, series)
 
@@ -155,7 +155,7 @@ class DatetimeValue1dArray(Sequence):
         if appstruct is null:  # colander.null
             return null
 
-        appstruct = zip(appstruct['time'].astype(object), appstruct['value'])
+        appstruct = list(zip(appstruct['time'].astype(object), appstruct['value']))
 
         return super(DatetimeValue1dArray, self).serialize(node, appstruct)
 

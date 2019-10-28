@@ -10,7 +10,7 @@ from gnome.basic_types import spill_type, world_point, world_point_type
 
 from gnome.cy_gnome.cy_helpers import srand
 from gnome.cy_gnome.cy_random_mover_3d import CyRandomMover3D
-import cy_fixtures
+from . import cy_fixtures
 
 import pytest
 
@@ -52,10 +52,10 @@ class TestRandomVertical:
 
         self.move(self.cm.delta)
         np.set_printoptions(precision=4)
-        print
-        print self.msg.format(self.rm),
-        print 'get_move output:'
-        print self.cm.delta.view(dtype=np.float64).reshape(-1, 3)
+        print()
+        print(self.msg.format(self.rm), end=' ')
+        print('get_move output:')
+        print(self.cm.delta.view(dtype=np.float64).reshape(-1, 3))
         assert np.all(self.cm.delta['z'] != 0)
         assert np.all(self.cm.delta['lat'] != 0)
         assert np.all(self.cm.delta['long'] != 0)
@@ -104,22 +104,22 @@ class TestRandomVertical:
         np.set_printoptions(precision=6)
         delta = np.zeros((self.cm.num_le, ), dtype=world_point)
         self.move(delta)  # get the move before changing the coefficient
-        print
-        print self.msg.format(self.rm) + ' get_move output:'
-        print delta.view(dtype=np.float64).reshape(-1, 3)
+        print()
+        print(self.msg.format(self.rm) + ' get_move output:')
+        print(delta.view(dtype=np.float64).reshape(-1, 3))
 
         srand(1)
         self.cm.ref['z'][:]=20
         new_delta = np.zeros((self.cm.num_le, ), dtype=world_point)
         self.move(new_delta)  # get the move after changing coefficient
-        print
-        print self.msg.format(self.rm) + ' get_move output:'
-        print new_delta.view(dtype=np.float64).reshape(-1, 3)
-        print
+        print()
+        print(self.msg.format(self.rm) + ' get_move output:')
+        print(new_delta.view(dtype=np.float64).reshape(-1, 3))
+        print()
         assert np.all(delta['z'] != new_delta['z'])
 
-        print '-- Norm of difference between movement vector --'
-        print self._diff(delta, new_delta).reshape(-1, 1)
+        print('-- Norm of difference between movement vector --')
+        print(self._diff(delta, new_delta).reshape(-1, 1))
 
         self.rm.mixed_layer_depth = 0
 
@@ -127,10 +127,10 @@ class TestRandomVertical:
         self.cm.ref['z'][:]=.1
         newer_delta = np.zeros((self.cm.num_le, ), dtype=world_point)
         self.move(newer_delta)  # get the move after changing mld
-        print
-        print self.msg.format(self.rm) + ' get_move output:'
-        print newer_delta.view(dtype=np.float64).reshape(-1, 3)
-        print
+        print()
+        print(self.msg.format(self.rm) + ' get_move output:')
+        print(newer_delta.view(dtype=np.float64).reshape(-1, 3))
+        print()
 
         msg = r"{0} move is not within a tolerance of {1}"
         tol = 1e-10
@@ -143,8 +143,8 @@ class TestRandomVertical:
             0,
             )
 
-        print '-- Norm of difference between movement vector --'
-        print self._diff(new_delta, newer_delta).reshape(-1, 1)
+        print('-- Norm of difference between movement vector --')
+        print(self._diff(new_delta, newer_delta).reshape(-1, 1))
 
         self.rm.mixed_layer_depth = 10
 
@@ -158,21 +158,21 @@ class TestRandomVertical:
         np.set_printoptions(precision=6)
         delta = np.zeros((self.cm.num_le, ), dtype=world_point)
         self.move(delta)  # get the move before changing the coefficient
-        print
-        print self.msg.format(self.rm) + ' get_move output:'
-        print delta.view(dtype=np.float64).reshape(-1, 3)
+        print()
+        print(self.msg.format(self.rm) + ' get_move output:')
+        print(delta.view(dtype=np.float64).reshape(-1, 3))
         self.rm.vertical_diffusion_coef_above_ml = 10
         assert self.rm.vertical_diffusion_coef_above_ml == 10
 
         srand(1)
         new_delta = np.zeros((self.cm.num_le, ), dtype=world_point)
         self.move(new_delta)  # get the move after changing coefficient
-        print
-        print self.msg.format(self.rm) + ' get_move output:'
-        print new_delta.view(dtype=np.float64).reshape(-1, 3)
-        print
-        print '-- Norm of difference between movement vector --'
-        print self._diff(delta, new_delta).reshape(-1, 1)
+        print()
+        print(self.msg.format(self.rm) + ' get_move output:')
+        print(new_delta.view(dtype=np.float64).reshape(-1, 3))
+        print()
+        print('-- Norm of difference between movement vector --')
+        print(self._diff(delta, new_delta).reshape(-1, 1))
 
         assert np.all(delta['z'] != new_delta['z'])
 
@@ -188,21 +188,21 @@ class TestRandomVertical:
         np.set_printoptions(precision=6)
         delta = np.zeros((self.cm.num_le, ), dtype=world_point)
         self.move(delta)  # get the move before changing the coefficient
-        print
-        print self.msg.format(self.rm) + ' get_move output:'
-        print delta.view(dtype=np.float64).reshape(-1, 3)
+        print()
+        print(self.msg.format(self.rm) + ' get_move output:')
+        print(delta.view(dtype=np.float64).reshape(-1, 3))
         self.rm.horizontal_diffusion_coef_above_ml = 1000
         assert self.rm.horizontal_diffusion_coef_above_ml == 1000
 
         srand(1)
         new_delta = np.zeros((self.cm.num_le, ), dtype=world_point)
         self.move(new_delta)  # get the move after changing coefficient
-        print
-        print self.msg.format(self.rm) + ' get_move output:'
-        print new_delta.view(dtype=np.float64).reshape(-1, 3)
-        print
-        print '-- Norm of difference between movement vector --'
-        print self._diff(delta, new_delta).reshape(-1, 1)
+        print()
+        print(self.msg.format(self.rm) + ' get_move output:')
+        print(new_delta.view(dtype=np.float64).reshape(-1, 3))
+        print()
+        print('-- Norm of difference between movement vector --')
+        print(self._diff(delta, new_delta).reshape(-1, 1))
 
         assert np.all(delta['lat'] != new_delta['lat'])
         assert np.all(delta['long'] != new_delta['long'])
@@ -221,19 +221,19 @@ class TestRandomVertical:
         new_delta = np.zeros((self.cm.num_le, ), dtype=world_point)
         self.move(new_delta)
 
-        print
-        print '-- Do not reset seed and call get move again',
-        print 'to get identical results --'
-        print 'get_move results 1st time:'
-        print delta.view(dtype=np.float64).reshape(-1, 3)
-        print 'get_move results 2nd time - same seed:'
-        print new_delta.view(dtype=np.float64).reshape(-1, 3)
-        print
+        print()
+        print('-- Do not reset seed and call get move again', end=' ')
+        print('to get identical results --')
+        print('get_move results 1st time:')
+        print(delta.view(dtype=np.float64).reshape(-1, 3))
+        print('get_move results 2nd time - same seed:')
+        print(new_delta.view(dtype=np.float64).reshape(-1, 3))
+        print()
         assert np.all(delta['lat'] == new_delta['lat'])
         assert np.all(delta['long'] == new_delta['long'])
         assert np.all(delta['z'] == new_delta['z'])
-        print '-- Norm of difference between movement vector --'
-        print self._diff(delta, new_delta)
+        print('-- Norm of difference between movement vector --')
+        print(self._diff(delta, new_delta))
 
     def _diff(self, delta, new_delta):
         """

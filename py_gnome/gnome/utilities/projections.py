@@ -15,7 +15,7 @@ NOTE: all coordinates are takes as (lon, lat, depth)
       even though depth is always ignored
 """
 # make sure to get float division everywhere
-from __future__ import division
+
 
 import numpy as np
 from gnome.gnomeobject import GnomeId

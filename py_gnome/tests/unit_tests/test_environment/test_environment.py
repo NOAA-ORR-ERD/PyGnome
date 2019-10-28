@@ -69,9 +69,9 @@ def test_Water_init(attr, sub_attr, value):
         setattr(w, attr, value)
     else:
         sub_value = getattr(w, attr)
-        print 'sub_value = ', sub_value
+        print('sub_value = ', sub_value)
         sub_value[sub_attr] = value
-        print 'sub_value = ', sub_value
+        print('sub_value = ', sub_value)
 
     w = Water()
 

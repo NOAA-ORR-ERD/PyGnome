@@ -11,7 +11,7 @@ import copy
 
 import numpy as np
 
-import BBox
+from . import BBox
 
 
 class Polygon(np.ndarray):
@@ -164,7 +164,7 @@ class Polygon(np.ndarray):
         # special_case if last point matches first point
         last_same = 1 if np.array_equal(orig_poly[0], orig_poly[-1]) else 0
         thinned = [orig_poly[0]]
-        for j in xrange(len(sc_poly)-last_same):
+        for j in range(len(sc_poly)-last_same):
             point = sc_poly[j]
             if not np.array_equal(point, prev_point):
                 thinned.append(orig_poly[j])

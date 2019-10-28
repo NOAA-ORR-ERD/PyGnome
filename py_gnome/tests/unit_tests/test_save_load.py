@@ -42,7 +42,7 @@ from gnome import map, spill
 # following is modified for testing only
 from gnome.persist import save_load
 
-from conftest import testdata
+from .conftest import testdata
 
 import pytest
 from testfixtures import LogCapture
@@ -152,7 +152,7 @@ g_objects = (
     SimpleMover(velocity=(10.0, 10.0, 0.0)),
 
     map.MapFromBNA(testdata['MapFromBNA']['testmap'], 6),
-    NetCDFOutput(os.path.join(base_dir, u'xtemp.nc')),
+    NetCDFOutput(os.path.join(base_dir, 'xtemp.nc')),
     Renderer(testdata['Renderer']['bna_sample'],
              os.path.join(base_dir, 'output_dir')),
     WeatheringOutput(),

@@ -113,8 +113,8 @@ def ReadDOGSFile(filename):
     Depths = np.zeros((Npoints,), dtype=np.float)
 
     line = line.split(',')
-    for n in xrange(Npoints):
-        lon, lat, depth = map(float, line[1:4])
+    for n in range(Npoints):
+        lon, lat, depth = list(map(float, line[1:4]))
         Coords[n, :] = (lon, lat)
         Depths[n] = depth
         line = fd.readline().strip().split(',')
@@ -138,7 +138,7 @@ def WriteDOGSFiles(filename, Coords, Depths, Units='meters'):
     fd.write("[BNDS]  %f, %f, %f, %f\n" % (high_lat, low_long,
                                            low_lat, high_long))
 
-    for i in xrange(N):
+    for i in range(N):
         fd.write("%i, %f, %f, %f, 0.0, 0.0, 0\n" % (i + 1,
                                                     Coords[i, 0],
                                                     Coords[i, 1],
@@ -187,7 +187,7 @@ def WriteVerdatFile(filename, PointData, Boundaries):
     fd = open(filename, 'w')
 
     fd.write('DOGS\n')
-    for i in xrange(len(PointData)):
+    for i in range(len(PointData)):
         fd.write("%i, " % (i + 1))  # Verdat indexes from 1
         fd.write("%f, %f, %f\n" % tuple(PointData[i]))
     fd.write("  0,   0.000,   0.000,   0.000\n")
@@ -236,7 +236,7 @@ def GetNextBNAPolygon(f, dtype=np.float64):
         num_points = int(fields[4].strip()[1:])
         #header = header.replace('", "', '","') # some bnas have an extra space
         #name, rest = header.strip().split('","')
-    except ValueError, IndexError:
+    except ValueError as IndexError:
         raise ValueError('something wrong with header line: {0}'
                          .format(header))
 
@@ -345,7 +345,7 @@ def ReadBNA(filename, polytype="list", dtype=np.float):
             polygon = np.zeros((num_points, 2), np.float)
 
             for i in range(num_points):
-                polygon[i, :] = map(float, fd.readline().split(','))
+                polygon[i, :] = list(map(float, fd.readline().split(',')))
             polys.append(polygon)
 
         Output = BNAData(polys, Names, Types, os.path.abspath(filename))

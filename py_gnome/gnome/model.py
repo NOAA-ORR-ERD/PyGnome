@@ -209,7 +209,7 @@ class Model(GnomeId):
         # contains both certain/uncertain spills
         self.spills = SpillContainerPair(uncertain)
         if len(uncertain_spills) > 0:
-            _spills = zip(spills, uncertain_spills)
+            _spills = list(zip(spills, uncertain_spills))
         else:
             _spills = spills
         self.spills.add(_spills)
@@ -292,7 +292,7 @@ class Model(GnomeId):
                                  see: ``gnome.weatherers.__init__.py`` for the full list
 
         """
-        names = weatherers_by_name.keys()
+        names = list(weatherers_by_name.keys())
         try:
             which = standard_weatherering_sets[which]
         except (TypeError, KeyError):
@@ -305,7 +305,7 @@ class Model(GnomeId):
                 raise ValueError("{} is not a valid weatherer. \n"
                                  "The options are:"
                                  " {}".format(wx_name,
-                                              weatherers_by_name.keys()))
+                                              list(weatherers_by_name.keys())))
 
 
 
@@ -358,7 +358,7 @@ class Model(GnomeId):
         updatable = self._schema().get_nodes_by_attr('update')
         attrs = copy.copy(dict_)
         updated = False
-        for k in attrs.keys():
+        for k in list(attrs.keys()):
             if k not in updatable:
                 attrs.pop(k)
 
@@ -396,7 +396,7 @@ class Model(GnomeId):
 
                     attrs.pop(name)
 
-        for k, v in attrs.items():
+        for k, v in list(attrs.items()):
             if hasattr(self, k):
                 if not updated and self._attr_changed(getattr(self, k), v):
                     updated = True
@@ -600,7 +600,7 @@ class Model(GnomeId):
         items = []
         for item in collection:
             try:
-                if not isinstance(getattr(item, attr), basestring):
+                if not isinstance(getattr(item, attr), str):
                     if any([value == v for v in getattr(item, attr)]):
                         if allitems:
                             items.append(item)
@@ -621,7 +621,7 @@ class Model(GnomeId):
         'use weatherer_sort to sort the weatherers'
         s_weatherers = sorted(self.weatherers, key=weatherer_sort)
 
-        if self.weatherers.values() != s_weatherers:
+        if list(self.weatherers.values()) != s_weatherers:
             self.weatherers.clear()
             self.weatherers += s_weatherers
 
@@ -648,7 +648,7 @@ class Model(GnomeId):
         #Provide the references to all contained objects that also use the
         #default references system by calling _attach_default_refs on each
         #instance
-        all_spills = [sp for sc in self.spills.items() for sp in sc.spills.values()]
+        all_spills = [sp for sc in list(self.spills.items()) for sp in list(sc.spills.values())]
         for coll in [self.environment,
                      self.weatherers,
                      self.movers,
@@ -738,7 +738,7 @@ class Model(GnomeId):
 
         self.logger.debug(array_types)
 
-        for sc in self.spills.items():
+        for sc in list(self.spills.items()):
             sc.prepare_for_model_run(array_types, self.time_step)
 
         '''Step 4: Attach default references'''
@@ -754,7 +754,7 @@ class Model(GnomeId):
 
         weathering = False
         for w in self.weatherers:
-            for sc in self.spills.items():
+            for sc in list(self.spills.items()):
                 # weatherers will initialize 'mass_balance' key/values
                 # to 0.0
                 if w.on:
@@ -812,11 +812,11 @@ class Model(GnomeId):
         '''
         # initialize movers differently if model uncertainty is on
         for m in self.movers:
-            for sc in self.spills.items():
+            for sc in list(self.spills.items()):
                 m.prepare_for_model_step(sc, self.time_step, self.model_time)
 
         for w in self.weatherers:
-            for sc in self.spills.items():
+            for sc in list(self.spills.items()):
                 # maybe we will setup a super-sampling step here???
                 w.prepare_for_model_step(sc, self.time_step, self.model_time)
 
@@ -834,7 +834,7 @@ class Model(GnomeId):
          - calls the beaching code to beach the elements that need beaching.
          - sets the new position
         '''
-        for sc in self.spills.items():
+        for sc in list(self.spills.items()):
             if sc.num_released > 0:  # can this check be removed?
                 # possibly refloat elements
                 self.map.refloat_elements(sc, self.time_step, self.model_time)
@@ -909,7 +909,7 @@ class Model(GnomeId):
             # if no weatherers then mass_components array may not be defined
             return
 
-        for sc in self.spills.items():
+        for sc in list(self.spills.items()):
             # elements may have beached to update fate_status
 
             sc.reset_fate_dataview()
@@ -953,17 +953,17 @@ class Model(GnomeId):
         Output data
         '''
         for mover in self.movers:
-            for sc in self.spills.items():
+            for sc in list(self.spills.items()):
                 mover.model_step_is_done(sc)
 
         for w in self.weatherers:
-            for sc in self.spills.items():
+            for sc in list(self.spills.items()):
                 w.model_step_is_done(sc)
 
         for outputter in self.outputters:
             outputter.model_step_is_done()
 
-        for sc in self.spills.items():
+        for sc in list(self.spills.items()):
             '''
             removes elements with oil_status.to_be_removed
             '''
@@ -996,7 +996,7 @@ class Model(GnomeId):
         hindcasting.
         '''
         isvalid = True
-        for sc in self.spills.items():
+        for sc in list(self.spills.items()):
             # Set the current time stamp only after current_time_step is
             # incremented and before the output is written. Set it to None here
             # just so we're not carrying around the old time_stamp
@@ -1041,7 +1041,7 @@ class Model(GnomeId):
         #    self.model_time + self.time_step
         # This is the current_time_stamp attribute of the SpillContainer
         #     [sc.current_time_stamp for sc in self.spills.items()]
-        for sc in self.spills.items():
+        for sc in list(self.spills.items()):
             sc.current_time_stamp = self.model_time
 
             # release particles for next step - these particles will be aged
@@ -1080,7 +1080,7 @@ class Model(GnomeId):
 
         return self
 
-    def next(self):
+    def __next__(self):
         '''
         (This method satisfies Python's iterator and generator protocols)
 
@@ -1356,7 +1356,7 @@ class Model(GnomeId):
         for w in self.weatherers:
             array_types.update(w.array_types)
 
-        for sc in self.spills.items():
+        for sc in list(self.spills.items()):
             sc.prepare_for_model_run(array_types)
             if sc.uncertain:
                 (data, weather_data) = NetCDFOutput.read_data(u_spill_data,
@@ -1569,7 +1569,7 @@ class Model(GnomeId):
 
         '''
 
-        return self.spills.items()[0].data_arrays.keys()
+        return list(self.spills.items())[0].data_arrays.keys()
 
     def get_spill_property(self, prop_name, ucert=0):
         '''
@@ -1577,7 +1577,7 @@ class Model(GnomeId):
         User can specify ucert as 'ucert' or 1
         '''
         ucert = 1 if ucert == 'ucert' else 0
-        return self.spills.items()[ucert][prop_name]
+        return list(self.spills.items())[ucert][prop_name]
 
     def get_spill_data(self, target_properties, conditions, ucert=0):
         """
@@ -1607,7 +1607,7 @@ class Model(GnomeId):
             '''
             Gets the column containing the information on one element
             '''
-            val = self.spills.items()[ucert].data_arrays[prop][index]
+            val = list(self.spills.items())[ucert].data_arrays[prop][index]
             return val
 
         def test_phrase(phrase):
@@ -1634,7 +1634,7 @@ class Model(GnomeId):
         conditions = conditions.rsplit('&&')
         conditions = [str(cond).rsplit('||') for cond in conditions]
 
-        sc = self.spills.items()[ucert]
+        sc = list(self.spills.items())[ucert]
         result = {}
 
         for t in target_properties:
@@ -1649,7 +1649,7 @@ class Model(GnomeId):
                     break
 
             if test_result:
-                for k in result.keys():
+                for k in list(result.keys()):
                     n = elem_val(k, i)
                     result[k].append(n)
 

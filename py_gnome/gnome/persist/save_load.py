@@ -34,7 +34,7 @@ class Refs(dict):
         '''
         base_name = obj.obj_type.split('.')[-1]
 
-        num_of_same_type = [v for v in self.values()
+        num_of_same_type = [v for v in list(self.values())
                             if v.obj_type == obj.obj_type]
 
         return base_name + num_of_same_type + 1
@@ -59,14 +59,14 @@ class References(object):
 
     @property
     def files(self):
-        return self._refs.keys()
+        return list(self._refs.keys())
 
     def get_reference(self, obj):
         '''
         return key if obj already exists in references list
         else return None
         '''
-        for key, item in self._refs.iteritems():
+        for key, item in self._refs.items():
             if item is obj:
                 return key
 
@@ -454,7 +454,7 @@ class Savable(object):
         try:
             _to_dict = cls.deserialize(json_data)
         except colander.Invalid as e:
-            print('Class {0} failed to deserialize.'.format(cls.__name__))
+            print(('Class {0} failed to deserialize.'.format(cls.__name__)))
             raise e
 
         if ref_dict:

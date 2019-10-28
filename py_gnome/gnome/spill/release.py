@@ -806,7 +806,7 @@ class InitElemsFromFile(Release):
         Will set positions and all other data arrays if data for them was found
         in the NetCDF initialization file.
         '''
-        for key, val in self._init_data.iteritems():
+        for key, val in self._init_data.items():
             if key in data_arrays:
                 data_arrays[key][-num_new_particles:] = val
 

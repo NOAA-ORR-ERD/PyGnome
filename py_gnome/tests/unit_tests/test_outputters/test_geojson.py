@@ -62,13 +62,13 @@ def test_clean_output_files(model, output_dir):
     model.rewind()
     model.full_run()
     files = glob(os.path.join(output_dir, '*.geojson'))
-    print files
+    print(files)
     assert len(files) == model.num_time_steps
 
     model.outputters[-1].clean_output_files()
 
     files = glob(os.path.join(output_dir, '*.geojson'))
-    print files
+    print(files)
     assert len(files) == 0
 
 

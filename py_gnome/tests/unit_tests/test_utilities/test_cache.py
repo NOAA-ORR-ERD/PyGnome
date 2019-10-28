@@ -276,8 +276,8 @@ def test_read_back_from_memory():
 
     scp1 = c.load_timestep(1)
 
-    print scp1
-    print scp1._spill_container._data_arrays
+    print(scp1)
+    print(scp1._spill_container._data_arrays)
     assert np.array_equal(scp1._spill_container['positions'],
                           sc['positions'])
 

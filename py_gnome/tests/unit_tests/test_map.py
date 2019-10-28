@@ -6,7 +6,7 @@ Tests of the map code.
 
 Designed to be run with py.test
 """
-from __future__ import division
+
 import os
 
 import numpy as np
@@ -17,7 +17,7 @@ from gnome.utilities.projections import NoProjection
 
 from gnome.map import GnomeMap, MapFromBNA, RasterMap  # , MapFromUGrid
 
-from conftest import sample_sc_release
+from .conftest import sample_sc_release
 
 basedir = os.path.dirname(__file__)
 datadir = os.path.normpath(os.path.join(basedir, "sample_data"))
@@ -62,7 +62,7 @@ def test_in_water_resolution():
     running = True
     while running:
         mag = mag + 1.
-        print 'Order of magnitude: %g' % mag
+        print('Order of magnitude: %g' % mag)
         running = m.in_water((px, py + eps * 10.0 ** mag, 0.))
 
     # Difference in position within an order of magnitude in
@@ -75,7 +75,7 @@ def test_in_water_resolution():
         '''A particle positioned on a coastline segment must be moved
     something more than {0} meters, but less than {1} meters,
     inland before pyGNOME acknowledges it's no longer in water.'''
-    print msg.format(dlatO0 * 1852.0, dlatO1 * 1852.0)
+    print(msg.format(dlatO0 * 1852.0, dlatO1 * 1852.0))
 
 
 # tests for GnomeMap -- the most basic version
@@ -88,7 +88,7 @@ class Test_GnomeMap:
 
         # too big latitude
 
-        print gmap.on_map((0., 91.0, 0.))
+        print(gmap.on_map((0., 91.0, 0.)))
         assert gmap.on_map((0., 91.0, 0.)) is False
 
         # too small latitude
@@ -173,7 +173,7 @@ class Test_ParamMap:
 
     def test_land_generation(self):
         pmap1 = gnome.map.ParamMap((0, 0), 10000, 90)
-        print pmap1.land_points
+        print(pmap1.land_points)
 
     def test_to_geojson(self):
         pmap = gnome.map.ParamMap((0, 0), 10000, 90)
@@ -290,10 +290,10 @@ class Test_RasterMap:
                          projection=NoProjection())
 
         # right in the middle
-        print 'testing a land point:', (10, 6, 0.), gmap.on_land((10, 6, 0.))
+        print('testing a land point:', (10, 6, 0.), gmap.on_land((10, 6, 0.)))
         assert gmap.on_land((10, 6, 0.))
 
-        print 'testing a water point:'
+        print('testing a water point:')
         assert not gmap.on_land((19.0, 11.0, 0.))
 
     def test_spillable_area(self):
@@ -305,10 +305,10 @@ class Test_RasterMap:
                          projection=NoProjection())
 
         # right in the middle of land
-        print 'testing a land point:'
+        print('testing a land point:')
         assert not gmap.allowable_spill_position((10, 6, 0.))
 
-        print 'testing a water point:'
+        print('testing a water point:')
         assert gmap.allowable_spill_position((19.0, 11.0, 0.))
 
     def test_spillable_area2(self):
@@ -428,8 +428,8 @@ class TestRefloat:
         init_ix = int(round(.25 * self.num_les))
         last_ix = self.num_les - (int(round(.5 * self.num_les)) - init_ix)
 
-        ix = range(init_ix)  # choose first 25% of indices
-        ix.extend(range(last_ix, self.num_les, 1))  # last 25% of indices
+        ix = list(range(init_ix))  # choose first 25% of indices
+        ix.extend(list(range(last_ix, self.num_les, 1)))  # last 25% of indices
         ix = np.asarray(ix)
 
         self.spill['status_codes'][ix] = oil_status.on_land
@@ -445,8 +445,8 @@ class TestRefloat:
                                    oil_status.in_water) /
                   (self.num_les / 2) * 100)
 
-        print ('Expect {0}% refloat, actual refloated: {1}%'
-               .format(expected, actual))
+        print(('Expect {0}% refloat, actual refloated: {1}%'
+               .format(expected, actual)))
 
         # ensure some of the elements that were on land are back on water
         assert np.count_nonzero(self.spill['status_codes'][ix] ==
@@ -471,7 +471,7 @@ class TestRefloat:
 
 class Test_MapfromBNA:
 
-    print "instaniating map:", testbnamap
+    print("instaniating map:", testbnamap)
     # NOTE: this is a pretty course map -- for testing
     bna_map = MapFromBNA(testbnamap, refloat_halflife=6, raster_size=1000)
 
@@ -502,8 +502,8 @@ class Test_MapfromBNA:
         correctly.
         '''
         OnLand = (-127, 47.8, 0.)
-        print "on land:", self.bna_map.on_land(OnLand)
-        print self.bna_map.raster
+        print("on land:", self.bna_map.on_land(OnLand))
+        print(self.bna_map.raster)
 
         assert self.bna_map.on_land(OnLand)
         assert not self.bna_map.in_water(OnLand)

@@ -13,7 +13,7 @@ this should profile foo whenever it is called and add it to the global profile s
 
 import cProfile
 import pstats
-import StringIO
+import io
 
 profiler = cProfile.Profile()
 

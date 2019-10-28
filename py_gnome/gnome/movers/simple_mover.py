@@ -107,7 +107,7 @@ class SimpleMover(Mover):
         try:
             positions = spill['positions']
             status_codes = spill['status_codes']
-        except KeyError, err:
+        except KeyError as err:
             raise ValueError("The spill doesn't have the required "
                              "data arrays\n{}".format(err))
 

@@ -46,7 +46,7 @@ wind = constant_wind(20., 117, 'knots')
 waves = Waves(wind, water)
 
 def make_model(images_dir=os.path.join(base_dir, 'images')):
-    print 'initializing the model'
+    print('initializing the model')
 
     start_time = datetime(2015, 5, 14, 0, 0)
 
@@ -79,7 +79,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     model.outputters += NetCDFOutput(netcdf_file, which_data='all',
                                      output_timestep=timedelta(hours=1))
 
-    print 'adding a spill'
+    print('adding a spill')
     # for now subsurface spill stays on initial layer
     # - will need diffusion and rise velocity
     # - wind doesn't act
@@ -98,10 +98,10 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     spill.substance._bullwinkle = .303
     model.spills += spill
 
-    print 'adding a RandomMover:'
+    print('adding a RandomMover:')
     # model.movers += RandomMover(diffusion_coef=50000)
 
-    print 'adding a wind mover:'
+    print('adding a wind mover:')
 
     series = np.zeros((2,), dtype=datetime_value_2d)
     series[0] = (start_time, (20, 0))
@@ -112,7 +112,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     w_mover = WindMover(wind)
     model.movers += w_mover
 
-    print 'adding weatherers and cleanup options:'
+    print('adding weatherers and cleanup options:')
 
     # define skimmer/burn cleanup options
     skim1_start = start_time + timedelta(hours=15.58333)

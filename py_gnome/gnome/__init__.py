@@ -14,7 +14,7 @@ import importlib
 import unit_conversion as uc
 
 # just so it will be in the namespace.
-from gnomeobject import GnomeId, AddLogger
+from .gnomeobject import GnomeId, AddLogger
 # from gnomeobject import init_obj_log
 
 # using a PEP 404 compliant version name
@@ -41,8 +41,8 @@ def check_dependency_versions():
         try:
             module = importlib.import_module(name)
         except ImportError:
-            print ('ERROR: The {} package, version >= {} needs to be installed'
-                   .format(name, version))
+            print(('ERROR: The {} package, version >= {} needs to be installed'
+                   .format(name, version)))
             sys.exit(1)
         if module.__version__ < version:
             w = ('Version {0} of {1} package is required, '
@@ -64,7 +64,7 @@ def initialize_log(config, logfile=None):
     :param logfile=None: optional name of file to log to
 
     '''
-    if isinstance(config, basestring):
+    if isinstance(config, str):
         config = json.load(open(config, 'r'))
 
     if logfile is not None:
@@ -104,7 +104,7 @@ def _valid_units(unit_name):
     'convenience function to get all valid units accepted by unit_conversion'
     _valid_units = uc.GetUnitNames(unit_name)
     _valid_units.extend(chain(*[val[1] for val in
-                                uc.ConvertDataUnits[unit_name].values()]))
+                                list(uc.ConvertDataUnits[unit_name].values())]))
     return tuple(_valid_units)
 
 

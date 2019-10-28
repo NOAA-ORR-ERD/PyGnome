@@ -14,7 +14,7 @@ import sys
 import numpy as np
 
 # pull everything from the cython code
-import cy_gnome.cy_basic_types as cbt
+from . import cy_gnome.cy_basic_types as cbt
 
 # in lib_gnome, the coordinate systems used (r-theta, uv, etc)
 # are called ts_format, which is not a very descriptive name.
@@ -27,7 +27,7 @@ seconds = cbt.seconds
 spill_type = cbt.spill_type
 
 # this is a mapping of oil_status code to the meaningful name:
-oil_status_map = { num: name for name, num in vars(oil_status).items() if not name.startswith("_")}
+oil_status_map = { num: name for name, num in list(vars(oil_status).items()) if not name.startswith("_")}
 
 
 
@@ -46,7 +46,7 @@ oil_status_map = { num: name for name, num in vars(oil_status).items() if not na
 if sys.platform == 'win32':
     np_long = np.int
 elif sys.platform in ('darwin', 'linux2', 'linux'):
-    if sys.maxint > 2147483647:
+    if sys.maxsize > 2147483647:
         np_long = np.long
     else:
         np_long = np.int

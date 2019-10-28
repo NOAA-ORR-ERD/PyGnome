@@ -73,7 +73,7 @@ def test_init_exceptions():
 def test_exceptions(output_filename):
     spill_pair = SpillContainerPair()
 
-    print "output_filename:", output_filename
+    print("output_filename:", output_filename)
     # begin tests
     netcdf = NetCDFOutput(output_filename, which_data='all')
     netcdf.rewind()  # delete temporary files
@@ -210,10 +210,10 @@ def test_write_output_standard(model):
                 # fixme: this should probably round!
                 #        this may help:
                 #        https://stackoverflow.com/questions/3463930/how-to-round-the-minute-of-a-datetime-object-python
-                print "***** scp timestamp", scp.LE('current_time_stamp',
-                                                    uncertain)
-                print "***** netcdf time:", time_[step]
-                print type(time_[step])
+                print("***** scp timestamp", scp.LE('current_time_stamp',
+                                                    uncertain))
+                print("***** netcdf time:", time_[step])
+                print(type(time_[step]))
                 assert scp.LE('current_time_stamp', uncertain) == time_[step].replace(microsecond=0)
 
                 assert np.allclose(scp.LE('positions', uncertain)[:, 0],
@@ -243,7 +243,7 @@ def test_write_output_standard(model):
                     assert np.all(scp.LE('age', uncertain)[:] ==
                                   (dv['age'])[idx[step]:idx[step + 1]])
 
-            print 'data in model matches output in {0}'.format(file_)
+            print('data in model matches output in {0}'.format(file_))
 
         # 2nd time around, we are looking at uncertain filename so toggle
         # uncertain flag
@@ -409,9 +409,9 @@ def test_read_standard_arrays(model, output_ts_factor, use_time):
                                   nc_data['age'])
 
                 if uncertain:
-                    sc = scp.items()[1]
+                    sc = list(scp.items())[1]
                 else:
-                    sc = scp.items()[0]
+                    sc = list(scp.items())[0]
 
                 assert sc.mass_balance == weathering_data
             else:
@@ -420,11 +420,11 @@ def test_read_standard_arrays(model, output_ts_factor, use_time):
                                 .format(curr_time))
 
         if _found_a_matching_time:
-            print ('\n'
+            print(('\n'
                    'data in model matches for output in\n'
                    '{0}\n'
                    'and output_ts_factor: {1}'
-                   .format(file_, output_ts_factor))
+                   .format(file_, output_ts_factor)))
 
         # 2nd time around, look at uncertain filename so toggle uncertain flag
         uncertain = True
@@ -477,7 +477,7 @@ def test_read_all_arrays(model):
                                           nc_data[key])
 
         if _found_a_matching_time:
-            print ('\ndata in model matches for output in \n{0}'.format(file_))
+            print(('\ndata in model matches for output in \n{0}'.format(file_)))
 
         # 2nd time around, look at uncertain filename so toggle uncertain flag
         uncertain = True
@@ -528,7 +528,7 @@ def test_write_output_post_run(model, output_ts_factor):
         ix = 0  # index for grabbing record from NetCDF file
         for step in range(0, model.num_time_steps,
                           int(ceil(output_ts_factor))):
-            print "step: {0}".format(step)
+            print("step: {0}".format(step))
             scp = model._cache.load_timestep(step)
             curr_time = scp.LE('current_time_stamp', uncertain)
 
@@ -564,8 +564,8 @@ def test_write_output_post_run(model, output_ts_factor):
                 NetCDFOutput.read_data(file_, index=ix + 1)
 
         """ at least one matching time found """
-        print ('All expected timestamps in {0} for output_ts_factor: {1}'
-               .format(os.path.split(file_)[1], output_ts_factor))
+        print(('All expected timestamps in {0} for output_ts_factor: {1}'
+               .format(os.path.split(file_)[1], output_ts_factor)))
 
         # 2nd time around, look at uncertain filename so toggle uncertain flag
         uncertain = True
@@ -597,10 +597,10 @@ def test_serialize_deserialize(output_filename):
     # ==========================================================================
 
     model.rewind()
-    print "step: {0}, _start_idx: {1}".format(-1, o_put._start_idx)
+    print("step: {0}, _start_idx: {1}".format(-1, o_put._start_idx))
     for ix in range(2):
         model.step()
-        print "step: {0}, _start_idx: {1}".format(ix, o_put._start_idx)
+        print("step: {0}, _start_idx: {1}".format(ix, o_put._start_idx))
 
     o_put2 = NetCDFOutput.deserialize(o_put.serialize())
     assert o_put == o_put2
@@ -609,7 +609,7 @@ def test_serialize_deserialize(output_filename):
 #     assert o_put != o_put2
 
     if os.path.exists(o_put.filename):
-        print '\n{0} exists'.format(o_put.filename)
+        print('\n{0} exists'.format(o_put.filename))
 
 
 @pytest.mark.slow

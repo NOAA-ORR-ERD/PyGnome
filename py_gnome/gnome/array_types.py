@@ -133,7 +133,7 @@ class ArrayType(AddLogger):
         if len(self.__dict__) != len(other.__dict__):
             return False
 
-        for (key, val) in self.__dict__.iteritems():
+        for (key, val) in self.__dict__.items():
             if key not in other.__dict__:
                 return False
             elif key == 'initial_value':

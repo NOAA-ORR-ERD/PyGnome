@@ -208,8 +208,8 @@ def _assert_move(delta):
     helper function to test assertions
     """
 
-    print
-    print delta
+    print()
+    print(delta)
     assert np.all(delta[:, :2] != 0)
     assert np.all(delta[:, 2] == 0)
 

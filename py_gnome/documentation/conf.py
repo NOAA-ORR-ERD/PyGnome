@@ -54,8 +54,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'pyGNOME'
-copyright = u'2012, NOAA Emergecny Response Division'
+project = 'pyGNOME'
+copyright = '2012, NOAA Emergecny Response Division'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -208,8 +208,8 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'pyGNOME.tex', u'pyGNOME Documentation',
-   u'NOAA Emergecny Response Division', 'manual'),
+  ('index', 'pyGNOME.tex', 'pyGNOME Documentation',
+   'NOAA Emergecny Response Division', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -238,8 +238,8 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'pygnome', u'pyGNOME Documentation',
-     [u'NOAA Emergecny Response Division'], 1)
+    ('index', 'pygnome', 'pyGNOME Documentation',
+     ['NOAA Emergecny Response Division'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -252,8 +252,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'pyGNOME', u'pyGNOME Documentation',
-   u'NOAA Emergecny Response Division', 'pyGNOME', 'One line description of project.',
+  ('index', 'pyGNOME', 'pyGNOME Documentation',
+   'NOAA Emergecny Response Division', 'pyGNOME', 'One line description of project.',
    'Miscellaneous'),
 ]
 

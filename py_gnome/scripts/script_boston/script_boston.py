@@ -51,7 +51,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     # create the maps:
 
-    print 'creating the maps'
+    print('creating the maps')
     mapfile = gs.get_datafile(os.path.join(base_dir, './MassBayMap.bna'))
     gnome_map = gs.MapFromBNA(mapfile,
                               refloat_halflife=1,  # hours
@@ -63,7 +63,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                            image_size=(800, 800),
                            projection_class=GeoProjection)
 
-    print 'initializing the model'
+    print('initializing the model')
     # start_time = datetime(2013, 3, 12, 10, 0)
     start_time = "2013-03-12T10:00"
     # 15 minutes in seconds
@@ -74,7 +74,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                      map=gnome_map,
                      uncertain=True)
 
-    print 'adding outputters'
+    print('adding outputters')
     model.outputters += renderer
 
     netcdf_file = os.path.join(base_dir, 'script_boston.nc')
@@ -83,10 +83,10 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     model.outputters += gs.KMZOutput(os.path.join(base_dir, 'script_boston.kmz'))
 
-    print 'adding a RandomMover:'
+    print('adding a RandomMover:')
     model.movers += gs.RandomMover(diffusion_coef=100000)
 
-    print 'adding a wind mover:'
+    print('adding a wind mover:')
 
     # series = np.zeros((2, ), dtype=datetime_value_2d)
     # series[0] = (start_time, (5, 180))
@@ -99,7 +99,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     w_mover = gs.constant_wind_mover(5, 180, units='m/s')
     model.movers += w_mover
-    print 'adding a cats shio mover:'
+    print('adding a cats shio mover:')
 
     curr_file = gs.get_datafile(os.path.join(base_dir, r"./EbbTides.cur"))
     tide_file = gs.get_datafile(os.path.join(base_dir, r"./EbbTidesShio.txt"))
@@ -115,7 +115,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # TODO: cannot add this till environment base class is created
     # model.environment += c_mover.tide
 
-    print 'adding a cats ossm mover:'
+    print('adding a cats ossm mover:')
 
     # ossm_file = get_datafile(os.path.join(base_dir,
     #                          r"./MerrimackMassCoastOSSM.txt"))
@@ -132,7 +132,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     model.movers += c_mover
     model.environment += c_mover.tide
 
-    print 'adding a cats mover:'
+    print('adding a cats mover:')
     curr_file = gs.get_datafile(os.path.join(base_dir, "MassBaySewage.cur"))
     c_mover = gs.CatsMover(curr_file)
 
@@ -156,7 +156,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     #
     # scaleBy WindStress
 
-    print "adding a component mover:"
+    print("adding a component mover:")
     component_file1 = gs.get_datafile(os.path.join(base_dir, "WAC10msNW.cur"))
     component_file2 = gs.get_datafile(os.path.join(base_dir, "WAC10msSW.cur"))
     comp_mover = gs.ComponentMover(component_file1, component_file2, w_mover.wind)
@@ -178,7 +178,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     model.movers += comp_mover
 
-    print 'adding a spill'
+    print('adding a spill')
 
     end_time = gs.asdatetime(start_time) + gs.hours(12)
     spill = gs.point_line_release_spill(num_elements=100,
@@ -194,7 +194,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
 if __name__ == "__main__":
     gs.make_images_dir()
-    print "setting up the model"
+    print("setting up the model")
     model = make_model()
-    print "running the model"
+    print("running the model")
     model.full_run()

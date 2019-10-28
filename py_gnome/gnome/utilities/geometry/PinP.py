@@ -34,7 +34,7 @@ def points_in_poly( pgon, points):
         return result
 
 
-def CrossingsTest( pgon, (tx, ty) ):
+def CrossingsTest( pgon, xxx_todo_changeme ):
     """
     Point in polygon test using the "Crossings" algorithm.
     
@@ -52,7 +52,7 @@ def CrossingsTest( pgon, (tx, ty) ):
           are the same.
     
     """
-    # make it a numpy array if it isn't one
+    (tx, ty) = xxx_todo_changeme
     pgon = np.asarray(pgon).reshape((-1, 2))
     
     if pgon[0,0] == pgon[-1,0] and pgon[0,1] == pgon[-1,1]:
@@ -65,7 +65,7 @@ def CrossingsTest( pgon, (tx, ty) ):
     yflag0 = ( vtx0[1] >= ty )
     vtx1 = pgon[0]
     inside_flag = False
-    for j in xrange(numverts):
+    for j in range(numverts):
         vtx1 = pgon[j]
         yflag1 = ( vtx1[1] >= ty ) 
         #check if endpoints straddle (are on opposite sides) of X axis

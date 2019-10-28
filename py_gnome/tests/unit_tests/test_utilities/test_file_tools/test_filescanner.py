@@ -29,7 +29,7 @@ def test_call():
     " can we even call it"
     f = open(tiny_file)
     result = scan(f, 10)
-    print result
+    print(result)
     assert True
 
 def test_scan_n():
@@ -54,15 +54,15 @@ def test_scan_leave_file_in_right_place2():
     result = scan(f, 8)
     assert np.array_equal(result, tiny_arr[:8])
     next = f.readline()
-    print next
-    print "rest of file:\n", f.read()
+    print(next)
+    print("rest of file:\n", f.read())
     assert next.strip() == "some random text"
 
 
 def test_scan_all():
     f = open(tiny_file)
     result = scan(f)
-    print result.shape
+    print(result.shape)
     assert np.array_equal(result, tiny_arr)
 
 def test_assert_not_file():

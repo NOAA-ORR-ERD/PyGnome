@@ -21,7 +21,7 @@ from gnome.utilities import projections
 from gnome.cy_gnome.cy_ossm_time import CyTimeseries
 from gnome.cy_gnome.cy_wind_mover import CyWindMover
 
-import cy_fixtures
+from . import cy_fixtures
 from ..conftest import testdata
 
 datadir = os.path.join(os.path.dirname(__file__), r"sample_data")
@@ -178,10 +178,10 @@ class TestConstantWind:
         """
         # the move should be the same from both objects
 
-        print
-        print 'test_constant_wind'
-        print self.cw.delta
-        print self.cww_ossm.delta
+        print()
+        print('test_constant_wind')
+        print(self.cw.delta)
+        print(self.cww_ossm.delta)
         np.testing.assert_equal(self.cw.delta, self.cww_ossm.delta,
                                 'test_constant_wind() failed', 0)
 
@@ -215,18 +215,18 @@ class TestConstantWind:
     def test_move_uncertain(self):
         self.cw.test_move_uncertain()
         self.cww_ossm.test_move_uncertain()
-        print '=================================================='
-        print ' Check move for uncertain LEs (test_move_uncertain)  '
-        print '--- ConstandWind ------'
-        print 'Forecast LEs delta: '
-        print self.cw.delta
-        print 'Uncertain LEs delta: '
-        print self.cw.u_delta
-        print '--- ConstandWind with OSSM ------'
-        print 'Forecast LEs delta: '
-        print self.cww_ossm.delta
-        print 'Uncertain LEs delta: '
-        print self.cww_ossm.u_delta
+        print('==================================================')
+        print(' Check move for uncertain LEs (test_move_uncertain)  ')
+        print('--- ConstandWind ------')
+        print('Forecast LEs delta: ')
+        print(self.cw.delta)
+        print('Uncertain LEs delta: ')
+        print(self.cw.u_delta)
+        print('--- ConstandWind with OSSM ------')
+        print('Forecast LEs delta: ')
+        print(self.cww_ossm.delta)
+        print('Uncertain LEs delta: ')
+        print(self.cww_ossm.u_delta)
         assert np.all(self.cw.delta != self.cw.u_delta)
         assert np.all(self.cww_ossm.delta != self.cww_ossm.u_delta)
 
@@ -268,7 +268,7 @@ class TestVariableWind:
                              self.cm.status,
                              spill_type.forecast)
 
-            print self.delta
+            print(self.delta)
             assert np.all(self.delta['lat'] != 0)
             assert np.all(self.delta['long'] == 0)
             assert np.all(self.delta['z'] == 0)

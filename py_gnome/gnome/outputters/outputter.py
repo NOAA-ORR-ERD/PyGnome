@@ -414,7 +414,7 @@ class Outputter(GnomeId):
 
         for step_num in range(num_time_steps):
             if (step_num > 0 and step_num < num_time_steps - 1):
-                next_ts = (self.cache.load_timestep(step_num).items()[0].
+                next_ts = (list(self.cache.load_timestep(step_num).items())[0].
                            current_time_stamp)
                 ts = next_ts - model_time
 
@@ -425,8 +425,7 @@ class Outputter(GnomeId):
 
             self.write_output(step_num, last_step)
 
-            model_time = (self.cache.load_timestep(step_num)
-                          .items()[0]
+            model_time = (list(self.cache.load_timestep(step_num).items())[0]
                           .current_time_stamp)
 
     @property

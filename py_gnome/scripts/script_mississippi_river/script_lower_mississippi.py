@@ -28,11 +28,11 @@ base_dir = os.path.dirname(__file__)
 
 def make_model(images_dir=os.path.join(base_dir, 'images')):
 
-    print 'creating the maps'
+    print('creating the maps')
     mapfile = get_datafile(os.path.join(base_dir, 'LowerMississippiMap.bna'))
     gnome_map = MapFromBNA(mapfile, refloat_halflife=6)  # hours
 
-    print 'initializing the model'
+    print('initializing the model')
     start_time = datetime(2012, 9, 15, 12, 0)
 
     # default to now, rounded to the nearest hour
@@ -40,17 +40,17 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                   duration=timedelta(days=1),
                   map=gnome_map, uncertain=True)
 
-    print 'adding outputters'
+    print('adding outputters')
     model.outputters += Renderer(mapfile, images_dir, image_size=(800, 600))
 
     netcdf_file = os.path.join(base_dir, 'script_lower_mississippi.nc')
     scripting.remove_netcdf(netcdf_file)
     model.outputters += NetCDFOutput(netcdf_file, which_data='all')
 
-    print 'adding a RandomMover:'
+    print('adding a RandomMover:')
     model.movers += RandomMover(diffusion_coef=10000)
 
-    print 'adding a wind mover:'
+    print('adding a wind mover:')
 
     series = np.zeros((5, ), dtype=datetime_value_2d)
     series[0] = (start_time, (2, 45))
@@ -62,7 +62,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     w_mover = WindMover(Wind(timeseries=series, units='m/s'))
     model.movers += w_mover
 
-    print 'adding a cats mover:'
+    print('adding a cats mover:')
     curr_file = get_datafile(os.path.join(base_dir, 'LMiss.CUR'))
     c_mover = CatsMover(curr_file)
 
@@ -75,7 +75,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     model.movers += c_mover
 
-    print 'adding a spill'
+    print('adding a spill')
     spill = point_line_release_spill(num_elements=1000,
                                      start_position=(-89.699944, 29.494558,
                                                      0.0),

@@ -18,20 +18,20 @@ from .waves import Waves, WavesSchema
 from .tide import Tide, TideSchema
 from .wind import Wind, WindSchema, constant_wind, wind_from_values
 
-from running_average import RunningAverage, RunningAverageSchema
-from timeseries_objects_base import (TimeseriesData,
+from .running_average import RunningAverage, RunningAverageSchema
+from .timeseries_objects_base import (TimeseriesData,
                                      TimeseriesDataSchema,
                                      TimeseriesVector,
                                      TimeseriesVectorSchema
                                      )
-from gridded_objects_base import (PyGrid,
+from .gridded_objects_base import (PyGrid,
                                   GridSchema,
                                   VectorVariable,
                                   Variable)
 
-from grid import Grid
+from .grid import Grid
 
-import timeseries_objects_base
+from . import timeseries_objects_base
 # from gnome.environment.environment_objects import IceAwareCurrentSchema
 
 base_classes = [Environment,

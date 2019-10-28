@@ -41,7 +41,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     # create the maps:
 
-    print 'creating the maps'
+    print('creating the maps')
     mapfile = get_datafile(os.path.join(base_dir, 'SanJuanMap.bna'))
     gnome_map = MapFromBNA(mapfile, refloat_halflife=1,
                            raster_size=1024 * 1024)
@@ -53,7 +53,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     renderer.viewport = ((-66.24, 18.39), (-66.1, 18.55))
 
-    print 'initializing the model'
+    print('initializing the model')
     start_time = datetime(2014, 9, 3, 13, 0)
 
     # 15 minutes in seconds
@@ -62,17 +62,17 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                   duration=timedelta(days=1),
                   map=gnome_map, uncertain=False)
 
-    print 'adding outputters'
+    print('adding outputters')
     model.outputters += renderer
 
     netcdf_file = os.path.join(base_dir, 'script_san_juan.nc')
     scripting.remove_netcdf(netcdf_file)
     model.outputters += NetCDFOutput(netcdf_file, which_data='all')
 
-    print 'adding a RandomMover:'
+    print('adding a RandomMover:')
     model.movers += RandomMover(diffusion_coef=100000)
 
-    print 'adding a wind mover:'
+    print('adding a wind mover:')
 
     series = np.zeros((2, ), dtype=datetime_value_2d)
     series[0] = (start_time, (0, 270))
@@ -83,7 +83,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     wind.extrapolation_is_allowed=True
     model.movers += w_mover
 
-    print 'adding a cats shio mover:'
+    print('adding a cats shio mover:')
 
     # need to add the scale_factor for the tide heights file
     curr_file = get_datafile(os.path.join(base_dir, 'EbbTides.cur'))
@@ -99,7 +99,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     model.movers += c_mover
 
-    print 'adding a cats mover:'
+    print('adding a cats mover:')
 
     curr_file = get_datafile(os.path.join(base_dir, 'Offshore.cur'))
 
@@ -113,7 +113,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     model.movers += c_mover
 
-    print 'adding a spill'
+    print('adding a spill')
 
     end_time = start_time + timedelta(hours=12)
     spill = point_line_release_spill(num_elements=1000,

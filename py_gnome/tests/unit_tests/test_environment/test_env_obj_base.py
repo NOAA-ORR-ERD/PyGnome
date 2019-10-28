@@ -14,7 +14,7 @@ from gnome.environment.gridded_objects_base import (Variable,
 from gnome.environment.timeseries_objects_base import (TimeseriesData,
                                                        TimeseriesVector)
 
-from gen_analytical_datasets import gen_all
+from .gen_analytical_datasets import gen_all
 
 
 @pytest.fixture('class')
@@ -409,7 +409,7 @@ class TestGriddedProp:
 
         assert all(u.at(points, time) == [1, 1, 1])
 
-        print np.cos(points[:, 0] / 2) / 2
+        print(np.cos(points[:, 0] / 2) / 2)
         assert all(np.isclose(v.at(points, time),
                               np.cos(points[:, 0] / 2) / 2))
 

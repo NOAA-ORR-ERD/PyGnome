@@ -3,8 +3,8 @@ Download data from remote server
 '''
 
 import os
-import urllib2
-from urlparse import urljoin
+import urllib.request, urllib.error, urllib.parse
+from urllib.parse import urljoin
 
 from progressbar import (ProgressBar, Percentage, FileTransferSpeed,
                          ETA, Bar)
@@ -44,8 +44,8 @@ def get_datafile(file_):
             path_ = '.'     # relative to current path
 
         try:
-            resp = urllib2.urlopen(urljoin(data_server, fname))
-        except urllib2.HTTPError, ex:
+            resp = urllib.request.urlopen(urljoin(data_server, fname))
+        except urllib.error.HTTPError as ex:
             ex.msg = ("{0}. '{1}' not found on server or server is down"
                       .format(ex.msg, fname))
             raise ex

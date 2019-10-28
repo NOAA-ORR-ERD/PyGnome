@@ -3,7 +3,7 @@
 #    It makes for a little less computation at every step.
 from gnome.gnomeobject import GnomeId
 from gnome.environment.gridded_objects_base import PyGrid
-from __builtin__ import property
+from builtins import property
 
 """
 An implementation of the GNOME land-water map.
@@ -166,7 +166,7 @@ class GnomeMap(GnomeId):
     def _attr_array_to_dict(self, np_array):
         '''convert np_array to list of tuples, used for map_bounds,
         spillable_area'''
-        return map(tuple, np_array.tolist())
+        return list(map(tuple, np_array.tolist()))
 
     def _attr_from_list_to_array(self, l_):
         '''
@@ -614,10 +614,10 @@ class ParamMap(GnomeMap):
             spill_container['status_codes'][r_idx] = oil_status.in_water
 
     def update_from_dict(self, data):
-        if ('center' in data.keys() or
-                'distance' in data.keys() or
-                'bearing' in data.keys() or
-                'units' in data.keys()):
+        if ('center' in list(data.keys()) or
+                'distance' in list(data.keys()) or
+                'bearing' in list(data.keys()) or
+                'units' in list(data.keys())):
             self.build(
                 data.pop('center', self.center),
                 data.pop('distance', self.distance),
@@ -869,7 +869,7 @@ class RasterMap(GnomeMap):
 
         returns: a (N,) array of bools - true for particles that are on land
         """
-        mask = map(point_in_poly, [self.map_bounds] * len(coords), coords)
+        mask = list(map(point_in_poly, [self.map_bounds] * len(coords), coords))
         racpy = np.copy(coords)[mask]
         mskgph = self.raster[racpy[:, 0], racpy[:, 1]]
 

@@ -1,5 +1,5 @@
 import datetime
-import StringIO
+import io
 import copy
 import numpy as np
 import logging
@@ -216,7 +216,7 @@ class Grid_S(GnomeId, gridded.grids.Grid_S):
         st = def_style.copy()
 
         if style is not None:
-            for k in style.keys():
+            for k in list(style.keys()):
                 st[k].update(style[k])
 
         for f in features:

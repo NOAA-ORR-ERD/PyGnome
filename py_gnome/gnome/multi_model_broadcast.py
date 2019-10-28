@@ -7,7 +7,7 @@ import logging
 import traceback
 from six import reraise
 
-from cPickle import loads, dumps
+from pickle import loads, dumps
 import uuid
 
 import multiprocessing as mp
@@ -265,7 +265,7 @@ class ModelBroadcaster(GnomeId):
             msg = ('Broadcaster is stopped.  Cannot execute command: {}({})'
                    .format(command,
                            ', '.join(['{}={}'.format(*i)
-                                      for i in args.iteritems()])))
+                                      for i in args.items()])))
             self.logger.warning(msg)
 
             return None

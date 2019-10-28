@@ -243,7 +243,7 @@ def writeGif(
 
     try:
         n = _writeGifToFile(fp, images2, durations, loops)
-        print n, 'frames written'
+        print(n, 'frames written')
     finally:
         fp.close()
 

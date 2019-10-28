@@ -42,11 +42,11 @@ def test_properties_read_from_file():
     """ read only properties """
 
     shio = CyShioTime(shio_file)
-    print shio.filename
+    print(shio.filename)
     with open(shio_file) as fh:
         data = fh.read()
 
-    for (item, prop) in check_items.iteritems():
+    for (item, prop) in check_items.items():
         s_idx = data.find(item)
         e_idx = data.find('\n', s_idx)
         val = getattr(shio, prop)
@@ -128,10 +128,10 @@ def test_eq():
 
 
 def test_eval_repr():
-    print "in test_eval_repr: shio_file is:", shio_file
+    print("in test_eval_repr: shio_file is:", shio_file)
     shio = CyShioTime(shio_file)
 
-    print "the repr is:", repr(shio)
+    print("the repr is:", repr(shio))
     other_shio = eval(repr(shio))
     assert shio == other_shio
 

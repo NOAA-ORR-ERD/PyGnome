@@ -66,7 +66,7 @@ class TestGridWindMover:
     def move(self):
         self.gcm.prepare_for_model_run()
 
-        print "Certain move"
+        print("Certain move")
         self.gcm.prepare_for_model_step(self.cm.model_time,
                 self.cm.time_step)
         self.gcm.get_move(
@@ -85,7 +85,7 @@ class TestGridWindMover:
         spill_size[0] = self.cm.num_le  # for uncertainty spills
         start_pos=(-122.934656,38.27594,0)
 
-        print "Uncertain move"
+        print("Uncertain move")
         self.gcm.prepare_for_model_step(self.cm.model_time,
                 self.cm.time_step, 1, spill_size)
         self.gcm.get_move(
@@ -100,13 +100,13 @@ class TestGridWindMover:
 
     def check_move(self):
         self.move()
-        print self.cm.delta
+        print(self.cm.delta)
         assert np.all(self.cm.delta['lat'] != 0)
         assert np.all(self.cm.delta['long'] != 0)
 
     def check_move_uncertain(self):
         self.move_uncertain()
-        print self.cm.delta_uncertainty
+        print(self.cm.delta_uncertainty)
         assert np.all(self.cm.delta_uncertainty['lat'] != 0)
         assert np.all(self.cm.delta_uncertainty['long'] != 0)
 

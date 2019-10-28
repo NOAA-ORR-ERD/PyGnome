@@ -48,7 +48,7 @@ class TestWeatheringData:
 
         # test initialization as well
         wd.prepare_for_model_run(sc)
-        for val in sc.mass_balance.values():
+        for val in list(sc.mass_balance.values()):
             assert val == 0.0
 
         # test initialization as well
@@ -242,7 +242,7 @@ class TestWeatheringData:
             # model would update the age
             sc1['age'] += ts
             sc2['age'] += ts
-            print 'Completed step: ', i
+            print('Completed step: ', i)
 
     def test_update_intrinsic_props(self):
         '''
@@ -278,7 +278,7 @@ class TestWeatheringData:
         for w in weatherers:
             w.prepare_for_model_run(sc)
 
-        for val in sc.mass_balance.values():
+        for val in list(sc.mass_balance.values()):
             assert val == 0.0
 
         # test initialization as well
@@ -295,7 +295,7 @@ class TestWeatheringData:
             for w in weatherers:
                 self.step(w, sc, curr_time)
 
-            for key, val in sc.mass_balance.iteritems():
+            for key, val in sc.mass_balance.items():
                 if len(sc) > 0 and key not in ('beached',
                                                'non_weathering',
                                                'off_maps'):
@@ -322,7 +322,7 @@ class TestWeatheringData:
                 assert all(sc['viscosity'] > 0)
 
             sc['age'] += ts     # model would do this operation
-            print 'Completed step: ', i
+            print('Completed step: ', i)
 
     def test_bulk_init_volume_fay_area_two_spills(self):
         '''
@@ -354,8 +354,8 @@ class TestWeatheringData:
                 w.initialize_data(sc, num)
 
         # bulk_init_volume is set in same order as b_init_vol
-        print sc['bulk_init_volume']
-        print b_init_vol
+        print(sc['bulk_init_volume'])
+        print(b_init_vol)
         mask = sc['spill_num'] == 0
         assert np.all(sc['bulk_init_volume'][mask] == b_init_vol[0])
         assert np.all(sc['bulk_init_volume'][~mask] == b_init_vol[1])

@@ -43,14 +43,14 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     # create the maps:
 
-    print 'creating the maps'
+    print('creating the maps')
     mapfile = get_datafile(os.path.join(base_dir, 'DelawareRiverMap.bna'))
     gnome_map = MapFromBNA(mapfile, refloat_halflife=1)  # hours
 
     renderer = Renderer(mapfile, images_dir, image_size=(800, 800),
                         projection_class=GeoProjection)
 
-    print 'initializing the model'
+    print('initializing the model')
     start_time = datetime(2012, 8, 20, 13, 0)
 
     # 15 minutes in seconds
@@ -59,17 +59,17 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                   duration=timedelta(days=1),
                   map=gnome_map, uncertain=False)
 
-    print 'adding outputters'
+    print('adding outputters')
     model.outputters += renderer
 
     netcdf_file = os.path.join(base_dir, 'script_delaware_bay.nc')
     scripting.remove_netcdf(netcdf_file)
     model.outputters += NetCDFOutput(netcdf_file, which_data='all')
 
-    print 'adding a RandomMover:'
+    print('adding a RandomMover:')
     model.movers += RandomMover(diffusion_coef=100000)
 
-    print 'adding a wind mover:'
+    print('adding a wind mover:')
 
     # wind_file = get_datafile(os.path.join(base_dir, 'ConstantWind.WND'))
     # wind = Wind(filename=wind_file)
@@ -84,7 +84,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     w_mover = WindMover(wind)
     model.movers += w_mover
 
-    print 'adding a cats shio mover:'
+    print('adding a cats shio mover:')
 
     curr_file = get_datafile(os.path.join(base_dir, 'FloodTides.cur'))
     tide_file = get_datafile(os.path.join(base_dir, 'FloodTidesShio.txt'))
@@ -101,7 +101,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # TODO: cannot add this till environment base class is created
     model.environment += c_mover.tide
 
-    print 'adding a cats mover:'
+    print('adding a cats mover:')
 
     curr_file = get_datafile(os.path.join(base_dir, 'Offshore.cur'))
     c_mover = CatsMover(curr_file)
@@ -123,7 +123,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # pat2ScaleToValue 0.032882
     # scaleBy WindStress
 
-    print 'adding a component mover:'
+    print('adding a component mover:')
 
     # if only using one current pattern
     # comp_mover = ComponentMover(curr_file1, None, wind)
@@ -154,7 +154,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     model.movers += comp_mover
 
-    print 'adding a spill'
+    print('adding a spill')
 
     end_time = start_time + timedelta(hours=12)
     spill = point_line_release_spill(num_elements=1000,

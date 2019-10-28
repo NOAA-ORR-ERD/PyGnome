@@ -66,7 +66,7 @@ class TestCyDateTime:
         # The C++ time struct 0=Sunday and 6=Sat.
         # For Python time struct 0=Monday and 6=Sunday
 
-        print
+        print()
         for field in self.daterec.dtype.names:
             # fixme: dayOfWeek doesn't match - check if this is relevant?
             # for pyDate all fields must match
@@ -74,7 +74,7 @@ class TestCyDateTime:
 
             if field != 'dayOfWeek':
                 msg = 'expected {0}: {1}\t actual {0}: {2}'
-                print msg.format(field, date[field], self.daterec[field][0])
+                print(msg.format(field, date[field], self.daterec[field][0]))
                 assert date[field] == self.daterec[field][0]
 
     def test_sec_to_date(self):
@@ -85,9 +85,9 @@ class TestCyDateTime:
 
         tgt = time_utils.round_time(dt=self.now, roundTo=1)
         act = time_utils.sec_to_date(self.pySec)
-        print
-        print 'expected:\t' + str(tgt)
-        print 'actual:  \t' + str(act)
+        print()
+        print('expected:\t' + str(tgt))
+        print('actual:  \t' + str(act))
         assert tgt == act
 
 

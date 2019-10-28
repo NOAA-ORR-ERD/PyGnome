@@ -13,15 +13,15 @@ save_loc = os.path.join(base_dir, 'WeatheringRun.gnome')
 
 def make_model():
 
-    print 'initializing the model'
+    print('initializing the model')
     model = gs.Model(duration=gs.days(5))
 
 
-    print 'adding outputters'
+    print('adding outputters')
     budget_file = os.path.join(base_dir, 'GNOME_oil_budget.csv')
     model.outputters += gs.OilBudgetOutput(budget_file)
 
-    print 'adding a spill'
+    print('adding a spill')
     # We need a spill at the very least
     spill = gs.point_line_release_spill(num_elements=10,  # no need for a lot of elements for a instantaneous release
                                         start_position=(0.0, 0.0, 0.0),
@@ -32,10 +32,10 @@ def make_model():
 
     model.spills += spill
 
-    print 'adding a RandomMover:'
+    print('adding a RandomMover:')
     model.movers += gs.RandomMover()
 
-    print 'adding a wind mover:'
+    print('adding a wind mover:')
 
     model.movers += gs.constant_wind_mover(speed=10, direction=0, units="m/s")
 
@@ -45,7 +45,7 @@ def make_model():
     waves = gs.Waves()
     model.environment += waves
 
-    print 'adding the standard weatherers'
+    print('adding the standard weatherers')
     model.add_weathering()
 
     return model
@@ -53,6 +53,6 @@ def make_model():
 
 if __name__ == "__main__":
     model = make_model()
-    print "running the model"
+    print("running the model")
     model.full_run()
     model.save(saveloc=save_loc)

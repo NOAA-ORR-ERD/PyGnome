@@ -13,7 +13,7 @@ def tmp_output_dir(tmpdir, request):
     puts it in where tmpfiles go, so good for autoamted testing,
     not good for looking at the results.
     '''
-    name = 'output_' + request.function.func_name
+    name = 'output_' + request.function.__name__
     name = tmpdir.mkdir(name).strpath
 
     return name

@@ -30,7 +30,7 @@ base_dir = os.path.dirname(__file__)
 
 
 def make_model(img_dir=os.path.join(base_dir, 'images')):
-    print 'initializing the model'
+    print('initializing the model')
 
     start_time = datetime(2013, 5, 18, 0)
 
@@ -38,14 +38,14 @@ def make_model(img_dir=os.path.join(base_dir, 'images')):
                   time_step=3600, uncertain=False)
 
 
-    print 'adding the map'
+    print('adding the map')
     p_map = model.map = ParamMap(center = (0,0), distance=20, bearing = 20, units='km' )  # hours
 
     #
     # Add the outputters -- render to images, and save out as netCDF
     #
 
-    print 'adding renderer'
+    print('adding renderer')
     rend = Renderer( output_dir=img_dir,
                                  image_size=(800, 600),
                                  map_BB=p_map.get_map_bounds(),
@@ -65,13 +65,13 @@ def make_model(img_dir=os.path.join(base_dir, 'images')):
     # Set up the movers:
     #
 
-    print 'adding a RandomMover:'
+    print('adding a RandomMover:')
     model.movers += RandomMover(diffusion_coef=100000)
 
-    print 'adding a simple wind mover:'
+    print('adding a simple wind mover:')
     model.movers += constant_wind_mover(10, 225, units='m/s')
 
-    print 'adding a current mover:'
+    print('adding a current mover:')
 
 #     # # this is HYCOM currents
 #     curr_file = get_datafile(os.path.join(base_dir, 'HYCOM.nc'))
@@ -82,7 +82,7 @@ def make_model(img_dir=os.path.join(base_dir, 'images')):
     # # Add some spills (sources of elements)
     # #
 
-    print 'adding four spill'
+    print('adding four spill')
     model.spills += point_line_release_spill(num_elements=NUM_ELEMENTS // 4,
                                              start_position=(0.0,0.0,
                                                              0.0),
@@ -100,6 +100,6 @@ if __name__ == '__main__':
         if (step['step_num'] == 33):
             pass
         
-        print "step: %.4i -- memuse: %fMB" % (step['step_num'],
-                                              utilities.get_mem_use())
+        print("step: %.4i -- memuse: %fMB" % (step['step_num'],
+                                              utilities.get_mem_use()))
     # model.full_run(log=True)

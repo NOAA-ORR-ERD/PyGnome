@@ -220,7 +220,7 @@ class Oil(object):
 
     @classmethod
     def from_json(cls, data):
-        if type(data) in (str, unicode):
+        if type(data) in (str, str):
             data = json.loads(data)
         return cls(**num_pcs)
 
@@ -298,8 +298,8 @@ class Oil(object):
         rho_idxs1 = (rho_idxs0 + 1).clip(0, len(obj_list) - 1)
         rho_idxs1[low_and_oob] = 0
 
-        return zip([obj_list[i] for i in rho_idxs0],
-                   [obj_list[i] for i in rho_idxs1])
+        return list(zip([obj_list[i] for i in rho_idxs0],
+                   [obj_list[i] for i in rho_idxs1]))
 
 
     def get_densities(self):
@@ -499,8 +499,8 @@ class Oil(object):
 
         agg = dict(kvis_list)
 
-        return zip(*[(KVis(m_2_s=k, ref_temp_k=t, weathering=w), e)
-                     for (t, w), (k, e) in sorted(agg.iteritems())])
+        return list(zip(*[(KVis(m_2_s=k, ref_temp_k=t, weathering=w), e)
+                     for (t, w), (k, e) in sorted(agg.items())]))
 
 
     def kvis_at_temp(self, temp_k=288.15, weathering=0.0):
@@ -531,8 +531,8 @@ class Oil(object):
         if closest_kvis is not None:
             try:
                 # treat as a list
-                ref_kvis, ref_temp_k = zip(*[(kv[0].m_2_s, kv[0].ref_temp_k)
-                                             for kv in closest_kvis])
+                ref_kvis, ref_temp_k = list(zip(*[(kv[0].m_2_s, kv[0].ref_temp_k)
+                                             for kv in closest_kvis]))
                 if len(closest_kvis) > 1:
                     ref_kvis = np.array(ref_kvis).reshape(temp_k.shape)
                     ref_temp_k = np.array(ref_temp_k).reshape(temp_k.shape)
@@ -581,8 +581,8 @@ class Oil(object):
         if len(kvis_list) < 2:
             return
 
-        ref_temp_k, ref_kvis = zip(*[(k.ref_temp_k, k.m_2_s)
-                                     for k in kvis_list])
+        ref_temp_k, ref_kvis = list(zip(*[(k.ref_temp_k, k.m_2_s)
+                                     for k in kvis_list]))
 
         for k in np.logspace(3.6, 4.5, num=8):
             # k = log range from about 5000-32000
@@ -597,7 +597,7 @@ class Oil(object):
                 #   So we will only check for inf values.
                 # - for sample sizes < 3, the covariance is unreliable.
                 if len(ref_kvis) > 2 and np.any(pcov == np.inf):
-                    print 'covariance too high.'
+                    print('covariance too high.')
                     continue
 
                 if popt[1] <= 1.0:

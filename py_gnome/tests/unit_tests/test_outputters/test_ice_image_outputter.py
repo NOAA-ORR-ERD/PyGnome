@@ -110,11 +110,11 @@ def test_ice_image_output():
     '''
     model = make_model()
 
-    print model.outputters[0].map_canvas.viewport
+    print(model.outputters[0].map_canvas.viewport)
 
     begin = time.time()
     for step in model:
-        print '\n\ngot step at: ', time.time() - begin
+        print('\n\ngot step at: ', time.time() - begin)
 
         ice_output = step['IceImageOutput']
 
@@ -125,9 +125,9 @@ def test_ice_image_output():
                     'projection'):
             assert key in ice_output
 
-        print 'bounding box:', ice_output['bounding_box']
-        print 'thickness img size:', len(ice_output['thickness_image'])
-        print 'concentration img size:', len(ice_output['concentration_image'])
+        print('bounding box:', ice_output['bounding_box'])
+        print('thickness img size:', len(ice_output['thickness_image']))
+        print('concentration img size:', len(ice_output['concentration_image']))
 
     # not sure what else to check here
 
@@ -172,8 +172,8 @@ def test_ice_image_mid_run():
                 'projection'):
         assert key in ice_output
 
-        print 'thickness img size:', len(ice_output['thickness_image'])
-        print 'concentration img size:', len(ice_output['concentration_image'])
+        print('thickness img size:', len(ice_output['thickness_image']))
+        print('concentration img size:', len(ice_output['concentration_image']))
 
     # not sure what else to assert here -- at least it runs!
 

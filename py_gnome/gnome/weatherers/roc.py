@@ -2,7 +2,7 @@
 oil removal from various cleanup options
 add these as weatherers
 '''
-from __future__ import division
+
 
 import os
 import json
@@ -92,7 +92,7 @@ class Response(Weatherer):
 
     @units.setter
     def units(self, u_dict):
-        for prop, unit in u_dict.iteritems():
+        for prop, unit in u_dict.items():
             if (prop in self._units_type and
                     unit not in self._units_type[prop][1]):
                 msg = ('{0} are invalid units for {1}. Ignore it'
@@ -243,7 +243,7 @@ class Response(Weatherer):
 
 class PlatformUnitsSchema(MappingSchema):
     def __init__(self, *args, **kwargs):
-        for k, v in Platform._attr.items():
+        for k, v in list(Platform._attr.items()):
             self.add(SchemaNode(String(), missing=drop, name=k,
                                 validator=OneOf(v[2])))
 
@@ -255,7 +255,7 @@ class PlatformSchema(base_schema.ObjTypeSchema):
     name = SchemaNode(String(), test_equal=False)
 
     def __init__(self, *args, **kwargs):
-        for k in Platform._attr.keys():
+        for k in list(Platform._attr.keys()):
             self.add(SchemaNode(Float(), missing=drop, name=k, save=True,
                                 update=True))
 
@@ -304,18 +304,18 @@ class Platform(GnomeId):
              "pump_rate_max": ('gal/min', 'discharge', _valid_dis_units),
              "pump_rate_min": ('gal/min', 'discharge', _valid_dis_units)}
 
-    _si_units = dict([(k, v[0]) for k, v in _attr.items()])
+    _si_units = dict([(k, v[0]) for k, v in list(_attr.items())])
 
-    _units_type = dict([(k, (v[1], v[2])) for k, v in _attr.items()])
+    _units_type = dict([(k, (v[1], v[2])) for k, v in list(_attr.items())])
 
     base_dir = os.path.dirname(__file__)
 
     with open(os.path.join(base_dir, 'platforms.json'), 'r') as f:
         js = json.load(f)
-        plat_types = dict(zip([t['name'] for t in js['vessel']],
-                              js['vessel']))
-        plat_types.update(dict(zip([t['name'] for t in js['aircraft']],
-                                   js['aircraft'])))
+        plat_types = dict(list(zip([t['name'] for t in js['vessel']],
+                              js['vessel'])))
+        plat_types.update(dict(list(zip([t['name'] for t in js['aircraft']],
+                                   js['aircraft']))))
 
     _schema = PlatformSchema
 
@@ -327,12 +327,12 @@ class Platform(GnomeId):
             kwargs = self.plat_types[kwargs.get('_name')]
 
         if units is None:
-            units = dict([(k, v[0]) for k, v in self._attr.items()])
+            units = dict([(k, v[0]) for k, v in list(self._attr.items())])
 
         self.units = units
         self.type = type
 
-        for k in Platform._attr.keys():
+        for k in list(Platform._attr.keys()):
             setattr(self, k, kwargs.get(k, None))
 
         self.disp_remaining = 0
@@ -592,7 +592,7 @@ class Platform(GnomeId):
 
 class DisperseUnitsSchema(MappingSchema):
     def __init__(self, *args, **kwargs):
-        for k, v in Disperse._attr.items():
+        for k, v in list(Disperse._attr.items()):
             self.add(SchemaNode(String(), missing=drop, name=k,
                                 validator=OneOf(v[2])))
 
@@ -617,7 +617,7 @@ class DisperseSchema(ResponseSchema):
                                     save_reference=True)
 
     def __init__(self, *args, **kwargs):
-        for k, _v in Disperse._attr.items():
+        for k, _v in list(Disperse._attr.items()):
             self.add(SchemaNode(Float(), missing=drop, name=k, save=True,
                                 update=True))
 
@@ -635,8 +635,8 @@ class Disperse(Response):
              'dosage': ('gal/acre', 'oilconcentration',
                         _valid_oil_concentration_units)}
 
-    _si_units = dict([(k, v[0]) for k, v in _attr.items()])
-    _units_type = dict([(k, (v[1], v[2])) for k, v in _attr.items()])
+    _si_units = dict([(k, v[0]) for k, v in list(_attr.items())])
+    _units_type = dict([(k, (v[1], v[2])) for k, v in list(_attr.items())])
 
     _ref_as = 'roc_disperse'
     _req_refs = ['wind']
@@ -711,7 +711,7 @@ class Disperse(Response):
 
         # time to next state
         if platform is not None:
-            if isinstance(platform, basestring):
+            if isinstance(platform, str):
                 # find platform name
                 self.platform = Platform(_name=platform)
             else:
@@ -720,7 +720,7 @@ class Disperse(Response):
             self.platform = platform
 
         if units is None:
-            units = dict([(k, v[0]) for k, v in self._attr.items()])
+            units = dict([(k, v[0]) for k, v in list(self._attr.items())])
         self._units = units
 
         self.wind = wind
@@ -840,7 +840,7 @@ class Disperse(Response):
         else:
             avg_visc = 1000000
 
-        visc_eff = visc_eff_table[visc_eff_table.keys()[np.searchsorted(visc_eff_table.keys(), avg_visc)]] / 100
+        visc_eff = visc_eff_table[list(visc_eff_table.keys())[np.searchsorted(list(visc_eff_table.keys()), avg_visc)]] / 100
 
         return wind_eff * visc_eff
 
@@ -855,9 +855,9 @@ class Disperse(Response):
         idxs = self.dispersable_oil_idxs(sc)
         visc = sc['viscosity'][idxs] * 1000000
 
-        visc_idxs = np.array([np.searchsorted(visc_eff_table.keys(), v)
+        visc_idxs = np.array([np.searchsorted(list(visc_eff_table.keys()), v)
                               for v in visc])
-        visc_eff = np.array([visc_eff_table[visc_eff_table.keys()[v]]
+        visc_eff = np.array([visc_eff_table[list(visc_eff_table.keys())[v]]
                              for v in visc_idxs]) / 100
 
         return wind_eff * visc_eff
@@ -948,7 +948,7 @@ class Disperse(Response):
                     self.report.append((model_time,
                                         'Deactivating due to insufficient '
                                         'time remaining to conduct sortie'))
-                    print self.report[-1]
+                    print(self.report[-1])
                     self._time_remaining -= min(self._time_remaining, ttni)
                     model_time, time_step = self.update_time(self._time_remaining,
                                                              model_time,
@@ -1018,7 +1018,7 @@ class Disperse(Response):
                                         'on {} kg of oil'
                                         .format(disp_actual, spray_time,
                                                 oil_avail)))
-                    print self.report[-1]
+                    print(self.report[-1])
 
                     self.state.append(['onsite', spray_time.total_seconds()])
 
@@ -1097,7 +1097,7 @@ class Disperse(Response):
 
                 if self._time_remaining > zero:
                     self.report.append((model_time, 'Returned to base'))
-                    print self.report[-1]
+                    print(self.report[-1])
 
                     refuel_reload = timedelta(seconds=self.platform
                                               .refuel_reload(simul=self
@@ -1120,7 +1120,7 @@ class Disperse(Response):
                                                          time_step)
                 if self._time_remaining > zero:
                     self.report.append((model_time, 'Refuel/reload complete'))
-                    print self.report[-1]
+                    print(self.report[-1])
 
                     self._remaining_dispersant = self.platform.get('payload',
                                                                    'm^3')
@@ -1145,7 +1145,7 @@ class Disperse(Response):
                 self.report.append((model_time,
                                     'Disperse operation has ended and is '
                                     'deactivated'))
-                print self.report[-1]
+                print(self.report[-1])
 
                 break
 
@@ -1157,7 +1157,7 @@ class Disperse(Response):
 
                     self.report.append((model_time,
                                         'Begin new operational period'))
-                    print self.report[-1]
+                    print(self.report[-1])
 
                     continue
 
@@ -1179,7 +1179,7 @@ class Disperse(Response):
 
                         self.report.append((model_time,
                                             'Begin new operational period'))
-                        print self.report[-1]
+                        print(self.report[-1])
                     else:
                         interval_idx = self.index_of(model_time -
                                                      time_step +
@@ -1188,7 +1188,7 @@ class Disperse(Response):
                         self.report.append((model_time,
                                             'Ending current operational '
                                             'period'))
-                        print self.report[-1]
+                        print(self.report[-1])
 
             elif self.cur_state == 'ready':
                 if self.platform.sortie_possible(ttni, self.transit,
@@ -1196,7 +1196,7 @@ class Disperse(Response):
                     # sortie is possible, so start immediately
 
                     self.report.append((model_time, 'Starting sortie'))
-                    print self.report[-1]
+                    print(self.report[-1])
 
                     self._next_state_time = (model_time +
                                              timedelta(seconds=self.platform
@@ -1211,7 +1211,7 @@ class Disperse(Response):
                     self.report.append((model_time,
                                         'Retiring due to insufficient '
                                         'time remaining to conduct sortie'))
-                    print self.report[-1]
+                    print(self.report[-1])
 
                     self._time_remaining -= min(self._time_remaining, ttni)
                     model_time, time_step = self.update_time(self._time_remaining,
@@ -1233,7 +1233,7 @@ class Disperse(Response):
 
                 if self._time_remaining > zero:
                     self.report.append((model_time, 'Reached slick'))
-                    print self.report[-1]
+                    print(self.report[-1])
 
                     self._op_start = model_time
                     self._op_end = (model_time +
@@ -1253,7 +1253,7 @@ class Disperse(Response):
                     self.report.append((model_time,
                                         'Starting approach for pass {}'
                                         .format(self._cur_pass_num)))
-                    print self.report[-1]
+                    print(self.report[-1])
 
             elif self.cur_state == 'approach':
                 time_left = self._next_state_time - model_time
@@ -1369,7 +1369,7 @@ class Disperse(Response):
                         self.report.append((model_time,
                                             'Starting disperse pass {}'
                                             .format(self._cur_pass_num)))
-                        print self.report[-1]
+                        print(self.report[-1])
 
                         self.cur_state = 'disperse_' + str(self._cur_pass_num)
                         self._next_state_time = (model_time +
@@ -1503,7 +1503,7 @@ class Disperse(Response):
 
                 if self._time_remaining > zero:
                     self.report.append((model_time, 'Refuel/reload complete'))
-                    print self.report[-1]
+                    print(self.report[-1])
 
                     self._remaining_dispersant = self.platform.get('payload',
                                                                    'm^3')
@@ -1525,7 +1525,7 @@ class Disperse(Response):
 
                 if self._time_remaining > zero:
                     self.report.append((model_time, 'Cascade complete'))
-                    print self.report[-1]
+                    print(self.report[-1])
                     self.cur_state = 'ready'
             else:
                 raise ValueError('current state is not recognized: {}'
@@ -1533,7 +1533,7 @@ class Disperse(Response):
 
     def reset_for_return_to_base(self, model_time, message):
         self.report.append((model_time, message))
-        print self.report[-1]
+        print(self.report[-1])
 
         o_w_t_t = timedelta(seconds=self.platform
                             .one_way_transit_time(self.transit, payload=False))
@@ -1596,7 +1596,7 @@ class Disperse(Response):
             # org_mass = sc['mass'][idxs]
 
             removed = self._remove_mass_indices(sc, mass_to_remove, idxs)
-            print 'index, original mass, removed mass, final mass'
+            print('index, original mass, removed mass, final mass')
 
             # masstab = np.column_stack((idxs,
             #                            org_mass,
@@ -2371,8 +2371,8 @@ class Skim(Response):
 
     def _transit(self, sc, time_step, model_time):
         # transiting back to shore to offload
-        print('time', self._time_remaining)
-        print('remaining', self._transit_remaining)
+        print(('time', self._time_remaining))
+        print(('remaining', self._transit_remaining))
 
         if self._time_remaining >= self._transit_remaining:
             self._state_list.append(['transit', self._transit_remaining])
@@ -2459,7 +2459,7 @@ class Skim(Response):
 
 
 if __name__ == '__main__':
-    print None
+    print(None)
     d = Disperse(name='test')
     p = Platform(_name='Test Platform')
     import pprint as pp
@@ -2473,10 +2473,10 @@ if __name__ == '__main__':
     ser2 = p2.serialize()
     pp.pprint(ser2)
 
-    print 'INCORRECT BELOW'
+    print('INCORRECT BELOW')
 
-    for k, v in ser.items():
+    for k, v in list(ser.items()):
         if p2.serialize()[k] != v:
-            print p2.serialize()[k]
+            print(p2.serialize()[k])
 
     pass

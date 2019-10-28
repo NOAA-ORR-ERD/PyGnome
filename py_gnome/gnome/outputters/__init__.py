@@ -1,18 +1,18 @@
 
-from outputter import Outputter, BaseOutputterSchema
-from netcdf import NetCDFOutput, NetCDFOutputSchema
-from renderer import Renderer, RendererSchema
-from weathering import WeatheringOutput
-from geo_json import (TrajectoryGeoJsonOutput,
+from .outputter import Outputter, BaseOutputterSchema
+from .netcdf import NetCDFOutput, NetCDFOutputSchema
+from .renderer import Renderer, RendererSchema
+from .weathering import WeatheringOutput
+from .geo_json import (TrajectoryGeoJsonOutput,
                       IceGeoJsonOutput)
-from json import (IceJsonOutput,
+from .json import (IceJsonOutput,
                   CurrentJsonOutput,
                   SpillJsonOutput)
 
-from kmz import KMZOutput
-from image import IceImageOutput
-from shape import ShapeOutput
-from oil_budget import OilBudgetOutput
+from .kmz import KMZOutput
+from .image import IceImageOutput
+from .shape import ShapeOutput
+from .oil_budget import OilBudgetOutput
 
 # NOTE: no need for __all__ if you want export everything!
 outputters = [Outputter,

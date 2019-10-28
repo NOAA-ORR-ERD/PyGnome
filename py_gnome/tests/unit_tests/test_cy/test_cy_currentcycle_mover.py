@@ -79,7 +79,7 @@ class TestCurrentCycleMover:
     def move(self):
         self.ccm.prepare_for_model_run()
 
-        print "Certain move"
+        print("Certain move")
         self.ccm.prepare_for_model_step(self.cm.model_time,
                 self.cm.time_step)
         self.ccm.get_move(
@@ -97,7 +97,7 @@ class TestCurrentCycleMover:
         spill_size[0] = self.cm.num_le  # for uncertainty spills
         start_pos=(-76.149368,37.74496,0)
 
-        print "Uncertain move"
+        print("Uncertain move")
         self.ccm.prepare_for_model_step(self.cm.model_time,
                 self.cm.time_step, 1, spill_size)
         self.ccm.get_move(
@@ -111,13 +111,13 @@ class TestCurrentCycleMover:
 
     def check_move(self):
         self.move()
-        print self.cm.delta
+        print(self.cm.delta)
         assert np.all(self.cm.delta['lat'] != 0)
         assert np.all(self.cm.delta['long'] != 0)
 
     def check_move_uncertain(self):
         self.move_uncertain()
-        print self.cm.delta_uncertainty
+        print(self.cm.delta_uncertainty)
         assert np.all(self.cm.delta_uncertainty['lat'] != 0)
         assert np.all(self.cm.delta_uncertainty['long'] != 0)
 

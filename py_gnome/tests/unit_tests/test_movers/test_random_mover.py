@@ -47,16 +47,16 @@ class TestRandomMover:
 
     def reset_pos(self):
         self.pSpill['positions'] = (0., 0., 0.)
-        print self.pSpill['positions']
+        print(self.pSpill['positions'])
 
     def test_string_representation_matches_repr_method(self):
         """
         Just print repr and str
         """
 
-        print
-        print repr(self.mover)
-        print str(self.mover)
+        print()
+        print(repr(self.mover))
+        print(str(self.mover))
         assert True
 
     def test_id_matches_builtin_id(self):
@@ -94,7 +94,7 @@ class TestRandomMover:
                             self.model_time,
                             )
 
-        print delta
+        print(delta)
 
         assert np.alltrue(delta[:, :] == 0.0)
 

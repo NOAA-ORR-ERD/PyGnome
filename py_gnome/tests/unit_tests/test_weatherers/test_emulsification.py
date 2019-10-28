@@ -11,7 +11,7 @@ from gnome.weatherers import (Emulsification,
                               Evaporation)
 from gnome.outputters import WeatheringOutput
 
-from conftest import weathering_data_arrays
+from .conftest import weathering_data_arrays
 
 from ..conftest import (sample_model_weathering,
                         sample_model_weathering2,
@@ -36,7 +36,7 @@ def test_emulsification(oil, temp, num_elems, on):
     Fuel Oil #6 does not emulsify
     fixme: this fails for ALASKA NORTH SLOPE - what is it supposed to test?
     '''
-    print oil, temp, num_elems, on
+    print(oil, temp, num_elems, on)
 
     emul = Emulsification(waves)
     emul.on = on
@@ -54,14 +54,14 @@ def test_emulsification(oil, temp, num_elems, on):
         sc['frac_evap'][:] = .31
 
     # sc['frac_evap'][:] = .35
-    print "sc['frac_evap'][:]"
-    print sc['frac_evap'][:]
+    print("sc['frac_evap'][:]")
+    print(sc['frac_evap'][:])
 
     emul.prepare_for_model_step(sc, time_step, model_time)
     emul.weather_elements(sc, time_step, model_time)
 
-    print "sc['frac_water'][:]"
-    print sc['frac_water'][:]
+    print("sc['frac_water'][:]")
+    print(sc['frac_water'][:])
 
     if on:
         assert np.all(sc['frac_evap'] > 0) and np.all(sc['frac_evap'] < 1.0)
@@ -70,14 +70,14 @@ def test_emulsification(oil, temp, num_elems, on):
         assert np.all(sc['frac_water'] == 0)
 
     sc['frac_evap'][:] = .2
-    print "sc['frac_evap'][:]"
-    print sc['frac_evap'][:]
+    print("sc['frac_evap'][:]")
+    print(sc['frac_evap'][:])
 
     emul.prepare_for_model_step(sc, time_step, model_time)
     emul.weather_elements(sc, time_step, model_time)
 
-    print "sc['frac_water'][:]"
-    print sc['frac_water'][:]
+    print("sc['frac_water'][:]")
+    print(sc['frac_water'][:])
 
     if on:
         assert np.all(sc['frac_evap'] > 0) and np.all(sc['frac_evap'] < 1.0)
@@ -101,14 +101,14 @@ def test_full_run(sample_model_fcn, oil, temp):
     model.set_make_default_refs(True)
 
     for step in model:
-        for sc in model.spills.items():
+        for sc in list(model.spills.items()):
             # need or condition to account for water_content = 0.9000000000012
             # or just a little bit over 0.9
             assert (sc.mass_balance['water_content'] <= .9 or
                     np.isclose(sc.mass_balance['water_content'], 0.9))
-            print ("Water fraction: {0}".
-                   format(sc.mass_balance['water_content']))
-            print "Completed step: {0}\n".format(step['step_num'])
+            print(("Water fraction: {0}".
+                   format(sc.mass_balance['water_content'])))
+            print("Completed step: {0}\n".format(step['step_num']))
 
 
 def test_full_run_emul_not_active(sample_model_fcn):
@@ -124,7 +124,7 @@ def test_full_run_emul_not_active(sample_model_fcn):
         assert 'water_content' not in step['WeatheringOutput']
         assert ('time_stamp' in step['WeatheringOutput'])
 
-        print ("Completed step: {0}".format(step['step_num']))
+        print(("Completed step: {0}".format(step['step_num'])))
 
 
 def test_bulltime():

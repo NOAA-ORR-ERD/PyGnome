@@ -5,7 +5,7 @@ the Wind object defines the Wind conditions for the spill
 import datetime
 import os
 import copy
-import StringIO
+import io
 import zipfile
 import gridded
 
@@ -332,7 +332,7 @@ class Wind(Timeseries, Environment):
         '''
         use a StringIO type of file descriptor and write directly to zipfile
         '''
-        fd = StringIO.StringIO()
+        fd = io.StringIO()
         self._write_timeseries_to_fd(fd)
         self._write_to_zip(saveloc, ts_name, fd.getvalue())
 
@@ -347,7 +347,7 @@ class Wind(Timeseries, Environment):
 
         Writes the "OSSM format" with the full header
         '''
-        if self.units in ossm_wind_units.values():
+        if self.units in list(ossm_wind_units.values()):
             data_units = self.units
         else:
             # we know C++ understands this unit

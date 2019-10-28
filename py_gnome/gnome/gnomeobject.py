@@ -15,6 +15,7 @@ import colander
 
 import gnome
 from gnome.utilities.orderedcollection import OrderedCollection
+from functools import reduce
 
 log = logging.getLogger(__name__)
 
@@ -71,7 +72,7 @@ class AddLogger(object):
         except TypeError:
             if kwargs:  # could it fail for some other reason? maybe???
                 msg = ("{} are invalid keyword arguments for:\n"
-                       "{}".format(kwargs.keys(), self.__class__))
+                       "{}".format(list(kwargs.keys()), self.__class__))
                 raise TypeError(msg)
 
     @property
@@ -116,8 +117,7 @@ class Refs(dict):
         provides a unique name by appending length+1
         '''
         base_name = obj.obj_type.split('.')[-1]
-        num_of_same_type = filter(lambda v: v.obj_type == obj.obj_type,
-                                  self.values())
+        num_of_same_type = [v for v in list(self.values()) if v.obj_type == obj.obj_type]
 
         return base_name + num_of_same_type+1
 
@@ -130,11 +130,10 @@ class GnomeObjMeta(type):
         return super(GnomeObjMeta, cls).__new__(cls, name, parents, dct)
 
 
-class GnomeId(AddLogger):
+class GnomeId(AddLogger, metaclass=GnomeObjMeta):
     '''
     A class for assigning a unique ID for an object
     '''
-    __metaclass__ = GnomeObjMeta
     _id = None
     make_default_refs = True
 
@@ -401,7 +400,7 @@ class GnomeId(AddLogger):
         attrs = copy.copy(dict_)
         updated = False
 
-        for k in attrs.keys():
+        for k in list(attrs.keys()):
             if k not in updatable:
                 attrs.pop(k)
 
@@ -420,7 +419,7 @@ class GnomeId(AddLogger):
                 if attrs[name] is colander.drop:
                     del attrs[name]
 
-        for k, v in attrs.items():
+        for k, v in list(attrs.items()):
             if hasattr(self, k):
                 if not updated and self._attr_changed(getattr(self, k), v):
                     updated = True

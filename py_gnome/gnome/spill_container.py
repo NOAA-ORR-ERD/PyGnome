@@ -154,7 +154,7 @@ class FateDataView(AddLogger):
             self.logger.debug(self._pid + "found LEs with 'mass' equal to 0. "
                               "reset_view")
 
-        for key, val in d_to_sync.iteritems():
+        for key, val in d_to_sync.items():
             sc[key][w_mask] = val
 
         if reset_view:
@@ -169,7 +169,7 @@ class FateDataView(AddLogger):
             if len(data) > 0:
                 idx = np.where(data['id'] == ix)[0]
                 if len(idx) > 0:
-                    self._set_data(sc, data.keys(),
+                    self._set_data(sc, list(data.keys()),
                                    self._get_fate_mask(sc, fate),
                                    fate)
 
@@ -288,7 +288,7 @@ class SpillContainerData(object):
 
         # check key/val that are not dicts
         val_is_dict = []
-        for key, val in self.__dict__.iteritems():
+        for key, val in self.__dict__.items():
             'compare dict not including _data_arrays'
             if isinstance(val, dict):
                 val_is_dict.append(key)
@@ -307,7 +307,7 @@ class SpillContainerData(object):
                 # dicts should contain the same keys
                 return False
 
-            for key, val in self.__dict__[item].iteritems():
+            for key, val in self.__dict__[item].items():
                 other_val = other.__dict__[item][key]
                 if isinstance(val, np.ndarray):
                     try:
@@ -337,7 +337,7 @@ class SpillContainerData(object):
         """
         try:
             # find the length of an arbitrary first array
-            return len(self._data_arrays.itervalues().next())
+            return len(next(iter(self._data_arrays.values())))
         except StopIteration:
             return 0
 
@@ -362,7 +362,7 @@ class SpillContainerData(object):
         """
         a keys() function so it looks a bit more like a dict
         """
-        return self._data_arrays.keys()
+        return list(self._data_arrays.keys())
 
 
 class SpillContainer(AddLogger, SpillContainerData):
@@ -569,7 +569,7 @@ class SpillContainer(AddLogger, SpillContainerData):
         in which case, it is the name of the array so return it. If its not
         a string, then return the at.name attribute.
         '''
-        if isinstance(at, basestring):
+        if isinstance(at, str):
             return at
         else:
             return at.name
@@ -582,7 +582,7 @@ class SpillContainer(AddLogger, SpillContainerData):
         :param int num_released: number of particles released
 
         """
-        for name, atype in self._array_types.iteritems():
+        for name, atype in self._array_types.items():
             # initialize all arrays even if 0 length
             if atype.shape is None:
                 # assume array type is for weather data, provide it the shape
@@ -857,7 +857,7 @@ class SpillContainer(AddLogger, SpillContainerData):
         and prepare_for_model_run to define all data arrays.
         At this time the arrays are empty.
         """
-        for name, atype in self._array_types.iteritems():
+        for name, atype in self._array_types.items():
             # Initialize data_arrays with 0 elements
             # fixme: is every array type with None shape neccesarily
             #        oil components??
@@ -961,7 +961,7 @@ class SpillContainer(AddLogger, SpillContainerData):
             self.logger.warning(msg)
             raise
 
-        for name, at in self.array_types.iteritems():
+        for name, at in self.array_types.items():
             data = self[name]
             split_elems = at.split_element(num, self[name][idx], l_frac)
             data = np.insert(data, idx, split_elems[:-1], 0)
@@ -986,7 +986,7 @@ class SpillContainer(AddLogger, SpillContainerData):
                                  oil_status.to_be_removed)[0]
 
         if len(to_be_removed) > 0:
-            for key in self._array_types.keys():
+            for key in list(self._array_types.keys()):
                 self._data_arrays[key] = np.delete(self[key], to_be_removed,
                                                    axis=0)
 
@@ -1054,7 +1054,7 @@ class SpillContainerPairData(object):
 
     @property
     def LE_data(self):
-        data = self._spill_container._data_arrays.keys()
+        data = list(self._spill_container._data_arrays.keys())
         data.append('current_time_stamp')
         if self._spill_container.mass_balance:
             'only add if it is not an empty dict'
@@ -1083,7 +1083,7 @@ class SpillContainerPairData(object):
         if self.uncertain != other.uncertain:
             return False
 
-        for sc in zip(self.items(), other.items()):
+        for sc in zip(list(self.items()), list(other.items())):
             if sc[0] != sc[1]:
                 return False
 
@@ -1289,7 +1289,7 @@ class SpillContainerPair(SpillContainerPairData):
         if len(l_spills) != len(self):
             updated = True
 
-        if self._spill_container.spills.values() != l_spills:
+        if list(self._spill_container.spills.values()) != l_spills:
             updated = True
 
         if updated:

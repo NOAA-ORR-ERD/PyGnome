@@ -39,7 +39,7 @@ def test_exceptions(invalid_rq):
     # valid timeseries for testing
 
     dtv = np.zeros((4, ), dtype=datetime_value_2d).view(dtype=np.recarray)
-    dtv.time = [datetime(2012, 11, 06, 20, 10 + i, 30,) for i in range(4)]
+    dtv.time = [datetime(2012, 11, 0o6, 20, 10 + i, 30,) for i in range(4)]
     dtv.value = (1, 0)
 
     # Following also raises ValueError. This gives invalid (r,theta) inputs
@@ -70,7 +70,7 @@ def test_exceptions(invalid_rq):
         dtv_rq = np.zeros((4, ),
                           dtype=datetime_value_2d).view(dtype=np.recarray)
         dtv_rq.value = (1, 0)
-        dtv_rq.time[:len(dtv_rq) - 1] = [datetime(2012, 11, 06, 20, 10 + i, 30)
+        dtv_rq.time[:len(dtv_rq) - 1] = [datetime(2012, 11, 0o6, 20, 10 + i, 30)
                                          for i in range(len(dtv_rq) - 1)]
 
         Timeseries(timeseries=dtv_rq)

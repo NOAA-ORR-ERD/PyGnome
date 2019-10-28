@@ -29,7 +29,7 @@ def get_plume_data():
 
     plume_depths = np.linspace(0, 200, plume_mass_flux.size)
 
-    return zip(plume_depths, plume_mass_flux)
+    return list(zip(plume_depths, plume_mass_flux))
 
 
 class Plume(object):
@@ -149,13 +149,13 @@ class PlumeGenerator(object):
 
     def __iter__(self):
         if self.time_steps is not None:
-            for step in range(long(self.time_steps)):
+            for step in range(int(self.time_steps)):
                 curr_time = (self.release_time +
                              timedelta(seconds=self.time_step_delta * step))
                 next_time = curr_time + timedelta(seconds=self.time_step_delta)
                 yield (curr_time,
-                       zip(self.plume.coords,
-                           self.elems_in_range(curr_time, next_time)))
+                       list(zip(self.plume.coords,
+                           self.elems_in_range(curr_time, next_time))))
         else:
             step = 0
             while True:
@@ -164,8 +164,8 @@ class PlumeGenerator(object):
                 next_time = curr_time + timedelta(seconds=self.time_step_delta)
                 step += 1
                 yield (curr_time,
-                       zip(self.plume.coords,
-                           self.elems_in_range(curr_time, next_time)))
+                       list(zip(self.plume.coords,
+                           self.elems_in_range(curr_time, next_time))))
 
 
 if __name__ == '__main__':
@@ -181,26 +181,26 @@ if __name__ == '__main__':
                                plume=plume)
 
     # let's print out some facts about our plume
-    print ('Based on the mean plume mass flux value, we will choose an LE '
+    print(('Based on the mean plume mass flux value, we will choose an LE '
            'with {} kg of oil'
-           .format(plume_gen.mass_of_an_le))
+           .format(plume_gen.mass_of_an_le)))
 
     # now lets iterate our plume generator
-    print 'First, just the occurrence pattern for LE releases...'
+    print('First, just the occurrence pattern for LE releases...')
     total_le_count = 0
     for step in plume_gen:
         le_count = sum([r[1] for r in step[1]])
         total_le_count += le_count
-        print step[0], [r[1] for r in step[1]], le_count
-    print 'total LEs:', total_le_count
+        print(step[0], [r[1] for r in step[1]], le_count)
+    print('total LEs:', total_le_count)
 
-    print '\nNext, the full information...'
+    print('\nNext, the full information...')
     for step in plume_gen:
         for r in step:
             # each row should consist of a world_point
             # and a number of LEs to create
-            print r
-        print
+            print(r)
+        print()
 
     # OK, we need to deal somehow with an undefined end time
     # in this case we would presumably iterate over an infinite
@@ -211,19 +211,19 @@ if __name__ == '__main__':
                                time_step_delta=time_step_delta,
                                plume=plume)
 
-    print '\nNext, we iterate a portion of an infinite run...'
+    print('\nNext, we iterate a portion of an infinite run...')
     total_le_count = 0
     step_count = 0
     for step in plume_gen:
         le_count = sum([r[1] for r in step[1]])
         total_le_count += le_count
-        print step[0], [r[1] for r in step[1]], le_count
+        print(step[0], [r[1] for r in step[1]], le_count)
 
         step_count += 1
         if step_count >= 24:
             break
 
-    print 'total LEs:', total_le_count
+    print('total LEs:', total_le_count)
 
     # I believe with our test data that the total LEs is 240
     # Lets change the total number of LEs and see how that affects our run.
@@ -233,14 +233,14 @@ if __name__ == '__main__':
                                plume=plume)
     plume_gen.set_le_mass_from_total_le_count(200)
 
-    print 'Now, the occurrence pattern if the total LEs is 200...'
+    print('Now, the occurrence pattern if the total LEs is 200...')
     total_le_count = 0
     for step in plume_gen:
         le_count = sum([r[1] for r in step[1]])
         total_le_count += le_count
-        print step[0], [r[1] for r in step[1]], le_count
+        print(step[0], [r[1] for r in step[1]], le_count)
 
-    print 'total LEs:', total_le_count
+    print('total LEs:', total_le_count)
     assert total_le_count == 200
 
     #
@@ -261,7 +261,7 @@ if __name__ == '__main__':
     # plume generator.  And we will do this over a range of specified
     # LE counts.
     le_counts = [compare_le_count(plume_gen, n) for n in range(100, 401)]
-    print le_counts
+    print(le_counts)
 
     # Here we test the difference in LEs that we had over our range of
     # counts.

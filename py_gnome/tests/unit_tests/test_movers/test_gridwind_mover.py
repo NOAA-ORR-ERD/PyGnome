@@ -13,7 +13,7 @@ from gnome.movers import GridWindMover
 
 from ..conftest import sample_sc_release, testdata
 # default settings are the same for both objects
-from test_wind_mover import _defaults
+from .test_wind_mover import _defaults
 
 
 wind_file = testdata['GridWindMover']['wind_curv']
@@ -61,13 +61,13 @@ def test_init_defaults():
 
 def test_string_repr_no_errors():
     gw = GridWindMover(wind_file, topology_file)
-    print
-    print '======================'
-    print 'repr(WindMover): '
-    print repr(gw)
-    print
-    print 'str(WindMover): '
-    print str(gw)
+    print()
+    print('======================')
+    print('repr(WindMover): ')
+    print(repr(gw))
+    print()
+    print('str(WindMover): ')
+    print(str(gw))
 
     # TODO, FIXME: We need a way of validating this if we really care what
     #              the str() and repr() methods are doing.
@@ -126,9 +126,9 @@ def test_certain_uncertain():
 
     delta = test_loop()
     u_delta = test_uncertain_loop()
-    print
-    print delta
-    print u_delta
+    print()
+    print(delta)
+    print(u_delta)
     assert np.all(delta[:, :2] != u_delta[:, :2])
     assert np.all(delta[:, 2] == u_delta[:, 2])
 
@@ -172,8 +172,8 @@ def _assert_move(delta):
     helper function to test assertions
     """
 
-    print
-    print delta
+    print()
+    print(delta)
     assert np.all(delta[:, :2] != 0)
     assert np.all(delta[:, 2] == 0)
 

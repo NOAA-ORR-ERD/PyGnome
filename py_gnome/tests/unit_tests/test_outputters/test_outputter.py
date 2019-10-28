@@ -84,10 +84,10 @@ def test_output_timestep(model, model_ts, output_ts):
     assert o_put._model_start_time is None
     assert o_put._dt_since_lastoutput is None
     assert o_put._write_step
-    print ("\n\nmodel_ts: {0}, output_ts: {1}").format(model_ts.seconds,
-                                                       output_ts[0].seconds)
-    print ("num outputs: {0}, for model steps: {1}\n").format(output_ts[2],
-                                                              match_after)
+    print(("\n\nmodel_ts: {0}, output_ts: {1}").format(model_ts.seconds,
+                                                       output_ts[0].seconds))
+    print(("num outputs: {0}, for model steps: {1}\n").format(output_ts[2],
+                                                              match_after))
     while True:
         try:
             model.step()
@@ -143,10 +143,10 @@ def test_output_timestep(model, model_ts, output_ts):
                 if model.current_time_step % match_after == 0:
                     assert frac_step == 0.0
 
-                print ("step_num, _write_step, _dt_since_lastoutput:\t"
+                print(("step_num, _write_step, _dt_since_lastoutput:\t"
                        "{0}, {1}, {2}").format(model.current_time_step,
                                                o_put._write_step,
-                                               o_put._dt_since_lastoutput)
+                                               o_put._dt_since_lastoutput))
 
         except StopIteration:
             break

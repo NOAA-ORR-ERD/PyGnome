@@ -132,7 +132,7 @@ class IceImageOutput(Outputter):
             :param num_colors: The number of gradient colors to generate
             :type num_colors: Number
         '''
-        color_range_idx = range(len(color_range))
+        color_range_idx = list(range(len(color_range)))
         color_space = np.linspace(color_range_idx[0], color_range_idx[-1],
                                   num=num_colors)
 
@@ -187,7 +187,7 @@ class IceImageOutput(Outputter):
 
         # fixme -- doing all this cache stuff just to get the timestep..
         # maybe timestep should be passed in.
-        for sc in self.cache.load_timestep(step_num).items():
+        for sc in list(self.cache.load_timestep(step_num).items()):
             model_time = date_to_sec(sc.current_time_stamp)
             iso_time = sc.current_time_stamp.isoformat()
 

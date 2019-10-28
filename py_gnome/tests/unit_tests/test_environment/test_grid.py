@@ -69,11 +69,11 @@ class TestPyGrid_S:
 
         sg3 = PyGrid.from_netCDF(filename, dataset,
                                  grid_topology=grid_topology)
-        print sg3.shape
+        print(sg3.shape)
         assert sg == sg3
 
         sg4 = PyGrid.from_netCDF(filename)
-        print sg4.shape
+        print(sg4.shape)
         assert sg2 == sg4
 
     def test_serialize(self, sg, sg_data, sg_topology):
@@ -84,8 +84,8 @@ class TestPyGrid_S:
         sg2 = Grid_S.from_netCDF(filename, dataset,
                                  grid_topology=grid_topology)
 
-        print sg.serialize()['filename']
-        print sg2.serialize()['filename']
+        print(sg.serialize()['filename'])
+        print(sg2.serialize()['filename'])
         assert sg.serialize()['filename'] == sg2.serialize()['filename']
 
     def test_deserialize(self, sg):
@@ -115,8 +115,8 @@ class TestPyGrid_U:
         ug3 = PyGrid.from_netCDF(filename, dataset,
                                  grid_topology=grid_topology)
         ug4 = PyGrid.from_netCDF(filename)
-        print ug3.shape
-        print ug4.shape
+        print(ug3.shape)
+        print(ug4.shape)
         assert ug == ug3
         assert ug2 == ug4
 

@@ -24,7 +24,7 @@ def test_basic_move():
     mover = simple_mover.SimpleMover(velocity=(1.0, 10.0, 0.0))
 
     delta = mover.get_move(sp, time_step=100.0, model_time=None)
-    print delta
+    print(delta)
 
     # expected = np.zeros_like(delta)
 

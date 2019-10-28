@@ -13,7 +13,7 @@ from colander import (SchemaNode, deferred, drop, required, Invalid, Unsupported
                       SequenceSchema, TupleSchema, MappingSchema,
                       String, Float, Int, SchemaType, Sequence, Tuple, Positional, null)
 
-from extend_colander import NumpyFixedLenSchema
+from .extend_colander import NumpyFixedLenSchema
 
 from gnome.gnomeobject import Refs, class_from_objtype
 from gnome.persist.extend_colander import OrderedCollectionType
@@ -263,7 +263,7 @@ class ObjType(SchemaType):
             #Passing the 'save' in case a class wants to do some special stuff on
             #saving specifically.
             dict_ = raw_object.to_dict('save')
-            for k in dict_.keys():
+            for k in list(dict_.keys()):
                 if dict_[k] is None:
                     dict_[k] = null
             return dict_
@@ -287,7 +287,7 @@ class ObjType(SchemaType):
         #strips out any entries that do not need saving. They're still in refs,
         #but that shouldn't do any harm.
         savable_attrs = node.get_nodes_by_attr('save')
-        for k in json_.keys():
+        for k in list(json_.keys()):
             subnode = node.get(k)
 
             # Need to exclude lists from this culling,
@@ -636,7 +636,7 @@ class ObjTypeSchema(MappingSchema):
     def __init__(self, *args, **kwargs):
         super(ObjTypeSchema, self).__init__(*args, **kwargs)
         for c in self.children:
-            for k,v in self._colander_defaults.items():
+            for k,v in list(self._colander_defaults.items()):
                 if not hasattr(c, k):
                     setattr(c, k, v)
                 elif hasattr(c, k) and hasattr(c.__class__, k) and getattr(c, k) is getattr(c.__class__, k):
@@ -707,7 +707,7 @@ class ObjTypeSchema(MappingSchema):
         if attr == 'all':
             return [n.name for n in self.children]
         else:
-            names = [n.name for n in filter(lambda c: hasattr(c, attr) and getattr(c, attr), self.children)]
+            names = [n.name for n in [c for c in self.children if hasattr(c, attr) and getattr(c, attr)]]
             #sequences need to be taken into account. If present they will
             #considered to always have 'save' and 'update' as true, read as false,
             return names

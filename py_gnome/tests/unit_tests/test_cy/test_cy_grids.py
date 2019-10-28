@@ -29,8 +29,8 @@ def test_grid_wind_rect():
     c = CyTimeGridWindRect(file_)
     time = date_to_sec(time)
     vel = c.get_value(time, long_lat)
-    print "\nRect grid - vel: {0}".format(vel)
-    print "Rect grid - expected_vel: {0}".format(exp_vel)
+    print("\nRect grid - vel: {0}".format(vel))
+    print("Rect grid - expected_vel: {0}".format(exp_vel))
     assert (vel.item() == exp_vel)
 
 
@@ -40,5 +40,5 @@ def test_grid_wind_curv():
                               testdata['GridWindMover']['top_curv'])
     time = date_to_sec(datetime(2006, 3, 31, 21))
     vel = curv.get_value(time, (-122.934656, 38.27594))
-    print "Curv grid - vel: {0}\n".format(vel)
+    print("Curv grid - vel: {0}\n".format(vel))
     assert vel.item() != 0

@@ -271,7 +271,7 @@ class Renderer(Outputter, MapCanvas):
 
     @formats.setter
     def formats(self, val):
-        if isinstance(val, (str, unicode)):
+        if isinstance(val, str):
             val = (val,)
         self._formats = val
 
@@ -591,7 +591,7 @@ class Renderer(Outputter, MapCanvas):
             self.copy_back_to_fore()
 
         # draw prop for self.draw_ontop second so it draws on top
-        scp = self.cache.load_timestep(step_num).items()
+        scp = list(self.cache.load_timestep(step_num).items())
         if len(scp) == 1:
             self.draw_elements(scp[0])
         else:
@@ -634,7 +634,7 @@ class Renderer(Outputter, MapCanvas):
         """
 
         # draw prop for self.draw_ontop second so it draws on top
-        scp = self.cache.load_timestep(step_num).items()
+        scp = list(self.cache.load_timestep(step_num).items())
         if len(scp) == 1:
             self.draw_elements(scp[0])
         else:
@@ -796,7 +796,7 @@ class GridPropVisLayer(object):
 
         line = np.array([[0., 0.], [0., 0.]])
 
-        for i in xrange(0, len(start)):
+        for i in range(0, len(start)):
             line[0] = start[i]
             line[1] = end[i]
             img.draw_polyline(line,

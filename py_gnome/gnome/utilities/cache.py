@@ -126,7 +126,7 @@ class ElementCache(object):
         :param step_num: the step number of the data
         :param spill_container: the spill container at this step
         """
-        for sc in spill_container_pair.items():
+        for sc in list(spill_container_pair.items()):
             data = copy.deepcopy(sc.data_arrays)
 
             self._set_weathering_data(sc, data)
@@ -228,7 +228,7 @@ class ElementCache(object):
             # which arrays belong to mass_balance when reconstructing
             # set the itemsize of char array to be the len of largest key in
             # 'mass_balance'
-            max_name = len(max(sc.mass_balance.keys(),
+            max_name = len(max(list(sc.mass_balance.keys()),
                                key=lambda l: len(l)))
             data['mass_balance'] = \
                 np.chararray((len(sc.mass_balance),),

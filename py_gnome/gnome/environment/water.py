@@ -254,7 +254,7 @@ class Water(Environment):
         if not hasattr(self, '_units'):
             self._units = {}
 
-        for prop, unit in u_dict.iteritems():
+        for prop, unit in u_dict.items():
             if prop in self._units_type:
                 if unit not in self._units_type[prop][1]:
                     msg = ("{0} are invalid units for {1}.  Ignore it."

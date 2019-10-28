@@ -72,7 +72,7 @@ class Test_LocalDateTime(object):
         dt_str = '2016-02-12T13:32:00+03:00'
 
         result = self.dts.deserialize(None, dt_str)
-        print repr(result)
+        print(repr(result))
 
         assert result == datetime(2016, 2, 12, 13, 32)
 

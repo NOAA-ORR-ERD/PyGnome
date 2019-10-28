@@ -4,7 +4,7 @@ test functions in remote_data module
 
 import os
 import shutil
-from urllib2 import HTTPError, URLError
+from urllib.error import HTTPError, URLError
 
 from gnome.utilities.remote_data import get_datafile
 

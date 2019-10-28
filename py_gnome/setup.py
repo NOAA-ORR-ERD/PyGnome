@@ -44,7 +44,7 @@ try:
 except TypeError:
     branch_name = 'no-branch'
 
-last_update = repo.iter_commits().next().committed_datetime.isoformat(),
+last_update = next(repo.iter_commits()).committed_datetime.isoformat(),
 
 
 def target_dir(name):
@@ -73,7 +73,7 @@ class cleanall(clean):
 
         rm_dir = ['pyGnome.egg-info', 'build']
         for dir_ in rm_dir:
-            print "Deleting auto-generated directory: {0}".format(dir_)
+            print("Deleting auto-generated directory: {0}".format(dir_))
             try:
                 shutil.rmtree(dir_)
             except OSError as err:
@@ -112,15 +112,15 @@ class cleanall(clean):
                             self.delete_file(f)
 
     def delete_file(self, filepath):
-        print "Deleting auto-generated file: {0}".format(filepath)
+        print("Deleting auto-generated file: {0}".format(filepath))
         try:
             if os.path.isdir(filepath):
                 shutil.rmtree(filepath)
             else:
                 os.remove(filepath)
         except OSError as err:
-            print("Failed to remove {0}. Error: {1}"
-                  .format(filepath, err))
+            print(("Failed to remove {0}. Error: {1}"
+                  .format(filepath, err)))
             # raise
 
 
@@ -222,13 +222,13 @@ if sys.platform is "darwin" or "win32":
                 rm_dll = os.path.join(dlls_dst, dll_name)
                 if os.path.exists(rm_dll):
                     os.remove(rm_dll)
-                    print "deleted: " + rm_dll
+                    print("deleted: " + rm_dll)
             else:
                 # Note: weird permissions/file locking thing on Windows --
                 #       couldn't delete or overwrite the dll...
                 #       so only copy if it's not there already
                 if not os.path.isfile(os.path.join(dlls_dst, dll_name)):
-                    print "copy: " + dll + " to: " + dlls_dst
+                    print("copy: " + dll + " to: " + dlls_dst)
                     shutil.copy(dll, dlls_dst)
         netcdf_names = ('netcdf',)
     else:
@@ -359,7 +359,7 @@ static_lib_files = netcdf_lib_files
 
 if sys.platform == "darwin":
 
-    print "using these compile arguments:", compile_args
+    print("using these compile arguments:", compile_args)
     basic_types_ext = Extension(r'gnome.cy_gnome.cy_basic_types',
                                 ['gnome/cy_gnome/cy_basic_types.pyx'] + cpp_files,
                                 language='c++',

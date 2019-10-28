@@ -162,7 +162,7 @@ class MapCanvas(object):
         todo: this happens in multiple places so maybe worthwhile to define
         custom serialize/deserialize -- but do this for now
         '''
-        return map(tuple, self.viewport.tolist())
+        return list(map(tuple, self.viewport.tolist()))
 
     @property
     def viewport(self):
@@ -170,7 +170,7 @@ class MapCanvas(object):
         returns the current value of viewport of map:
         the bounding box of the image
         """
-        print 'property viewport()...'
+        print('property viewport()...')
         return self._viewport.BB
 
     @viewport.setter

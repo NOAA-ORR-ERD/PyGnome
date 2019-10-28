@@ -393,7 +393,7 @@ class CyMover(Mover):
         try:
             self.positions = sc['positions']
             self.status_codes = sc['status_codes']
-        except KeyError, err:
+        except KeyError as err:
             raise ValueError('The spill container does not have the required'
                              'data arrays\n' + str(err))
 
@@ -419,7 +419,7 @@ class CyMover(Mover):
                 if self.active:
                     try:
                         self.status_codes = sc['status_codes']
-                    except KeyError, err:
+                    except KeyError as err:
                         raise ValueError('The spill container does not have'
                                          ' the required data array\n{}'
                                          .format(err))

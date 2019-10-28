@@ -35,7 +35,7 @@ def test_exceptions():
     # valid timeseries for testing
 
     dtv = np.zeros((4, ), dtype=datetime_value_2d).view(dtype=np.recarray)
-    dtv.time = [datetime(2012, 11, 06, 20, 10 + i, 30,) for i in range(4)]
+    dtv.time = [datetime(2012, 11, 0o6, 20, 10 + i, 30,) for i in range(4)]
     dtv.value = (1, 0)
 
     # exception raised since no units given for timeseries during init
@@ -158,7 +158,7 @@ def test_at(coord_sys, wind_circ):
         d_val0 = rec['value'][0]
         d_val1 = rec['value'][1]
         val1 = wind.at(tp1, time, coord_sys=coord_sys)
-        print val1
+        print(val1)
 
         if coord_sys in ('r-theta', 'uv'):
             assert np.isclose(val1[0][0], d_val0)
@@ -185,7 +185,7 @@ def wind_rand(rq_rand):
 
     dtv_rq = np.zeros((len(rq_rand['rq']), ),
                       dtype=datetime_value_2d).view(dtype=np.recarray)
-    dtv_rq.time = [datetime(2012, 11, 06, 20, 10 + i, 30)
+    dtv_rq.time = [datetime(2012, 11, 0o6, 20, 10 + i, 30)
                    for i in range(len(dtv_rq))]
     dtv_rq.value = rq_rand['rq']
 
@@ -240,7 +240,7 @@ class TestWind:
         simply tests that we get no errors during repr() and str()
         """
         repr(all_winds['wind'])
-        print str(all_winds['wind'])
+        print(str(all_winds['wind']))
         assert True
 
     def test_id_matches_builtin_id(self, all_winds):
@@ -341,45 +341,45 @@ class TestWind:
                   .view(dtype=np.recarray))
 
         np.set_printoptions(precision=4)
-        print
-        print '=================================================='
-        print '(u,v):'
-        print str(all_winds['uv'].value[:2, :])
-        print
-        print 'get_uv:\t{0}'.format(get_uv.value[0])
-        print 'time:  \t{0}'.format(dt)
-        print '-----------------'
-        print ('u-bounds: ({0:0.4f},{1:0.4f});\t '
+        print()
+        print('==================================================')
+        print('(u,v):')
+        print(str(all_winds['uv'].value[:2, :]))
+        print()
+        print('get_uv:\t{0}'.format(get_uv.value[0]))
+        print('time:  \t{0}'.format(dt))
+        print('-----------------')
+        print(('u-bounds: ({0:0.4f},{1:0.4f});\t '
                'computed-u: ({2:0.4f})'
                ''.format(min(all_winds['uv'].value[:2, 0]),
                          max(all_winds['uv'].value[:2, 0]),
-                         get_uv.value[0, 0]))
-        print ('v-bounds: ({0:0.4f},{1:0.4f});\t '
+                         get_uv.value[0, 0])))
+        print(('v-bounds: ({0:0.4f},{1:0.4f});\t '
                'computed-v: ({2:0.4f})'
                ''.format(min(all_winds['uv'].value[:2, 1]),
                          max(all_winds['uv'].value[:2, 1]),
-                         get_uv.value[0, 1]))
-        print '-----------------'
-        print 'FOR INFO ONLY: INTERPOLATION IS DONE IN (u,v) SPACE'
-        print '(r,theta): '
-        print str(all_winds['rq'].value[:2, :])
-        print
-        print 'get_rq:\t{0}'.format(get_rq.value[0])
-        print '-----------------'
-        print ('r-bounds: ({0:0.4f},{1:0.4f});\t '
+                         get_uv.value[0, 1])))
+        print('-----------------')
+        print('FOR INFO ONLY: INTERPOLATION IS DONE IN (u,v) SPACE')
+        print('(r,theta): ')
+        print(str(all_winds['rq'].value[:2, :]))
+        print()
+        print('get_rq:\t{0}'.format(get_rq.value[0]))
+        print('-----------------')
+        print(('r-bounds: ({0:0.4f},{1:0.4f});\t '
                'computed-r: ({2:0.4f})'
                ''.format(min(all_winds['rq'].value[:2, 0]),
                          max(all_winds['rq'].value[:2, 0]),
-                         get_rq.value[0, 0]))
-        print ('q-bounds: ({0:0.4f},{1:0.4f});\t '
+                         get_rq.value[0, 0])))
+        print(('q-bounds: ({0:0.4f},{1:0.4f});\t '
                'computed-q: ({2:0.4f})'
                ''.format(min(all_winds['rq'].value[:2, 1]),
                          max(all_winds['rq'].value[:2, 1]),
-                         get_rq.value[0, 1]))
-        print '-----------------'
-        print 'NOTE: This test fails at times for randomly generated (r,theta)'
-        print '      Still trying to understand how the hermite interpolation'
-        print '      should work'
+                         get_rq.value[0, 1])))
+        print('-----------------')
+        print('NOTE: This test fails at times for randomly generated (r,theta)')
+        print('      Still trying to understand how the hermite interpolation')
+        print('      should work')
 
         assert get_uv.time[0].astype(object) == dt
         assert (get_uv.value[0, 0] > np.min(all_winds['uv'].value[:2, 0]) and
@@ -462,8 +462,8 @@ def test_update_from_dict():
                  'latitude': 90.,
                  'longitude': 90.,
                  'updated_at': '2014-03-26T14:52:45.385126',
-                 'source_type': u'manual',
-                 'source_id': u'unknown',
+                 'source_type': 'manual',
+                 'source_id': 'unknown',
                  'timeseries': [('2012-11-06T20:10:00', (1.0, 0.0)),
                                 ('2012-11-06T20:11:00', (1.0, 45.0)),
                                 ('2012-11-06T20:12:00', (1.0, 90.0)),
@@ -471,7 +471,7 @@ def test_update_from_dict():
                                 ('2012-11-06T20:14:00', (1.0, 180.0)),
                                 ('2012-11-06T20:15:00', (1.0, 270.0))],
                  'units': 'knots',
-                 'json_': u'webapi'
+                 'json_': 'webapi'
                  }
     wind = constant_wind(1.0, 45.0, 'meter per second')
 
@@ -519,11 +519,11 @@ def test_update_from_dict_with_dst_spring_transition():
                  'latitude': 90,
                  'longitude': 90,
                  'updated_at': '2016-03-12T12:52:45.385126',
-                 'source_type': u'manual',
-                 'source_id': u'unknown',
+                 'source_type': 'manual',
+                 'source_id': 'unknown',
                  'timeseries': timeseries,
                  'units': 'knots',
-                 'json_': u'webapi'
+                 'json_': 'webapi'
                  }
 
     wind = Wind.deserialize(wind_json)
@@ -550,11 +550,11 @@ def test_new_from_dict_with_dst_fall_transition():
                  'latitude': 90,
                  'longitude': 90,
                  'updated_at': '2016-03-12T12:52:45.385126',
-                 'source_type': u'manual',
-                 'source_id': u'unknown',
+                 'source_type': 'manual',
+                 'source_id': 'unknown',
                  'timeseries': gen_timeseries_for_dst('fall'),
                  'units': 'knots',
-                 'json_': u'webapi'
+                 'json_': 'webapi'
                  }
 
     wind = Wind.deserialize(wind_json)
@@ -574,11 +574,11 @@ def test_roundtrip_dst_spring_transition():
                  'latitude': 90,
                  'longitude': 90,
                  'updated_at': '2016-03-12T12:52:45.385126',
-                 'source_type': u'manual',
-                 'source_id': u'unknown',
+                 'source_type': 'manual',
+                 'source_id': 'unknown',
                  'timeseries': timeseries,
                  'units': 'knots',
-                 'json_': u'webapi'
+                 'json_': 'webapi'
                  }
 
     wind = Wind.deserialize(wind_json)
@@ -740,8 +740,8 @@ class TestGridWind(object):
                                _auto_align=False)
 
             ans_mag = np.sqrt(ans[:, 0] ** 2 + ans[:, 1] ** 2)
-            print 'ans_mag', ans_mag
-            print
+            print('ans_mag', ans_mag)
+            print()
 
             ans_dir = np.arctan2(ans[:, 1], ans[:, 0]) * 180./np.pi
 

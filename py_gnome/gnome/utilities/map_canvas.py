@@ -110,7 +110,7 @@ class MapCanvas(object):
         todo: this happens in multiple places so maybe worthwhile to define
         custom serialize/deserialize -- but do this for now
         '''
-        return map(tuple, self._viewport.BB)
+        return list(map(tuple, self._viewport.BB))
 
     @property
     def viewport(self):
@@ -686,11 +686,11 @@ class GridLines(object):
                     seconds = 0
 
                 if seconds != 0:
-                    tag = u"%id%i'%i\"%c" % (degrees, minutes, seconds, hemi)
+                    tag = "%id%i'%i\"%c" % (degrees, minutes, seconds, hemi)
                 elif minutes != 0:
-                    tag = u"%id%i'%c" % (degrees, minutes, hemi)
+                    tag = "%id%i'%c" % (degrees, minutes, hemi)
                 else:
-                    tag = u"%id%c" % (degrees, hemi)
+                    tag = "%id%c" % (degrees, hemi)
 
             top = self.projection.image_box[1][1]
             left = self.projection.image_box[0][0]

@@ -8,7 +8,7 @@ Uses the same approach as ADIOS 2
 
 (code ported from old MATLAB prototype code)
 """
-from __future__ import division
+
 
 import copy
 import numpy as np
@@ -22,7 +22,7 @@ from gnome.exceptions import ReferencedObjectNotSet
 from .environment import Environment
 from .water import WaterSchema
 
-from wind import WindSchema
+from .wind import WindSchema
 from gnome.environment.gridded_objects_base import VectorVariableSchema
 from gnome.environment.wind import Wind
 from gnome.environment.water import Water

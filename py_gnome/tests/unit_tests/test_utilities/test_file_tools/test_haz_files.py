@@ -110,7 +110,7 @@ class Test_bna_list:
         assert self.polys[2][2] == 'A name with, a comma'
 
     def test_sname(self):
-        print self.polys[0]
+        print(self.polys[0])
         assert self.polys[0][3] == 'Another Type'
         assert self.polys[1][3] == '6'
         assert self.polys[2][3] == '1'
@@ -150,7 +150,7 @@ class Test_bna_polygonset:
         assert len(self.polys) == 6
 
     def test_type(self):
-        print self.polys[0]
+        print(self.polys[0])
         assert self.polys[0].metadata[0] == 'polygon'
         assert self.polys[3].metadata[0] == 'polyline'
         assert self.polys[4].metadata[0] == 'point'
@@ -161,7 +161,7 @@ class Test_bna_polygonset:
         assert self.polys[2].metadata[1] == 'A name with, a comma'
 
     def test_sname(self):
-        print self.polys[0]
+        print(self.polys[0])
         assert self.polys[0].metadata[2] == 'Another Type'
         assert self.polys[1].metadata[2] == '6'
         assert self.polys[2].metadata[2] == '1'

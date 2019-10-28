@@ -5,7 +5,7 @@ This is a test case for working with what hopefully will be a CF standard
 
 """  # Change the / operator to ensure true division throughout (Zelenke).
 
-from __future__ import division
+
 from datetime import datetime
 
 import numpy as np
@@ -58,19 +58,19 @@ class particle_trajectory:
 
         # Global Attributes
 
-        for (attr, val) in self.attributes.items():
+        for (attr, val) in list(self.attributes.items()):
             nc.setncattr(attr, val)
             setattr(nc, 'creation_date', datetime.now().isoformat())
 
         # add Dimensions
 
-        print 'num timesteps:', len(self.Trajectory)
+        print('num timesteps:', len(self.Trajectory))
         nc.createDimension('time', len(self.Trajectory))
         nc.createDimension('data', None)
 
         # create variables
 
-        print 'creating variables'
+        print('creating variables')
 
         # # fixme: should be able to create these from Trajectory dtype.
 
@@ -96,7 +96,7 @@ class particle_trajectory:
 
         # add data
 
-        print 'adding data'
+        print('adding data')
 
         # #fixme -- should be able to add on by time -- how?
 
@@ -145,8 +145,8 @@ class particle_trajectory:
 #            depth.missing_value = -99999.
 #            depth.units = "meter"
 
-        for (var, attrs) in Variable_attributes.items():
-            for (att, val) in attrs.items():
+        for (var, attrs) in list(Variable_attributes.items()):
+            for (att, val) in list(attrs.items()):
                 Variables[var].setncattr(att, val)
         nc.close()
 

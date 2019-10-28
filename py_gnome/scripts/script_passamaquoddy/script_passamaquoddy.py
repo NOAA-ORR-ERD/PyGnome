@@ -28,7 +28,7 @@ base_dir = os.path.dirname(__file__)
 
 
 def make_model(images_dir=os.path.join(base_dir, 'images')):
-    print 'initializing the model'
+    print('initializing the model')
 
     start_time = datetime(2014, 6, 9, 0, 0)
     mapfile = get_datafile(os.path.join(base_dir, 'PassamaquoddyMap.bna'))
@@ -43,7 +43,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                   duration=timedelta(hours=24), time_step=360,
                   map=gnome_map, uncertain=False, cache_enabled=True)
 
-    print 'adding outputters'
+    print('adding outputters')
     renderer = Renderer(mapfile, images_dir, image_size=(800, 600),
                         # output_timestep=timedelta(hours=1),
                         draw_ontop='uncertain')
@@ -56,17 +56,17 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     model.outputters += NetCDFOutput(netcdf_file, which_data='all')
 
-    print 'adding a spill'
+    print('adding a spill')
     spill = point_line_release_spill(num_elements=1000,
                                      start_position=(-66.991344, 45.059316,
                                                      0.0),
                                      release_time=start_time)
     model.spills += spill
 
-    print 'adding a RandomMover:'
+    print('adding a RandomMover:')
     model.movers += RandomMover(diffusion_coef=30000, uncertain_factor=2)
 
-    print 'adding a wind mover:'
+    print('adding a wind mover:')
     series = np.zeros((5, ), dtype=datetime_value_2d)
     series[0] = (start_time, (5, 90))
     series[1] = (start_time + timedelta(hours=18), (5, 180))
@@ -77,7 +77,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     wind = Wind(timeseries=series, units='m/s')
     model.movers += WindMover(wind)
 
-    print 'adding a current mover:'
+    print('adding a current mover:')
     curr_file = get_datafile(os.path.join(base_dir, 'PQBayCur.nc4'))
     topology_file = get_datafile(os.path.join(base_dir, 'PassamaquoddyTOP.dat')
                                  )
@@ -89,9 +89,9 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     model.movers += cc_mover
     model.environment += cc_mover.tide
 
-    print 'viewport is:', [o.viewport
+    print('viewport is:', [o.viewport
                            for o in model.outputters
-                           if isinstance(o, Renderer)]
+                           if isinstance(o, Renderer)])
 
     return model
 

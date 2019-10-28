@@ -142,7 +142,7 @@ class TamocSpill(Spill):
         try:
             self._substance = GnomeOil.get_GnomeOil(val)
         except Exception:
-            if isinstance(val, basestring):
+            if isinstance(val, str):
                 raise
 
             self.logger.info('Failed to get_oil_props for {0}. Use as is '

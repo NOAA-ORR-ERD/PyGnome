@@ -44,7 +44,7 @@ def test_exceptions():
         wm = WindMover()
         wm.prepare_for_model_run()
 
-    print excinfo.value
+    print(excinfo.value)
 
     with raises(TypeError):
         """
@@ -110,7 +110,7 @@ def test_empty_init():
 
     _defaults(wm)
     #assert wm.name == 'WindMover'
-    print wm.validate()
+    print(wm.validate())
 
 
 def test_properties(wind_circ):
@@ -152,7 +152,7 @@ def test_update_wind(wind_circ):
     # update wind timeseries - default format is magnitude_direction
 
     t_dtv = np.zeros((3, ), dtype=datetime_value_2d).view(dtype=np.recarray)
-    t_dtv.time = [datetime(2012, 11, 06, 20, 0 + i, 30)
+    t_dtv.time = [datetime(2012, 11, 0o6, 20, 0 + i, 30)
                   for i in range(3)]
     t_dtv.value = np.random.uniform(1, 5, (3, 2))
 
@@ -226,7 +226,7 @@ class TestPrepareForModelStep:
         for ix in range(2):
             curr_time = sec_to_date(date_to_sec(self.model_time) +
                                     self.time_step * ix)
-            print 'curr_time = ', curr_time
+            print('curr_time = ', curr_time)
 
             old_windages = np.copy(self.sc['windages'])
             wm.prepare_for_model_step(self.sc, self.time_step, curr_time)
@@ -259,7 +259,7 @@ class TestPrepareForModelStep:
         for ix in range(2):
             curr_time = sec_to_date(date_to_sec(self.model_time) +
                                     self.time_step * ix)
-            print 'curr_time = ', curr_time
+            print('curr_time = ', curr_time)
 
             old_windages = np.copy(self.sc['windages'])
             wm.prepare_for_model_step(self.sc, self.time_step, curr_time)
@@ -425,13 +425,13 @@ class TestWindMover:
     wm.prepare_for_model_run()
 
     def test_string_repr_no_errors(self):
-        print
-        print '======================'
-        print 'repr(WindMover): '
-        print repr(self.wm)
-        print
-        print 'str(WindMover): '
-        print str(self.wm)
+        print()
+        print('======================')
+        print('repr(WindMover): ')
+        print(repr(self.wm))
+        print()
+        print('str(WindMover): ')
+        print(str(self.wm))
         assert True
 
     def test_get_move(self):
@@ -456,10 +456,10 @@ class TestWindMover:
             assert self.wm.active
 
             ts = date_to_sec(curr_time) - date_to_sec(self.model_time)
-            print ('Time step [sec]:\t{0}'
+            print(('Time step [sec]:\t{0}'
                    'C++ delta-move:\n{1}'
                    'Expected delta-move:\n{2}'
-                   ''.format(ts, delta, actual))
+                   ''.format(ts, delta, actual)))
 
         self.wm.model_step_is_done()
 
@@ -580,7 +580,7 @@ def test_timespan():
     wm.model_step_is_done()
 
     assert wm.active is True
-    print '''\ntest_timespan delta \n{0}'''.format(delta)
+    print('''\ntest_timespan delta \n{0}'''.format(delta))
     assert np.all(delta[:, :2] != 0)  # model_time + time_step > active_start
 
 
@@ -644,19 +644,19 @@ def test_constant_wind_mover_bounds():
 
 def test_wind_mover_from_file():
     wm = wind_mover_from_file(file_)
-    print wm.wind.filename
+    print(wm.wind.filename)
     assert wm.wind.filename == file_
 
 
 def test_wind_mover_from_file_cardinal():
     wm = wind_mover_from_file(file2_)
-    print wm.wind.filename
+    print(wm.wind.filename)
     assert wm.wind.filename == file2_
 
 
 def test_wind_mover_from_file_kph_units():
     wm = wind_mover_from_file(filekph_)
-    print wm.wind.filename
+    print(wm.wind.filename)
     assert wm.wind.filename == filekph_
 
 
@@ -749,15 +749,15 @@ def _assert_timeseries_equivalence(cpp_timeseries, wind_ts):
     """
     private method used to print data and assert
     """
-    print
-    print '====================='
-    print 'WindMover timeseries [time], [u, v]: '
-    print cpp_timeseries['time']
-    print cpp_timeseries['value']
-    print '---------------------'
-    print 'Wind timeseries [time], [u, v]: '
-    print wind_ts['time']
-    print wind_ts['value']
+    print()
+    print('=====================')
+    print('WindMover timeseries [time], [u, v]: ')
+    print(cpp_timeseries['time'])
+    print(cpp_timeseries['value'])
+    print('---------------------')
+    print('Wind timeseries [time], [u, v]: ')
+    print(wind_ts['time'])
+    print(wind_ts['value'])
 
     assert np.all(cpp_timeseries['time'] == wind_ts['time'])
     assert np.allclose(cpp_timeseries['value'], wind_ts['value'], atol, rtol)

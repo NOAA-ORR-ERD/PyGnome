@@ -13,7 +13,7 @@ from gnome.utilities.inf_datetime import InfDateTime
 from gnome.environment import Water
 
 from oil_library import get_oil_props
-from conftest import weathering_data_arrays, test_oil
+from .conftest import weathering_data_arrays, test_oil
 
 from gnome.weatherers import (Weatherer,
                               HalfLifeWeatherer,
@@ -29,7 +29,7 @@ class TestWeatherer:
     def test_init(self):
         weatherer = Weatherer()
 
-        print weatherer
+        print(weatherer)
         assert weatherer.on
         assert weatherer.active
         assert weatherer.active_range == (InfDateTime('-inf'),
@@ -47,7 +47,7 @@ class TestWeatherer:
                                     Water(),
                                     time_step)[0]
 
-        print '\nsc["mass"]:\n', sc['mass']
+        print('\nsc["mass"]:\n', sc['mass'])
 
         orig_mc = np.copy(sc['mass_components'])
 
@@ -58,7 +58,7 @@ class TestWeatherer:
         weatherer.weather_elements(sc, time_step, model_time)
         weatherer.model_step_is_done()
 
-        print '\nsc["mass"]:\n', sc['mass']
+        print('\nsc["mass"]:\n', sc['mass'])
         assert np.allclose(0.5 * orig_mc.sum(1), sc['mass'])
         assert np.allclose(0.5 * orig_mc, sc['mass_components'])
 

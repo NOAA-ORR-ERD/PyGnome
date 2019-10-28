@@ -98,7 +98,7 @@ class TimeseriesData(GnomeId):
 
         :rtype: list of (datetime, double) tuples
         '''
-        return map(lambda x, y: (x, y), self.time.data, self.data)
+        return list(map(lambda x, y: (x, y), self.time.data, self.data))
 
     @property
     def data(self):
@@ -286,7 +286,7 @@ class TimeseriesVector(GnomeId):
         '''
         if self.variables is not None:
             times = [v.time for v in self.variables]
-            otherTimes = filter(lambda t: t is not times[0], times)
+            otherTimes = [t for t in times if t is not times[0]]
             if len(otherTimes) == 0:
                 return times[0]
             else:

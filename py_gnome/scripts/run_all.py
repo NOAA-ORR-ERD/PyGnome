@@ -14,7 +14,7 @@ import script_runner
 def run_all_with_script_runner(to_skip=[]):
     scripts = glob.glob(os.path.join(os.path.dirname(__file__),
                         'script_*/script_*.py'))
-    print scripts
+    print(scripts)
     default_skip = ['script_ny_plume/script_ny_plume.py', 'script_ny_roms/script_ny_roms.py',
                     'script_tamoc/script_tamoc.py', 'script_tamoc/script_arctic_tamoc.py',
                     'script_tamoc/script_gulf_tamoc.py', 'script_TAP/script_old_TAP.py']
@@ -24,10 +24,10 @@ def run_all_with_script_runner(to_skip=[]):
     to_skip.extend(default_skip)
     for script in to_skip:
         scripts = [s for s in scripts if script not in s]
-    print scripts
+    print(scripts)
 
     for script in scripts:
-        print 'Begin processing script: {0}'.format(script)
+        print('Begin processing script: {0}'.format(script))
 
         # clean directories first
         # script_runner.clean(os.path.dirname(script))
@@ -39,12 +39,12 @@ def run_all_with_script_runner(to_skip=[]):
         (model, imp_script) = script_runner.load_model(script, image_dir)
         script_runner.run(model)
 
-        print 'completed model run for: {0}'.format(script)
+        print('completed model run for: {0}'.format(script))
 
         if hasattr(imp_script, 'post_run'):
             imp_script.post_run(model)
 
-            print 'completed post model run for: {0}'.format(script)
+            print('completed post model run for: {0}'.format(script))
 
         # save model _state
 
@@ -72,22 +72,22 @@ def run_all_alone():
     scripts = glob.glob(os.path.join(os.path.dirname(__file__),
                         'script_*/script_*.py'))
 
-    print scripts
+    print(scripts)
 
     ## this could (and probably should) be made much smarter
     ##   should it use subprocess??
     for script in scripts:
-        print "**************************"
-        print "*"
-        print "*  Running:   %s"%script
-        print "*"
-        print "**************************"
+        print("**************************")
+        print("*")
+        print("*  Running:   %s"%script)
+        print("*")
+        print("**************************")
         subprocess.check_call(["python", script], shell=False)
 
 
 
 if __name__ == "__main__":
-    print sys.argv
+    print(sys.argv)
     to_skip = sys.argv[1:]
     run_all_with_script_runner(to_skip)
 

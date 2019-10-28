@@ -55,7 +55,7 @@ def test_horizontal_zero():
                         model_time,
                         )
 
-    print delta
+    print(delta)
 
     assert np.alltrue(delta[:, 0:2] == 0.0)
 
@@ -75,7 +75,7 @@ def test_vertical_zero():
                            )
     # set z positions:
     sc['positions'][:, 2] = np.linspace(0, 50, num_elements)
-    print sc['positions']
+    print(sc['positions'])
 
     mv.vertical_diffusion_coef_above_ml = 0.0
     mv.vertical_diffusion_coef_below_ml = 0.0
@@ -85,7 +85,7 @@ def test_vertical_zero():
                         model_time,
                         )
 
-    print delta
+    print(delta)
 
     assert not np.alltrue(delta[:, 2] == 0.0)
 
@@ -130,7 +130,7 @@ def test_bottom_layer():
     exp_var = 2 * num_timesteps*time_step * D_lower # in cm^2?
     exp_var /= 10**4 # convert to m
     var = sc['positions'][:,2].var()
-    print "expected_var:", exp_var, "var:", var
+    print("expected_var:", exp_var, "var:", var)
 
     assert np.allclose(exp_var, var, rtol=0.25)
 
@@ -178,7 +178,7 @@ def test_mixed_layer():
     exp_var = 2 * num_timesteps*time_step * D_mixed # in cm^2?
     exp_var /= 10**4 # convert to m
     var = sc['positions'][:,2].var()
-    print "expected_var:", exp_var, "var:", var
+    print("expected_var:", exp_var, "var:", var)
 
     assert np.allclose(exp_var, var, rtol=0.1)
 
@@ -228,7 +228,7 @@ def test_mixed_layer2():
     # expected variance:
     exp_var = mixed_layer_depth**2 / 12.0
     var = sc['positions'][:, 2].var()
-    print "expected_var:", exp_var, "var:", var
+    print("expected_var:", exp_var, "var:", var)
 
     assert np.allclose(exp_var, var, rtol=0.18)
 

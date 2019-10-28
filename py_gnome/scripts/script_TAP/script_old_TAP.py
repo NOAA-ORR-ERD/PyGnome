@@ -35,7 +35,7 @@ base_dir = os.path.dirname(__file__)
 
 
 def make_model(images_dir=os.path.join(base_dir, 'images')):
-    print 'initializing the model'
+    print('initializing the model')
 
     start_time = datetime(1985, 1, 1, 13, 31)
 
@@ -47,11 +47,11 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     mapfile = get_datafile(os.path.join(base_dir, 'arctic_coast3.bna'))
 
-    print 'adding the map'
+    print('adding the map')
     model.map = MapFromBNA(mapfile, refloat_halflife=0.0)  # seconds
 #     model.map = GnomeMap()
 
-    print 'adding outputters'
+    print('adding outputters')
 
     # draw_ontop can be 'uncertain' or 'forecast'
     # 'forecast' LEs are in black, and 'uncertain' are in red
@@ -63,7 +63,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     model.outputters += NetCDFOutput(netcdf_file, which_data='all')
 
-    print 'adding a spill'
+    print('adding a spill')
     # for now subsurface spill stays on initial layer
     # - will need diffusion and rise velocity
     # - wind doesn't act
@@ -83,27 +83,27 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     model.spills += spill1
 #     model.spills += spill2
 
-    print 'adding a RandomMover:'
+    print('adding a RandomMover:')
     model.movers += RandomMover(diffusion_coef=1000)
 
-    print 'adding a wind mover:'
+    print('adding a wind mover:')
      # winds from the ROMS Arctic run, provided by Walter Johnson
     wind_file = os.path.join(base_dir, 'arctic_filelist.txt')
-    print wind_file
+    print(wind_file)
     topology_file = os.path.join(base_dir, 'arctic_subset_newtopo2.DAT')
     model.movers += IceWindMover(wind_file, topology_file)
     # model.movers += GridWindMover(wind_file, topology_file)
     # model.movers += GridWindMover(wind_file, topology_file)
 
-    print 'adding an ice mover:'
+    print('adding an ice mover:')
   # ice from the ROMS Arctic run, provided by Walter Johnson
     ice_file = os.path.join(base_dir, 'arctic_filelist.txt')
     topology_file = os.path.join(base_dir, 'arctic_subset_newtopo2.DAT')
     model.movers += IceMover(ice_file, topology_file)
     # model.movers += IceMover(ice_file)
-    print ice_file
+    print(ice_file)
 
-    print 'adding a current mover:'
+    print('adding a current mover:')
 #
 #     fn = ['N:\\Users\\Dylan.Righi\\OutBox\\ArcticROMS\\arctic_avg2_0001_gnome.nc',
 #                  'N:\\Users\\Dylan.Righi\\OutBox\\ArcticROMS\\arctic_avg2_0002_gnome.nc']
@@ -142,7 +142,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 if __name__ == "__main__":
     scripting.make_images_dir()
     model = make_model()
-    print "doing full run"
+    print("doing full run")
 #     rend = model.outputters[0]
 #     rend.graticule.set_DMS(True)
     startTime = datetime.now()
@@ -152,8 +152,8 @@ if __name__ == "__main__":
 #             rend.set_viewport(((195, 65.25), (192.5, 70)))
 #         if step['step_num'] == 0:
 #             rend.set_viewport(((-175, 65), (-160, 70)))
-        print "step: %.4i -- memuse: %fMB" % (step['step_num'],
-                                              utilities.get_mem_use())
-    print datetime.now() - startTime
+        print("step: %.4i -- memuse: %fMB" % (step['step_num'],
+                                              utilities.get_mem_use()))
+    print(datetime.now() - startTime)
     pd.profiler.disable()
     pd.print_stats(0.1)

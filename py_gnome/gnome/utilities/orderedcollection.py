@@ -79,7 +79,7 @@ class OrderedCollection(object):
         if isinstance(elem, self.dtype):
             l__id = self._s_id(elem)
 
-            if l__id not in self._d_index.keys():
+            if l__id not in list(self._d_index.keys()):
                 self._d_index[l__id] = len(self._elems)
                 self._elems.append(elem)
 
@@ -183,7 +183,7 @@ class OrderedCollection(object):
         return sorted(self._d_index.values()).index(idx)
 
     def __len__(self):
-        return len(self._d_index.keys())
+        return len(list(self._d_index.keys()))
 
     def __iter__(self):
         for i in sorted(self._d_index.values()):
@@ -239,7 +239,7 @@ class OrderedCollection(object):
         for __str__, don't show the keys
         """
         # order by position in list
-        itemlist = sorted(self._d_index.items(), key=lambda x: x[1])
+        itemlist = sorted(list(self._d_index.items()), key=lambda x: x[1])
 
         # reference the value in list
         itemlist = [self._elems[v] for (k, v) in itemlist]
@@ -258,7 +258,7 @@ class OrderedCollection(object):
 
     def __repr__(self):
         # order by position in list
-        itemlist = sorted(self._d_index.items(), key=lambda x: x[1])
+        itemlist = sorted(list(self._d_index.items()), key=lambda x: x[1])
 
         # reference the value in list
         itemlist = [(k, self._elems[v]) for (k, v) in itemlist]
@@ -294,7 +294,7 @@ class OrderedCollection(object):
         '''
         if not isinstance(cstruct, list):
             raise ValueError('Must update an OrderedCollection with a list')
-        current_values = self.values()
+        current_values = list(self.values())
         new_vals = []
 
         for elem in cstruct:
@@ -361,7 +361,7 @@ class OrderedCollection(object):
         self.callbacks[callback] = events
 
     def fire_event(self, event, obj_):
-        for (callback, reg_event) in self.callbacks.items():
+        for (callback, reg_event) in list(self.callbacks.items()):
             if event in reg_event:
                 callback(obj_)  # this should be all that is required
 

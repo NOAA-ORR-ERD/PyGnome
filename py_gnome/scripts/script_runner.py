@@ -26,17 +26,17 @@ def run(model):
     # os.mkdir(images_dir)
     #
 
-    print 'running:'
+    print('running:')
 
     # run the model
 
     while True:
-        print 'calling step'
+        print('calling step')
         try:
             image_info = model.step()
-            print image_info
+            print(image_info)
         except StopIteration:
-            print 'Done with the model run'
+            print('Done with the model run')
             break
 
 
@@ -48,7 +48,7 @@ def save(model, saveloc):
     if os.path.isdir(saveloc):
         shutil.rmtree(saveloc)
     os.mkdir(saveloc)
-    print 'saving ..'
+    print('saving ..')
     model.save(saveloc)
 
 

@@ -36,7 +36,7 @@ base_dir = os.path.dirname(__file__)
 
 
 def make_model(images_dir=os.path.join(base_dir, 'images')):
-    print 'initializing the model'
+    print('initializing the model')
 
     start_time = datetime(2012, 10, 25, 0, 1)
     # start_time = datetime(2015, 12, 18, 06, 01)
@@ -49,7 +49,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     mapfile = get_datafile(os.path.join(base_dir, 'nyharbor.bna'))
 
-    print 'adding the map'
+    print('adding the map')
     '''TODO: sort out MapFromBna's map_bounds parameter...
     it does nothing right now, and the spill is out of bounds'''
     model.map = MapFromBNA(mapfile, refloat_halflife=0.0)  # seconds
@@ -61,10 +61,10 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 #     renderer.viewport = ((-73.5, 40.5), (-73.1, 40.75))
 #     renderer.viewport = ((-122.9, 45.6), (-122.6, 46.0))
 
-    print 'adding outputters'
+    print('adding outputters')
     model.outputters += renderer
 
-    print 'adding a spill'
+    print('adding a spill')
     # for now subsurface spill stays on initial layer
     # - will need diffusion and rise velocity
     # - wind doesn't act
@@ -77,14 +77,14 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     model.spills += spill1
 
-    print 'adding a RandomMover:'
+    print('adding a RandomMover:')
     model.movers += RandomMover(diffusion_coef=50000)
 
-    print 'adding a wind mover:'
+    print('adding a wind mover:')
 
     model.movers += constant_wind_mover(4, 270, units='m/s')
 
-    print 'adding a current mover:'
+    print('adding a current mover:')
 
     # url is broken, fix and include the following section
 #     url = ('http://geoport.whoi.edu/thredds/dodsC/clay/usgs/users/jcwarner/Projects/Sandy/triple_nest/00_dir_NYB05.ncml')
@@ -104,7 +104,7 @@ if __name__ == "__main__":
     startTime = datetime.now()
     scripting.make_images_dir()
     model = make_model()
-    print "doing full run"
+    print("doing full run")
     rend = model.outputters[0]
 #     field = rend.grids[0]
 #     rend.graticule.set_DMS(True)
@@ -112,8 +112,8 @@ if __name__ == "__main__":
         if step['step_num'] == 0:
             rend.set_viewport(((-74.25, 40.4), (-73.9, 40.6)))
 
-        print "step: %.4i -- memuse: %fMB" % (step['step_num'],
-                                              utilities.get_mem_use())
-    print datetime.now() - startTime
+        print("step: %.4i -- memuse: %fMB" % (step['step_num'],
+                                              utilities.get_mem_use()))
+    print(datetime.now() - startTime)
     pd.profiler.disable()
     pd.print_stats(0.2)

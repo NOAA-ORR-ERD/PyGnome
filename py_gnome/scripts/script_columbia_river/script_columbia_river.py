@@ -32,7 +32,7 @@ base_dir = os.path.dirname(__file__)
 
 
 def make_model(images_dir=os.path.join(base_dir, 'images')):
-    print 'initializing the model'
+    print('initializing the model')
 
     start_time = datetime(2015, 9, 24, 1, 1)
 
@@ -44,7 +44,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     mapfile = get_datafile(os.path.join(base_dir, 'columbia_river.bna'))
 
-    print 'adding the map'
+    print('adding the map')
     model.map = MapFromBNA(mapfile, refloat_halflife=0.0)  # seconds
 
     # draw_ontop can be 'uncertain' or 'forecast'
@@ -55,10 +55,10 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 #     renderer.viewport = ((-123.35, 45.6), (-122.68, 46.13))
 #     renderer.viewport = ((-122.9, 45.6), (-122.6, 46.0))
 
-    print 'adding outputters'
+    print('adding outputters')
     model.outputters += renderer
 
-    print 'adding a spill'
+    print('adding a spill')
     # for now subsurface spill stays on initial layer
     # - will need diffusion and rise velocity
     # - wind doesn't act
@@ -71,14 +71,14 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     model.spills += spill1
 
-    print 'adding a RandomMover:'
+    print('adding a RandomMover:')
     # model.movers += RandomMover(diffusion_coef=50000)
 
-    print 'adding a wind mover:'
+    print('adding a wind mover:')
 
     model.movers += constant_wind_mover(0.5, 0, units='m/s')
 
-    print 'adding a current mover:'
+    print('adding a current mover:')
     curr_file = get_datafile(os.path.join(base_dir, 'COOPSu_CREOFS24.nc'))
 
     # uncertain_time_delay in hours
@@ -100,7 +100,7 @@ if __name__ == "__main__":
     startTime = datetime.now()
     scripting.make_images_dir()
     model = make_model()
-    print "doing full run"
+    print("doing full run")
     rend = model.outputters[0]
 #     rend.graticule.set_DMS(True)
     for step in model:
@@ -113,6 +113,6 @@ if __name__ == "__main__":
         if step['step_num'] == 110:
             rend.set_viewport(((-122.8, 45.75), (-122.75, 45.85)))
         # print step
-        print "step: %.4i -- memuse: %fMB" % (step['step_num'],
-                                              utilities.get_mem_use())
-    print datetime.now() - startTime
+        print("step: %.4i -- memuse: %fMB" % (step['step_num'],
+                                              utilities.get_mem_use()))
+    print(datetime.now() - startTime)

@@ -80,7 +80,7 @@ class SpillJsonOutput(Outputter):
         certain_scs = []
         uncertain_scs = []
 
-        for sc in self.cache.load_timestep(step_num).items():
+        for sc in list(self.cache.load_timestep(step_num).items()):
             position = sc['positions']
             longitude = np.around(position[:, 0], 5).tolist()
             latitude = np.around(position[:, 1], 5).tolist()
@@ -197,7 +197,7 @@ class CurrentJsonOutput(Outputter):
         if self.on is False or not self._write_step:
             return None
 
-        for sc in self.cache.load_timestep(step_num).items():
+        for sc in list(self.cache.load_timestep(step_num).items()):
             model_time = date_to_sec(sc.current_time_stamp)
 
         json_ = {}
@@ -331,7 +331,7 @@ class IceJsonOutput(Outputter):
         if self.on is False or not self._write_step:
             return None
 
-        for sc in self.cache.load_timestep(step_num).items():
+        for sc in list(self.cache.load_timestep(step_num).items()):
             pass
 
         model_time = date_to_sec(sc.current_time_stamp)

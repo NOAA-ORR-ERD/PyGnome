@@ -124,7 +124,7 @@ class KMZOutput(OutputterFilenameMixin, Outputter):
             return None
 
         # add to the kml list:
-        for sc in self.cache.load_timestep(step_num).items():
+        for sc in list(self.cache.load_timestep(step_num).items()):
             # loop through uncertain and certain LEs
             # extract the data
             start_time = sc.current_time_stamp

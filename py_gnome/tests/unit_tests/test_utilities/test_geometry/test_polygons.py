@@ -25,16 +25,16 @@ class Test_Polygon:
 
     def test_str(self):
         P = Polygon(p1, metadata={'name': 'a name'})
-        print P
+        print(P)
         assert str(P) \
             == "Polygon with 4 points.\nmetadata: {'name': 'a name'}"
 
     def test_repr(self):
         P = Polygon(p1, metadata={'name': 'a name'})
-        print 'ppoints:', P.dtype, P.shape
+        print('ppoints:', P.dtype, P.shape)
         for p in P:
-            print type(p), p
-        print repr(P)
+            print(type(p), p)
+        print(repr(P))
         assert repr(P) \
             == """Polygon( [[1.0, 2.0],
           [3.0, 4.0],
@@ -59,8 +59,8 @@ class Test_Polygon:
 
     def test_slice(self):
         P = Polygon([(1, 2), (3, 4), (5, 6)])
-        print P[:2]
-        print Polygon([(1, 2), (3, 4)])[:]
+        print(P[:2])
+        print(Polygon([(1, 2), (3, 4)])[:])
         assert P[:2] == Polygon([(1, 2), (3, 4)])
 
     def test_metadata(self):
@@ -88,7 +88,7 @@ class Test_Polygon:
 
     def test_bounding_box(self):
         P = Polygon(p1)
-        print P.bounding_box
+        print(P.bounding_box)
         assert P.bounding_box == np.array([[1., 2.], [7., 8.]],
                                           dtype=np.float)
 
@@ -127,8 +127,8 @@ class Test_PolygonSet:
         poly_set = PolygonSet(dtype=np.float32)
         poly_set.append(p1)
         poly_set.append(p2)
-        print poly_set[0]
-        print poly_set[0].dtype
+        print(poly_set[0])
+        print(poly_set[0].dtype)
         assert poly_set[0].dtype == np.float32
 
     def test_zero_length(self):

@@ -177,7 +177,7 @@ class TestCyTimeseries:
         actual = np.array(self.tval['value'], dtype=velocity_rec)
         time = np.array(self.tval['time'], dtype=seconds)
         vel_rec, _err = ossm.get_time_value(time)
-        print vel_rec
+        print(vel_rec)
 
         tol = 1e-6
         msg = ('{0} is not within a tolerance of '
@@ -231,11 +231,11 @@ class TestCyTimeseries:
         ossmT = CyTimeseries(timeseries=self.tval)
         t_val = ossmT.timeseries
 
-        print 't_val before:', t_val['value']
+        print('t_val before:', t_val['value'])
         # need to learn how to do the following in 1 line of code
         t_val['value']['u'] += 2
         t_val['value']['v'] += 2
-        print 't_val after:', t_val['value']
+        print('t_val after:', t_val['value'])
 
         ossmT.timeseries = t_val
         new_val = ossmT.timeseries

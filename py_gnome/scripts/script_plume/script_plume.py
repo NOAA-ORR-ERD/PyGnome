@@ -39,7 +39,7 @@ images_dir = os.path.join(base_dir, 'images')
 
 
 def make_model():
-    print 'initializing the model'
+    print('initializing the model')
 
     start_time = datetime(2004, 12, 31, 13, 0)
     model = Model(start_time=start_time,
@@ -47,7 +47,7 @@ def make_model():
                   time_step=30 * 60,
                   uncertain=False)
 
-    print 'adding the map'
+    print('adding the map')
     model.map = GnomeMap()
 
     renderer = Renderer(output_dir=images_dir,
@@ -56,7 +56,7 @@ def make_model():
                         draw_ontop='uncertain')
     renderer.viewport = ((-76.5, 37.), (-75.8, 38.))
 
-    print 'adding outputters'
+    print('adding outputters')
     model.outputters += renderer
 
     netcdf_file = os.path.join(base_dir, 'script_plume.nc')
@@ -65,7 +65,7 @@ def make_model():
     model.outputters += NetCDFOutput(netcdf_file, which_data='most',
                                      output_timestep=timedelta(hours=2))
 
-    print 'adding two spills'
+    print('adding two spills')
     # Break the spill into two spills, first with the larger droplets
     # and second with the smaller droplets.
     # Split the total spill volume (100 m^3) to have most
@@ -113,13 +113,13 @@ def make_model():
                                      )
     model.spills += spill
 
-    print 'adding a RandomMover:'
+    print('adding a RandomMover:')
     model.movers += RandomMover(diffusion_coef=50000)
 
-    print 'adding a RiseVelocityMover:'
+    print('adding a RiseVelocityMover:')
     model.movers += RiseVelocityMover()
 
-    print 'adding a RandomMover3D:'
+    print('adding a RandomMover3D:')
     model.movers += RandomMover3D(vertical_diffusion_coef_above_ml=5,
                                         vertical_diffusion_coef_below_ml=.11,
                                         mixed_layer_depth=10)
@@ -137,7 +137,7 @@ def make_model():
     #
     # model.movers += w_mover
 
-    print 'adding a simple mover:'
+    print('adding a simple mover:')
     s_mover = SimpleMover(velocity=(0.0, -.3, 0.0))
     model.movers += s_mover
 
@@ -147,6 +147,6 @@ def make_model():
 if __name__ == "__main__":
     scripting.make_images_dir(images_dir)
     model = make_model()
-    print "about to start running the model"
+    print("about to start running the model")
     for step in model:
-        print step
+        print(step)

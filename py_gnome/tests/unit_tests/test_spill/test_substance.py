@@ -15,7 +15,7 @@ class TestSubstance(object):
         #substance should expose the array types of it's initializers
         assert all([atype in sub1.array_types for atype in initw.array_types])
         #in this case, there should only be InitWindages
-        assert sub1.array_types.keys() == initw.array_types.keys()
+        assert list(sub1.array_types.keys()) == list(initw.array_types.keys())
 
     def test_eq(self):
         sub1 = Substance()
@@ -47,7 +47,7 @@ class TestSubstance(object):
 class TestGnomeOil(object):
 
     def test_init(self):
-        oil1 = GnomeOil(u'oil_ans_mp', windage_range=(0.05, 0.07))
+        oil1 = GnomeOil('oil_ans_mp', windage_range=(0.05, 0.07))
         assert oil1.windage_range == (0.05, 0.07)
         assert isinstance(oil1.record, Oil)
         assert isinstance(oil1.initializers[0], InitWindages)
@@ -55,14 +55,14 @@ class TestGnomeOil(object):
         assert all([atype in oil1.array_types for atype in initw.array_types])
 
     def test_eq(self):
-        sub1 = GnomeOil(u'oil_ans_mp')
-        sub2 = GnomeOil(u'oil_ans_mp')
+        sub1 = GnomeOil('oil_ans_mp')
+        sub2 = GnomeOil('oil_ans_mp')
         assert sub1 == sub2
-        sub3 = GnomeOil(u'oil_ans_mp', windage_range=(0.05, 0.07))
+        sub3 = GnomeOil('oil_ans_mp', windage_range=(0.05, 0.07))
         assert sub1 != sub3
 
     def test_serialization(self):
-        oil1 = GnomeOil(u'oil_ans_mp', windage_range=(0.05, 0.07))
+        oil1 = GnomeOil('oil_ans_mp', windage_range=(0.05, 0.07))
         ser = oil1.serialize()
         deser = GnomeOil.deserialize(ser)
         assert deser == oil1
@@ -76,13 +76,13 @@ class TestGnomeOil(object):
         These are stored as nested objects in the Spill but this should also work
         so test it here
         '''
-        test_obj = GnomeOil(u'oil_ans_mp', windage_range=(0.05, 0.07))
+        test_obj = GnomeOil('oil_ans_mp', windage_range=(0.05, 0.07))
         json_, savefile, refs = test_obj.save(saveloc_)
         test_obj2 = test_obj.__class__.load(savefile)
         assert test_obj == test_obj2
 
     def test_set_emulsification_constants(self):
-        test_obj = GnomeOil(u'oil_ans_mp')
+        test_obj = GnomeOil('oil_ans_mp')
         assert test_obj._bulltime is None
         assert test_obj.bullwinkle < 0.5 and test_obj.bullwinkle is test_obj.record.bullwinkle_fraction
         d = test_obj.serialize()

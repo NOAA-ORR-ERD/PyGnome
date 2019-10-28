@@ -5,7 +5,7 @@ import numpy as np
 import gnome
 from gnome import basic_types
 from gnome.cy_gnome import cy_cats_mover, cy_ossm_time, cy_shio_time
-import cy_fixtures
+from . import cy_fixtures
 
 from ..conftest import testdata
 
@@ -50,8 +50,8 @@ class CatsMove(cy_fixtures.CyTestMove):
             self.status,
             basic_types.spill_type.forecast,
             )
-        print
-        print self.delta
+        print()
+        print(self.delta)
 
     def uncertain_move(self):
         """
@@ -66,8 +66,8 @@ class CatsMove(cy_fixtures.CyTestMove):
             self.status,
             basic_types.spill_type.uncertainty,
             )
-        print
-        print self.u_delta
+        print()
+        print(self.u_delta)
 
 
 def test_move():
@@ -75,9 +75,9 @@ def test_move():
     test get_move for forecast and uncertain LEs
     """
 
-    print
-    print '--------------'
-    print 'test certain_move and uncertain_move are different'
+    print()
+    print('--------------')
+    print('test certain_move and uncertain_move are different')
     tgt = CatsMove()
     tgt.certain_move()
     tgt.uncertain_move()
@@ -93,9 +93,9 @@ def test_certain_move():
     test get_move for forecase LEs
     """
 
-    print
-    print '--------------'
-    print 'test_certain_move'
+    print()
+    print('--------------')
+    print('test_certain_move')
     tgt = CatsMove()
     tgt.certain_move()
 
@@ -112,9 +112,9 @@ def test_uncertain_move():
     test get_move for uncertainty LEs
     """
 
-    print
-    print '--------------'
-    print 'test_uncertain_move'
+    print()
+    print('--------------')
+    print('test_uncertain_move')
     tgt = CatsMove()
     tgt.uncertain_move()
 
@@ -142,7 +142,7 @@ def test_scale_value():
     """
 
     c_cats.scale_value = 0
-    print c_cats.scale_value
+    print(c_cats.scale_value)
     assert c_cats.scale_value == 0
 
 

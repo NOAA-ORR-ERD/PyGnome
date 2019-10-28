@@ -270,7 +270,7 @@ def test_release_from_splot_data():
     assert rel.num_elements == exp_num_elems
     assert len(rel.start_position) == exp_num_elems
     cumsum = np.cumsum(exp)
-    for ix in xrange(len(cumsum) - 1):
+    for ix in range(len(cumsum) - 1):
         assert np.all(rel.start_position[cumsum[ix]] ==
                       rel.start_position[cumsum[ix]:cumsum[ix + 1]])
     assert np.all(rel.start_position[0] == rel.start_position[:cumsum[0]])

@@ -32,7 +32,7 @@ base_dir = os.path.dirname(__file__)
 
 
 def make_model(images_dir=os.path.join(base_dir, 'images')):
-    print 'initializing the model'
+    print('initializing the model')
 
     start_time = datetime(1985, 1, 1, 13, 31)
 
@@ -45,10 +45,10 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 #     mapfile = get_datafile(os.path.join(base_dir, 'ak_arctic.bna'))
     mapfile = get_datafile('arctic_coast3.bna')
 
-    print 'adding the map'
+    print('adding the map')
     model.map = MapFromBNA(mapfile, refloat_halflife=0.0)  # seconds
 
-    print 'adding a spill'
+    print('adding a spill')
     # for now subsurface spill stays on initial layer
     # - will need diffusion and rise velocity
     # - wind doesn't act
@@ -68,11 +68,11 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     model.spills += spill1
 #     model.spills += spill2
 
-    print 'adding a wind mover:'
+    print('adding a wind mover:')
 
 #     model.movers += constant_wind_mover(0.5, 0, units='m/s')
 
-    print 'adding a current mover:'
+    print('adding a current mover:')
 
     fn = ['arctic_avg2_0001_gnome.nc',
           'arctic_avg2_0002_gnome.nc']
@@ -86,7 +86,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     wind_method = 'Euler'
     method = 'RK2'
-    print 'adding outputters'
+    print('adding outputters')
 
     # draw_ontop can be 'uncertain' or 'forecast'
     # 'forecast' LEs are in black, and 'uncertain' are in red
@@ -96,11 +96,11 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     netcdf_file = os.path.join(base_dir, str(model.time_step / 60) + method + '.nc')
     scripting.remove_netcdf(netcdf_file)
 
-    print 'adding movers'
+    print('adding movers')
     model.outputters += NetCDFOutput(netcdf_file, which_data='all')
 
 
-    print 'loading entire current data'
+    print('loading entire current data')
     ice_aware_curr = IceAwareCurrent.from_netCDF(filename=fn,
                                                  grid_topology=gt)
 
@@ -122,7 +122,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 #     model.environment.add(ice_aware_curr)
 #     from gnome.environment import WindTS
 
-    print 'loading entire wind data'
+    print('loading entire wind data')
 
 #     i_c_mover = PyCurrentMover(current=ice_aware_curr)
 #     i_c_mover = PyCurrentMover(current=ice_aware_curr, default_num_method='Euler')
@@ -137,7 +137,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     model.movers += i_c_mover
     model.movers += i_w_mover
 
-    print 'adding an IceAwareRandomMover:'
+    print('adding an IceAwareRandomMover:')
     model.movers += IceAwareRandomMover(ice_concentration=ice_aware_curr.ice_concentration,
                                         diffusion_coef=1000)
 #     renderer.add_grid(ice_aware_curr.grid)
@@ -162,7 +162,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 if __name__ == "__main__":
     scripting.make_images_dir()
     model = make_model()
-    print "doing full run"
+    print("doing full run")
 #     rend = model.outputters[0]
 #     rend.graticule.set_DMS(True)
     startTime = datetime.now()
@@ -172,8 +172,8 @@ if __name__ == "__main__":
 #             rend.set_viewport(((-165, 69.25), (-162.5, 70)))
 #         if step['step_num'] == 0:
 #             rend.set_viewport(((-175, 65), (-160, 70)))
-        print "step: %.4i -- memuse: %fMB" % (step['step_num'],
-                                              utilities.get_mem_use())
-    print datetime.now() - startTime
+        print("step: %.4i -- memuse: %fMB" % (step['step_num'],
+                                              utilities.get_mem_use()))
+    print(datetime.now() - startTime)
 #     pd.profiler.disable()
 #     pd.print_stats(0.1)

@@ -105,7 +105,7 @@ def test_land_cross(
 
     result = find_first_pixel(raster, pt1, pt2)
 
-    print result
+    print(result)
     assert result[0] == res1
     assert result[1] == res2
 
@@ -164,8 +164,8 @@ def test_land_cross_diag(
 
     result = find_first_pixel(raster, pt1, pt2)
 
-    print pt1, pt2, prev_pt, hit_pt
-    print result
+    print(pt1, pt2, prev_pt, hit_pt)
+    print(result)
     assert result[0] == prev_pt
     assert result[1] == hit_pt
 
@@ -194,7 +194,7 @@ def test_land_not_cross_diag(pt1, pt2):
 
     result = find_first_pixel(raster, pt1, pt2)
 
-    print pt1, pt2, result
+    print(pt1, pt2, result)
     assert result is None
 
 points_outside_grid = [((-5, -5), (25, 15), (9, 4), (10, 5))]  # outside from right
@@ -224,8 +224,8 @@ def test_points_outside_grid(
 
     result = find_first_pixel(raster, pt1, pt2)
 
-    print pt1, pt2, prev_pt, hit_pt
-    print result
+    print(pt1, pt2, prev_pt, hit_pt)
+    print(result)
     assert result[0] == prev_pt
     assert result[1] == hit_pt
 
@@ -246,8 +246,8 @@ def test_way_off(pt2):
     # a little block in the middle
     # raster[8:12, 8:12] = 1
     pt1 = (10, 10)
-    print pt1
-    print pt2
+    print(pt1)
+    print(pt2)
     result = find_first_pixel(raster, pt1, pt2)
 
     assert result is None

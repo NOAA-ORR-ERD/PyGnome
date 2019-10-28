@@ -31,7 +31,7 @@ class EnvironmentMeta(GnomeObjMeta):
         super(EnvironmentMeta, self).__init__(_name, _bases, _dct)
 
 
-class Environment(GnomeId):
+class Environment(GnomeId, metaclass=EnvironmentMeta):
     """
     A base class for all classes in environment module
 
@@ -46,8 +46,6 @@ class Environment(GnomeId):
     # insinstance() checks. Used by model to automatically hook up objects that
     # reference environment objects
     _ref_as = 'environment'
-
-    __metaclass__ = EnvironmentMeta
 
     def __init__(self, make_default_refs=True,**kwargs):
         '''
@@ -170,12 +168,12 @@ def env_from_netCDF(filename=None, dataset=None,
                 req_refs = None
 
             if req_refs is not None:
-                for ref, klass in req_refs.items():
+                for ref, klass in list(req_refs.items()):
                     for o in new_env:
                         if isinstance(o, klass):
                             clskwargs[ref] = o
 
-                    if ref in clskwargs.keys():
+                    if ref in list(clskwargs.keys()):
                         continue
                     else:
                         obj = attempt_from_netCDF(c,
@@ -440,7 +438,7 @@ class Water(Environment):
         if not hasattr(self, '_units'):
             self._units = {}
 
-        for prop, unit in u_dict.iteritems():
+        for prop, unit in u_dict.items():
             if prop in self._units_type:
                 if unit not in self._units_type[prop][1]:
                     msg = ("{0} are invalid units for {1}.  Ignore it."

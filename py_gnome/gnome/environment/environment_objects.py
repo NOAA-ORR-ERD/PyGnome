@@ -192,7 +192,7 @@ class VelocityTS(TimeseriesVector):
     def timeseries(self):
         x = self.variables[0].data
         y = self.variables[1].data
-        return map(lambda t, x, y: (t, (x, y)), self._time, x, y)
+        return list(map(lambda t, x, y: (t, (x, y)), self._time, x, y))
 
 
 class VelocityGrid(VectorVariable):
@@ -222,7 +222,7 @@ class VelocityGrid(VectorVariable):
             elif kwargs.get('grid_file', None) is not None:
                 df = gridded.utilities.get_dataset(kwargs['grid_file'])
 
-            if df is not None and 'angle' in df.variables.keys():
+            if df is not None and 'angle' in list(df.variables.keys()):
                 # Unrotated ROMS Grid!
                 self.angle = Variable(name='angle',
                                       units='radians',
@@ -250,10 +250,10 @@ class WindTS(VelocityTS, Environment):
         if 'timeseries' in kwargs:
             ts = kwargs['timeseries']
 
-            time = map(lambda e: e[0], ts)
-            mag = np.array(map(lambda e: e[1][0], ts))
+            time = [e[0] for e in ts]
+            mag = np.array([e[1][0] for e in ts])
 
-            d = np.array(map(lambda e: e[1][1], ts))
+            d = np.array([e[1][1] for e in ts])
             d = d * -1 - 90
 
             u = mag * np.cos(d * np.pi / 180)
@@ -290,10 +290,10 @@ class CurrentTS(VelocityTS, Environment):
                  **kwargs):
         if 'timeseries' in kwargs:
             ts = kwargs['timeseries']
-            time = map(lambda e: e[0], ts)
-            mag = np.array(map(lambda e: e[1][0], ts))
+            time = [e[0] for e in ts]
+            mag = np.array([e[1][0] for e in ts])
 
-            direction = np.array(map(lambda e: e[1][1], ts))
+            direction = np.array([e[1][1] for e in ts])
             direction = direction * -1 - 90
 
             u = mag * np.cos(direction * np.pi / 180)
@@ -329,8 +329,8 @@ class TemperatureTS(TimeseriesData, Environment):
         if 'timeseries' in kwargs:
             ts = kwargs['timeseries']
 
-            time = map(lambda e: e[0], ts)
-            data = np.array(map(lambda e: e[1], ts))
+            time = [e[0] for e in ts]
+            data = np.array([e[1] for e in ts])
 
         TimeseriesData.__init__(self, name, units, time, data=data)
 

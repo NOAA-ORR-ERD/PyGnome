@@ -27,7 +27,7 @@ from gnome.outputters import WeatheringOutput, TrajectoryGeoJsonOutput
 
 from gnome.multi_model_broadcast import ModelBroadcaster
 
-from conftest import testdata, test_oil
+from .conftest import testdata, test_oil
 
 from pprint import PrettyPrinter
 pp = PrettyPrinter(indent=2, width=120)
@@ -64,7 +64,7 @@ def make_model(uncertain=False,
 
     model.movers += RandomMover(diffusion_coef=500000, uncertain_factor=2)
 
-    print 'adding a wind mover:'
+    print('adding a wind mover:')
     series = np.zeros((5, ), dtype=datetime_value_2d)
     series[0] = (start_time, (20, 45))
     series[1] = (start_time + timedelta(hours=18), (20, 90))
@@ -76,14 +76,14 @@ def make_model(uncertain=False,
                 speed_uncertainty_scale=0.05)
     model.movers += WindMover(wind)
 
-    print 'adding a cats mover:'
+    print('adding a cats mover:')
     c_mover = CatsMover(testdata["lis"]["cats_curr"],
                         tide=Tide(testdata["lis"]["cats_tide"]))
     model.movers += c_mover
 
     model.environment += c_mover.tide
 
-    print 'adding Weatherers'
+    print('adding Weatherers')
     rel_time = model.spills[0].release_time
     skim_start = rel_time + timedelta(hours=4)
     amount = spill.amount
@@ -113,7 +113,7 @@ def make_model(uncertain=False,
                          burn,
                          skimmer]
 
-    print 'adding outputters'
+    print('adding outputters')
     model.outputters += WeatheringOutput()
 
     if geojson_output:
@@ -229,7 +229,7 @@ def test_timeout(secs, timeout, expected_runtime, valid_func):
                                          ('down', 'normal', 'up'))
 
     try:
-        print '\nsleeping for {} secs...'.format(secs)
+        print('\nsleeping for {} secs...'.format(secs))
         if timeout is None:
             begin = time.time()
             res = model_broadcaster.cmd('sleep', {'secs': secs})
@@ -245,7 +245,7 @@ def test_timeout(secs, timeout, expected_runtime, valid_func):
         # runtime duraton should be either:
         # - the expected response time plus a bit of overhead
         # - the expected timeout plus a bit of overhead
-        print 'runtime: ', rt
+        print('runtime: ', rt)
         assert rt >= expected_runtime
         assert rt < expected_runtime + (expected_runtime * 0.06)
 
@@ -268,7 +268,7 @@ def test_timeout_2_times():
         # The command should succeed
         #
         secs, timeout, expected_runtime = 4, 5, 4
-        print '\nsleeping for {} secs...'.format(secs)
+        print('\nsleeping for {} secs...'.format(secs))
 
         begin = time.time()
         res = model_broadcaster.cmd('sleep', {'secs': secs}, timeout=timeout)
@@ -285,7 +285,7 @@ def test_timeout_2_times():
         # have reverted back to the default, and the command should succeed.
         #
         secs, expected_runtime = 9, 9
-        print '\nsleeping for {} secs...'.format(secs)
+        print('\nsleeping for {} secs...'.format(secs))
 
         begin = time.time()
         res = model_broadcaster.cmd('sleep', {'secs': secs})
@@ -311,7 +311,7 @@ def test_rewind():
                                          ('down', 'normal', 'up'))
 
     try:
-        print '\nRewind results:'
+        print('\nRewind results:')
         res = model_broadcaster.cmd('rewind', {})
 
         assert len(res) == 9
@@ -330,7 +330,7 @@ def test_step():
                                          ('down', 'normal', 'up'))
 
     try:
-        print '\nStep results:'
+        print('\nStep results:')
         res = model_broadcaster.cmd('step', {})
         assert len(res) == 9
     finally:
@@ -347,14 +347,14 @@ def test_full_run():
                                          ('down', 'normal', 'up'))
 
     try:
-        print '\nNumber of time steps:'
+        print('\nNumber of time steps:')
         num_steps = model_broadcaster.cmd('num_time_steps', {})
         assert len(num_steps) == 9
 
         # all models have the same number of steps
         assert len(set(num_steps)) == 1
 
-        print '\nStep results:'
+        print('\nStep results:')
         res = model_broadcaster.cmd('full_run', {})
         assert len(res) == 9
 
@@ -374,7 +374,7 @@ def test_cache_dirs():
                                          ('down', 'normal', 'up'))
 
     try:
-        print '\nCache directory results:'
+        print('\nCache directory results:')
         res = model_broadcaster.cmd('get_cache_dir', {})
 
         assert all([os.path.isdir(d) for d in res])
@@ -393,9 +393,9 @@ def test_spill_containers_have_uncertainty_off():
                                          ('down', 'normal', 'up'))
 
     try:
-        print '\nSpill results:'
+        print('\nSpill results:')
         res = model_broadcaster.cmd('get_spill_container_uncertainty', {})
-        print [r for r in res]
+        print([r for r in res])
         assert not any([r for r in res])
     finally:
         model_broadcaster.stop()
@@ -420,7 +420,7 @@ def test_weathering_output_only():
 
         assert len(res) == 9
 
-        assert [r.keys() for r in res
+        assert [list(r.keys()) for r in res
                 if ('step_num' in r and
                     'valid' in r and
                     'WeatheringOutput' in r)]
@@ -445,7 +445,7 @@ def test_child_exception():
     model = make_model(geojson_output=True)
 
     model.spills[0].amount = None
-    print 'amount:', model.spills[0].amount
+    print('amount:', model.spills[0].amount)
 
     try:
         _model_broadcaster = ModelBroadcaster(model,
@@ -473,30 +473,30 @@ if __name__ == '__main__':
                                          ('down', 'normal', 'up'),
                                          ('down', 'normal', 'up'))
 
-    print '\nStep results:'
+    print('\nStep results:')
     pp.pprint(model_broadcaster.cmd('step', {}))
 
-    print '\nGetting wind timeseries for all models:'
+    print('\nGetting wind timeseries for all models:')
     pp.pprint(model_broadcaster.cmd('get_wind_timeseries', {}))
 
-    print '\nGetting spill amounts for all models:'
+    print('\nGetting spill amounts for all models:')
     pp.pprint(model_broadcaster.cmd('get_spill_amounts', {}))
 
-    print '\nGetting time & spill values for just the (down, down) model:'
+    print('\nGetting time & spill values for just the (down, down) model:')
     pp.pprint((model_broadcaster.cmd('get_wind_timeseries', {},
                                      ('down', 'down')),
                model_broadcaster.cmd('get_spill_amounts', {},
                                      ('down', 'down')),
                ))
 
-    print '\nGetting time & spill values for just the (normal, normal) model:'
+    print('\nGetting time & spill values for just the (normal, normal) model:')
     pp.pprint((model_broadcaster.cmd('get_wind_timeseries', {},
                                      ('normal', 'normal')),
                model_broadcaster.cmd('get_spill_amounts', {},
                                      ('normal', 'normal')),
                ))
 
-    print '\nGetting time & spill values for just the (up, up) model:'
+    print('\nGetting time & spill values for just the (up, up) model:')
     pp.pprint((model_broadcaster.cmd('get_wind_timeseries', {},
                                      ('up', 'up')),
                model_broadcaster.cmd('get_spill_amounts', {},

@@ -85,7 +85,7 @@ class SimpleMover(Mover, serializable.Serializable):
         try:
             positions = spill['positions']
             status_codes = spill['status_codes']
-        except KeyError, err:
+        except KeyError as err:
             raise ValueError('The spill does not have the required '
                              'data arrays\n{}'
                              .format(err))

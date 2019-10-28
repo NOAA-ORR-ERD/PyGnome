@@ -29,7 +29,7 @@ base_dir = os.path.dirname(__file__)
 
 
 def make_model(images_dir=os.path.join(base_dir, 'images')):
-    print 'initializing the model'
+    print('initializing the model')
 
     start_time = datetime(2004, 12, 31, 13, 0)
 
@@ -42,7 +42,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     mapfile = get_datafile(os.path.join(base_dir, 'ChesapeakeBay.bna'))
 
-    print 'adding the map'
+    print('adding the map')
     model.map = MapFromBNA(mapfile, refloat_halflife=1)  # seconds
 
     # draw_ontop can be 'uncertain' or 'forecast'
@@ -57,7 +57,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # note: this is really slow, so only use for diagnostics
     # renderer.raster_map = model.map
 
-    print 'adding outputters'
+    print('adding outputters')
     model.outputters += renderer
 
     netcdf_file = os.path.join(base_dir, 'script_chesapeake_bay.nc')
@@ -65,7 +65,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     model.outputters += NetCDFOutput(netcdf_file, which_data='all',
                                      output_timestep=timedelta(hours=2))
 
-    print 'adding a spill'
+    print('adding a spill')
     # for now subsurface spill stays on initial layer
     # - will need diffusion and rise velocity
     # - wind doesn't act
@@ -78,10 +78,10 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     model.spills += spill
 
-    print 'adding a RandomMover:'
+    print('adding a RandomMover:')
     model.movers += RandomMover(diffusion_coef=50000)
 
-    print 'adding a wind mover:'
+    print('adding a wind mover:')
 
     series = np.zeros((2, ), dtype=datetime_value_2d)
     series[0] = (start_time, (30, 0))
@@ -94,7 +94,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     wind.extrapolation_is_allowed=True
     model.movers += w_mover
 
-    print 'adding a current mover:'
+    print('adding a current mover:')
     curr_file = get_datafile(os.path.join(base_dir, 'ChesapeakeBay.nc'))
     topology_file = get_datafile(os.path.join(base_dir, 'ChesapeakeBay.dat'))
 
@@ -112,6 +112,6 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 if __name__ == "__main__":
     scripting.make_images_dir()
     model = make_model()
-    print "running the model"
+    print("running the model")
     model.full_run()
 
