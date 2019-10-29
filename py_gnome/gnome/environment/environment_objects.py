@@ -507,8 +507,6 @@ class GridCurrent(VelocityGrid, Environment):
             ang = raw_ang.reshape(-1)
             ang = np.ma.MaskedArray(ang, mask = ctr_mask.reshape(-1))
             ang = ang.compressed()
-            import pdb
-            pdb.set_trace()
 
             x = lin_u[:] * np.cos(ang) - lin_v[:] * np.sin(ang)
             y = lin_u[:] * np.sin(ang) + lin_v[:] * np.cos(ang)
