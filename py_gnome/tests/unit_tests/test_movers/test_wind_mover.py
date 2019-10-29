@@ -639,8 +639,7 @@ def test_constant_wind_mover():
 def test_constant_wind_mover_bounds():
     wm = constant_wind_mover(10, 45, units='knots')
 
-    assert wm.data_start == InfDateTime("-inf")
-    assert wm.data_stop == InfDateTime("inf")
+    assert wm.data_start == wm.data_stop
 
 
 def test_wind_mover_from_file():

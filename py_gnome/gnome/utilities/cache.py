@@ -11,6 +11,7 @@ import tempfile
 import shutil
 import copy
 from multiprocessing import Lock
+import atexit
 
 import numpy as np
 
@@ -46,7 +47,7 @@ def clean_up_cache(dir_name=_cache_dir):
         # note: should be smarter and check the error code in
         #       the Exception to make sure that it's a "file not there"
         pass
-    except Exception, excp:
+    except Exception as excp:
         # something else went wrong
         warnings.warn('Problem Deleting cache dir')
         # using repr to get the Error type in the warning
@@ -56,8 +57,6 @@ def clean_up_cache(dir_name=_cache_dir):
 # need to clean up temp directories at exit:
 # this will clean up the master temp dir, and anything in it if
 # something went wrong with __del__ in the individual objects
-
-import atexit
 atexit.register(clean_up_cache)
 
 
@@ -176,15 +175,16 @@ class ElementCache(object):
         except KeyError:
             # not in the recent dict: try to load from disk
             try:
-                data_arrays = \
-                    dict(np.load(self._make_filename(step_num), allow_pickle=True))
+                data_arrays = dict(np.load(self._make_filename(step_num),
+                                           allow_pickle=True))
             except IOError:
                 raise CacheError('step: {0} is not in the cache'
                                  .format(step_num))
 
             try:
-                u_data_arrays = \
-                    dict(np.load(self._make_filename(step_num, True)))
+                u_data_arrays = dict(np.load(self._make_filename(step_num,
+                                                                 True),
+                                             allow_pickle=True))
             except IOError:
                 u_data_arrays = None
 
