@@ -232,19 +232,19 @@ class Grid_S(GnomeId, gridded.grids.Grid_S):
         return rv
 
     def get_cells(self):
-        if not hasattr(self, '_cell_trees'):
+        if self._cell_tree is None:
             self.build_celltree()
 
-        ns = self._cell_trees['node'][1]
-        fs = self._cell_trees['node'][2]
+        ns = self._cell_tree[1]
+        fs = self._cell_tree[2]
 
         return ns[fs]
 
     def get_nodes(self):
-        if not hasattr(self, '_cell_trees'):
+        if self._cell_tree is None:
             self.build_celltree()
 
-        n = self._cell_trees['node'][1]
+        n = self._cell_tree[1]
 
         return n
 
@@ -255,18 +255,24 @@ class Grid_S(GnomeId, gridded.grids.Grid_S):
             return np.stack((lons, lats), axis=-1).reshape(-1, 2)
         else:
             if self._get_geo_mask('center'):
-                if not self._cell_trees['center']:
-                    self.build_celltree('center', use_mask=True)
-                return self._cell_trees['node'][1]
+                if not self._cell_tree:
+                    self.build_celltree(use_mask=True)
+                ctr_padding_slice = self.get_padding_slices(self.center_padding)
+                ctr_mask = gridded.utilities.gen_celltree_mask_from_center_mask(self.center_mask, ctr_padding_slice)
+                clons = self.center_lon[ctr_padding_slice]
+                clats = self.center_lat[ctr_padding_slice]
+                clons = np.ma.MaskedArray(clons, mask = ctr_mask)
+                clats = np.ma.MaskedArray(clats, mask = ctr_mask)
+                return np.stack((clons.compressed(), clats.compressed()), axis=-1).reshape(-1, 2)
             return self.centers.reshape(-1, 2)
 
     def get_metadata(self):
-        if not hasattr(self, '_cell_trees'):
+        if self._cell_tree is None:
             self.build_celltree()
         json_ = {}
         json_['nodes_shape'] = self.nodes.shape
         json_['num_nodes'] = self.nodes.shape[0] * self.nodes.shape[1]
-        json_['num_cells'] = self._cell_trees['node'][2].shape[0]
+        json_['num_cells'] = self._cell_tree[2].shape[0]
         return json_
 
     def get_lines(self):
@@ -279,10 +285,10 @@ class Grid_S(GnomeId, gridded.grids.Grid_S):
         '''
         if self._get_geo_mask('node') is not None:
             #masked sgrid, so use Grid_U style of lines
-            if not hasattr(self, '_cell_trees'):
+            if self._cell_tree is None:
                 self.build_celltree()
-            nodes = self._cell_trees['node'][1]
-            faces = self._cell_trees['node'][2]
+            nodes = self._cell_tree[1]
+            faces = self._cell_tree[2]
             open_cells = nodes[faces]
             closed_cells = np.concatenate((open_cells, open_cells[:, None, 0]),
                                           axis=1)
@@ -526,15 +532,33 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
 
         if np.any(np.array(raw_u.shape) != np.array(raw_v.shape)):
             # must be roms-style staggered
-            raw_u = (raw_u[:, 0:-1, :] + raw_u[:, 1:, :]) / 2
-            raw_v = (raw_v[:, :, 0:-1] + raw_v[:, :, 1:]) / 2
+            u_padding_slice = (np.s_[:],) + self.grid.get_padding_slices(self.grid.edge1_padding)
+            v_padding_slice = (np.s_[:],) + self.grid.get_padding_slices(self.grid.edge2_padding)
+            raw_u = raw_u[u_padding_slice].filled(0)
+            raw_v = raw_v[v_padding_slice].filled(0)
+            raw_u = (raw_u[:, :, 0:-1, ] + raw_u[:, :, 1:]) / 2
+            raw_v = (raw_v[:, 0:-1, :] + raw_v[:, 1:, :]) / 2
 
-        raw_u = raw_u.reshape(raw_u.shape[0], -1)
-        raw_v = raw_v.reshape(raw_v.shape[0], -1)
-        #r = np.ma.stack((raw_u, raw_v)) change to this when numpy 1.15 becomes norm.
-        r = np.ma.concatenate((raw_u[None,:], raw_v[None,:]))
+        ctr_padding_slice = self.grid.get_padding_slices(self.grid.center_padding)
+        x = raw_u[:]
+        xt = x.shape[0]
+        y = raw_v[:]
+        yt = y.shape[0]
+        x = x.reshape(xt, -1)
+        y = y.reshape(yt, -1)
+        #u/v should be interpolated to centers at this point. Now apply appropriate mask
+        if self.grid._cell_tree_mask is None:
+            self.grid.build_celltree()
+        
+        ctr_mask = gridded.utilities.gen_celltree_mask_from_center_mask(self.grid.center_mask, ctr_padding_slice)
+        x = np.ma.MaskedArray(x, mask = np.tile(ctr_mask.reshape(-1), xt))
+        x = x.compressed().reshape(xt, -1)
+        y = np.ma.MaskedArray(y, mask = np.tile(ctr_mask.reshape(-1), yt))
+        y = y.compressed().reshape(yt,-1)
 
-        return np.ascontiguousarray(r.filled(0), np.float32)
+        #r = np.ma.stack((x, y)) change to this when numpy 1.15 becomes norm.
+        r = np.ma.concatenate((x[None,:], y[None,:]))
+        return np.ascontiguousarray(r.astype(np.float32)) # r.compressed().astype(np.float32)
 
     def get_metadata(self):
         json_ = {}
