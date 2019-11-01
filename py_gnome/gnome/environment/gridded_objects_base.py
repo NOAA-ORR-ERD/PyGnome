@@ -442,6 +442,8 @@ class Variable(gridded.Variable, GnomeId):
     def data_stop(self):
         return self.time.max_time.replace(tzinfo=None)
 
+    def save(self, saveloc='.', refs=None, overwrite=True):
+        return GnomeId.save(self, saveloc=saveloc, refs=refs, overwrite=overwrite)
 
 class DepthBase(gridded.depth.DepthBase, GnomeId):
 
@@ -583,6 +585,9 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
     @property
     def data_stop(self):
         return self.time.max_time.replace(tzinfo=None)
+
+    def save(self, saveloc='.', refs=None, overwrite=True):
+        return GnomeId.save(self, saveloc=saveloc, refs=refs, overwrite=overwrite)
 
     @classmethod
     def _get_shared_vars(cls, *sh_args):

@@ -7,6 +7,7 @@ import tempfile
 import glob
 import json
 import zipfile
+import tempfile
 
 from uuid import uuid1
 
@@ -737,6 +738,16 @@ class GnomeId(AddLogger):
         :param refs: A dictionary of id -> object instances that will be used
                      to complete references, if available.
         '''
+
+        def extract_zipfile(zip_file, to_folder='.', prefix=''):
+            for name in zip_file.namelist():
+                if (prefix and name.find(prefix) != 0) or name.endswith('/'):
+                    pass
+                else:
+                    target = os.path.join(to_folder, os.path.basename(name))
+                    with open(target, 'wb') as f:
+                        f.write(zip_file.read(name))
+
         fp = json_ = None
 
         if not refs:
@@ -769,33 +780,16 @@ class GnomeId(AddLogger):
                                      .format(cls.__name__, saveloc))
             elif zipfile.is_zipfile(saveloc):
                 # saveloc is a zip archive
-                # get json from the file to start the process
+                # extract to a temporary file and retry load
+                tempdir = tempfile.mkdtemp()
                 with zipfile.ZipFile(saveloc, 'r') as saveloc:
-                    if filename:
-                        with saveloc.open(filename, 'rU') as fp:
-                            json_ = json.load(fp,
-                                              parse_float=True,
-                                              parse_int=True)
-
-                        return cls._schema().load(json_, saveloc=saveloc,
-                                                  refs=refs)
-                    else:
-                        # no filename, so search archive
-                        for fn in saveloc.namelist():
-                            if fn.endswith('.json'):
-                                with saveloc.open(fn, 'rU') as fp:
-                                    json_ = json.load(fp)
-
-                                if 'obj_type' in json_:
-                                    if class_from_objtype(json_['obj_type']) is cls:
-                                        return (cls._schema()
-                                                .load(json_,
-                                                      saveloc=saveloc,
-                                                      refs=refs))
-
-                        raise ValueError('No .json file containing a {} '
-                                         'found in archive {}'
-                                         .format(cls.__name__, saveloc))
+                    folders = [name for name in saveloc.namelist() if name.endswith('/') and not name.startswith('__MACOSX')]
+                    prefix = None
+                    if len(folders) == 1:
+                        # we allow our model content to be in a single top-level folder
+                        prefix = folders[0]
+                    extract_zipfile(saveloc, tempdir, prefix)
+                    return cls.load(saveloc=tempdir, filename=filename, refs=refs)
             else:
                 # saveloc is .json file
                 with open(saveloc, 'r') as fp:
@@ -811,28 +805,16 @@ class GnomeId(AddLogger):
                         return cls._schema().load(json_, saveloc=folder,
                                                   refs=refs)
         elif isinstance(saveloc, zipfile.ZipFile):
-            if filename:
-                with saveloc.open(filename, 'rU') as fp:
-                    json_ = json.load(fp)
-
-                    return cls._schema().load(json_, saveloc=saveloc,
-                                              refs=refs)
-            else:
-                # no filename, so search archive
-                for fn in saveloc.namelist():
-                    if fn.endswith('.json'):
-                        with saveloc.open(fn, 'r') as fp:
-                            json_ = json.load(fp)
-
-                            if 'obj_type' in json_:
-                                if class_from_objtype(json_['obj_type']) is cls:
-                                    return cls._schema().load(json_,
-                                                              saveloc=saveloc,
-                                                              refs=refs)
-
-                raise ValueError('No .json file containing a {} '
-                                 'found in archive {}'
-                                 .format(cls.__name__, saveloc))
+            # saveloc is a zip archive
+            # extract to a temporary file and retry load
+            tempdir = tempfile.mkdtemp()
+            folders = [name for name in saveloc.namelist() if name.endswith('/') and not name.startswith('__MACOSX')]
+            prefix = None
+            if len(folders) == 1:
+                # we allow our model content to be in a single top-level folder
+                prefix = folders[0]
+            extract_zipfile(saveloc, tempdir, prefix)
+            return cls.load(saveloc=tempdir, filename=filename, refs=refs)
         else:
             raise ValueError('saveloc was not a string path '
                              'or an open zipfile.ZipFile object')
