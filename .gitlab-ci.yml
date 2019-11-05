@@ -6,7 +6,7 @@ test:
   stage: test
   except:
     - production
-  image: gitlab.orr.noaa.gov:5002/oillibrary
+  image: gitlab.orr.noaa.gov:5002/oillibrary:master
   script:
     - yum install gcc gcc-c++ -y
     - yum install netcdf-devel -y # needed by the C++ code -- it can't find the conda versions
