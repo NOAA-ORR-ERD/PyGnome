@@ -16,6 +16,7 @@ import colander
 
 import gnome
 from gnome.utilities.orderedcollection import OrderedCollection
+from gnome.utilities.save_updater import extract_zipfile, update_savefile
 
 log = logging.getLogger(__name__)
 
@@ -739,15 +740,6 @@ class GnomeId(AddLogger):
                      to complete references, if available.
         '''
 
-        def extract_zipfile(zip_file, to_folder='.', prefix=''):
-            for name in zip_file.namelist():
-                if (prefix and name.find(prefix) != 0) or name.endswith('/'):
-                    pass
-                else:
-                    target = os.path.join(to_folder, os.path.basename(name))
-                    with open(target, 'wb') as f:
-                        f.write(zip_file.read(name))
-
         fp = json_ = None
 
         if not refs:
@@ -755,6 +747,9 @@ class GnomeId(AddLogger):
 
         if isinstance(saveloc, six.string_types):
             if os.path.isdir(saveloc):
+                #run the savefile update system
+                update_savefile(saveloc)
+
                 if filename:
                     fn = os.path.join(saveloc, filename)
 
@@ -782,14 +777,11 @@ class GnomeId(AddLogger):
                 # saveloc is a zip archive
                 # extract to a temporary file and retry load
                 tempdir = tempfile.mkdtemp()
-                with zipfile.ZipFile(saveloc, 'r') as saveloc:
-                    folders = [name for name in saveloc.namelist() if name.endswith('/') and not name.startswith('__MACOSX')]
-                    prefix = None
-                    if len(folders) == 1:
-                        # we allow our model content to be in a single top-level folder
-                        prefix = folders[0]
-                    extract_zipfile(saveloc, tempdir, prefix)
-                    return cls.load(saveloc=tempdir, filename=filename, refs=refs)
+                extract_zipfile(saveloc, tempdir)
+
+                #run the savefile update system
+                update_savefile(tempdir)
+                return cls.load(saveloc=tempdir, filename=filename, refs=refs)
             else:
                 # saveloc is .json file
                 with open(saveloc, 'r') as fp:
