@@ -39,7 +39,7 @@ pyshp=1.2.12
 
 
 # NOAA maintained packages
-gridded=0.1.5
+gridded=0.2.2
 unit_conversion=2.6.*
 cell_tree2d>=0.3.*
 py_gd=0.1.* # libgd should get brought in automatically
