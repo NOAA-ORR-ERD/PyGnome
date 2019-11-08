@@ -281,6 +281,9 @@ class GnomeOil(OilProps, Substance):
         json_.update(substance_json)
         return json_
 
+    def __deepcopy__(self, memo):
+        return GnomeOil.deserialize(self.serialize())
+
     def update_from_dict(self, dict_, refs=None):
         #special case for bullwinkle
         #because there's no schema, this hackery is necessary...
