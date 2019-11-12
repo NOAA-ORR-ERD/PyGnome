@@ -199,10 +199,7 @@ def sanitize_filename(fname):
     '''
     if sys.platform == "win32":
         return re.sub(r'[\\\\/*?:"<>|]', "", fname)
-    if sys.platform == "darwin":
+    else:
         return re.sub(r'[/]', "", fname)
-    if sys.platform == "linux":
-        return re.sub(r'[/]', "", fname)
-        
 
 all_update_steps = [v0tov1,]
