@@ -28,7 +28,6 @@ all_names = [os.path.basename(s) for s in all_saves]
 pure_saves = filter(lambda f: 'mac' not in os.path.basename(f), all_saves)
 mac_saves = filter(lambda f: 'mac' in os.path.basename(f), all_saves)
 
-
 @contextlib.contextmanager
 def setup_workspace(savename):
     '''
