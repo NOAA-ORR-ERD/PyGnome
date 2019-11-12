@@ -720,7 +720,7 @@ class GnomeId(AddLogger):
             return (obj_json, saveloc, refs)
 
     @classmethod
-    def load(cls, saveloc='.', filename=None, refs=None):
+    def load(cls, saveloc='.', filename=None, refs=None, apply_update_patches=True):
         '''
         Load an instance of this class from an archive or folder
 
@@ -748,7 +748,8 @@ class GnomeId(AddLogger):
         if isinstance(saveloc, six.string_types):
             if os.path.isdir(saveloc):
                 #run the savefile update system
-                update_savefile(saveloc)
+                if apply_update_patches:
+                    update_savefile(saveloc)
 
                 if filename:
                     fn = os.path.join(saveloc, filename)

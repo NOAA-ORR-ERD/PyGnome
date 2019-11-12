@@ -2,7 +2,7 @@
 
 from __future__ import print_function
 
-import ujson
+import json
 import logging
 import glob
 import sys
@@ -106,7 +106,7 @@ def v0tov1(messages, errors):
     inits = []
     for fname in jsonfiles:
         with open(fname, 'r') as fn:
-            json_ = ujson.load(fn)
+            json_ = json.load(fn)
             if 'obj_type' in json_:
                 if 'Water' in json_['obj_type'] and 'environment' in json_['obj_type'] and water_json is None:
                     water_json = (fname, json_)
@@ -134,18 +134,18 @@ def v0tov1(messages, errors):
 
     # Write modified and new files
     with open(substance_fn, 'w') as subs_file:
-        ujson.dump(substance, subs_file, indent=True)
+        json.dump(substance, subs_file, indent=True)
     for spill in spills:
         fn, sp = spill
         del sp['element_type']
         sp['substance'] = substance_fn
         with open(fn, 'w') as fp:
-            ujson.dump(sp, fp, indent=True)
+            json.dump(sp, fp, indent=True)
     for init in inits:
         fn, init = init
         init['obj_type'] = init['obj_type'].replace('.elements.', '.')
         with open(fn, 'w') as fp:
-            ujson.dump(init, fp, indent=True)
+            json.dump(init, fp, indent=True)
     with open('version.txt', 'w') as vers_file:
         vers_file.write('1')
 
