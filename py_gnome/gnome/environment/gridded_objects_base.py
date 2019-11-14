@@ -541,7 +541,10 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
             raw_u = (raw_u[:, :, 0:-1, ] + raw_u[:, :, 1:]) / 2
             raw_v = (raw_v[:, 0:-1, :] + raw_v[:, 1:, :]) / 2
 
-        ctr_padding_slice = self.grid.get_padding_slices(self.grid.center_padding)
+        if isinstance(self.grid, Grid_S):
+            ctr_padding_slice = self.grid.get_padding_slices(self.grid.center_padding)
+        else:
+            ctr_padding_slice = None
         x = raw_u[:]
         xt = x.shape[0]
         y = raw_v[:]
@@ -549,14 +552,21 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
         x = x.reshape(xt, -1)
         y = y.reshape(yt, -1)
         #u/v should be interpolated to centers at this point. Now apply appropriate mask
-        if self.grid._cell_tree_mask is None:
-            self.grid.build_celltree()
         
-        ctr_mask = gridded.utilities.gen_celltree_mask_from_center_mask(self.grid.center_mask, ctr_padding_slice)
-        x = np.ma.MaskedArray(x, mask = np.tile(ctr_mask.reshape(-1), xt))
-        x = x.compressed().reshape(xt, -1)
-        y = np.ma.MaskedArray(y, mask = np.tile(ctr_mask.reshape(-1), yt))
-        y = y.compressed().reshape(yt,-1)
+        if isinstance(self.grid, Grid_S):
+            if self.grid._cell_tree_mask is None:
+                self.grid.build_celltree()
+            
+            ctr_mask = gridded.utilities.gen_celltree_mask_from_center_mask(self.grid.center_mask, ctr_padding_slice)
+            x = np.ma.MaskedArray(x, mask = np.tile(ctr_mask.reshape(-1), xt))
+            x = x.compressed().reshape(xt, -1)
+            y = np.ma.MaskedArray(y, mask = np.tile(ctr_mask.reshape(-1), yt))
+            y = y.compressed().reshape(yt,-1)
+        else:
+            raw_u = raw_u.filled(0).reshape(raw_u.shape[0], -1)
+            raw_v = raw_v.filled(0).reshape(raw_v.shape[0], -1)
+            r = np.stack((raw_u, raw_v))
+            return np.ascontiguousarray(r, np.float32)
 
         #r = np.ma.stack((x, y)) change to this when numpy 1.15 becomes norm.
         r = np.ma.concatenate((x[None,:], y[None,:]))
