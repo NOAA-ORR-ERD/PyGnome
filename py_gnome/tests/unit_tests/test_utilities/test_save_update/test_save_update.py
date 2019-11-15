@@ -66,7 +66,8 @@ def test_extract_zipfile():
             assert "GENERIC DIESEL.json" in files
         assert check_files(
             lambda js:'spill.Spill' in js['obj_type'] and
-                js.get('substance', None) == "GENERIC DIESEL.json"
+                (sys.platform == "win32" and js.get('substance', None) == "GENERIC DIESEL.json") or
+                (sys.platform != "win32" and js.get('substance', None) == "*GENERIC DIESEL.json")
         )
 
     #Ensure that the __MACOSX folder is ignored
