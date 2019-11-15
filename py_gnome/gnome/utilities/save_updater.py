@@ -120,6 +120,8 @@ def v0tov1(messages, errors):
     # Generate new substance object
     if water_json is None:
         water_json = (None, None)
+    if element_type_json is not None:
+        element_type_json = (None,None)
     substance = Substance_from_ElementType(element_type_json[1], water_json[1])
     substance_fn = sanitize_filename(substance['name'] + '.json')
 
