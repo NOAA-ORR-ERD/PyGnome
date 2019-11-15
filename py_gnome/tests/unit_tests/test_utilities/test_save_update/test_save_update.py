@@ -60,11 +60,13 @@ def test_extract_zipfile():
     #Ensure the *GENERIC DIESEL.json gets renamed as a file and as a reference
     with setup_workspace('v1_double_diesel.gnome'):
         files = glob.glob('*.json')
-        assert "GENERIC DIESEL.json" in files
+        if sys.platform != "win32":
+            assert "*GENERIC DIESEL.json" in files
+        else:
+            assert "GENERIC DIESEL.json" in files
         assert check_files(
             lambda js:'spill.Spill' in js['obj_type'] and
-                (sys.platform == "win32" and js.get('substance', None) == "GENERIC DIESEL.json") or
-                (sys.platform != "win32" and js.get('substance', None) == "*GENERIC DIESEL.json")
+                js.get('substance', None) == "GENERIC DIESEL.json"
         )
 
     #Ensure that the __MACOSX folder is ignored
