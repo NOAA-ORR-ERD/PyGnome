@@ -35,7 +35,8 @@ def setup_workspace(savename):
     folder.
     '''
     tempdir = tempfile.mkdtemp()
-    extract_zipfile(savename, tempdir)
+    with remember_cwd(os.path.dirname(__file__)):
+        extract_zipfile(savename, tempdir)
     curdir= os.getcwd()
     os.chdir(tempdir)
     try: 
