@@ -125,15 +125,15 @@ def v0tov1(messages, errors):
     if element_type_json is not None:
         substance = Substance_from_ElementType(element_type_json[1], water_json[1])
         substance_fn = sanitize_filename(substance['name'] + '.json')
+        # Delete .json for deprecated objects (element_type)
+        fn = element_type_json[0]
+        try:
+            os.remove(fn)
+        except Exception as e:
+            err = errortypes[2].format(fn, e)
+            errors.append(err)
+            return messages, errors
 
-    # Delete .json for deprecated objects (element_type)
-    fn = element_type_json[0]
-    try:
-        os.remove(fn)
-    except Exception as e:
-        err = errortypes[2].format(fn, e)
-        errors.append(err)
-        return messages, errors
 
     # Write modified and new files
     if substance is not None:
