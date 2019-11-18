@@ -1,4 +1,5 @@
 import os
+import sys
 import pytest
 import glob
 import tempfile
@@ -35,7 +36,8 @@ def setup_workspace(savename):
     folder.
     '''
     tempdir = tempfile.mkdtemp()
-    extract_zipfile(savename, tempdir)
+    with remember_cwd(os.path.dirname(__file__)):
+        extract_zipfile(savename, tempdir)
     curdir= os.getcwd()
     os.chdir(tempdir)
     try: 
@@ -58,10 +60,14 @@ def test_extract_zipfile():
     #Ensure the *GENERIC DIESEL.json gets renamed as a file and as a reference
     with setup_workspace('v1_double_diesel.gnome'):
         files = glob.glob('*.json')
-        assert "GENERIC DIESEL.json" in files
+        if sys.platform != "win32":
+            assert "*GENERIC DIESEL.json" in files
+        else:
+            assert "GENERIC DIESEL.json" in files
         assert check_files(
             lambda js:'spill.Spill' in js['obj_type'] and
-                js.get('substance', None) == "GENERIC DIESEL.json"
+                (sys.platform == "win32" and js.get('substance', None) == "GENERIC DIESEL.json") or
+                (sys.platform != "win32" and js.get('substance', None) == "*GENERIC DIESEL.json")
         )
 
     #Ensure that the __MACOSX folder is ignored

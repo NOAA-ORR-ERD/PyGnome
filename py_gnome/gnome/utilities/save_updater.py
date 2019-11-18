@@ -120,21 +120,25 @@ def v0tov1(messages, errors):
     # Generate new substance object
     if water_json is None:
         water_json = (None, None)
-    substance = Substance_from_ElementType(element_type_json[1], water_json[1])
-    substance_fn = sanitize_filename(substance['name'] + '.json')
 
-    # Delete .json for deprecated objects (element_type)
-    fn = element_type_json[0]
-    try:
-        os.remove(fn)
-    except Exception as e:
-        err = errortypes[2].format(fn, e)
-        errors.append(err)
-        return messages, errors
+    substance=None
+    if element_type_json is not None:
+        substance = Substance_from_ElementType(element_type_json[1], water_json[1])
+        substance_fn = sanitize_filename(substance['name'] + '.json')
+        # Delete .json for deprecated objects (element_type)
+        fn = element_type_json[0]
+        try:
+            os.remove(fn)
+        except Exception as e:
+            err = errortypes[2].format(fn, e)
+            errors.append(err)
+            return messages, errors
+
 
     # Write modified and new files
-    with open(substance_fn, 'w') as subs_file:
-        json.dump(substance, subs_file, indent=True)
+    if substance is not None:
+        with open(substance_fn, 'w') as subs_file:
+            json.dump(substance, subs_file, indent=True)
     for spill in spills:
         fn, sp = spill
         del sp['element_type']
