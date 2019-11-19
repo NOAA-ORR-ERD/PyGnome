@@ -540,27 +540,23 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
             raw_v = raw_v[v_padding_slice].filled(0)
             raw_u = (raw_u[:, :, 0:-1, ] + raw_u[:, :, 1:]) / 2
             raw_v = (raw_v[:, 0:-1, :] + raw_v[:, 1:, :]) / 2
-
-        if isinstance(self.grid, Grid_S):
-            ctr_padding_slice = self.grid.get_padding_slices(self.grid.center_padding)
-        else:
-            ctr_padding_slice = None
-        x = raw_u[:]
-        xt = x.shape[0]
-        y = raw_v[:]
-        yt = y.shape[0]
-        x = x.reshape(xt, -1)
-        y = y.reshape(yt, -1)
         #u/v should be interpolated to centers at this point. Now apply appropriate mask
         
-        if isinstance(self.grid, Grid_S):
+        if isinstance(self.grid, Grid_S) and self.grid.center_mask is not None:
+            ctr_padding_slice = self.grid.get_padding_slices(self.grid.center_padding)
             if self.grid._cell_tree_mask is None:
                 self.grid.build_celltree()
-            
+        
+            x = raw_u[:]
+            xt = x.shape[0]
+            y = raw_v[:]
+            yt = y.shape[0]
+            x = x.reshape(xt, -1)
+            y = y.reshape(yt, -1)
             ctr_mask = gridded.utilities.gen_celltree_mask_from_center_mask(self.grid.center_mask, ctr_padding_slice)
             x = np.ma.MaskedArray(x, mask = np.tile(ctr_mask.reshape(-1), xt))
-            x = x.compressed().reshape(xt, -1)
             y = np.ma.MaskedArray(y, mask = np.tile(ctr_mask.reshape(-1), yt))
+            x = x.compressed().reshape(xt, -1)
             y = y.compressed().reshape(yt,-1)
         else:
             raw_u = raw_u.filled(0).reshape(raw_u.shape[0], -1)
