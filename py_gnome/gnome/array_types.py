@@ -279,6 +279,7 @@ _default_values = {'positions': ((3,), world_point_type, 'positions',
                    # use negative as a not yet set flag
                    'bulltime': ((), np.float64, 'bulltime', -1.),
                    'frac_lost': ((), np.float64, 'frac_lost', 0),
+                   'frac_evap': ((), np.float64, 'frac_evap', 0),
 
                    # substance index - used label elements from same substance
                    # used internally only by SpillContainer *if* more than one

@@ -520,7 +520,6 @@ class ObjType(SchemaType):
             # simple existence check
             if not os.path.exists(os.path.join(dirname, filename)):
                 saveloc.extract(filename, dirname)
-
                 return os.path.join(dirname, filename)
             else:
                 return os.path.join(dirname, filename)

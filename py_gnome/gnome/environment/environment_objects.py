@@ -492,35 +492,24 @@ class GridCurrent(VelocityGrid, Environment):
 
         if(hasattr(self, 'angle') and self.angle):
 
+            raw_uv = super(GridCurrent, self).get_data_vectors()
+            lin_u = raw_uv[0,:,:]
+            lin_v = raw_uv[1,:,:]
+
             raw_ang = self.angle.data[:]
-            raw_u = self.variables[0].data[:]
-            raw_v = self.variables[1].data[:]
-
-            if self.depth is not None:
-                raw_u = raw_u[:, self.depth.surface_index]
-                raw_v = raw_v[:, self.depth.surface_index]
-
-            if np.any(np.array(raw_u.shape) != np.array(raw_v.shape)):
-                # must be roms-style staggered
-                raw_u = (raw_u[:, 0:-1, :] + raw_u[:, 1:, :]) / 2
-                raw_v = (raw_v[:, :, 0:-1] + raw_v[:, :, 1:]) / 2
-                raw_ang = (raw_ang[0:-1, 0:-1] + raw_ang[1:, 1:]) / 2
+            angle_padding_slice = self.grid.get_padding_slices(self.grid.center_padding)
+            raw_ang = raw_ang[angle_padding_slice]
 
             if 'degree' in self.angle.units:
                 raw_ang = raw_ang * np.pi/180.
+            
+            ctr_mask = gridded.utilities.gen_celltree_mask_from_center_mask(self.grid.center_mask, angle_padding_slice)
+            ang = raw_ang.reshape(-1)
+            ang = np.ma.MaskedArray(ang, mask = ctr_mask.reshape(-1))
+            ang = ang.compressed()
 
-            x = raw_u[:] * np.cos(raw_ang) - raw_v[:] * np.sin(raw_ang)
-            xt = x.shape[0]
-            y = raw_u[:] * np.sin(raw_ang) + raw_v[:] * np.cos(raw_ang)
-            yt = y.shape[0]
-            x = x.filled(0).reshape(xt, -1)
-            y = y.filled(0).reshape(yt, -1)
-            if hasattr(self.grid.node_lon[:], 'mask') and self.grid.node_lon[:].mask is not False and not np.all(self.grid.node_lon[:].mask == False):
-                x = np.ma.MaskedArray(x, mask = self.grid._masks['node'][0])
-                x = x.compressed().reshape(xt, -1)
-                y = np.ma.MaskedArray(y, mask = self.grid._masks['node'][0])
-                y = y.compressed().reshape(yt,-1)
-            #r = np.ma.stack((x, y)) change to this when numpy 1.15 becomes norm.
+            x = lin_u[:] * np.cos(ang) - lin_v[:] * np.sin(ang)
+            y = lin_u[:] * np.sin(ang) + lin_v[:] * np.cos(ang)
             r = np.concatenate((x[None,:], y[None,:]))
             return np.ascontiguousarray(r.astype(np.float32)) # r.compressed().astype(np.float32)
             # return np.ascontiguousarray(r.filled(0), np.float32)
@@ -803,7 +792,7 @@ class IceAwareCurrent(GridCurrent):
             diff_v -= water_v
 
             vels[interp_mask] += (diff_v[interp_mask] *
-                                  interp[interp_mask])
+                                  interp[interp_mask][:, np.newaxis])
 
             return vels
         else:
@@ -866,7 +855,7 @@ class IceAwareWind(GridWind):
 
             # scale winds from 100-0% depending on ice coverage
             vels[interp_mask] = (vels[interp_mask] *
-                                 (1 - interp[interp_mask]))
+                                 (1 - interp[interp_mask][:, np.newaxis]))
 
             return vels
         else:

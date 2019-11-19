@@ -255,28 +255,15 @@ class Wind(Timeseries, Environment):
     def data_start(self):
         """
         The start time of the valid data for this wind timeseries
-
-        If there is one data point -- it's a constant wind
-        so data_start is -InfDateTime
         """
-
-        if self.ossm.get_num_values() == 1:
-            return InfDateTime("-inf")
-        else:
-            return sec_to_datetime(self.ossm.get_start_time())
+        return sec_to_datetime(self.ossm.get_start_time())
 
     @property
     def data_stop(self):
         """
         The stop time of the valid data for this wind timeseries
-
-        If there is one data point -- it's a constant wind
-        so data_start is -InfDateTime
         """
-        if self.ossm.get_num_values() == 1:
-            return InfDateTime("inf")
-        else:
-            return sec_to_datetime(self.ossm.get_end_time())
+        return sec_to_datetime(self.ossm.get_end_time())
 
     def timeseries_to_dict(self):
         '''

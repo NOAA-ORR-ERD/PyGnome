@@ -213,7 +213,16 @@ class CatsMover(CurrentMoversBase):
             raise ValueError('Path for Cats filename does not exist: {0}'
                              .format(filename))
 
-        self._filename = filename
+        f = open(filename, 'rU') 
+        header = f.readline()
+        f.close()
+        header.strip()
+        fields = header.split(' ')
+        if fields[0]!='DAG':
+            raise ValueError('File has incorrect header line for Cats format: {0}'
+                             .format(header))
+
+        self._filename = filename 
 
         # check if this is stored with cy_cats_mover?
         self.mover = CyCatsMover()
@@ -237,7 +246,8 @@ class CatsMover(CurrentMoversBase):
 
         if 'scale_refpoint' in kwargs:
             self.scale_refpoint = kwargs.pop('scale_refpoint')
-            self.mover.compute_velocity_scale()
+            #self.mover.compute_velocity_scale()
+            
         super(CatsMover, self).__init__(uncertain_duration=uncertain_duration,
                                         **kwargs)
 
@@ -249,6 +259,8 @@ class CatsMover(CurrentMoversBase):
             self.scale_value != 0.0 and
                 self.scale_refpoint is None):
             raise TypeError("Provide a reference point in 'scale_refpoint'.")
+
+        self.mover.compute_velocity_scale()
 
     def __repr__(self):
         return 'CatsMover(filename={0})'.format(self.filename)
@@ -328,6 +340,7 @@ class CatsMover(CurrentMoversBase):
     def tide(self, tide_obj):
         if tide_obj is None:
             self._tide = tide_obj
+            self.mover.unset_tide()
             return
         if not isinstance(tide_obj, Tide):
             raise TypeError('tide must be of type environment.Tide')
@@ -372,7 +385,8 @@ class CatsMover(CurrentMoversBase):
         Get file values scaled to ref pt value, with tide applied (if any)
         """
         velocities = self.mover._get_velocity_handle()
-        ref_scale = self.ref_scale  # this needs to be computed, needs a time
+        self.mover.compute_velocity_scale()  # make sure ref_scale is up to date
+        ref_scale = self.ref_scale 
 
         if self._tide is not None:
             time_value, _err = self._tide.cy_obj.get_time_value(model_time)
@@ -1125,6 +1139,7 @@ class ComponentMover(CurrentMoversBase):
     def __init__(self,
                  filename1=None,
                  filename2=None,
+                 wind=None,
                  scale_refpoint=None,
                  pat1_angle=0,
                  pat1_speed=10,
@@ -1135,7 +1150,6 @@ class ComponentMover(CurrentMoversBase):
                  pat2_speed=10,
                  pat2_speed_units=2,
                  scale_by=0,
-                 wind=None,
                  **kwargs):
         """
         Uses super to invoke base class __init__ method.

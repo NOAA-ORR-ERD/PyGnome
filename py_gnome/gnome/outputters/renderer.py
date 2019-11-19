@@ -467,9 +467,15 @@ class Renderer(Outputter, MapCanvas):
                                       background=True)
             elif metadata[2] == '2':
                 # this is a lake
-                self.draw_polygon(poly, fill_color='lake', background=True)
+                try:
+                    self.draw_polygon(poly, fill_color='lake', background=True)
+                except ValueError:
+                    pass  # py_gd can't handle 2pt polygons
             else:
-                self.draw_polygon(poly, fill_color='land', background=True)
+                try:
+                    self.draw_polygon(poly, fill_color='land', background=True)
+                except ValueError:
+                    pass  # py_gd can't handle 2pt polygons
 
         return None
 
