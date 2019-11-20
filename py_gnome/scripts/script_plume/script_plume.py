@@ -16,11 +16,13 @@ import os
 from datetime import datetime, timedelta
 
 from gnome import scripting
-from gnome.spill.elements import plume
+#from gnome.spill.elements import plume
 from gnome.utilities.distributions import WeibullDistribution
 
 from gnome.model import Model
 from gnome.map import GnomeMap
+from gnome.spill.substance import NonWeatheringSubstance
+from gnome.spill.initializers import plume_initializers
 from gnome.spill import point_line_release_spill
 from gnome.scripting import subsurface_plume_spill
 from gnome.movers import (RandomMover,
@@ -33,9 +35,10 @@ from gnome.outputters import NetCDFOutput
 
 # define base directory
 base_dir = os.path.dirname(__file__)
+images_dir = os.path.join(base_dir, 'images')
 
 
-def make_model(images_dir=os.path.join(base_dir, 'images')):
+def make_model():
     print 'initializing the model'
 
     start_time = datetime(2004, 12, 31, 13, 0)
@@ -74,7 +77,10 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                              min_=.0002)  # 200 micron min
     end_time = start_time + timedelta(hours=24)
 
-    spill = subsurface_plume_spill(num_elements=10,
+    # at this point only one non-weathering substance is allowed; this should change in the future
+    substance=NonWeatheringSubstance(standard_density=900, initializers=plume_initializers(distribution=wd))
+
+    spill = subsurface_plume_spill(num_elements=50,
                                    start_position=(-76.126872, 37.680952,
                                                    1700.0),
                                    release_time=start_time,
@@ -83,7 +89,9 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                                    units='m^3',
                                    end_release_time=end_time,
                                    # substance='oil_crude',
-                                   density=900,
+                                   #substance=NonWeatheringSubstance(standard_density=900),
+                                   substance=substance,
+                                   #density=900,
                                    )
 
     model.spills += spill
@@ -92,13 +100,16 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                              lambda_=.00456,
                              max_=.0002)  # 200 micron max
 
-    spill = point_line_release_spill(num_elements=10, amount=90,
+    spill = point_line_release_spill(num_elements=50, 
                                      units='m^3',
                                      start_position=(-76.126872, 37.680952,
                                                      1800.0),
                                      release_time=start_time,
-                                     element_type=plume(distribution=wd,
-                                                        density=900.0)
+                                     amount=90,
+                                     #element_type=plume(distribution=wd,
+                                     #                   density=900.0)
+                                     #substance = NonWeatheringSubstance(initializers=plume_initializers(distribution=wd))
+                                     substance=substance
                                      )
     model.spills += spill
 
@@ -134,7 +145,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
 
 if __name__ == "__main__":
-    scripting.make_images_dir()
+    scripting.make_images_dir(images_dir)
     model = make_model()
     print "about to start running the model"
     for step in model:

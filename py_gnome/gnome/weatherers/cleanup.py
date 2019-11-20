@@ -184,7 +184,7 @@ class CleanUpBase(RemoveMass, Weatherer):
 
                 self.logger.warning('{0} insufficient mass released for cleanup'
                                     .format(self._pid))
-                self.logger.warning('{0} marked ALL ({1}) LEs, total mass: {2}'
+                self.logger.debug('{0} marked ALL ({1}) LEs, total mass: {2}'
                                     .format(self._pid,
                                             len(data['fate_status']),
                                             data['mass'].sum()))

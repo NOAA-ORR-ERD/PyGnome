@@ -762,7 +762,7 @@ class RasterMap(GnomeMap):
         if self._ratios is None:
             self._ratios = (16,1,)
         return self._ratios
-    
+
     @ratios.setter
     def ratios(self, r):
         self._ratios = r
@@ -800,7 +800,7 @@ class RasterMap(GnomeMap):
         diff = self.projection.lonlat_to_meters(orig-diag, orig)
 
         return np.average(np.abs(diff))
-        
+
     def save_as_image(self, filename):
         '''
         Save the land-water raster as a PNG save_as_image
@@ -1113,7 +1113,13 @@ class MapFromBNA(RasterMap):
             elif p.metadata[1].lower().replace(' ', '') == 'mapbounds':
                 map_bounds = p
             else:
-                land_polys.append(p)
+                #  Fixme: we could draw the polylines....
+                if len(p) > 2:
+                    land_polys.append(p)
+                else:
+                    self.logger.debug("invalid polygon ignored:"
+                                 "{} points: {}, ".format(len(p), p.metadata))
+
 
         # now draw the raster map with a map_canvas:
         # determine the size:
@@ -1211,7 +1217,7 @@ class MapFromBNA(RasterMap):
         Maximum physical size of the raster in bytes
         '''
         return self._raster_size
-    
+
     @raster_size.setter
     def raster_size(self, size):
         if size != self._raster_size:

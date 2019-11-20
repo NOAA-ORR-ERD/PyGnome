@@ -130,6 +130,8 @@ var_attributes = {
         'long_name': 'water fraction after each time step'},
     'frac_lost': {
         'long_name': 'fraction of total mass that is lost after each time step'},
+    'frac_evap': {
+        'long_name': 'fraction of total mass that is evaporated after each time step'},
     'avg_density': {
         'long_name': 'average density at end of timestep',
         'units': 'kg/m^3'},

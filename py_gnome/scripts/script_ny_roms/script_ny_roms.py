@@ -86,17 +86,15 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     print 'adding a current mover:'
 
-    url = ('http://geoport.whoi.edu/thredds/dodsC/clay/usgs/users/jcwarner/Projects/Sandy/triple_nest/00_dir_NYB05.ncml')
-#     cf = roms_field('nos.tbofs.fields.n000.20160406.t00z_sgrid.nc')
-    cf = GridCurrent.from_netCDF(url)
-    renderer.add_grid(cf.grid)
-    renderer.delay = 25
-    u_mover = PyCurrentMover(cf, default_num_method='Euler')
-    model.movers += u_mover
-
-    # curr_file = get_datafile(os.path.join(base_dir, 'COOPSu_CREOFS24.nc'))
-    # c_mover = GridCurrentMover(curr_file)
-    # model.movers += c_mover
+    # url is broken, fix and include the following section
+#     url = ('http://geoport.whoi.edu/thredds/dodsC/clay/usgs/users/jcwarner/Projects/Sandy/triple_nest/00_dir_NYB05.ncml')
+# #     cf = roms_field('nos.tbofs.fields.n000.20160406.t00z_sgrid.nc')
+#     cf = GridCurrent.from_netCDF(url)
+#     renderer.add_grid(cf.grid)
+#     renderer.delay = 25
+#     u_mover = PyCurrentMover(cf, default_num_method='Euler')
+#     model.movers += u_mover
+# 
 
     return model
 

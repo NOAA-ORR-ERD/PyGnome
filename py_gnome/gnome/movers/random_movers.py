@@ -156,7 +156,7 @@ class IceAwareRandomMover(RandomMover):
             deltas[:, 0:2][ice_mask] = 0
 
             # scale winds from 100-0% depending on ice coverage
-            deltas[:, 0:2][interp_mask] *= (1 - interp[interp_mask])
+            deltas[:, 0:2][interp_mask] *= (1 - interp[interp_mask][:, np.newaxis])
             deltas[status] = (0, 0, 0)
 
             return deltas

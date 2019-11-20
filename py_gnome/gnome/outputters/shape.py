@@ -46,6 +46,11 @@ class ShapeOutput(Outputter):
 
         filename = filename.split(".zip")[0].split(".shp")[0]
 
+        if "." in os.path.split(filename)[-1]:
+            # anything after a doit gets removed
+            # I *think* pyshp is doing that, but not sure.
+            raise ValueError("shape files can't have a dot in the filename")
+
         self.filename = filename
         self.filedir = os.path.dirname(filename)
 
@@ -197,6 +202,7 @@ class ShapeOutput(Outputter):
             zipf = zipfile.ZipFile(zfilename, 'w')
 
             for suf in ['shp', 'prj', 'dbf', 'shx']:
+                print "filename is:", filename
                 file_to_zip = os.path.split(filename)[-1] + '.' + suf
 
                 zipf.write(os.path.join(self.filedir, file_to_zip),

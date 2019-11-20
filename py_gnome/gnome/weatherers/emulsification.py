@@ -56,7 +56,7 @@ class Emulsification(Weatherer):
                                  'oil_viscosity': gat('oil_viscosity'),
                                  'mass': gat('mass'),
                                  'interfacial_area': gat('interfacial_area'),
-                                 'frac_lost': gat('frac_lost')})
+                                 'frac_evap': gat('frac_evap')})
 
     def prepare_for_model_run(self, sc):
         '''
@@ -290,7 +290,7 @@ class Emulsification(Weatherer):
             emulsify_oil(time_step,
                          data['frac_water'],
                          data['interfacial_area'],
-                         data['frac_lost'],
+                         data['frac_evap'],
                          data['age'],
                          data['bulltime'],
                          k_emul,
@@ -325,18 +325,18 @@ class Emulsification(Weatherer):
 
         use_new_algorithm = False
         # only use new algorithm if all substances have measured SARA totals
-        for substance in sc.get_substances():
-            if substance.record.imported is not None:
-                sat = substance.record.imported.saturates
-                arom = substance.record.imported.aromatics
-                if sat is not None and arom is not None:
-                    use_new_algorithm = True
-                else:
-                    use_new_algorithm = False
-                    break
-            else:
-                use_new_algorithm = False	#use old algorithm
-                break
+#         for substance in sc.get_substances():
+#             if substance.record.imported is not None:
+#                 sat = substance.record.imported.saturates
+#                 arom = substance.record.imported.aromatics
+#                 if sat is not None and arom is not None:
+#                     use_new_algorithm = True
+#                 else:
+#                     use_new_algorithm = False
+#                     break
+#             else:
+#                 use_new_algorithm = False	#use old algorithm
+#                 break
 
         #self.weather_elements_lehr(sc, time_step, model_time)
         self.weather_elements_adios2(sc, time_step, model_time)
@@ -417,7 +417,8 @@ class Emulsification(Weatherer):
         wind_speed = self.waves.get_emulsification_wind(points, model_time)
 
         # water uptake rate constant - get this from database
-        K0Y = substance.get('k0y')
+        #K0Y = substance.get('k0y')
+        K0Y = 2.02E-06
 
         k_emul = 6.0 * K0Y * wind_speed * wind_speed / constants.drop_max
 

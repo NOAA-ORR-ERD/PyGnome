@@ -29,7 +29,7 @@ class PyCurrentMoverSchema(ObjTypeSchema):
                                        )
     filename = FilenameSchema(save=True, update=False, isdatafile=True,
                               missing=drop)
-    current_scale = SchemaNode(Float(), save=True, update=True,
+    scale_value = SchemaNode(Float(), save=True, update=True,
                                missing=drop)
     on = SchemaNode(Bool(), missing=drop, save=True, update=True)
     active_range = TimeRangeSchema()
@@ -51,7 +51,7 @@ class PyCurrentMover(movers.PyMover):
                  filename=None,
                  current=None,
                  time_offset=0,
-                 current_scale=1,
+                 scale_value=1,
                  uncertain_duration=24 * 3600,
                  uncertain_time_delay=0,
                  uncertain_along=.5,
@@ -74,7 +74,7 @@ class PyCurrentMover(movers.PyMover):
                              active
         :type active_range: 2-tuple of datetimes
 
-        :param current_scale: Value to scale current data
+        :param scale_value: Value to scale current data
         :param uncertain_duration: how often does a given uncertain element
                                    get reset
         :param uncertain_time_delay: when does the uncertainly kick in.
@@ -96,8 +96,7 @@ class PyCurrentMover(movers.PyMover):
             else:
                 self.current = GridCurrent.from_netCDF(filename=self.filename,
                                                        **kwargs)
-
-        self.current_scale = current_scale
+        self.scale_value = scale_value
 
         self.uncertain_along = uncertain_along
         self.uncertain_across = uncertain_across
@@ -115,7 +114,7 @@ class PyCurrentMover(movers.PyMover):
                     filename=None,
                     name=None,
                     time_offset=0,
-                    current_scale=1,
+                    scale_value=1,
                     uncertain_duration=24 * 3600,
                     uncertain_time_delay=0,
                     uncertain_along=.5,
@@ -131,7 +130,7 @@ class PyCurrentMover(movers.PyMover):
                    current=current,
                    filename=filename,
                    time_offset=time_offset,
-                   current_scale=current_scale,
+                   scale_value=scale_value,
                    uncertain_along=uncertain_along,
                    uncertain_across=uncertain_across,
                    uncertain_cross=uncertain_cross,
@@ -253,7 +252,7 @@ class PyCurrentMover(movers.PyMover):
             else:
                 deltas = res
 
-            deltas *= self.current_scale
+            deltas *= self.scale_value
 
             deltas = FlatEarthProjection.meters_to_lonlat(deltas, positions)
             deltas[status] = (0, 0, 0)
