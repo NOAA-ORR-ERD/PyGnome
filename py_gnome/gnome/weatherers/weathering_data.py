@@ -114,7 +114,7 @@ class WeatheringData(Weatherer):
 
         water_rho = self.water.get('density')
 
-        for substance, data in sc.itersubstancedata(self.array_types, fate_status='all'):
+        for substance, data in sc.itersubstancedata(self.array_types, fate_status='surface_weather'):
             
             if not substance.is_weatherable or len(data['density']) == 0:
                 self._aggregated_data(sc, 0)
@@ -170,7 +170,7 @@ class WeatheringData(Weatherer):
             #sc.data_arrays['mass'][zeros] = 0
             #sc.data_arrays['mass_components'][zeros] = 0
 
-            sc.update_from_fatedataview(fate_status='all')
+            sc.update_from_fatedataview(fate_status='surface_weather')
 
             # also initialize/update aggregated data
             self._aggregated_data(sc, 0)
