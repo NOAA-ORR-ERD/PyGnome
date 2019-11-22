@@ -114,7 +114,7 @@ class WeatheringData(Weatherer):
 
         water_rho = self.water.get('density')
 
-        for substance, data in sc.itersubstancedata(self.array_types, fate_status='surface_weather'):
+        for substance, data in sc.itersubstancedata(self.array_types, fate_status='all'):
             
             if not substance.is_weatherable or len(data['density']) == 0:
                 self._aggregated_data(sc, 0)
@@ -159,10 +159,7 @@ class WeatheringData(Weatherer):
                 kv1 = self._get_kv1_weathering_visc_update(v0)
                 fw_d_fref = data['frac_water'] / self.visc_f_ref
 
-                data['viscosity'] = (v0 *
-                                     np.exp(kv1 * data['frac_lost']) *
-                                     (1 + (fw_d_fref / (1.187 - fw_d_fref))) ** 2.49
-                                     )
+                data['viscosity'] = (v0 * np.exp(kv1 * data['frac_lost']) * (1 + (fw_d_fref / (1.187 - fw_d_fref))) ** 2.49 )
                 data['oil_viscosity'] = (v0 * np.exp(kv1 * data['frac_lost']))
 
             #sc.data_arrays['fate_status'][:] = np.choose(np.isclose(sc.data_arrays['mass'], 0), [sc.data_arrays['fate_status'], fate.non_weather])
@@ -170,10 +167,10 @@ class WeatheringData(Weatherer):
             #sc.data_arrays['mass'][zeros] = 0
             #sc.data_arrays['mass_components'][zeros] = 0
 
-            sc.update_from_fatedataview(fate_status='surface_weather')
+        sc.update_from_fatedataview(fate_status='all')
 
             # also initialize/update aggregated data
-            self._aggregated_data(sc, 0)
+        self._aggregated_data(sc, 0)
 
     def _aggregated_data(self, data, new_LEs):
         '''

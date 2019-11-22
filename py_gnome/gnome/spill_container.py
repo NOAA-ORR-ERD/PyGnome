@@ -51,7 +51,7 @@ class FateDataView(AddLogger):
 
     def reset(self):
         for fate_type in self._dicts_:
-            setattr(self, fate_type, {})
+                setattr(self, fate_type, {})
         # all data - this is required by WeatheringData to update
         # properties of old LEs and properties of newly released LEs
         self.all = {}
@@ -91,8 +91,8 @@ class FateDataView(AddLogger):
             for at in array_types:
                 array = sc._array_name(at)
 
-                if array not in dict_to_update:
-                    dict_to_update[array] = sc[array][fate_mask]
+                #if array not in dict_to_update:
+                dict_to_update[array] = sc[array][fate_mask]
 
             setattr(self, fate_status, dict_to_update)
 
@@ -129,6 +129,10 @@ class FateDataView(AddLogger):
         d_to_sync = getattr(self, fate_status)
 
         if d_to_sync is sc._data_arrays:
+            #import pdb
+            #pdb.set_trace()
+            for fs in self._dicts_:
+                self._set_data( sc, sc.array_types, self._get_fate_mask(sc, fs), fs)
             return
 
         w_mask = self._get_fate_mask(sc, fate_status)
