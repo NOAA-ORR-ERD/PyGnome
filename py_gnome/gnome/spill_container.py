@@ -51,7 +51,7 @@ class FateDataView(AddLogger):
 
     def reset(self):
         for fate_type in self._dicts_:
-                setattr(self, fate_type, {})
+            setattr(self, fate_type, {})
         # all data - this is required by WeatheringData to update
         # properties of old LEs and properties of newly released LEs
         self.all = {}
@@ -81,7 +81,6 @@ class FateDataView(AddLogger):
         # if 'substance' in sc:
         #     fate_mask = np.logical_and(sc['substance'] == self.substance_id,
         #                                fate_mask)
-
 
         if np.all(fate_mask):
             # no need to make a copy of array
@@ -129,10 +128,9 @@ class FateDataView(AddLogger):
         d_to_sync = getattr(self, fate_status)
 
         if d_to_sync is sc._data_arrays:
-            #import pdb
-            #pdb.set_trace()
-            for fs in self._dicts_:
-                self._set_data( sc, sc.array_types, self._get_fate_mask(sc, fs), fs)
+            self.reset()
+            #for fs in self._dicts_:
+            #    self._set_data( sc, getattr(self, fs).keys(), self._get_fate_mask(sc, fs), fs)
             return
 
         w_mask = self._get_fate_mask(sc, fate_status)
@@ -162,7 +160,7 @@ class FateDataView(AddLogger):
             sc[key][w_mask] = val
 
         if reset_view:
-            setattr(self, fate_status, {})
+            self.reset()
 
     def _reset_fatedata(self, sc, ix):
         '''
@@ -993,6 +991,7 @@ class SpillContainer(AddLogger, SpillContainerData):
             for key in self._array_types.keys():
                 self._data_arrays[key] = np.delete(self[key], to_be_removed,
                                                    axis=0)
+            self._fate_data_view.reset()
 
     def __str__(self):
         return ('gnome.spill_container.SpillContainer\n'
