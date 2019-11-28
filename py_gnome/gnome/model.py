@@ -918,6 +918,9 @@ class Model(GnomeId):
                 for model_time, time_step in self._split_into_substeps():
                     # change 'mass_components' in weatherer
                     w.weather_elements(sc, time_step, model_time)
+                    #self.logger.info('density after {0}: {1}'.format(w.name, sc['density'][-5:]))
+        
+        #self.logger.info('density after weather_elements: {0}'.format(sc['density'][-5:]))
 
     def _split_into_substeps(self):
         '''
