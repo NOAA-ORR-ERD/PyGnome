@@ -47,10 +47,9 @@ from gnome.utilities.file_tools import haz_files
 
 from gnome.utilities.geometry.polygons import PolygonSet
 from gnome.utilities.geometry import points_in_poly, point_in_poly
+from gnome.utilities.appearance import AppearanceSchema
 
 from gnome.cy_gnome.cy_land_check import check_land_layers, move_particles
-
-
 from gnome.persist import base_schema
 
 
@@ -59,6 +58,7 @@ class GnomeMapSchema(base_schema.ObjTypeSchema):
     # .MetaDataList is not serialized at all
     spillable_area = base_schema.PolygonSetSchema(save_reference=False,
                                                   test_equal=False)
+    _appearance = AppearanceSchema(test_equal=False)
     # land_polys = base_schema.PolygonSet(missing=drop)
     #crosses_dateline = SchemaNode(Boolean(), test_equal=False, read_only=True, save=False),
 
