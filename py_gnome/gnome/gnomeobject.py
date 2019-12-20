@@ -140,14 +140,15 @@ class GnomeId(AddLogger):
     _id = None
     make_default_refs = True
 
-    def __init__(self, name=None, *args, **kwargs):
+    def __init__(self, name=None, _appearance=None, *args, **kwargs):
         super(GnomeId, self).__init__(*args, **kwargs)
         self.__class__._instance_count += 1
 
         if name:
             if isinstance(name, six.string_types) and '/' in name or '\\' in name:
-                raise ValueError("Invalid slash character in {0}".format(name))
+                raise ValueError("Invalid slash character in object name: {0}".format(name))
             self.name = name
+        self._appearance = _appearance
         self.array_types = dict()
 
     @property

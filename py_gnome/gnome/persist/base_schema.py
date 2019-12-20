@@ -10,7 +10,7 @@ import tempfile
 import copy
 
 from colander import (SchemaNode, deferred, drop, required, Invalid, UnsupportedFields,
-                      SequenceSchema, TupleSchema, MappingSchema,
+                      SequenceSchema, TupleSchema, MappingSchema, Mapping,
                       String, Float, Int, SchemaType, Sequence, Tuple, Positional, null)
 
 from extend_colander import NumpyFixedLenSchema
@@ -29,7 +29,6 @@ def now(node, kw):
                                     in Schema
     """
     return datetime.datetime.now().replace(microsecond=0)
-
 
 class ObjType(SchemaType):
 
@@ -629,8 +628,8 @@ class ObjTypeSchema(MappingSchema):
     #       So the json structures that we produce for a save file
     #       should not rely on any unique object identifiers
     id = SchemaNode(String(), save=True, read_only=True)
-
     name = SchemaNode(String(), test_equal=False)
+    # _appearance is to allow the client to persist visualization information.
 
     def __init__(self, *args, **kwargs):
         super(ObjTypeSchema, self).__init__(*args, **kwargs)
@@ -771,6 +770,7 @@ class ObjTypeSchema(MappingSchema):
             return subappstruct
         else:
             return subnode.deserialize(subcstruct)
+
 
 class GeneralGnomeObjectSchema(ObjTypeSchema):
     '''
