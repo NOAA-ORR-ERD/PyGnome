@@ -72,7 +72,8 @@ class WeatheringData(Weatherer):
                             'oil_viscosity': gat('oil_viscosity'),
                             'init_mass': gat('init_mass'),
                             'frac_water': gat('frac_water'),
-                            'frac_lost': gat('frac_lost'),
+                            'frac_lost': gat('frac_lost'),	# change to frac_dissolved
+                            'frac_evap': gat('frac_evap'),
                             'age': gat('age')}
 
         # following used to update viscosity
@@ -159,8 +160,8 @@ class WeatheringData(Weatherer):
                 kv1 = self._get_kv1_weathering_visc_update(v0)
                 fw_d_fref = data['frac_water'] / self.visc_f_ref
 
-                data['viscosity'] = (v0 * np.exp(kv1 * data['frac_lost']) * (1 + (fw_d_fref / (1.187 - fw_d_fref))) ** 2.49 )
-                data['oil_viscosity'] = (v0 * np.exp(kv1 * data['frac_lost']))
+                data['viscosity'] = (v0 * np.exp(kv1 * data['frac_evap']) * (1 + (fw_d_fref / (1.187 - fw_d_fref))) ** 2.49 )
+                data['oil_viscosity'] = (v0 * np.exp(kv1 * data['frac_evap']))
 
             #sc.data_arrays['fate_status'][:] = np.choose(np.isclose(sc.data_arrays['mass'], 0), [sc.data_arrays['fate_status'], fate.non_weather])
             #zeros = np.isclose(sc.data_arrays['mass'], 0)
