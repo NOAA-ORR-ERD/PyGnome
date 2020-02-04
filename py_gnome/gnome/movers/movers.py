@@ -32,8 +32,6 @@ class ProcessSchema(ObjTypeSchema):
     '''
     on = SchemaNode(Bool(), missing=drop, save=True, update=True)
     active_range = TimeRangeSchema()
-    #Web client-only attributes
-    on_lock = SchemaNode(Bool(), missing=drop, save=False, update=True)
 
 
 class Process(GnomeId):
@@ -48,7 +46,6 @@ class Process(GnomeId):
 
     def __init__(self,
                  on=True,
-                 on_lock=False,
                  make_default_refs=True,
                  active_range=(InfDateTime('-inf'), InfDateTime('inf')),
                  **kwargs):  # default min + max values for timespan
@@ -65,7 +62,6 @@ class Process(GnomeId):
         super(Process, self).__init__(**kwargs)
 
         self.on = on
-        self.on_lock = on_lock
         self._active = self.on
 
         self._check_active_startstop(*active_range)
