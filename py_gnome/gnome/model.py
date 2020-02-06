@@ -109,6 +109,9 @@ class ModelSchema(ObjTypeSchema):
         save_reference=True
     )
 
+    #UI Configuration properties for web client:
+    manual_weathering = SchemaNode(Bool(), save=False, update=True, test_equal=False, missing=drop)
+
 
 class Model(GnomeId):
     '''
@@ -164,6 +167,7 @@ class Model(GnomeId):
                  weatherers=[],
                  spills=[],
                  uncertain_spills=[],
+                 manual_weathering=False,
                  **kwargs):
         '''
         Initializes a model.
@@ -254,6 +258,7 @@ class Model(GnomeId):
 
         self.location = location
         self._register_callbacks()
+        self.manual_weathering = manual_weathering
         self.array_types.update({'age': gat('age')})
 
     def _register_callbacks(self):
