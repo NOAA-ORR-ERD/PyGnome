@@ -9,10 +9,9 @@ from gnome.persist.base_schema import (ObjTypeSchema,
                                        ObjType,
                                        GeneralGnomeObjectSchema)
 from gnome.gnomeobject import GnomeId
-from oil_library.oil_props import OilProps
-from oil_library.factory import get_oil
-from oil_library.models import Oil
+from gnome.weatherers.oil import Oil
 from gnome.environment.water import Water, WaterSchema
+from gnome.spill.sample_oils import _sample_oils
 from gnome.spill.initializers import (floating_initializers,
                                       InitWindagesSchema,
                                       DistributionBaseSchema)
@@ -190,30 +189,35 @@ class Substance(GnomeId):
         return GnomeId._attach_default_refs(self, ref_dict)
 
 
-class GnomeOil(OilProps, Substance):
+
+class GnomeOil(Oil, Substance):
     _schema = GnomeOilSchema
     _req_refs = ['water']
 
     def __init__(self, name=None, water=None, **kwargs):
-        if isinstance(name, six.string_types):
-            if kwargs.get('adios_oil_id', False):
-                # init the oilprops from dictionary
-                oil_obj = get_oil(kwargs)
-            else:
-                # GnomeOil('oil_name_here')
-                oil_obj = get_oil(name)
-
-            OilProps.__init__(self, oil_obj)
-
-            # this is important;
-            # it passes name up to GnomeId to be handled there!
-            kwargs['name'] = name
-        elif isinstance(name, Oil):
-            oil_obj = name
-            OilProps.__init__(self, oil_obj)
+        oil_info = name
+        if name in _sample_oils:
+            oil_info = _sample_oils[name]
+        elif isinstance(name, six.string_types):
+            # check if it's json from save file or from client
+            if kwargs.get('component_density', False):
+                oil_info = kwargs
+            else:                
+                from oil_library import get_oil_props
+                if kwargs.get('adios_oil_id', False): 
+                    # init the oilprops from dictionary, old form
+                    oil_obj = get_oil_props(kwargs)
+                else: 
+                    # use name to get oil from oil library
+                    oil_obj = get_oil_props(name) 
+                oil_info = oil_obj.get_gnome_oil()
+                
+            kwargs['name'] = name #this is important; it passes name up to GnomeId to be handled there!
         else:
             raise ValueError('Must provide an oil name or OilLibrary.Oil '
                              'to GnomeOil init')
+
+        Oil.__init__(self, **oil_info)
 
         # because passing oilLibrary kwargs makes problem up the tree,
         # only pass up the kwargs specified in the schema
@@ -240,10 +244,7 @@ class GnomeOil(OilProps, Substance):
 
     def __eq__(self, other):
         t1 = Substance.__eq__(self, other)
-        try:
-            t2 = self.tojson() == other.tojson()
-        except Exception:
-            return False
+        t2 = Oil.__eq__(self, other)
         return t1 and t2
 
     @classmethod
@@ -251,34 +252,12 @@ class GnomeOil(OilProps, Substance):
         '''
         Use this instead of get_oil_props
         '''
-        oil_ = get_oil(oil_info, max_cuts)
-        return GnomeOil(oil_)
+        return GnomeOil(oil_info)
+
 
     def to_dict(self, json_=None):
         json_ = super(GnomeOil, self).to_dict(json_=json_)
-        substance_json = self.tojson()
 
-        # the old 'prune_substance' function from Spill
-        del substance_json['imported_record_id']
-        del substance_json['estimated_id']
-        del substance_json['id']
-
-        for attr in ('kvis', 'densities', 'cuts',
-                     'molecular_weights',
-                     'sara_densities', 'sara_fractions'):
-            for item in substance_json[attr]:
-                for sub_item in ('id', 'oil_id', 'imported_record_id'):
-                    if sub_item in item:
-                        del item[sub_item]
-
-        #special case for bullwinkle
-        #This is necessary because OilProps.tojson uses self.record, ignoring any
-        #attributes set directly on the instance. self._bulltime REALLY needs
-        #to be renamed to 'bullwinkle_time' in OilProps
-        substance_json['bullwinkle_time'] = self._bulltime
-        substance_json['bullwinkle_fraction'] = self.bullwinkle
-
-        json_.update(substance_json)
         return json_
 
     def __deepcopy__(self, memo):
