@@ -5,7 +5,6 @@ This provides an Oil object that can be used in the GNOME weathering algorithms.
 
 """
 
-from oil_library.factory import get_oil_props
 from backports.functools_lru_cache import lru_cache
 
 import json
@@ -95,7 +94,13 @@ class OilSchema(ObjTypeSchema):
     api = SchemaNode(
         Float(), missing=drop, save=True, update=True
     )
+    adios_oil_id = SchemaNode(
+        Int(), missing=drop, save=True, update=True
+    )
     pour_point = SchemaNode(
+        Float(), missing=drop, save=True, update=True
+    )
+    flash_point = SchemaNode(
         Float(), missing=drop, save=True, update=True
     )
     solubility = SchemaNode(
@@ -161,6 +166,8 @@ class Oil(object):
     is an array with length number of PCs
 
     """
+    _schema = OilSchema
+
     def __init__(self,
                  name,
                  # Physical properties
@@ -183,6 +190,9 @@ class Oil(object):
                  molecular_weight,
                  component_density,
                  sara_type,
+                 flash_point=None,
+                 adios_oil_id=None,
+                 **kwargs
                  ):
         """
         Create an oil from pseudo component data
@@ -191,6 +201,7 @@ class Oil(object):
         self.num_components = len(mass_fraction)
 
         self.api = api
+        self.adios_oil_id = adios_oil_id
         self.name = name
         self.densities = densities
         self.density_ref_temps = density_ref_temps
@@ -199,8 +210,11 @@ class Oil(object):
         self.kvis_ref_temps = kvis_ref_temps
         self.kvis_weathering = kvis_weathering
         self.bullwinkle_frac = bullwinkle_fraction
+        self.emulsion_water_fraction_max = emulsion_water_fraction_max
         self.bull_time = bullwinkle_time
         self._pour_point = pour_point
+        self._flash_point = flash_point
+        self.solubility = solubility	
         #self._k_v2 = 2416.0
         self._k_v2 = None
 
@@ -223,6 +237,100 @@ class Oil(object):
         if type(data) in (str, unicode):
             data = json.loads(data)
         return cls(**num_pcs)
+
+
+    def __eq__(self, other):
+        '''
+        need to explicitly compare __dict__
+        check if self.__dict__ == other.__dict__
+        '''
+        if type(self) != type(other):
+            return False
+
+        d1 = self.get_dict()
+        d2 = other.get_dict()
+
+        for key, val in d1.iteritems():
+            o_val = d2[key]
+
+            if isinstance(val, np.ndarray):
+                if np.any(val != o_val):
+                    return False
+            else:
+                if val != o_val:
+                    return False
+
+        return True
+
+
+    def get_dict(self):
+        """
+        Returns a dictionary representation of this object. Uses the schema to
+        determine which attributes are put into the dictionary. No extra
+        processing is done to each attribute. They are presented as is.
+        """
+
+        data = {'name':self.name,
+                       'api':self.api,
+                       'adios_oil_id':self.adios_oil_id,
+                       'pour_point':self._pour_point,
+                       'flash_point':self._flash_point,
+                       'solubility':self.solubility,
+                       'bullwinkle_fraction':self.bullwinkle,
+                       'bullwinkle_time':self.bulltime,
+                       'densities':self.densities,
+                       'density_ref_temps':self.density_ref_temps,
+                       'density_weathering':self.density_weathering,
+                       'kvis':self.kvis,
+                       'kvis_ref_temps':self.kvis_ref_temps,
+                       'kvis_weathering':self.kvis_weathering,
+                       'emulsion_water_fraction_max':self.emulsion_water_fraction_max,
+                       'mass_fraction':self.mass_fraction.tolist(),
+                       'boiling_point':self.boiling_point.tolist(),
+                       'molecular_weight':self.molecular_weight.tolist(),
+                       'component_density':self.component_density.tolist(),
+                       'sara_type':self.sara_type}
+
+        return data
+
+
+    def to_dict(self, json_=None):
+        """
+        Returns a dictionary representation of this object. Uses the schema to
+        determine which attributes are put into the dictionary. No extra
+        processing is done to each attribute. They are presented as is.
+
+        The ``json_`` parameter is ignored in this base class. 'save' is passed
+        in when the schema is saving the object. This allows an override of
+        this function to do any custom stuff necessary to prepare for saving.
+        """
+
+        json_ = super(Oil, self).to_dict(json_=json_)
+
+        data = {'name':self.name,
+                       'api':self.api,
+                       'adios_oil_id':self.adios_oil_id,
+                       #'pour_point':self.pour_point(),
+                       'pour_point':self._pour_point,
+                       'flash_point':self._flash_point,
+                       'solubility':self.solubility,
+                       'bullwinkle_fraction':self.bullwinkle,
+                       'bullwinkle_time':self.bulltime,
+                       'densities':self.densities,
+                       'density_ref_temps':self.density_ref_temps,
+                       'density_weathering':self.density_weathering,
+                       'kvis':self.kvis,
+                       'kvis_ref_temps':self.kvis_ref_temps,
+                       'kvis_weathering':self.kvis_weathering,
+                       'emulsion_water_fraction_max':self.emulsion_water_fraction_max,
+                       'mass_fraction':self.mass_fraction.tolist(),
+                       'boiling_point':self.boiling_point.tolist(),
+                       'molecular_weight':self.molecular_weight.tolist(),
+                       'component_density':self.component_density.tolist(),
+                       'sara_type':self.sara_type}
+
+        data.update(json_)
+        return data
 
 
     def _set_pc_values(self, prop, values):
@@ -317,7 +425,8 @@ class Oil(object):
         new_densities = []
 
         for x in range(0,len(densities)):
-            new_densities.append(Density(kg_m_3=densities[x],ref_temp_k=density_ref_temps[x],weathering=0.0))
+            if weathering[x] == 0:	#also check None
+                new_densities.append(Density(kg_m_3=densities[x],ref_temp_k=density_ref_temps[x],weathering=0.0))
 
         return sorted(new_densities, key=lambda d: d.ref_temp_k)
 
@@ -518,7 +627,8 @@ class Oil(object):
         kvis_list = []
 
         for x in range(0,len(kvis)):
-            kvis_list.append(KVis(m_2_s=kvis[x],ref_temp_k=kvis_ref_temps[x],weathering=0.0))
+            if weathering[x] == 0:	#also check None
+                kvis_list.append(KVis(m_2_s=kvis[x],ref_temp_k=kvis_ref_temps[x],weathering=0.0))
 
        # agg = dict(kvis_list)
 
@@ -686,3 +796,8 @@ class Oil(object):
 
         #return self.pour_point_min_k, self.pour_point_max_k, Estimated
         return self._pour_point, self._pour_point, False
+
+    def flash_point(self):
+
+        #return self.flash_point_min_k, self.flash_point_max_k, Estimated
+        return self._flash_point, self._flash_point, False

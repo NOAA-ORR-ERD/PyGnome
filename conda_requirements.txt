@@ -40,7 +40,7 @@ pyshp=1.2.12
 
 # NOAA maintained packages
 gridded=0.2.5
-unit_conversion=2.6.*
+pynucos>=2.6.*
 cell_tree2d>=0.3.*
 py_gd=0.1.* # libgd should get brought in automatically
 
@@ -50,7 +50,7 @@ py_gd=0.1.* # libgd should get brought in automatically
 #zope.interface>=4.1
 
 # required for building
-# note: cython 0.26 introduced a incompatiblity that we should address at some point
+# note: cython 0.26 introduced a incompatibility that we should address at some point
 cython=0.25.*
 
 # needed to run tests

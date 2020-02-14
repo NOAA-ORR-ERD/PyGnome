@@ -194,8 +194,13 @@ class Spill(BaseSpill):
         if val is None:
             self._substance = NonWeatheringSubstance()
             return
-        elif isinstance(val, Substance):
+        #elif isinstance(val, Substance):
+        elif isinstance(val, NonWeatheringSubstance):
             self._substance = val
+            return
+        elif isinstance(val, GnomeOil):
+            self._substance = val
+            return
         try:
             self._substance = GnomeOil.get_GnomeOil(val)
         except Exception:

@@ -76,6 +76,11 @@ class RiseVelocityMover(CyMover):
 
 
 class TamocRiseVelocityMover(RiseVelocityMover):
+    """
+    The only thing this adds (so far)
+
+    are droplet_diameter and density array types
+    """
     def __init__(self, *args, **kwargs):
         super(TamocRiseVelocityMover, self).__init__(*args, **kwargs)
 
