@@ -3,6 +3,7 @@ from outputter import Outputter, BaseOutputterSchema
 from netcdf import NetCDFOutput, NetCDFOutputSchema
 from renderer import Renderer, RendererSchema
 from weathering import WeatheringOutput
+from binary import BinaryOutput, BinaryOutputSchema
 from geo_json import (TrajectoryGeoJsonOutput,
                       IceGeoJsonOutput)
 from json import (IceJsonOutput,
@@ -19,6 +20,7 @@ outputters = [Outputter,
               NetCDFOutput,
               Renderer,
               WeatheringOutput,
+              BinaryOutput,
               TrajectoryGeoJsonOutput,
               IceGeoJsonOutput,
               IceJsonOutput,
