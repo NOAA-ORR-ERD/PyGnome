@@ -19,6 +19,7 @@ Contents
   logging
   serialization
   units
+  tech_notes
   reference
 
 

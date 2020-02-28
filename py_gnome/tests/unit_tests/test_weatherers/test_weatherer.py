@@ -11,8 +11,8 @@ import numpy as np
 from gnome.utilities.inf_datetime import InfDateTime
 
 from gnome.environment import Water
+from gnome.spill.substance import GnomeOil
 
-from oil_library import get_oil_props
 from conftest import weathering_data_arrays, test_oil
 
 from gnome.weatherers import (Weatherer,
@@ -21,7 +21,7 @@ from gnome.weatherers import (Weatherer,
                               Dissolution,
                               weatherer_sort)
 
-subs = get_oil_props(test_oil)
+subs = GnomeOil(test_oil)
 rel_time = datetime(2012, 8, 20, 13)  # yyyy/month/day/hr/min/sec
 
 
