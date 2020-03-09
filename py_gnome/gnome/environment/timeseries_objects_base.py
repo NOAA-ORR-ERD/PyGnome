@@ -35,6 +35,8 @@ class TimeseriesData(GnomeId):
 
     _schema = TimeseriesDataSchema
 
+    _gnome_unit = None
+
     def __init__(self,
                  data=None,
                  time=None,
@@ -177,8 +179,10 @@ class TimeseriesData(GnomeId):
 
             value = d0 + (d1 - d0) * t_alphas
 
-        if units is not None and units != self.units:
-            value = unit_conversion.convert(self.units, units, value)
+        data_units = self.units if self.units else self._gnome_unit
+        req_units = units if units else data_units
+        if data_units is not None:
+            value = unit_conversion.convert(data_units, req_units, value)
 
         if points is None:
             return value
@@ -230,6 +234,7 @@ class TimeseriesVector(GnomeId):
     Base class for multiple data sources aligned along the same single time dimension
     '''
     _schema = TimeseriesVectorSchema
+    _gnome_unit = None
 
     def __init__(self,
                  variables=None,
@@ -353,7 +358,7 @@ class TimeseriesVector(GnomeId):
         '''
         raise NotImplementedError()
 
-    def at(self, points, time, *args, **kwargs):
+    def at(self, points, time, units=None, *args, **kwargs):
         '''
             Find the value of the property at positions P at time T
 
@@ -378,8 +383,10 @@ class TimeseriesVector(GnomeId):
             :return: returns a Nx2 array of interpolated values
             :rtype: double
         '''
-        val = np.column_stack([var.at(points, time, *args, **kwargs)
-                                for var in self.variables])
+        units = units if units else self._gnome_unit #no need to convert here, its handled in the subcomponents
+        val = np.column_stack([var.at(points, time,  units=units, *args, **kwargs) for var in self.variables])
+
+        # No need to unit convert since that should be handled by the individual variable objects
         if points is None:
             return val[0]
         else:

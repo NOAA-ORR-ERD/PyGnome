@@ -127,6 +127,7 @@ class Wind(Timeseries, Environment):
     '''
     # object is referenced by others using this attribute name
     _ref_as = 'wind'
+    _gnome_unit = 'm/s'
 
     # default units for input/output data
     _schema = WindSchema
@@ -239,7 +240,7 @@ class Wind(Timeseries, Environment):
         returns entire timeseries in 'r-theta' coordinate system in the units
         in which the data was entered or as specified by units attribute
         '''
-        return self.get_wind_data(units=self.units)
+        return self.get_timeseries()
 
     @timeseries.setter
     def timeseries(self, value):
@@ -248,7 +249,7 @@ class Wind(Timeseries, Environment):
         self.units attribute. Property converts the units to 'm/s' so Cython/
         C++ object stores timeseries in 'm/s'
         '''
-        self.set_wind_data(value, units=self.units)
+        self.set_timeseries(value)
         self.time.data = self.timeseries['time'].astype(datetime.datetime)
 
     @property
@@ -470,7 +471,7 @@ class Wind(Timeseries, Environment):
 
         return tuple(data[0]['value'])
 
-    def at(self, points, time, coord_sys='r-theta',
+    def at(self, points, time, coord_sys='r-theta', units=None,
            _auto_align=True):
         '''
         Returns the value of the wind at the specified points at the specified

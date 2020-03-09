@@ -7,6 +7,7 @@ import numpy as np
 from colander import drop
 
 import gridded
+import unit_conversion as uc
 
 from gnome.environment import Environment
 from gnome.environment.timeseries_objects_base import TimeseriesData, TimeseriesVector
@@ -159,6 +160,8 @@ class S_Depth_T1(object):
 
 class VelocityTS(TimeseriesVector):
 
+    _gnome_unit = 'm/s'
+
     @classmethod
     def constant(cls,
                  name='',
@@ -197,6 +200,7 @@ class VelocityTS(TimeseriesVector):
 
 class VelocityGrid(VectorVariable):
 
+    _gnome_unit = 'm/s'
     comp_order = ['u', 'v', 'w']
 
     def __init__(self, angle=None, **kwargs):
@@ -323,6 +327,8 @@ class CurrentTS(VelocityTS, Environment):
 
 class TemperatureTS(TimeseriesData, Environment):
 
+    _gnome_unit = 'K'
+
     def __init__(self, name=None, units='K',
                  time=None, data=None,
                  **kwargs):
@@ -347,8 +353,12 @@ class GridTemperature(Variable, Environment):
 
     cf_names = ['sea_water_temperature', 'sea_surface_temperature']
 
+    _gnome_unit = 'K'
+    _default_unit_type = 'Temperature'
+
 
 class SalinityTS(TimeseriesData, Environment):
+    _gnome_unit = 'ppt'
 
     @classmethod
     def constant_salinity(cls,
@@ -362,9 +372,11 @@ class GridSalinity(Variable, Environment):
     default_names = ['salt']
 
     cf_names = ['sea_water_salinity', 'sea_surface_salinity']
+    _gnome_unit = 'ppt'
 
 
 class WaterDensityTS(TimeseriesData, Environment):
+    _gnome_unit = 'kg/m^3'
 
     def __init__(self,
                  name=None,
@@ -398,6 +410,7 @@ class WaterDensityTS(TimeseriesData, Environment):
 
 
 class GridSediment(Variable, Environment):
+    _gnome_unit = 'ppt'
     default_names = ['sand_06']
 
 
@@ -411,13 +424,15 @@ class IceConcentration(Variable, Environment):
 
 
 class Bathymetry(Variable):
+    _gnome_unit = 'm'
     default_names = ['h']
     cf_names = ['depth']
 
 
 class GridCurrent(VelocityGrid, Environment):
-    _ref_as = 'current'
 
+    _ref_as = 'current'
+    _gnome_unit = 'm/s'
     default_names = {'u': ['u', 'U', 'water_u', 'curr_ucmp'],
                      'v': ['v', 'V', 'water_v', 'curr_vcmp'],
                      'w': ['w', 'W']}
@@ -425,7 +440,7 @@ class GridCurrent(VelocityGrid, Environment):
                 'v': ['northward_sea_water_velocity'],
                 'w': ['upward_sea_water_velocity']}
 
-    def at(self, points, time, units=None, **kwargs):
+    def at(self, points, time, *args, **kwargs):
         '''
         Find the value of the property at positions P at time T
 
@@ -458,7 +473,7 @@ class GridCurrent(VelocityGrid, Environment):
 
         extrapolate = self.extrapolation_is_allowed
 
-        value = super(GridCurrent, self).at(points, time, units,
+        value = super(GridCurrent, self).at(points, time,
                                             extrapolate=extrapolate,
                                             **kwargs)
 
@@ -519,7 +534,7 @@ class GridCurrent(VelocityGrid, Environment):
 
 class GridWind(VelocityGrid, Environment):
     _ref_as = 'wind'
-
+    _gnome_unit = 'm/s'
     default_names = {'u': ['air_u', 'Air_U', 'air_ucmp', 'wind_u'],
                      'v': ['air_v', 'Air_V', 'air_vcmp', 'wind_v']}
 
@@ -538,10 +553,8 @@ class GridWind(VelocityGrid, Environment):
                                  'grid cell centers')
 
         self.wet_dry_mask = wet_dry_mask
-        if self.units is None:
-            self.units = 'm/s'
 
-    def at(self, points, time, units=None,
+    def at(self, points, time,
            coord_sys='uv', _auto_align=True, **kwargs):
         '''
         Find the value of the property at positions P at time T
@@ -592,7 +605,7 @@ class GridWind(VelocityGrid, Environment):
         if value is None:
             extrapolate = self.extrapolation_is_allowed
 
-            value = super(GridWind, self).at(pts, time, units,
+            value = super(GridWind, self).at(pts, time,
                                              extrapolate=extrapolate,
                                              _auto_align=False, **kwargs)
 
@@ -645,6 +658,11 @@ class GridWind(VelocityGrid, Environment):
 
 
 class LandMask(Variable):
+
+    '''
+    This class depends on gridded features not yet finalized so it likely non-functional
+    '''
+
     def __init__(self, *args, **kwargs):
         data = kwargs.pop('data', None)
 
@@ -697,6 +715,7 @@ class LandMask(Variable):
 
 class IceVelocity(VelocityGrid, Environment):
     _ref_as = ['ice_velocity', 'ice_aware']
+    _gnome_unit = 'm/s'
     default_names = {'u': ['ice_u'],
                      'v': ['ice_v']}
 
@@ -764,7 +783,7 @@ class IceAwareCurrent(GridCurrent):
                              ice_velocity=ice_velocity,
                              **kwargs))
 
-    def at(self, points, time, units=None, **kwargs):
+    def at(self, points, time, *args, **kwargs):
         extrapolate = self.extrapolation_is_allowed
         interp = (self.ice_concentration.at(points, time,
                                             extrapolate=extrapolate, **kwargs)
@@ -777,9 +796,9 @@ class IceAwareCurrent(GridCurrent):
             ice_mask = interp.reshape(-1) >= 0.8
 
             water_v = (super(IceAwareCurrent, self)
-                       .at(points, time, units=units, **kwargs))
+                       .at(points, time, *args, **kwargs))
 
-            ice_v = (self.ice_velocity.at(points, time, units=units, extrapolate=extrapolate, **kwargs).copy())
+            ice_v = (self.ice_velocity.at(points, time, extrapolate=extrapolate, *args, **kwargs).copy())
 
             interp = (interp - 0.2) * 10 / 6.
 
@@ -798,7 +817,8 @@ class IceAwareCurrent(GridCurrent):
         else:
             return super(IceAwareCurrent, self).at(points,
                                                    time,
-                                                   units=units,
+                                                   extrapolate=extrapolate,
+                                                   *args,
                                                    **kwargs)
 
 
@@ -834,10 +854,10 @@ class IceAwareWind(GridWind):
                              ice_velocity=ice_velocity,
                              **kwargs))
 
-    def at(self, points, time, units=None, **kwargs):
+    def at(self, points, time, *args, **kwargs):
         extrapolate = self.extrapolation_is_allowed
         interp = self.ice_concentration.at(points, time,
-                                           extrapolate=extrapolate, **kwargs)
+                                           extrapolate=extrapolate, *args, **kwargs)
 
         interp_mask = np.logical_and(interp >= 0.2, interp < 0.8)
         interp_mask = interp_mask.reshape(-1)
@@ -860,4 +880,4 @@ class IceAwareWind(GridWind):
             return vels
         else:
             return (super(IceAwareWind, self)
-                    .at(points, time, units, **kwargs))
+                    .at(points, time, extrapolate=extrapolate, *args, **kwargs))

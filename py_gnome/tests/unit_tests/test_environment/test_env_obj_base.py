@@ -6,6 +6,7 @@ import tempfile
 
 import numpy as np
 import netCDF4 as nc
+import unit_conversion as uc
 
 from gnome.environment.gridded_objects_base import (Variable,
                                                     VectorVariable,
@@ -109,11 +110,11 @@ class TestTimeseriesData:
     test_class = TimeseriesData
 
     def get_tsd_instance(self, dates, series_data):
-        return TimeseriesData(time=Time(dates), data=series_data, units='m')
+        return TimeseriesData(time=Time(dates), data=series_data, units=None)
 
     def test_construction(self, dates, series_data):
         t = self.get_tsd_instance(dates, series_data)
-        t2 = self.test_class(time=dates, data=series_data, units='m')
+        t2 = self.test_class(time=dates, data=series_data, units=None)
 
         assert t.time == t2.time
         assert t == t2
@@ -142,6 +143,22 @@ class TestTimeseriesData:
             t.at(np.array([0, 0, 0, 0]),
                  dt.datetime(2000, 2, 1, 1),
                  extrapolate=False)
+
+        assert np.allclose(t.at(np.array([0, 0, 0]),
+                                dt.datetime(2000, 1, 1, 1),
+                                units='m'),
+                        np.array([2, 2, 2]))
+
+        t.units = 'cm/s'
+        assert np.allclose(t.at(np.array([0, 0, 0]),
+                                dt.datetime(2000, 1, 1, 1)),
+                           np.array([2, 2, 2]))
+
+        assert np.allclose(t.at(np.array([0, 0, 0]),
+                                dt.datetime(2000, 1, 1, 1),
+                                units='m/s'),
+                           np.array([0.02, 0.02, 0.02]))
+
 
     def test_serialize(self, dates, series_data):
         t = self.get_tsd_instance(dates, series_data)
@@ -202,6 +219,23 @@ class TestTimeseriesVector:
             t.at(np.array([0, 0, 0, 0]),
                  dt.datetime(2000, 2, 1, 1),
                  extrapolate=False)
+
+
+        with pytest.raises(uc.UnitConversionError):
+            assert np.allclose(t.at(np.array([0, 0, 0]),
+                                    dt.datetime(2000, 1, 1, 1),
+                                    units='cm'),
+                            np.array([(200, 400), (200, 400), (200, 400)]))
+
+        t.units = 'cm/s'
+        assert np.allclose(t.at(np.array([0, 0, 0]),
+                                dt.datetime(2000, 1, 1, 1)),
+                           np.array([(2, 4), (2, 4), (2, 4)]))
+
+        assert np.allclose(t.at(np.array([0, 0, 0]),
+                                dt.datetime(2000, 1, 1, 1),
+                                units='m/s'),
+                           np.array([(0.02, 0.04), (0.02, 0.04), (0.02, 0.04)]))
 
     def test_serialize(self, dates, series_data, series_data2):
         t = self.get_tsv_instance(dates, series_data, series_data2)

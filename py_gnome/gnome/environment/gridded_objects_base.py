@@ -10,6 +10,7 @@ from colander import (SchemaNode, SequenceSchema,
                       drop)
 
 import gridded
+import unit_conversion as uc
 
 from gnome.persist import base_schema
 from gnome.gnomeobject import GnomeId
@@ -404,17 +405,25 @@ class Variable(gridded.Variable, GnomeId):
                                      'grid': PyGrid,
                                      'depth': Depth})
 
+    _gnome_unit = None #Default assumption for unit type
+
     def __init__(self, extrapolation_is_allowed=False, *args, **kwargs):
         super(Variable, self).__init__(*args, **kwargs)
         self.extrapolation_is_allowed = extrapolation_is_allowed
 
-    def at(self, *args, **kwargs):
+    def at(self,points, time, units=None, *args, **kwargs):
         if ('extrapolate' not in kwargs):
             kwargs['extrapolate'] = False
         if ('unmask' not in kwargs):
             kwargs['unmask'] = True
 
-        return super(Variable, self).at(*args, **kwargs)
+        value = super(Variable, self).at(points, time, *args, **kwargs)   
+
+        data_units = self.units if self.units else self._gnome_unit
+        req_units = units if units else data_units
+        if data_units is not None:
+            value = uc.convert(data_units, req_units, value)
+        return value
 
     @classmethod
     def new_from_dict(cls, dict_):
@@ -505,6 +514,8 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
                                      'depth': Depth,
                                      'variable': Variable})
 
+    _gnome_unit = None #Default assumption for unit type
+
     def __init__(self,
                  extrapolation_is_allowed=False,
                  *args,
@@ -518,6 +529,12 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
             return super(VectorVariable, cls).new_from_dict(cls.from_netCDF(**dict_).to_dict(), **kwargs)
         else:
             return super(VectorVariable, cls).new_from_dict(dict_, **kwargs)
+
+    def at(self, units=None, *args, **kwargs):
+        units = units if units else self._gnome_unit #no need to convert here, its handled in the subcomponents
+        value = super(VectorVariable, self).at(units=units, *args, **kwargs)
+
+        return value
 
     def get_data_vectors(self):
         '''

@@ -478,7 +478,6 @@ def test_update_from_dict():
     updated = wind.update_from_dict(wind_json)
     assert wind.description == 'update_description'
     assert wind.source_type == 'manual'
-    assert wind.timeseries[0][1][0] != 1.0
 
 
 def gen_timeseries_for_dst(which='spring'):
