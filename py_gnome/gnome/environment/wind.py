@@ -240,7 +240,7 @@ class Wind(Timeseries, Environment):
         returns entire timeseries in 'r-theta' coordinate system in the units
         in which the data was entered or as specified by units attribute
         '''
-        return self.get_timeseries()
+        return self.get_timeseries( coord_sys='r-theta')
 
     @timeseries.setter
     def timeseries(self, value):
@@ -249,7 +249,7 @@ class Wind(Timeseries, Environment):
         self.units attribute. Property converts the units to 'm/s' so Cython/
         C++ object stores timeseries in 'm/s'
         '''
-        self.set_timeseries(value)
+        self.set_timeseries(value, coord_sys='r-theta')
         self.time.data = self.timeseries['time'].astype(datetime.datetime)
 
     @property
