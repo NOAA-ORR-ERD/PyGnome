@@ -23,6 +23,8 @@ from gnome.basic_types import wind_datasources
 from gnome.cy_gnome.cy_ossm_time import ossm_wind_units
 
 from gnome.utilities.time_utils import sec_to_datetime
+from gnome.utilities.time_utils import (zero_time,
+                                        sec_to_date)
 from gnome.utilities.timeseries import Timeseries
 from gnome.utilities.inf_datetime import InfDateTime
 from gnome.utilities.distributions import RayleighDistribution as rayleigh
@@ -31,6 +33,9 @@ from gnome.persist.extend_colander import (DefaultTupleSchema,
                                            LocalDateTime,
                                            DatetimeValue2dArraySchema,
                                            FilenameSchema)
+from gnome.utilities.convert import (to_time_value_pair,
+                                     tsformat,
+                                     to_datetime_value_2d)
 from gnome.persist.validators import convertible_to_seconds
 from gnome.persist import validators, base_schema
 
@@ -148,6 +153,7 @@ class Wind(Timeseries, Environment):
         """
         todo: update docstrings!
         """
+        self._timeseries = np.array([(sec_to_date(zero_time()),[0.0, 0.0])], dtype=datetime_value_2d)
         self.updated_at = kwargs.pop('updated_at', None)
         self.source_id = kwargs.pop('source_id', 'undefined')
 
@@ -240,7 +246,7 @@ class Wind(Timeseries, Environment):
         returns entire timeseries in 'r-theta' coordinate system in the units
         in which the data was entered or as specified by units attribute
         '''
-        return self.get_timeseries( coord_sys='r-theta')
+        return self._timeseries
 
     @timeseries.setter
     def timeseries(self, value):
@@ -249,8 +255,22 @@ class Wind(Timeseries, Environment):
         self.units attribute. Property converts the units to 'm/s' so Cython/
         C++ object stores timeseries in 'm/s'
         '''
-        self.set_timeseries(value, coord_sys='r-theta')
-        self.time.data = self.timeseries['time'].astype(datetime.datetime)
+        coord_sys ='r-theta'
+        if self._check_timeseries(value):
+            units = self.units
+
+            wind_data = self._xform_input_timeseries(value)
+            self._timeseries = wind_data
+            wind_data['value'] = self._convert_units(wind_data['value'],
+                                                     coord_sys, units,
+                                                     'meter per second')
+
+            datetime_value_2d = self._xform_input_timeseries(wind_data)
+            timeval = to_time_value_pair(wind_data, coord_sys)
+            self.ossm.timeseries = timeval
+            self.time.data = self._timeseries['time'].astype(datetime.datetime)
+        else:
+            raise ValueError('Bad timeseries as input')
 
     @property
     def data_start(self):
@@ -451,6 +471,7 @@ class Wind(Timeseries, Environment):
                                                      'meter per second')
 
             super(Wind, self).set_timeseries(wind_data, coord_sys)
+            self._timeseries = wind_data
         else:
             raise ValueError('Bad timeseries as input')
 
