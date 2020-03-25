@@ -411,7 +411,7 @@ class Variable(gridded.Variable, GnomeId):
         super(Variable, self).__init__(*args, **kwargs)
         self.extrapolation_is_allowed = extrapolation_is_allowed
 
-    def at(self,points, time, units=None, *args, **kwargs):
+    def at(self, points, time, units=None, *args, **kwargs):
         if ('extrapolate' not in kwargs):
             kwargs['extrapolate'] = False
         if ('unmask' not in kwargs):
@@ -530,9 +530,9 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
         else:
             return super(VectorVariable, cls).new_from_dict(dict_, **kwargs)
 
-    def at(self, units=None, *args, **kwargs):
+    def at(self, points, time, units=None, *args, **kwargs):
         units = units if units else self._gnome_unit #no need to convert here, its handled in the subcomponents
-        value = super(VectorVariable, self).at(units=units, *args, **kwargs)
+        value = super(VectorVariable, self).at(points, time, units=units, *args, **kwargs)
 
         return value
 
