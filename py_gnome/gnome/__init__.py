@@ -41,14 +41,18 @@ def check_dependency_versions():
         try:
             module = importlib.import_module(name)
         except ImportError:
-            print ('ERROR: The {} package, version >= {} needs to be installed'
-                   .format(name, version))
-            sys.exit(1)
+            msg = ("ERROR: The {} package, version >= {}"
+                   "needs to be installed".format(name, version))
+            warnings.warn(msg)
+
+            # print ('ERROR: The {} package, version >= {} needs to be installed'
+            #        .format(name, version))
+            # sys.exit(1)
         if module.__version__ < version:
-            w = ('Version {0} of {1} package is required, '
-                 'but actual version in module is {2}'
-                 .format(version, name, module.__version__))
-            warnings.warn(w)
+            msg = ('Version {0} of {1} package is required, '
+                   'but actual version in module is {2}'
+                   .format(version, name, module.__version__))
+            warnings.warn(msg)
 
 
 def initialize_log(config, logfile=None):
