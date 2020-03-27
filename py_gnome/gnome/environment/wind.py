@@ -195,7 +195,7 @@ class Wind(Timeseries, Environment):
                 if units is None:
                     raise TypeError('Units must be provided with timeseries')
                 self.units = units
-                self.timeseries = timeseries
+                self.new_set_timeseries(timeseries, coord_sys)
 
         self.extrapolation_is_allowed = extrapolation_is_allowed
         self.time = kwargs.pop('time', None)
@@ -263,6 +263,9 @@ class Wind(Timeseries, Environment):
         C++ object stores timeseries in 'm/s'
         '''
         coord_sys ='r-theta'
+        self.new_set_timeseries(value, coord_sys)
+
+    def new_set_timeseries(self, value, coord_sys):
         if self._check_timeseries(value):
             units = self.units
 
@@ -280,6 +283,7 @@ class Wind(Timeseries, Environment):
             self.time.data = self._timeseries['time'].astype(datetime.datetime)
         else:
             raise ValueError('Bad timeseries as input')
+
 
     @property
     def data_start(self):
