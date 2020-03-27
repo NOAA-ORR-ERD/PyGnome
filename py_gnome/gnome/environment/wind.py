@@ -194,12 +194,19 @@ class Wind(Timeseries, Environment):
             if timeseries is not None:
                 if units is None:
                     raise TypeError('Units must be provided with timeseries')
-
-                self.set_wind_data(timeseries, units, coord_sys)
+                self.units = units
+                self.timeseries = timeseries
 
         self.extrapolation_is_allowed = extrapolation_is_allowed
         self.time = kwargs.pop('time', None)
-        self._time = Time(data=self.timeseries['time'].astype(datetime.datetime))
+
+    def update_from_dict(self, dict_, refs=None):
+        if 'units' in dict_.keys():
+            #enforce updating of units before timeseries
+            self.units = dict_.pop('units')
+        if 'timeseries' in dict_.keys():
+            self.timeseries = WindTimeSeriesSchema().deserialize(dict_.pop('timeseries'))
+        super(Wind, self).update_from_dict(dict_, refs=refs)
 
     def _check_units(self, units):
         '''
@@ -260,7 +267,7 @@ class Wind(Timeseries, Environment):
             units = self.units
 
             wind_data = self._xform_input_timeseries(value)
-            self._timeseries = wind_data
+            self._timeseries = wind_data.copy()
             wind_data['value'] = self._convert_units(wind_data['value'],
                                                      coord_sys, units,
                                                      'meter per second')
@@ -268,6 +275,8 @@ class Wind(Timeseries, Environment):
             datetime_value_2d = self._xform_input_timeseries(wind_data)
             timeval = to_time_value_pair(wind_data, coord_sys)
             self.ossm.timeseries = timeval
+            if not hasattr(self, '_time') or self._time is None:
+                self._time = Time()
             self.time.data = self._timeseries['time'].astype(datetime.datetime)
         else:
             raise ValueError('Bad timeseries as input')
@@ -285,15 +294,6 @@ class Wind(Timeseries, Environment):
         The stop time of the valid data for this wind timeseries
         """
         return sec_to_datetime(self.ossm.get_end_time())
-
-    def timeseries_to_dict(self):
-        '''
-        when serializing data - round it to 2 decimal places
-        '''
-        ts = self.get_wind_data(units=self.units)
-        ts['value'][:] = np.round(ts['value'], 2)
-
-        return ts
 
     @property
     def units(self):
