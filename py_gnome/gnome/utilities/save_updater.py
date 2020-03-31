@@ -73,7 +73,8 @@ def v0tov1(messages, errors):
         '''
         inits = et_json.get('initializers',[])
         for init in inits:
-            init['obj_type'] = init['obj_type'].replace('.elements.', '.')
+            if isinstance(init, dict):
+                init['obj_type'] = init['obj_type'].replace('.elements.', '.')
         if 'substance' not in et_json:
             '''
             Note the id of the new cstructs. The ID IS required at this stage, because
