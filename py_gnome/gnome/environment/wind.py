@@ -176,6 +176,7 @@ class Wind(Timeseries, Environment):
             self.name = kwargs.pop('name', os.path.split(self.filename)[1])
             # set _user_units attribute to match user_units read from file.
             self._user_units = self.ossm.user_units
+            self._timeseries = self.get_wind_data(units=self._user_units)
 
             if units is not None:
                 self.units = units
