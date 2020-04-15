@@ -418,6 +418,7 @@ class IceConcentration(Variable, Environment):
     _ref_as = ['ice_concentration', 'ice_aware']
     default_names = ['ice_fraction', ]
     cf_names = ['sea_ice_area_fraction']
+    _gnome_unit = 'fraction'
 
     def __init__(self, *args, **kwargs):
         super(IceConcentration, self).__init__(*args, **kwargs)
@@ -785,41 +786,34 @@ class IceAwareCurrent(GridCurrent):
 
     def at(self, points, time, *args, **kwargs):
         extrapolate = self.extrapolation_is_allowed
-        interp = (self.ice_concentration.at(points, time,
+        cctn = (self.ice_concentration.at(points, time,
                                             extrapolate=extrapolate, **kwargs)
                   .copy())
 
-        interp_mask = np.logical_and(interp >= 0.2, interp < 0.8)
-        interp_mask = interp_mask.reshape(-1)
+        water_v = super(IceAwareCurrent, self).at(points,
+                                                  time,
+                                                  *args,
+                                                  **kwargs)
 
-        if len(interp > 0.2):
-            ice_mask = interp.reshape(-1) >= 0.8
+        if np.any(cctn >= 0.2):
+            ice_mask = cctn >= 0.8
+            water_mask = cctn < 0.2
+            interp_mask = np.logical_and(cctn >= 0.2, cctn < 0.8)
 
-            water_v = (super(IceAwareCurrent, self)
-                       .at(points, time, *args, **kwargs))
-
-            ice_v = (self.ice_velocity.at(points, time, extrapolate=extrapolate, *args, **kwargs).copy())
-
-            interp = (interp - 0.2) * 10 / 6.
+            ice_vel_factor = cctn.copy()
+            ice_vel_factor[ice_mask] = 1
+            ice_vel_factor[water_mask] = 0
+            ice_vel_factor[interp_mask] = ((ice_vel_factor[interp_mask] - 0.2) * 10) / 6
 
             vels = water_v.copy()
+            ice_v = self.ice_velocity.at(points, time, extrapolate=extrapolate, *args, **kwargs).copy()
 
             #deals with the >0.8 concentration case
-            vels[ice_mask] = ice_v[ice_mask]
-
-            diff_v = ice_v
-            diff_v -= water_v
-
-            vels[interp_mask] += (diff_v[interp_mask] *
-                                  interp[interp_mask][:, np.newaxis])
+            vels[:] = vels[:] + (ice_v - water_v) * ice_vel_factor
 
             return vels
         else:
-            return super(IceAwareCurrent, self).at(points,
-                                                   time,
-                                                   extrapolate=extrapolate,
-                                                   *args,
-                                                   **kwargs)
+            return water_v
 
 
 class IceAwareWind(GridWind):
@@ -856,28 +850,27 @@ class IceAwareWind(GridWind):
 
     def at(self, points, time, *args, **kwargs):
         extrapolate = self.extrapolation_is_allowed
-        interp = self.ice_concentration.at(points, time,
-                                           extrapolate=extrapolate, *args, **kwargs)
 
-        interp_mask = np.logical_and(interp >= 0.2, interp < 0.8)
-        interp_mask = interp_mask.reshape(-1)
+        cctn = self.ice_concentration.at(points, time, extrapolate=extrapolate, *args, **kwargs)
+        wind_v = super(IceAwareWind, self).at(points, time, *args, **kwargs)
 
-        if len(interp >= 0.2) != 0:
-            ice_mask = interp.reshape(-1) >= 0.8
+        if np.any(cctn >= 0.2):
+            ice_mask = cctn >= 0.8
+            water_mask = cctn < 0.2
+            interp_mask = np.logical_and(cctn >= 0.2, cctn < 0.8)
 
-            wind_v = (super(IceAwareWind, self)
-                      .at(points, time, units, **kwargs))
-
-            interp = (interp - 0.2) * 10 / 6.
+            ice_vel_factor = cctn.copy()
+            ice_vel_factor[ice_mask] = 1
+            ice_vel_factor[water_mask] = 0
+            ice_vel_factor[interp_mask] = ((ice_vel_factor[interp_mask] - 0.2) * 10) / 6
 
             vels = wind_v.copy()
             vels[ice_mask] = 0
 
             # scale winds from 100-0% depending on ice coverage
-            vels[interp_mask] = (vels[interp_mask] *
-                                 (1 - interp[interp_mask][:, np.newaxis]))
+            # 100% wind up to 0.2 coverage, 0% wind at >0.8 coverage
+            vels[:] = vels[:] * (1 - ice_vel_factor)
 
             return vels
         else:
-            return (super(IceAwareWind, self)
-                    .at(points, time, extrapolate=extrapolate, *args, **kwargs))
+            return wind_v

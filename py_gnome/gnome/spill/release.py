@@ -455,7 +455,7 @@ class PointLineRelease(Release):
         '''
         if not self._prepared:
             return 0
-        return int(self._release_ts.at(None, current_time + timedelta(seconds=time_step)))
+        return int(self._release_ts.at(None, current_time + timedelta(seconds=time_step), extrapolate=True))
 
     def initialize_LEs(self, to_rel, data, current_time, time_step):
         '''
@@ -464,8 +464,8 @@ class PointLineRelease(Release):
         time_step = integer seconds
         '''
         sl = slice(-to_rel, None, 1)
-        start_position = self._pos_ts.at(None, current_time)
-        end_position = self._pos_ts.at(None, current_time + timedelta(seconds=time_step))
+        start_position = self._pos_ts.at(None, current_time, extrapolate=True)
+        end_position = self._pos_ts.at(None, current_time + timedelta(seconds=time_step), extrapolate=True)
         data['positions'][sl, 0] = \
             np.linspace(start_position[0],
                         end_position[0],

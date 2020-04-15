@@ -220,7 +220,7 @@ class TestTimeseriesVector:
                  dt.datetime(2000, 2, 1, 1),
                  extrapolate=False)
 
-
+        #try to convert m/s to cm
         with pytest.raises(uc.UnitConversionError):
             assert np.allclose(t.at(np.array([0, 0, 0]),
                                     dt.datetime(2000, 1, 1, 1),
