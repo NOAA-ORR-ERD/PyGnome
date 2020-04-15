@@ -165,7 +165,7 @@ class TimeseriesData(GnomeId):
                 t_index = self.time.index_of(time, extrapolate)
                 t_alphas = self.time.interp_alpha(time, extrapolate)
 
-                d0 = self.data[t_index - 1]
+                d0 = self.data[max(t_index - 1, 0)]
                 d1 = self.data[t_index]
 
                 value = d0 + (d1 - d0) * t_alphas

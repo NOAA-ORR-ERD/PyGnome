@@ -124,17 +124,17 @@ class TestTimeseriesData:
 
         assert np.allclose(t.at(np.array([0, 0, 0]),
                                 dt.datetime(2000, 1, 1, 1)),
-                           np.array([2, 2, 2]))
+                           np.array([2]))
 
         assert np.allclose(t.at(np.array([0, 0]),
                                 dt.datetime(1999, 1, 1, 0)),
-                           np.array([1, 1]))
+                           np.array([1]))
 
-        assert np.allclose(t.at(np.array([0]),
+        assert np.allclose(t.at(np.array([0, 0]),
                                 dt.datetime(2000, 2, 1, 0)),
                            np.array([15]))
 
-        assert np.allclose(t.at(np.array([0]),
+        assert np.allclose(t.at(np.array([0, 0, 0]),
                                 dt.datetime(2000, 1, 1, 0),
                                 extrapolate=False),
                            np.array([1]))
@@ -200,17 +200,17 @@ class TestTimeseriesVector:
 
         assert np.allclose(t.at(np.array([0, 0, 0]),
                                 dt.datetime(2000, 1, 1, 1)),
-                           np.array([(2, 4), (2, 4), (2, 4)]))
+                           np.array([(2, 4)]))
 
         assert np.allclose(t.at(np.array([0, 0]),
                                 dt.datetime(1999, 1, 1, 0)),
-                           np.array([(1, 2), (1, 2)]))
+                           np.array([(1, 2)]))
 
-        assert np.allclose(t.at(np.array([0]),
+        assert np.allclose(t.at(np.array([0,0]),
                                 dt.datetime(2000, 2, 1, 0)),
                            np.array([(15, 30)]))
 
-        assert np.allclose(t.at(np.array([0]),
+        assert np.allclose(t.at(np.array([0,0,0]),
                                 dt.datetime(2000, 1, 1, 0),
                                 extrapolate=False),
                            np.array([(1, 2)]))
@@ -220,7 +220,7 @@ class TestTimeseriesVector:
                  dt.datetime(2000, 2, 1, 1),
                  extrapolate=False)
 
-        #try to convert m/s to cm
+
         with pytest.raises(uc.UnitConversionError):
             assert np.allclose(t.at(np.array([0, 0, 0]),
                                     dt.datetime(2000, 1, 1, 1),
