@@ -32,7 +32,7 @@ def check_dependency_versions():
     If the version is not at least as current as what's defined here
     a warning is displayed
     """
-    libs = [('gridded', '0.2.2'),
+    libs = [('gridded', '0.2.4'),
             ('oil_library', '1.1.2'),
             ('unit_conversion', '2.6.3')]
 
@@ -44,15 +44,12 @@ def check_dependency_versions():
             msg = ("ERROR: The {} package, version >= {}"
                    "needs to be installed".format(name, version))
             warnings.warn(msg)
-
-            # print ('ERROR: The {} package, version >= {} needs to be installed'
-            #        .format(name, version))
-            # sys.exit(1)
-        if module.__version__ < version:
-            msg = ('Version {0} of {1} package is required, '
-                   'but actual version in module is {2}'
-                   .format(version, name, module.__version__))
-            warnings.warn(msg)
+        else:
+            if module.__version__ < version:
+                msg = ('Version {0} of {1} package is required, '
+                       'but actual version in module is {2}'
+                       .format(version, name, module.__version__))
+                warnings.warn(msg)
 
 
 def initialize_log(config, logfile=None):
