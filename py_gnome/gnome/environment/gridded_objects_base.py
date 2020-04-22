@@ -3,6 +3,7 @@ import StringIO
 import copy
 import numpy as np
 import logging
+import warnings
 from functools import wraps
 
 from colander import (SchemaNode, SequenceSchema,
@@ -417,12 +418,20 @@ class Variable(gridded.Variable, GnomeId):
         if ('unmask' not in kwargs):
             kwargs['unmask'] = True
 
-        value = super(Variable, self).at(points, time, *args, **kwargs)   
+        value = super(Variable, self).at(points, time, *args, **kwargs)
 
         data_units = self.units if self.units else self._gnome_unit
         req_units = units if units else data_units
-        if data_units is not None:
-            value = uc.convert(data_units, req_units, value)
+        if data_units is not None and data_units != req_units:
+            try:
+                value = uc.convert(data_units, req_units, value)
+            except uc.NotSupportedUnitError:
+                if (not uc.is_supported(data_units)):
+                    warnings.warn("{0} units is not supported: {1}".format(self.name, data_units))
+                elif (not uc.is_supported(req_units)):
+                    warnings.warn("Requested unit is not supported: {1}".format(req_units))
+                else:
+                    raise
         return value
 
     @classmethod
