@@ -291,10 +291,11 @@ class ObjType(SchemaType):
 
             # Need to exclude lists from this culling,
             # unless explicitly set save=false
-            t1 = not isinstance(subnode, (SequenceSchema, TupleSchema))
+            #t1 = not isinstance(subnode, (SequenceSchema, TupleSchema))
             t2 = hasattr(subnode, 'save') and subnode.save is False
             t3 = k not in savable_attrs
-            if (t1 and t2 and t3 and k in json_):
+            #if (t1 and t2 and t3 and k in json_):
+            if (t2 and t3 and k in json_):
                 json_.pop(k)
 
         #replace all save_reference json with just the json filename containing said object

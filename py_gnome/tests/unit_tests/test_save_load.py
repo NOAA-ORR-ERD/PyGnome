@@ -136,7 +136,8 @@ base_dir = os.path.dirname(__file__)
 g_objects = (
     GridCurrent.from_netCDF(testdata['GridCurrentMover']['curr_tri']),
     Tide(testdata['CatsMover']['tide']),
-    Wind(filename=testdata['ComponentMover']['wind']),
+    #Wind(filename=testdata['ComponentMover']['wind']),
+    constant_wind(5., 270, 'knots'),
     Wind(timeseries=(sec_to_date(24 * 60 * 60),
                      (0, 0)), units='mps'),
     Water(temperature=273),
@@ -147,7 +148,8 @@ g_objects = (
               tide=Tide(testdata['CatsMover']['tide'])),
     ComponentMover(testdata['ComponentMover']['curr']),
     ComponentMover(testdata['ComponentMover']['curr'],
-                   wind=Wind(filename=testdata['ComponentMover']['wind'])),
+                   wind=constant_wind(5., 270, 'knots')),
+                   #wind=Wind(filename=testdata['ComponentMover']['wind'])),
     RandomMover3D(),
     SimpleMover(velocity=(10.0, 10.0, 0.0)),
 
