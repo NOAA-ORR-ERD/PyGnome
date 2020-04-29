@@ -402,9 +402,14 @@ class PointLineRelease(Release):
         else:
             t = Time([self.release_time + timedelta(seconds=ts * step) for step in range(0,num_ts + 1)])
             t.data[-1] = self.end_release_time
-        self._release_ts = TimeseriesData(name=self.name+'_release_ts',
-                                          time=t,
-                                          data=np.linspace(0, max_release, num_ts + 1).astype(int))
+        if self.release_duration == 0:
+            self._release_ts = TimeseriesData(name=self.name+'_release_ts',
+                                              time=t,
+                                              data=np.full(t.data.shape, max_release).astype(int))
+        else:
+            self._release_ts = TimeseriesData(name=self.name+'_release_ts',
+                                            time=t,
+                                            data=np.linspace(0, max_release, num_ts + 1).astype(int))
         lon_ts = TimeseriesData(name=self.name+'_lon_ts',
                                 time=t,
                                 data=np.linspace(self.start_position[0], self.end_position[0], num_ts + 1))
@@ -454,6 +459,8 @@ class PointLineRelease(Release):
         :param amount: integer kilograms
         '''
         if not self._prepared:
+            return 0
+        if current_time < self.release_time:
             return 0
         return int(self._release_ts.at(None, current_time + timedelta(seconds=time_step), extrapolate=True))
 
