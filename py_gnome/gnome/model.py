@@ -1003,7 +1003,7 @@ class Model(GnomeId):
         Steps the model forward (or backward) in time. Needs testing for
         hindcasting.
         '''
-        isvalid = True
+        isValid = True
         for sc in self.spills.items():
             # Set the current time stamp only after current_time_step is
             # incremented and before the output is written. Set it to None here
@@ -1011,19 +1011,24 @@ class Model(GnomeId):
             sc.current_time_stamp = None
 
         if self.current_time_step == -1:
-            # that's all we need to do for the zeroth time step
+            #starting new run so run setup
             self.setup_model_run()
 
             # let each object raise appropriate error if obj is incomplete
             # validate and send validation flag if model is invalid
-            (msgs, isvalid) = self.check_inputs()
-            if not isvalid:
+            (msgs, isValid) = self.check_inputs()
+            if not isValid:
                 raise RuntimeError("Setup model run complete but model "
                                    "is invalid", msgs)
-            # (msgs, isvalid) = self.validate()
-            # if not isvalid:
-            #    raise StopIteration("Setup model run complete but model "
-            #                        "is invalid", msgs)
+
+            #going into step 0
+            self.current_time_step += 1
+            #only release 1 second, to catch any instantaneous releases
+            self.release_elements(1, self.model_time)
+            #step 0 output
+            output_info = self.output_step(isValid)
+
+            return output_info
 
         elif self.current_time_step >= self._num_time_steps - 1:
             # _num_time_steps is set when self.time_step is set. If user does
@@ -1034,27 +1039,34 @@ class Model(GnomeId):
             raise StopIteration("Run complete for {0}".format(self.name))
 
         else:
+            self.current_time_step += 1
             self.setup_time_step()
+            #release_elements first param is 0 because self.model_time is already
+            #set to the END of the current time interval
+            self.release_elements(0, self.model_time)
             self.move_elements()
             self.weather_elements()
             self.step_is_done()
+            output_info = self.output_step(isValid)
+            return output_info
 
-        self.current_time_step += 1
+    def output_step(self, isvalid):
+        self._cache.save_timestep(self.current_time_step, self.spills)
+        output_info = self.write_output(isvalid)
 
-        # this is where the new step begins!
-        # the elements released are during the time period:
-        #    self.model_time + self.time_step
-        # The else part of the loop computes values for data_arrays that
-        # correspond with time_stamp:
-        #    self.model_time + self.time_step
-        # This is the current_time_stamp attribute of the SpillContainer
-        #     [sc.current_time_stamp for sc in self.spills.items()]
+        self.logger.debug('{0._pid} '
+                        'Completed step: {0.current_time_step} for {0.name}'
+                        .format(self))
+        return output_info
+
+    def release_elements(self, time_step, model_time):
+        num_released = 0
         for sc in self.spills.items():
-            sc.current_time_stamp = self.model_time
+            sc.current_time_stamp = model_time
 
             # release particles for next step - these particles will be aged
             # in the next step
-            num_released = sc.release_elements(self.time_step, self.model_time)
+            num_released = sc.release_elements(time_step, model_time)
 
             # initialize data - currently only weatherers do this so cycle
             # over weatherers collection - in future, maybe movers can also do
@@ -1067,18 +1079,7 @@ class Model(GnomeId):
             self.logger.debug("{1._pid} released {0} new elements for step:"
                               " {1.current_time_step} for {1.name}".
                               format(num_released, self))
-
-        # cache the results - current_time_step is incremented but the
-        # current_time_stamp in spill_containers (self.spills) is not updated
-        # till we go through the prepare_for_model_step
-        self._cache.save_timestep(self.current_time_step, self.spills)
-        output_info = self.write_output(isvalid)
-
-        self.logger.debug('{0._pid} '
-                          'Completed step: {0.current_time_step} for {0.name}'
-                          .format(self))
-
-        return output_info
+        return num_released
 
     def __iter__(self):
         '''
