@@ -1051,6 +1051,7 @@ class Model(GnomeId):
             self.step_is_done()
             #This releases any elements that are expected to pop into existence on
             #the last second of the current step (or the first second of the next interval)
+            #This helps avoid egregious cases involving non-step-aligned instant releases
             self.release_elements(0, self.model_time)
             output_info = self.output_step(isValid)
             return output_info
