@@ -1079,6 +1079,39 @@ class CurrentCycleMover(GridCurrentMover):
     def is_data_on_cells(self):
         return None
 
+    def get_center_points(self):
+        if self.mover._is_triangle_grid():
+            if self.mover._is_data_on_cells():
+                return self.get_triangle_center_points()
+            else:
+                return self.get_points()
+        else:
+            return self.get_cell_center_points()
+
+    def get_scaled_velocities(self, time):
+        """
+        :param model_time=0:
+        """
+        num_tri = self.mover.get_num_triangles()
+
+        # will need to update this for regular grids
+        if self.mover._is_triangle_grid():
+            if self.mover._is_data_on_cells():
+                num_cells = num_tri
+            else:
+                num_vertices = self.mover.get_num_points()
+                num_cells = num_vertices
+        elif self.mover._is_regular_grid():
+            num_cells = self.mover.get_num_points()
+        else:
+            num_cells = num_tri / 2
+
+        vels = np.zeros(num_cells, dtype=basic_types.velocity_rec)
+
+        self.mover.get_scaled_velocities(time, vels)
+
+        return vels
+
 
 class ComponentMoverSchema(ProcessSchema):
     '''static schema for ComponentMover'''
