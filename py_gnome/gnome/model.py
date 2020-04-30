@@ -1043,10 +1043,15 @@ class Model(GnomeId):
             self.setup_time_step()
             #release_elements first param is 0 because self.model_time is already
             #set to the END of the current time interval
-            self.release_elements(0, self.model_time)
+            #This releases all the elements that are expected to exist during this
+            #time step, NOT INCLUSIVE of the last second of the time step
+            self.release_elements(0, self.model_time - timedelta(seconds=1))
             self.move_elements()
             self.weather_elements()
             self.step_is_done()
+            #This releases any elements that are expected to pop into existence on
+            #the last second of the current step (or the first second of the next interval)
+            self.release_elements(0, self.model_time)
             output_info = self.output_step(isValid)
             return output_info
 
