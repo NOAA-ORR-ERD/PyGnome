@@ -1003,7 +1003,7 @@ class Model(GnomeId):
         Steps the model forward (or backward) in time. Needs testing for
         hindcasting.
         '''
-        isvalid = True
+        isValid = True
         for sc in self.spills.items():
             # Set the current time stamp only after current_time_step is
             # incremented and before the output is written. Set it to None here
@@ -1016,12 +1016,12 @@ class Model(GnomeId):
 
             # let each object raise appropriate error if obj is incomplete
             # validate and send validation flag if model is invalid
-            (msgs, isvalid) = self.check_inputs()
-            if not isvalid:
+            (msgs, isValid) = self.check_inputs()
+            if not isValid:
                 raise RuntimeError("Setup model run complete but model "
                                    "is invalid", msgs)
-            # (msgs, isvalid) = self.validate()
-            # if not isvalid:
+            # (msgs, isValid) = self.validate()
+            # if not isValid:
             #    raise StopIteration("Setup model run complete but model "
             #                        "is invalid", msgs)
 
@@ -1072,7 +1072,7 @@ class Model(GnomeId):
         # current_time_stamp in spill_containers (self.spills) is not updated
         # till we go through the prepare_for_model_step
         self._cache.save_timestep(self.current_time_step, self.spills)
-        output_info = self.write_output(isvalid)
+        output_info = self.write_output(isValid)
 
         self.logger.debug('{0._pid} '
                           'Completed step: {0.current_time_step} for {0.name}'
@@ -1416,7 +1416,7 @@ class Model(GnomeId):
         raise an exception if user can't run the model
         todo: check if all spills start after model ends
         '''
-        (msgs, isvalid) = self.validate()
+        (msgs, isValid) = self.validate()
 
         someSpillIntersectsModel = False
         num_spills = len(self.spills)
@@ -1448,7 +1448,7 @@ class Model(GnomeId):
 
                     msgs.append('error: {}: {}'
                                 .format(self.__class__.__name__, msg))
-                    isvalid = False
+                    isValid = False
 
                 if spill.substance.is_weatherable:
                     # min_k1 = spill.substance.get('pour_point_min_k')
@@ -1472,7 +1472,7 @@ class Model(GnomeId):
                         if np.any(rho_h2o < rho_oil):
                             msg = ('Found particles with '
                                    'relative_buoyancy < 0. Oil is a sinker')
-                            isvalid = False
+                            isValid = False
                             raise GnomeRuntimeError(msg)
 
         if num_spills_on > 0 and not someSpillIntersectsModel:
@@ -1486,9 +1486,9 @@ class Model(GnomeId):
             self.logger.warning(msg)  # for now make this a warning
             # self.logger.error(msg)
             msgs.append('warning: ' + self.__class__.__name__ + ': ' + msg)
-            # isvalid = False
+            # isValid = False
 
-        return (msgs, isvalid)
+        return (msgs, isValid)
 
     def validate(self):
         '''
@@ -1501,7 +1501,7 @@ class Model(GnomeId):
         # object in collection requires it
         env_req = set()
         msgs = []
-        isvalid = True
+        isValid = True
         for oc in self._oc_list:
             for item in getattr(self, oc):
                 # if item is not on, no need to validate it
