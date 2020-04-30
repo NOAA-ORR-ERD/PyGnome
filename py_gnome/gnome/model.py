@@ -1039,16 +1039,16 @@ class Model(GnomeId):
             raise StopIteration("Run complete for {0}".format(self.name))
 
         else:
-            self.current_time_step += 1
             self.setup_time_step()
             #release_elements first param is 0 because self.model_time is already
             #set to the END of the current time interval
             #This releases all the elements that are expected to exist during this
             #time step, NOT INCLUSIVE of the last second of the time step
-            self.release_elements(0, self.model_time - timedelta(seconds=1))
+            self.release_elements(self.time_step - 1, self.model_time)
             self.move_elements()
             self.weather_elements()
             self.step_is_done()
+            self.current_time_step += 1
             #This releases any elements that are expected to pop into existence on
             #the last second of the current step (or the first second of the next interval)
             #This helps avoid egregious cases involving non-step-aligned instant releases
