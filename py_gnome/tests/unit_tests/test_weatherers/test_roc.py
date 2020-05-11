@@ -448,7 +448,7 @@ class TestRocChemDispersion(ROCTests):
                 assert all(self.sc['mass'] >= 0)
                 assert np.all(self.sc['mass_components'] >= 0)
                 assert ((self.sc.mass_balance['chem_dispersed'] +
-                         self.sc.mass_balance['evaporated']) <
+                         self.sc.mass_balance['evaporated']) <=
                         sum(self.sc['init_mass']))
         except StopIteration:
             pass
