@@ -4,6 +4,7 @@ is composed of a release object and an ElementType
 '''
 
 import copy
+import math
 from datetime import datetime, timedelta
 from gnome.utilities.time_utils import asdatetime
 
@@ -462,7 +463,7 @@ class PointLineRelease(Release):
             return 0
         if current_time < self.release_time:
             return 0
-        return int(self._release_ts.at(None, current_time + timedelta(seconds=time_step), extrapolate=True))
+        return int(math.ceil(self._release_ts.at(None, current_time + timedelta(seconds=time_step), extrapolate=True)))
 
     def initialize_LEs(self, to_rel, data, current_time, time_step):
         '''

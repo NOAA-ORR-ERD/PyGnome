@@ -1044,7 +1044,7 @@ class Model(GnomeId):
             #set to the END of the current time interval
             #This releases all the elements that are expected to exist during this
             #time step, NOT INCLUSIVE of the last second of the time step
-            self.release_elements(self.time_step - 1, self.model_time)
+            self.release_elements(self.time_step/2, self.model_time)
             self.move_elements()
             self.weather_elements()
             self.step_is_done()
