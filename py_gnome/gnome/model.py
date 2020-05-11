@@ -1024,7 +1024,7 @@ class Model(GnomeId):
             #going into step 0
             self.current_time_step += 1
             #only release 1 second, to catch any instantaneous releases
-            self.release_elements(1, self.model_time)
+            self.release_elements(0, self.model_time)
             #step 0 output
             output_info = self.output_step(isValid)
 
@@ -1040,18 +1040,13 @@ class Model(GnomeId):
 
         else:
             self.setup_time_step()
-            #release_elements first param is 0 because self.model_time is already
-            #set to the END of the current time interval
-            #This releases all the elements that are expected to exist during this
-            #time step, NOT INCLUSIVE of the last second of the time step
+            #release half the LEs for this time interval
             self.release_elements(self.time_step/2, self.model_time)
             self.move_elements()
             self.weather_elements()
             self.step_is_done()
             self.current_time_step += 1
-            #This releases any elements that are expected to pop into existence on
-            #the last second of the current step (or the first second of the next interval)
-            #This helps avoid egregious cases involving non-step-aligned instant releases
+            #Release the remaining half of the LEs in this time interval
             self.release_elements(0, self.model_time)
             output_info = self.output_step(isValid)
             return output_info
