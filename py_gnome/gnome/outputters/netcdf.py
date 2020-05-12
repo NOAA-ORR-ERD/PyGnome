@@ -856,7 +856,7 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
             _stop_ix = _start_ix + data.variables['particle_count'][index]
             elem = data.variables['particle_count'][index]
 
-            c_time = nc.num2date(time_[index], time_.units,
+            c_time = nc.num2pydate(time_[index], time_.units,
                                  calendar=time_.calendar)
 
             arrays_dict['current_time_stamp'] = np.array(c_time)

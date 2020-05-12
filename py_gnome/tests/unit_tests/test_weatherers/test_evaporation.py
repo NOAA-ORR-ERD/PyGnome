@@ -153,7 +153,7 @@ class TestDecayConst:
         else:
             num_les_one_per_ts = end_time_delay.total_seconds() / 900.
 
-        (m1, m2) = self.setup_test(end_time_delay, (num_les_one_per_ts,
+        (m1, m2) = self.setup_test(end_time_delay, (2*num_les_one_per_ts,
                                                     4 * num_les_one_per_ts))
 
         for ix in xrange(m1.num_time_steps):
@@ -191,7 +191,8 @@ def assert_helper(sc, new_p):
             assert data['mass'].sum() < total_mass
 
         if new_p > 0:
-            assert np.all(data['evap_decay_constant'][-new_p:, :] ==
+            #new_p/2 because of new step release behavior May 2020
+            assert np.all(data['evap_decay_constant'][-(new_p/2):, :] ==
                           0.0)
 
 

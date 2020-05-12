@@ -567,12 +567,12 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
             raw_u = (raw_u[:, :, 0:-1, ] + raw_u[:, :, 1:]) / 2
             raw_v = (raw_v[:, 0:-1, :] + raw_v[:, 1:, :]) / 2
         #u/v should be interpolated to centers at this point. Now apply appropriate mask
-        
+
         if isinstance(self.grid, Grid_S) and self.grid.center_mask is not None:
             ctr_padding_slice = self.grid.get_padding_slices(self.grid.center_padding)
             if self.grid._cell_tree_mask is None:
                 self.grid.build_celltree()
-        
+
             x = raw_u[:]
             xt = x.shape[0]
             y = raw_v[:]
@@ -612,11 +612,17 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
 
     @property
     def data_start(self):
-        return self.time.min_time.replace(tzinfo=None)
+        try:
+            return self.time.min_time.replace(tzinfo=None)
+        except TypeError: # cftime datetime objects don't have a tzinfo attribute.
+            return self.time.min_time
 
     @property
     def data_stop(self):
-        return self.time.max_time.replace(tzinfo=None)
+        try:
+            return self.time.max_time.replace(tzinfo=None)
+        except TypeError: # cftime datetime objects don't have a tzinfo attribute.
+            return self.time.max_time
 
     def save(self, saveloc='.', refs=None, overwrite=True):
         return GnomeId.save(self, saveloc=saveloc, refs=refs, overwrite=overwrite)
