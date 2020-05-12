@@ -1503,7 +1503,7 @@ class Model(GnomeId):
         # object in collection requires it
         env_req = set()
         msgs = []
-        isValid = True
+        isvalid = True
         for oc in self._oc_list:
             for item in getattr(self, oc):
                 # if item is not on, no need to validate it
