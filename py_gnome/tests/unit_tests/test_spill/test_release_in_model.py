@@ -123,12 +123,12 @@ def test_continuous_aligned_start(empty_model, cont_spill):
 
     data = results.data_buffer.certain
 
-    # there should be 1/4 of the Elements at time zero
+    # there should be 0 of the Elements at time zero
     # then go from there
-    assert len(data[0]['mass']) == NUM_ELEMENTS / 4 * 1
-    assert len(data[1]['mass']) == NUM_ELEMENTS / 4 * 2
-    assert len(data[2]['mass']) == NUM_ELEMENTS / 4 * 3
-    assert len(data[3]['mass']) == NUM_ELEMENTS
+    assert len(data[0]['mass']) == 0
+    assert len(data[1]['mass']) == NUM_ELEMENTS / 4
+    assert len(data[2]['mass']) == NUM_ELEMENTS / 4 * 2
+    assert len(data[3]['mass']) == NUM_ELEMENTS / 4 * 3
     assert len(data[4]['mass']) == NUM_ELEMENTS
 
 
@@ -147,9 +147,9 @@ def test_continuous_unaligned_start(empty_model, cont_spill):
     # there should be 100 Elements at all times
     # there should be 0 Elements at time zero
     assert len(data[0]['mass']) == 0
-    assert len(data[1]['mass']) == NUM_ELEMENTS / 4 * 1
-    assert len(data[2]['mass']) == NUM_ELEMENTS / 4 * 2
-    assert len(data[3]['mass']) == NUM_ELEMENTS / 4 * 3
-    assert len(data[4]['mass']) == NUM_ELEMENTS
+    assert len(data[1]['mass']) == 0
+    assert len(data[2]['mass']) == NUM_ELEMENTS / 4 * 1
+    assert len(data[3]['mass']) == NUM_ELEMENTS / 4 * 2
+    assert len(data[4]['mass']) == NUM_ELEMENTS / 4 * 3
     assert len(data[5]['mass']) == NUM_ELEMENTS
 

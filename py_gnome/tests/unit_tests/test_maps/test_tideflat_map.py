@@ -214,7 +214,7 @@ def test_full_model_run(simple_model):
     """
     # run it a bit faster
     # but long enough for them all to beach
-    simple_model.duration = gs.hours(18)
+    simple_model.duration = gs.hours(24)
     # simple_model.full_run()
     for step in simple_model:
         print "step num:", step['step_num']
