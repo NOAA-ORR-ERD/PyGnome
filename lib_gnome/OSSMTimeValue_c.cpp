@@ -974,7 +974,10 @@ OSErr OSSMTimeValue_c::ReadTimeValues(char *path, short format,
 #ifdef pyGNOME
 	// askForUnits must be FALSE if using pyGNOME
 	if (askForUnits) {
-		err = 1;	// JS: standard error codes dont exist in C++ gnome
+		if (IsTimeFile(linesInFile))
+			err = 1;	// old OSSM with no header 	JS: standard error codes dont exist in C++ gnome
+		else
+			err = 2;	// unknown format
 		goto done;
 	}
 
