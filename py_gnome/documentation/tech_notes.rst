@@ -13,13 +13,13 @@ The role of mass in GNOME
 Question from a user:
 ---------------------
 
-  I am doing an experiment, in which the position of a drifting buoy (3000 kg) is predicted from a known initial position.
+I am doing an experiment, in which the position of a drifting buoy (3000 kg) is predicted from a known initial position.
 
-  The predicted position is found to be same for an object with different mass. That is :
+The predicted position is found to be same for an object with different mass. That is:
 ​
-  I took only one splot (as one drifting buoy with 3000 kg) and drove it with ocean currents.  Then i changed the mass as 1 kg and forced the model with currents, again i got the same position only.
+I took only one splot (as one drifting buoy with 3000 kg) and drove it with ocean currents.  Then I changed the mass as 1 kg and forced the model with currents, again I got the same position only.
 
-  Generally the mass of the object plays a role in drift. But in the above case, i got the same position even after changing the mass of the particle.
+Generally the mass of the object plays a role in drift. But in the above case, i got the same position even after changing the mass of the particle.
 
 Response:
 ---------
@@ -88,7 +88,28 @@ But for response, the goal is to capture where, and how far the oil might travel
 
 In the end, without observations to calibrate to -- diffusion needs to be selected such that it fits the scale and complexity of the region being modeled -- large enough to spread, but small enough to not "wash out" the details captured in the underlying circulation model.
 
+Evaporation
+===========
 
+A user asked:
+
+    In the simulation, the evaporation seems to be a  process that never ceases, despite the rate will be very slow as time goes. In practice, such a process should stop when all the light or volatile fractions evaporate, right?
+
+    The second picture is the distillation cut of selected oil in simulation, we set water temperature as 5 Celsius degree which much lower than the vapor temperature of cut #1, the evaporation still going fast at the beginning, could you explain what’s the principle behind this?
+
+Response:
+
+    Well, almost -- "volatile" is not an on-off switch. While as a rule of thumb, the components with a boiling point below about 250C will evaporate, and the ones with a higher BP will not, compounds with a slightly higher BP will evaporate very slowly. In addition, when the more volatile compounds are a very small fraction of the total, they evaporate more slowly as well.
+
+    So in your results, if I read them right, it's lost 1% over ~200 hrs, and then no more (58%) after another 250 hrs -- that seems right to me.
+
+
+    The second picture is the distillation cut of selected oil in simulation, we set water temperature as 5 Celsius degree which much lower than the vapor temperature of cut #1, the evaporation still going fast at the beginning, could you explain what’s the principle behind this?
+
+
+    Liquids evaporate at well below their boiling points. Think of water -- it's BP is 100C, yet it will evaporate fairly rapidly in typical conditions, particularly if spread out very thinly, like oil on water does.
+
+    We have discovered that for large spills, GNOME may be spreading out the oil too fast, which may be accelerating the evaporation -- but we still do expect the lighter ends to go away pretty fast.
 
 
 
