@@ -104,12 +104,13 @@ Response:
     So in your results, if I read them right, it's lost 1% over ~200 hrs, and then no more (58%) after another 250 hrs -- that seems right to me.
 
 
+And the next part of the question:
+
     The second picture is the distillation cut of selected oil in simulation, we set water temperature as 5 Celsius degree which much lower than the vapor temperature of cut #1, the evaporation still going fast at the beginning, could you explain what’s the principle behind this?
 
+Answer 2:
 
     Liquids evaporate at well below their boiling points. Think of water -- it's BP is 100C, yet it will evaporate fairly rapidly in typical conditions, particularly if spread out very thinly, like oil on water does.
-
-    We have discovered that for large spills, GNOME may be spreading out the oil too fast, which may be accelerating the evaporation -- but we still do expect the lighter ends to go away pretty fast.
 
 
 
