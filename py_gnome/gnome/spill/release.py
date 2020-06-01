@@ -5,6 +5,7 @@ is composed of a release object and an ElementType
 
 import copy
 import math
+import warnings
 from datetime import datetime, timedelta
 from gnome.utilities.time_utils import asdatetime
 
@@ -490,6 +491,24 @@ class PointLineRelease(Release):
         data['init_mass'][sl] = self._mass_per_le
 
 
+class SpatialRelease2(PointLineRelease):
+    _schema = SpatialReleaseSchema
+
+    @property
+    def end_position(self):
+        return None
+    
+    @end_position.setter
+    def end_position(self, val):
+        raise TypeError("Cannot set end position on a Spatial Release")
+    
+    def LE_timestep_ratio(self, ts):
+        '''
+        Returns the ratio
+        '''
+        return 1.0 * self.num_elements / self.get_num_release_time_steps(ts)
+
+
 class SpatialRelease(Release):
     """
     A simple release class  --  a release of floating non-weathering particles,
@@ -499,40 +518,74 @@ class SpatialRelease(Release):
 
     def __init__(self,
                  release_time=None,
-                 start_position=None,
+                 num_elements=1000,
+                 end_release_time=None,
+                 start_positions=None,
                  release_mass=0,
+                 random_distribute=True,
                  **kwargs):
         """
         :param release_time: time the LEs are released
         :type release_time: datetime.datetime
 
         :param start_positions: locations the LEs are released
-        :type start_positions: (num_elements, 3) numpy array of float64
+        :type start_positions: (num_start_positions, 3) numpy array of float64
             -- (long, lat, z)
 
         num_elements and release_time passed to base class __init__ using super
         See base :class:`Release` documentation
         """
-        super(SpatialRelease, self).__init__(release_time=release_time,**kwargs)
-        self.start_position = (np.asarray(start_position,
-                                          dtype=world_point_type)
-                               .reshape((-1, 3)))
-        self.num_elements = len(self.start_position)
-        self.release_mass = release_mass
+        super(SpatialRelease, self).__init__(release_time=release_time,
+                                             num_elements=num_elements,
+                                             release_mass = release_mass,
+                                             **kwargs)
+        self.start_position = start_positions
+        self.random_distribute = random_distribute
+        if num_elements is None:
+            self.num_elements = len(self.start_position)
+        else:
+            self.num_elements = num_elements
 
-    def num_elements_after_time(self, current_time, time_step):
-        """
-        return number of particles released in current_time + time_step
-        """
-        # call base class method to check if start_time is valid
-        if (current_time + timedelta(seconds=time_step) <= self.release_time):
-            return 0
+    @property
+    def start_positions(self):
+        #alias for start_position
+        return self.start_position
+    
+    @start_positions.setter
+    def start_positions(self, val):
+        self.start_position = val
 
-        return self.num_elements
+    @property
+    def start_position(self):
+        return self._start_position
+
+    @start_position.setter
+    def start_position(self, val):
+        '''
+        set start_position and also make _delta_pos = None so it gets
+        recomputed when model runs - it should be updated
+        '''
+        self._start_position = np.array(val, dtype=world_point_type).reshape(-1,3)
+
+    @property
+    def num_per_timestep(self):
+        return None
+
+    @num_per_timestep.setter
+    def num_per_timestep(self, val):
+        raise TypeError('num_per_timestep not supported on SpatialRelease')
+
+    def LE_timestep_ratio(self, ts):
+        '''
+        Returns the ratio
+        '''
+        return 1.0 * self.num_elements / self.get_num_release_time_steps(ts)
 
     def rewind(self):
         self._prepared = False
         self._mass_per_le = 0
+        self._release_ts = None
+        #self._pos_ts = None
 
     def prepare_for_model_run(self, ts):
         '''
@@ -541,10 +594,61 @@ class SpatialRelease(Release):
         '''
         if self._prepared:
             self.rewind()
-        max_release = self.num_elements
+        if self.LE_timestep_ratio(ts) < 1:
+            raise ValueError('Not enough LEs: Number of LEs must at least \
+                be equal to the number of timesteps in the release')
 
+        num_ts = self.get_num_release_time_steps(ts)
+        max_release = 0
+        if self.num_per_timestep is not None:
+            max_release = self.num_per_timestep * num_ts
+        else:
+            max_release = self.num_elements
+
+        self.generate_release_timeseries(num_ts, max_release, ts)
         self._prepared = True
         self._mass_per_le = self.release_mass*1.0 / max_release
+
+    def generate_release_timeseries(self, num_ts, max_release, ts):
+        '''
+        Release timeseries describe release behavior as a function of time.
+        _release_ts describes the number of LEs that should exist at time T
+        SpatialRelease does not have a _pos_ts because it uses start_position only
+        All use TimeseriesData objects.
+        '''
+        t = None
+        if num_ts == 1:
+            #This is a special case, when the release is short enough a single
+            #timestep encompasses the whole thing.
+            if self.release_duration == 0:
+                t = Time([self.release_time, self.end_release_time+timedelta(seconds=1)])
+            else:
+                t = Time([self.release_time, self.end_release_time])
+        else:
+            t = Time([self.release_time + timedelta(seconds=ts * step) for step in range(0,num_ts + 1)])
+            t.data[-1] = self.end_release_time
+        if self.release_duration == 0:
+            self._release_ts = TimeseriesData(name=self.name+'_release_ts',
+                                              time=t,
+                                              data=np.full(t.data.shape, max_release).astype(int))
+        else:
+            self._release_ts = TimeseriesData(name=self.name+'_release_ts',
+                                            time=t,
+                                            data=np.linspace(0, max_release, num_ts + 1).astype(int))
+
+    def num_elements_after_time(self, current_time, time_step):
+        '''
+        Returns the number of elements expected to exist at current_time+time_step.
+        Returns 0 if prepare_for_model_run has not been called.
+        :param ts: integer seconds
+        :param amount: integer kilograms
+        '''
+        if not self._prepared:
+            return 0
+        if current_time < self.release_time:
+            return 0
+        return int(math.ceil(self._release_ts.at(None, current_time + timedelta(seconds=time_step), extrapolate=True)))
+
 
     def initialize_LEs(self, to_rel, data, current_time, time_step):
         """
@@ -553,8 +657,24 @@ class SpatialRelease(Release):
         .. note:: this releases all the elements at their initial positions at
             the release_time
         """
+
+        num_locs = len(self.start_positions)
+        if to_rel < num_locs:
+            warnings.warn("{0} is releasing fewer LEs than number of start positions at time: {1}".format(self, current_time))
+
         sl = slice(-to_rel, None, 1)
-        data['positions'][sl] = self.start_position
+        if self.random_distribute or to_rel < num_locs:
+            idxs = np.random.choice(num_locs, to_rel)
+            data['positions'][sl] = self.start_positions[idxs]
+        else:
+            qt = num_locs / to_rel #number of times to tile self.start_positions
+            rem = num_locs % to_rel #remaining LES to distribute randomly
+            qt_pos = np.tile(self.start_positions, (qt, 1))
+            rem_pos = self.start_positions[np.random.choice(num_locs, rem)]
+            pos = np.vstack((qt_pos, rem_pos))
+            assert len(pos) == to_rel
+            data['positions'][sl] = pos
+
 
         data['mass'][sl] = self._mass_per_le
         data['init_mass'][sl] = self._mass_per_le
@@ -613,12 +733,33 @@ class ContinuousSpatialRelease(SpatialRelease):
         num_elements and release_time passed to base class __init__ using super
         See base :class:`Release` documentation
         """
+        super(self, SpatialRelease).__init__(
+            release_time=release_time,
+            num_elements=num_elements,
+            end_release_time=end_release_time
+        )
         Release.__init__(release_time,
                          num_elements,
                          **kwargs)
 
         self._start_positions = (np.asarray(start_positions,
                                            dtype=world_point_type).reshape((-1, 3)))
+
+    @property
+    def release_duration(self):
+        '''
+        duration over which particles are released in seconds
+        '''
+        if self.end_release_time is None:
+            return 0
+        else:
+            return (self.end_release_time - self.release_time).total_seconds()
+
+    def LE_timestep_ratio(self, ts):
+        '''
+        Returns the ratio
+        '''
+        return 1.0 * self.num_elements / self.get_num_release_time_steps(ts)
 
 
     def num_elements_to_release(self, current_time, time_step):
