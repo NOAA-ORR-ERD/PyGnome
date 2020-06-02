@@ -471,6 +471,9 @@ class PointLineRelease(Release):
         current_time = datetime.datetime
         time_step = integer seconds
         '''
+        if(time_step == 0):
+            time_step = 1 #to deal with initializing position in instantaneous release case 
+
         sl = slice(-to_rel, None, 1)
         start_position = self._pos_ts.at(None, current_time, extrapolate=True)
         end_position = self._pos_ts.at(None, current_time + timedelta(seconds=time_step), extrapolate=True)
