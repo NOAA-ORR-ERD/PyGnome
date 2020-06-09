@@ -165,7 +165,7 @@ class nc_particle_file:
 
         time = nc.variables['time']
         units = time.getncattr('units')
-        self.times = netCDF4.num2pydate(time, units)
+        self.times = netCDF4.num2date(time, units)
         self.time_units = units
 
         # Defined mass in the same way as done above for time (Zelenke).
@@ -218,7 +218,7 @@ class nc_particle_file:
                                   'longitude']):
         """
         returns the requested variables from trajectory of an individual particle
-        
+
         note: this is very inefficient -- it has to read the entire file to get it.
         """
 

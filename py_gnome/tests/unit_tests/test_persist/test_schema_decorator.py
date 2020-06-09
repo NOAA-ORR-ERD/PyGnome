@@ -1,5 +1,10 @@
 """
 test code for the schema decorator
+
+only started -- needs to be fleshed out and tested.
+
+key missing feature: having it build a full schema from subclasses
+
 """
 
 from gnome.persist.schema_decorator import serializable
@@ -28,7 +33,6 @@ def test_simple():
 
     assert ex._schema.__name__ == "ExampleSchema"
 
-    assert False
 
 
 

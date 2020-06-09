@@ -11,11 +11,12 @@ import os
 
 import numpy as np
 
-import gnome.map
+# import gnome.maps.map
 from gnome.basic_types import oil_status, status_code_type
 from gnome.utilities.projections import NoProjection
 
-from gnome.map import GnomeMap, MapFromBNA, RasterMap  # , MapFromUGrid
+from gnome.maps import GnomeMap, MapFromBNA, RasterMap, ParamMap
+# MapFromUGrid
 
 from conftest import sample_sc_release
 
@@ -35,8 +36,8 @@ def test_in_water_resolution():
 
     # Create an 500x500 pixel map, with an LE refloat half-life of 2 hours
     # (specified here in seconds).
-    m = gnome.map.MapFromBNA(filename=testbnamap, refloat_halflife=2,
-                             raster_size=500 * 500)
+    m = MapFromBNA(filename=testbnamap, refloat_halflife=2,
+                   raster_size=500 * 500)
 
     # Specify coordinates of the two points that make up the
     # southeastern coastline segment of the island in the BNA map.
@@ -157,26 +158,26 @@ class Test_ParamMap:
     '''
 
     def test_on_map(self):
-        pmap = gnome.map.ParamMap((0, 0), 10000, 90)
+        pmap = ParamMap((0, 0), 10000, 90)
         assert pmap.on_map((0, 0, 0))
         assert pmap.on_map((15, 0, 0)) is False
 
     def test_on_land(self):
-        pmap = gnome.map.ParamMap((0, 0), 10000, 90)
+        pmap = ParamMap((0, 0), 10000, 90)
         assert pmap.on_land((0.3, 0, 0)) is True
         assert pmap.on_land((-0.3, 0, 0)) is False
 
     def test_in_water(self):
-        pmap = gnome.map.ParamMap((0, 0), 10000, 90)
+        pmap = ParamMap((0, 0), 10000, 90)
         assert pmap.in_water((-0.3, 0, 0)) is True
         assert pmap.in_water((0.3, 0, 0)) is False
 
     def test_land_generation(self):
-        pmap1 = gnome.map.ParamMap((0, 0), 10000, 90)
+        pmap1 = ParamMap((0, 0), 10000, 90)
         print pmap1.land_points
 
     def test_to_geojson(self):
-        pmap = gnome.map.ParamMap((0, 0), 10000, 90)
+        pmap = ParamMap((0, 0), 10000, 90)
         geo_json = pmap.to_geojson()
 
         assert geo_json['type'] == 'FeatureCollection'
@@ -198,10 +199,10 @@ class Test_ParamMap:
         """
         test create new ParamMap from deserialized dict
         """
-        pmap = gnome.map.ParamMap((5, 5), 12000, 40)
+        pmap = ParamMap((5, 5), 12000, 40)
 
         serial = pmap.serialize()
-        pmap2 = gnome.map.ParamMap.deserialize(serial)
+        pmap2 = ParamMap.deserialize(serial)
 
         assert pmap == pmap2
 
@@ -209,7 +210,7 @@ class Test_ParamMap:
         """
         test create new ParamMap from deserialized dict
         """
-        map1 = gnome.map.ParamMap((5, 5), 12000, 40)
+        map1 = ParamMap((5, 5), 12000, 40)
         assert map1.center == (5, 5, 0)
 
         json_ = {'center': [6, 6]}
@@ -588,16 +589,16 @@ class Test_MapfromBNA:
         """
         test create new object from to_dict
         """
-        gmap = gnome.map.MapFromBNA(testbnamap, 6)
+        gmap = MapFromBNA(testbnamap, 6)
 
         serial = gmap.serialize()
-        map2 = gnome.map.MapFromBNA.deserialize(serial)
+        map2 = MapFromBNA.deserialize(serial)
 
         assert gmap == map2
 
     def test_update_from_dict_MapFromBNA(self):
         'test update_from_dict for MapFromBNA'
-        gmap = gnome.map.MapFromBNA(testbnamap, 6)
+        gmap = MapFromBNA(testbnamap, 6)
 
         dict_ = {}
         dict_['map_bounds'] = [(-10, 10), (10, 10), (10, -10), (-10, -10)]
@@ -865,7 +866,7 @@ def test_resurface_airborne_elements():
 
     spill = {'next_positions': positions}
 
-    m = gnome.map.GnomeMap()
+    m = GnomeMap()
     m.resurface_airborne_elements(spill)
 
     assert spill['next_positions'][:, 2].min() == 0.

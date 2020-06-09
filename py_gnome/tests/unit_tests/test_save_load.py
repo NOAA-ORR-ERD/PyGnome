@@ -38,7 +38,9 @@ from gnome.outputters import (Renderer,
                               NetCDFOutput,
                               TrajectoryGeoJsonOutput)
 
-from gnome import map, spill
+from gnome.maps import MapFromBNA
+from gnome import spill
+
 # following is modified for testing only
 from gnome.persist import save_load
 
@@ -153,7 +155,7 @@ g_objects = (
     RandomMover3D(),
     SimpleMover(velocity=(10.0, 10.0, 0.0)),
 
-    map.MapFromBNA(testdata['MapFromBNA']['testmap'], 6),
+    MapFromBNA(testdata['MapFromBNA']['testmap'], 6),
     NetCDFOutput(os.path.join(base_dir, u'xtemp.nc')),
     Renderer(testdata['Renderer']['bna_sample'],
              os.path.join(base_dir, 'output_dir')),

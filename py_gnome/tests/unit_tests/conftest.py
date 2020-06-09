@@ -19,7 +19,7 @@ import pytest
 import gnome
 from gnome.basic_types import datetime_value_2d
 
-from gnome.map import MapFromBNA
+from gnome.maps import MapFromBNA
 from gnome.model import Model
 
 
@@ -384,7 +384,7 @@ def get_testdata():
          'cats_curr': get_datafile(os.path.join(lis, r"LI_tidesWAC.CUR")),
          'cats_tide': get_datafile(os.path.join(lis, r"CLISShio.txt"))
          }
-    
+
     #Save file updater saves
     data['savefile_update_testdata'] = \
         {
