@@ -147,12 +147,9 @@ class GnomeMap(GnomeId):
         polys['land_polys'] = self.land_polys
         return polys
 
-#     def to_dict(self, json_=None):
-#         dict_ = super(GnomeMap, self).to_dict(json_=json_)
-#         dict_['spillable_area'] = [poly.points.tolist() for poly in self.spillable_area]
-#         return dict_
-
     def _polygon_set_from_points(self, poly):
+        # fixme: is this not in the geometry module??
+        #.       but maybe should get rid of the PolygonSet object anyway
         '''
         create PolygonSet() object from list of polygons which in turn is a
         list of points
@@ -177,6 +174,7 @@ class GnomeMap(GnomeId):
 
     @property
     def map_bounds(self):
+
         return self._map_bounds
 
     @map_bounds.setter
@@ -193,22 +191,29 @@ class GnomeMap(GnomeId):
 
     @spillable_area.setter
     def spillable_area(self, sa):
-        if sa is None or (isinstance(sa, list) and len(sa) == 0):
-            sa = np.array([[(-360, -90), (-360, 90),
-                           (360, 90), (360, -90)]],
-                           dtype=np.float64)
-        if isinstance(sa, PolygonSet):
+        # it's OK to have No spillable area
+        # if sa is None or (isinstance(sa, list) and len(sa) == 0):
+        #     sa = np.array([[(-360, -90), (-360, 90),
+        #                    (360, 90), (360, -90)]],
+        #                    dtype=np.float64)
+
+        print "setting spillable area:", sa
+        if sa is None:
+            self._spillable_area = None
+        elif isinstance(sa, PolygonSet):
             self._spillable_area = sa
-            return
-        ps = PolygonSet()
-        try:
-            sa[0][0][0]
-        except TypeError:
-            # probably a single polygon -- put it in a list
-            sa = [sa]
-        for poly in sa:
-            ps.append(poly)
-        self._spillable_area = ps
+        else:  # make it a PolygonSet
+            # fixme: this should be in the geometry package
+            #        -- or stop using PolygonSet
+            ps = PolygonSet()
+            try:  #
+                sa[0][0][0]
+            except TypeError:
+                # probably a single polygon -- put it in a list
+                sa = [sa]
+            for poly in sa:
+                ps.append(poly)
+            self._spillable_area = ps
 
     @property
     def land_polys(self):
@@ -284,10 +289,13 @@ class GnomeMap(GnomeId):
         .. note:: it could be either off the map, or in a location that
                   spills aren't allowed
         """
-        for poly in self.spillable_area:
-            if points_in_poly(poly.points, coord):
+        if self.spillable_area is not None:
+            for poly in self.spillable_area:
+                if points_in_poly(poly.points, coord):
+                    return True
+        else:
+            if points_in_poly(self.map_bounds, coord):
                 return True
-
         return False
 
     def _set_off_map_status(self, spill):
@@ -1018,7 +1026,7 @@ class RasterMap(GnomeMap):
 
     def allowable_spill_position(self, coord):
         """
-        Returns true is the spill position is in the allowable spill area
+        Returns true if the spill position is in the allowable spill area
 
         .. note::
             This may not be the same as in_water!
@@ -1027,11 +1035,7 @@ class RasterMap(GnomeMap):
         """
         if self.on_map(coord):
             if not self.on_land(coord):
-                if self.spillable_area is None:
-                    return True
-                else:
-                    return (super(RasterMap, self)
-                            .allowable_spill_position(coord))
+                return (super(RasterMap, self).allowable_spill_position(coord))
             else:
                 return False
         else:
@@ -1060,6 +1064,8 @@ class MapFromBNA(RasterMap):
     def __init__(self,
                  filename=None,
                  raster_size=4096 * 4096,
+                 map_bounds=None,
+                 spillable_area=None,
                  **kwargs):
         """
         Creates a RasterMap from a data file.
@@ -1088,6 +1094,7 @@ class MapFromBNA(RasterMap):
                    This is only used when loading object from save file.
         :type id: string
         """
+        print "initializing from a BNA:", filename, spillable_area
         self.filename = filename
         self._raster_size = raster_size
 
@@ -1104,33 +1111,36 @@ class MapFromBNA(RasterMap):
         #      or a gnome_map_data object...
 
         land_polys = PolygonSet()  # and lakes....
-        spillable_area = PolygonSet()
+        spillable_area_bna = PolygonSet()
 
         for p in polygons:
             if p.metadata[1].lower().replace(' ', '') == 'spillablearea':
-                spillable_area.append(p)
+                spillable_area_bna.append(p)
 
             elif p.metadata[1].lower().replace(' ', '') == 'mapbounds':
                 map_bounds = p
             else:
-                #  Fixme: we could draw the polylines....
+                #  Fixme: we could do something with the polylines....
                 if len(p) > 2:
                     land_polys.append(p)
                 else:
                     self.logger.debug("invalid polygon ignored:"
-                                 "{} points: {}, ".format(len(p), p.metadata))
+                                      "{} points: {}, ".format(len(p), p.metadata))
 
 
-        # now draw the raster map with a map_canvas:
+        # Draw the raster map with a map_canvas:
         # determine the size:
-
         BB = land_polys.bounding_box
 
-        # create spillable area and  bounds if they weren't in the BNA
+        if not spillable_area:  # not passed in
+            # use the one in the bna
+            if len(spillable_area_bna) == 0:
+                # no spillable_area in the file
+                spillable_area = None
+            else:
+                spillable_area = spillable_area_bna
 
-        spillable_area = kwargs.pop('spillable_area', spillable_area)
-        map_bounds = kwargs.pop('map_bounds', map_bounds)
-
+        # fixme: map bounds might not be a rectangle -- is this doing the right thing?
         if map_bounds is None:
             if spillable_area:  # add the spillable area to the bounds
                 saBB = spillable_area.bounding_box
@@ -1139,8 +1149,6 @@ class MapFromBNA(RasterMap):
             else:
                 map_bounds = BB.AsPoly()
 
-        if len(spillable_area) == 0:
-            spillable_area.append(map_bounds)
 
         # get the raster as a numpy array:
         raster, projection = self.build_raster(land_polys, BB)
@@ -1346,7 +1354,7 @@ class MapFromUGrid(RasterMap):
             map_bounds = BB.AsPoly()
 
         if len(spillable_area) == 0:
-            spillable_area.append(map_bounds)
+            spillable_area = None
 
         # user defined spillable_area, map_bounds overrides data obtained
         # from polygons

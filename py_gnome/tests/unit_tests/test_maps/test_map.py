@@ -18,9 +18,12 @@ from gnome.utilities.projections import NoProjection
 from gnome.maps import GnomeMap, MapFromBNA, RasterMap, ParamMap
 # MapFromUGrid
 
-from conftest import sample_sc_release
+from ..conftest import sample_sc_release
 
+
+# fixme: this should realy be in conftest
 basedir = os.path.dirname(__file__)
+basedir = os.path.split(basedir)[0]
 datadir = os.path.normpath(os.path.join(basedir, "sample_data"))
 output_dir = os.path.normpath(os.path.join(basedir, "output_dir"))
 testbnamap = os.path.join(datadir, 'MapBounds_Island.bna')
