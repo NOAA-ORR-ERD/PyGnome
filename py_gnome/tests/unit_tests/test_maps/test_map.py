@@ -905,9 +905,11 @@ class Test_lake():
         """
         Once loaded, polygons should be there
         """
+        # There should always be map bounds
         assert self.map.map_bounds is not None
 
-        assert self.map.spillable_area is not None
+        # no spillable area in this one
+        assert self.map.spillable_area is None
 
         # NOTE: current version puts land and lakes in the land_polys set
         assert len(self.map.land_polys) == 2
