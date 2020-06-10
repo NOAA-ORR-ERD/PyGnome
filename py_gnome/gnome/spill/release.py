@@ -517,28 +517,36 @@ class SpatialRelease(Release):
     _schema = SpatialReleaseSchema
 
     def __init__(self,
-                 release_time=None,
-                 num_elements=1000,
-                 end_release_time=None,
+                 filename=None,
+                 polygons=None,
                  start_positions=None,
-                 release_mass=0,
                  random_distribute=True,
+                 num_elements=1000,
                  **kwargs):
         """
-        :param release_time: time the LEs are released
-        :type release_time: datetime.datetime
+        :param filename: NESDIS shapefile
+        :type filename: string or list of strings
 
-        :param start_positions: locations the LEs are released
-        :type start_positions: (num_start_positions, 3) numpy array of float64
-            -- (long, lat, z)
+        :param polygons: polygons to use in this release
+        :type polygons: list of shapely.Polygon
 
-        num_elements and release_time passed to base class __init__ using super
-        See base :class:`Release` documentation
+        :param start_positions: Nx3 array of release coordinates (lon, lat, z)
+        :type start_positions: np.ndarray 
+
+        :param random_distribute: If True, all LEs will always be distributed
+        among all release locations. Otherwise, LEs will be equally distributed,
+        and only remainder will be placed randomly
+
+        :param num_elements: If passed as None, number of elements will be equivalent
+        to number of start positions. For backward compatibility.
         """
-        super(SpatialRelease, self).__init__(release_time=release_time,
-                                             num_elements=num_elements,
-                                             release_mass = release_mass,
-                                             **kwargs)
+        kwargs.pop('start_position', None)
+        kwargs.pop('end_position', None)
+        super(SpatialRelease, self).__init__(
+            start_position=np.array([0,0,0]),
+            end_position=np.array([0,0,0]),
+            **kwargs
+        )
         self.start_position = start_positions
         self.random_distribute = random_distribute
         if num_elements is None:
@@ -567,6 +575,31 @@ class SpatialRelease(Release):
         '''
         self._start_position = np.array(val, dtype=world_point_type).reshape(-1,3)
 
+    @property
+    def end_release_time(self):
+        if self._end_release_time is None:
+            return self.release_time
+        else:
+            return self._end_release_time
+
+    @end_release_time.setter
+    def end_release_time(self, val):
+        '''
+        Set end_release_time.
+        If end_release_time is None or if end_release_time == release_time,
+        it is an instantaneous release.
+
+        Also update reference to set_newparticle_positions - if this was
+        previously an instantaneous release but is now timevarying, we need
+        to update this method
+        '''
+        val = asdatetime(val)
+        if val is not None and self.release_time > val:
+            raise ValueError('end_release_time must be greater than '
+                             'release_time')
+
+        self._end_release_time = val
+        
     @property
     def num_per_timestep(self):
         return None
