@@ -197,7 +197,6 @@ class GnomeMap(GnomeId):
         #                    (360, 90), (360, -90)]],
         #                    dtype=np.float64)
 
-        print "setting spillable area:", sa
         if sa is None:
             self._spillable_area = None
         elif isinstance(sa, PolygonSet):
@@ -1094,7 +1093,6 @@ class MapFromBNA(RasterMap):
                    This is only used when loading object from save file.
         :type id: string
         """
-        print "initializing from a BNA:", filename, spillable_area
         self.filename = filename
         self._raster_size = raster_size
 
@@ -1148,7 +1146,6 @@ class MapFromBNA(RasterMap):
                 map_bounds = saBB.AsPoly()
             else:
                 map_bounds = BB.AsPoly()
-
 
         # get the raster as a numpy array:
         raster, projection = self.build_raster(land_polys, BB)

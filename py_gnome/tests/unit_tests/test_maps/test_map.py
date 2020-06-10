@@ -9,7 +9,9 @@ Designed to be run with py.test
 from __future__ import division
 import os
 
+from pprint import pprint
 import numpy as np
+
 
 # import gnome.maps.map
 from gnome.basic_types import oil_status, status_code_type
@@ -936,6 +938,75 @@ class Test_lake():
         outfilename = os.path.join(output_dir, "florida_geojson.json")
         with open(outfilename, 'w') as outfile:
             json.dump(gj, outfile, indent=2)
+
+class Test_serialize:
+
+    map = MapFromBNA(bna_with_lake)
+
+    def test_serialize(self):
+        ser = self.map.to_dict()
+        print ser.keys()
+
+        assert ser['spillable_area'] is None
+
+    def test_deserialize(self):
+        ## fixme: this should fail with no spillable area ?!?
+        jsblob = self.map.serialize()
+
+        jsblob['spillable_area'] = None
+
+        pprint(jsblob)
+
+        # {'approximate_raster_interval': 53.9608870724,
+        #  'filename': u'/Users/chris.barker/Hazmat/GitLab/pygnome/py_gnome/tests/unit_tests/sample_data/florida_with_lake_small.bna',
+        #  'id': u'b3590b7d-aab1-11ea-8899-1e00b098d304',
+        #  'map_bounds': [(-82.8609915978, 24.5472415066),
+        #                 (-82.8609915978, 28.1117673335),
+        #                 (-80.0313642811, 28.1117673335),
+        #                 (-80.0313642811, 24.5472415066)],
+        #  'name': u'MapFromBNA_8',
+        #  'obj_type': u'gnome.maps.map.MapFromBNA',
+        #  'raster_size': 16777216.0,
+        #  'refloat_halflife': 1.0}
+        MapFromBNA.update_from_dict
+
+        map = MapFromBNA.deserialize(jsblob)
+
+        print map.spillable_area
+        print map.land_polys
+
+        assert map.spillable_area is None
+        assert len(map.map_bounds) == 4
+
+    def test_update_spillable_area_none(self):
+        map = MapFromBNA(bna_with_lake)
+
+        map.update_from_dict({'spillable_area': None})
+
+    def test_update_spillable_area_polygons(self):
+        map = MapFromBNA(bna_with_lake)
+
+        map.update_from_dict({'spillable_area': [[(-82.86099, 24.54724),
+                                                  (-82.86099, 28.11176),
+                                                  (-80.03136, 28.11176),
+                                                  (-80.03136, 24.54724)],
+                                                 [(-82.86099, 24.54724),
+                                                  (-82.86099, 28.11176),
+                                                  (-80.03136, 28.11176),
+                                                  (-80.03136, 24.54724),
+                                                  (-80.03136, 28.11176),
+                                                  (-80.03136, 24.54724),
+                                                  ],
+                                                 ]
+                              })
+
+        assert len(map.spillable_area) == 2
+        assert len(map.spillable_area[1]) == 6
+
+
+
+
+
 
 
 if __name__ == '__main__':
