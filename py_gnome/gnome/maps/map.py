@@ -69,6 +69,7 @@ class ParamMapSchema(GnomeMapSchema):
     bearing = SchemaNode(Integer())
     units = SchemaNode(String())
 
+# fixme: shouldn't the rasterMap have the raster size? and the raster itself?
 class RasterMapSchema(GnomeMapSchema):
     pass
 
@@ -1061,7 +1062,7 @@ class MapFromBNA(RasterMap):
     _schema = MapFromBNASchema
 
     def __init__(self,
-                 filename=None,
+                 filename,
                  raster_size=4096 * 4096,
                  map_bounds=None,
                  spillable_area=None,

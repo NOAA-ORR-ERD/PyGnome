@@ -20,6 +20,8 @@ from gnome.utilities.projections import NoProjection
 from gnome.maps import GnomeMap, MapFromBNA, RasterMap, ParamMap
 # MapFromUGrid
 
+from gnome.gnomeobject import class_from_objtype
+
 from ..conftest import sample_sc_release
 
 
@@ -949,6 +951,69 @@ class Test_serialize:
 
         assert ser['spillable_area'] is None
 
+    def test_serialize_from_blob_old(self):
+        # this one uses the "old" name, before moving the map module.
+        json_data = {'approximate_raster_interval': 53.9608870724,
+                     'filename': u'/Users/chris.barker/Hazmat/GitLab/pygnome/py_gnome/tests/unit_tests/sample_data/florida_with_lake_small.bna',
+                     'id': u'b3590b7d-aab1-11ea-8899-1e00b098d304',
+                     'map_bounds': [(-82.8609915978, 24.5472415066),
+                                    (-82.8609915978, 28.1117673335),
+                                    (-80.0313642811, 28.1117673335),
+                                    (-80.0313642811, 24.5472415066)],
+                     'name': u'MapFromBNA_8',
+                     'obj_type': u'gnome.map.MapFromBNA',
+                     'raster_size': 16777216.0,
+                     'spillable_area': None,
+                     'refloat_halflife': 1.0}
+
+        cls = class_from_objtype(json_data['obj_type'])
+    #   obj = cls.load(saveloc, fname, references)
+
+        print "found class:", cls
+        map = cls.deserialize(json_data)
+
+        # when we go to Python3 :-(
+        # assert map.__class__.__qualname__ == "gnome.maps.map.MapFromBNA"
+        assert map.__class__.__name__ == "MapFromBNA"
+        assert map.__class__.__module__ == "gnome.maps.map"
+
+        print map.spillable_area
+        print map.land_polys
+
+        assert map.spillable_area is None
+        assert len(map.map_bounds) == 4
+
+    def test_serialize_from_blob_new(self):
+        # this one uses the "new" name, after moving the map module.
+        json_data = {'approximate_raster_interval': 53.9608870724,
+                     'filename': u'/Users/chris.barker/Hazmat/GitLab/pygnome/py_gnome/tests/unit_tests/sample_data/florida_with_lake_small.bna',
+                     'id': u'b3590b7d-aab1-11ea-8899-1e00b098d304',
+                     'map_bounds': [(-82.8609915978, 24.5472415066),
+                                    (-82.8609915978, 28.1117673335),
+                                    (-80.0313642811, 28.1117673335),
+                                    (-80.0313642811, 24.5472415066)],
+                     'name': u'MapFromBNA_8',
+                     'obj_type': u'gnome.maps.map.MapFromBNA',
+                     'raster_size': 16777216.0,
+                     'spillable_area': None,
+                     'refloat_halflife': 1.0}
+
+        cls = class_from_objtype(json_data['obj_type'])
+    #   obj = cls.load(saveloc, fname, references)
+
+        print "found class:", cls
+        map = cls.deserialize(json_data)
+
+        # when we go to Python3 :-(
+        # assert map.__class__.__qualname__ == "gnome.maps.map.MapFromBNA"
+        assert map.__class__.__name__ == "MapFromBNA"
+        assert map.__class__.__module__ == "gnome.maps.map"
+        print map.spillable_area
+        print map.land_polys
+
+        assert map.spillable_area is None
+        assert len(map.map_bounds) == 4
+
     def test_deserialize(self):
         ## fixme: this should fail with no spillable area ?!?
         jsblob = self.map.serialize()
@@ -968,7 +1033,6 @@ class Test_serialize:
         #  'obj_type': u'gnome.maps.map.MapFromBNA',
         #  'raster_size': 16777216.0,
         #  'refloat_halflife': 1.0}
-        MapFromBNA.update_from_dict
 
         map = MapFromBNA.deserialize(jsblob)
 

@@ -871,17 +871,13 @@ class PolygonSetSchema(SequenceSchema):
         return super(PolygonSetSchema, self).serialize(appstruct)
 
     def deserialize(self, cstruct):
-        print "in deserialize: ", cstruct
         if cstruct is None:
             return None
         else:
             appstruct = super(PolygonSetSchema, self).deserialize(cstruct)
             if len(appstruct) == 0:
-                #empty --should be None
+                # empty --should be None
                 return None
-                # we never should have been doing this here!
-                # appstruct = [(-360, -90), (-360, 90),
-                #              (360, 90), (360, -90)]
             # fixme: is there any need to for a PolygonSet here?
             #        a list of lists would work fine.
             #        a PolygonSet is created in the spillable_area.setter anyway.
