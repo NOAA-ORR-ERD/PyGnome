@@ -7,7 +7,8 @@ These will output images for use in the Web client / OpenLayers
 import os
 import copy
 import collections
-from tempfile import NamedTemporaryFile
+import tempfile
+# from tempfile import NamedTemporaryFile
 from colander import SequenceSchema
 from gnome.persist.base_schema import GeneralGnomeObjectSchema
 
@@ -271,19 +272,18 @@ class IceImageOutput(Outputter):
         # formatted buffer in memory. (libgd can be made to do this, but
         # the wrapper is yet to be written)
         # So we will just write to a tempfile and then read it back.
-        with NamedTemporaryFile() as fp:
-            fp.close()
-            canvas.save_foreground(fp.name)
-            fp = open(fp.name, 'w+b')
-            fp.seek(0)
-            thickness_image = fp.read().encode('base64')
+        # If we ever have to do this anywhere else, a context manger would be good.
+        tempdir = tempfile.mkdtemp()
+        tempfilename = os.path.join(tempdir, "gnome_temp_image_file.png")
 
-        with NamedTemporaryFile() as fp:
-            fp.close()
-            canvas.save_background(fp.name)
-            fp = open(fp.name, 'w+b')
-            fp.seek(0)
-            coverage_image = fp.read().encode('base64')
+        canvas.save_foreground(tempfilename)
+        thickness_image = open(tempfilename, 'rb').read().encode('base64')
+
+        canvas.save_background(tempfilename)
+        coverage_image = open(tempfilename, 'rb').read().encode('base64')
+
+        os.remove(tempfilename)
+        os.rmdir(tempdir)
 
         return ("data:image/png;base64,{}".format(thickness_image),
                 "data:image/png;base64,{}".format(coverage_image),
