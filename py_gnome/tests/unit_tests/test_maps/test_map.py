@@ -951,6 +951,8 @@ class Test_serialize:
 
         assert ser['spillable_area'] is None
 
+    #need to add the file to file server
+    @pytest.mark.xfail()
     def test_serialize_from_blob_old(self):
         # this one uses the "old" name, before moving the map module.
         json_data = {'approximate_raster_interval': 53.9608870724,
@@ -983,6 +985,7 @@ class Test_serialize:
         assert map.spillable_area is None
         assert len(map.map_bounds) == 4
 
+    @pytest.mark.xfail()
     def test_serialize_from_blob_new(self):
         # this one uses the "new" name, after moving the map module.
         json_data = {'approximate_raster_interval': 53.9608870724,
