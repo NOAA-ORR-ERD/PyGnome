@@ -8,6 +8,7 @@ Designed to be run with py.test
 """
 from __future__ import division
 import os
+import pytest
 
 from pprint import pprint
 import numpy as np
