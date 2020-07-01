@@ -4,10 +4,10 @@ cimport numpy as cnp
 import numpy as np
 from libc.string cimport memcpy
 
-from type_defs cimport *
-from utils cimport _GetHandleSize
-from movers cimport Mover_c
-from current_movers cimport IceMover_c, GridCurrentMover_c, CurrentMover_c
+from .type_defs cimport *
+from .utils cimport _GetHandleSize
+from .movers cimport Mover_c
+from .current_movers cimport IceMover_c, GridCurrentMover_c, CurrentMover_c
 
 from gnome import basic_types
 from gnome.cy_gnome.cy_gridcurrent_mover cimport CyGridCurrentMover

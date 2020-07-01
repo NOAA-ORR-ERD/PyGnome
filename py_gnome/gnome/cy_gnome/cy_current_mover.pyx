@@ -4,8 +4,8 @@ No CyCurrentMover object is ever defined or used; however, this is a good
 place to keep all the common properties of current movers
 '''
 
-from cy_mover cimport CyMover
-from current_movers cimport CurrentMover_c
+from .cy_mover cimport CyMover
+from .current_movers cimport CurrentMover_c
 
 cdef class CyCurrentMover(CyMover):
     '''

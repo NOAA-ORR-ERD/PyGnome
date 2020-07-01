@@ -21,6 +21,9 @@ from .outputter import Outputter, BaseOutputterSchema, OutputterFilenameMixin
 # Big dict that stores the attributes for the standard data arrays
 # in the output - these are constants. The instance var_attributes are stored
 # with the NetCDFOutput object
+
+print(oil_status)
+print(oil_status._int)
 var_attributes = {
     'time': {'long_name': 'time since the beginning of the simulation',
              'standard_name': 'time',
@@ -54,10 +57,8 @@ var_attributes = {
             },
     'status_codes': {
         'long_name': 'particle status code',
-        'flag_values': " ".join(["%i" % i for i in oil_status._int]),
-        'flag_meanings': " ".join(["%i: %s," % pair for pair in
-                                   sorted(zip(oil_status._int,
-                                              oil_status._attr))])
+        'flag_values': oil_status._int,
+        'flag_meanings': oil_status.args.items()
                      },
     'spill_num': {'long_name': 'spill to which the particle belongs'},
     'id': {'long_name': 'particle ID',

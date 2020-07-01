@@ -403,7 +403,7 @@ elif sys.platform == "win32":
     # we will reference this library when building all other extensions
     static_lib_files = [os.path.join(target_path(),
                                      'Release', 'gnome', 'cy_gnome',
-                                     'cy_basic_types.lib')]
+                                     'cy_basic_types.cp37-win_amd64.lib')]
     libdirs = []
 
 elif sys.platform == "linux2":
@@ -504,15 +504,15 @@ extensions.append(Extension("gnome.utilities.geometry.cy_point_in_polygon",
                             extra_link_args=link_args,
                             ))
 
-extensions.append(Extension("gnome.utilities.file_tools.filescanner",
-                            sources=[os.path.join('gnome',
-                                                  'utilities',
-                                                  'file_tools',
-                                                  'filescanner.pyx')],
-                            extra_compile_args=compile_args,
-                            include_dirs=include_dirs,
-                            language="c",
-                            ))
+# extensions.append(Extension("gnome.utilities.file_tools.filescanner",
+#                             sources=[os.path.join('gnome',
+#                                                   'utilities',
+#                                                   'file_tools',
+#                                                   'filescanner.pyx')],
+#                             extra_compile_args=compile_args,
+#                             include_dirs=include_dirs,
+#                             language="c",
+#                             ))
 
 
 def get_version():
@@ -525,6 +525,8 @@ def get_version():
             return version
     raise ValueError("can't find version string in __init__")
 
+for e in extensions:
+    e.cython_directives = {'language_level': "3"} #all are Python-3
 
 setup(name='pyGnome',
       version=get_version(),

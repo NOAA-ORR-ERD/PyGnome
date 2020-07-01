@@ -3,15 +3,15 @@ import os
 cimport numpy as cnp
 import numpy as np
 
-from type_defs cimport *
+from .type_defs cimport *
 from gnome import basic_types
 
 from gnome.cy_gnome.cy_helpers cimport to_bytes
 from gnome.cy_gnome.cy_ossm_time cimport CyOSSMTime
 from gnome.cy_gnome.cy_shio_time cimport CyShioTime
 
-from movers cimport Mover_c
-from current_movers cimport CurrentCycleMover_c
+from .movers cimport Mover_c
+from .current_movers cimport CurrentCycleMover_c
 from gnome.cy_gnome.cy_mover cimport CyMover
 
 

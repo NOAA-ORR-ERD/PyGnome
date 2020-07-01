@@ -2,9 +2,9 @@ cimport numpy as cnp
 import numpy as np
 
 # following exist in gnome.cy_gnome
-from type_defs cimport *
-from movers cimport Random_c, Mover_c
-cimport cy_mover
+from .type_defs cimport *
+from .movers cimport Random_c, Mover_c
+cimport gnome.cy_gnome.cy_mover as cy_mover
 
 """
 Dynamic casts are not currently supported in Cython - define it here instead.

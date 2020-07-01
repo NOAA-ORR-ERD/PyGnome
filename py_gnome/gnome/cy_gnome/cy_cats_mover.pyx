@@ -4,11 +4,11 @@ cimport numpy as cnp
 import numpy as np
 from libc.string cimport memcpy
 
-from type_defs cimport *
-from utils cimport _GetHandleSize
-from movers cimport Mover_c
-from current_movers cimport CATSMover_c
-from cy_current_mover cimport CyCurrentMover, dc_mover_to_cmover
+from .type_defs cimport *
+from .utils cimport _GetHandleSize
+from .movers cimport Mover_c
+from .current_movers cimport CATSMover_c
+from .cy_current_mover cimport CyCurrentMover, dc_mover_to_cmover
 
 from gnome import basic_types
 from gnome.cy_gnome.cy_ossm_time cimport CyOSSMTime

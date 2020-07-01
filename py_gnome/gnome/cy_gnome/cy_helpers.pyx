@@ -6,8 +6,8 @@ cimport numpy as cnp
 import numpy as np
 
 from gnome import basic_types
-from type_defs cimport Seconds, DateTimeRec
-cimport utils
+from .type_defs cimport Seconds, DateTimeRec
+cimport gnome.cy_gnome.utils as utils
 
 cdef class CyDateTime:
 

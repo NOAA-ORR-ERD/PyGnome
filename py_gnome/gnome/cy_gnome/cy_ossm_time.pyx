@@ -5,10 +5,10 @@ import numpy as np
 from gnome import basic_types
 
 from libc.string cimport memcpy
-from type_defs cimport *
-from utils cimport _NewHandle, _GetHandleSize
-from utils cimport OSSMTimeValue_c
-from cy_helpers import filename_as_bytes
+from .type_defs cimport *
+from .utils cimport _NewHandle, _GetHandleSize
+from .utils cimport OSSMTimeValue_c
+from .cy_helpers import filename_as_bytes
 
 cimport numpy as cnp
 

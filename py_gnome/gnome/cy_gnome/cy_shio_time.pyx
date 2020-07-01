@@ -6,14 +6,14 @@ from libc.string cimport memcpy
 
 from gnome import basic_types
 
-from type_defs cimport *
-from utils cimport (ShioTimeValue_c,
+from .type_defs cimport *
+from .utils cimport (ShioTimeValue_c,
                     #EbbFloodData, EbbFloodDataH,
                     #HighLowData, HighLowDataH,
                     _NewHandle, _GetHandleSize)
-from cy_ossm_time cimport CyOSSMTime, dynamic_cast_ptr
-from cy_helpers import filename_as_bytes
-from cy_helpers cimport to_bytes
+from .cy_ossm_time cimport CyOSSMTime, dynamic_cast_ptr
+from .cy_helpers import filename_as_bytes
+from .cy_helpers cimport to_bytes
 
 
 cdef class CyShioTime(CyOSSMTime):

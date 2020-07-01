@@ -1,7 +1,7 @@
 """
 lib_gnome utils
 """
-from type_defs cimport *
+from .type_defs cimport *
 from libcpp cimport bool
 from libcpp.string cimport string
 from libc.stdint cimport *

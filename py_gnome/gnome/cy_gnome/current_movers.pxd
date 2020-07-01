@@ -6,12 +6,12 @@ from libcpp cimport bool
 
 from libc.stdint cimport int32_t
 
-from type_defs cimport *
-from utils cimport OSSMTimeValue_c
+from .type_defs cimport *
+from .utils cimport OSSMTimeValue_c
 
-from movers cimport Mover_c
-from grids cimport TimeGridVel_c
-from grids cimport GridVel_c
+from .movers cimport Mover_c
+from .grids cimport TimeGridVel_c
+from .grids cimport GridVel_c
 
 cdef extern from "CurrentMover_c.h":
     cdef cppclass CurrentMover_c(Mover_c):

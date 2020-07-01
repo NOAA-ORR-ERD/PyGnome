@@ -1,11 +1,11 @@
-from type_defs cimport OSErr, VelocityRec, WorldPoint3D
+from .type_defs cimport OSErr, VelocityRec, WorldPoint3D
 from libcpp cimport bool
 
 import cython
 cimport numpy as cnp
 import numpy as np
 
-from grids cimport TimeGridVel_c
+from .grids cimport TimeGridVel_c
 from gnome.basic_types import velocity_rec
 
 

@@ -5,12 +5,12 @@ import numpy as np
 
 from libc.string cimport memcpy
 
-from type_defs cimport *
+from .type_defs cimport *
 from gnome import basic_types
 
-from utils cimport _GetHandleSize
-from movers cimport Mover_c
-from current_movers cimport GridCurrentMover_c, CurrentMover_c
+from .utils cimport _GetHandleSize
+from .movers cimport Mover_c
+from .current_movers cimport GridCurrentMover_c, CurrentMover_c
 
 from gnome.cy_gnome.cy_helpers cimport to_bytes
 from gnome.cy_gnome.cy_mover cimport CyCurrentMoverBase

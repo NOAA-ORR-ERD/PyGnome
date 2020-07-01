@@ -14,20 +14,34 @@ import sys
 import numpy as np
 
 # pull everything from the cython code
-from . import cy_gnome.cy_basic_types as cbt
+import gnome.cy_gnome.cy_basic_types as cbt
 
+
+class enum(object):
+    def __init__(self, **kwargs):
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+        self.args = kwargs
+
+    @property
+    def _int(self):
+        return self.args.values()
+    
+    @property
+    def _attr(self):
+        return self.args.keys()
 # in lib_gnome, the coordinate systems used (r-theta, uv, etc)
 # are called ts_format, which is not a very descriptive name.
 # the word 'format' can mean a lot of different things depending on
 # what we are talking about.  So we try to be a bit more specific here.
-coord_systems = cbt.ts_format
-ts_format = cbt.ts_format
-oil_status = cbt.oil_status
+coord_systems = enum(**cbt.ts_format)
+ts_format = enum(**cbt.ts_format)
+oil_status = enum(**cbt.oil_status)
 seconds = cbt.seconds
-spill_type = cbt.spill_type
+spill_type = enum(**cbt.spill_type)
 
 # this is a mapping of oil_status code to the meaningful name:
-oil_status_map = { num: name for name, num in list(vars(oil_status).items()) if not name.startswith("_")}
+oil_status_map = { num: name for name, num in oil_status.args.items()}
 
 
 
@@ -73,12 +87,12 @@ datetime_value_1d = np.dtype([('time', 'datetime64[s]'),
 # Define enums that are independent of C++ here so we
 # don't have to recompile code
 
-wind_datasources = cbt.enum(undefined=0, file=1, manual=2, nws=3, buoy=4)
+wind_datasources = enum(undefined=0, file=1, manual=2, nws=3, buoy=4)
 
 # Define an enum for weathering status. The numpy array will contain np.uint8
 # datatype. Can still define 2 more flags as 2**6, 2**7
 # These are bit flags
-fate = cbt.enum(non_weather=1,
+fate = enum(non_weather=1,
             surface_weather=2,
             subsurf_weather=4,
             skim=8,

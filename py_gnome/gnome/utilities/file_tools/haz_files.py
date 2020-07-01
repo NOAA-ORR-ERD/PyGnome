@@ -9,11 +9,11 @@ check_receptors extension module. I should put that in another library.
 import os
 import numpy as np
 
-try:
-    from .filescanner import scan
-    FILESCANNER = True
-except:
-    FILESCANNER = False
+# try:
+#     from .filescanner import scan
+#     FILESCANNER = True
+# except:
+FILESCANNER = False #because py3
 
 ## fixme: It would be MUCH cleaner to internally store VerDat data with
 ## Python style slicing and indexing, including storing a 0 at the beginning

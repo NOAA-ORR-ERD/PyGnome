@@ -5,9 +5,9 @@ Pulled from type_defs.pxi -- i.e pulled from C++ headers, etc.
 
 """
 # pull stuff in from the C++ headers
-from type_defs cimport *
+from .type_defs cimport *
 
-
+'''
 def enum(**enums):
     """
     Usage: x = enum(a=1, b=2, c=3)
@@ -27,12 +27,12 @@ def enum(**enums):
     enums.update({'_attr': enums.keys(), '_int': enums.values()})
 
     return type('Enum', (), enums)
-
+'''
 
 """
 LE Status as an enum type
 """
-oil_status = enum(not_released=OILSTAT_NOTRELEASED,
+oil_status = dict(not_released=OILSTAT_NOTRELEASED,
                   in_water=OILSTAT_INWATER,
                   on_land=OILSTAT_ONLAND,
                   off_maps=OILSTAT_OFFMAPS,
@@ -41,13 +41,13 @@ oil_status = enum(not_released=OILSTAT_NOTRELEASED,
                   on_tideflat=OILSTAT_ON_TIDEFLAT,
                   )
 
-numerical_methods = enum(euler=EULER,
+numerical_methods = dict(euler=EULER,
                          rk4=RK4)
 
 """
 disperse status as an enum type
 """
-# disp_status = enum(dont_disperse = DONT_DISPERSE,
+# disp_status = dict(dont_disperse = DONT_DISPERSE,
 #                    disperse = DISPERSE,
 #                    have_dispersed = HAVE_DISPERSED,
 #                    disperse_nat = DISPERSE_NAT,
@@ -60,7 +60,7 @@ disperse status as an enum type
 """
 SpillType {FORECAST_LE = 1, UNCERTAINTY_LE = 2};
 """
-spill_type = enum(forecast=FORECAST_LE,
+spill_type = dict(forecast=FORECAST_LE,
                   uncertainty=UNCERTAINTY_LE,)
 
 
@@ -85,7 +85,7 @@ from TypeDefs.h:
     M19CANCEL = 7
     M19LABEL = 8
 """
-ts_format = enum(magnitude_direction=M19MAGNITUDEDIRECTION,
+ts_format = dict(magnitude_direction=M19MAGNITUDEDIRECTION,
                  uv=M19REALREAL,
                  r_theta=M19MAGNITUDEDIRECTION)
 
