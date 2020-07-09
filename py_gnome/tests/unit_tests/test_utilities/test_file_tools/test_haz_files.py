@@ -15,7 +15,7 @@ from gnome.utilities.file_tools import haz_files
 
 ## NOTE: according to:
 ## http://www.softwright.com/faq/support/boundary_file_bna_format.html
-## polygons in BNA shouls have the first and last popint the same.
+## polygons in BNA shouls have the first and last point the same.
 ## these tests (Nor the code) do not enforce that, but rather add the extra
 ## point if it's not there
 
@@ -23,7 +23,7 @@ basedir = os.path.dirname(__file__)
 
 #  write a simple test bna file
 
-file(os.path.join(basedir, 'test.bna'), 'w'
+open(os.path.join(basedir, 'test.bna'), 'w'
      ).write('''"Another Name","Another Type", 7
 -81.531753540039,31.134635925293
 -81.531150817871,31.134529113769
@@ -75,7 +75,7 @@ test_bna = os.path.join(basedir, 'test.bna')
 
 #  write a simple test bna file with invalid data
 
-file(os.path.join(basedir, 'test_bad.bna'), 'w'
+open(os.path.join(basedir, 'test_bad.bna'), 'w'
      ).write('''"An too-small polygon","Another Type", 2
 -81.531753540039,31.134635925293
 -81.531150817871,31.134529113769

@@ -3,12 +3,17 @@
 """
 Tests for the filescanner module
 
-Designed to be run with py.test
+Designed to be run with pytest
 """
+
 import pytest
 import numpy as np
 
-from gnome.utilities.file_tools.filescanner import scan
+try:
+    from gnome.utilities.file_tools.filescanner import scan
+except ImportError:
+    pytestmark = pytest.mark.skipif(True, reason="filescanner not available")
+
 
 # write a test file with various separators.
 tiny_file = "junk_tiny.txt"
@@ -22,8 +27,11 @@ some random text
 
 now more at the end of the file
 """)
+
 # The expected results when scanned
-tiny_arr = np.array((23.4, 45.6, 354, 13.23, 45.6, 2.3, 5.4, 3.4, 14, 32, 3, 14.2), dtype=np.float64)
+tiny_arr = np.array((23.4, 45.6, 354, 13.23, 45.6, 2.3, 5.4, 3.4,
+                     14, 32, 3, 14.2), dtype=np.float64)
+
 
 def test_call():
     " can we even call it"
@@ -32,15 +40,17 @@ def test_call():
     print(result)
     assert True
 
+
 def test_scan_n():
     f = open(tiny_file)
     result = scan(f, 10)
     assert np.array_equal(tiny_arr[:10], result)
 
+
 def test_scan_not_enough():
     f = open(tiny_file)
     with pytest.raises(ValueError):
-        result = scan(f, 15)
+        scan(f, 15)
 
 
 def test_scan_leave_file_in_right_place():
@@ -48,6 +58,7 @@ def test_scan_leave_file_in_right_place():
     result = scan(f, 10)
     next = f.readline()
     assert next.strip() == ";  3"
+
 
 def test_scan_leave_file_in_right_place2():
     f = open(tiny_file)
@@ -69,22 +80,26 @@ def test_assert_not_file():
     with pytest.raises(TypeError):
         f = scan('a_string', 4)
 
+
 def test_file_closed():
     f = open(tiny_file)
     f.close()
     with pytest.raises(TypeError):
         result = scan(f, 10)
 
+
 def test_wrong_file_mode():
     f = open('junk.txt', 'w')
     with pytest.raises(TypeError):
         result = scan(f, 10)
+
 
 def test_read_zero_vals():
     # it might as well work
     f = open(tiny_file)
     result = scan(f, 0)
     assert np.array_equal(result, np.zeros((0,)))
+
 
 def test_read_negative_vals():
     # it might as well work
@@ -97,6 +112,7 @@ def test_assert_not_int():
     f = open(tiny_file)
     with pytest.raises(TypeError):
         result = scan(f, 'a_string')
+
 
 def test_big():
     """

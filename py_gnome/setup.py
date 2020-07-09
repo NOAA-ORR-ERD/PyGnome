@@ -121,7 +121,6 @@ class cleanall(clean):
         except OSError as err:
             print(("Failed to remove {0}. Error: {1}"
                   .format(filepath, err)))
-            # raise
 
 
 # setup our environment and architecture
@@ -183,8 +182,10 @@ def get_netcdf_libs():
 get_netcdf_libs()
 '''
 
+if sys.platform == "win32":
+    raise SystemError("32 bit Windows is not supported")
 
-if sys.platform is "darwin" or "win32":
+if sys.platform == "darwin":
     third_party_dir = os.path.join('..', 'third_party_lib')
 
     # the netCDF environment
