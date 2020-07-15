@@ -364,16 +364,16 @@ Boolean IsOSSMHeightFile(char *path, short *selectedUnitsP)
 bool IsTimeFile(vector<string> &linesInFile)
 {
 	bool bIsValid = true;
-	string currentLine;
+	string currentLine, val1Str, val2Str;
 	long line = 0;
 
 	DateTimeRec time;
-	VelocityRec velocity;
+	//VelocityRec velocity;
 
 	currentLine = linesInFile[line++];
 
 	std::replace(currentLine.begin(), currentLine.end(), ',', ' ');
-	if (!ParseLine(currentLine, time, velocity))
+	if (!ParseLine(currentLine, time, val1Str, val2Str))
 		bIsValid = false;
 
 	return bIsValid;

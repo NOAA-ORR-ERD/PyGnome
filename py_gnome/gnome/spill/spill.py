@@ -15,6 +15,7 @@ import numpy as np
 
 import unit_conversion as uc
 from gnome.utilities.time_utils import asdatetime
+from gnome.utilities.appearance import SpillAppearanceSchema
 
 from colander import (SchemaNode, Bool, String, Float, drop)
 
@@ -69,6 +70,10 @@ class SpillSchema(ObjTypeSchema):
         acceptable_schemas=[GnomeOilSchema,
                             NonWeatheringSubstanceSchema],
         save=True, update=True, save_reference=True
+    )
+    _appearance = SpillAppearanceSchema(
+        save=True, update=True, missing=drop,
+        test_equal=False
     )
 
 
@@ -189,8 +194,13 @@ class Spill(BaseSpill):
         if val is None:
             self._substance = NonWeatheringSubstance()
             return
-        elif isinstance(val, Substance):
+        #elif isinstance(val, Substance):
+        elif isinstance(val, NonWeatheringSubstance):
             self._substance = val
+            return
+        elif isinstance(val, GnomeOil):
+            self._substance = val
+            return
         try:
             self._substance = GnomeOil.get_GnomeOil(val)
         except Exception:

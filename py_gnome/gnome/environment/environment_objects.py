@@ -7,6 +7,7 @@ import numpy as np
 from colander import drop
 
 import gridded
+import unit_conversion as uc
 
 from gnome.environment import Environment
 from gnome.environment.timeseries_objects_base import TimeseriesData, TimeseriesVector
@@ -159,6 +160,8 @@ class S_Depth_T1(object):
 
 class VelocityTS(TimeseriesVector):
 
+    _gnome_unit = 'm/s'
+
     @classmethod
     def constant(cls,
                  name='',
@@ -197,6 +200,7 @@ class VelocityTS(TimeseriesVector):
 
 class VelocityGrid(VectorVariable):
 
+    _gnome_unit = 'm/s'
     comp_order = ['u', 'v', 'w']
 
     def __init__(self, angle=None, **kwargs):
@@ -323,6 +327,8 @@ class CurrentTS(VelocityTS, Environment):
 
 class TemperatureTS(TimeseriesData, Environment):
 
+    _gnome_unit = 'K'
+
     def __init__(self, name=None, units='K',
                  time=None, data=None,
                  **kwargs):
@@ -347,8 +353,12 @@ class GridTemperature(Variable, Environment):
 
     cf_names = ['sea_water_temperature', 'sea_surface_temperature']
 
+    _gnome_unit = 'K'
+    _default_unit_type = 'Temperature'
+
 
 class SalinityTS(TimeseriesData, Environment):
+    _gnome_unit = 'ppt'
 
     @classmethod
     def constant_salinity(cls,
@@ -362,9 +372,11 @@ class GridSalinity(Variable, Environment):
     default_names = ['salt']
 
     cf_names = ['sea_water_salinity', 'sea_surface_salinity']
+    _gnome_unit = 'ppt'
 
 
 class WaterDensityTS(TimeseriesData, Environment):
+    _gnome_unit = 'kg/m^3'
 
     def __init__(self,
                  name=None,
@@ -398,6 +410,7 @@ class WaterDensityTS(TimeseriesData, Environment):
 
 
 class GridSediment(Variable, Environment):
+    _gnome_unit = 'ppt'
     default_names = ['sand_06']
 
 
@@ -405,19 +418,22 @@ class IceConcentration(Variable, Environment):
     _ref_as = ['ice_concentration', 'ice_aware']
     default_names = ['ice_fraction', ]
     cf_names = ['sea_ice_area_fraction']
+    _gnome_unit = 'fraction'
 
     def __init__(self, *args, **kwargs):
         super(IceConcentration, self).__init__(*args, **kwargs)
 
 
 class Bathymetry(Variable):
+    _gnome_unit = 'm'
     default_names = ['h']
     cf_names = ['depth']
 
 
 class GridCurrent(VelocityGrid, Environment):
-    _ref_as = 'current'
 
+    _ref_as = 'current'
+    _gnome_unit = 'm/s'
     default_names = {'u': ['u', 'U', 'water_u', 'curr_ucmp'],
                      'v': ['v', 'V', 'water_v', 'curr_vcmp'],
                      'w': ['w', 'W']}
@@ -425,7 +441,7 @@ class GridCurrent(VelocityGrid, Environment):
                 'v': ['northward_sea_water_velocity'],
                 'w': ['upward_sea_water_velocity']}
 
-    def at(self, points, time, units=None, **kwargs):
+    def at(self, points, time, *args, **kwargs):
         '''
         Find the value of the property at positions P at time T
 
@@ -458,7 +474,7 @@ class GridCurrent(VelocityGrid, Environment):
 
         extrapolate = self.extrapolation_is_allowed
 
-        value = super(GridCurrent, self).at(points, time, units,
+        value = super(GridCurrent, self).at(points, time,
                                             extrapolate=extrapolate,
                                             **kwargs)
 
@@ -492,35 +508,24 @@ class GridCurrent(VelocityGrid, Environment):
 
         if(hasattr(self, 'angle') and self.angle):
 
+            raw_uv = super(GridCurrent, self).get_data_vectors()
+            lin_u = raw_uv[0,:,:]
+            lin_v = raw_uv[1,:,:]
+
             raw_ang = self.angle.data[:]
-            raw_u = self.variables[0].data[:]
-            raw_v = self.variables[1].data[:]
-
-            if self.depth is not None:
-                raw_u = raw_u[:, self.depth.surface_index]
-                raw_v = raw_v[:, self.depth.surface_index]
-
-            if np.any(np.array(raw_u.shape) != np.array(raw_v.shape)):
-                # must be roms-style staggered
-                raw_u = (raw_u[:, 0:-1, :] + raw_u[:, 1:, :]) / 2
-                raw_v = (raw_v[:, :, 0:-1] + raw_v[:, :, 1:]) / 2
-                raw_ang = (raw_ang[0:-1, 0:-1] + raw_ang[1:, 1:]) / 2
+            angle_padding_slice = self.grid.get_padding_slices(self.grid.center_padding)
+            raw_ang = raw_ang[angle_padding_slice]
 
             if 'degree' in self.angle.units:
                 raw_ang = raw_ang * np.pi/180.
+            
+            ctr_mask = gridded.utilities.gen_celltree_mask_from_center_mask(self.grid.center_mask, angle_padding_slice)
+            ang = raw_ang.reshape(-1)
+            ang = np.ma.MaskedArray(ang, mask = ctr_mask.reshape(-1))
+            ang = ang.compressed()
 
-            x = raw_u[:] * np.cos(raw_ang) - raw_v[:] * np.sin(raw_ang)
-            xt = x.shape[0]
-            y = raw_u[:] * np.sin(raw_ang) + raw_v[:] * np.cos(raw_ang)
-            yt = y.shape[0]
-            x = x.filled(0).reshape(xt, -1)
-            y = y.filled(0).reshape(yt, -1)
-            if hasattr(self.grid.node_lon[:], 'mask') and self.grid.node_lon[:].mask is not False and not np.all(self.grid.node_lon[:].mask == False):
-                x = np.ma.MaskedArray(x, mask = self.grid._masks['node'][0])
-                x = x.compressed().reshape(xt, -1)
-                y = np.ma.MaskedArray(y, mask = self.grid._masks['node'][0])
-                y = y.compressed().reshape(yt,-1)
-            #r = np.ma.stack((x, y)) change to this when numpy 1.15 becomes norm.
+            x = lin_u[:] * np.cos(ang) - lin_v[:] * np.sin(ang)
+            y = lin_u[:] * np.sin(ang) + lin_v[:] * np.cos(ang)
             r = np.concatenate((x[None,:], y[None,:]))
             return np.ascontiguousarray(r.astype(np.float32)) # r.compressed().astype(np.float32)
             # return np.ascontiguousarray(r.filled(0), np.float32)
@@ -530,7 +535,7 @@ class GridCurrent(VelocityGrid, Environment):
 
 class GridWind(VelocityGrid, Environment):
     _ref_as = 'wind'
-
+    _gnome_unit = 'm/s'
     default_names = {'u': ['air_u', 'Air_U', 'air_ucmp', 'wind_u'],
                      'v': ['air_v', 'Air_V', 'air_vcmp', 'wind_v']}
 
@@ -549,10 +554,8 @@ class GridWind(VelocityGrid, Environment):
                                  'grid cell centers')
 
         self.wet_dry_mask = wet_dry_mask
-        if self.units is None:
-            self.units = 'm/s'
 
-    def at(self, points, time, units=None,
+    def at(self, points, time,
            coord_sys='uv', _auto_align=True, **kwargs):
         '''
         Find the value of the property at positions P at time T
@@ -603,7 +606,7 @@ class GridWind(VelocityGrid, Environment):
         if value is None:
             extrapolate = self.extrapolation_is_allowed
 
-            value = super(GridWind, self).at(pts, time, units,
+            value = super(GridWind, self).at(pts, time,
                                              extrapolate=extrapolate,
                                              _auto_align=False, **kwargs)
 
@@ -656,6 +659,11 @@ class GridWind(VelocityGrid, Environment):
 
 
 class LandMask(Variable):
+
+    '''
+    This class depends on gridded features not yet finalized so it likely non-functional
+    '''
+
     def __init__(self, *args, **kwargs):
         data = kwargs.pop('data', None)
 
@@ -708,6 +716,7 @@ class LandMask(Variable):
 
 class IceVelocity(VelocityGrid, Environment):
     _ref_as = ['ice_velocity', 'ice_aware']
+    _gnome_unit = 'm/s'
     default_names = {'u': ['ice_u'],
                      'v': ['ice_v']}
 
@@ -775,42 +784,36 @@ class IceAwareCurrent(GridCurrent):
                              ice_velocity=ice_velocity,
                              **kwargs))
 
-    def at(self, points, time, units=None, **kwargs):
+    def at(self, points, time, *args, **kwargs):
         extrapolate = self.extrapolation_is_allowed
-        interp = (self.ice_concentration.at(points, time,
+        cctn = (self.ice_concentration.at(points, time,
                                             extrapolate=extrapolate, **kwargs)
                   .copy())
 
-        interp_mask = np.logical_and(interp >= 0.2, interp < 0.8)
-        interp_mask = interp_mask.reshape(-1)
+        water_v = super(IceAwareCurrent, self).at(points,
+                                                  time,
+                                                  *args,
+                                                  **kwargs)
 
-        if len(interp > 0.2):
-            ice_mask = interp.reshape(-1) >= 0.8
+        if np.any(cctn >= 0.2):
+            ice_mask = cctn >= 0.8
+            water_mask = cctn < 0.2
+            interp_mask = np.logical_and(cctn >= 0.2, cctn < 0.8)
 
-            water_v = (super(IceAwareCurrent, self)
-                       .at(points, time, units=units, **kwargs))
-
-            ice_v = (self.ice_velocity.at(points, time, units=units, extrapolate=extrapolate, **kwargs).copy())
-
-            interp = (interp - 0.2) * 10 / 6.
+            ice_vel_factor = cctn.copy()
+            ice_vel_factor[ice_mask] = 1
+            ice_vel_factor[water_mask] = 0
+            ice_vel_factor[interp_mask] = ((ice_vel_factor[interp_mask] - 0.2) * 10) / 6
 
             vels = water_v.copy()
+            ice_v = self.ice_velocity.at(points, time, extrapolate=extrapolate, *args, **kwargs).copy()
 
             #deals with the >0.8 concentration case
-            vels[ice_mask] = ice_v[ice_mask]
-
-            diff_v = ice_v
-            diff_v -= water_v
-
-            vels[interp_mask] += (diff_v[interp_mask] *
-                                  interp[interp_mask][:, np.newaxis])
+            vels[:] = vels[:] + (ice_v - water_v) * ice_vel_factor
 
             return vels
         else:
-            return super(IceAwareCurrent, self).at(points,
-                                                   time,
-                                                   units=units,
-                                                   **kwargs)
+            return water_v
 
 
 class IceAwareWind(GridWind):
@@ -845,30 +848,29 @@ class IceAwareWind(GridWind):
                              ice_velocity=ice_velocity,
                              **kwargs))
 
-    def at(self, points, time, units=None, **kwargs):
+    def at(self, points, time, *args, **kwargs):
         extrapolate = self.extrapolation_is_allowed
-        interp = self.ice_concentration.at(points, time,
-                                           extrapolate=extrapolate, **kwargs)
 
-        interp_mask = np.logical_and(interp >= 0.2, interp < 0.8)
-        interp_mask = interp_mask.reshape(-1)
+        cctn = self.ice_concentration.at(points, time, extrapolate=extrapolate, *args, **kwargs)
+        wind_v = super(IceAwareWind, self).at(points, time, *args, **kwargs)
 
-        if len(interp >= 0.2) != 0:
-            ice_mask = interp.reshape(-1) >= 0.8
+        if np.any(cctn >= 0.2):
+            ice_mask = cctn >= 0.8
+            water_mask = cctn < 0.2
+            interp_mask = np.logical_and(cctn >= 0.2, cctn < 0.8)
 
-            wind_v = (super(IceAwareWind, self)
-                      .at(points, time, units, **kwargs))
-
-            interp = (interp - 0.2) * 10 / 6.
+            ice_vel_factor = cctn.copy()
+            ice_vel_factor[ice_mask] = 1
+            ice_vel_factor[water_mask] = 0
+            ice_vel_factor[interp_mask] = ((ice_vel_factor[interp_mask] - 0.2) * 10) / 6
 
             vels = wind_v.copy()
             vels[ice_mask] = 0
 
             # scale winds from 100-0% depending on ice coverage
-            vels[interp_mask] = (vels[interp_mask] *
-                                 (1 - interp[interp_mask][:, np.newaxis]))
+            # 100% wind up to 0.2 coverage, 0% wind at >0.8 coverage
+            vels[:] = vels[:] * (1 - ice_vel_factor)
 
             return vels
         else:
-            return (super(IceAwareWind, self)
-                    .at(points, time, units, **kwargs))
+            return wind_v

@@ -152,7 +152,9 @@ class Dissolution(Weatherer):
 
         # print 'droplet_avg_sizes = ', droplet_avg_sizes
 
-        arom_mask = substance._sara['type'] == 'Aromatics'
+        #arom_mask = substance._sara['type'] == 'Aromatics' 
+        sara = np.asarray(substance.sara_type)
+        arom_mask = sara == 'Aromatics'
 
         mol_wt = substance.molecular_weight
         rho = substance.component_density

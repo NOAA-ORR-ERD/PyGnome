@@ -11160,6 +11160,9 @@ OSErr TimeGridVelTri_c::GetScaledVelocities(Seconds time, VelocityFRec *scaled_v
 TimeGridCurRect_c::TimeGridCurRect_c () : TimeGridVel_c()
 {
 	fTimeDataHdl = 0;
+	fPtsH = 0;
+	fGridCellInfoH = 0;
+	fCenterPtsH = 0;
 	
 	fUserUnits = kUndefined;
 }
@@ -11167,6 +11170,9 @@ TimeGridCurRect_c::TimeGridCurRect_c () : TimeGridVel_c()
 void TimeGridCurRect_c::Dispose ()
 {
 	if(fTimeDataHdl) {DisposeHandle((Handle)fTimeDataHdl); fTimeDataHdl=0;}
+	if(fPtsH) {DisposeHandle((Handle)fPtsH); fPtsH=0;}
+	if(fGridCellInfoH) {DisposeHandle((Handle)fGridCellInfoH); fGridCellInfoH=0;}
+	if(fCenterPtsH) {DisposeHandle((Handle)fCenterPtsH); fCenterPtsH=0;}
 	
 	TimeGridVel_c::Dispose ();
 }
@@ -12271,6 +12277,235 @@ done:
 	return err;
 }
 
+
+LongPointHdl TimeGridCurRect_c::GetPointsHdl()
+{
+	long i, j, numPoints;
+	float fLat, fLong, dLong, dLat;
+	WorldRect gridBounds = fGridBounds; // loLong, loLat, hiLong, hiLat
+	LongPoint vertex;
+	OSErr err = 0;
+
+	if (fPtsH) return fPtsH;
+	
+	numPoints = fNumRows*fNumCols;
+	dLong = (gridBounds.hiLong - gridBounds.loLong) / (fNumCols-1);
+	dLat = (gridBounds.hiLat - gridBounds.loLat) / (fNumRows-1);
+	fPtsH = (LongPointHdl)_NewHandle(numPoints * sizeof(LongPoint));
+	if (!fPtsH) {
+		err = -1;
+		TechError("TriGridCurRect_c::GetPointsHdl()", "_NewHandle()", 0);
+		goto done;
+	}
+	
+	for (i=0; i<fNumRows; i++)
+	{
+		for (j=0; j<fNumCols; j++)
+		{
+			fLat = gridBounds.loLat + i*dLat;
+			fLong = gridBounds.loLong + j*dLong;
+
+			vertex.v = (long)(fLat);
+			vertex.h = (long)(fLong);
+			//vertex.v = (long)(fLat*1e6);
+			//vertex.h = (long)(fLong*1e6);
+		
+			INDEXH(fPtsH,i*fNumCols+j) = vertex;
+		}
+	}	
+	
+done:
+	return fPtsH;
+}
+
+OSErr TimeGridCurRect_c::GetScaledVelocities(Seconds time, VelocityFRec *scaled_velocity)
+{	// use for curvilinear
+	double timeAlpha;
+	Seconds startTime,endTime;
+	OSErr err = 0;
+	char errmsg[256];
+	LongPoint longPt;
+	WorldPoint wp;
+	
+	long numPoints,i,j,index=-1;
+	LongPointHdl ptsHdl = 0;
+	long timeDataInterval;
+	Boolean loaded;
+	//TTriGridVel* triGrid = (TTriGridVel*)fGrid;
+	//TTriGridVel* triGrid = (dynamic_cast<TTriGridVel*>(fGrid));
+	VelocityFRec velocity;
+	
+	err = this -> SetInterval(errmsg, time);
+	if(err) return err;
+	
+	loaded = this -> CheckInterval(timeDataInterval, time);	 
+	
+	if(!loaded) return -1;
+	
+	ptsHdl = this->GetPointsHdl();
+	if(ptsHdl)
+		numPoints = _GetHandleSize((Handle)ptsHdl)/sizeof(**ptsHdl);
+	else 
+		numPoints = 0;
+	
+	// Check for time varying current 
+	if((GetNumTimesInFile()>1 || GetNumFiles()>1) && loaded && !err)
+	{
+		// Calculate the time weight factor
+		if (GetNumFiles()>1 && fOverLap)
+			startTime = fOverLapStartTime + fTimeShift;
+		else
+			startTime = (*fTimeHdl)[fStartData.timeIndex] + fTimeShift;
+
+		if (fEndData.timeIndex == UNASSIGNEDINDEX && (time > startTime || time < startTime) && fAllowExtrapolationInTime)
+		{
+			timeAlpha = 1;
+		}
+		else
+		{	
+			endTime = (*fTimeHdl)[fEndData.timeIndex] + fTimeShift;
+			timeAlpha = (endTime - time)/(double)(endTime - startTime);
+		}
+	}
+	// need to account for 3D...
+	//for (i = 0 ; i< numPoints; i+=1)
+	for (i = 0 ; i< fNumRows; i++)
+	//for (i = 0 ; i< numTri; i++)
+	{
+		for (j = 0; j< fNumCols; j++)
+		{
+		//longPt = (*ptsHdl)[i];
+		longPt = (*ptsHdl)[i*fNumCols+j];
+		wp.pLat = longPt.v;
+		wp.pLong = longPt.h;
+		//index = (numPoints-1) - i;
+		index = i * fNumCols + j;
+		//index = GetVelocityIndex(wp);  // regular grid
+	
+		//if (index < 0) {scaled_velocity[i].u = 0;	scaled_velocity[i].v = 0;}// should this be an error?
+		//index = i;
+		// Should check vs fFillValue
+		// Check for constant current 
+		if(((GetNumTimesInFile()==1 && !(GetNumFiles()>1)) || timeAlpha == 1) && index!=-1)
+		{
+				velocity.u = GetStartUVelocity(index);
+				velocity.v = GetStartVVelocity(index);
+		}
+		else if (index!=-1)// time varying current
+		{
+			velocity.u = timeAlpha*GetStartUVelocity(index) + (1-timeAlpha)*GetEndUVelocity(index);
+			velocity.v = timeAlpha*GetStartVVelocity(index) + (1-timeAlpha)*GetEndVVelocity(index);
+		}
+		if (velocity.u == fFillValue) velocity.u = 0.;
+		if (velocity.v == fFillValue) velocity.v = 0.;
+		/*if ((velocity.u != 0 || velocity.v != 0) && (velocity.u != fFillValue && velocity.v != fFillValue)) // should already have handled fill value issue
+		{
+			// code goes here, fill up arrays with data
+			float inchesX = (velocity.u * refScale * fVar.fileScaleFactor) / arrowScale;
+			float inchesY = (velocity.v * refScale * fVar.fileScaleFactor) / arrowScale;
+		}*/
+		//u[i] = velocity.u * fVar.fileScaleFactor;
+		//v[i] = velocity.v * fVar.fileScaleFactor;
+		//scaled_velocity[i].u = velocity.u * fVar.fileScaleFactor / 100.;
+		//scaled_velocity[i].v = velocity.v * fVar.fileScaleFactor / 100.;
+		//scaled_velocity[i].u = velocity.u * fVar.fileScaleFactor;
+		//scaled_velocity[i].v = velocity.v * fVar.fileScaleFactor;
+		scaled_velocity[(fNumRows-i-1)*fNumCols+j].u = velocity.u * fVar.fileScaleFactor;
+		scaled_velocity[(fNumRows-i-1)*fNumCols+j].v = velocity.v * fVar.fileScaleFactor;
+		//vel_index++;
+		}
+	}
+	return err;
+}
+
+WORLDPOINTH TimeGridCurRect_c::GetCellCenters()
+{
+	OSErr err = 0;
+	LongPointHdl ptsH = 0;
+	WorldPoint wp;
+	int32_t i, numPts = 0, numCells;
+	
+	if (fCenterPtsH) return fCenterPtsH;
+	
+	ptsH = GetPointsHdl();
+	numPts = _GetHandleSize((Handle)ptsH)/sizeof(LongPoint);
+	numCells = (fNumCols-1)*(fNumRows-1);
+	// for now just return the points since velocities are on the points
+	fCenterPtsH = (WORLDPOINTH)_NewHandle(numPts * sizeof(WorldPoint));
+	if (!fCenterPtsH) {
+		err = -1;
+		TechError("TriGridCurRect_c::GetCellCenters()", "_NewHandle()", 0);
+		goto done;
+	}
+	
+	for (i=0; i<numPts; i++)
+	{
+		//index1 = i*2;
+		//index2 = i*2+1;
+		//tri1 = INDEXH(topH,index1);
+		//tri2 = INDEXH(topH,index2);
+
+		//wp1 = (*ptsH)[(*topH)[index1].vertex1];
+		//wp2 = (*ptsH)[(*topH)[index1].vertex2];
+		//wp3 = (*ptsH)[(*topH)[index1].vertex3];
+		//wp4 = (*ptsH)[(*topH)[index2].vertex2];
+
+#ifndef pyGNOME
+		wp.pLong = (*ptsH)[i].h;
+		wp.pLat = (*ptsH)[i].v;
+		//wp.pLong = (wp1.h+wp2.h+wp3.h + wp4.h)/4;
+		//wp.pLat = (wp1.v+wp2.v+wp3.v + wp4.v)/4;
+#else
+		wp.pLong = (double)((*ptsH)[i].h)/1.e6;
+		wp.pLat = (double)((*ptsH)[i].v)/1.e6;
+		//wp.pLong = (double)(wp1.h+wp2.h+wp3.h + wp4.h)/4.e6;
+		//wp.pLat = (double)(wp1.v+wp2.v+wp3.v + wp4.v)/4.e6;
+#endif
+		INDEXH(fCenterPtsH,i) = wp;
+
+	}
+		
+done:
+	return fCenterPtsH;
+}
+
+GridCellInfoHdl TimeGridCurRect_c::GetCellData()
+{	// use for regular
+	OSErr err = 0;
+
+	long i,j,numCells;
+
+	if (fGridCellInfoH) return fGridCellInfoH;
+	
+	numCells = (fNumCols-1)*(fNumRows-1);
+	GridCellInfoHdl fGridCellInfoH = (GridCellInfoHdl)_NewHandleClear(numCells * sizeof(**fGridCellInfoH));
+	if (!fGridCellInfoH) 
+	{
+		err = memFullErr; 
+		goto done;
+	}
+	
+	for (i=0; i<fNumRows-1; i++)
+	{
+		for (j=0; j<fNumCols-1; j++)
+		{
+			INDEXH(fGridCellInfoH,i*(fNumCols-1)+j).cellNum = i*fNumCols+j;
+			INDEXH(fGridCellInfoH,i*(fNumCols-1)+j).topLeft = i*fNumCols+j;
+			INDEXH(fGridCellInfoH,i*(fNumCols-1)+j).topRight = i*fNumCols+j+1;
+			INDEXH(fGridCellInfoH,i*(fNumCols-1)+j).bottomRight = (i+1)*fNumCols+j;
+			INDEXH(fGridCellInfoH,i*(fNumCols-1)+j).bottomLeft = (i+1)*fNumCols+j+1;
+			//INDEXH(fGridCellInfoH,i*(fNumCols-1)+j).bottomLeft = (i+1)*fNumCols+j;
+			//INDEXH(fGridCellInfoH,i*(fNumCols-1)+j).bottomRight = (i+1)*fNumCols+j+1;
+		}
+	}
+	
+done:
+	if (err)
+	{
+		if(fGridCellInfoH) {DisposeHandle((Handle)fGridCellInfoH); fGridCellInfoH=0;}
+	}
+	return fGridCellInfoH;
+}
 
 TimeGridCurTri_c::TimeGridCurTri_c () : TimeGridCurRect_c()
 {
@@ -13598,6 +13833,16 @@ OSErr TimeGridCurTri_c::GetScaledVelocities(Seconds time, VelocityFRec *scaled_v
 		scaled_velocity[i].v = velocity.v * fVar.fileScaleFactor;
 	}
 	return err;
+}
+
+LongPointHdl TimeGridCurTri_c::GetPointsHdl()
+{
+	return (dynamic_cast<TTriGridVel*>(fGrid)) -> GetPointsHdl();
+}
+
+TopologyHdl TimeGridCurTri_c::GetTopologyHdl(void)
+{
+	return dynamic_cast<TriGridVel_c *>(fGrid)->GetTopologyHdl();
 }
 
 // some extra functions that are not attached to any class

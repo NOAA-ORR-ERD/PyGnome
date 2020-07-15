@@ -1,6 +1,6 @@
-#########################################
-Notes on serialization / deserialization:
-#########################################
+########################################
+Notes on serialization / deserialization
+########################################
 
 .. _serialization_overview:
 

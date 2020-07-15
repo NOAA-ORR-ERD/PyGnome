@@ -3,6 +3,7 @@ import io
 import copy
 import numpy as np
 import logging
+import warnings
 from functools import wraps
 
 from colander import (SchemaNode, SequenceSchema,
@@ -10,6 +11,7 @@ from colander import (SchemaNode, SequenceSchema,
                       drop)
 
 import gridded
+import unit_conversion as uc
 
 from gnome.persist import base_schema
 from gnome.gnomeobject import GnomeId
@@ -232,19 +234,19 @@ class Grid_S(GnomeId, gridded.grids.Grid_S):
         return rv
 
     def get_cells(self):
-        if not hasattr(self, '_cell_trees'):
+        if self._cell_tree is None:
             self.build_celltree()
 
-        ns = self._cell_trees['node'][1]
-        fs = self._cell_trees['node'][2]
+        ns = self._cell_tree[1]
+        fs = self._cell_tree[2]
 
         return ns[fs]
 
     def get_nodes(self):
-        if not hasattr(self, '_cell_trees'):
+        if self._cell_tree is None:
             self.build_celltree()
 
-        n = self._cell_trees['node'][1]
+        n = self._cell_tree[1]
 
         return n
 
@@ -255,18 +257,24 @@ class Grid_S(GnomeId, gridded.grids.Grid_S):
             return np.stack((lons, lats), axis=-1).reshape(-1, 2)
         else:
             if self._get_geo_mask('center'):
-                if not self._cell_trees['center']:
-                    self.build_celltree('center', use_mask=True)
-                return self._cell_trees['node'][1]
+                if not self._cell_tree:
+                    self.build_celltree(use_mask=True)
+                ctr_padding_slice = self.get_padding_slices(self.center_padding)
+                ctr_mask = gridded.utilities.gen_celltree_mask_from_center_mask(self.center_mask, ctr_padding_slice)
+                clons = self.center_lon[ctr_padding_slice]
+                clats = self.center_lat[ctr_padding_slice]
+                clons = np.ma.MaskedArray(clons, mask = ctr_mask)
+                clats = np.ma.MaskedArray(clats, mask = ctr_mask)
+                return np.stack((clons.compressed(), clats.compressed()), axis=-1).reshape(-1, 2)
             return self.centers.reshape(-1, 2)
 
     def get_metadata(self):
-        if not hasattr(self, '_cell_trees'):
+        if self._cell_tree is None:
             self.build_celltree()
         json_ = {}
         json_['nodes_shape'] = self.nodes.shape
         json_['num_nodes'] = self.nodes.shape[0] * self.nodes.shape[1]
-        json_['num_cells'] = self._cell_trees['node'][2].shape[0]
+        json_['num_cells'] = self._cell_tree[2].shape[0]
         return json_
 
     def get_lines(self):
@@ -279,10 +287,10 @@ class Grid_S(GnomeId, gridded.grids.Grid_S):
         '''
         if self._get_geo_mask('node') is not None:
             #masked sgrid, so use Grid_U style of lines
-            if not hasattr(self, '_cell_trees'):
+            if self._cell_tree is None:
                 self.build_celltree()
-            nodes = self._cell_trees['node'][1]
-            faces = self._cell_trees['node'][2]
+            nodes = self._cell_tree[1]
+            faces = self._cell_tree[2]
             open_cells = nodes[faces]
             closed_cells = np.concatenate((open_cells, open_cells[:, None, 0]),
                                           axis=1)
@@ -398,17 +406,33 @@ class Variable(gridded.Variable, GnomeId):
                                      'grid': PyGrid,
                                      'depth': Depth})
 
+    _gnome_unit = None #Default assumption for unit type
+
     def __init__(self, extrapolation_is_allowed=False, *args, **kwargs):
         super(Variable, self).__init__(*args, **kwargs)
         self.extrapolation_is_allowed = extrapolation_is_allowed
 
-    def at(self, *args, **kwargs):
+    def at(self, points, time, units=None, *args, **kwargs):
         if ('extrapolate' not in kwargs):
             kwargs['extrapolate'] = False
         if ('unmask' not in kwargs):
             kwargs['unmask'] = True
 
-        return super(Variable, self).at(*args, **kwargs)
+        value = super(Variable, self).at(points, time, *args, **kwargs)
+
+        data_units = self.units if self.units else self._gnome_unit
+        req_units = units if units else data_units
+        if data_units is not None and data_units != req_units:
+            try:
+                value = uc.convert(data_units, req_units, value)
+            except uc.NotSupportedUnitError:
+                if (not uc.is_supported(data_units)):
+                    warnings.warn("{0} units is not supported: {1}".format(self.name, data_units))
+                elif (not uc.is_supported(req_units)):
+                    warnings.warn("Requested unit is not supported: {1}".format(req_units))
+                else:
+                    raise
+        return value
 
     @classmethod
     def new_from_dict(cls, dict_):
@@ -436,6 +460,8 @@ class Variable(gridded.Variable, GnomeId):
     def data_stop(self):
         return self.time.max_time.replace(tzinfo=None)
 
+    def save(self, saveloc='.', refs=None, overwrite=True):
+        return GnomeId.save(self, saveloc=saveloc, refs=refs, overwrite=overwrite)
 
 class DepthBase(gridded.depth.DepthBase, GnomeId):
 
@@ -497,6 +523,8 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
                                      'depth': Depth,
                                      'variable': Variable})
 
+    _gnome_unit = None #Default assumption for unit type
+
     def __init__(self,
                  extrapolation_is_allowed=False,
                  *args,
@@ -510,6 +538,12 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
             return super(VectorVariable, cls).new_from_dict(cls.from_netCDF(**dict_).to_dict(), **kwargs)
         else:
             return super(VectorVariable, cls).new_from_dict(dict_, **kwargs)
+
+    def at(self, points, time, units=None, *args, **kwargs):
+        units = units if units else self._gnome_unit #no need to convert here, its handled in the subcomponents
+        value = super(VectorVariable, self).at(points, time, units=units, *args, **kwargs)
+
+        return value
 
     def get_data_vectors(self):
         '''
@@ -526,15 +560,39 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
 
         if np.any(np.array(raw_u.shape) != np.array(raw_v.shape)):
             # must be roms-style staggered
-            raw_u = (raw_u[:, 0:-1, :] + raw_u[:, 1:, :]) / 2
-            raw_v = (raw_v[:, :, 0:-1] + raw_v[:, :, 1:]) / 2
+            u_padding_slice = (np.s_[:],) + self.grid.get_padding_slices(self.grid.edge1_padding)
+            v_padding_slice = (np.s_[:],) + self.grid.get_padding_slices(self.grid.edge2_padding)
+            raw_u = raw_u[u_padding_slice].filled(0)
+            raw_v = raw_v[v_padding_slice].filled(0)
+            raw_u = (raw_u[:, :, 0:-1, ] + raw_u[:, :, 1:]) / 2
+            raw_v = (raw_v[:, 0:-1, :] + raw_v[:, 1:, :]) / 2
+        #u/v should be interpolated to centers at this point. Now apply appropriate mask
 
-        raw_u = raw_u.reshape(raw_u.shape[0], -1)
-        raw_v = raw_v.reshape(raw_v.shape[0], -1)
-        #r = np.ma.stack((raw_u, raw_v)) change to this when numpy 1.15 becomes norm.
-        r = np.ma.concatenate((raw_u[None,:], raw_v[None,:]))
+        if isinstance(self.grid, Grid_S) and self.grid.center_mask is not None:
+            ctr_padding_slice = self.grid.get_padding_slices(self.grid.center_padding)
+            if self.grid._cell_tree_mask is None:
+                self.grid.build_celltree()
 
-        return np.ascontiguousarray(r.filled(0), np.float32)
+            x = raw_u[:]
+            xt = x.shape[0]
+            y = raw_v[:]
+            yt = y.shape[0]
+            x = x.reshape(xt, -1)
+            y = y.reshape(yt, -1)
+            ctr_mask = gridded.utilities.gen_celltree_mask_from_center_mask(self.grid.center_mask, ctr_padding_slice)
+            x = np.ma.MaskedArray(x, mask = np.tile(ctr_mask.reshape(-1), xt))
+            y = np.ma.MaskedArray(y, mask = np.tile(ctr_mask.reshape(-1), yt))
+            x = x.compressed().reshape(xt, -1)
+            y = y.compressed().reshape(yt,-1)
+        else:
+            raw_u = raw_u.filled(0).reshape(raw_u.shape[0], -1)
+            raw_v = raw_v.filled(0).reshape(raw_v.shape[0], -1)
+            r = np.stack((raw_u, raw_v))
+            return np.ascontiguousarray(r, np.float32)
+
+        #r = np.ma.stack((x, y)) change to this when numpy 1.15 becomes norm.
+        r = np.ma.concatenate((x[None,:], y[None,:]))
+        return np.ascontiguousarray(r.astype(np.float32)) # r.compressed().astype(np.float32)
 
     def get_metadata(self):
         json_ = {}
@@ -554,11 +612,20 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
 
     @property
     def data_start(self):
-        return self.time.min_time.replace(tzinfo=None)
+        try:
+            return self.time.min_time.replace(tzinfo=None)
+        except TypeError: # cftime datetime objects don't have a tzinfo attribute.
+            return self.time.min_time
 
     @property
     def data_stop(self):
-        return self.time.max_time.replace(tzinfo=None)
+        try:
+            return self.time.max_time.replace(tzinfo=None)
+        except TypeError: # cftime datetime objects don't have a tzinfo attribute.
+            return self.time.max_time
+
+    def save(self, saveloc='.', refs=None, overwrite=True):
+        return GnomeId.save(self, saveloc=saveloc, refs=refs, overwrite=overwrite)
 
     @classmethod
     def _get_shared_vars(cls, *sh_args):

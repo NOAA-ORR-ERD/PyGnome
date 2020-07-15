@@ -19,7 +19,7 @@ import pytest
 import gnome
 from gnome.basic_types import datetime_value_2d
 
-from gnome.map import MapFromBNA
+from gnome.maps import MapFromBNA
 from gnome.model import Model
 
 
@@ -268,6 +268,7 @@ def get_testdata():
     wind_dir = os.path.join(s_data, 'winds')
     testmap = os.path.join(s_data, 'MapBounds_Island.bna')
     bna_sample = os.path.join(s_data, 'MapBounds_2Spillable2Islands2Lakes.bna')
+    save_update_data = os.path.join(base_dir, 'test_utilities', 'test_save_update')
 
     data = dict()
 
@@ -383,6 +384,16 @@ def get_testdata():
          'cats_curr': get_datafile(os.path.join(lis, r"LI_tidesWAC.CUR")),
          'cats_tide': get_datafile(os.path.join(lis, r"CLISShio.txt"))
          }
+
+    #Save file updater saves
+    data['savefile_update_testdata'] = \
+        {
+            'v0_diesel_mac': get_datafile(os.path.join(save_update_data, 'v0_diesel_mac.zip')),
+            'v0_diesel': get_datafile(os.path.join(save_update_data, 'v0_diesel.zip')),
+            'v0_non_weatherable': get_datafile(os.path.join(save_update_data, 'v0_non_weatherable.zip')),
+            'v1_double_diesel': get_datafile(os.path.join(save_update_data, 'v1_double_diesel.gnome')),
+            'v1_non_weatherable': get_datafile(os.path.join(save_update_data, 'v1_non_weatherable.zip')),
+        }
     return data
 
 

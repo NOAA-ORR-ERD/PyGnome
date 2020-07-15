@@ -82,7 +82,6 @@ class FateDataView(AddLogger):
         #     fate_mask = np.logical_and(sc['substance'] == self.substance_id,
         #                                fate_mask)
 
-
         if np.all(fate_mask):
             # no need to make a copy of array
             setattr(self, fate_status, sc._data_arrays)
@@ -91,8 +90,8 @@ class FateDataView(AddLogger):
             for at in array_types:
                 array = sc._array_name(at)
 
-                if array not in dict_to_update:
-                    dict_to_update[array] = sc[array][fate_mask]
+                #if array not in dict_to_update:
+                dict_to_update[array] = sc[array][fate_mask]
 
             setattr(self, fate_status, dict_to_update)
 
@@ -129,6 +128,9 @@ class FateDataView(AddLogger):
         d_to_sync = getattr(self, fate_status)
 
         if d_to_sync is sc._data_arrays:
+            self.reset()
+            #for fs in self._dicts_:
+            #    self._set_data( sc, getattr(self, fs).keys(), self._get_fate_mask(sc, fs), fs)
             return
 
         w_mask = self._get_fate_mask(sc, fate_status)
@@ -158,7 +160,7 @@ class FateDataView(AddLogger):
             sc[key][w_mask] = val
 
         if reset_view:
-            setattr(self, fate_status, {})
+            self.reset()
 
     def _reset_fatedata(self, sc, ix):
         '''
@@ -989,6 +991,7 @@ class SpillContainer(AddLogger, SpillContainerData):
             for key in list(self._array_types.keys()):
                 self._data_arrays[key] = np.delete(self[key], to_be_removed,
                                                    axis=0)
+            self._fate_data_view.reset()
 
     def __str__(self):
         return ('gnome.spill_container.SpillContainer\n'

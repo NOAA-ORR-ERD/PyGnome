@@ -229,6 +229,12 @@ def GetNextBNAPolygon(f, dtype=np.float64):
             break
         else:
             continue
+
+    try:
+        header.decode('ascii')
+    except UnicodeDecodeError:
+        raise ValueError('File has incorrect header for BNA format')
+
     try:
         fields = header.split('"')
         name = fields[1]
@@ -236,8 +242,14 @@ def GetNextBNAPolygon(f, dtype=np.float64):
         num_points = int(fields[4].strip()[1:])
         #header = header.replace('", "', '","') # some bnas have an extra space
         #name, rest = header.strip().split('","')
+<<<<<<< HEAD
     except ValueError as IndexError:
         raise ValueError('something wrong with header line: {0}'
+=======
+    #except ValueError, IndexError:
+    except:
+        raise ValueError('File has incorrect header for BNA format: {0}'
+>>>>>>> develop
                          .format(header))
 
     if num_points < 0 or num_points == 2:

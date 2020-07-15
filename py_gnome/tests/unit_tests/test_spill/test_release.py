@@ -79,6 +79,7 @@ pos = (0, 10, 20)
 
 @pytest.fixture('function')
 def r1():
+    #150 minute continuous release
     return PointLineRelease(release_time=rel_time,
                             start_position=pos,
                             end_position= (10, 20, 30),
@@ -142,11 +143,11 @@ class TestPointLineRelease:
 
         r2.prepare_for_model_run(900)
         assert len(r2._release_ts.data) == 2
-        assert r2._release_ts.at(None, r2.release_time) == 0
-        assert r2._release_ts.at(None, r2.release_time - timedelta(seconds=1)) == 0
+        assert r2._release_ts.at(None, r2.release_time) == 1000
+        assert r2._release_ts.at(None, r2.release_time - timedelta(seconds=1)) == 1000
         assert r2._release_ts.at(None, r2.release_time + timedelta(seconds=1)) == 1000
         assert r2._release_ts.at(None, r2.release_time + timedelta(seconds=2)) == 1000
-        assert np.all(r2._release_ts.data == np.linspace(0,1000, len(r2._release_ts.data)))
+        assert np.all(r2._release_ts.data == np.linspace(1000,1000, len(r2._release_ts.data)))
         assert r2._mass_per_le == 0
         assert len(r2._pos_ts.time) == 2
 

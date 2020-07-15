@@ -6,7 +6,8 @@ test:
   stage: test
   except:
     - production
-  image: gitlab.orr.noaa.gov:5002/oillibrary:latest
+    - master
+  image: registry.orr.noaa.gov/gnome/oillibrary:develop
   script:
     - yum install gcc gcc-c++ -y
     - yum install netcdf-devel -y # needed by the C++ code -- it can't find the conda versions
@@ -23,11 +24,32 @@ test:
   tags:
     - docker
 
+test_master:
+  stage: test
+  only:
+  - master
+  image: registry.orr.noaa.gov/gnome/oillibrary:master
+  script:
+    - yum install gcc gcc-c++ -y
+    - yum install netcdf-devel -y # needed by the C++ code -- it can't find the conda versions
+    # we're shouldn't need matplotlib for tests or deployment ...
+    - yum install libXext libSM libXrender -y  # needed by matplotlib on CentOS
+
+    # install the requirements
+    - conda install --file conda_requirements.txt
+
+    - cd ./py_gnome
+    - python ./setup.py install
+    - cd tests/unit_tests && pytest
+
+  tags:
+    - docker
+    
 test_production:
   stage: test
   only:
   - production
-  image: gitlab.orr.noaa.gov:5002/oillibrary:production
+  image: registry.orr.noaa.gov/gnome/oillibrary:production
   script:
     - yum install gcc gcc-c++ -y
     - yum install netcdf-devel -y # needed by the C++ code -- it can't find the conda versions
@@ -47,10 +69,12 @@ test_production:
 develop:
   stage: build
   script:
-    - docker pull gitlab.orr.noaa.gov:5002/oillibrary
-    - docker tag gitlab.orr.noaa.gov:5002/oillibrary oillibrary
-    - docker build -f dockerfile . -t gitlab.orr.noaa.gov:5002/pygnome:develop
-    - docker push gitlab.orr.noaa.gov:5002/pygnome:develop
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker pull registry.orr.noaa.gov/gnome/oillibrary:develop
+    - docker tag registry.orr.noaa.gov/gnome/oillibrary:develop oillibrary
+    - docker build -f dockerfile . -t registry.orr.noaa.gov/gnome/pygnome:develop
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker push registry.orr.noaa.gov/gnome/pygnome:develop
   only:
     - develop
   tags:
@@ -60,10 +84,12 @@ develop:
 master:
   stage: build
   script:
-    - docker pull gitlab.orr.noaa.gov:5002/oillibrary
-    - docker tag gitlab.orr.noaa.gov:5002/oillibrary oillibrary
-    - docker build -f dockerfile . -t gitlab.orr.noaa.gov:5002/pygnome
-    - docker push gitlab.orr.noaa.gov:5002/pygnome
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker pull registry.orr.noaa.gov/gnome/oillibrary:master
+    - docker tag registry.orr.noaa.gov/gnome/oillibrary:master oillibrary
+    - docker build -f dockerfile . -t registry.orr.noaa.gov/gnome/pygnome:master
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker push registry.orr.noaa.gov/gnome/pygnome:master
   only:
      - master
   tags:
@@ -73,10 +99,12 @@ master:
 production:
   stage: build
   script:
-      - docker pull gitlab.orr.noaa.gov:5002/oillibrary:production
-      - docker tag gitlab.orr.noaa.gov:5002/oillibrary:production oillibrary
-      - docker build -f dockerfile . -t gitlab.orr.noaa.gov:5002/pygnome:production
-      - docker push gitlab.orr.noaa.gov:5002/pygnome:production
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker pull registry.orr.noaa.gov/gnome/oillibrary:production
+    - docker tag registry.orr.noaa.gov/gnome/oillibrary:production oillibrary
+    - docker build -f dockerfile . -t registry.orr.noaa.gov/gnome/pygnome:production
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker push registry.orr.noaa.gov/gnome/pygnome:production
   only:
      - production
   tags:

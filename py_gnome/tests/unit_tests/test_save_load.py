@@ -38,7 +38,9 @@ from gnome.outputters import (Renderer,
                               NetCDFOutput,
                               TrajectoryGeoJsonOutput)
 
-from gnome import map, spill
+from gnome.maps import MapFromBNA
+from gnome import spill
+
 # following is modified for testing only
 from gnome.persist import save_load
 
@@ -136,7 +138,8 @@ base_dir = os.path.dirname(__file__)
 g_objects = (
     GridCurrent.from_netCDF(testdata['GridCurrentMover']['curr_tri']),
     Tide(testdata['CatsMover']['tide']),
-    Wind(filename=testdata['ComponentMover']['wind']),
+    #Wind(filename=testdata['ComponentMover']['wind']),
+    constant_wind(5., 270, 'knots'),
     Wind(timeseries=(sec_to_date(24 * 60 * 60),
                      (0, 0)), units='mps'),
     Water(temperature=273),
@@ -147,12 +150,18 @@ g_objects = (
               tide=Tide(testdata['CatsMover']['tide'])),
     ComponentMover(testdata['ComponentMover']['curr']),
     ComponentMover(testdata['ComponentMover']['curr'],
-                   wind=Wind(filename=testdata['ComponentMover']['wind'])),
+                   wind=constant_wind(5., 270, 'knots')),
+                   #wind=Wind(filename=testdata['ComponentMover']['wind'])),
     RandomMover3D(),
     SimpleMover(velocity=(10.0, 10.0, 0.0)),
 
+<<<<<<< HEAD
     map.MapFromBNA(testdata['MapFromBNA']['testmap'], 6),
     NetCDFOutput(os.path.join(base_dir, 'xtemp.nc')),
+=======
+    MapFromBNA(testdata['MapFromBNA']['testmap'], 6),
+    NetCDFOutput(os.path.join(base_dir, u'xtemp.nc')),
+>>>>>>> develop
     Renderer(testdata['Renderer']['bna_sample'],
              os.path.join(base_dir, 'output_dir')),
     WeatheringOutput(),

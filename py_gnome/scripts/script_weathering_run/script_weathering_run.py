@@ -7,6 +7,8 @@ This is a "just weathering" run -- no land, currents, etc.
 import os
 from gnome import scripting as gs
 
+print "I am running!"
+
 # define base directory
 base_dir = os.path.dirname(__file__)
 save_loc = os.path.join(base_dir, 'WeatheringRun.gnome')

@@ -294,6 +294,12 @@ cdef class CyOSSMTime(object):
             # and raise other exceptions
             raise ValueError("Valid user units not found in file")
 
+        if err == 2:
+            # TODO: need to define error codes in C++
+            # and raise other exceptions
+            print "err = 2 error"
+            raise ValueError('File format not valid for point wind')
+
         if err != 0:
             raise IOError('Error occurred in C++: {0}().ReadTimeValues()'
                           .format(self.__class__.__name__))

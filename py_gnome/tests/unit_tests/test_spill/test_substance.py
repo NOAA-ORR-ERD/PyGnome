@@ -2,7 +2,7 @@ from gnome.spill.substance import (Substance,
                                    GnomeOil,
                                    NonWeatheringSubstance)
 from gnome.spill.initializers import InitWindages, plume_initializers
-from oil_library.models import Oil
+#from oil_library.models import Oil
 
 class TestSubstance(object):
     '''Test for base class'''
@@ -49,7 +49,7 @@ class TestGnomeOil(object):
     def test_init(self):
         oil1 = GnomeOil('oil_ans_mp', windage_range=(0.05, 0.07))
         assert oil1.windage_range == (0.05, 0.07)
-        assert isinstance(oil1.record, Oil)
+        #assert isinstance(oil1.record, Oil)	#GnomeOil doesn't have a record
         assert isinstance(oil1.initializers[0], InitWindages)
         initw = oil1.initializers[0]
         assert all([atype in oil1.array_types for atype in initw.array_types])
@@ -84,7 +84,8 @@ class TestGnomeOil(object):
     def test_set_emulsification_constants(self):
         test_obj = GnomeOil('oil_ans_mp')
         assert test_obj._bulltime is None
-        assert test_obj.bullwinkle < 0.5 and test_obj.bullwinkle is test_obj.record.bullwinkle_fraction
+        assert test_obj.bullwinkle < 0.5
+        #assert test_obj.bullwinkle < 0.5 and test_obj.bullwinkle is test_obj.record.bullwinkle_fraction
         d = test_obj.serialize()
         d['bullwinkle_time'] = 60
         d['bullwinkle_fraction'] = 0.7

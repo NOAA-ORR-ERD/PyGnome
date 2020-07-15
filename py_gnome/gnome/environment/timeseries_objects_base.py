@@ -7,13 +7,15 @@ import numpy as np
 
 from colander import SchemaNode, String, Float, drop, SequenceSchema, Sequence
 
-import unit_conversion
+import unit_conversion as uc
 
 from gnome.persist import base_schema
 
 from gnome.environment.gridded_objects_base import Time, TimeSchema
 from gnome.gnomeobject import GnomeId
 from gnome.persist.extend_colander import NumpyArraySchema
+
+from gridded.utilities import _align_results_to_spatial_data, _reorganize_spatial_data
 
 
 class TimeseriesDataSchema(base_schema.ObjTypeSchema):
@@ -34,6 +36,8 @@ class TimeseriesData(GnomeId):
     '''
 
     _schema = TimeseriesDataSchema
+
+    _gnome_unit = None
 
     def __init__(self,
                  data=None,
@@ -129,7 +133,7 @@ class TimeseriesData(GnomeId):
             raise ValueError('Object being assigned must be an iterable '
                              'or a Time object')
 
-    def at(self, points, time, units=None, extrapolate=None, **kwargs):
+    def at(self, points, time, units=None, extrapolate=None, auto_align=True, **kwargs):
         '''
             Interpolates this property to the given points at the given time
             with the units specified.
@@ -142,48 +146,54 @@ class TimeseriesData(GnomeId):
 
             :param units: The units that the result would be converted to
         '''
+        pts = _reorganize_spatial_data(points)
         value = None
-        if extrapolate is None:
-            extrapolate = self.extrapolate
-
         if len(self.time) == 1:
-            # single time time series (constant)
-            if points is None:
-                value = self.data
-            else:
-                value = np.full((points.shape[0], 1), self.data, dtype=np.float64)
+            value = self.data
+        else:
+            if extrapolate is None:
+                extrapolate = self.extrapolate
+            if not extrapolate:
+                self.time.valid_time(time)
 
-            if units is not None and units != self.units:
-                value = unit_conversion.convert(self.units, units, value)
+            if extrapolate and time > self.time.max_time:
+                value = self.data[-1]
+            if extrapolate and time <= self.time.min_time:
+                value = self.data[0]
 
-            return value
+            if value is None:
+                t_index = self.time.index_of(time, extrapolate)
+                t_alphas = self.time.interp_alpha(time, extrapolate)
 
-        if not extrapolate:
-            self.time.valid_time(time)
+                d0 = self.data[max(t_index - 1, 0)]
+                d1 = self.data[t_index]
 
-        t_index = self.time.index_of(time, extrapolate)
+                value = d0 + (d1 - d0) * t_alphas
 
-        if time > self.time.max_time:
-            value = self.data[-1]
 
-        if time <= self.time.min_time:
-            value = self.data[0]
-
-        if value is None:
-            t_alphas = self.time.interp_alpha(time, extrapolate)
-
-            d0 = self.data[t_index - 1]
-            d1 = self.data[t_index]
-
-            value = d0 + (d1 - d0) * t_alphas
-
-        if units is not None and units != self.units:
-            value = unit_conversion.convert(self.units, units, value)
+        data_units = self.units if self.units else self._gnome_unit
+        req_units = units if units else data_units
+        #Try to convert units. This is the same as in gridded_objects_base.Variable
+        if data_units is not None and data_units != req_units:
+            try:
+                value = uc.convert(data_units, req_units, value)
+            except uc.NotSupportedUnitError:
+                if (not uc.is_supported(data_units)):
+                    warnings.warn("{0} units is not supported: {1}".format(self.name, data_units))
+                elif (not uc.is_supported(req_units)):
+                    warnings.warn("Requested unit is not supported: {1}".format(req_units))
+                else:
+                    raise
 
         if points is None:
             return value
         else:
-            return np.full((points.shape[0], 1), value, dtype=np.float64)
+            rval = np.full((pts.shape[0], 1), value, dtype=np.float64)
+            if auto_align:
+                return _align_results_to_spatial_data(rval, points)
+            else:
+                return rval
+
 
     def in_units(self, unit):
         '''
@@ -198,7 +208,7 @@ class TimeseriesData(GnomeId):
         cpy = copy.copy(self)
 
         if hasattr(cpy.data, '__mul__'):
-            cpy.data = unit_conversion.convert(cpy.units, unit, cpy.data)
+            cpy.data = uc.convert(cpy.units, unit, cpy.data)
         else:
             warnings.warn('Data was not converted to new units and '
                           'was not copied because it does not support '
@@ -230,6 +240,7 @@ class TimeseriesVector(GnomeId):
     Base class for multiple data sources aligned along the same single time dimension
     '''
     _schema = TimeseriesVectorSchema
+    _gnome_unit = None
 
     def __init__(self,
                  variables=None,
@@ -327,7 +338,7 @@ class TimeseriesVector(GnomeId):
     @units.setter
     def units(self, unit):
         if unit is not None:
-            if not unit_conversion.is_supported(unit):
+            if not uc.is_supported(unit):
                 raise ValueError('Units of {0} are not supported'.format(unit))
 
         self._units = unit
@@ -353,7 +364,7 @@ class TimeseriesVector(GnomeId):
         '''
         raise NotImplementedError()
 
-    def at(self, points, time, *args, **kwargs):
+    def at(self, points, time, units=None, *args, **kwargs):
         '''
             Find the value of the property at positions P at time T
 
@@ -378,8 +389,10 @@ class TimeseriesVector(GnomeId):
             :return: returns a Nx2 array of interpolated values
             :rtype: double
         '''
-        val = np.column_stack([var.at(points, time, *args, **kwargs)
-                                for var in self.variables])
+        units = units if units else self._gnome_unit #no need to convert here, its handled in the subcomponents
+        val = np.column_stack([var.at(points, time,  units=units, *args, **kwargs) for var in self.variables])
+
+        # No need to unit convert since that should be handled by the individual variable objects
         if points is None:
             return val[0]
         else:

@@ -71,13 +71,13 @@ class TestWeatheringData:
     def mock_weather_data(self, sc, wd, zero_elems=5):
         '''
         helper function that mocks a weatherer - like evaporation. It simply
-        changes the mass_fraction and updates frac_lost accordingly
+        changes the mass_fraction and updates frac_evap accordingly
         '''
         for _, data in sc.itersubstancedata(wd.array_types):
             # following simulates weathered/evaporated oil
             data['mass_components'][:, :zero_elems] = 0
             data['mass'][:] = sc['mass_components'].sum(1)
-            data['frac_lost'][:] = 1 - data['mass']/data['init_mass']
+            data['frac_evap'][:] = 1 - data['mass']/data['init_mass']
 
         sc.update_from_fatedataview()
 
@@ -378,6 +378,7 @@ class TestWeatheringData:
         todo: should this raise a runtime error. May want to change how this
             works
         '''
+        pytest.importorskip("oil_library")
         l.uninstall()
         rel_time = datetime.now().replace(microsecond=0)
         (sc, wd) = self.sample_sc_intrinsic(100, rel_time)

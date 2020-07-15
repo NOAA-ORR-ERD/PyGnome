@@ -17,7 +17,7 @@ import numpy as np
 from gnome.basic_types import datetime_value_2d
 from gnome.utilities.inf_datetime import InfDateTime
 
-from gnome.map import MapFromBNA
+from gnome.maps import MapFromBNA
 from gnome.environment import Wind, Tide, Water
 from gnome.model import Model
 from gnome.spill import point_line_release_spill

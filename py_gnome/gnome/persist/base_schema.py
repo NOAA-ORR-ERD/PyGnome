@@ -10,7 +10,7 @@ import tempfile
 import copy
 
 from colander import (SchemaNode, deferred, drop, required, Invalid, UnsupportedFields,
-                      SequenceSchema, TupleSchema, MappingSchema,
+                      SequenceSchema, TupleSchema, MappingSchema, Mapping,
                       String, Float, Int, SchemaType, Sequence, Tuple, Positional, null)
 
 from .extend_colander import NumpyFixedLenSchema
@@ -29,7 +29,6 @@ def now(node, kw):
                                     in Schema
     """
     return datetime.datetime.now().replace(microsecond=0)
-
 
 class ObjType(SchemaType):
 
@@ -292,10 +291,11 @@ class ObjType(SchemaType):
 
             # Need to exclude lists from this culling,
             # unless explicitly set save=false
-            t1 = not isinstance(subnode, (SequenceSchema, TupleSchema))
+            #t1 = not isinstance(subnode, (SequenceSchema, TupleSchema))
             t2 = hasattr(subnode, 'save') and subnode.save is False
             t3 = k not in savable_attrs
-            if (t1 and t2 and t3 and k in json_):
+            #if (t1 and t2 and t3 and k in json_):
+            if (t2 and t3 and k in json_):
                 json_.pop(k)
 
         #replace all save_reference json with just the json filename containing said object
@@ -520,7 +520,6 @@ class ObjType(SchemaType):
             # simple existence check
             if not os.path.exists(os.path.join(dirname, filename)):
                 saveloc.extract(filename, dirname)
-
                 return os.path.join(dirname, filename)
             else:
                 return os.path.join(dirname, filename)
@@ -630,8 +629,8 @@ class ObjTypeSchema(MappingSchema):
     #       So the json structures that we produce for a save file
     #       should not rely on any unique object identifiers
     id = SchemaNode(String(), save=True, read_only=True)
-
     name = SchemaNode(String(), test_equal=False)
+    # _appearance is to allow the client to persist visualization information.
 
     def __init__(self, *args, **kwargs):
         super(ObjTypeSchema, self).__init__(*args, **kwargs)
@@ -773,6 +772,7 @@ class ObjTypeSchema(MappingSchema):
         else:
             return subnode.deserialize(subcstruct)
 
+
 class GeneralGnomeObjectSchema(ObjTypeSchema):
     '''
     The purpose of this schema is to be a placeholder in situations where you
@@ -865,19 +865,27 @@ Polygon = LongLatBounds
 
 class PolygonSetSchema(SequenceSchema):
     polygonset = Polygon()
+
     def serialize(self, appstruct):
         appstruct = [poly.tolist() for poly in appstruct]
-        return super(PolygonSetSchema, self).serialize( appstruct)
+        return super(PolygonSetSchema, self).serialize(appstruct)
 
     def deserialize(self, cstruct):
-        appstruct = super(PolygonSetSchema, self).deserialize(cstruct)
-        if len(appstruct) == 0:
-            appstruct = [(-360, -90), (-360, 90),
-                         (360, 90), (360, -90)]
-        ps = PolygonSet()
-        for poly in appstruct:
-            ps.append(poly)
-        return ps
+        if cstruct is None:
+            return None
+        else:
+            appstruct = super(PolygonSetSchema, self).deserialize(cstruct)
+            if len(appstruct) == 0:
+                # empty --should be None
+                return None
+            # fixme: is there any need to for a PolygonSet here?
+            #        a list of lists would work fine.
+            #        a PolygonSet is created in the spillable_area.setter anyway.
+            ps = PolygonSet()
+            for poly in appstruct:
+                ps.append(poly)
+            return ps
+
 
 class WorldPoint(LongLat):
     'Used to define reference points. 3D positions (long,lat,z)'

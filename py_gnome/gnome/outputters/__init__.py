@@ -3,11 +3,12 @@ from .outputter import Outputter, BaseOutputterSchema
 from .netcdf import NetCDFOutput, NetCDFOutputSchema
 from .renderer import Renderer, RendererSchema
 from .weathering import WeatheringOutput
+from .binary import BinaryOutput
 from .geo_json import (TrajectoryGeoJsonOutput,
-                      IceGeoJsonOutput)
+                       IceGeoJsonOutput)
 from .json import (IceJsonOutput,
-                  CurrentJsonOutput,
-                  SpillJsonOutput)
+                   CurrentJsonOutput,
+                   SpillJsonOutput)
 
 from .kmz import KMZOutput
 from .image import IceImageOutput
@@ -19,6 +20,7 @@ outputters = [Outputter,
               NetCDFOutput,
               Renderer,
               WeatheringOutput,
+              BinaryOutput,
               TrajectoryGeoJsonOutput,
               IceGeoJsonOutput,
               IceJsonOutput,
@@ -33,3 +35,4 @@ for cls in outputters:
     if hasattr(cls, '_schema'):
         schemas.add(cls._schema)
 schemas = list(schemas)
+

@@ -5,6 +5,7 @@ time_utils
 assorted utilities for working with time and datetime
 """
 from datetime import datetime, timedelta, tzinfo
+import cftime
 from dateutil.parser import parse as parsetime
 import time
 
@@ -96,9 +97,10 @@ def date_to_sec(date_times):
         scalar = True
         date_times = [date_times.astype(datetime)]
 
-    if not isinstance(date_times[0], datetime):
+    if not isinstance(date_times[0], (datetime, cftime.datetime)):
+    # if not isinstance(date_times[0], datetime):
         raise TypeError('date_to_sec only works on datetime and datetime64 '
-                        'objects')
+                        'objects. Got a: {}'.format(type(date_times[0])))
 
     t_list = []
     for dt in date_times:
@@ -214,7 +216,7 @@ def round_time(dt=None, roundTo=60):  # IGNORE:W0621
 
 def asdatetime(dt):
     """
-    makes sure the inmput is a datetime.datetime object
+    makes sure the input is a datetime.datetime object
 
     if it already is, it will be passed through.
 
@@ -224,7 +226,8 @@ def asdatetime(dt):
     """
     if dt is None:
         return dt
-    if not isinstance(dt, datetime):
+    # if not isinstance(dt, datetime):
+    if not isinstance(dt, (datetime, cftime.datetime)):
         # assume it's an iso string, or something that dateutils can parse.
         return parsetime(dt, ignoretz=True)
     else:

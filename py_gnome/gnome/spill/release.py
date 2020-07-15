@@ -4,6 +4,7 @@ is composed of a release object and an ElementType
 '''
 
 import copy
+import math
 from datetime import datetime, timedelta
 from gnome.utilities.time_utils import asdatetime
 
@@ -402,9 +403,14 @@ class PointLineRelease(Release):
         else:
             t = Time([self.release_time + timedelta(seconds=ts * step) for step in range(0,num_ts + 1)])
             t.data[-1] = self.end_release_time
-        self._release_ts = TimeseriesData(name=self.name+'_release_ts',
-                                          time=t,
-                                          data=np.linspace(0, max_release, num_ts + 1).astype(int))
+        if self.release_duration == 0:
+            self._release_ts = TimeseriesData(name=self.name+'_release_ts',
+                                              time=t,
+                                              data=np.full(t.data.shape, max_release).astype(int))
+        else:
+            self._release_ts = TimeseriesData(name=self.name+'_release_ts',
+                                            time=t,
+                                            data=np.linspace(0, max_release, num_ts + 1).astype(int))
         lon_ts = TimeseriesData(name=self.name+'_lon_ts',
                                 time=t,
                                 data=np.linspace(self.start_position[0], self.end_position[0], num_ts + 1))
@@ -455,7 +461,9 @@ class PointLineRelease(Release):
         '''
         if not self._prepared:
             return 0
-        return int(self._release_ts.at(None, current_time + timedelta(seconds=time_step)))
+        if current_time < self.release_time:
+            return 0
+        return int(math.ceil(self._release_ts.at(None, current_time + timedelta(seconds=time_step), extrapolate=True)))
 
     def initialize_LEs(self, to_rel, data, current_time, time_step):
         '''
@@ -463,9 +471,12 @@ class PointLineRelease(Release):
         current_time = datetime.datetime
         time_step = integer seconds
         '''
+        if(time_step == 0):
+            time_step = 1 #to deal with initializing position in instantaneous release case 
+
         sl = slice(-to_rel, None, 1)
-        start_position = self._pos_ts.at(None, current_time)
-        end_position = self._pos_ts.at(None, current_time + timedelta(seconds=time_step))
+        start_position = self._pos_ts.at(None, current_time, extrapolate=True)
+        end_position = self._pos_ts.at(None, current_time + timedelta(seconds=time_step), extrapolate=True)
         data['positions'][sl, 0] = \
             np.linspace(start_position[0],
                         end_position[0],

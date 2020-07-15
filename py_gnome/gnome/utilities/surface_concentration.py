@@ -64,7 +64,7 @@ def surface_conc_kde(sc):
             mass_for_kernel = mass[id]
             id_bin = np.where(age_for_kernel>=t)[0] #we only calculate pdf for particles in bin
 
-            if len(np.unique(lat_for_kernel))>2 or len(np.unique(lon_for_kernel))>2: # can't compute a kde for less than 3 unique points!
+            if len(np.unique(lat_for_kernel))>2 and len(np.unique(lon_for_kernel))>2: # can't compute a kde for less than 3 unique points!
                 lon0, lat0 = min(lon_for_kernel), min(lat_for_kernel)
                 # FIXME: should use projection code to get this right.
                 x = (lon_for_kernel - lon0) * 111325 * np.cos(lat0 * np.pi / 180)

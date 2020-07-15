@@ -364,6 +364,9 @@ class TimeGridCurRect_c : virtual public TimeGridVel_c
 public:
 
 	PtCurTimeDataHdl fTimeDataHdl;	
+	LongPointHdl fPtsH;
+	WORLDPOINTH fCenterPtsH;		// for curvilinear, all vertex points from file
+	GridCellInfoHdl fGridCellInfoH;
 	short fUserUnits;
 
 	TimeGridCurRect_c();
@@ -395,6 +398,13 @@ public:
 
 	virtual OSErr TextRead(std::vector<std::string> &linesInFile, std::string containingDir);
 	virtual OSErr TextRead(const char *path, const char *topFilePath);
+
+	virtual LongPointHdl		GetPointsHdl();
+	virtual WORLDPOINTH 	GetCellCenters();
+	virtual GridCellInfoHdl 	GetCellData();
+	virtual OSErr 	GetScaledVelocities(Seconds time, VelocityFRec *velocity);
+
+	virtual	bool 		IsRegularGrid(){return true;}
 };
 
 
@@ -436,6 +446,8 @@ public:
 	virtual	bool 		IsTriangleGrid(){return true;}
 	virtual	bool 		IsDataOnCells(){return false;}	// data is on the points
 	virtual OSErr 		GetScaledVelocities(Seconds time, VelocityFRec *scaled_velocity);
+	virtual LongPointHdl		GetPointsHdl();
+	TopologyHdl 		GetTopologyHdl();
 };
 
 

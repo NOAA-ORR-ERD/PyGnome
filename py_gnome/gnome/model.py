@@ -20,11 +20,11 @@ from gnome.utilities.orderedcollection import OrderedCollection
 from gnome.spill_container import SpillContainerPair
 from gnome.basic_types import oil_status, fate
 
-from gnome.map import (GnomeMapSchema,
-                       MapFromBNASchema,
-                       ParamMapSchema,
-                       MapFromUGridSchema,
-                       GnomeMap)
+from gnome.maps.map import (GnomeMapSchema,
+                            MapFromBNASchema,
+                            ParamMapSchema,
+                            MapFromUGridSchema,
+                            GnomeMap)
 
 from gnome.environment import Environment, Wind
 from gnome.array_types import gat
@@ -77,6 +77,8 @@ class ModelSchema(ObjTypeSchema):
         List(), missing=drop,
 
     )
+    # fixme: this feels fragile -- couldn't we use subclassing?
+    #        any Schema derived from GnomeMapSchema would be good?
     map = GeneralGnomeObjectSchema(
         acceptable_schemas=(GnomeMapSchema,
                             MapFromBNASchema,
@@ -108,6 +110,9 @@ class ModelSchema(ObjTypeSchema):
         GeneralGnomeObjectSchema(acceptable_schemas=out_schemas),
         save_reference=True
     )
+
+    #UI Configuration properties for web client:
+    manual_weathering = SchemaNode(Bool(), save=False, update=True, test_equal=False, missing=drop)
 
 
 class Model(GnomeId):
@@ -164,6 +169,7 @@ class Model(GnomeId):
                  weatherers=[],
                  spills=[],
                  uncertain_spills=[],
+                 manual_weathering=False,
                  **kwargs):
         '''
         Initializes a model.
@@ -254,6 +260,7 @@ class Model(GnomeId):
 
         self.location = location
         self._register_callbacks()
+        self.manual_weathering = manual_weathering
         self.array_types.update({'age': gat('age')})
 
     def _register_callbacks(self):
@@ -918,6 +925,9 @@ class Model(GnomeId):
                 for model_time, time_step in self._split_into_substeps():
                     # change 'mass_components' in weatherer
                     w.weather_elements(sc, time_step, model_time)
+                    #self.logger.info('density after {0}: {1}'.format(w.name, sc['density'][-5:]))
+
+        #self.logger.info('density after weather_elements: {0}'.format(sc['density'][-5:]))
 
     def _split_into_substeps(self):
         '''
@@ -995,27 +1005,37 @@ class Model(GnomeId):
         Steps the model forward (or backward) in time. Needs testing for
         hindcasting.
         '''
+<<<<<<< HEAD
         isvalid = True
         for sc in list(self.spills.items()):
+=======
+        isValid = True
+        for sc in self.spills.items():
+>>>>>>> develop
             # Set the current time stamp only after current_time_step is
             # incremented and before the output is written. Set it to None here
             # just so we're not carrying around the old time_stamp
             sc.current_time_stamp = None
 
         if self.current_time_step == -1:
-            # that's all we need to do for the zeroth time step
+            #starting new run so run setup
             self.setup_model_run()
 
             # let each object raise appropriate error if obj is incomplete
             # validate and send validation flag if model is invalid
-            (msgs, isvalid) = self.check_inputs()
-            if not isvalid:
+            (msgs, isValid) = self.check_inputs()
+            if not isValid:
                 raise RuntimeError("Setup model run complete but model "
                                    "is invalid", msgs)
-            # (msgs, isvalid) = self.validate()
-            # if not isvalid:
-            #    raise StopIteration("Setup model run complete but model "
-            #                        "is invalid", msgs)
+
+            #going into step 0
+            self.current_time_step += 1
+            #only release 1 second, to catch any instantaneous releases
+            self.release_elements(0, self.model_time)
+            #step 0 output
+            output_info = self.output_step(isValid)
+
+            return output_info
 
         elif self.current_time_step >= self._num_time_steps - 1:
             # _num_time_steps is set when self.time_step is set. If user does
@@ -1027,12 +1047,22 @@ class Model(GnomeId):
 
         else:
             self.setup_time_step()
+            #release half the LEs for this time interval
+            self.release_elements(self.time_step/2, self.model_time)
             self.move_elements()
             self.weather_elements()
             self.step_is_done()
+            self.current_time_step += 1
+            #Release the remaining half of the LEs in this time interval
+            self.release_elements(0, self.model_time)
+            output_info = self.output_step(isValid)
+            return output_info
 
-        self.current_time_step += 1
+    def output_step(self, isvalid):
+        self._cache.save_timestep(self.current_time_step, self.spills)
+        output_info = self.write_output(isvalid)
 
+<<<<<<< HEAD
         # this is where the new step begins!
         # the elements released are during the time period:
         #    self.model_time + self.time_step
@@ -1043,10 +1073,21 @@ class Model(GnomeId):
         #     [sc.current_time_stamp for sc in self.spills.items()]
         for sc in list(self.spills.items()):
             sc.current_time_stamp = self.model_time
+=======
+        self.logger.debug('{0._pid} '
+                        'Completed step: {0.current_time_step} for {0.name}'
+                        .format(self))
+        return output_info
+
+    def release_elements(self, time_step, model_time):
+        num_released = 0
+        for sc in self.spills.items():
+            sc.current_time_stamp = model_time
+>>>>>>> develop
 
             # release particles for next step - these particles will be aged
             # in the next step
-            num_released = sc.release_elements(self.time_step, self.model_time)
+            num_released = sc.release_elements(time_step, model_time)
 
             # initialize data - currently only weatherers do this so cycle
             # over weatherers collection - in future, maybe movers can also do
@@ -1059,18 +1100,7 @@ class Model(GnomeId):
             self.logger.debug("{1._pid} released {0} new elements for step:"
                               " {1.current_time_step} for {1.name}".
                               format(num_released, self))
-
-        # cache the results - current_time_step is incremented but the
-        # current_time_stamp in spill_containers (self.spills) is not updated
-        # till we go through the prepare_for_model_step
-        self._cache.save_timestep(self.current_time_step, self.spills)
-        output_info = self.write_output(isvalid)
-
-        self.logger.debug('{0._pid} '
-                          'Completed step: {0.current_time_step} for {0.name}'
-                          .format(self))
-
-        return output_info
+        return num_released
 
     def __iter__(self):
         '''
@@ -1408,7 +1438,7 @@ class Model(GnomeId):
         raise an exception if user can't run the model
         todo: check if all spills start after model ends
         '''
-        (msgs, isvalid) = self.validate()
+        (msgs, isValid) = self.validate()
 
         someSpillIntersectsModel = False
         num_spills = len(self.spills)
@@ -1440,7 +1470,7 @@ class Model(GnomeId):
 
                     msgs.append('error: {}: {}'
                                 .format(self.__class__.__name__, msg))
-                    isvalid = False
+                    isValid = False
 
                 if spill.substance.is_weatherable:
                     # min_k1 = spill.substance.get('pour_point_min_k')
@@ -1464,7 +1494,7 @@ class Model(GnomeId):
                         if np.any(rho_h2o < rho_oil):
                             msg = ('Found particles with '
                                    'relative_buoyancy < 0. Oil is a sinker')
-                            isvalid = False
+                            isValid = False
                             raise GnomeRuntimeError(msg)
 
         if num_spills_on > 0 and not someSpillIntersectsModel:
@@ -1478,9 +1508,9 @@ class Model(GnomeId):
             self.logger.warning(msg)  # for now make this a warning
             # self.logger.error(msg)
             msgs.append('warning: ' + self.__class__.__name__ + ': ' + msg)
-            # isvalid = False
+            # isValid = False
 
-        return (msgs, isvalid)
+        return (msgs, isValid)
 
     def validate(self):
         '''
