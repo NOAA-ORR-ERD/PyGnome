@@ -23,11 +23,9 @@ from gnome.maps import GnomeMap, MapFromBNA, RasterMap, ParamMap
 
 from gnome.gnomeobject import class_from_objtype
 
-<<<<<<< HEAD:py_gnome/tests/unit_tests/test_map.py
 from .conftest import sample_sc_release
-=======
+
 from ..conftest import sample_sc_release
->>>>>>> develop:py_gnome/tests/unit_tests/test_maps/test_map.py
 
 
 # fixme: this should realy be in conftest
@@ -185,13 +183,8 @@ class Test_ParamMap:
         assert pmap.in_water((0.3, 0, 0)) is False
 
     def test_land_generation(self):
-<<<<<<< HEAD:py_gnome/tests/unit_tests/test_map.py
-        pmap1 = gnome.map.ParamMap((0, 0), 10000, 90)
-        print(pmap1.land_points)
-=======
         pmap1 = ParamMap((0, 0), 10000, 90)
-        print pmap1.land_points
->>>>>>> develop:py_gnome/tests/unit_tests/test_maps/test_map.py
+        print(pmap1.land_points)
 
     def test_to_geojson(self):
         pmap = ParamMap((0, 0), 10000, 90)

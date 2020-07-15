@@ -41,6 +41,7 @@ from gnome.spill.substance import NonWeatheringSubstance
 
 from gnome.exceptions import ReferencedObjectNotSet
 
+
 @pytest.fixture(scope='function')
 def model(sample_model_fcn, tmpdir):
     '''
@@ -756,7 +757,6 @@ def test_release_at_right_time():
     assert list(model.spills.items())[0].num_released == 0
 
     model.step()
-<<<<<<< HEAD
     assert list(model.spills.items())[0].num_released == 4
 
     model.step()
@@ -764,18 +764,10 @@ def test_release_at_right_time():
 
     model.step()
     assert list(model.spills.items())[0].num_released == 12
-=======
-    assert model.spills.items()[0].num_released == 0
-
-    model.step()
-    assert model.spills.items()[0].num_released == 4
-
-    model.step()
-    assert model.spills.items()[0].num_released == 8
->>>>>>> develop
 
     model.step()
     assert list(model.spills.items())[0].num_released == 12
+
 
 # @pytest.mark.skip(reason="Segfault on CI server")
 @pytest.mark.parametrize("traj_only", [False, True])

@@ -18,7 +18,7 @@ from .gnomeobject import GnomeId, AddLogger
 # from gnomeobject import init_obj_log
 
 # using a PEP 404 compliant version name
-__version__ = '0.6.5'
+__version__ = '0.7.0'
 
 
 # a few imports so that the basic stuff is there
@@ -41,16 +41,6 @@ def check_dependency_versions():
         try:
             module = importlib.import_module(name)
         except ImportError:
-<<<<<<< HEAD
-            print(('ERROR: The {} package, version >= {} needs to be installed'
-                   .format(name, version)))
-            sys.exit(1)
-        if module.__version__ < version:
-            w = ('Version {0} of {1} package is required, '
-                 'but actual version in module is {2}'
-                 .format(version, name, module.__version__))
-            warnings.warn(w)
-=======
             msg = ("ERROR: The {} package, version >= {}"
                    "needs to be installed".format(name, version))
             warnings.warn(msg)
@@ -60,7 +50,6 @@ def check_dependency_versions():
                        'but actual version in module is {2}'
                        .format(version, name, module.__version__))
                 warnings.warn(msg)
->>>>>>> develop
 
 
 def initialize_log(config, logfile=None):

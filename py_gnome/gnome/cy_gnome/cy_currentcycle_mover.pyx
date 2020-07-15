@@ -3,13 +3,10 @@ import os
 cimport numpy as cnp
 import numpy as np
 
-<<<<<<< HEAD
-from .type_defs cimport *
-=======
 from libc.string cimport memcpy
 
-from type_defs cimport *
->>>>>>> develop
+from .type_defs cimport *
+
 from gnome import basic_types
 
 from utils cimport _GetHandleSize
