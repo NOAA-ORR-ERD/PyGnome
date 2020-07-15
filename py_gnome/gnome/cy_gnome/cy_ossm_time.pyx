@@ -297,7 +297,7 @@ cdef class CyOSSMTime(object):
         if err == 2:
             # TODO: need to define error codes in C++
             # and raise other exceptions
-            print "err = 2 error"
+            print("err = 2 error")
             raise ValueError('File format not valid for point wind')
 
         if err != 0:

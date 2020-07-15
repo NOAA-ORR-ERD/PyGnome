@@ -3,7 +3,8 @@
 #    It makes for a little less computation at every step.
 from gnome.gnomeobject import GnomeId
 from gnome.environment.gridded_objects_base import PyGrid
-from builtins import property
+# needed for py3 ??
+# from builtins import property
 
 """
 An implementation of the GNOME land-water map.

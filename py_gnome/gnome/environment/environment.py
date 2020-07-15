@@ -8,7 +8,10 @@ import copy
 try:
     from functools import lru_cache  # it's built-in on py3
 except ImportError:
-    from backports.functools_lru_cache import lru_cache  # needs backports for py2
+    # needs backports for py2
+    from backports.functools_lru_cache import lru_cache
+
+import six
 
 from colander import SchemaNode, MappingSchema, Float, String, drop, OneOf
 
@@ -31,7 +34,8 @@ class EnvironmentMeta(GnomeObjMeta):
         super(EnvironmentMeta, self).__init__(_name, _bases, _dct)
 
 
-class Environment(GnomeId, metaclass=EnvironmentMeta):
+# py3: class Environment(GnomeId, metaclass=EnvironmentMeta):
+class Environment(six.with_metaclass(EnvironmentMeta, GnomeId)):
     """
     A base class for all classes in environment module
 

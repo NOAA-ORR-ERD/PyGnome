@@ -18,7 +18,8 @@ from gnome.persist.base_schema import ObjTypeSchema
 from gnome.persist.validators import convertible_to_seconds
 from gnome.persist.extend_colander import LocalDateTime, FilenameSchema
 from gnome.persist.base_schema import GeneralGnomeObjectSchema
-from builtins import property
+# needed for py3 ????
+# from builtins import property
 
 
 class PyCurrentMoverSchema(ObjTypeSchema):

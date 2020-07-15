@@ -3,8 +3,37 @@ Download data from remote server
 '''
 
 import os
-import urllib.request, urllib.error, urllib.parse
-from urllib.parse import urljoin
+# # Python 2 and 3: alternative 4
+# try:  # the py2 way
+#     from urllib.request import urlopen
+#     from urllib.error import HTTPError
+#     from urlparse import urljoin
+# except:
+#     raise
+    # from urllib.parse import urlparse, urlencode
+    # from urllib.request import urlopen, Request
+    # from urllib.error import HTTPError
+# except ImportError:  # the py3 way
+#     from urllib2 import urlopen, HTTPError
+#     from urllib.parse import urljoin
+#     from urlparse import urlparse
+#     # from urlparse import urlparse
+#     # from urllib import urlencode
+#     # from urllib2 import urlopen, Request, HTTPError
+
+try: # the py3 way
+    from urllib.parse import urlparse, urlencode
+    from urllib.request import urlopen, Request
+    from urllib.error import HTTPError
+except ImportError:  # the py2 way
+    from urlparse import urljoin
+    from urllib import urlencode
+    from urllib2 import urlopen, Request, HTTPError
+
+
+# import urllib.request, urllib.error, urllib.parse
+
+# from urllib.parse import urljoin
 
 from progressbar import (ProgressBar, Percentage, FileTransferSpeed,
                          ETA, Bar)
@@ -44,8 +73,8 @@ def get_datafile(file_):
             path_ = '.'     # relative to current path
 
         try:
-            resp = urllib.request.urlopen(urljoin(data_server, fname))
-        except urllib.error.HTTPError as ex:
+            resp = urlopen(urljoin(data_server, fname))
+        except HTTPError as ex:
             ex.msg = ("{0}. '{1}' not found on server or server is down"
                       .format(ex.msg, fname))
             raise ex

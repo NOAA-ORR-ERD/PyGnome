@@ -9,7 +9,7 @@ from .type_defs cimport *
 
 from gnome import basic_types
 
-from utils cimport _GetHandleSize
+from .utils cimport _GetHandleSize
 
 from gnome.cy_gnome.cy_helpers cimport to_bytes
 from gnome.cy_gnome.cy_ossm_time cimport CyOSSMTime
