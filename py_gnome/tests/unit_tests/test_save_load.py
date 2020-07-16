@@ -156,7 +156,7 @@ g_objects = (
     SimpleMover(velocity=(10.0, 10.0, 0.0)),
 
     MapFromBNA(testdata['MapFromBNA']['testmap'], 6),
-    NetCDFOutput(os.path.join(base_dir, u'xtemp.nc')),HEADRenderer(testdata['Renderer']['bna_sample'],
+    NetCDFOutput(os.path.join(base_dir, u'xtemp.nc')), Renderer(testdata['Renderer']['bna_sample'],
              os.path.join(base_dir, 'output_dir')),
     WeatheringOutput(),
     spill.PointLineRelease(release_time=datetime.now(),

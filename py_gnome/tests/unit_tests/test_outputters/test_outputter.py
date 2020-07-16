@@ -7,12 +7,16 @@ from __future__ import print_function
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-from builtins import round
-from builtins import int
-from future import standard_library
-standard_library.install_aliases()
-from builtins import *
+# from builtins import round
+# from builtins import int
+# from future import standard_library
+# standard_library.install_aliases()
+
+# from builtins import *
+
+
 from datetime import timedelta
+
 import math
 
 import pytest
@@ -57,7 +61,7 @@ model_ts = timedelta(minutes=15)
 # where last two integers specify the ratio of number of outputs produced for
 # number of model steps
 output_ts = [(model_ts, 1, 1),          # model_ts = output_ts
-             (model_ts / 2, 1, 1),      # unlikely case, but test it!
+             (model_ts // 2, 1, 1),      # unlikely case, but test it!
              (model_ts * 3, 3, 1),      # model_ts thrice as fast as output
              (timedelta(seconds=(model_ts.seconds * 1.8)), 9, 5),
              (timedelta(seconds=(model_ts.seconds * 2.5)), 5, 2),

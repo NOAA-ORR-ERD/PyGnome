@@ -21,7 +21,7 @@ from gnome.utilities.inf_datetime import InfDateTime
 from gnome.environment import Water
 from gnome.spill.substance import GnomeOil
 
-from conftest import weathering_data_arrays, test_oil
+from .conftest import weathering_data_arrays, test_oil
 
 from gnome.weatherers import (Weatherer,
                               HalfLifeWeatherer,

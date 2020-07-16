@@ -36,12 +36,15 @@ def check_dependency_versions():
         gridded
         oillibrary
         unit_conversion
+        py_gd
     If the version is not at least as current as what's defined here
     a warning is displayed
     """
     libs = [('gridded', '0.2.4'),
             ('oil_library', '1.1.2'),
-            ('unit_conversion', '2.6.3')]
+            ('unit_conversion', '2.6.3'),
+            ('py_gd', '1.0.1'),
+            ]
 
     for name, version in libs:
         # import the lib:
