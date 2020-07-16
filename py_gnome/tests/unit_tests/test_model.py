@@ -13,6 +13,7 @@ from pytest import raises
 
 import gnome
 
+import gnome.scripting as gs
 from gnome.basic_types import datetime_value_2d
 from gnome.utilities.inf_datetime import InfDateTime
 
@@ -177,7 +178,7 @@ def test_model_time_and_current_time_in_sc():
         assert (model.model_time ==
                 model.start_time + timedelta(seconds=step * model.time_step))
 
-        for sc in list(model.spills.items()):
+        for sc in model.spills.items():
             assert model.model_time == sc.current_time_stamp
 
 
@@ -717,7 +718,7 @@ def test_model_release_after_start():
         print('running a step')
         assert step['step_num'] == model.current_time_step
 
-        for sc in list(model.spills.items()):
+        for sc in model.spills.items():
             print('num_LEs', len(sc['positions']))
 
 
@@ -731,42 +732,44 @@ def test_release_at_right_time():
     first time step of the model.
     '''
     # default to now, rounded to the nearest hour
-    seconds_in_minute = 60
-    minutes_in_hour = 60
-    seconds_in_hour = seconds_in_minute * minutes_in_hour
+    # seconds_in_minute = 60
+    # minutes_in_hour = 60
+    # seconds_in_hour = seconds_in_minute * minutes_in_hour
 
     start_time = datetime(2013, 1, 1, 0)
-    time_step = 2 * seconds_in_hour
+    time_step = gs.hours(2)
 
-    model = Model(time_step=time_step, start_time=start_time,
+    model = Model(time_step=time_step,
+                  start_time=start_time,
                   duration=timedelta(hours=12))
 
     # add a spill that starts right when the run begins
 
     model.spills += point_line_release_spill(num_elements=12,
                                              start_position=(0, 0, 0),
-                                             release_time=datetime(2013,
-                                                                   1, 1, 0),
-                                             end_release_time=datetime(2013,
-                                                                       1, 1, 6)
+                                             release_time=start_time,
+                                             end_release_time=start_time + gs.hours(6),
                                              )
 
     # before the run - no elements present since data_arrays get defined after
     # 1st step (prepare_for_model_run):
 
-    assert list(model.spills.items())[0].num_released == 0
+    assert model.spills.items()[0].num_released == 0
 
     model.step()
-    assert list(model.spills.items())[0].num_released == 4
+    assert model.spills.items()[0].num_released == 0
 
     model.step()
-    assert list(model.spills.items())[0].num_released == 8
+    assert model.spills.items()[0].num_released == 4
 
     model.step()
-    assert list(model.spills.items())[0].num_released == 12
+    assert model.spills.items()[0].num_released == 8
 
     model.step()
-    assert list(model.spills.items())[0].num_released == 12
+    assert model.spills.items()[0].num_released == 12
+
+    model.step()
+    assert model.spills.items()[0].num_released == 12
 
 
 # @pytest.mark.skip(reason="Segfault on CI server")
@@ -1092,7 +1095,7 @@ def test_staggered_spills_weathering(sample_model_fcn, delay):
             print(step['messages'])
             raise RuntimeError("Model has error in setup_model_run")
 
-        for sc in list(model.spills.items()):
+        for sc in model.spills.items():
             print("completed step {0}".format(step))
             # sum up all the weathered mass + mass of LEs marked for weathering
             # and ensure this equals the total amount released
@@ -1177,7 +1180,7 @@ def test_two_substance_same(sample_model_fcn, s0=test_oil, s1=test_oil):
 
     # model.full_run()
     for step in model:
-        for sc in list(model.spills.items()):
+        for sc in model.spills.items():
             # sum up all the weathered mass + mass of LEs marked for weathering
             # and ensure this equals the total amount released
             sum_ = 0.0
@@ -1245,7 +1248,7 @@ def test_weathering_data_attr():
     model.spills += s
     model.step()
 
-    for sc in list(model.spills.items()):
+    for sc in model.spills.items():
         assert len(sc.mass_balance) == 2
         for key in ('beached', 'off_maps'):
             assert key in sc.mass_balance
@@ -1260,7 +1263,7 @@ def test_weathering_data_attr():
     model.rewind()
     model.step()
 
-    for sc in list(model.spills.items()):
+    for sc in model.spills.items():
         # since no substance is defined, all the LEs are marked as
         # nonweathering
         assert sc.mass_balance['non_weathering'] == sc['mass'].sum()
@@ -1274,7 +1277,7 @@ def test_weathering_data_attr():
     for ix in range(2):
         model.step()
         exp_rel += s[ix].amount
-        for sc in list(model.spills.items()):
+        for sc in model.spills.items():
             assert sc.mass_balance['non_weathering'] == sc['mass'].sum()
             assert sc.mass_balance['non_weathering'] == exp_rel
 

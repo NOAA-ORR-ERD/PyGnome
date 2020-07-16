@@ -166,7 +166,7 @@ class Model(GnomeId):
 
     def __init__(self,
                  name='Model',
-                 time_step=900,
+                 time_step=timedelta(minutes=15),
                  start_time=round_time(datetime.now(), 3600),
                  duration=timedelta(days=1),
                  weathering_substeps=1,

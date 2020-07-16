@@ -5,10 +5,12 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 from __future__ import unicode_literals
-from builtins import int
-from future import standard_library
-standard_library.install_aliases()
-from builtins import *
+
+# from builtins import int
+# from future import standard_library
+# standard_library.install_aliases()
+# from builtins import *
+
 import os
 from glob import glob
 from datetime import timedelta
@@ -134,7 +136,8 @@ def test_geojson_multipoint_output(model):
             assert feature['properties']['mass'] > 0
 
             assert 'spill_num' in feature['properties']
-            assert type(feature['properties']['spill_num']) is int
+            assert isinstance(feature['properties']['spill_num'], int)
+            # assert type(feature['properties']['spill_num']) is int
 
             mask = np.where(model.spills.LE('status_codes', uncertain) ==
                             feature['properties']['status_code'])

@@ -6,9 +6,11 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
-from future import standard_library
-standard_library.install_aliases()
-from builtins import *
+
+# from future import standard_library
+# standard_library.install_aliases()
+# from builtins import *
+
 import copy
 import os
 from glob import glob
@@ -184,6 +186,8 @@ class TrajectoryGeoJsonOutput(Outputter):
         filename = os.path.join(self.output_dir,
                                 file_format.format(step_num))
 
+        print("output to file")
+        print(type(json_content))
         with open(filename, 'w+') as outfile:
             dump(json_content, outfile, indent=True)
 
