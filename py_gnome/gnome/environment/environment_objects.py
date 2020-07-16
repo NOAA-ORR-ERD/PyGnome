@@ -1,3 +1,14 @@
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
+from future import standard_library
+standard_library.install_aliases()
+from builtins import map
+from builtins import range
+from builtins import *
+from builtins import object
+from past.utils import old_div
 import copy
 from datetime import datetime
 
@@ -145,10 +156,10 @@ class S_Depth_T1(object):
             if ulev == 0:
                 und_alph[within_layer] = -2
             else:
-                a = ((pts[:, 2].take(within_layer) -
-                      blev_depths.take(within_layer)) /
+                a = (old_div((pts[:, 2].take(within_layer) -
+                      blev_depths.take(within_layer)),
                      (ulev_depths.take(within_layer) -
-                      blev_depths.take(within_layer)))
+                      blev_depths.take(within_layer))))
                 und_alph[within_layer] = a
             blev_depths = ulev_depths
 
@@ -183,8 +194,8 @@ class VelocityTS(TimeseriesVector):
         """
         direction = direction * -1 - 90
 
-        u = speed * np.cos(direction * np.pi / 180)
-        v = speed * np.sin(direction * np.pi / 180)
+        u = speed * np.cos(old_div(direction * np.pi, 180))
+        v = speed * np.sin(old_div(direction * np.pi, 180))
 
         u = TimeseriesData.constant('u', units, u)
         v = TimeseriesData.constant('v', units, v)
@@ -260,8 +271,8 @@ class WindTS(VelocityTS, Environment):
             d = np.array([e[1][1] for e in ts])
             d = d * -1 - 90
 
-            u = mag * np.cos(d * np.pi / 180)
-            v = mag * np.sin(d * np.pi / 180)
+            u = mag * np.cos(old_div(d * np.pi, 180))
+            v = mag * np.sin(old_div(d * np.pi, 180))
 
             variables = [u, v]
 
@@ -300,8 +311,8 @@ class CurrentTS(VelocityTS, Environment):
             direction = np.array([e[1][1] for e in ts])
             direction = direction * -1 - 90
 
-            u = mag * np.cos(direction * np.pi / 180)
-            v = mag * np.sin(direction * np.pi / 180)
+            u = mag * np.cos(old_div(direction * np.pi, 180))
+            v = mag * np.sin(old_div(direction * np.pi, 180))
 
             variables = [u, v]
 
@@ -803,7 +814,7 @@ class IceAwareCurrent(GridCurrent):
             ice_vel_factor = cctn.copy()
             ice_vel_factor[ice_mask] = 1
             ice_vel_factor[water_mask] = 0
-            ice_vel_factor[interp_mask] = ((ice_vel_factor[interp_mask] - 0.2) * 10) / 6
+            ice_vel_factor[interp_mask] = old_div(((ice_vel_factor[interp_mask] - 0.2) * 10), 6)
 
             vels = water_v.copy()
             ice_v = self.ice_velocity.at(points, time, extrapolate=extrapolate, *args, **kwargs).copy()
@@ -862,7 +873,7 @@ class IceAwareWind(GridWind):
             ice_vel_factor = cctn.copy()
             ice_vel_factor[ice_mask] = 1
             ice_vel_factor[water_mask] = 0
-            ice_vel_factor[interp_mask] = ((ice_vel_factor[interp_mask] - 0.2) * 10) / 6
+            ice_vel_factor[interp_mask] = old_div(((ice_vel_factor[interp_mask] - 0.2) * 10), 6)
 
             vels = wind_v.copy()
             vels[ice_mask] = 0

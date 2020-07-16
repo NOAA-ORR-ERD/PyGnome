@@ -3,7 +3,15 @@ unit tests cython wrapper
 
 designed to be run with py.test
 """
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import *
+from builtins import object
 import os
 
 import pytest
@@ -14,7 +22,7 @@ from ..conftest import testdata
 
 
 @pytest.mark.slow
-class TestGridMap:
+class TestGridMap(object):
 
     # gcm = cy_grid_map.CyGridMap()
 

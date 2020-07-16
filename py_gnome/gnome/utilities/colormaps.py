@@ -33,12 +33,21 @@ The following colormaps are included:
 
 autumn, bone, cool, copper, hot, hsv, jet, pink, winter
 """
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
+from future import standard_library
+standard_library.install_aliases()
+from builtins import *
+from past.utils import old_div
+from builtins import object
 import collections
 
 import numpy as np
 
 
-class DistictColormap:
+class DistictColormap(object):
     def __init__(self, MapName=None, map_list=None):
         pass
 
@@ -47,7 +56,7 @@ class DistictColormap:
         # put code in here to make a "three color" colormap class
 
 
-class ColorMap:
+class ColorMap(object):
     def __init__(self, MapName=None, val_range=None, map_list=None):
         if MapName is not None:
             try:
@@ -79,7 +88,7 @@ class ColorMap:
             values = np.asarray(values, np.uint8)
         else:
             values = np.asarray(values, np.float)
-            values = (values - low) / (high - low) * 255.0
+            values = old_div((values - low), (high - low)) * 255.0
 
             # force out-of-range values into the acceptable range for map_list
             values.clip(min=0, max=255, out=values)

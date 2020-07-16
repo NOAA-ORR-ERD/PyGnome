@@ -2,6 +2,14 @@
 Binary Outputter
 For use in Gnome Analyst
 '''
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+from future import standard_library
+standard_library.install_aliases()
+from builtins import range
+from builtins import *
 import os
 import copy
 from glob import glob
@@ -140,7 +148,7 @@ class BinaryOutput(OutputterFilenameMixin,Outputter):
         if not self._write_step:
             return None
 
-        for sc in self.cache.load_timestep(step_num).items():
+        for sc in list(self.cache.load_timestep(step_num).items()):
             # loop through uncertain and certain LEs
             # extract the data
             if sc.uncertain:
@@ -182,8 +190,8 @@ class BinaryOutput(OutputterFilenameMixin,Outputter):
 
         refYear = year - (year % 4)
 	
-        ref_day = 01
-        ref_month = 01
+        ref_day = 0o1
+        ref_month = 0o1
         ref_year = refYear	#back to 4 digit year
         ref_hour = 0
         ref_minute = 0

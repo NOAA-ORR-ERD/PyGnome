@@ -2,6 +2,14 @@
 JSON outputter
 Does not contain a schema for persistence yet
 '''
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
+from future import standard_library
+standard_library.install_aliases()
+from builtins import *
+from past.utils import old_div
 import copy
 from collections import Iterable
 
@@ -218,7 +226,7 @@ class CurrentJsonOutput(Outputter):
             x = velocities[:, 0]
             y = velocities[:, 1]
 
-            direction = np.arctan2(y, x) - np.pi/2
+            direction = np.arctan2(y, x) - old_div(np.pi,2)
             magnitude = np.sqrt(x**2 + y**2)
 
             direction = np.round(direction, 2)

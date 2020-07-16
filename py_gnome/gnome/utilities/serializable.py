@@ -1,6 +1,16 @@
 '''
 Created on Feb 15, 2013
 '''
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+from builtins import zip
+from builtins import *
+from builtins import object
 import copy
 
 import numpy as np
@@ -95,14 +105,14 @@ class Field(object):  # ,serializable.Serializable):
     def __repr__(self):
         'unambiguous object representation'
         attr_vals = ', '.join(['{0}={1}'.format(attr, val)
-                               for attr, val in self.__dict__.items()])
+                               for attr, val in list(self.__dict__.items())])
 
         return ('{0.__class__.__module__}.{0.__class__.__name__}'
                 '({1})'.format(self, attr_vals))
 
     def __str__(self):
         attr_vals = ', '.join(['{0}={1}'.format(attr, val)
-                               for attr, val in self.__dict__.items()])
+                               for attr, val in list(self.__dict__.items())])
 
         return ('Field Object: '
                 '{1}'.format(self, attr_vals))
@@ -365,7 +375,7 @@ class State(object):
         update_ = kwargs.pop('update', None)
 
         for field in l_field:
-            for (key, val) in kwargs.items():
+            for (key, val) in list(kwargs.items()):
                 setattr(field, key, val)
 
             if read_ is not None and update_ is not None:  # change them both
@@ -391,7 +401,7 @@ class State(object):
             if read_ is not None:
                 setattr(field, 'read', read_)
 
-            for (key, val) in kwargs.items():
+            for (key, val) in list(kwargs.items()):
                 if key == 'update' and val is True:
                     if getattr(field, 'read'):
                         raise AttributeError("The 'read' and 'update' "

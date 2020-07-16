@@ -1,4 +1,14 @@
 #!/usr/bin/env python
+from __future__ import print_function
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import unicode_literals
+from builtins import str
+from builtins import range
+from future import standard_library
+standard_library.install_aliases()
+from builtins import *
+from builtins import object
 from pytest import raises, mark
 
 from gnome.movers.simple_mover import SimpleMover
@@ -310,7 +320,7 @@ class TestOrderedCollection(object):
         assert obj_oc[1].id == upd_list[1]['id']
         assert len(obj_oc) == 2
 
-class ObjToAdd:
+class ObjToAdd(object):
     'Define a helper class (mutable object) for use in TestCallbacks'
     def __init__(self):
         self.reset()
@@ -321,7 +331,7 @@ class ObjToAdd:
         self.replace_callback = False
 
 
-class TestCallbacks:
+class TestCallbacks(object):
 
     to_add = [ObjToAdd(), ObjToAdd(), ObjToAdd()]
 

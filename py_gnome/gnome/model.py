@@ -1,5 +1,18 @@
 #!/usr/bin/env python
 
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
+
+from future import standard_library
+standard_library.install_aliases()
+from builtins import zip
+from builtins import str
+from builtins import range
+from builtins import *
+from past.utils import old_div
+
 import os
 from datetime import datetime, timedelta
 import zipfile
@@ -939,7 +952,7 @@ class Model(GnomeId):
                    1 more sub-step than we requested.)
         '''
         time_step = int(self._time_step)
-        sub_step = time_step / self.weathering_substeps
+        sub_step = old_div(time_step, self.weathering_substeps)
 
         indexes = [idx for idx in range(0, time_step + 1, sub_step)]
         res = [(idx, next_idx - idx)
@@ -1005,8 +1018,8 @@ class Model(GnomeId):
         Steps the model forward (or backward) in time. Needs testing for
         hindcasting.
         '''
-        isvalid = True
-        for sc in self.spills.items():
+        isValid = True
+        for sc in list(self.spills.items()):
             # Set the current time stamp only after current_time_step is
             # incremented and before the output is written. Set it to None here
             # just so we're not carrying around the old time_stamp
@@ -1043,7 +1056,7 @@ class Model(GnomeId):
         else:
             self.setup_time_step()
             # release half the LEs for this time interval
-            self.release_elements(self.time_step/2, self.model_time)
+            self.release_elements(old_div(self.time_step,2), self.model_time)
             self.move_elements()
             self.weather_elements()
             self.step_is_done()
@@ -1064,7 +1077,7 @@ class Model(GnomeId):
 
     def release_elements(self, time_step, model_time):
         num_released = 0
-        for sc in self.spills.items():
+        for sc in list(self.spills.items()):
             sc.current_time_stamp = model_time
             # release particles for next step - these particles will be aged
             # in the next step
@@ -1580,7 +1593,7 @@ class Model(GnomeId):
 
         '''
 
-        return list(self.spills.items())[0].data_arrays.keys()
+        return list(list(self.spills.items())[0].data_arrays.keys())
 
     def get_spill_property(self, prop_name, ucert=0):
         '''

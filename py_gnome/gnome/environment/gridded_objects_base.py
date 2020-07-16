@@ -1,3 +1,11 @@
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
+from future import standard_library
+standard_library.install_aliases()
+from builtins import *
+from past.utils import old_div
 import datetime
 import io
 import copy
@@ -252,8 +260,8 @@ class Grid_S(GnomeId, gridded.grids.Grid_S):
 
     def get_centers(self):
         if self.center_lon is None:
-            lons = (self.node_lon[0:-1, 0:-1] + self.node_lon[1:, 1:]) / 2
-            lats = (self.node_lat[0:-1, 0:-1] + self.node_lat[1:, 1:]) / 2
+            lons = old_div((self.node_lon[0:-1, 0:-1] + self.node_lon[1:, 1:]), 2)
+            lats = old_div((self.node_lat[0:-1, 0:-1] + self.node_lat[1:, 1:]), 2)
             return np.stack((lons, lats), axis=-1).reshape(-1, 2)
         else:
             if self._get_geo_mask('center'):
@@ -336,11 +344,11 @@ class Grid_R(gridded.grids.Grid_R, GnomeId):
     def get_lines(self):
 
         lon_lines = np.array([[(lon, self.node_lat[0]),
-                               (lon, self.node_lat[len(self.node_lat) / 2]),
+                               (lon, self.node_lat[old_div(len(self.node_lat), 2)]),
                                (lon, self.node_lat[-1])]
                               for lon in self.node_lon], dtype=np.float32)
         lat_lines = np.array([[(self.node_lon[0], lat),
-                               (self.node_lon[len(self.node_lon) / 2], lat),
+                               (self.node_lon[old_div(len(self.node_lon), 2)], lat),
                                (self.node_lon[-1], lat)]
                               for lat in self.node_lat], dtype=np.float32)
 
@@ -564,8 +572,8 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
             v_padding_slice = (np.s_[:],) + self.grid.get_padding_slices(self.grid.edge2_padding)
             raw_u = raw_u[u_padding_slice].filled(0)
             raw_v = raw_v[v_padding_slice].filled(0)
-            raw_u = (raw_u[:, :, 0:-1, ] + raw_u[:, :, 1:]) / 2
-            raw_v = (raw_v[:, 0:-1, :] + raw_v[:, 1:, :]) / 2
+            raw_u = old_div((raw_u[:, :, 0:-1, ] + raw_u[:, :, 1:]), 2)
+            raw_v = old_div((raw_v[:, 0:-1, :] + raw_v[:, 1:, :]), 2)
         #u/v should be interpolated to centers at this point. Now apply appropriate mask
 
         if isinstance(self.grid, Grid_S) and self.grid.center_mask is not None:

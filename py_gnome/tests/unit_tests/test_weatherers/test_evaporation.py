@@ -1,6 +1,15 @@
 '''
 Test evaporation module
 '''
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import unicode_literals
+from builtins import range
+from future import standard_library
+standard_library.install_aliases()
+from builtins import *
+from builtins import object
 from datetime import timedelta, datetime
 
 import pytest
@@ -82,7 +91,7 @@ def test_evaporation(oil, temp, num_elems, on):
         assert np.all(sc['mass_components'] == init_mass)
 
 
-class TestDecayConst:
+class TestDecayConst(object):
     '''
     WIP - Currently has one working test, but may have more so grouped it in
     a class

@@ -1,4 +1,15 @@
 #!/usr/bin/env python
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import unicode_literals
+from builtins import zip
+from builtins import str
+from builtins import range
+from future import standard_library
+standard_library.install_aliases()
+from builtins import *
+from builtins import object
 import os
 from datetime import datetime, timedelta
 import shutil
@@ -217,7 +228,7 @@ def all_winds(request):
     return request.getfixturevalue(request.param)
 
 
-class TestWind:
+class TestWind(object):
     """
     Gather all tests that apply to a WindObject in this class. All methods use
     the 'all_winds' fixture

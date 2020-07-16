@@ -1,6 +1,17 @@
 '''
 test objects defined in wd module
 '''
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
+from __future__ import unicode_literals
+from builtins import range
+from builtins import zip
+from builtins import dict
+from future import standard_library
+standard_library.install_aliases()
+from builtins import *
+from builtins import object
 from datetime import datetime, timedelta
 
 import numpy as np
@@ -21,7 +32,7 @@ default_ts = 900  # default timestep for tests
 water = Water()
 
 
-class TestWeatheringData:
+class TestWeatheringData(object):
     def test_init(self):
         WeatheringData(water)
 

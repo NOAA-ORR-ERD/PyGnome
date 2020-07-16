@@ -1,34 +1,24 @@
 '''
 Download data from remote server
 '''
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import *
 import os
-# # Python 2 and 3: alternative 4
-# try:  # the py2 way
-#     from urllib.request import urlopen
-#     from urllib.error import HTTPError
-#     from urlparse import urljoin
-# except:
-#     raise
-    # from urllib.parse import urlparse, urlencode
-    # from urllib.request import urlopen, Request
-    # from urllib.error import HTTPError
-# except ImportError:  # the py3 way
-#     from urllib2 import urlopen, HTTPError
-#     from urllib.parse import urljoin
-#     from urlparse import urlparse
-#     # from urlparse import urlparse
-#     # from urllib import urlencode
-#     # from urllib2 import urlopen, Request, HTTPError
 
 try: # the py3 way
-    from urllib.parse import urlparse, urlencode
-    from urllib.request import urlopen, Request
+    from urllib.parse import urljoin
+    from urllib.request import urlopen
     from urllib.error import HTTPError
 except ImportError:  # the py2 way
-    from urlparse import urljoin
-    from urllib import urlencode
-    from urllib2 import urlopen, Request, HTTPError
+    from urllib.parse import urljoin
+    from urllib.request import urlopen
+    from urllib.error import HTTPError
 
 
 # import urllib.request, urllib.error, urllib.parse

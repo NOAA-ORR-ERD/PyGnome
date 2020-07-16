@@ -6,6 +6,16 @@ Implements a container for spills -- keeps all the data from each spill in one
 set of arrays. The spills themselves provide some of the arrays themselves
 (adding more each time LEs are released).
 """
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+from future import standard_library
+standard_library.install_aliases()
+from builtins import zip
+from builtins import next
+from builtins import *
+from builtins import object
 import os
 from collections import namedtuple
 
@@ -156,7 +166,7 @@ class FateDataView(AddLogger):
             self.logger.debug(self._pid + "found LEs with 'mass' equal to 0. "
                               "reset_view")
 
-        for key, val in d_to_sync.items():
+        for key, val in list(d_to_sync.items()):
             sc[key][w_mask] = val
 
         if reset_view:
@@ -290,7 +300,7 @@ class SpillContainerData(object):
 
         # check key/val that are not dicts
         val_is_dict = []
-        for key, val in self.__dict__.items():
+        for key, val in list(self.__dict__.items()):
             'compare dict not including _data_arrays'
             if isinstance(val, dict):
                 val_is_dict.append(key)
@@ -309,7 +319,7 @@ class SpillContainerData(object):
                 # dicts should contain the same keys
                 return False
 
-            for key, val in self.__dict__[item].items():
+            for key, val in list(self.__dict__[item].items()):
                 other_val = other.__dict__[item][key]
                 if isinstance(val, np.ndarray):
                     try:
@@ -339,7 +349,7 @@ class SpillContainerData(object):
         """
         try:
             # find the length of an arbitrary first array
-            return len(next(iter(self._data_arrays.values())))
+            return len(next(iter(list(self._data_arrays.values()))))
         except StopIteration:
             return 0
 
@@ -584,7 +594,7 @@ class SpillContainer(AddLogger, SpillContainerData):
         :param int num_released: number of particles released
 
         """
-        for name, atype in self._array_types.items():
+        for name, atype in list(self._array_types.items()):
             # initialize all arrays even if 0 length
             if atype.shape is None:
                 # assume array type is for weather data, provide it the shape
@@ -859,7 +869,7 @@ class SpillContainer(AddLogger, SpillContainerData):
         and prepare_for_model_run to define all data arrays.
         At this time the arrays are empty.
         """
-        for name, atype in self._array_types.items():
+        for name, atype in list(self._array_types.items()):
             # Initialize data_arrays with 0 elements
             # fixme: is every array type with None shape neccesarily
             #        oil components??
@@ -963,7 +973,7 @@ class SpillContainer(AddLogger, SpillContainerData):
             self.logger.warning(msg)
             raise
 
-        for name, at in self.array_types.items():
+        for name, at in list(self.array_types.items()):
             data = self[name]
             split_elems = at.split_element(num, self[name][idx], l_frac)
             data = np.insert(data, idx, split_elems[:-1], 0)

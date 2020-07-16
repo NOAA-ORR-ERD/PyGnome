@@ -2,6 +2,16 @@
 oil removal from various cleanup options
 add these as weatherers
 '''
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+from builtins import *
+from past.utils import old_div
+from builtins import object
 from datetime import timedelta
 
 import numpy as np
@@ -176,7 +186,7 @@ class CleanUpBase(RemoveMass, Weatherer):
             if oilwater_mix:
                 # create a mass array of oil/water mixture and use this when
                 # marking LEs for removal
-                curr_mass = curr_mass / (1 - data['frac_water'])
+                curr_mass = old_div(curr_mass, (1 - data['frac_water']))
 
             # (1 - frac_water) * mass_to_remove
             if mass_to_remove >= curr_mass.sum():
@@ -206,8 +216,8 @@ class CleanUpBase(RemoveMass, Weatherer):
         since we want the average fraction of oil in this data
         '''
         if data['mass'].sum() > 0:
-            avg_frac_water = ((data['mass'] * data['frac_water']).
-                              sum())/data['mass'].sum()
+            avg_frac_water = old_div(((data['mass'] * data['frac_water']).
+                              sum()),data['mass'].sum())
         else:
             avg_frac_water = 0
             self.logger.warning('{0} set avg_frac_water = ({1}), '
@@ -298,8 +308,8 @@ class Skimmer(CleanUpBase):
         '''
         no need to call base class since no new array_types were added
         '''
-        self._rate = self.amount / (self.active_range[1] -
-                                    self.active_range[0]).total_seconds()
+        self._rate = old_div(self.amount, (self.active_range[1] -
+                                    self.active_range[0]).total_seconds())
 
         if self.on:
             sc.mass_balance['skimmed'] = 0.0
@@ -360,7 +370,7 @@ class Skimmer(CleanUpBase):
                                      self.units) * self.efficiency
 
             total_mass = data['mass'].sum()
-            rm_mass_frac = min(rm_mass / total_mass, 1.0)
+            rm_mass_frac = min(old_div(rm_mass, total_mass), 1.0)
             rm_mass = rm_mass_frac * total_mass
 
             # if elements are also evaporating following could be true
@@ -636,8 +646,8 @@ class Burn(CleanUpBase):
                                               self.thickness_units, 'm',
                                               self.thickness)
 
-        burn_duration = ((self._oilwater_thickness - self._min_thickness) /
-                         self._oilwater_thick_burnrate)
+        burn_duration = (old_div((self._oilwater_thickness - self._min_thickness),
+                         self._oilwater_thick_burnrate))
 
         self._active_range = (self.active_range[0],
                               self.active_range[0] +
@@ -712,7 +722,7 @@ class Burn(CleanUpBase):
             if rm_mass > burn_mass:
                 rm_mass = burn_mass
 
-            rm_mass_frac = rm_mass / burn_mass
+            rm_mass_frac = old_div(rm_mass, burn_mass)
 
             mc = data['mass_components'] * (1 - rm_mass_frac)
             data['mass_components'] = mc
@@ -837,9 +847,9 @@ class ChemicalDispersion(CleanUpBase):
                                          substance, rm_total_mass_si,
                                          oilwater_mix=False)
 
-            self._rate = (rm_total_mass_si /
+            self._rate = (old_div(rm_total_mass_si,
                           (self.active_range[1] - self.active_range[0])
-                          .total_seconds())
+                          .total_seconds()))
 
     def _set_efficiency(self, points, model_time):
         if self.efficiency is None:
@@ -869,7 +879,7 @@ class ChemicalDispersion(CleanUpBase):
             rm_mass = self._rate * self._timestep
 
             total_mass = data['mass'].sum()
-            rm_mass_frac = min(rm_mass / total_mass, 1.0)
+            rm_mass_frac = min(old_div(rm_mass, total_mass), 1.0)
             rm_mass = rm_mass_frac * total_mass
 
             data['mass_components'] = \

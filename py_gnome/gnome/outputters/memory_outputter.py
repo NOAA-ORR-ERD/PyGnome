@@ -5,7 +5,15 @@ This could be handy for tests, etc.
 
 NOTE: not complete!
 """
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import *
+from builtins import object
 from gnome.outputters.outputter import Outputter
 
 
@@ -41,7 +49,7 @@ class MemoryOutputter(Outputter):
         if self.on is False or not self._write_step:
             return None
 
-        for sc in self.cache.load_timestep(step_num).items():
+        for sc in list(self.cache.load_timestep(step_num).items()):
             if sc.uncertain:
                 raise NotImplementedError("MemoryOutputter Doesn't handle uncertainty yet.")
             # if sc.uncertain and self._u_filename is not None:
@@ -70,8 +78,8 @@ class MemoryOutputter(Outputter):
 
             # write mass_balance data
             if sc.mass_balance:
-                for key, val in sc.mass_balance.iteritems():
-                    print sc.mass_balance
+                for key, val in sc.mass_balance.items():
+                    print(sc.mass_balance)
         #             if key not in grp.variables:
         #                 self._create_nc_var(grp,
         #                                     key, 'float', ('time', ),

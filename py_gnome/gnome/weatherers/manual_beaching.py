@@ -5,6 +5,14 @@
     model run.
     It is modelled as a weathering process.
 '''
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
+from future import standard_library
+standard_library.install_aliases()
+from builtins import *
+from past.utils import old_div
 from datetime import datetime
 
 import numpy as np
@@ -194,7 +202,7 @@ class Beaching(RemoveMass, Weatherer):
             else:
                 raise ValueError("{} is not a valid unit for beached oil"
                                  .format(self.unit))
-            self._rate = dm / dt
+            self._rate = old_div(dm, dt)
 
         # find rate for time interval (model_time, model_time + time_step)
         # function is called for model_time within active start and active stop
@@ -250,7 +258,7 @@ class Beaching(RemoveMass, Weatherer):
             if len(data['mass']) is 0:
                 continue
             rm_mass = self._remove_mass(self._timestep, model_time, substance)
-            rm_mass_frac = rm_mass / data['mass'].sum()
+            rm_mass_frac = old_div(rm_mass, data['mass'].sum())
             if rm_mass_frac > 1.0:
                 rm_mass_frac = 1.0
                 rm_mass = data['mass'].sum()

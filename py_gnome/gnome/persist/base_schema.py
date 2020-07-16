@@ -1,4 +1,13 @@
-import pdb
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+# from future import standard_library
+# standard_library.install_aliases()
+# from builtins import str
+# from builtins import *
+
+# import pdb
 import datetime
 import zipfile
 import six
@@ -165,10 +174,11 @@ class ObjType(SchemaType):
         return self._impl(node, value, callback)
 
     def _deser(self, node, value, refs):
+
 #         try:
             if value is None:
                 return None
-            if type(value) is dict and 'obj_type' in value:
+            if isinstance(value, dict) and 'obj_type' in value:
                 id_ = value.get('id', None)
                 if id_ not in refs or id_ is None:
                     obj_type = class_from_objtype(value['obj_type'])

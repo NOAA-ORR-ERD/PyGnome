@@ -3,7 +3,15 @@ unit tests cython wrapper
 
 designed to be run with py.test
 """
+from __future__ import print_function
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import unicode_literals
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import *
+from builtins import object
 import numpy as np
 
 from gnome.basic_types import spill_type, world_point, world_point_type
@@ -27,7 +35,7 @@ def test_exceptions():
         CyRandomMover(uncertain_factor=.5)
 
 
-class TestRandom:
+class TestRandom(object):
 
     cm = cy_fixtures.CyTestMove()
     rm = CyRandomMover(diffusion_coef=100000)

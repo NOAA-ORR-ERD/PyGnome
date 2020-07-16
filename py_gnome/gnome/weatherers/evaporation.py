@@ -1,6 +1,14 @@
 '''
 model evaporation process
 '''
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
+from future import standard_library
+standard_library.install_aliases()
+from builtins import *
+from past.utils import old_div
 import copy
 
 import numpy as np
@@ -112,7 +120,7 @@ class Evaporation(Weatherer):
         # evaporation expects mw in kg/mol, database is in g/mol
         mw = substance.molecular_weight / 1000.
 
-        sum_mi_mw = (data['mass_components'][:, :len(vp)] / mw).sum(axis=1)
+        sum_mi_mw = (old_div(data['mass_components'][:, :len(vp)], mw)).sum(axis=1)
         # d_numer = -1/rho * f_diff.reshape(-1, 1) * K * vp
         # d_denom = (data['thickness'] * constants.gas_constant *
         #            water_temp * sum_frac_mw).reshape(-1, 1)
@@ -121,7 +129,7 @@ class Evaporation(Weatherer):
         # Do computation together so we don't need to make intermediate copies
         # of data - left sum_frac_mw, which is a copy but easier to
         # read/understand
-        edc = ((-data['area'] * f_diff * K / (constants.gas_constant * water_temp * sum_mi_mw)).reshape(-1, 1)* vp)
+        edc = ((old_div(-data['area'] * f_diff * K, (constants.gas_constant * water_temp * sum_mi_mw))).reshape(-1, 1)* vp)
 
         data['evap_decay_constant'][:, :len(vp)] = edc
 
@@ -202,12 +210,12 @@ class Evaporation(Weatherer):
                                      np.sum(data['mass_components'][:, :] -
                                             mass_remain[:, :])))
 
-            data['frac_evap'][:] += ((data['mass_components'][:, :] - mass_remain[:, :]).sum(1)/data['init_mass'])
+            data['frac_evap'][:] += (old_div((data['mass_components'][:, :] - mass_remain[:, :]).sum(1),data['init_mass']))
             data['mass_components'][:] = mass_remain
             data['mass'][:] = data['mass_components'].sum(1)
 
             # add frac_lost
-            data['frac_lost'][:] = 1 - data['mass']/data['init_mass']
+            data['frac_lost'][:] = 1 - old_div(data['mass'],data['init_mass'])
         sc.update_from_fatedataview()
 
 
@@ -246,9 +254,9 @@ class BlobEvaporation(Evaporation):
 
         # for now, for testing, assume instantaneous spill so get the
         # mass of the blob
-        sum_mi_mw = (data['mass_components'][:, :].sum(0) / mw).sum()
-        const = -(f_diff * K * vp /
-                  (constants.gas_constant * water_temp * sum_mi_mw))
+        sum_mi_mw = (old_div(data['mass_components'][:, :].sum(0), mw)).sum()
+        const = -(old_div(f_diff * K * vp,
+                  (constants.gas_constant * water_temp * sum_mi_mw)))
 
         # do it the same way for initial and all subsequent times
         blob_area = data['area'][0] * len(data['area'])
@@ -257,7 +265,7 @@ class BlobEvaporation(Evaporation):
             int_area = blob_area
         else:
             int_area = (blob_area * 2./3 *
-                        ((t + time_step)**(3./2)/np.sqrt(t) - t))
+                        (old_div((t + time_step)**(3./2),np.sqrt(t)) - t))
         data['evap_decay_constant'][:, :] = const * int_area
 
         self.logger.debug(self._pid + 'max decay: {0}, min decay: {1}'.

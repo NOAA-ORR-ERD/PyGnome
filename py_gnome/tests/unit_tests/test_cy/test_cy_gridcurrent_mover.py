@@ -3,7 +3,15 @@ unit tests cython wrapper
 
 designed to be run with py.test
 """
+from __future__ import print_function
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import unicode_literals
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import *
+from builtins import object
 import os
 import datetime
 
@@ -19,7 +27,7 @@ from gnome.utilities import time_utils
 from ..conftest import testdata
 
 
-class Common:
+class Common(object):
 
     """
     test setting up and moving four particles
@@ -65,7 +73,7 @@ def test_init():
 
 
 @pytest.mark.slow
-class TestGridCurrentMover:
+class TestGridCurrentMover(object):
 
     cm = Common()
     gcm = CyGridCurrentMover()

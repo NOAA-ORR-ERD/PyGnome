@@ -2,7 +2,17 @@
 release objects that define how elements are released. A Spill() objects
 is composed of a release object and an ElementType
 '''
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import zip
+from builtins import range
+from builtins import *
+from past.utils import old_div
 import copy
 import math
 from datetime import datetime, timedelta
@@ -149,7 +159,7 @@ class Release(GnomeId):
         '''
         Returns the ratio
         '''
-        return 1.0 * self.num_elements / self.get_num_release_time_steps(ts)
+        return old_div(1.0 * self.num_elements, self.get_num_release_time_steps(ts))
 
     def maximum_mass_error(self, ts):
         '''
@@ -162,7 +172,7 @@ class Release(GnomeId):
         '''
         calculates how many time steps it takes to complete the release duration
         '''
-        rts = int(ceil(self.release_duration / ts))
+        rts = int(ceil(old_div(self.release_duration, ts)))
         if rts == 0:
             rts = 1
         return rts
@@ -383,7 +393,7 @@ class PointLineRelease(Release):
         '''
         if self.num_elements is None and self.num_per_timestep is not None:
             return self.num_per_timestep
-        return 1.0 * self.num_elements / self.get_num_release_time_steps(ts)
+        return old_div(1.0 * self.num_elements, self.get_num_release_time_steps(ts))
 
     def generate_release_timeseries(self, num_ts, max_release, ts):
         '''
@@ -654,7 +664,7 @@ class ContinuousSpatialRelease(SpatialRelease):
 
         # divide the number to be released by the number of release points
         # rounding down so same for each point
-        num_per_point = int(num_new_particles / num_rel_points)
+        num_per_point = int(old_div(num_new_particles, num_rel_points))
         coords = coords * np.zeros(num_rel_points, num_per_point, 3)
         coords.shape = (num_new_particles, 3)
         data_arrays['positions'][-num_new_particles:, :] = self.coords
@@ -817,7 +827,7 @@ class InitElemsFromFile(Release):
         Will set positions and all other data arrays if data for them was found
         in the NetCDF initialization file.
         '''
-        for key, val in self._init_data.items():
+        for key, val in list(self._init_data.items()):
             if key in data_arrays:
                 data_arrays[key][-num_new_particles:] = val
 

@@ -4,6 +4,16 @@ image outputters
 These will output images for use in the Web client / OpenLayers
 
 """
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
+from future import standard_library
+standard_library.install_aliases()
+from builtins import zip
+from builtins import range
+from builtins import *
+from past.utils import old_div
 import os
 import copy
 import collections
@@ -165,9 +175,9 @@ class IceImageOutput(Outputter):
             return None
 
         scale_range = high_val - low_val
-        q_step_range = scale_range / len(color_names)
+        q_step_range = old_div(scale_range, len(color_names))
 
-        idx = (np.floor(values / q_step_range)
+        idx = (np.floor(old_div(values, q_step_range))
                .astype(int)
                .clip(0, len(color_names) - 1))
 

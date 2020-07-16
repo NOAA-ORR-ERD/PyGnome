@@ -5,7 +5,14 @@ This file contains the definitions to create a TAMOC simulation in GNOME and
 run the simulation in a seemless integration with GNOME.
 
 """
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import *
 from datetime import datetime, timedelta
 
 import unit_conversion as uc

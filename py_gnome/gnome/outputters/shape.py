@@ -1,6 +1,13 @@
 """
 shapefile  outputter
 """
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+from future import standard_library
+standard_library.install_aliases()
+from builtins import *
 import os
 import zipfile
 
@@ -202,7 +209,7 @@ class ShapeOutput(Outputter):
             zipf = zipfile.ZipFile(zfilename, 'w')
 
             for suf in ['shp', 'prj', 'dbf', 'shx']:
-                print("filename is:", filename)
+                print(("filename is:", filename))
                 file_to_zip = os.path.split(filename)[-1] + '.' + suf
 
                 zipf.write(os.path.join(self.filedir, file_to_zip),

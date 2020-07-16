@@ -1,6 +1,13 @@
 '''
 Weathering Outputter
 '''
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+from future import standard_library
+standard_library.install_aliases()
+from builtins import *
 import os
 import copy
 from glob import glob
@@ -32,7 +39,7 @@ class BaseMassBalanceOutputter(Outputter):
 
         self.logger.debug(self._pid + 'step_num: {0}'.format(step_num))
 
-        for name, val in output_info.items():
+        for name, val in list(output_info.items()):
             msg = ('\t{0}: {1}'.format(name, val))
             self.logger.debug(msg)
 

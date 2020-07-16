@@ -1,7 +1,15 @@
 '''
 Movers using wind as the forcing function
 '''
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import *
+from past.utils import old_div
 import os
 import copy
 
@@ -457,7 +465,7 @@ class GridWindMover(WindMoversBase):
             num_cells = self.mover.get_num_points()
         else:
             num_tri = self.mover.get_num_triangles()
-            num_cells = num_tri / 2
+            num_cells = old_div(num_tri, 2)
 
         # will need to update this for regular grids
         vels = np.zeros(num_cells, dtype=velocity_rec)
@@ -595,7 +603,7 @@ class IceWindMover(WindMoversBase):
         if self.mover._is_triangle_grid():
             num_cells = num_tri
         else:
-            num_cells = num_tri / 2
+            num_cells = old_div(num_tri, 2)
 
         vels = np.zeros(num_cells, dtype=velocity_rec)
         self.mover.get_scaled_velocities(model_time, vels)
@@ -629,7 +637,7 @@ class IceWindMover(WindMoversBase):
         :param model_time=0:
         """
         num_tri = self.mover.get_num_triangles()
-        num_cells = num_tri / 2
+        num_cells = old_div(num_tri, 2)
 
         frac_coverage = np.zeros(num_cells, dtype=np.float64)
         thickness = np.zeros(num_cells, dtype=np.float64)

@@ -3,6 +3,14 @@ Test some of the base class functionality independent of derived classes.
 Just simpler to do the testing here
 Tests the Process methods and the Mover's get_move
 '''
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
+from future import standard_library
+standard_library.install_aliases()
+from builtins import *
+from builtins import object
 from datetime import datetime, timedelta
 
 import numpy as np
@@ -32,7 +40,7 @@ def test_default_properties():
     assert mover.make_default_refs is True
 
 
-class TestActive:
+class TestActive(object):
     time_step = 15 * 60  # seconds
     model_time = datetime(2012, 8, 20, 13)
     sc = sample_sc_release(1, (0, 0, 0))  # no used for anything

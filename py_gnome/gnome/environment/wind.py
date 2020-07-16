@@ -2,6 +2,13 @@
 module contains objects that contain weather related data. For example,
 the Wind object defines the Wind conditions for the spill
 """
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+from future import standard_library
+standard_library.install_aliases()
+from builtins import *
 import datetime
 import os
 import copy
@@ -202,10 +209,10 @@ class Wind(Timeseries, Environment):
         self.time = kwargs.pop('time', None)
 
     def update_from_dict(self, dict_, refs=None):
-        if 'units' in dict_.keys():
+        if 'units' in list(dict_.keys()):
             #enforce updating of units before timeseries
             self.units = dict_.pop('units')
-        if 'timeseries' in dict_.keys():
+        if 'timeseries' in list(dict_.keys()):
             self.timeseries = WindTimeSeriesSchema().deserialize(dict_.pop('timeseries'))
         super(Wind, self).update_from_dict(dict_, refs=refs)
 

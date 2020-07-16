@@ -18,7 +18,16 @@ Almar Klein (June 2009)
 This code is provided as is, and is free to use for all.
 
 """
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import chr
+from builtins import *
+from past.utils import old_div
 try:
     import PIL
     from PIL import Image, ImageChops
@@ -44,7 +53,7 @@ def intToBin(i):
     # divide in two parts (bytes)
 
     i1 = i % 256
-    i2 = int(i/256)
+    i2 = int(old_div(i,256))
 
     # make string (little endian)
 
@@ -243,7 +252,7 @@ def writeGif(
 
     try:
         n = _writeGifToFile(fp, images2, durations, loops)
-        print(n, 'frames written')
+        print((n, 'frames written'))
     finally:
         fp.close()
 

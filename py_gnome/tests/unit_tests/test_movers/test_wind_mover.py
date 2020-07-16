@@ -1,3 +1,13 @@
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import unicode_literals
+from builtins import str
+from builtins import range
+from future import standard_library
+standard_library.install_aliases()
+from builtins import *
+from builtins import object
 from datetime import timedelta, datetime
 
 from pytest import raises
@@ -172,7 +182,7 @@ def test_update_wind(wind_circ):
                        atol, rtol)
 
 
-class TestPrepareForModelStep:
+class TestPrepareForModelStep(object):
     time_step = 15 * 60  # seconds
     model_time = datetime(2012, 8, 20, 13)  # yyyy/month/day/hr/min/sec
 
@@ -409,7 +419,7 @@ class TestPrepareForModelStep:
             assert np.all(self.sc['windages'][mask] != old_windages[mask])
 
 
-class TestWindMover:
+class TestWindMover(object):
     """
     gnome.WindMover() test
     """

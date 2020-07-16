@@ -1,6 +1,14 @@
 '''
 Test Langmuir() - very simple object with only one method
 '''
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
+from builtins import *
+from builtins import object
+from future import standard_library
+standard_library.install_aliases()
 from datetime import datetime
 
 import numpy as np
@@ -31,7 +39,7 @@ def data_arrays(num_elems=10):
     return (bulk_init_volume, age, area)
 
 
-class TestFayGravityViscous:
+class TestFayGravityViscous(object):
     spread = FayGravityViscous()
     spread._set_thickness_limit(1e-4)    # thickness_limit based on viscosity
 

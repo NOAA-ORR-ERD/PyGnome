@@ -1,3 +1,10 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+from future import standard_library
+standard_library.install_aliases()
+from builtins import *
 from .core import Weatherer, HalfLifeWeatherer
 from .cleanup import Skimmer, Burn, ChemicalDispersion
 from .manual_beaching import Beaching

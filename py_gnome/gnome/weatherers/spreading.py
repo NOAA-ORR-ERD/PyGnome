@@ -2,7 +2,15 @@
 objects used to model the spreading of oil
 Include the Langmuir process here as well
 '''
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import *
+from past.utils import old_div
 import numpy as np
 try:
     # it's built-in on py3
@@ -85,9 +93,9 @@ class FayGravityViscous(Weatherer):
         inputs - don't expect 4 or more spills in one scenario.
         '''
         # time to reach a0
-        t0 = ((self.spreading_const[1] / self.spreading_const[0]) ** 4.0 *
-              (blob_init_vol / (water_viscosity * constants.gravity *
-                                relative_buoyancy)) ** (1. / 3)
+        t0 = ((old_div(self.spreading_const[1], self.spreading_const[0])) ** 4.0 *
+              (old_div(blob_init_vol, (water_viscosity * constants.gravity *
+                                relative_buoyancy))) ** (1. / 3)
               )
         return t0
 
@@ -99,10 +107,10 @@ class FayGravityViscous(Weatherer):
         just a convenience function to compute the time to reach max area
         All inputs are scalars
         '''
-        max_area = blob_init_vol / self.thickness_limit
-        time = (max_area / (PI * self.spreading_const[1] ** 2) *
-                (np.sqrt(water_viscosity) /
-                 (blob_init_vol ** 2 * constants.gravity * rel_buoy)) ** (1. / 3)
+        max_area = old_div(blob_init_vol, self.thickness_limit)
+        time = (old_div(max_area, (PI * self.spreading_const[1] ** 2)) *
+                (old_div(np.sqrt(water_viscosity),
+                 (blob_init_vol ** 2 * constants.gravity * rel_buoy))) ** (1. / 3)
                 ) ** 2
 
         return time
@@ -129,14 +137,14 @@ class FayGravityViscous(Weatherer):
             A0 = PI*(k2**4/k1**2)*((V0**5*g*dbuoy)/(nu_h2o**2))**(1./6.)
         '''
         a0 = (np.pi *
-              (self.spreading_const[1] ** 4 / self.spreading_const[0] ** 2) *
-              (((blob_init_vol) ** 5 * constants.gravity * relative_buoyancy) /
-               (water_viscosity ** 2)) ** (1. / 6.))
+              (old_div(self.spreading_const[1] ** 4, self.spreading_const[0] ** 2)) *
+              (old_div(((blob_init_vol) ** 5 * constants.gravity * relative_buoyancy),
+               (water_viscosity ** 2))) ** (1. / 6.))
 
         # highly unlikely to reach max_area, min_thickness during
         # initialization, but it is possible so add a check for it and log
         # an error/warning? for it
-        max_area = blob_init_vol / self.thickness_limit
+        max_area = old_div(blob_init_vol, self.thickness_limit)
         a0 = min(a0, max_area)
         if a0 == max_area:
             msg = "max_area is achieved during init_area()"
@@ -148,10 +156,10 @@ class FayGravityViscous(Weatherer):
                           blob_init_volume, age):
         area = (PI *
                 self.spreading_const[1] ** 2 *
-                (blob_init_volume ** 2 *
+                (old_div(blob_init_volume ** 2 *
                  constants.gravity *
-                 relative_buoyancy /
-                 np.sqrt(water_viscosity)) ** (1. / 3.) *
+                 relative_buoyancy,
+                 np.sqrt(water_viscosity))) ** (1. / 3.) *
                 np.sqrt(age))
 
         return area
@@ -222,7 +230,7 @@ class FayGravityViscous(Weatherer):
                 continue
 
             # now update area of old LEs - only update till max area is reached
-            max_area = blob_init_volume[m_age][0] / self.thickness_limit
+            max_area = old_div(blob_init_volume[m_age][0], self.thickness_limit)
             if area[m_age].sum() < max_area:
                 # update area
                 blob_area = self._update_blob_area(water_viscosity,
@@ -231,9 +239,9 @@ class FayGravityViscous(Weatherer):
                                                    age[m_age][0])
 
                 if blob_area >= max_area:
-                    area[m_age] = max_area / m_age.sum()
+                    area[m_age] = old_div(max_area, m_age.sum())
                 else:
-                    area[m_age] = blob_area / m_age.sum()
+                    area[m_age] = old_div(blob_area, m_age.sum())
 
                 self.logger.debug('{0}\tarea after update: {1}'
                                   .format(self._pid, blob_area))
@@ -307,31 +315,31 @@ class FayGravityViscous(Weatherer):
                 continue
 
             # now update area of old LEs - only update till max area is reached
-            max_area = blob_init_volume[m_age][0] / self.thickness_limit
+            max_area = old_div(blob_init_volume[m_age][0], self.thickness_limit)
             if area[m_age].sum() < max_area:
 
                 C = (PI *
                     self.spreading_const[1] ** 2 *
-                    (blob_init_volume[m_age][0] ** 2 *
+                    (old_div(blob_init_volume[m_age][0] ** 2 *
                     constants.gravity *
-                    relative_buoyancy /
-                    np.sqrt(water_viscosity)) ** (1. / 3.))
+                    relative_buoyancy,
+                    np.sqrt(water_viscosity))) ** (1. / 3.))
 
                 #blob_area_fgv = area[m_age].sum() + .5 * (C**2 / area[m_age].sum()) * time_step	# make sure area > 0
-                blob_area_fgv = .5 * (C**2 / area[m_age].sum()) * time_step	# make sure area > 0
+                blob_area_fgv = .5 * (old_div(C**2, area[m_age].sum())) * time_step	# make sure area > 0
 
                 K = 4 * PI * 2 * .033
 
                 #blob_area_diffusion = area[m_age].sum() + ((7 / 6) * K * (area[m_age].sum() / K) ** (1 / 7)) * time_step
-                blob_area_diffusion = ((7 / 6) * K * (area[m_age].sum() / K) ** (1 / 7)) * time_step
+                blob_area_diffusion = ((old_div(7, 6)) * K * (old_div(area[m_age].sum(), K)) ** (old_div(1, 7))) * time_step
 
                 #blob_area = blob_area_fgv + blob_area_diffusion
                 blob_area = area[m_age].sum() + blob_area_fgv + blob_area_diffusion
 
                 if blob_area >= max_area:
-                    area[m_age] = max_area / m_age.sum()
+                    area[m_age] = old_div(max_area, m_age.sum())
                 else:
-                    area[m_age] = blob_area / m_age.sum()
+                    area[m_age] = old_div(blob_area, m_age.sum())
 
                 self.logger.debug('{0}\tarea after update: {1}'
                                   .format(self._pid, blob_area))
@@ -396,7 +404,7 @@ class FayGravityViscous(Weatherer):
                    "Oil is a sinker")
             raise GnomeRuntimeError(msg)
 
-        self._init_relative_buoyancy = (rho_h2o - rho_oil) / rho_h2o
+        self._init_relative_buoyancy = old_div((rho_h2o - rho_oil), rho_h2o)
 
     def initialize_data(self, sc, num_released):
         '''
@@ -431,15 +439,15 @@ class FayGravityViscous(Weatherer):
                 num = s_mask.sum()
 
                 # fixme: is this right? shouldn't initial volume be stored somewhere??
-                data['bulk_init_volume'][s_mask] = (data['mass'][s_mask][0] /
-                                                    data['density'][s_mask][0]
+                data['bulk_init_volume'][s_mask] = (old_div(data['mass'][s_mask][0],
+                                                    data['density'][s_mask][0])
                                                     ) * num
                 init_blob_area = self.init_area(water_kvis,
                                                 self._init_relative_buoyancy,
                                                 data['bulk_init_volume'][s_mask][0])
                 # fixme: these are the same, yes???
-                data['fay_area'][s_mask] = init_blob_area / num
-                data['area'][s_mask] = init_blob_area / num
+                data['fay_area'][s_mask] = old_div(init_blob_area, num)
+                data['area'][s_mask] = old_div(init_blob_area, num)
 
         sc.update_from_fatedataview()
 
@@ -596,10 +604,10 @@ class Langmuir(Weatherer):
         #        this gets caught in the next line, but the warnings
         #        are kind of annoying -- can we catch this sooner?
         #        and is this doing the right thing for a "sinking" oil?
-        frac_cov = (v_max ** 2 *
+        frac_cov = (old_div(v_max ** 2 *
                     4 *
-                    PISQUARED /
-                    (thickness * rel_buoy * gravity)) ** (-0.3333333333333333)
+                    PISQUARED,
+                    (thickness * rel_buoy * gravity))) ** (-0.3333333333333333)
         # due to oil density > water density
         frac_cov[np.isnan(frac_cov)] = 0.1
 
@@ -614,10 +622,10 @@ class Langmuir(Weatherer):
         Langmuir effect is within bounds:
             0.1 <= frac_coverage <= 1.0
         '''
-        v_min = np.sqrt(1.0 * thickness * rel_buoy * gravity /
-                        (4 * PISQUARED)) / 0.005
-        v_max = np.sqrt((1. / 0.1) ** 3 * thickness * rel_buoy * gravity /
-                        (4 * PISQUARED)) / 0.005
+        v_min = np.sqrt(old_div(1.0 * thickness * rel_buoy * gravity,
+                        (4 * PISQUARED))) / 0.005
+        v_max = np.sqrt(old_div((1. / 0.1) ** 3 * thickness * rel_buoy * gravity,
+                        (4 * PISQUARED))) / 0.005
 
         return (v_min, v_max)
 
@@ -648,12 +656,12 @@ class Langmuir(Weatherer):
                 # of oil released at same time, from same spill, sum
                 # the 'fay_area' array for elements that belong to same oil
                 # blob.
-                thickness = (data['bulk_init_volume'][s_mask][0] /
-                             data['fay_area'][s_mask].sum())
+                thickness = (old_div(data['bulk_init_volume'][s_mask][0],
+                             data['fay_area'][s_mask].sum()))
 
                 # assume only one type of oil is modeled so thickness_limit is
                 # already set and constant for all
-                rel_buoy = (rho_h2o - data['density'][s_mask]) / rho_h2o
+                rel_buoy = old_div((rho_h2o - data['density'][s_mask]), rho_h2o)
                 data['frac_coverage'][s_mask] = \
                     self._get_frac_coverage(points, model_time, rel_buoy, thickness)
 

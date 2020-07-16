@@ -1,7 +1,14 @@
 '''
     __init__.py for the gnome.movers package
 '''
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import *
 from .movers import Mover, Process, CyMover, ProcessSchema, PyMover
 from .simple_mover import SimpleMover, SimpleMoverSchema
 from .wind_movers import (WindMover,

@@ -13,7 +13,18 @@ GNOME-specific.
 
 This version used libgd and py_gd instead of PIL for the rendering
 """
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import print_function
+# from __future__ import unicode_literals
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import map
+from builtins import range
+from builtins import *
+from past.utils import old_div
+from builtins import object
 import bisect
 
 import numpy as np
@@ -594,7 +605,7 @@ class GridLines(object):
         img_width = float(self.projection.image_size[0])
         img_height = float(self.projection.image_size[1])
 
-        ratio = img_width / img_height
+        ratio = old_div(img_width, img_height)
         self.ref_dim = 'w' if img_width >= img_height else 'h'
 
         width = (self.projection.image_box[1][0] -
@@ -603,8 +614,8 @@ class GridLines(object):
                   self.projection.image_box[0][1])
 
         self.ref_len = width if self.ref_dim is 'w' else height
-        self.current_interval = self.get_step_size(self.ref_len /
-                                                   self.max_lines)
+        self.current_interval = self.get_step_size(old_div(self.ref_len,
+                                                   self.max_lines))
 
         self.lon_lines = self.max_lines if self.ref_dim is 'w' else None
         self.lat_lines = self.max_lines if self.ref_dim is 'h' else None
@@ -613,7 +624,7 @@ class GridLines(object):
             self.lon_lines = int(round(self.lat_lines * ratio))
 
         if self.lat_lines is None:
-            self.lat_lines = int(round(self.lon_lines / ratio))
+            self.lat_lines = int(round(old_div(self.lon_lines, ratio)))
 
     def set_max_lines(self, max_lines=None):
         """
@@ -771,7 +782,7 @@ class Viewport(object):
                     (self.center[0] + halfx, self.center[1] + halfy))
 
     def aspect_ratio(self):
-        return self.width / self.height
+        return old_div(self.width, self.height)
 
     @property
     def BB(self):

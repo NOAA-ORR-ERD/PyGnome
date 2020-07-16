@@ -6,6 +6,16 @@ module to hold all the map rendering code.
 This one used the new map_canvas, which uses the gd rendering lib.
 
 """
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
+from future import standard_library
+standard_library.install_aliases()
+from builtins import range
+from builtins import *
+from builtins import object
+from past.utils import old_div
 import os
 from os.path import basename
 import glob
@@ -369,7 +379,7 @@ class Renderer(Outputter, MapCanvas):
 
         size = d['size'] if 'size' in d else 'small'
 
-        default_position = (self.fore_image.width / 2, self.fore_image.height)
+        default_position = (old_div(self.fore_image.width, 2), self.fore_image.height)
         position = d['position'] if 'position' in d else default_position
 
         align = d['alignment'] if 'alignment' in d else 'cb'

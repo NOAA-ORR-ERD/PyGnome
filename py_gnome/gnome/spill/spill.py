@@ -8,6 +8,14 @@ and
 Element_types -- what the types of the elements are.
 
 """
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
+from future import standard_library
+standard_library.install_aliases()
+from builtins import *
+from past.utils import old_div
 from datetime import timedelta, datetime
 import copy
 import numpy as np
@@ -271,7 +279,7 @@ class Spill(BaseSpill):
 
         if self.units in self.valid_vol_units:
             std_density = self.substance.standard_density #kg/m3
-            vol = rel_mass / std_density
+            vol = old_div(rel_mass, std_density)
             return uc.convert('m^3', self.units, vol)
 
         if self.units in self.valid_mass_units:

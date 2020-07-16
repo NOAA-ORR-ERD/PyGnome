@@ -4,7 +4,18 @@ gnome oil object
 This provides an Oil object that can be used in the GNOME weathering algorithms.
 
 """
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import zip
+from builtins import range
+from builtins import *
+from past.utils import old_div
+from builtins import object
 from backports.functools_lru_cache import lru_cache
 
 import json
@@ -16,7 +27,7 @@ from colander import (SchemaNode, Int, String, Float, drop)
 from gnome.persist.base_schema import ObjTypeSchema
 
 
-class Density():
+class Density(object):
 
     def __init__(self, kg_m_3, ref_temp_k, weathering=0):
         self.kg_m_3 = kg_m_3
@@ -30,7 +41,7 @@ class Density():
                 .format(self))
 
 
-class KVis():
+class KVis(object):
 
     def __init__(self, m_2_s, ref_temp_k, weathering=0):
         self.m_2_s = m_2_s
@@ -55,7 +66,7 @@ def density_at_temp(ref_density, ref_temp_k, temp_k, k_rho_t=0.0008):
 
         NOTE: need a reference for the coefficient of expansion
     '''
-    return ref_density / (1.0 - k_rho_t * (ref_temp_k - temp_k))
+    return old_div(ref_density, (1.0 - k_rho_t * (ref_temp_k - temp_k)))
 
 
 def vol_expansion_coeff(rho_0, t_0, rho_1, t_1):
@@ -66,7 +77,7 @@ def vol_expansion_coeff(rho_0, t_0, rho_1, t_1):
     if t_0 == t_1:
         k_rho_t = 0.0
     else:
-        k_rho_t = (rho_0 - rho_1) / (rho_0 * (t_1 - t_0))
+        k_rho_t = old_div((rho_0 - rho_1), (rho_0 * (t_1 - t_0)))
 
     return k_rho_t
 
@@ -83,7 +94,7 @@ def kvis_at_temp(ref_kvis, ref_temp_k, temp_k, k_v2=2416.0):
               multi-KVis oils in our oil library suggest that a value of
               2416.0 (Abu Eishah 1999) would be a good default value for k_v2.
     '''
-    return ref_kvis * np.exp(k_v2 / temp_k - k_v2 / ref_temp_k)
+    return ref_kvis * np.exp(old_div(k_v2, temp_k) - old_div(k_v2, ref_temp_k))
 
 
 class OilSchema(ObjTypeSchema):
@@ -250,7 +261,7 @@ class Oil(object):
         d1 = self.get_dict()
         d2 = other.get_dict()
 
-        for key, val in d1.iteritems():
+        for key, val in d1.items():
             o_val = d2[key]
 
             if isinstance(val, np.ndarray):
@@ -364,8 +375,8 @@ class Oil(object):
         C_2i = 0.19 * self.boiling_point - 18
 
         var = 1. / (self.boiling_point - C_2i) - 1. / (temp - C_2i)
-        ln_Pi_Po = (D_S * (self.boiling_point - C_2i) ** 2 /
-                    (D_Zb * R_cal * self.boiling_point) * var)
+        ln_Pi_Po = (old_div(D_S * (self.boiling_point - C_2i) ** 2,
+                    (D_Zb * R_cal * self.boiling_point)) * var)
         Pi = np.exp(ln_Pi_Po) * atmos_pressure
 
         return Pi
@@ -682,7 +693,7 @@ class Oil(object):
         self._k_v2 = 2416.0
 
         def exp_func(temp_k, a, k_v2):
-            return a * np.exp(k_v2 / temp_k)
+            return a * np.exp(old_div(k_v2, temp_k))
 
         if kvis_list is None:
             kvis_list = [kv for kv in self.aggregate_kvis()[0]
@@ -696,7 +707,7 @@ class Oil(object):
 
         for k in np.logspace(3.6, 4.5, num=8):
             # k = log range from about 5000-32000
-            a_coeff = ref_kvis[0] * np.exp(-k / ref_temp_k[0])
+            a_coeff = ref_kvis[0] * np.exp(old_div(-k, ref_temp_k[0]))
 
             try:
                 popt, pcov = curve_fit(exp_func, ref_temp_k, ref_kvis,

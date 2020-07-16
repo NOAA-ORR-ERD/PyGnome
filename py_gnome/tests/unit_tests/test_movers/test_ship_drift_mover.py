@@ -1,6 +1,14 @@
 '''
 Test all operations for ship_drift mover work
 '''
+from __future__ import print_function
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import unicode_literals
+from builtins import str
+from future import standard_library
+standard_library.install_aliases()
+from builtins import *
 import datetime
 import os
 

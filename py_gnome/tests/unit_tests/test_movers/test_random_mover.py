@@ -3,7 +3,17 @@ unittests for random mover
 
 designed to be run with py.test
 """
+from __future__ import print_function
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import unicode_literals
 
+from builtins import range
+from builtins import str
+from future import standard_library
+standard_library.install_aliases()
+from builtins import *
+from builtins import object
 import datetime
 import numpy as np
 
@@ -27,7 +37,7 @@ def test_exceptions():
         RandomMover(uncertain_factor=0)
 
 
-class TestRandomMover:
+class TestRandomMover(object):
 
     """
     gnome.RandomMover() test

@@ -2,8 +2,18 @@
 oil removal from various cleanup options
 add these as weatherers
 '''
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
 
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import zip
+from builtins import str
+from builtins import *
+from past.utils import old_div
 import os
 import json
 from datetime import datetime, timedelta
@@ -80,9 +90,9 @@ class Response(Weatherer):
         substance = self._get_substance(sc)
 
         if sc['area'].any() > 0:
-            volume_emul = ((sc['mass'].mean() / substance.density_at_temp()) /
-                           (1.0 - sc['frac_water'].mean()))
-            oil_thickness = volume_emul / sc['area'].mean()
+            volume_emul = (old_div((old_div(sc['mass'].mean(), substance.density_at_temp())),
+                           (1.0 - sc['frac_water'].mean())))
+            oil_thickness = old_div(volume_emul, sc['area'].mean())
 
         return uc.convert('Length', 'meters', 'inches', oil_thickness)
 
@@ -92,7 +102,7 @@ class Response(Weatherer):
 
     @units.setter
     def units(self, u_dict):
-        for prop, unit in u_dict.items():
+        for prop, unit in list(u_dict.items()):
             if (prop in self._units_type and
                     unit not in self._units_type[prop][1]):
                 msg = ('{0} are invalid units for {1}. Ignore it'
@@ -131,7 +141,7 @@ class Response(Weatherer):
     def _is_active(self, model_time, time_step):
         for t in self.timeseries:
             if (model_time >= t[0] and
-                    model_time + timedelta(seconds=time_step / 2) <= t[1]):
+                    model_time + timedelta(seconds=old_div(time_step, 2)) <= t[1]):
                 return True
 
         return False
@@ -159,7 +169,7 @@ class Response(Weatherer):
 
     def _remove_mass_simple(self, data, amount):
         total_mass = data['mass'].sum()
-        rm_mass_frac = min(amount / total_mass, 1.0)
+        rm_mass_frac = min(old_div(amount, total_mass), 1.0)
 
         data['mass_components'] = (1 - rm_mass_frac) * data['mass_components']
         data['mass'] = data['mass_components'].sum(1)
@@ -169,7 +179,7 @@ class Response(Weatherer):
     def _remove_mass_indices(self, data, amounts, indices):
         # removes mass from the mass components specified by an indices array
         masses = data['mass'][indices]
-        rm_mass_frac = np.clip(amounts / masses, 0, 1)
+        rm_mass_frac = np.clip(old_div(amounts, masses), 0, 1)
 
         old_mass = data['mass_components'][indices].sum(1)
 
@@ -391,7 +401,7 @@ class Platform(GnomeId):
         else:
             t_l_d = None
 
-        raw = dist / t_s * 3600
+        raw = old_div(dist, t_s) * 3600
 
         if t_l_d is not None:
             raw += t_l_d
@@ -404,7 +414,7 @@ class Platform(GnomeId):
         a_s = self.get('application_speed', 'm/s')
         s_w_m = self.get('swath_width_min', 'm')
 
-        dos = (p_r_m) / (a_s * s_w_m)
+        dos = old_div((p_r_m), (a_s * s_w_m))
         dos = uc.convert('length', 'm', 'micron', dos)
         dos = uc.convert('oilconcentration', 'micron', 'gal/acre', dos)
 
@@ -416,7 +426,7 @@ class Platform(GnomeId):
         a_s = self.get('application_speed', 'm/s')
         s_w_m = self.get('swath_width_max', 'm')
 
-        dos = (p_r_m) / (a_s * s_w_m)
+        dos = old_div((p_r_m), (a_s * s_w_m))
         dos = uc.convert('length', 'm', 'micron', dos)
         dos = uc.convert('oilconcentration', 'micron', 'gal/acre', dos)
 
@@ -439,7 +449,7 @@ class Platform(GnomeId):
         cascade_time = 0
 
         if dist > max_range:
-            num_legs = dist / max_range
+            num_legs = old_div(dist, max_range)
             frac_leg = (num_legs * 1000) % 1000
             num_legs = int(num_legs)
 
@@ -449,11 +459,11 @@ class Platform(GnomeId):
             inter_stop = (taxi_land_depart * 2 + fuel_load)
 
             cascade_time += num_legs * inter_stop
-            cascade_time += frac_leg * (max_range / speed)
+            cascade_time += frac_leg * (old_div(max_range, speed))
             cascade_time += taxi_land_depart
         else:
             cascade_time += taxi_land_depart * 2
-            cascade_time += dist / speed
+            cascade_time += old_div(dist, speed)
 
         return cascade_time * 3600
 
@@ -476,8 +486,8 @@ class Platform(GnomeId):
 
         A pass consists of an approach, spray, u-turn, and reposition.
         '''
-        return int(time.total_seconds() /
-                   int(self.pass_duration(pass_len, pass_type)))
+        return int(old_div(time.total_seconds(),
+                   int(self.pass_duration(pass_len, pass_type))))
 
     def refuel_reload(self, simul=False):
         '''return unit = sec'''
@@ -515,8 +525,8 @@ class Platform(GnomeId):
         else:
             rep_speed = 1
 
-        appr_time = appr_dist / rep_speed
-        dep_time = dep_dist / rep_speed
+        appr_time = old_div(appr_dist, rep_speed)
+        dep_time = old_div(dep_dist, rep_speed)
 
         if self.u_turn_time is not None:
             u_turn = self.get('u_turn_time', 'sec')
@@ -525,7 +535,7 @@ class Platform(GnomeId):
 
         pass_len = uc.convert('length', units, 'm', pass_len)
         app_speed = self.get('application_speed', 'm/s')
-        spray_time = pass_len / app_speed
+        spray_time = old_div(pass_len, app_speed)
 
         if pass_type == 'bidirectional':
             self._ts_spray_time += spray_time * 2
@@ -582,12 +592,12 @@ class Platform(GnomeId):
         app_speed = self.get('application_speed', 'm/s')
 
         pass_dur = self.pass_duration(pass_len, pass_type, units)
-        spray_time = pass_len / app_speed
+        spray_time = old_div(pass_len, app_speed)
 
         if pass_type == 'bidirectional':
-            return (spray_time * 2) / pass_dur
+            return old_div((spray_time * 2), pass_dur)
         else:
-            return (spray_time) / pass_dur
+            return old_div((spray_time), pass_dur)
 
 
 class DisperseUnitsSchema(MappingSchema):
@@ -784,9 +794,9 @@ class Disperse(Response):
 
         app_speed = self.get('application_speed', 'm/s')
 
-        spray_time = pass_len / app_speed
+        spray_time = old_div(pass_len, app_speed)
 
-        max_dos = (self.get('pump_rate_max', 'm^3/s') * spray_time / pass_area)
+        max_dos = (old_div(self.get('pump_rate_max', 'm^3/s') * spray_time, pass_area))
         max_dos = uc.convert('length', 'm', 'micron', max_dos)
         max_dos = uc.convert('oilconcentration', 'micron', 'gal/acre', max_dos)
 
@@ -818,12 +828,12 @@ class Disperse(Response):
     def dosage_from_thickness(self, sc):
         thickness = self._get_thickness(sc)  # inches
 
-        self._dosage_m = (uc.convert('length', 'inches', 'm', thickness) /
-                          self.disp_oil_ratio)
+        self._dosage_m = (old_div(uc.convert('length', 'inches', 'm', thickness),
+                          self.disp_oil_ratio))
         self.dosage = uc.convert('length', 'inches', 'micron', thickness)
-        self.dosage = (uc.convert('oilconcentration',
-                                  'micron', 'gal/acre', self.dosage) /
-                       self.disp_oil_ratio)
+        self.dosage = (old_div(uc.convert('oilconcentration',
+                                  'micron', 'gal/acre', self.dosage),
+                       self.disp_oil_ratio))
 
     def get_disp_eff_avg(self, sc, model_time):
         wind_eff_list = Disperse.wind_eff_list
@@ -840,7 +850,7 @@ class Disperse(Response):
         else:
             avg_visc = 1000000
 
-        visc_eff = visc_eff_table[list(visc_eff_table.keys())[np.searchsorted(list(visc_eff_table.keys()), avg_visc)]] / 100
+        visc_eff = old_div(visc_eff_table[list(visc_eff_table.keys())[np.searchsorted(list(visc_eff_table.keys()), avg_visc)]], 100)
 
         return wind_eff * visc_eff
 
@@ -857,8 +867,8 @@ class Disperse(Response):
 
         visc_idxs = np.array([np.searchsorted(list(visc_eff_table.keys()), v)
                               for v in visc])
-        visc_eff = np.array([visc_eff_table[list(visc_eff_table.keys())[v]]
-                             for v in visc_idxs]) / 100
+        visc_eff = old_div(np.array([visc_eff_table[list(visc_eff_table.keys())[v]]
+                             for v in visc_idxs]), 100)
 
         return wind_eff * visc_eff
 
@@ -998,8 +1008,8 @@ class Disperse(Response):
                                       disp_possible)
 
                     if disp_actual != disp_possible:
-                        spray_time = timedelta(seconds=disp_actual /
-                                               self.platform.eff_pump_rate(dosage))
+                        spray_time = timedelta(seconds=old_div(disp_actual,
+                                               self.platform.eff_pump_rate(dosage)))
 
                     treated_possible = disp_actual * self.disp_oil_ratio
                     mass_treatable = np.mean(sc['density'][self.dispersable_oil_idxs(sc)]) * treated_possible
@@ -1025,8 +1035,8 @@ class Disperse(Response):
                     self._time_remaining -= spray_time
                     self._disp_sprayed_this_timestep += disp_actual
                     self._remaining_dispersant -= disp_actual
-                    self._ts_payloads_delivered += (disp_actual /
-                                                    self.platform.get('payload', 'm^3'))
+                    self._ts_payloads_delivered += (old_div(disp_actual,
+                                                    self.platform.get('payload', 'm^3')))
 
                     self.oil_treated_this_timestep += min(mass_treatable,
                                                           oil_avail)
@@ -1437,9 +1447,9 @@ class Disperse(Response):
                 self._time_remaining -= spray_time
                 self._disp_sprayed_this_timestep += disp_actual
                 self._remaining_dispersant -= disp_actual
-                self._ts_payloads_delivered += (disp_actual /
+                self._ts_payloads_delivered += (old_div(disp_actual,
                                                 self.platform.get('payload',
-                                                                  'm^3'))
+                                                                  'm^3')))
                 self.oil_treated_this_timestep += min(mass_treatable,
                                                       oil_avail)
 
@@ -1565,14 +1575,14 @@ class Disperse(Response):
         idxs = self.dispersable_oil_idxs(sc)
 
         if units in _valid_vol_units:
-            tot_vol = np.sum(sc['mass'][idxs] / sc['density'][idxs])
+            tot_vol = np.sum(old_div(sc['mass'][idxs], sc['density'][idxs]))
             return max(0, uc.convert('m^3', units, tot_vol))
         else:
             tot_mass = np.sum(sc['mass'][idxs])
             return max(0,
                        (tot_mass -
-                        self.oil_treated_this_timestep /
-                        np.mean(sc['density'][idxs])))
+                        old_div(self.oil_treated_this_timestep,
+                        np.mean(sc['density'][idxs]))))
 
     def weather_elements(self, sc, time_step, model_time):
         if not self.active or len(sc) == 0:
@@ -1587,7 +1597,7 @@ class Disperse(Response):
             # visc_eff_table = Disperse.visc_eff_table
             # wind_eff_list = Disperse.wind_eff_list
 
-            mass_proportions = sc['mass'][idxs] / np.sum(sc['mass'][idxs])
+            mass_proportions = old_div(sc['mass'][idxs], np.sum(sc['mass'][idxs]))
             eff_reductions = self.get_disp_eff(sc, model_time)
             mass_to_remove = (self.oil_treated_this_timestep *
                               mass_proportions *
@@ -1740,17 +1750,17 @@ class Burn(Response):
 
         self._swath_width = 0.3 * self.get('boom_length')
 
-        self._area = (self._swath_width *
-                      (0.4125 * self.get('boom_length') / 3) *
-                      2 / 3)
+        self._area = (old_div(self._swath_width *
+                      (old_div(0.4125 * self.get('boom_length'), 3)) *
+                      2, 3))
 
         self.set('_boom_capacity_max',
-                 self.get('boom_draft') / 36 * self._area,
+                 old_div(self.get('boom_draft'), 36) * self._area,
                  'ft^3')
 
         self._boom_capacity = self.get('_boom_capacity_max')
         self._offset_time = (self.offset * 0.00987 / self.get('speed')) * 60
-        self._area_coverage_rate = self._swath_width * self.get('speed') / 430
+        self._area_coverage_rate = old_div(self._swath_width * self.get('speed'), 430)
 
         if self._swath_width > 1000:
             self.report.append('Swaths > 1000 feet may not be achievable '
@@ -1848,10 +1858,10 @@ class Burn(Response):
             # old ROC equation
             # time_to_fill = (self._boom_capacity_remaining / emulsion_rr) * 60
             # new ebsp equation
-            time_to_fill = (uc.convert('Volume',
+            time_to_fill = (old_div(uc.convert('Volume',
                                        'ft^3', 'gal',
-                                       self._boom_capacity) /
-                            emulsion_rr)
+                                       self._boom_capacity),
+                            emulsion_rr))
         else:
             time_to_fill = self._time_remaining
 
@@ -1874,7 +1884,7 @@ class Burn(Response):
                                             'gal', 'ft^3',
                                             emulsion_rr * time_to_fill)
 
-            self._ts_area_covered = encounter_rate * (time_to_fill / 60)
+            self._ts_area_covered = encounter_rate * (old_div(time_to_fill, 60))
             self._boom_capacity -= self._ts_collected
             self._is_boom_full = True
 
@@ -1914,23 +1924,23 @@ class Burn(Response):
         # burning
         if self._burn_time is None:
             self._ts_num_burns = 1
-            self._burn_time = (0.33 *
-                               self.get('boom_draft') /
-                               self._burn_rate *
+            self._burn_time = (old_div(0.33 *
+                               self.get('boom_draft'),
+                               self._burn_rate) *
                                60.)
             self._burn_time_remaining = self._burn_time
 
             if not np.isclose(self._boom_capacity, 0):
                 # this is a special case if the boom didn't fill up all the way
                 # due to lack of oil or somethig.
-                self._burn_time_remaining = (self._burn_time *
-                                             (1 - self._boom_capacity) /
-                                             self.get('_boom_capacity_max'))
+                self._burn_time_remaining = (old_div(self._burn_time *
+                                             (1 - self._boom_capacity),
+                                             self.get('_boom_capacity_max')))
 
         self._is_boom_full = False
 
         if self._burn_time_remaining > self._time_remaining:
-            frac_burned = self._time_remaining / self._burn_time
+            frac_burned = old_div(self._time_remaining, self._burn_time)
             burned = self.get('_boom_capacity_max') * frac_burned
 
             self._burn_time_remaining -= self._time_remaining
@@ -2156,8 +2166,8 @@ class Skim(Response):
                                self.get('speed') *
                                0.00233)
 
-        self.offload = (self.get('storage', 'gal') /
-                        self.get('discharge_pump', 'gpm') *
+        self.offload = (old_div(self.get('storage', 'gal'),
+                        self.get('discharge_pump', 'gpm')) *
                         60.)
 
         if self.on:
@@ -2232,12 +2242,12 @@ class Skim(Response):
         thickness = self._get_thickness(sc)
 
         if self.recovery_ef > 0 and self.throughput > 0 and thickness > 0:
-            self._maximum_effective_swath = (self.get('nameplate_pump') *
-                                             self.get('recovery_ef') /
+            self._maximum_effective_swath = (old_div(self.get('nameplate_pump') *
+                                             self.get('recovery_ef'),
                                              (63.13 *
                                               self.get('speed', 'kts') *
                                               thickness *
-                                              self.throughput))
+                                              self.throughput)))
         else:
             self._maximum_effective_swath = 0
 
@@ -2257,20 +2267,20 @@ class Skim(Response):
             recovery = self._getRecoveryEfficiency()
 
             if recovery > 0:
-                totalFluidRecoveryRate = (encounter_rate *
-                                          self.throughput /
-                                          recovery)
+                totalFluidRecoveryRate = (old_div(encounter_rate *
+                                          self.throughput,
+                                          recovery))
 
                 if totalFluidRecoveryRate > self.get('nameplate_pump'):
                     # total fluid recovery rate is greater than nameplate
                     # pump, recalculate the throughput efficiency and
                     # total fluid recovery rate again with the new throughput
-                    throughput = (self.get('nameplate_pump') *
-                                  recovery /
-                                  encounter_rate)
-                    totalFluidRecoveryRate = (encounter_rate *
-                                              throughput /
-                                              recovery)
+                    throughput = (old_div(self.get('nameplate_pump') *
+                                  recovery,
+                                  encounter_rate))
+                    totalFluidRecoveryRate = (old_div(encounter_rate *
+                                              throughput,
+                                              recovery))
 
                     self.logger.warning('{0.name} - Total Fluid Recovery Rate '
                                         'is greater than Nameplate Pump Rate. '
@@ -2308,9 +2318,9 @@ class Skim(Response):
                     freeWaterDecantRate = (freeWaterRecoveryRate -
                                            freeWaterRetainedRate)
 
-                    timeToFill = (.7 *
-                                  self._storage_remaining /
-                                  retainRate *
+                    timeToFill = (old_div(.7 *
+                                  self._storage_remaining,
+                                  retainRate) *
                                   60. * 60.)
 
                     if timeToFill > self._time_remaining:
@@ -2330,15 +2340,15 @@ class Skim(Response):
 
                     self._state_list.append(['skim', time_collecting])
 
-                    fluid_collected = retainRate * (time_collecting / 60)
+                    fluid_collected = retainRate * (old_div(time_collecting, 60))
 
                     if (fluid_collected > 0 and
                             fluid_collected <= self._storage_remaining):
-                        self._ts_num_fills += (fluid_collected /
-                                               self.get('storage', 'gal'))
+                        self._ts_num_fills += (old_div(fluid_collected,
+                                               self.get('storage', 'gal')))
                     elif self._storage_remaining > 0:
-                        self._ts_num_fills += (self._storage_remaining /
-                                               self.get('storage', 'gal'))
+                        self._ts_num_fills += (old_div(self._storage_remaining,
+                                               self.get('storage', 'gal')))
 
                     if fluid_collected > self._storage_remaining:
                         self._storage_remaining = 0

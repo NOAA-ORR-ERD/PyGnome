@@ -8,7 +8,15 @@ Imports all the symbols from cy_basic_types.pyx
 Adds some for Python-only use
 
 """
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import *
+from builtins import object
 import sys
 
 import numpy as np
@@ -19,17 +27,17 @@ import gnome.cy_gnome.cy_basic_types as cbt
 
 class enum(object):
     def __init__(self, **kwargs):
-        for k, v in kwargs.items():
+        for k, v in list(kwargs.items()):
             setattr(self, k, v)
         self.args = kwargs
 
     @property
     def _int(self):
-        return self.args.values()
+        return list(self.args.values())
     
     @property
     def _attr(self):
-        return self.args.keys()
+        return list(self.args.keys())
 # in lib_gnome, the coordinate systems used (r-theta, uv, etc)
 # are called ts_format, which is not a very descriptive name.
 # the word 'format' can mean a lot of different things depending on
@@ -41,7 +49,7 @@ seconds = cbt.seconds
 spill_type = enum(**cbt.spill_type)
 
 # this is a mapping of oil_status code to the meaningful name:
-oil_status_map = { num: name for name, num in oil_status.args.items()}
+oil_status_map = { num: name for name, num in list(oil_status.args.items())}
 
 
 

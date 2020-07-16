@@ -4,7 +4,15 @@ Outputter for dumping teh oil budget as a CSV file
 (Or maybe other formats in the future)
 
 """
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import *
+from past.utils import old_div
 import csv
 
 from .weathering import BaseMassBalanceOutputter
@@ -105,8 +113,8 @@ class OilBudgetOutput(BaseMassBalanceOutputter, OutputterFilenameMixin):
         # print mass_balself._model_start_time).total_seconds() / 3600
         model_time = mass_balance_data['model_time']
         run_time = (model_time - self._model_start_time).total_seconds()
-        hours = int(run_time / 3600)
-        minutes = int((run_time - hours * 3600) / 60)
+        hours = int(old_div(run_time, 3600))
+        minutes = int(old_div((run_time - hours * 3600), 60))
         row = ["{}:{:02d}".format(hours, minutes),
                model_time.strftime("%Y-%m-%d %H:%M")]
         for category in self.budget_categories:

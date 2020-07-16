@@ -8,6 +8,14 @@ it works.
 
 The functions being tested do not produce any results.
 '''
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+from builtins import str
+from future import standard_library
+standard_library.install_aliases()
+from builtins import *
 from pytest import raises
 
 from gnome.cy_gnome import cy_mover

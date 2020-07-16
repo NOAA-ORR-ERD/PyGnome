@@ -14,9 +14,17 @@ Used by map_canvas code and map code.
 NOTE: all coordinates are takes as (lon, lat, depth)
       even though depth is always ignored
 """
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
 # make sure to get float division everywhere
 
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import *
+from past.utils import old_div
 import numpy as np
 from gnome.gnomeobject import GnomeId
 from gnome.persist.base_schema import ObjTypeSchema
@@ -211,7 +219,7 @@ class GeoProjection(GnomeId):
         bounding_box = np.asarray(bounding_box, dtype=np.float64)
 
         self.center = np.mean(bounding_box, axis=0)
-        self.offset = np.array(image_size, dtype=np.float64) / 2
+        self.offset = old_div(np.array(image_size, dtype=np.float64), 2)
 
         # compute BB to fit image
         h = bounding_box[1, 1] - bounding_box[0, 1]
@@ -219,10 +227,10 @@ class GeoProjection(GnomeId):
         # width scaled to longitude
         w = bounding_box[1, 0] - bounding_box[0, 0]
 
-        if w / h > image_size[0] / image_size[1]:
-            s = image_size[0] / w
+        if old_div(w, h) > old_div(image_size[0], image_size[1]):
+            s = old_div(image_size[0], w)
         else:
-            s = image_size[1] / h
+            s = old_div(image_size[1], h)
 
         self.scale = (s, -s)
 
@@ -472,7 +480,7 @@ class FlatEarthProjection(GeoProjection):
         bearing = np.deg2rad(bearing)
 
         # Convert linear distance to angular distance (in radians).
-        distance = distance / EarthRadius
+        distance = old_div(distance, EarthRadius)
 
         latout = np.arcsin(np.sin(lat) * np.cos(distance) + np.cos(lat) *
                            np.sin(distance) * np.cos(bearing))
@@ -516,11 +524,11 @@ class FlatEarthProjection(GeoProjection):
         # width scaled to longitude
         w = (bb[1, 0] - bb[0, 0]) * lon_scale
 
-        if w / h > image_size[0] / image_size[1]:
-            s = image_size[0] / w
+        if old_div(w, h) > old_div(image_size[0], image_size[1]):
+            s = old_div(image_size[0], w)
             self.scale = (s * lon_scale, -s)
         else:
-            s = image_size[1] / h
+            s = old_div(image_size[1], h)
             self.scale = (s * lon_scale, -s)
 
         # doing this at the end, in case there is a problem with the input.
@@ -747,12 +755,12 @@ class RegularGridProjection(GeoProjection):
         bounding_box = np.asarray(bounding_box, dtype=np.float64)
 
         self.center = np.mean(bounding_box, axis=0)
-        self.offset = np.array(image_size, dtype=np.float64) / 2
+        self.offset = old_div(np.array(image_size, dtype=np.float64), 2)
 
         h = bounding_box[1, 1] - bounding_box[0, 1]
         w = bounding_box[1, 0] - bounding_box[0, 0]
 
-        self.scale = (image_size[0] / w, - image_size[1] / h)
+        self.scale = (old_div(image_size[0], w), old_div(- image_size[1], h))
 
         # doing this at the end, in case there is a problem with the input.
         self.image_size = image_size

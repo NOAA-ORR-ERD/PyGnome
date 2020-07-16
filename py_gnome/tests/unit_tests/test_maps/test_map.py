@@ -6,7 +6,18 @@ Tests of the map code.
 
 Designed to be run with py.test
 """
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
 
+
+from future import standard_library
+standard_library.install_aliases()
+from builtins import range
+from builtins import *
+from builtins import object
+from past.utils import old_div
 import os
 import pytest
 
@@ -23,7 +34,6 @@ from gnome.maps import GnomeMap, MapFromBNA, RasterMap, ParamMap
 
 from gnome.gnomeobject import class_from_objtype
 
-from .conftest import sample_sc_release
 
 from ..conftest import sample_sc_release
 
@@ -59,10 +69,10 @@ def test_in_water_resolution():
 
     # Define a point on the line formed by this coastline segment.
 
-    slope = (y2 - y1) / (x2 - x1)
+    slope = old_div((y2 - y1), (x2 - x1))
     b = y1 - slope * x1
     py = 47.7
-    px = (py - b) / slope
+    px = old_div((py - b), slope)
 
     # Find the order of magnitude epsilon change in the latitude that causes
     # the given point to "move" from water to land.
@@ -91,7 +101,7 @@ def test_in_water_resolution():
 
 # tests for GnomeMap -- the most basic version
 
-class Test_GnomeMap:
+class Test_GnomeMap(object):
 
     def test_on_map(self):
         gmap = GnomeMap()
@@ -160,7 +170,7 @@ class Test_GnomeMap:
         assert np.all(gmap.map_bounds == json_['map_bounds'])
 
 
-class Test_ParamMap:
+class Test_ParamMap(object):
     '''
     WIP
 
@@ -228,7 +238,7 @@ class Test_ParamMap:
         assert map1.center == (6, 6, 0)
 
 
-class Test_RasterMap:
+class Test_RasterMap(object):
     """
     some tests for the raster map
     """
@@ -301,7 +311,7 @@ class Test_RasterMap:
                          projection=NoProjection())
 
         # right in the middle
-        print('testing a land point:', (10, 6, 0.), gmap.on_land((10, 6, 0.)))
+        print(('testing a land point:', (10, 6, 0.), gmap.on_land((10, 6, 0.))))
         assert gmap.on_land((10, 6, 0.))
 
         print('testing a water point:')
@@ -345,7 +355,7 @@ class Test_RasterMap:
         assert not gmap.allowable_spill_position((3.0, 3.0, 0.))
 
 
-class TestRefloat:
+class TestRefloat(object):
 
     """
     only tests the refloat_elements interface and functionality
@@ -447,14 +457,14 @@ class TestRefloat:
 
         self.map.refloat_elements(self.spill, self.time_step)
 
-        expected = (round(1. - .5 ** (self.time_step /
-                                      self.map.refloat_halflife *
+        expected = (round(1. - .5 ** (old_div(self.time_step,
+                                      self.map.refloat_halflife) *
                                       3600.),
                           2) *
                     100)
-        actual = (np.count_nonzero(self.spill['status_codes'][ix] ==
-                                   oil_status.in_water) /
-                  (self.num_les / 2) * 100)
+        actual = (old_div(np.count_nonzero(self.spill['status_codes'][ix] ==
+                                   oil_status.in_water),
+                  (old_div(self.num_les, 2))) * 100)
 
         print(('Expect {0}% refloat, actual refloated: {1}%'
                .format(expected, actual)))
@@ -480,9 +490,9 @@ class TestRefloat:
                       self.orig_pos[mask, :])
 
 
-class Test_MapfromBNA:
+class Test_MapfromBNA(object):
 
-    print("instaniating map:", testbnamap)
+    print(("instaniating map:", testbnamap))
     # NOTE: this is a pretty course map -- for testing
     bna_map = MapFromBNA(testbnamap, refloat_halflife=6, raster_size=1000)
 
@@ -513,7 +523,7 @@ class Test_MapfromBNA:
         correctly.
         '''
         OnLand = (-127, 47.8, 0.)
-        print("on land:", self.bna_map.on_land(OnLand))
+        print(("on land:", self.bna_map.on_land(OnLand)))
         print(self.bna_map.raster)
 
         assert self.bna_map.on_land(OnLand)
@@ -621,7 +631,7 @@ class Test_MapfromBNA:
         assert np.all(gmap.map_bounds == dict_['map_bounds'])
 
 
-class Test_full_move:
+class Test_full_move(object):
     """
     A test to see if the full API is working for beaching
 
@@ -897,7 +907,7 @@ def test_bna_no_map_bounds():
                                          ])
 
 
-class Test_lake():
+class Test_lake(object):
     """
     tests for handling a BNA with a lake
 
@@ -941,16 +951,19 @@ class Test_lake():
 
         import json
         outfilename = os.path.join(output_dir, "florida_geojson.json")
-        with open(outfilename, 'w') as outfile:
+        # fixme: this is a kludge -- geojson object seems to dump binary,
+        #        not unicode
+        #        huh?
+        with open(outfilename, 'wb') as outfile:
             json.dump(gj, outfile, indent=2)
 
-class Test_serialize:
+class Test_serialize(object):
 
     map = MapFromBNA(bna_with_lake)
 
     def test_serialize(self):
         ser = self.map.to_dict()
-        print ser.keys()
+        print(list(ser.keys()))
 
         assert ser['spillable_area'] is None
 
@@ -974,7 +987,7 @@ class Test_serialize:
         cls = class_from_objtype(json_data['obj_type'])
     #   obj = cls.load(saveloc, fname, references)
 
-        print "found class:", cls
+        print("found class:", cls)
         map = cls.deserialize(json_data)
 
         # when we go to Python3 :-(
@@ -982,8 +995,8 @@ class Test_serialize:
         assert map.__class__.__name__ == "MapFromBNA"
         assert map.__class__.__module__ == "gnome.maps.map"
 
-        print map.spillable_area
-        print map.land_polys
+        print(map.spillable_area)
+        print(map.land_polys)
 
         assert map.spillable_area is None
         assert len(map.map_bounds) == 4
@@ -1007,15 +1020,15 @@ class Test_serialize:
         cls = class_from_objtype(json_data['obj_type'])
     #   obj = cls.load(saveloc, fname, references)
 
-        print "found class:", cls
+        print("found class:", cls)
         map = cls.deserialize(json_data)
 
         # when we go to Python3 :-(
         # assert map.__class__.__qualname__ == "gnome.maps.map.MapFromBNA"
         assert map.__class__.__name__ == "MapFromBNA"
         assert map.__class__.__module__ == "gnome.maps.map"
-        print map.spillable_area
-        print map.land_polys
+        print(map.spillable_area)
+        print(map.land_polys)
 
         assert map.spillable_area is None
         assert len(map.map_bounds) == 4
@@ -1042,8 +1055,8 @@ class Test_serialize:
 
         map = MapFromBNA.deserialize(jsblob)
 
-        print map.spillable_area
-        print map.land_polys
+        print(map.spillable_area)
+        print(map.land_polys)
 
         assert map.spillable_area is None
         assert len(map.map_bounds) == 4

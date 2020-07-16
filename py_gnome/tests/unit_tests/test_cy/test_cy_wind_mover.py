@@ -5,6 +5,16 @@ unit tests for cy_wind_mover wrapper
 
 designed to be run with py.test
 """
+from __future__ import print_function
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import unicode_literals
+from builtins import range
+from builtins import super
+from future import standard_library
+standard_library.install_aliases()
+from builtins import *
+from builtins import object
 import os
 
 import numpy as np
@@ -160,7 +170,7 @@ class ConstantWindWithOSSM(cy_fixtures.CyTestMove):
                          spill_type.uncertainty)
 
 
-class TestConstantWind:
+class TestConstantWind(object):
 
     msg = '{0} is not within a tolerance of {1}'
     cw = ConstantWind()
@@ -231,7 +241,7 @@ class TestConstantWind:
         assert np.all(self.cww_ossm.delta != self.cww_ossm.u_delta)
 
 
-class TestVariableWind:
+class TestVariableWind(object):
     """
     Uses OSSMTimeValue_c to define a variable wind
     - variable wind has 'v' component, so movement
@@ -349,7 +359,7 @@ def test_z_greater_than_0():
     assert np.all((cw.delta['z'])[2:] == 0)
 
 
-class TestObjectSerialization:
+class TestObjectSerialization(object):
     '''
         Test all the serialization and deserialization methods that are
         available to the CyTimeseries object.

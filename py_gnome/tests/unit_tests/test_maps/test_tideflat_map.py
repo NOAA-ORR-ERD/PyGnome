@@ -3,9 +3,16 @@
 """
 tests for the tidal flat map
 """
+from __future__ import print_function
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import unicode_literals
 
 # a few tests that show that the delation to the underlying map works:
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import *
 import os
 from datetime import datetime
 import numpy as np
@@ -81,7 +88,6 @@ def simple_model(output_dir):
                                     # viewport=((4.5, 53.0),
                                     #           (5.5, 53.5)),
                                     )
-
 
     return model
 
@@ -260,3 +266,5 @@ def test_model_run_with_tideflat(simple_model):
     status = model.get_spill_property('status_codes')
 
     assert np.all(status == oil_status.on_land)
+
+

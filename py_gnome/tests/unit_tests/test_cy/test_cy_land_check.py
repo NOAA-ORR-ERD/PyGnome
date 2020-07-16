@@ -10,14 +10,22 @@ Designed to be run with py.test
 @author: Chris.Barker
 
 """
+from __future__ import print_function
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import unicode_literals
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import *
+from builtins import object
 import pytest
 
 import numpy as np
 from gnome.cy_gnome.cy_land_check import overlap_grid, find_first_pixel
 
 
-class Test_overlap_grid:
+class Test_overlap_grid(object):
 
     m = 100
     n = 200

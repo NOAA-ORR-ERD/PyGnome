@@ -2,6 +2,14 @@
 module contains objects that contain weather related data. For example,
 the Wind object defines the Wind conditions for the spill
 """
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+from builtins import *
 import copy
 
 
@@ -442,7 +450,7 @@ class Water(Environment):
         if not hasattr(self, '_units'):
             self._units = {}
 
-        for prop, unit in u_dict.items():
+        for prop, unit in list(u_dict.items()):
             if prop in self._units_type:
                 if unit not in self._units_type[prop][1]:
                     msg = ("{0} are invalid units for {1}.  Ignore it."

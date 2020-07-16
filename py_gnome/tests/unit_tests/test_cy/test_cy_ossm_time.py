@@ -2,6 +2,14 @@
 """
 Unit tests for CyOSSMTime class
 """
+from __future__ import print_function
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import unicode_literals
+from future import standard_library
+standard_library.install_aliases()
+from builtins import *
+from builtins import object
 import os
 
 from pytest import raises
@@ -121,7 +129,7 @@ def test_init_units(obj):
     assert ossmT2.user_units == 'knots'
 
 
-class TestObjectSerialization:
+class TestObjectSerialization(object):
     '''
         Test all the serialization and deserialization methods that are
         available to the CyOSSMTime object.
@@ -147,7 +155,7 @@ class TestObjectSerialization:
 'Tests for child CyTimeseries object'
 
 
-class TestCyTimeseries:
+class TestCyTimeseries(object):
     """
     Test __init__ method and the exceptions it throws for CyOSSMTime
     """

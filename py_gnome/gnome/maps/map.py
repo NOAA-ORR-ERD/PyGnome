@@ -1,6 +1,18 @@
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
 # NOTES:
 #  - Should we just use non-projected coordinates for the raster map?
 #    It makes for a little less computation at every step.
+# from future import standard_library
+# standard_library.install_aliases()
+# from builtins import map
+# from builtins import range
+# from builtins import *
+from past.utils import old_div
+
+
 from gnome.gnomeobject import GnomeId
 from gnome.environment.gridded_objects_base import PyGrid
 # needed for py3 ??
@@ -645,7 +657,9 @@ class ParamMap(GnomeMap):
                             properties={'name': 'Shoreline Polys'},
                             geometry=MultiPolygon(coordinates=[shoreline_geo]))
 
-        return FeatureCollection([shoreline])
+        stuff = FeatureCollection([shoreline])
+
+        return stuff
 
 
 class RasterMap(GnomeMap):
@@ -803,10 +817,10 @@ class RasterMap(GnomeMap):
 
     @property
     def approximate_raster_interval(self):
-        orig, diag = self.projection.to_lonlat(np.array([(0,0),(1,1)]))
-        orig = np.r_[orig, 0] #make (lat, lon) into (lat, lon, z)
+        orig, diag = self.projection.to_lonlat(np.array([(0, 0), (1, 1)]))
+        orig = np.r_[orig, 0]  # make (lat, lon) into (lat, lon, z)
         diag = np.r_[diag, 0]
-        diff = self.projection.lonlat_to_meters(orig-diag, orig)
+        diff = self.projection.lonlat_to_meters(orig - diag, orig)
 
         return np.average(np.abs(diff))
 
@@ -1178,10 +1192,10 @@ class MapFromBNA(RasterMap):
         BB = land_polys.bounding_box if BB is None else BB
         raster_size = self.raster_size
 
-        aspect_ratio = (np.cos(BB.Center[1] * np.pi / 180) *(BB.Width / BB.Height))
+        aspect_ratio = (np.cos(old_div(BB.Center[1] * np.pi, 180)) *(old_div(BB.Width, BB.Height)))
 
         w = int(np.sqrt(raster_size * aspect_ratio))
-        h = int(raster_size / w)
+        h = int(old_div(raster_size, w))
 
         canvas = MapCanvas(image_size=(w, h),
                            preset_colors=None,
@@ -1367,11 +1381,11 @@ class MapFromUGrid(RasterMap):
 
         # stretch the bounding box, to get approximate aspect ratio in
         # projected coords.
-        aspect_ratio = (np.cos(BB.Center[1] * np.pi / 180) *
-                        (BB.Width / BB.Height))
+        aspect_ratio = (np.cos(old_div(BB.Center[1] * np.pi, 180)) *
+                        (old_div(BB.Width, BB.Height)))
 
         w = int(np.sqrt(raster_size * aspect_ratio))
-        h = int(raster_size / w)
+        h = int(old_div(raster_size, w))
 
         canvas = MapCanvas(image_size=(w, h),
                            preset_colors=None,
@@ -1533,7 +1547,7 @@ def refine_axis(old_axis, refine):
     refine = int(refine)
 
     axis = old_axis.reshape((-1, 1))
-    axis = ((axis[1:] - axis[:-1]) / refine) * np.arange(refine) + axis[:-1]
+    axis = (old_div((axis[1:] - axis[:-1]), refine)) * np.arange(refine) + axis[:-1]
     axis.shape = (-1,)
     axis = np.r_[axis, old_axis[-1]]
 
@@ -1549,8 +1563,8 @@ def map_from_regular_grid(grid_mask, lon, lat, refine=4, refloat_halflife=1,
     constant.
     """
     nlon, nlat = grid_mask.shape
-    dlon = (lon[-1] - lon[0]) / (len(lon) - 1)
-    dlat = (lat[-1] - lat[0]) / (len(lat) - 1)
+    dlon = old_div((lon[-1] - lon[0]), (len(lon) - 1))
+    dlat = old_div((lat[-1] - lat[0]), (len(lat) - 1))
 
     # create the raster
     raster_array = np.zeros((nlon * resolution, nlat * resolution),

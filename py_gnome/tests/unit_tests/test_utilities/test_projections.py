@@ -3,7 +3,16 @@
 """
 tests of the gnome.utilities.projections module
 """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import unicode_literals
 
+from builtins import round
+from future import standard_library
+standard_library.install_aliases()
+from builtins import *
+from builtins import object
 import pytest
 import numpy as np
 
@@ -27,7 +36,7 @@ def test_NoProjection():
     assert np.array_equal(proj_coords, coords[:, :2])
 
 
-class Test_GeoProjection:
+class Test_GeoProjection(object):
 
     bounding_box = ((-10.0, 23.0), (-5, 33.0))
 
@@ -126,7 +135,7 @@ class Test_GeoProjection:
         assert not proj1 == proj2
 
 
-class Test_FlatEarthProjection:
+class Test_FlatEarthProjection(object):
     # bb with 60 degrees in the center: ( cos(60 deg) == 0.5 )
     bounding_box = ((20, 50.0), (40, 70.0))
 

@@ -1,6 +1,14 @@
 '''
 Movers using currents and tides as forcing functions
 '''
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
+from future import standard_library
+standard_library.install_aliases()
+from builtins import *
+from past.utils import old_div
 import os
 
 import numpy as np
@@ -616,7 +624,7 @@ class GridCurrentMover(CurrentMoversBase):
         elif self.mover._is_regular_grid():
             num_cells = self.mover.get_num_points()
         else:
-            num_cells = num_tri / 2
+            num_cells = old_div(num_tri, 2)
 
         vels = np.zeros(num_cells, dtype=basic_types.velocity_rec)
 
@@ -882,7 +890,7 @@ class IceMover(CurrentMoversBase):
         if self.mover._is_triangle_grid():
             num_cells = num_tri
         else:
-            num_cells = num_tri / 2
+            num_cells = old_div(num_tri, 2)
 
         vels = np.zeros(num_cells, dtype=basic_types.velocity_rec)
         self.mover.get_scaled_velocities(model_time, vels)
@@ -916,7 +924,7 @@ class IceMover(CurrentMoversBase):
         :param model_time=0:
         """
         num_tri = self.mover.get_num_triangles()
-        num_cells = num_tri / 2
+        num_cells = old_div(num_tri, 2)
 
         frac_coverage = np.zeros(num_cells, dtype=np.float64)
         thickness = np.zeros(num_cells, dtype=np.float64)
@@ -1104,7 +1112,7 @@ class CurrentCycleMover(GridCurrentMover):
         elif self.mover._is_regular_grid():
             num_cells = self.mover.get_num_points()
         else:
-            num_cells = num_tri / 2
+            num_cells = old_div(num_tri, 2)
 
         vels = np.zeros(num_cells, dtype=basic_types.velocity_rec)
 

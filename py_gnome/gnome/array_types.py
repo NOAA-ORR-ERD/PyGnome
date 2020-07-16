@@ -28,7 +28,15 @@ movers needs
     ArrayTypes().initialize() to handle the case where shape attribute is None
 
 '''
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import *
+from past.utils import old_div
 import sys
 
 import numpy as np
@@ -133,7 +141,7 @@ class ArrayType(AddLogger):
         if len(self.__dict__) != len(other.__dict__):
             return False
 
-        for (key, val) in self.__dict__.items():
+        for (key, val) in list(self.__dict__.items()):
             if key not in other.__dict__:
                 return False
             elif key == 'initial_value':
@@ -213,7 +221,7 @@ class ArrayTypeDivideOnSplit(ArrayType):
         split = self.initialize(num, shape, value)
 
         if l_frac is None:
-            return split[:]/num
+            return old_div(split[:],num)
         else:
             if len(split.shape) > 1:
                 # 2D array so reshape l_frac

@@ -12,7 +12,14 @@ Then the movers will not move the particles while that flag is set.
 It is set back to in_water when the water depth indicates the tide flat
 is no longer a tide flat.
 """
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import *
 import numpy as np
 
 from gnome.gnomeobject import GnomeId

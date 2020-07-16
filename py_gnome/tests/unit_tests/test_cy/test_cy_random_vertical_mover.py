@@ -3,7 +3,15 @@ unit tests cython wrapper
 
 designed to be run with py.test
 """
+from __future__ import print_function
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import unicode_literals
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import *
+from builtins import object
 import numpy as np
 
 from gnome.basic_types import spill_type, world_point, world_point_type
@@ -24,7 +32,7 @@ def test_exceptions():
         CyRandomMover3D(vertical_diffusion_coef_above_ml=-1000)
 
 
-class TestRandomVertical:
+class TestRandomVertical(object):
 
     msg = 'vertical_diffusion_coef_above_ml = {0.vertical_diffusion_coef_above_ml},vertical_diffusion_coef_below_ml = {0.vertical_diffusion_coef_below_ml}'
     cm = cy_fixtures.CyTestMove()

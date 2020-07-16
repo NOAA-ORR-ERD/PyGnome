@@ -1,6 +1,14 @@
 '''
 NetCDF outputter - write the nc_particles netcdf file format
 '''
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+from future import standard_library
+standard_library.install_aliases()
+from builtins import range
+from builtins import *
 import os
 from datetime import datetime
 
@@ -58,7 +66,7 @@ var_attributes = {
     'status_codes': {
         'long_name': 'particle status code',
         'flag_values': oil_status._int,
-        'flag_meanings': oil_status.args.items()
+        'flag_meanings': list(oil_status.args.items())
                      },
     'spill_num': {'long_name': 'spill to which the particle belongs'},
     'id': {'long_name': 'particle ID',
@@ -560,7 +568,7 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
                 # create a dict with dims {2: 'two', 3: 'three' ...}
                 # use this to define the NC variable's shape in code below
                 d_dims = {len(dim): name
-                          for name, dim in rootgrp.dimensions.items()
+                          for name, dim in list(rootgrp.dimensions.items())
                           if len(dim) > 0}
 
                 # create the time/particle_count variables
@@ -717,7 +725,7 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
                 # write mass_balance data
                 if sc.mass_balance:
                     grp = rootgrp.groups['mass_balance']
-                    for key, val in sc.mass_balance.items():
+                    for key, val in list(sc.mass_balance.items()):
                         if key not in grp.variables:
                             self._create_nc_var(grp,
                                                 key, 'float', ('time', ),
@@ -912,7 +920,7 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
             if 'mass_balance' in data.groups:
                 mb = data.groups['mass_balance']
 
-                for key, val in mb.variables.items():
+                for key, val in list(mb.variables.items()):
                     # assume SI units
                     weathering_data[key] = val[index]
 

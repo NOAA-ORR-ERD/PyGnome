@@ -5,7 +5,17 @@ test_spill.py was getting too big so moved the tests that do not use a Spill
 object here - more comprehensive tests of release objects within a Spill are
 in test_spill.py
 """
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
 
+from builtins import range
+from builtins import open
+from future import standard_library
+standard_library.install_aliases()
+from builtins import *
+from builtins import object
 import os
 from datetime import datetime, timedelta
 
@@ -24,7 +34,7 @@ def test_init():
     Release(release_time=datetime.now())
 
 
-class TestRelease:
+class TestRelease(object):
     rel_time = datetime.now().replace(microsecond=0)
 
     def test_init(self):
@@ -103,7 +113,7 @@ def r3():
                             num_per_timestep=100,
                             release_mass=5000)
 
-class TestPointLineRelease:
+class TestPointLineRelease(object):
 
     def test_LE_timestep_ratio(self, r1):
         r1.end_release_time = rel_time + timedelta(seconds=1000)*10

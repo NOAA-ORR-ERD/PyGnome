@@ -3,7 +3,15 @@ unit tests cython wrapper
 
 designed to be run with py.test
 """
+from __future__ import print_function
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import unicode_literals
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import *
+from builtins import object
 import numpy as np
 import pytest
 
@@ -23,7 +31,7 @@ from .cy_fixtures import CyTestMove
 #         CyRiseVelocityMover(water_density=0, water_viscosity=0)
 
 
-class TestRiseVelocity:
+class TestRiseVelocity(object):
 
     cm = CyTestMove()
     #rv = CyRiseVelocityMover(water_density=1020,

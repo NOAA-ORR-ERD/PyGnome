@@ -1,3 +1,11 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+from future import standard_library
+standard_library.install_aliases()
+from builtins import *
+from builtins import object
 import os
 import datetime as dt
 
@@ -37,7 +45,7 @@ def series_data2():
     return np.array([2, 6, 12, 20, 30])
 
 
-class TestTime:
+class TestTime(object):
     test_class = Time
 
     def test_construction(self, dates):
@@ -106,7 +114,7 @@ class TestTime:
         assert t == new_instance
 
 
-class TestTimeseriesData:
+class TestTimeseriesData(object):
     test_class = TimeseriesData
 
     def get_tsd_instance(self, dates, series_data):
@@ -176,7 +184,7 @@ class TestTimeseriesData:
         assert t == new_instance
 
 
-class TestTimeseriesVector:
+class TestTimeseriesVector(object):
     test_class = TimeseriesVector
 
     def get_tsv_instance(self, dates, series_data, series_data2):
@@ -408,7 +416,7 @@ Quad
 '''
 
 
-class TestGriddedProp:
+class TestGriddedProp(object):
     def test_construction(self):
         data = sinusoid['u'][:]
         grid = PyGrid.from_netCDF(dataset=sinusoid)
@@ -448,7 +456,7 @@ class TestGriddedProp:
     #                           np.cos(points[:, 0] / 2) / 2))
 
 
-class TestGridVectorProp:
+class TestGridVectorProp(object):
     def test_construction(self):
         curr_file = os.path.join(s_data, 'staggered_sine_channel.nc')
         u = Variable.from_netCDF(filename=curr_file, varname='u_rho')

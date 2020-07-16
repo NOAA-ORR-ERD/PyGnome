@@ -1,6 +1,15 @@
 '''
 Save/load gnome objects
 '''
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
+from future import standard_library
+standard_library.install_aliases()
+from builtins import *
+from past.utils import old_div
+from builtins import object
 import os
 import shutil
 import json
@@ -66,7 +75,7 @@ class References(object):
         return key if obj already exists in references list
         else return None
         '''
-        for key, item in self._refs.items():
+        for key, item in list(self._refs.items()):
             if item is obj:
                 return key
 
@@ -567,14 +576,14 @@ def is_savezip_valid(savezip):
 
             # integer division - it will floor
             if (zi.compress_size > 0 and
-                    zi.file_size / zi.compress_size > _max_compress_ratio):
+                    old_div(zi.file_size, zi.compress_size) > _max_compress_ratio):
                 # 4) Found a file with
                 #    uncompressed_size/compressed_size > _max_compress_ratio.
                 #    Rejecting.
                 log.warning('file compression ratio is {0}. '
                             'maximum must be less than {1}. '
                             'Rejecting zipfile'
-                            .format(zi.file_size / zi.compress_size,
+                            .format(old_div(zi.file_size, zi.compress_size),
                                     _max_compress_ratio))
                 return False
 

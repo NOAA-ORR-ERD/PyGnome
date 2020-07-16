@@ -1,3 +1,11 @@
+from __future__ import print_function
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import unicode_literals
+from future import standard_library
+standard_library.install_aliases()
+from builtins import *
+from builtins import object
 import os
 
 import pytest
@@ -54,7 +62,7 @@ def ug(ug_data, ug_topology):
                               grid_topology=ug_topology)
 
 
-class TestPyGrid_S:
+class TestPyGrid_S(object):
     def test_construction(self, sg_data, sg_topology):
         filename = sg_data[0]
         dataset = sg_data[1]
@@ -96,7 +104,7 @@ class TestPyGrid_S:
         assert sg == d_sg
 
 
-class TestPyGrid_U:
+class TestPyGrid_U(object):
     def test_construction(self, ug_data, ug_topology):
         filename = ug_data[0]
         dataset = ug_data[1]

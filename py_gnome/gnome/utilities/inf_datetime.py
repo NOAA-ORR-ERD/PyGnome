@@ -13,7 +13,15 @@ comparing to..
 Also special constructor for a real datetime that won't allow values out of
 range for this application
 """
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import *
+from builtins import object
 import datetime
 
 # minimum and maximum valid datetime values
@@ -224,10 +232,10 @@ class InfDateTime(datetime.datetime):
 
 if __name__ == '__main__':
     dt = InfDateTime('inf')
-    print(dt, type(dt))
+    print((dt, type(dt)))
 
     dt = InfDateTime('-inf')
-    print(dt, type(dt))
+    print((dt, type(dt)))
 
     dt = InfDateTime(2012, 4, 20)
-    print(dt, type(dt))
+    print((dt, type(dt)))

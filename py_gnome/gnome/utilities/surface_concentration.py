@@ -6,7 +6,15 @@ Code to compute surface surface_concentration from particles
 Ultimatley, there may be multiple versions of this
 -- with Cython optimizationas and all that.
 """
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import *
+from past.utils import old_div
 import numpy as np
 from scipy.stats import gaussian_kde
 
@@ -67,11 +75,11 @@ def surface_conc_kde(sc):
             if len(np.unique(lat_for_kernel))>2 and len(np.unique(lon_for_kernel))>2: # can't compute a kde for less than 3 unique points!
                 lon0, lat0 = min(lon_for_kernel), min(lat_for_kernel)
                 # FIXME: should use projection code to get this right.
-                x = (lon_for_kernel - lon0) * 111325 * np.cos(lat0 * np.pi / 180)
+                x = (lon_for_kernel - lon0) * 111325 * np.cos(old_div(lat0 * np.pi, 180))
                 y = (lat_for_kernel - lat0) * 111325
                 xy = np.vstack([x, y])
                 if len(np.unique(mass_for_kernel)) > 1:
-                    kernel = gaussian_kde(xy,weights=mass_for_kernel/mass_for_kernel.sum()) 
+                    kernel = gaussian_kde(xy,weights=old_div(mass_for_kernel,mass_for_kernel.sum())) 
                 else:
                     kernel = gaussian_kde(xy) 
                 if mass_for_kernel.sum() > 0:

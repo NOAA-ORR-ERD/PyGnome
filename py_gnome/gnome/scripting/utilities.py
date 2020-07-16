@@ -8,6 +8,14 @@ designed to be imported into the package __init__.py
 remember to add anyting new you want imported to "__all__"
 
 """
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+from future import standard_library
+standard_library.install_aliases()
+from builtins import *
+from builtins import object
 import os
 import sys
 import traceback
@@ -25,10 +33,10 @@ def make_images_dir(images_dir=None):
     if images_dir is None:
         images_dir = os.path.join(os.getcwd(), 'images')
 
-    print('images_dir is:', images_dir)
+    print(('images_dir is:', images_dir))
 
     if os.path.isdir(images_dir):
-        print('removing...', images_dir)
+        print(('removing...', images_dir))
         shutil.rmtree(images_dir)
     os.mkdir(images_dir)
 
