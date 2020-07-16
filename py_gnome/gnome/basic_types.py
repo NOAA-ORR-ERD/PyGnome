@@ -34,7 +34,7 @@ class enum(object):
     @property
     def _int(self):
         return list(self.args.values())
-    
+
     @property
     def _attr(self):
         return list(self.args.keys())

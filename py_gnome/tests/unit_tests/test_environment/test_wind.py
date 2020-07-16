@@ -3,13 +3,15 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 from __future__ import unicode_literals
-from builtins import zip
-from builtins import str
-from builtins import range
-from future import standard_library
-standard_library.install_aliases()
-from builtins import *
-from builtins import object
+
+# from builtins import zip
+# from builtins import str
+# from builtins import range
+# from future import standard_library
+# standard_library.install_aliases()
+# from builtins import *
+# from builtins import object
+
 import os
 from datetime import datetime, timedelta
 import shutil
@@ -341,7 +343,7 @@ class TestWind(object):
         """
         t0 = all_winds['rq'].time[0].astype(object)
         t1 = all_winds['rq'].time[1].astype(object)
-        dt = t0 + ((t1 - t0) / 2)
+        dt = t0 + ((t1 - t0) // 2)
 
         get_rq = (all_winds['wind']
                   .get_wind_data(coord_sys='r-theta', datetime=dt)
