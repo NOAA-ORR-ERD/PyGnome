@@ -279,10 +279,11 @@ cdef class CyOSSMTime(object):
         """
         file_ = filename_as_bytes(filename)
 
-        if self._file_format not in basic_types.ts_format._int:
-            raise ValueError('_file_format can only contain integers 5, '
+        if self._file_format not in basic_types.ts_format.values():
+            raise ValueError('_file_format can only contain integers: {}'
                              'or 1; also defined by basic_types.ts_format.'
-                             '<magnitude_direction or uv>')
+                             '<magnitude_direction or uv>'
+                             .format(basic_types.ts_format.values()))
 
         err = self.time_dep.ReadTimeValues(file_, self._file_format, -1)
         self._raise_errors(err)

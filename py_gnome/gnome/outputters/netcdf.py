@@ -30,8 +30,6 @@ from .outputter import Outputter, BaseOutputterSchema, OutputterFilenameMixin
 # in the output - these are constants. The instance var_attributes are stored
 # with the NetCDFOutput object
 
-print(oil_status)
-print(oil_status._int)
 var_attributes = {
     'time': {'long_name': 'time since the beginning of the simulation',
              'standard_name': 'time',
@@ -65,8 +63,9 @@ var_attributes = {
             },
     'status_codes': {
         'long_name': 'particle status code',
-        'flag_values': oil_status._int,
-        'flag_meanings': list(oil_status.args.items())
+        'flag_values': [v.value for v in oil_status],
+        'flag_meanings': " ".join("{}:{}".format(v.name, v.value)
+                                  for v in oil_status)
                      },
     'spill_num': {'long_name': 'spill to which the particle belongs'},
     'id': {'long_name': 'particle ID',

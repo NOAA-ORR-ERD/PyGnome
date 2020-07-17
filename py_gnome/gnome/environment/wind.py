@@ -112,8 +112,9 @@ class WindSchema(base_schema.ObjTypeSchema):
     source_id = SchemaNode(String())
     source_type = SchemaNode(
         String(),
-        validator=OneOf(wind_datasources._attr),
-        default='undefined', missing='undefined'
+        validator=OneOf(wind_datasources.__members__.keys()),
+        default='undefined',
+        missing='undefined'
     )
     units = SchemaNode(String(), default='m/s')
     speed_uncertainty_scale = SchemaNode(Float())
@@ -188,7 +189,7 @@ class Wind(Timeseries, Environment):
             if units is not None:
                 self.units = units
         else:
-            if kwargs.get('source_type') in wind_datasources._attr:
+            if kwargs.get('source_type') in wind_datasources.__members__.keys():
                 self.source_type = kwargs.pop('source_type')
             else:
                 self.source_type = 'undefined'

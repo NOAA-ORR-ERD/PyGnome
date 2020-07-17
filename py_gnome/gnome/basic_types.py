@@ -21,35 +21,52 @@ import sys
 
 import numpy as np
 
+# using the Py3 enum type
+from enum import IntEnum
+
 # pull everything from the cython code
 import gnome.cy_gnome.cy_basic_types as cbt
 
 
-class enum(object):
-    def __init__(self, **kwargs):
-        for k, v in list(kwargs.items()):
-            setattr(self, k, v)
-        self.args = kwargs
+# class enum(object):
+#     def __init__(self, **kwargs):
+#         for k, v in list(kwargs.items()):
+#             setattr(self, k, v)
+#         self.args = kwargs
 
-    @property
-    def _int(self):
-        return list(self.args.values())
+#     @property
+#     def _int(self):
+#         return list(self.args.values())
 
-    @property
-    def _attr(self):
-        return list(self.args.keys())
+#     @property
+#     def _attr(self):
+#         return list(self.args.keys())
 # in lib_gnome, the coordinate systems used (r-theta, uv, etc)
 # are called ts_format, which is not a very descriptive name.
 # the word 'format' can mean a lot of different things depending on
 # what we are talking about.  So we try to be a bit more specific here.
-coord_systems = enum(**cbt.ts_format)
-ts_format = enum(**cbt.ts_format)
-oil_status = enum(**cbt.oil_status)
+# pull the enums from the cython version
+
+coord_systems = cbt.ts_format
+ts_format = cbt.ts_format
+oil_status = cbt.oil_status
+spill_type = cbt.spill_type
+
+
+# coord_systems = enum(**cbt.ts_format)
+
+# ts_format = enum(**cbt.ts_format)
+
+# oil_status = enum(**cbt.oil_status)
+
+# spill_type = enum(**cbt.spill_type)
+
+# spill_type = enum(**cbt.spill_type)
+
 seconds = cbt.seconds
-spill_type = enum(**cbt.spill_type)
 
 # this is a mapping of oil_status code to the meaningful name:
-oil_status_map = { num: name for name, num in list(oil_status.args.items())}
+# oil_status_map = { num: name for name, num in list(oil_status.args.items())}
 
 
 
@@ -91,26 +108,40 @@ datetime_value_2d = np.dtype([('time', 'datetime64[s]'),
 datetime_value_1d = np.dtype([('time', 'datetime64[s]'),
                               ('value', mover_type, ())], align=True)
 
+
 # enums that are same as C++ values are defined in cy_basic_types
 # Define enums that are independent of C++ here so we
 # don't have to recompile code
+# fixme: that seems dangerous!
+class wind_datasources(IntEnum):
+    undefined = 0
+    file = 1
+    manual = 2
+    nws = 3
+    buoy = 4
 
-wind_datasources = enum(undefined=0, file=1, manual=2, nws=3, buoy=4)
 
 # Define an enum for weathering status. The numpy array will contain np.uint8
 # datatype. Can still define 2 more flags as 2**6, 2**7
 # These are bit flags
-fate = enum(non_weather=1,
-            surface_weather=2,
-            subsurf_weather=4,
-            skim=8,
-            burn=16,
-            disperse=32,  # marked for chemical_dispersion
-            )
+class fate(IntEnum):
+    """
+    An enum for weathering status. The numpy array will contain np.uint8
+    datatype. Can still define 2 more flags as 2**6, 2**7
+    These are bit flags
+    """
+    non_weather = 1,
+    surface_weather = 2,
+    subsurf_weather = 4,
+    skim = 8,
+    burn = 16,
+    disperse = 32,  # marked for chemical_dispersion
 
-numerical_methods = {'Euler': 0,
-                     'RK2': 1,
-                     'RK4': 2}
+
+class numerical_methods(IntEnum):
+    Euler = 0
+    RK2 = 1
+    RK4 = 2
 
 # ----------------------------------------------------------------
 # Mirror C++ structures, following are used by cython code

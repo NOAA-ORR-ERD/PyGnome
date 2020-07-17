@@ -16,6 +16,7 @@ from gnome import basic_types
 import numpy as np
 
 
+# fixme: in_ts_format sholdnot be optional!
 def to_time_value_pair(datetime_value, in_ts_format=None):
     """
     converts a numpy array containing basic_types.datetime_value_2d in
@@ -49,9 +50,7 @@ def to_time_value_pair(datetime_value, in_ts_format=None):
             raise ValueError("for datetime_value_2d data conversion, "
                              "the format defined by 'in_ts_format' "
                              "cannot be None ")
-
-        if isinstance(in_ts_format, str):
-            in_ts_format = tsformat(in_ts_format)
+        in_ts_format = tsformat(in_ts_format)
 
         if in_ts_format == basic_types.ts_format.magnitude_direction:
             uv = transforms.r_theta_to_uv_wind(datetime_value['value'])
@@ -87,8 +86,7 @@ def to_datetime_value_2d(time_value_pair, out_ts_format):
     datetime_value_2d = np.zeros((len(time_value_pair), ),
                                  dtype=basic_types.datetime_value_2d)
 
-    if isinstance(out_ts_format, str):
-        out_ts_format = tsformat(out_ts_format)
+    out_ts_format = tsformat(out_ts_format)
 
     # convert time_value_pair to datetime_value_2d in desired output format
     if out_ts_format == basic_types.ts_format.magnitude_direction:
@@ -144,16 +142,29 @@ def to_datetime_value_1d(time_value_pair):
     return datetime_value_1d
 
 
-def tsformat(format_):
+# fixme: if we just use the enum correctly, we don't need this.
+#        though hit does allow "r-theta", which is not legal
+def tsformat(format_obj):
     """
-    convert string 'uv' or 'magnitude_direction' into appropriate integer given
-    by basic_types.ts_format.*
+    convert string 'uv' or 'magnitude_direction' or 'r_theta' or 'r-theta'
+    into appropriate enum in basic_types.ts_format
     """
-    try:
-        format_ = (format_, 'r_theta')[format_ == 'r-theta']
+    val_error = ("timeseries format can only be one of {}"
+                 "Format entered is not recognized: {}"
+                 .format(basic_types.ts_format.names(),
+                         format_obj))
 
-        return getattr(basic_types.ts_format, format_)
+    if format_obj in basic_types.ts_format.__members__.values():
+        # it's already in the Enum
+        return format_obj
+
+    # do we really need to support "r-theta" ?
+    try:
+        format_obj = format_obj.replace("-", "_")
     except AttributeError:
-        raise ValueError("timeseries format can only be 'r-theta' or 'uv'.  "
-                         "Format entered is not recognized: {0}"
-                         .format(format_))
+        pass
+
+    try:
+        return basic_types.ts_format[format_obj]
+    except KeyError:
+        raise ValueError(val_error)

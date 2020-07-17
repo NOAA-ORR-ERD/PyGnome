@@ -4,8 +4,15 @@ cython file used to store all the type info for GNOME.
 Pulled from type_defs.pxi -- i.e pulled from C++ headers, etc.
 
 """
+
+# Use the "new" Py3 Enum type
+# from enum import IntEnum
+from gnome.utilities.enum import IntEnum
+
 # pull stuff in from the C++ headers
 from .type_defs cimport *
+
+
 
 '''
 def enum(**enums):
@@ -32,17 +39,32 @@ def enum(**enums):
 """
 LE Status as an enum type
 """
-oil_status = dict(not_released=OILSTAT_NOTRELEASED,
-                  in_water=OILSTAT_INWATER,
-                  on_land=OILSTAT_ONLAND,
-                  off_maps=OILSTAT_OFFMAPS,
-                  evaporated=OILSTAT_EVAPORATED,
-                  to_be_removed=OILSTAT_TO_BE_REMOVED,
-                  on_tideflat=OILSTAT_ON_TIDEFLAT,
-                  )
 
-numerical_methods = dict(euler=EULER,
-                         rk4=RK4)
+class oil_status(IntEnum):
+    """
+    maps to the C enum
+    """
+    not_released = OILSTAT_NOTRELEASED
+    in_water = OILSTAT_INWATER
+    on_land = OILSTAT_ONLAND
+    off_maps = OILSTAT_OFFMAPS
+    evaporated = OILSTAT_EVAPORATED
+    to_be_removed = OILSTAT_TO_BE_REMOVED
+    on_tideflat = OILSTAT_ON_TIDEFLAT
+
+
+# oil_status = dict(not_released=OILSTAT_NOTRELEASED,
+#                   in_water=OILSTAT_INWATER,
+#                   on_land=OILSTAT_ONLAND,
+#                   off_maps=OILSTAT_OFFMAPS,
+#                   evaporated=OILSTAT_EVAPORATED,
+#                   to_be_removed=OILSTAT_TO_BE_REMOVED,
+#                   on_tideflat=OILSTAT_ON_TIDEFLAT,
+#                   )
+
+class numerical_methods(IntEnum):
+    euler = EULER,
+    rk4 = RK4
 
 """
 disperse status as an enum type
@@ -60,8 +82,9 @@ disperse status as an enum type
 """
 SpillType {FORECAST_LE = 1, UNCERTAINTY_LE = 2};
 """
-spill_type = dict(forecast=FORECAST_LE,
-                  uncertainty=UNCERTAINTY_LE,)
+class spill_type(IntEnum):
+    forecast = FORECAST_LE
+    uncertainty = UNCERTAINTY_LE
 
 
 """
@@ -72,6 +95,7 @@ For instance, a standard wind file would contain magnitude and direction info
 
 'r-theta' is another alias for this so,
   ts_format.r_theta = 5
+
 
 It could also contain uv info. Tides would contain uv with v == 0
 Hydrology file would also contain uv format
@@ -85,9 +109,15 @@ from TypeDefs.h:
     M19CANCEL = 7
     M19LABEL = 8
 """
-ts_format = dict(magnitude_direction=M19MAGNITUDEDIRECTION,
-                 uv=M19REALREAL,
-                 r_theta=M19MAGNITUDEDIRECTION)
+class ts_format(IntEnum):
+    magnitude_direction = M19MAGNITUDEDIRECTION
+    uv = M19REALREAL
+    r_theta = M19MAGNITUDEDIRECTION
+
 
 cdef Seconds temp
 seconds = type(temp)
+
+
+
+
