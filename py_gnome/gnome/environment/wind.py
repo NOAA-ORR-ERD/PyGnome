@@ -6,14 +6,16 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
-from future import standard_library
-standard_library.install_aliases()
-from builtins import *
+
+# from future import standard_library
+# standard_library.install_aliases()
+# from builtins import *
+
 import datetime
 import os
-import copy
+# import copy
 import io
-import zipfile
+# import zipfile
 import gridded
 
 import numpy as np
@@ -24,7 +26,7 @@ from colander import (SchemaNode, drop, OneOf,
 import unit_conversion as uc
 
 from gnome.basic_types import datetime_value_2d
-from gnome.basic_types import coord_systems
+from gnome.basic_types import ts_format
 from gnome.basic_types import wind_datasources
 
 from gnome.cy_gnome.cy_ossm_time import ossm_wind_units
@@ -336,7 +338,7 @@ class Wind(Timeseries, Environment):
         if from_unit != to_unit:
             data[:, 0] = uc.convert('Velocity', from_unit, to_unit, data[:, 0])
 
-            if coord_sys == coord_systems.uv:
+            if coord_sys == ts_format.uv:
                 data[:, 1] = uc.convert('Velocity', from_unit, to_unit,
                                         data[:, 1])
 
