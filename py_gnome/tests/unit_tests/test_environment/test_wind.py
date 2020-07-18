@@ -758,7 +758,7 @@ class TestGridWind(object):
             print('ans_mag', ans_mag)
             print()
 
-            ans_dir = np.arctan2(ans[:, 1], ans[:, 0]) * 180./np.pi
+            ans_dir = np.arctan2(ans[:, 1], ans[:, 0]) * 180.0 / np.pi
 
             if coord_sys in ('r-theta', 'r', 'theta'):
                 if coord_sys == 'r':

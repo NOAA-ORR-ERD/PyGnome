@@ -5,10 +5,12 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
 
-from future import standard_library
-standard_library.install_aliases()
-from builtins import range
-from builtins import *
+# from future import standard_library
+# standard_library.install_aliases()
+# from builtins import range
+# from builtins import *
+
+
 import json
 import logging
 import glob
@@ -39,7 +41,7 @@ def remember_cwd(new_wd):
 def update_savefile(save_directory):
     if not isinstance(save_directory, six.string_types) or not os.path.isdir(save_directory):
         raise ValueError('Must unzip save to directory in order to upgrade it to latest version')
-    
+
     messages = []
     errors = []
 
@@ -88,17 +90,17 @@ def v0tov1(messages, errors):
             the load process will use it later to establish references between objects
             '''
             substance = {
-                "obj_type": "gnome.spill.substance.NonWeatheringSubstance", 
-                "name": "NonWeatheringSubstance", 
-                "standard_density": 1000.0, 
+                "obj_type": "gnome.spill.substance.NonWeatheringSubstance",
+                "name": "NonWeatheringSubstance",
+                "standard_density": 1000.0,
                 "initializers": inits,
-                "is_weatherable": False, 
+                "is_weatherable": False,
                 "id": "v0-v1-update-id-0"
             }
         else:
             substance = {
-                "obj_type": "gnome.spill.substance.GnomeOil", 
-                "name": et_json.get('substance', 'Unknown Oil'),  
+                "obj_type": "gnome.spill.substance.GnomeOil",
+                "name": et_json.get('substance', 'Unknown Oil'),
                 "initializers": et_json.get('initializers', []),
                 "is_weatherable": True,
                 "water": water,
@@ -187,7 +189,7 @@ def extract_zipfile(zip_file, to_folder='.'):
                 if orig != fn:
                     log.info('Invalid filename found: {0}'.format(orig))
                     fn_edits[orig] = fn
-                    
+
                 target = os.path.join(to_folder, fn)
                 with open(target, 'wb') as f:
                     f.write(zf.read(name))

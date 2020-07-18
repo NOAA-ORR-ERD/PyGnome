@@ -525,7 +525,7 @@ cdef class CyTimeseries(CyOSSMTime):
         sz = _GetHandleSize(<Handle>time_val_hdlH)
 
         # will this always work?
-        tval = np.empty((sz / tmp_size,), dtype=basic_types.time_value_pair)
+        tval = np.empty((sz // tmp_size,), dtype=basic_types.time_value_pair)
 
         memcpy(&tval[0], time_val_hdlH[0], sz)
 

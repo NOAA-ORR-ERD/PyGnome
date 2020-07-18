@@ -2,13 +2,15 @@ from __future__ import division
 from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
-from future import standard_library
-standard_library.install_aliases()
-from builtins import map
-from builtins import range
-from builtins import *
-from builtins import object
-from past.utils import old_div
+
+# from future import standard_library
+# standard_library.install_aliases()
+# from builtins import map
+# from builtins import range
+# from builtins import *
+# from builtins import object
+# from past.utils import old_div
+
 import copy
 from datetime import datetime
 
@@ -156,10 +158,10 @@ class S_Depth_T1(object):
             if ulev == 0:
                 und_alph[within_layer] = -2
             else:
-                a = (old_div((pts[:, 2].take(within_layer) -
-                      blev_depths.take(within_layer)),
+                a = ((pts[:, 2].take(within_layer) -
+                      blev_depths.take(within_layer)) /
                      (ulev_depths.take(within_layer) -
-                      blev_depths.take(within_layer))))
+                      blev_depths.take(within_layer)))
                 und_alph[within_layer] = a
             blev_depths = ulev_depths
 
@@ -529,7 +531,7 @@ class GridCurrent(VelocityGrid, Environment):
 
             if 'degree' in self.angle.units:
                 raw_ang = raw_ang * np.pi/180.
-            
+
             ctr_mask = gridded.utilities.gen_celltree_mask_from_center_mask(self.grid.center_mask, angle_padding_slice)
             ang = raw_ang.reshape(-1)
             ang = np.ma.MaskedArray(ang, mask = ctr_mask.reshape(-1))

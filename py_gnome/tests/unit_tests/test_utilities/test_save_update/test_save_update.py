@@ -1,3 +1,8 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import os
 import sys
 import pytest
@@ -40,10 +45,11 @@ def setup_workspace(savename):
         extract_zipfile(savename, tempdir)
     curdir= os.getcwd()
     os.chdir(tempdir)
-    try: 
-        yield tempdir 
+    try:
+        yield tempdir
     finally:
         os.chdir(curdir)
+
 
 def check_files(func):
     files = glob.glob('*.json')
@@ -76,7 +82,7 @@ def test_extract_zipfile():
         files = os.listdir('.')
         assert len(filter(lambda f: '__MACOSX' in f, files)) == 0
         assert 'Model.json' in files
-        
+
 # Should automate this in future
 def test_v0_to_v1():
     with setup_workspace('v0_diesel_mac.zip'):
