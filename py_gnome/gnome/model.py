@@ -1435,6 +1435,40 @@ class Model(GnomeId):
             if spill.on:
                 num_spills_on += 1
 
+                start_pos = copy.deepcopy(spill.start_position)
+                if not np.all(self.map.on_map(start_pos)):
+                    msg = ('{0} has start position outside of map bounds'.
+                           format(spill.name))
+                    self.logger.warning(msg)
+
+                    msgs.append(self._warn_pre + msg)
+
+                elif hasattr(spill, 'end_position') and not np.all(spill.end_position == spill.start_position):
+                    end_pos = copy.deepcopy(spill.end_position)
+                    if not np.all(self.map.on_map(end_pos)):
+                        msg = ('{0} has start position outside of map bounds'.
+                               format(spill.name))
+                        self.logger.warning(msg)
+
+                        msgs.append(self._warn_pre + msg)
+
+                #land check needs to be updated for Spatial Release
+                if np.any(self.map.on_land(start_pos)):
+                    msg = ('{0} has start position on land'.
+                           format(spill.name))
+                    self.logger.warning(msg)
+
+                    msgs.append(self._warn_pre + msg)
+
+                elif hasattr(spill, 'end_position') and not np.all(spill.end_position == spill.start_position):
+                    end_pos = copy.deepcopy(spill.end_position)
+                    if np.any(self.map.on_land(end_pos)):
+                        msg = ('{0} has start position on land'.
+                               format(spill.name))
+                        self.logger.warning(msg)
+
+                        msgs.append(self._warn_pre + msg)
+
                 if spill.release_time < self.start_time + self.duration:
                     someSpillIntersectsModel = True
 
