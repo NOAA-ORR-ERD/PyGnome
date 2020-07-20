@@ -5,9 +5,9 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
-from future import standard_library
-standard_library.install_aliases()
-from builtins import *
+# from future import standard_library
+# standard_library.install_aliases()
+# from builtins import *
 from copy import copy
 from gnome.persist.base_schema import ObjTypeSchema, ObjType
 from gnome.gnomeobject import GnomeObjMeta, GnomeId
@@ -46,11 +46,11 @@ class Appearance(object):
                                         str(self.__class__._instance_count))
 
             return self._name
-    
+
     @name.setter
     def name(self, v):
         self._name = v
-    
+
     @property
     def obj_type(self):
         try:
@@ -105,7 +105,7 @@ class Appearance(GnomeId):
         for k, v in list(kwargs.items()):
             setattr(self, k, v)
         self.appearance_keys = list(kwargs.keys())
-    
+
     def update_from_dict(self, dict_, refs=None):
         super(Appearance, self).update_from_dict(dict_, refs=refs)
         updatable = self._schema().get_nodes_by_attr('update')
@@ -114,7 +114,7 @@ class Appearance(GnomeId):
             dict_.pop(name)
         for k, v in list(dict_.items()):
             setattr(self, k, v)
-            
+
     def to_dict(self, json_=None):
         data = super(Appearance, self).to_dict(json_=json_)
         for k in self.appearance_keys:

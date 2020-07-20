@@ -37,17 +37,13 @@ from __future__ import division
 from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
-from future import standard_library
-standard_library.install_aliases()
-from builtins import *
-from past.utils import old_div
-from builtins import object
+
 import collections
 
 import numpy as np
 
 
-class DistictColormap(object):
+class DistictColormap:
     def __init__(self, MapName=None, map_list=None):
         pass
 
@@ -56,7 +52,7 @@ class DistictColormap(object):
         # put code in here to make a "three color" colormap class
 
 
-class ColorMap(object):
+class ColorMap:
     def __init__(self, MapName=None, val_range=None, map_list=None):
         if MapName is not None:
             try:
@@ -88,7 +84,7 @@ class ColorMap(object):
             values = np.asarray(values, np.uint8)
         else:
             values = np.asarray(values, np.float)
-            values = old_div((values - low), (high - low)) * 255.0
+            values = (values - low) / (high - low) * 255.0
 
             # force out-of-range values into the acceptable range for map_list
             values.clip(min=0, max=255, out=values)

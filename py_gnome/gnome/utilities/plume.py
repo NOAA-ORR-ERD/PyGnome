@@ -7,13 +7,7 @@ from __future__ import division
 from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
-from future import standard_library
-standard_library.install_aliases()
-from builtins import zip
-from builtins import range
-from builtins import *
-from past.utils import old_div
-from builtins import object
+
 import six
 from datetime import datetime, timedelta
 
@@ -131,14 +125,14 @@ class PlumeGenerator(object):
             total_release_time = ((self.end_release_time - self.release_time)
                                   .total_seconds())
             total_mass = self.plume.mass_flux.sum() * total_release_time
-            self.mass_of_an_le = old_div(total_mass, num_elements)
+            self.mass_of_an_le = total_mass / num_elements
 
     def _mass_to_elems(self, mass):
         '''
           Calculate mass into an equivalent number of LEs and return them.
           - We do not count the fractional amounts.
         '''
-        return (old_div(mass, self.mass_of_an_le)).astype(np.int32)
+        return (mass / self.mass_of_an_le).astype(np.int32)
 
     def _elems_to_mass(self, elems):
         '''

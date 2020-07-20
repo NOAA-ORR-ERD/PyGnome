@@ -1,14 +1,11 @@
 '''
 Movers using currents and tides as forcing functions
 '''
-from __future__ import division
-from __future__ import absolute_import
 from __future__ import print_function
+from __future__ import absolute_import
+from __future__ import division
 from __future__ import unicode_literals
-from future import standard_library
-standard_library.install_aliases()
-from builtins import *
-from past.utils import old_div
+
 import os
 
 import numpy as np
@@ -221,7 +218,7 @@ class CatsMover(CurrentMoversBase):
             raise ValueError('Path for Cats filename does not exist: {0}'
                              .format(filename))
 
-        f = open(filename, 'rU') 
+        f = open(filename, 'rU')
         header = f.readline()
         f.close()
         header.strip()
@@ -230,7 +227,7 @@ class CatsMover(CurrentMoversBase):
             raise ValueError('File has incorrect header line for Cats format: {0}'
                              .format(header))
 
-        self._filename = filename 
+        self._filename = filename
 
         # check if this is stored with cy_cats_mover?
         self.mover = CyCatsMover()
@@ -255,7 +252,7 @@ class CatsMover(CurrentMoversBase):
         if 'scale_refpoint' in kwargs:
             self.scale_refpoint = kwargs.pop('scale_refpoint')
             #self.mover.compute_velocity_scale()
-            
+
         super(CatsMover, self).__init__(uncertain_duration=uncertain_duration,
                                         **kwargs)
 
@@ -394,7 +391,7 @@ class CatsMover(CurrentMoversBase):
         """
         velocities = self.mover._get_velocity_handle()
         self.mover.compute_velocity_scale()  # make sure ref_scale is up to date
-        ref_scale = self.ref_scale 
+        ref_scale = self.ref_scale
 
         if self._tide is not None:
             time_value, _err = self._tide.cy_obj.get_time_value(model_time)
@@ -624,7 +621,7 @@ class GridCurrentMover(CurrentMoversBase):
         elif self.mover._is_regular_grid():
             num_cells = self.mover.get_num_points()
         else:
-            num_cells = old_div(num_tri, 2)
+            num_cells = num_tri / 2
 
         vels = np.zeros(num_cells, dtype=basic_types.velocity_rec)
 
@@ -890,7 +887,7 @@ class IceMover(CurrentMoversBase):
         if self.mover._is_triangle_grid():
             num_cells = num_tri
         else:
-            num_cells = old_div(num_tri, 2)
+            num_cells = num_tri / 2
 
         vels = np.zeros(num_cells, dtype=basic_types.velocity_rec)
         self.mover.get_scaled_velocities(model_time, vels)
@@ -924,7 +921,7 @@ class IceMover(CurrentMoversBase):
         :param model_time=0:
         """
         num_tri = self.mover.get_num_triangles()
-        num_cells = old_div(num_tri, 2)
+        num_cells = num_tri / 2
 
         frac_coverage = np.zeros(num_cells, dtype=np.float64)
         thickness = np.zeros(num_cells, dtype=np.float64)
@@ -1112,7 +1109,7 @@ class CurrentCycleMover(GridCurrentMover):
         elif self.mover._is_regular_grid():
             num_cells = self.mover.get_num_points()
         else:
-            num_cells = old_div(num_tri, 2)
+            num_cells = num_tri / 2
 
         vels = np.zeros(num_cells, dtype=basic_types.velocity_rec)
 

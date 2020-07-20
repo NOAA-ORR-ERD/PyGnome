@@ -4,14 +4,6 @@ from __future__ import division
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-# from builtins import zip
-# from builtins import str
-# from builtins import range
-# from future import standard_library
-# standard_library.install_aliases()
-# from builtins import *
-# from builtins import object
-
 import os
 from datetime import datetime, timedelta
 import shutil
@@ -27,7 +19,7 @@ from gnome.basic_types import datetime_value_2d
 from gnome.utilities.time_utils import (zero_time,
                                         sec_to_date)
 from gnome.utilities.timeseries import TimeseriesError
-from gnome.utilities.inf_datetime import InfDateTime
+# from gnome.utilities.inf_datetime import InfDateTime
 from gnome.environment import Wind, constant_wind, wind_from_values
 
 # from colander import Invalid

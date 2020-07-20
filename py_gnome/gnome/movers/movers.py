@@ -1,12 +1,8 @@
-from __future__ import division
-from __future__ import absolute_import
 from __future__ import print_function
+from __future__ import absolute_import
+from __future__ import division
 from __future__ import unicode_literals
-from future import standard_library
-standard_library.install_aliases()
-from builtins import str
-from builtins import *
-from past.utils import old_div
+
 from datetime import datetime, timedelta
 
 import numpy as np
@@ -143,7 +139,7 @@ class Process(GnomeId):
         :param model_time_datetime: current model time as datetime object
 
         """
-        half_timestep = model_time_datetime + timedelta(seconds=old_div(time_step, 2))
+        half_timestep = model_time_datetime + timedelta(seconds=time_step / 2)
 
         if (self.active_range[0] <= half_timestep and
                 self.active_range[1] >= half_timestep and
@@ -255,7 +251,7 @@ class PyMover(Mover):
 
         v1 = vel_field.at(p1, t + dt)
 
-        return old_div(dt_s, 2) * (v0 + v1)
+        return dt_s / 2 * (v0 + v1)
 
     def get_delta_RK4(self, sc, time_step, model_time, pos, vel_field):
         dt = timedelta(seconds=time_step)
@@ -263,23 +259,23 @@ class PyMover(Mover):
         t = model_time
 
         v0 = vel_field.at(pos, t)
-        d0 = FlatEarthProjection.meters_to_lonlat(old_div(v0 * dt_s, 2), pos)
+        d0 = FlatEarthProjection.meters_to_lonlat(v0 * dt_s / 2, pos)
         p1 = pos.copy()
         p1 += d0
 
-        v1 = vel_field.at(p1, t + old_div(dt, 2))
-        d1 = FlatEarthProjection.meters_to_lonlat(old_div(v1 * dt_s, 2), pos)
+        v1 = vel_field.at(p1, t + dt / 2)
+        d1 = FlatEarthProjection.meters_to_lonlat(v1 * dt_s / 2, pos)
         p2 = pos.copy()
         p2 += d1
 
-        v2 = vel_field.at(p2, t + old_div(dt, 2))
+        v2 = vel_field.at(p2, t + dt / 2)
         d2 = FlatEarthProjection.meters_to_lonlat(v2 * dt_s, pos)
         p3 = pos.copy()
         p3 += d2
 
         v3 = vel_field.at(p3, t + dt)
 
-        return old_div(dt_s, 6) * (v0 + 2 * v1 + 2 * v2 + v3)
+        return dt_s / 6 * (v0 + 2 * v1 + 2 * v2 + v3)
 
 
 class CyMover(Mover):
@@ -402,7 +398,7 @@ class CyMover(Mover):
         try:
             self.positions = sc['positions']
             self.status_codes = sc['status_codes']
-        except KeyError as err:
+        except KeyError, err:
             raise ValueError('The spill container does not have the required'
                              'data arrays\n' + str(err))
 
@@ -428,7 +424,7 @@ class CyMover(Mover):
                 if self.active:
                     try:
                         self.status_codes = sc['status_codes']
-                    except KeyError as err:
+                    except KeyError, err:
                         raise ValueError('The spill container does not have'
                                          ' the required data array\n{}'
                                          .format(err))

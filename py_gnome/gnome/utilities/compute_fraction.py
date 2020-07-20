@@ -13,16 +13,12 @@ from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from future import standard_library
-standard_library.install_aliases()
-from builtins import *
-from past.utils import old_div
 from math import exp, log
 
 def fraction_below_d(d, alpha, lambda_):
     alpha = float(alpha)
     lambda_ - float(lambda_)
-    return 1 - exp( -(old_div(d,lambda_))**alpha)
+    return 1 - exp( -(d/lambda_)**alpha)
 
 # if __name__ == "__main__":
 

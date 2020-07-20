@@ -2,10 +2,7 @@ from __future__ import division
 from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
-from future import standard_library
-standard_library.install_aliases()
-from builtins import *
-from past.utils import old_div
+
 from . import movers
 import numpy as np
 
@@ -26,8 +23,7 @@ from gnome.persist.base_schema import ObjTypeSchema
 from gnome.persist.validators import convertible_to_seconds
 from gnome.persist.extend_colander import LocalDateTime, FilenameSchema
 from gnome.persist.base_schema import GeneralGnomeObjectSchema
-# needed for py3 ????
-# from builtins import property
+from builtins import property
 
 
 class PyCurrentMoverSchema(ObjTypeSchema):
@@ -198,12 +194,12 @@ class PyCurrentMover(movers.PyMover):
                 # we are ugrid
                 triangles = self.current.grid.nodes[self.current.grid.faces[:]]
                 centroids = np.zeros((self.current.grid.faces.shape[0], 2))
-                centroids[:, 0] = old_div(np.sum(triangles[:, :, 0], axis=1), 3)
-                centroids[:, 1] = old_div(np.sum(triangles[:, :, 1], axis=1), 3)
+                centroids[:, 0] = np.sum(triangles[:, :, 0], axis=1) / 3
+                centroids[:, 1] = np.sum(triangles[:, :, 1], axis=1) / 3
 
             else:
-                c_lons = old_div((lons[0:-1, :] + lons[1:, :]), 2)
-                c_lats = old_div((lats[:, 0:-1] + lats[:, 1:]), 2)
+                c_lons = (lons[0:-1, :] + lons[1:, :]) / 2
+                c_lats = (lats[:, 0:-1] + lats[:, 1:]) / 2
                 centroids = np.column_stack((c_lons.reshape(-1),
                                              c_lats.reshape(-1)))
 

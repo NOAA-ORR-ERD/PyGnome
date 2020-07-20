@@ -5,10 +5,7 @@ from __future__ import division
 from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
-from future import standard_library
-standard_library.install_aliases()
-from builtins import *
-from past.utils import old_div
+
 import numpy as np
 
 from colander import (SchemaNode, Float, Boolean, drop)
@@ -161,7 +158,7 @@ class IceAwareRandomMover(RandomMover):
             ice_vel_factor = cctn.copy()
             ice_vel_factor[ice_mask] = 0
             ice_vel_factor[water_mask] = 1
-            ice_vel_factor[interp_mask] = 1 - old_div(((ice_vel_factor[interp_mask] - 0.2) * 10), 6)
+            ice_vel_factor[interp_mask] = 1 - ((ice_vel_factor[interp_mask] - 0.2) * 10) / 6
 
             deltas = (super(IceAwareRandomMover, self)
                       .get_move(sc, time_step, model_time_datetime))

@@ -7,12 +7,6 @@ from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from future import standard_library
-standard_library.install_aliases()
-from builtins import range
-from builtins import *
-from builtins import object
-from past.utils import old_div
 import copy
 import numpy
 from gnome.gnomeobject import GnomeId
@@ -228,19 +222,19 @@ class WeibullDistribution(GnomeId):
         self._weibull(np_array)
 
 
-class RayleighDistribution(object):
+class RayleighDistribution():
     @classmethod
     def sigma_from_wind(cls, avg_speed):
         return np.sqrt(2.0 / np.pi) * avg_speed
 
     @classmethod
     def pdf(cls, x, sigma):
-        return ((old_div(x, sigma ** 2.0)) *
-                np.exp((-1.0 / 2.0) * (old_div(x ** 2.0, sigma ** 2.0))))
+        return ((x / sigma ** 2.0) *
+                np.exp((-1.0 / 2.0) * (x ** 2.0 / sigma ** 2.0)))
 
     @classmethod
     def cdf(cls, x, sigma):
-        return 1.0 - np.exp((-1.0 / 2.0) * (old_div(x ** 2.0, sigma ** 2.0)))
+        return 1.0 - np.exp((-1.0 / 2.0) * (x ** 2.0 / sigma ** 2.0))
 
     @classmethod
     def quantile(cls, f, sigma):

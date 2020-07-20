@@ -9,9 +9,10 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from future import standard_library
-standard_library.install_aliases()
-from builtins import *
+# from future import standard_library
+# standard_library.install_aliases()
+# from builtins import *
+
 import numpy as np
 
 from gnome.cy_gnome import cy_helpers

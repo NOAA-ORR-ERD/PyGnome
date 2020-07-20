@@ -1,15 +1,8 @@
-from __future__ import division
-from __future__ import absolute_import
 from __future__ import print_function
+from __future__ import absolute_import
+from __future__ import division
 from __future__ import unicode_literals
 
-# from future import standard_library
-# standard_library.install_aliases()
-# from builtins import map
-# from builtins import range
-# from builtins import *
-# from builtins import object
-# from past.utils import old_div
 
 import copy
 from datetime import datetime
@@ -196,8 +189,8 @@ class VelocityTS(TimeseriesVector):
         """
         direction = direction * -1 - 90
 
-        u = speed * np.cos(old_div(direction * np.pi, 180))
-        v = speed * np.sin(old_div(direction * np.pi, 180))
+        u = speed * np.cos(direction * np.pi / 180)
+        v = speed * np.sin(direction * np.pi / 180)
 
         u = TimeseriesData.constant('u', units, u)
         v = TimeseriesData.constant('v', units, v)
@@ -208,7 +201,7 @@ class VelocityTS(TimeseriesVector):
     def timeseries(self):
         x = self.variables[0].data
         y = self.variables[1].data
-        return list(map(lambda t, x, y: (t, (x, y)), self._time, x, y))
+        return map(lambda t, x, y: (t, (x, y)), self._time, x, y)
 
 
 class VelocityGrid(VectorVariable):
@@ -239,7 +232,7 @@ class VelocityGrid(VectorVariable):
             elif kwargs.get('grid_file', None) is not None:
                 df = gridded.utilities.get_dataset(kwargs['grid_file'])
 
-            if df is not None and 'angle' in list(df.variables.keys()):
+            if df is not None and 'angle' in df.variables.keys():
                 # Unrotated ROMS Grid!
                 self.angle = Variable(name='angle',
                                       units='radians',
@@ -267,14 +260,14 @@ class WindTS(VelocityTS, Environment):
         if 'timeseries' in kwargs:
             ts = kwargs['timeseries']
 
-            time = [e[0] for e in ts]
-            mag = np.array([e[1][0] for e in ts])
+            time = map(lambda e: e[0], ts)
+            mag = np.array(map(lambda e: e[1][0], ts))
 
-            d = np.array([e[1][1] for e in ts])
+            d = np.array(map(lambda e: e[1][1], ts))
             d = d * -1 - 90
 
-            u = mag * np.cos(old_div(d * np.pi, 180))
-            v = mag * np.sin(old_div(d * np.pi, 180))
+            u = mag * np.cos(d * np.pi / 180)
+            v = mag * np.sin(d * np.pi / 180)
 
             variables = [u, v]
 
@@ -307,14 +300,14 @@ class CurrentTS(VelocityTS, Environment):
                  **kwargs):
         if 'timeseries' in kwargs:
             ts = kwargs['timeseries']
-            time = [e[0] for e in ts]
-            mag = np.array([e[1][0] for e in ts])
+            time = map(lambda e: e[0], ts)
+            mag = np.array(map(lambda e: e[1][0], ts))
 
-            direction = np.array([e[1][1] for e in ts])
+            direction = np.array(map(lambda e: e[1][1], ts))
             direction = direction * -1 - 90
 
-            u = mag * np.cos(old_div(direction * np.pi, 180))
-            v = mag * np.sin(old_div(direction * np.pi, 180))
+            u = mag * np.cos(direction * np.pi / 180)
+            v = mag * np.sin(direction * np.pi / 180)
 
             variables = [u, v]
 
@@ -348,8 +341,8 @@ class TemperatureTS(TimeseriesData, Environment):
         if 'timeseries' in kwargs:
             ts = kwargs['timeseries']
 
-            time = [e[0] for e in ts]
-            data = np.array([e[1] for e in ts])
+            time = map(lambda e: e[0], ts)
+            data = np.array(map(lambda e: e[1], ts))
 
         TimeseriesData.__init__(self, name, units, time, data=data)
 
@@ -816,7 +809,7 @@ class IceAwareCurrent(GridCurrent):
             ice_vel_factor = cctn.copy()
             ice_vel_factor[ice_mask] = 1
             ice_vel_factor[water_mask] = 0
-            ice_vel_factor[interp_mask] = old_div(((ice_vel_factor[interp_mask] - 0.2) * 10), 6)
+            ice_vel_factor[interp_mask] = ((ice_vel_factor[interp_mask] - 0.2) * 10) / 6
 
             vels = water_v.copy()
             ice_v = self.ice_velocity.at(points, time, extrapolate=extrapolate, *args, **kwargs).copy()
@@ -875,7 +868,7 @@ class IceAwareWind(GridWind):
             ice_vel_factor = cctn.copy()
             ice_vel_factor[ice_mask] = 1
             ice_vel_factor[water_mask] = 0
-            ice_vel_factor[interp_mask] = old_div(((ice_vel_factor[interp_mask] - 0.2) * 10), 6)
+            ice_vel_factor[interp_mask] = ((ice_vel_factor[interp_mask] - 0.2) * 10) / 6
 
             vels = wind_v.copy()
             vels[ice_mask] = 0

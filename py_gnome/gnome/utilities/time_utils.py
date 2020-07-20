@@ -8,11 +8,7 @@ from __future__ import division
 from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
-from future import standard_library
-standard_library.install_aliases()
-from builtins import range
-from builtins import *
-from past.utils import old_div
+
 from datetime import datetime, timedelta, tzinfo
 import cftime
 from dateutil.parser import parse as parsetime
@@ -35,7 +31,7 @@ class FixedOffset(tzinfo):
 
     def __repr__(self):
         return ("FixedOffset({}, '{}')"
-                .format(old_div(self.__offset.total_seconds(), 60), self.__name))
+                .format(self.__offset.total_seconds() / 60, self.__name))
 
     def utcoffset(self, dt):
         return self.__offset
@@ -216,7 +212,7 @@ def round_time(dt=None, roundTo=60):  # IGNORE:W0621
         seconds = (date - date.min).seconds
 
         # // is a floor division, not a comment on following line:
-        rounding = (seconds + old_div(roundTo, 2)) // roundTo * roundTo
+        rounding = (seconds + roundTo / 2) // roundTo * roundTo
 
         dt[li] = date + timedelta(0, rounding - seconds, -date.microsecond)
 

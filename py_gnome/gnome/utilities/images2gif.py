@@ -23,11 +23,6 @@ from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from future import standard_library
-standard_library.install_aliases()
-from builtins import chr
-from builtins import *
-from past.utils import old_div
 try:
     import PIL
     from PIL import Image, ImageChops
@@ -53,7 +48,7 @@ def intToBin(i):
     # divide in two parts (bytes)
 
     i1 = i % 256
-    i2 = int(old_div(i,256))
+    i2 = int(i/256)
 
     # make string (little endian)
 
@@ -71,7 +66,7 @@ def getheaderAnim(im):
 
 
 def getAppExt(loops=0):
-    """ Application extention. Part that secifies amount of loops. 
+    """ Application extention. Part that secifies amount of loops.
     if loops is 0, if goes on infinitely.
     """
 
@@ -191,7 +186,7 @@ def writeGif(
     dither=1,
     ):
     """ writeGif(filename, images, duration=0.1, loops=0, dither=1)
-    Write an animated gif from the specified images. 
+    Write an animated gif from the specified images.
     images should be a list of numpy arrays of PIL images.
     Numpy images of type float should have pixels between 0 and 1.
     Numpy images of other types are expected to have values between 0 and 255.

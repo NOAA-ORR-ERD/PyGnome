@@ -2,26 +2,18 @@
 module contains objects that contain weather related data. For example,
 the Wind object defines the Wind conditions for the spill
 """
+
+from __future__ import print_function
 from __future__ import absolute_import
 from __future__ import division
-from __future__ import print_function
 from __future__ import unicode_literals
 
-# from future import standard_library
-# standard_library.install_aliases()
-# from builtins import str
-# from builtins import *
-
 import copy
-
 
 try:
     from functools import lru_cache  # it's built-in on py3
 except ImportError:
-    # needs backports for py2
-    from backports.functools_lru_cache import lru_cache
-
-import six
+    from backports.functools_lru_cache import lru_cache  # needs backports for py2
 
 from colander import SchemaNode, MappingSchema, Float, String, drop, OneOf
 
@@ -44,8 +36,7 @@ class EnvironmentMeta(GnomeObjMeta):
         super(EnvironmentMeta, self).__init__(_name, _bases, _dct)
 
 
-# py3: class Environment(GnomeId, metaclass=EnvironmentMeta):
-class Environment(six.with_metaclass(EnvironmentMeta, GnomeId)):
+class Environment(GnomeId):
     """
     A base class for all classes in environment module
 
@@ -60,6 +51,8 @@ class Environment(six.with_metaclass(EnvironmentMeta, GnomeId)):
     # insinstance() checks. Used by model to automatically hook up objects that
     # reference environment objects
     _ref_as = 'environment'
+
+    __metaclass__ = EnvironmentMeta
 
     def __init__(self, make_default_refs=True,**kwargs):
         '''
@@ -182,12 +175,12 @@ def env_from_netCDF(filename=None, dataset=None,
                 req_refs = None
 
             if req_refs is not None:
-                for ref, klass in list(req_refs.items()):
+                for ref, klass in req_refs.items():
                     for o in new_env:
                         if isinstance(o, klass):
                             clskwargs[ref] = o
 
-                    if ref in list(clskwargs.keys()):
+                    if ref in clskwargs.keys():
                         continue
                     else:
                         obj = attempt_from_netCDF(c,
@@ -452,7 +445,7 @@ class Water(Environment):
         if not hasattr(self, '_units'):
             self._units = {}
 
-        for prop, unit in list(u_dict.items()):
+        for prop, unit in u_dict.iteritems():
             if prop in self._units_type:
                 if unit not in self._units_type[prop][1]:
                     msg = ("{0} are invalid units for {1}.  Ignore it."

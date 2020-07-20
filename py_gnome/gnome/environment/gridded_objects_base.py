@@ -1,15 +1,11 @@
-from __future__ import division
-from __future__ import absolute_import
 from __future__ import print_function
+from __future__ import absolute_import
+from __future__ import division
 from __future__ import unicode_literals
 
-# from future import standard_library
-# standard_library.install_aliases()
-# from builtins import *
-# from past.utils import old_div
 
 import datetime
-import io
+import StringIO
 import copy
 import numpy as np
 import logging
@@ -228,7 +224,7 @@ class Grid_S(GnomeId, gridded.grids.Grid_S):
         st = def_style.copy()
 
         if style is not None:
-            for k in list(style.keys()):
+            for k in style.keys():
                 st[k].update(style[k])
 
         for f in features:
@@ -273,8 +269,8 @@ class Grid_S(GnomeId, gridded.grids.Grid_S):
                 ctr_mask = gridded.utilities.gen_celltree_mask_from_center_mask(self.center_mask, ctr_padding_slice)
                 clons = self.center_lon[ctr_padding_slice]
                 clats = self.center_lat[ctr_padding_slice]
-                clons = np.ma.MaskedArray(clons, mask=ctr_mask)
-                clats = np.ma.MaskedArray(clats, mask=old_)
+                clons = np.ma.MaskedArray(clons, mask = ctr_mask)
+                clats = np.ma.MaskedArray(clats, mask = ctr_mask)
                 return np.stack((clons.compressed(), clats.compressed()), axis=-1).reshape(-1, 2)
             return self.centers.reshape(-1, 2)
 
@@ -346,11 +342,11 @@ class Grid_R(gridded.grids.Grid_R, GnomeId):
     def get_lines(self):
 
         lon_lines = np.array([[(lon, self.node_lat[0]),
-                               (lon, self.node_lat[len(self.node_lat), 2]),
+                               (lon, self.node_lat[len(self.node_lat) / 2]),
                                (lon, self.node_lat[-1])]
                               for lon in self.node_lon], dtype=np.float32)
         lat_lines = np.array([[(self.node_lon[0], lat),
-                               (self.node_lon[len(self.node_lon), 2], lat),
+                               (self.node_lon[len(self.node_lon) / 2], lat),
                                (self.node_lon[-1], lat)]
                               for lat in self.node_lat], dtype=np.float32)
 
