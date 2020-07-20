@@ -10,7 +10,7 @@ from __future__ import unicode_literals
 # from builtins import map
 # from builtins import range
 # from builtins import *
-from past.utils import old_div
+# from past.utils import old_div
 
 
 from gnome.gnomeobject import GnomeId
@@ -1184,18 +1184,16 @@ class MapFromBNA(RasterMap):
         # now draw the raster map with a map_canvas:
         # determine the size:
 
-
         # stretch the bounding box, to get approximate aspect ratio in
         # projected coords.
-
         land_polys = self.land_polys if land_polys is None else land_polys
         BB = land_polys.bounding_box if BB is None else BB
         raster_size = self.raster_size
 
-        aspect_ratio = (np.cos(old_div(BB.Center[1] * np.pi, 180)) *(old_div(BB.Width, BB.Height)))
+        aspect_ratio = np.cos(BB.Center[1] * np.pi / 180) * (BB.Width / BB.Height)
 
         w = int(np.sqrt(raster_size * aspect_ratio))
-        h = int(old_div(raster_size, w))
+        h = raster_size // w
 
         canvas = MapCanvas(image_size=(w, h),
                            preset_colors=None,
@@ -1381,11 +1379,10 @@ class MapFromUGrid(RasterMap):
 
         # stretch the bounding box, to get approximate aspect ratio in
         # projected coords.
-        aspect_ratio = (np.cos(old_div(BB.Center[1] * np.pi, 180)) *
-                        (old_div(BB.Width, BB.Height)))
+        aspect_ratio = (np.cos(BB.Center[1] * np.pi / 180) * (BB.Width / BB.Height))
 
         w = int(np.sqrt(raster_size * aspect_ratio))
-        h = int(old_div(raster_size, w))
+        h = raster_size // w
 
         canvas = MapCanvas(image_size=(w, h),
                            preset_colors=None,
@@ -1547,7 +1544,7 @@ def refine_axis(old_axis, refine):
     refine = int(refine)
 
     axis = old_axis.reshape((-1, 1))
-    axis = (old_div((axis[1:] - axis[:-1]), refine)) * np.arange(refine) + axis[:-1]
+    axis = ((axis[1:] - axis[:-1]) / refine) * np.arange(refine) + axis[:-1]
     axis.shape = (-1,)
     axis = np.r_[axis, old_axis[-1]]
 
@@ -1557,14 +1554,14 @@ def refine_axis(old_axis, refine):
 def map_from_regular_grid(grid_mask, lon, lat, refine=4, refloat_halflife=1,
                           map_bounds=None):
     """
-    note: poorly tested -- here to save it in case we need it in the future
+    note: untested -- here to save it in case we need it in the future
 
     makes a raster map from a regular grid: i.e delta_lon and delta-lat are
     constant.
     """
     nlon, nlat = grid_mask.shape
-    dlon = old_div((lon[-1] - lon[0]), (len(lon) - 1))
-    dlat = old_div((lat[-1] - lat[0]), (len(lat) - 1))
+    dlon = (lon[-1] - lon[0]) / (len(lon) - 1)
+    dlat = (lat[-1] - lat[0]) / (len(lat) - 1)
 
     # create the raster
     raster_array = np.zeros((nlon * resolution, nlat * resolution),

@@ -317,7 +317,7 @@ def ReadBNA(filename, polytype="list", dtype=np.float):
     The dtype parameter specifies what numpy data type you want the points
     data in -- it defaults to np.float (C double)
     """
-    fd = open(filename, 'rU')
+    fd = open(filename, 'r')
 
     if polytype == 'list':
         Output = []
@@ -335,7 +335,7 @@ def ReadBNA(filename, polytype="list", dtype=np.float):
             poly = GetNextBNAPolygon(fd)
             if poly is None:
                 break
-            ##fixme: should this be a dict, instead?
+            # fixme: should this be a dict, instead?
             Output.append(poly[0], poly[1:])
 
     elif polytype == 'BNADataClass':

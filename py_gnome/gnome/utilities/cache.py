@@ -233,30 +233,20 @@ class ElementCache(object):
     def _set_weathering_data(self, sc, data):
         'add mass balance data to arrays'
         if sc.mass_balance:
-            # let's convert weathering data to numpy_arrays. In order to save
+            # convert weathering data to numpy_arrays. In order to save
             # it in the samefile, we'll also need to store the keys so we know
             # which arrays belong to mass_balance when reconstructing
-            # set the itemsize of char array to be the len of largest key in
-            # 'mass_balance'
-            max_name = len(max(list(sc.mass_balance.keys()),
-                               key=lambda l: len(l)))
-            data['mass_balance'] = \
-                np.chararray((len(sc.mass_balance),),
-                             itemsize=max_name)
-            for ix, key in enumerate(sc.mass_balance):
-                # an array with a scalar for each spill
+            data['mass_balance'] = np.array(list(sc.mass_balance.keys()))
+            for key in data['mass_balance']:
                 data[key] = np.asarray(sc.mass_balance[key])
-                data['mass_balance'][ix] = key
 
     def _get_weathering_data(self, data_arrays):
         mb_data = {}
         if 'mass_balance' in data_arrays:
             mb_names = data_arrays.pop('mass_balance')
-            print("mb_names:", mb_names)
             mb_data = {}
             for name in mb_names:
                 mb_data[name] = data_arrays.pop(name).item()
-
         return mb_data
 
     def rewind(self):

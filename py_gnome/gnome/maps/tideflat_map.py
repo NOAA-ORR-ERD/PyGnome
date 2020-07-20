@@ -17,13 +17,10 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from future import standard_library
-standard_library.install_aliases()
-from builtins import *
 import numpy as np
 
 from gnome.gnomeobject import GnomeId
-from gnome.maps import GnomeMap
+# from gnome.maps import GnomeMap
 from gnome.basic_types import oil_status
 from gnome.utilities.time_utils import asdatetime
 
@@ -41,6 +38,7 @@ class TideflatMap(GnomeId):
     Not subclassed from a GnomeMap, as it delgates to the passed-in map
     instead
     """
+
     def __init__(self, land_map, tideflat):
         """
         initialize a TideflatMap
