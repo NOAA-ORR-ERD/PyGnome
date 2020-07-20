@@ -109,14 +109,13 @@ def date_to_sec(date_times):
 
     t_list = []
     for dt in date_times:
-        timetuple = list(dt.timetuple())
         # last element is "is_dst" flag:
         # 0 means "not DST", 1 means "DST", -1 "unknown"
         # but IIUC, it is only used for the DST transition
         # That is to say, when there can be two times that cross the border,
         # then setting this to 0 seems to force what we want.
-        timetuple[-1] = 0
-        t_list.append(time.mktime(timetuple))
+        timetuple = dt.timetuple()[:-1] + (0,)
+        t_list.append(time.mktime(tuple(timetuple)))
 
     return np.array(t_list, dtype=np.uint32) if not scalar else t_list[0]
 

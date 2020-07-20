@@ -149,9 +149,10 @@ def tsformat(format_obj):
     convert string 'uv' or 'magnitude_direction' or 'r_theta' or 'r-theta'
     into appropriate enum in basic_types.ts_format
     """
+    names = list(basic_types.ts_format.__members__.keys())
     val_error = ("timeseries format can only be one of {}"
                  "Format entered is not recognized: {}"
-                 .format(basic_types.ts_format.names(),
+                 .format(names,
                          format_obj))
 
     if format_obj in basic_types.ts_format.__members__.values():

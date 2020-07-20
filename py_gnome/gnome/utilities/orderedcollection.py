@@ -14,6 +14,7 @@ from __future__ import unicode_literals
 # from builtins import *
 # from builtins import object
 
+
 class OrderedCollection(object):
     '''
     Generalized Container for a set of objects of a particular type which
@@ -184,8 +185,8 @@ class OrderedCollection(object):
         try:
             # first check if elem is the 'id'
             idx = self._d_index[elem]
-        except KeyError:
-            # if its not a valid ID, then check if its the object
+        except (KeyError, TypeError):
+            # if its not a valid ID, then check if it's the object
             ident = self._s_id(elem)
             try:
                 idx = self._d_index[ident]

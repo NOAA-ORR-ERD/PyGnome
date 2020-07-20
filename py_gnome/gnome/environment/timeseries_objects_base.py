@@ -2,10 +2,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
-from future import standard_library
-standard_library.install_aliases()
-from builtins import map
-from builtins import *
+
 import warnings
 import copy
 from numbers import Number
@@ -336,7 +333,7 @@ class TimeseriesVector(GnomeId):
         :rtype: string
         '''
         if hasattr(self._units, '__iter__'):
-            if len(set(self._units) > 1):
+            if len(set(self._units)) > 1:
                 return self._units
             else:
                 return self._units[0]

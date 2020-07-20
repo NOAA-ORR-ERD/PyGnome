@@ -180,7 +180,8 @@ cdef class CyGridCurrentMover(CyCurrentMoverBase):
 
         def __set__(self, value):
             self.grid_current.num_method = basic_types.numerical_methods[value]
-            self._num_method = value
+            cdef bytes bvalue = value.encode('ASCII')
+            self._num_method = bvalue
 
     def extrapolate_in_time(self, extrapolate):
         self.grid_current.SetExtrapolationInTime(extrapolate)

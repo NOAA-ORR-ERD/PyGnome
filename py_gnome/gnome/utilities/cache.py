@@ -252,6 +252,7 @@ class ElementCache(object):
         mb_data = {}
         if 'mass_balance' in data_arrays:
             mb_names = data_arrays.pop('mass_balance')
+            print("mb_names:", mb_names)
             mb_data = {}
             for name in mb_names:
                 mb_data[name] = data_arrays.pop(name).item()

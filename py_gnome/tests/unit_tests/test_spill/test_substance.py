@@ -2,26 +2,29 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
-from future import standard_library
-standard_library.install_aliases()
-from builtins import *
+# from future import standard_library
+# standard_library.install_aliases()
+# from builtins import *
+
 from gnome.spill.substance import (Substance,
                                    GnomeOil,
                                    NonWeatheringSubstance)
-from gnome.spill.initializers import InitWindages, plume_initializers
-#from oil_library.models import Oil
+from gnome.spill.initializers import InitWindages
+# from oil_library.models import Oil
+
 
 class TestSubstance(object):
     '''Test for base class'''
+
     def test_init(self):
-        #check default state
+        # check default state
         sub1 = Substance()
         assert len(sub1.initializers) == 1
         assert isinstance(sub1.initializers[0], InitWindages)
         initw = sub1.initializers[0]
-        #substance should expose the array types of it's initializers
+        # substance should expose the array types of it's initializers
         assert all([atype in sub1.array_types for atype in initw.array_types])
-        #in this case, there should only be InitWindages
+        # in this case, there should only be InitWindages
         assert list(sub1.array_types.keys()) == list(initw.array_types.keys())
 
     def test_eq(self):
@@ -56,7 +59,7 @@ class TestGnomeOil(object):
     def test_init(self):
         oil1 = GnomeOil('oil_ans_mp', windage_range=(0.05, 0.07))
         assert oil1.windage_range == (0.05, 0.07)
-        #assert isinstance(oil1.record, Oil)	#GnomeOil doesn't have a record
+        # assert isinstance(oil1.record, Oil)	#GnomeOil doesn't have a record
         assert isinstance(oil1.initializers[0], InitWindages)
         initw = oil1.initializers[0]
         assert all([atype in oil1.array_types for atype in initw.array_types])
@@ -67,6 +70,21 @@ class TestGnomeOil(object):
         assert sub1 == sub2
         sub3 = GnomeOil('oil_ans_mp', windage_range=(0.05, 0.07))
         assert sub1 != sub3
+
+    def test_hashable_1(self):
+        """
+        GnomeOIl needs to be hashable, so that is can be used with lru_cache
+
+        This only tests that the SAME oil object is hashable and recoverable,
+        but that's OK for caching.
+        """
+        oil1 = GnomeOil('oil_ans_mp')
+
+        # can I put it in a dict, and get it out again?
+        d = {}
+        d[oil1] = "yes"
+
+        assert d[oil1] == "yes"
 
     def test_serialization(self):
         oil1 = GnomeOil('oil_ans_mp', windage_range=(0.05, 0.07))
@@ -92,7 +110,7 @@ class TestGnomeOil(object):
         test_obj = GnomeOil('oil_ans_mp')
         assert test_obj._bulltime is None
         assert test_obj.bullwinkle < 0.5
-        #assert test_obj.bullwinkle < 0.5 and test_obj.bullwinkle is test_obj.record.bullwinkle_fraction
+        # assert test_obj.bullwinkle < 0.5 and test_obj.bullwinkle is test_obj.record.bullwinkle_fraction
         d = test_obj.serialize()
         d['bullwinkle_time'] = 60
         d['bullwinkle_fraction'] = 0.7

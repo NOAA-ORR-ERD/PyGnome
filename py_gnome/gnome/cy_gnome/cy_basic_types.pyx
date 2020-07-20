@@ -6,12 +6,12 @@ Pulled from type_defs.pxi -- i.e pulled from C++ headers, etc.
 """
 
 # Use the "new" Py3 Enum type
-# from enum import IntEnum
-from gnome.utilities.enum import IntEnum
+from enum import IntEnum
+
+# from gnome.utilities.enum import IntEnum
 
 # pull stuff in from the C++ headers
 from .type_defs cimport *
-
 
 
 '''

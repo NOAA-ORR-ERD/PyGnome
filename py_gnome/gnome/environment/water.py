@@ -6,10 +6,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
-from future import standard_library
-standard_library.install_aliases()
-from builtins import str
-from builtins import *
+
 import copy
 
 try:
@@ -227,12 +224,17 @@ class Water(Environment):
         setattr(self, attr, value)
         self.units[attr] = unit
 
+    # has to be a staticmethod, as the type is not hashable foe lru_cache
+    @staticmethod
     @lru_cache(2)
-    def _get_density(self, salinity, temp):
+    def _get_density(salinity, temp, temp_units):
         '''
         use lru cache so we don't recompute if temp is not changing
         '''
-        temp_c = uc.convert('Temperature', self.units['temperature'], 'C',
+        temp_c = uc.convert('Temperature',
+                            temp_units,
+                            # self.units['temperature'],
+                            'C',
                             temp)
         # sea level pressure in decibar - don't expect atmos_pressure to change
         # also expect constants to have SI units
@@ -248,7 +250,9 @@ class Water(Environment):
         units - for our purposes, this is sufficient. Using gsw.rho()
         internally which expects salinity in absolute units.
         '''
-        return self._get_density(self.salinity, self.temperature)
+        return self._get_density(self.salinity,
+                                 self.temperature,
+                                 self.units['temperature'])
 
     @property
     def units(self):

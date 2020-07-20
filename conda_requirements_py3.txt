@@ -46,7 +46,7 @@ cython
 pytest
 pytest-cov
 pytest-timeout
-# testfixtures
+testfixtures
 
 # nice to have for development, not required to run
 matplotlib

@@ -31,8 +31,9 @@ mac_zips = all_saves = pure_saves = all_names = None
 pth = os.path.dirname(__file__)
 all_saves = glob.glob(os.path.join(pth, '*.zip')) + glob.glob(os.path.join(pth, '*.gnome'))
 all_names = [os.path.basename(s) for s in all_saves]
-pure_saves = filter(lambda f: 'mac' not in os.path.basename(f), all_saves)
-mac_saves = filter(lambda f: 'mac' in os.path.basename(f), all_saves)
+pure_saves = [f for f in all_saves if 'mac' not in os.path.basename(f)]
+mac_saves =  [f for f in all_saves if 'mac' in os.path.basename(f)]
+
 
 @contextlib.contextmanager
 def setup_workspace(savename):
@@ -76,12 +77,13 @@ def test_extract_zipfile():
                 (sys.platform != "win32" and js.get('substance', None) == "*GENERIC DIESEL.json")
         )
 
-    #Ensure that the __MACOSX folder is ignored
-    #And the zip structure is flat
+    # Ensure that the __MACOSX folder is ignored
+    # And the zip structure is flat
     with setup_workspace('v0_diesel_mac.zip') :
         files = os.listdir('.')
-        assert len(filter(lambda f: '__MACOSX' in f, files)) == 0
+        assert len(list(filter(lambda f: '__MACOSX' in f, files))) == 0
         assert 'Model.json' in files
+
 
 # Should automate this in future
 def test_v0_to_v1():
