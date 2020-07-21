@@ -228,11 +228,11 @@ def GetNextBNAPolygon(f, dtype=np.float64):
           simply split on the commas
           (or march through the line looking for the quotes -- regex?)
     """
-    while True: # skip blank lines
+    while True:  # skip blank lines
         header = f.readline()
-        if not header: # end of file
+        if not header:  # end of file
             return None
-        if header.strip(): # found a header
+        if header.strip():  # found a header
             break
         else:
             continue
@@ -242,6 +242,7 @@ def GetNextBNAPolygon(f, dtype=np.float64):
     # except UnicodeDecodeError:
     #     raise ValueError('File has incorrect header for BNA format')
 
+    print("header:", header)
     try:
         fields = header.split('"')
         name = fields[1]
@@ -317,7 +318,7 @@ def ReadBNA(filename, polytype="list", dtype=np.float):
     The dtype parameter specifies what numpy data type you want the points
     data in -- it defaults to np.float (C double)
     """
-    fd = open(filename, 'r')
+    fd = open(filename, 'rU')
 
     if polytype == 'list':
         Output = []

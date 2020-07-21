@@ -77,7 +77,7 @@ class FayGravityViscous(Weatherer):
         # varies over time, may want to do something different
         self._init_relative_buoyancy = None
         self.thickness_limit = thickness_limit
-        #self.is_first_step = True
+        # self.is_first_step = True
 
     @staticmethod
     @lru_cache(10)
@@ -87,13 +87,13 @@ class FayGravityViscous(Weatherer):
                               spreading_const):
         '''
         time for the initial transient phase of spreading to complete. This
-        depends on blob volume, but is on the order of minutes. Cache upto 4
-        inputs - don't expect 4 or more spills in one scenario.
+        depends on blob volume, but is on the order of minutes. Cache up to 10
+        inputs - don't expect 10 or more spills in one scenario.
         '''
         # time to reach a0
         t0 = ((spreading_const[1] / spreading_const[0]) ** 4.0 *
               (blob_init_vol / (water_viscosity * constants.gravity *
-                                relative_buoyancy)) ** (1. / 3)
+                                relative_buoyancy)) ** (1.0 / 3.0)
               )
         return t0
 
@@ -120,23 +120,23 @@ class FayGravityViscous(Weatherer):
         '''
         This takes scalars inputs since water_viscosity, init_volume and
         relative_buoyancy for a bunch of LEs released together will be the same
-        It
+
 
         :param water_viscosity: viscosity of water
         :type water_viscosity: float
-        :param init_volume: total initial volume of all LEs released together
-        :type init_volume: float
+        :param blob_init_volume: total initial volume of all LEs released together
+        :type blob_init_volume: float
         :param relative_buoyancy: relative buoyancy of oil wrt water:
-            (rho_water - rho_oil)/rho_water where rho defines density
+            (rho_water - rho_oil)/rho_water where rho is the density
         :type relative_buoyancy: float
 
         Equation for gravity spreading:
         ::
             A0 = PI*(k2**4/k1**2)*((V0**5*g*dbuoy)/(nu_h2o**2))**(1./6.)
         '''
-        a0 = (np.pi *
+        a0 = (PI *
               (self.spreading_const[1] ** 4 / self.spreading_const[0] ** 2) *
-              (((blob_init_vol) ** 5 * constants.gravity * relative_buoyancy) /
+              (((blob_init_vol) ** 5 * gravity * relative_buoyancy) /
                (water_viscosity ** 2)) ** (1. / 6.))
 
         # highly unlikely to reach max_area, min_thickness during
