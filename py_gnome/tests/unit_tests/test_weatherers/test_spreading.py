@@ -5,10 +5,9 @@ from __future__ import division
 from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
-from builtins import *
-from builtins import object
-from future import standard_library
-standard_library.install_aliases()
+
+import sys
+
 from datetime import datetime
 
 import numpy as np
@@ -64,13 +63,21 @@ class TestFayGravityViscous(object):
 
         return (A0, p_area)
 
-    def test_exceptions(self):
+    def test_exception_init_area(self):
         '''
         if relative_bouyancy is < 0, it just raises an exception
         '''
-        with pytest.raises(ValueError):
+        # kludge for py2/3 different behaviour with pow() or a negative number
+        Err = ValueError if sys.version_info.major == 2 else TypeError
+        with pytest.raises(Err):
             'relative_bouyancy >= 0'
             self.spread.init_area(water_viscosity, -rel_buoy, bulk_init_vol)
+
+
+    def test_exception_update_area(self):
+        '''
+        if relative_bouyancy is < 0, it just raises an exception
+        '''
 
         with pytest.raises(ValueError):
             'age must be > 0'
