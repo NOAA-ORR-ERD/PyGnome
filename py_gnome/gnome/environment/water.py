@@ -7,7 +7,6 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import copy
 
 try:
     from functools import lru_cache  # it's built-in on py3

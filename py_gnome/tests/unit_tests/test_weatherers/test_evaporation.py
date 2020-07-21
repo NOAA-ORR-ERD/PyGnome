@@ -5,11 +5,7 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 from __future__ import unicode_literals
-from builtins import range
-from future import standard_library
-standard_library.install_aliases()
-from builtins import *
-from builtins import object
+
 from datetime import timedelta, datetime
 
 import pytest
@@ -201,8 +197,7 @@ def assert_helper(sc, new_p):
 
         if new_p > 0:
             #new_p/2 because of new step release behavior May 2020
-            assert np.all(data['evap_decay_constant'][-(new_p/2):, :] ==
-                          0.0)
+            assert np.all(data['evap_decay_constant'][ - (new_p // 2):, :] == 0.0)
 
 
 @pytest.mark.parametrize(('oil', 'temp'), [('oil_6', 333.0),

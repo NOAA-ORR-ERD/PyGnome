@@ -2,10 +2,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
-# from future import standard_library
-# standard_library.install_aliases()
-# from builtins import str
-# from builtins import *
 
 # import pdb
 import datetime
@@ -540,7 +536,6 @@ class ObjType(SchemaType):
         else:
             return filename
 
-
     def _load_json_from_file(self, fname, saveloc):
         '''
         filename is the name of the file in the zip
@@ -550,11 +545,12 @@ class ObjType(SchemaType):
             return
         fp = None
         if isinstance(saveloc, zipfile.ZipFile):
-            fp = saveloc.open(fname, 'rU')
+            fp = saveloc.open(fname)
         else:
             fname = os.path.join(saveloc, fname)
-            fp = open(fname, 'rU')
+            fp = open(fname)
         return json.load(fp)
+
 
 class ObjTypeSchema(MappingSchema):
     schema_type = ObjType

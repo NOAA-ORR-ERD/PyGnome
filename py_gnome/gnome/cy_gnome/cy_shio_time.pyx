@@ -65,11 +65,13 @@ cdef class CyShioTime(CyOSSMTime):
         cdef OSErr err
         cdef bytes yeardata_path
 
+        # path separator as a bytes object
+        cdef bytes bsep = os.sep.encode("ASCII")
         yeardata_path = to_bytes(unicode(yeardata_path_))
 
         if os.path.exists(yeardata_path):
-            if yeardata_path[-1] != os.sep:
-                yeardata_path = os.path.normpath(yeardata_path) + os.sep
+            if yeardata_path[-1] != bsep:
+                yeardata_path = os.path.normpath(yeardata_path) + bsep
 
             # implicit conversion from bytes to char *
             err = self.shio.SetYearDataPath(yeardata_path)
@@ -168,10 +170,10 @@ cdef class CyShioTime(CyOSSMTime):
 #         """
 #         # initialize self.shio.fEbbFloodDataHdl for specified duration
 #         self.get_time_value(modelTime)
-# 
+#
 #         cdef short tmp_size = sizeof(EbbFloodData)
 #         cdef cnp.ndarray[EbbFloodData, ndim = 1] ebb_flood
-# 
+#
 #         if self.shio.fStationType == 'C':
 #             # allocate memory and copy it over
 #             sz = _GetHandleSize(<Handle>self.shio.fEbbFloodDataHdl)
@@ -181,21 +183,21 @@ cdef class CyShioTime(CyOSSMTime):
 #             return ebb_flood
 #         else:
 #             return 0
-# 
+#
 #     def get_high_low(self, modelTime):
 #         """
 #         Return high and low tide data for specified modelTime
 #         """
 #         # initialize self.shio.fEbbFloodDataHdl for specified duration
 #         self.get_time_value(modelTime)
-# 
+#
 #         cdef short tmp_size = sizeof(HighLowData)
 #         cdef cnp.ndarray[HighLowData, ndim = 1] high_low
-# 
+#
 #         if self.shio.fStationType == 'H':
 #             # initialize self.shio.fEbbFloodDataHdl for specified duration
 #             self.get_time_value(modelTime)
-# 
+#
 #             # allocate memory and copy it over
 #             sz = _GetHandleSize(<Handle>self.shio.fHighLowDataHdl)
 #             high_low = np.empty((sz / tmp_size,),

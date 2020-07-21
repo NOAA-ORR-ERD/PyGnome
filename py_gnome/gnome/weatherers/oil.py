@@ -9,13 +9,6 @@ from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from future import standard_library
-standard_library.install_aliases()
-from builtins import zip
-from builtins import range
-from builtins import *
-from past.utils import old_div
-from builtins import object
 from backports.functools_lru_cache import lru_cache
 
 import json
@@ -66,7 +59,7 @@ def density_at_temp(ref_density, ref_temp_k, temp_k, k_rho_t=0.0008):
 
         NOTE: need a reference for the coefficient of expansion
     '''
-    return old_div(ref_density, (1.0 - k_rho_t * (ref_temp_k - temp_k)))
+    return ref_density / (1.0 - k_rho_t * (ref_temp_k - temp_k))
 
 
 def vol_expansion_coeff(rho_0, t_0, rho_1, t_1):
@@ -77,7 +70,7 @@ def vol_expansion_coeff(rho_0, t_0, rho_1, t_1):
     if t_0 == t_1:
         k_rho_t = 0.0
     else:
-        k_rho_t = old_div((rho_0 - rho_1), (rho_0 * (t_1 - t_0)))
+        k_rho_t = (rho_0 - rho_1) / (rho_0 * (t_1 - t_0))
 
     return k_rho_t
 
@@ -94,7 +87,7 @@ def kvis_at_temp(ref_kvis, ref_temp_k, temp_k, k_v2=2416.0):
               multi-KVis oils in our oil library suggest that a value of
               2416.0 (Abu Eishah 1999) would be a good default value for k_v2.
     '''
-    return ref_kvis * np.exp(old_div(k_v2, temp_k) - old_div(k_v2, ref_temp_k))
+    return ref_kvis * np.exp(k_v2 / temp_k - k_v2 / ref_temp_k)
 
 
 class OilSchema(ObjTypeSchema):
@@ -225,7 +218,7 @@ class Oil(object):
         self.bull_time = bullwinkle_time
         self._pour_point = pour_point
         self._flash_point = flash_point
-        self.solubility = solubility	
+        self.solubility = solubility
         #self._k_v2 = 2416.0
         self._k_v2 = None
 
@@ -375,7 +368,7 @@ class Oil(object):
         C_2i = 0.19 * self.boiling_point - 18
 
         var = 1. / (self.boiling_point - C_2i) - 1. / (temp - C_2i)
-        ln_Pi_Po = (old_div(D_S * (self.boiling_point - C_2i) ** 2,
+        ln_Pi_Po = ((D_S * (self.boiling_point - C_2i) ** 2 /
                     (D_Zb * R_cal * self.boiling_point)) * var)
         Pi = np.exp(ln_Pi_Po) * atmos_pressure
 
@@ -677,6 +670,7 @@ class Oil(object):
             return kvis_t
 
     def determine_k_v2(self, kvis_list=None):
+      # FIXME: this should be able to be done with a simple linear fit.
         '''
             The value k_v2 is the coefficient of exponential decay used
             when calculating kinematic viscosity as a function of
@@ -693,7 +687,7 @@ class Oil(object):
         self._k_v2 = 2416.0
 
         def exp_func(temp_k, a, k_v2):
-            return a * np.exp(old_div(k_v2, temp_k))
+            return a * np.exp(k_v2 / temp_k)
 
         if kvis_list is None:
             kvis_list = [kv for kv in self.aggregate_kvis()[0]
@@ -702,12 +696,12 @@ class Oil(object):
         if len(kvis_list) < 2:
             return
 
-        ref_temp_k, ref_kvis = list(zip(*[(k.ref_temp_k, k.m_2_s)
-                                     for k in kvis_list]))
+        ref_temp_k, ref_kvis = zip(*((k.ref_temp_k, k.m_2_s)
+                                     for k in kvis_list))
 
         for k in np.logspace(3.6, 4.5, num=8):
             # k = log range from about 5000-32000
-            a_coeff = ref_kvis[0] * np.exp(old_div(-k, ref_temp_k[0]))
+            a_coeff = ref_kvis[0] * np.exp(-k / ref_temp_k[0])
 
             try:
                 popt, pcov = curve_fit(exp_func, ref_temp_k, ref_kvis,
@@ -752,11 +746,11 @@ class Oil(object):
         # check for user input value, otherwise set to -999 as a flag
         bulltime = -999.
 
-        if self._bulltime is not None:	
+        if self._bulltime is not None:
             return self._bulltime
         else:
             if self.bull_time is not None:
-                return self.bull_time 
+                return self.bull_time
             else:
                 return bulltime
             #return bulltime

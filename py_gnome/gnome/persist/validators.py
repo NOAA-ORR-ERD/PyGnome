@@ -7,9 +7,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
-from future import standard_library
-standard_library.install_aliases()
-from builtins import *
+
 import time
 
 import numpy as np
@@ -30,7 +28,7 @@ def convertible_to_seconds(node, value):
         return
 
     try:
-        time.mktime(list(value.timetuple()))
+        time.mktime(value.timetuple())
     except (OverflowError, ValueError):
         raise Invalid(node, 'Invalid date.')
 

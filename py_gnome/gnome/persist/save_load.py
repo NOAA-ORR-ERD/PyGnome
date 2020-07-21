@@ -572,14 +572,14 @@ def is_savezip_valid(savezip):
 
             # integer division - it will floor
             if (zi.compress_size > 0 and
-                    old_div(zi.file_size, zi.compress_size) > _max_compress_ratio):
+                    (zi.file_size / zi.compress_size) > _max_compress_ratio):
                 # 4) Found a file with
                 #    uncompressed_size/compressed_size > _max_compress_ratio.
                 #    Rejecting.
                 log.warning('file compression ratio is {0}. '
                             'maximum must be less than {1}. '
                             'Rejecting zipfile'
-                            .format(old_div(zi.file_size, zi.compress_size),
+                            .format((zi.file_size / zi.compress_size),
                                     _max_compress_ratio))
                 return False
 
