@@ -53,10 +53,9 @@ class OrderedCollection(object):
         # is hard to reference as a key
 
         self._elems = elems[:]
-        self._d_index = \
-            {self._s_id(elem): idx for idx, elem in enumerate(self._elems)}
+        self._d_index = {self._s_id(elem): idx for idx, elem in enumerate(self._elems)}
 
-        self.callbacks = {}
+        self.callbacks = []
 
     def _s_id(self, elem):
         'return the id of the object as a string'
@@ -184,9 +183,17 @@ class OrderedCollection(object):
         '''
         try:
             # first check if elem is the 'id'
-            idx = self._d_index[elem]
-        except (KeyError, TypeError):
-            # if its not a valid ID, then check if it's the object
+            if (hasattr(elem, 'id')):
+                idx = self._s_id(elem)
+                try:
+                    idx = self._d_index[idx]
+                except KeyError:
+                    raise ValueError('{0} is not in OrderedCollection'
+                                    .format(elem))
+            else:
+                idx = self._d_index[elem]
+        except KeyError:
+            # if its not a valid ID, then check if its the object
             ident = self._s_id(elem)
             try:
                 idx = self._d_index[ident]
@@ -372,10 +379,10 @@ class OrderedCollection(object):
                                  "('add', 'remove', 'replace'). "
                                  "{0} is not supported".format(event))
 
-        self.callbacks[callback] = events
+        self.callbacks.append((callback, events))
 
     def fire_event(self, event, obj_):
-        for (callback, reg_event) in list(self.callbacks.items()):
+        for (callback, reg_event) in self.callbacks:
             if event in reg_event:
                 callback(obj_)  # this should be all that is required
 

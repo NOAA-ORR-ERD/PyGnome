@@ -82,7 +82,7 @@ def get_datafile(file_):
                    ]
 
         pbar = ProgressBar(widgets=widgets,
-                           maxval=int(resp.info().getheader('Content-Length'))
+                           maxval=int(resp.info()['Content-Length'])
                            ).start()
 
         if not os.path.exists(path_):
