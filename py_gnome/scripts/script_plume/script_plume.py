@@ -2,24 +2,32 @@
 """
 Script to test GNOME with plume element type
  - weibull droplet size distribution
+
 Simple map and simple current mover
+
 Rise velocity and vertical diffusion
+
+This is simply making a point source with a given distribution of droplet sizes
+
 """
+
 
 import os
 from datetime import datetime, timedelta
 
 from gnome import scripting
-from gnome.spill.elements import plume
+#from gnome.spill.elements import plume
 from gnome.utilities.distributions import WeibullDistribution
 
 from gnome.model import Model
 from gnome.map import GnomeMap
+from gnome.spill.substance import NonWeatheringSubstance
+from gnome.spill.initializers import plume_initializers
 from gnome.spill import point_line_release_spill
 from gnome.scripting import subsurface_plume_spill
 from gnome.movers import (RandomMover,
                           RiseVelocityMover,
-                          RandomVerticalMover,
+                          RandomMover3D,
                           SimpleMover)
 
 from gnome.outputters import Renderer
@@ -27,23 +35,23 @@ from gnome.outputters import NetCDFOutput
 
 # define base directory
 base_dir = os.path.dirname(__file__)
+images_dir = os.path.join(base_dir, 'images')
 
 
-def make_model(images_dir=os.path.join(base_dir, 'images')):
+def make_model():
     print 'initializing the model'
 
     start_time = datetime(2004, 12, 31, 13, 0)
-    model = Model(start_time=start_time, duration=timedelta(days=3),
-                  time_step=30 * 60, uncertain=False)
+    model = Model(start_time=start_time,
+                  duration=timedelta(days=3),
+                  time_step=30 * 60,
+                  uncertain=False)
 
     print 'adding the map'
     model.map = GnomeMap()
 
-    # draw_ontop can be 'uncertain' or 'forecast'
-    # 'forecast' LEs are in black, and 'uncertain' are in red
-    # default is 'forecast' LEs draw on top
     renderer = Renderer(output_dir=images_dir,
-                        # size=(800, 600),
+                        image_size=(800, 600),
                         output_timestep=timedelta(hours=1),
                         draw_ontop='uncertain')
     renderer.viewport = ((-76.5, 37.), (-75.8, 38.))
@@ -64,41 +72,44 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # in the larger droplet spill.
     # Smaller droplets start at a lower depth than larger
 
-    wd = WeibullDistribution(alpha=1.8, lambda_=.00456,
+    wd = WeibullDistribution(alpha=1.8,
+                             lambda_=.00456,
                              min_=.0002)  # 200 micron min
     end_time = start_time + timedelta(hours=24)
-    # spill = point_line_release_spill(num_elements=10,
-    #                                  amount=90,  # default volume_units=m^3
-    #                                  units='m^3',
-    #                                  start_position=(-76.126872, 37.680952,
-    #                                                  1700),
-    #                                  release_time=start_time,
-    #                                  end_release_time=end_time,
-    #                                  element_type=plume(distribution=wd,
-    #                                                     density=600)
-    #                                  )
 
-    spill = subsurface_plume_spill(num_elements=10,
+    # at this point only one non-weathering substance is allowed; this should change in the future
+    substance=NonWeatheringSubstance(standard_density=900, initializers=plume_initializers(distribution=wd))
+
+    spill = subsurface_plume_spill(num_elements=50,
                                    start_position=(-76.126872, 37.680952,
-                                                   1700),
+                                                   1700.0),
                                    release_time=start_time,
                                    distribution=wd,
                                    amount=90,  # default volume_units=m^3
                                    units='m^3',
                                    end_release_time=end_time,
-                                   density=600)
+                                   # substance='oil_crude',
+                                   #substance=NonWeatheringSubstance(standard_density=900),
+                                   substance=substance,
+                                   #density=900,
+                                   )
 
     model.spills += spill
 
-    wd = WeibullDistribution(alpha=1.8, lambda_=.00456,
+    wd = WeibullDistribution(alpha=1.8,
+                             lambda_=.00456,
                              max_=.0002)  # 200 micron max
-    spill = point_line_release_spill(num_elements=10, amount=90,
+
+    spill = point_line_release_spill(num_elements=50, 
                                      units='m^3',
                                      start_position=(-76.126872, 37.680952,
-                                                     1800),
+                                                     1800.0),
                                      release_time=start_time,
-                                     element_type=plume(distribution=wd,
-                                                        substance_name='oil_crude')
+                                     amount=90,
+                                     #element_type=plume(distribution=wd,
+                                     #                   density=900.0)
+                                     #substance = NonWeatheringSubstance(initializers=plume_initializers(distribution=wd))
+                                     substance=substance
                                      )
     model.spills += spill
 
@@ -108,8 +119,8 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     print 'adding a RiseVelocityMover:'
     model.movers += RiseVelocityMover()
 
-    print 'adding a RandomVerticalMover:'
-    model.movers += RandomVerticalMover(vertical_diffusion_coef_above_ml=5,
+    print 'adding a RandomMover3D:'
+    model.movers += RandomMover3D(vertical_diffusion_coef_above_ml=5,
                                         vertical_diffusion_coef_below_ml=.11,
                                         mixed_layer_depth=10)
 
@@ -133,12 +144,9 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     return model
 
 
-# if __name__ == "__main__":
-#     scripting.make_images_dir()
-#     for step in model:
-#         print step
-#         print model.get_spill_data('spill_num && positions',
-#                                    ('age < 8000 && '
-#                                     'spill_num == 1 || '
-#                                     'mass < 8100')
-#                                    )
+if __name__ == "__main__":
+    scripting.make_images_dir(images_dir)
+    model = make_model()
+    print "about to start running the model"
+    for step in model:
+        print step

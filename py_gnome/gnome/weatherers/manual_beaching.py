@@ -5,9 +5,7 @@
     model run.
     It is modelled as a weathering process.
 '''
-
 from datetime import datetime
-import copy
 
 import numpy as np
 
@@ -18,7 +16,6 @@ import unit_conversion as uc
 
 from gnome.basic_types import datetime_value_1d
 from gnome.weatherers import Weatherer
-from gnome.utilities.serializable import Serializable, Field
 from gnome.utilities.inf_datetime import InfDateTime
 
 from gnome.persist import validators, base_schema
@@ -27,6 +24,7 @@ from gnome.persist.extend_colander import (DefaultTupleSchema,
                                            DatetimeValue1dArraySchema)
 from .core import WeathererSchema
 from .cleanup import RemoveMass
+from gnome.environment.environment import WaterSchema
 
 
 class BeachingTupleSchema(DefaultTupleSchema):
@@ -36,8 +34,7 @@ class BeachingTupleSchema(DefaultTupleSchema):
     datetime = SchemaNode(LocalDateTime(default_tzinfo=None),
                           default=base_schema.now,
                           validator=validators.convertible_to_seconds)
-    amount = SchemaNode(Float(),
-                        default=0,
+    amount = SchemaNode(Float(), default=0,
                         validator=Range(min=0,
                                         min_err='amount must be '
                                                 'greater than or equal to 0'))
@@ -47,9 +44,9 @@ class BeachingTimeSeriesSchema(DatetimeValue1dArraySchema):
     '''
     Schema for list of Amount tuples, to make the amount timeseries
     '''
-    value = \
-        BeachingTupleSchema(default=(datetime.now().replace(second=0,
-                                                            microsecond=0), 0))
+    value = BeachingTupleSchema(default=(datetime.now()
+                                         .replace(second=0, microsecond=0),
+                                         0))
 
     def validator(self, node, cstruct):
         '''
@@ -64,26 +61,24 @@ class BeachingSchema(WeathererSchema):
     validate data after deserialize, before it is given back to pyGnome's
     from_dict to set _state of object
     '''
-    units = SchemaNode(String(), default='m^3')
+    units = SchemaNode(String(), default='m^3', save=True, update=True)
+    timeseries = BeachingTimeSeriesSchema(missing=drop, save=True, update=True)
+    water = WaterSchema(save=True, update=True, save_reference=True)
 
-    timeseries = BeachingTimeSeriesSchema(missing=drop)
 
-
-class Beaching(RemoveMass, Weatherer, Serializable):
+class Beaching(RemoveMass, Weatherer):
     '''
     It isn't really a reponse/cleanup option; however, it works in the same
     manner in that Beaching removes mass at a user specified rate. Mixin the
     RemoveMass functionality.
     '''
-    _state = copy.deepcopy(Weatherer._state)
-    _state += [Field('timeseries', save=True, update=True),
-               Field('units', save=True, update=True), ]
     _schema = BeachingSchema
 
     def __init__(self,
-                 active_start,
+                 active_range,
                  units='m^3',
                  timeseries=None,
+                 water=None,
                  **kwargs):
         '''
         Initialization for the manual beaching events.
@@ -96,13 +91,9 @@ class Beaching(RemoveMass, Weatherer, Serializable):
         .. note:: Assumes the model's
             time_step is smaller than the timeseries timestep, meaning the
         '''
-        if 'active_stop' in kwargs:
-            # user cannot set 'active_stop'. active_stop is automatically set
-            # to be the last time in the timeseries range
-            kwargs.pop('active_stop')
+        super(Beaching, self).__init__(active_range=active_range, **kwargs)
 
-        super(Beaching, self).__init__(active_start=active_start,
-                                       **kwargs)
+        self.water = water
 
         self._units = None
         self.units = units
@@ -129,14 +120,15 @@ class Beaching(RemoveMass, Weatherer, Serializable):
         '''
         value = np.asarray(value, dtype=datetime_value_1d)
 
-        # prepends active_start to _timeseries array. This is for convenience
+        # prepends active start to _timeseries array. This is for convenience
         to_insert = np.zeros(1, dtype=datetime_value_1d)
 
-        if self.active_start != InfDateTime('-inf'):
-            to_insert['time'][0] = np.datetime64(self.active_start)
+        if self.active_range[0] != InfDateTime('-inf'):
+            to_insert['time'][0] = np.datetime64(self.active_range[0])
 
         self._timeseries = np.insert(value, 0, to_insert)
-        self.active_stop = self._timeseries['time'][-1].astype(datetime)
+        self.active_range = (self.active_range[0],
+                             self._timeseries['time'][-1].astype(datetime))
 
     @property
     def units(self):
@@ -169,7 +161,7 @@ class Beaching(RemoveMass, Weatherer, Serializable):
         '''
         if self.on:
             sc.mass_balance['observed_beached'] = 0.0
-            #force rate to be recalculated in case anything changed
+            # force rate to be recalculated in case anything changed
             self._rate = None
 
     def _remove_mass(self, time_step, model_time, substance):
@@ -181,24 +173,31 @@ class Beaching(RemoveMass, Weatherer, Serializable):
             the step.
         '''
         if self._rate is None:
-            # ensure active_start < timeseries['time'][0]
+            # ensure active start < timeseries['time'][0]
             # timedelta64 seems to be in seconds
             dt = np.diff(self._timeseries['time']).astype(np.float64)
 
             # convert timeseries to 'kg'
             dv = self.timeseries['value']
-            dm = 0
-            types = uc.FindUnitTypes()
-            unit_type = types[self.units]
-            if unit_type == 'Mass':
-                dm = uc.convert('Mass', self.units, 'kg', dv)
-            elif unit_type == 'Volume':
-                dm = (uc.convert('Volume', self.units, 'm^3', dv) *
-                      substance.get_density())
-            self._rate = dm/dt
+
+            # types = uc.FindUnitTypes()
+            # unit_type = types[self.units]
+            unit_type = uc.UNIT_TYPES[self.units]
+            if unit_type == 'mass':
+                dm = uc.convert('mass', self.units, 'kg', dv)
+            elif unit_type == 'volume':
+                water_temp = self.water.get('temperature')
+                rho = substance.density_at_temp(water_temp)
+                volume = uc.convert('volume', self.units, 'm^3', dv)
+
+                dm = volume * rho
+            else:
+                raise ValueError("{} is not a valid unit for beached oil"
+                                 .format(self.unit))
+            self._rate = dm / dt
 
         # find rate for time interval (model_time, model_time + time_step)
-        # function is called for model_time within active_start and active_stop
+        # function is called for model_time within active start and active stop
         # so following should always work
         # Expect the timestep to be much smaller than the delta time between
         # timeseries, however, let's not make this assumption since it can't be
@@ -254,6 +253,7 @@ class Beaching(RemoveMass, Weatherer, Serializable):
             rm_mass_frac = rm_mass / data['mass'].sum()
             if rm_mass_frac > 1.0:
                 rm_mass_frac = 1.0
+                rm_mass = data['mass'].sum()
                 msg = ("Beaching() removing more mass than available at {0}".
                        format(model_time))
                 self.logger.warning(msg)

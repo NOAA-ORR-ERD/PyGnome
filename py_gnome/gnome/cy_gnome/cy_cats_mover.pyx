@@ -124,7 +124,7 @@ cdef class CyCatsMover(CyCurrentMover):
                   CyShioTime.ref_point
             """
             ref = self.cats.GetRefPosition()
-            if int(ref.p.pLat) == -999:
+            if np.isclose(ref.p.pLat, -999.):
                 return None
             else:
                 return (ref.p.pLong / 1.e6, ref.p.pLat / 1.e6, ref.z)
@@ -189,7 +189,7 @@ cdef class CyCatsMover(CyCurrentMover):
         """
         self.cats.SetTimeDep(cy_shio.shio)
 
-        if cy_shio.station_location is not None:
+        if cy_shio.station_location is not None and self.ref_point is None:
             self.ref_point = cy_shio.station_location
 
         self.cats.bTimeFileActive = True
@@ -205,10 +205,20 @@ cdef class CyCatsMover(CyCurrentMover):
         self.cats.SetTimeDep(ossm.time_dep)
         self.cats.bTimeFileActive = True   # What is this?
 
-        if ossm.station_location is not None:
+        if ossm.station_location is not None and self.ref_point is None:
             self.ref_point = ossm.station_location
 
         return True
+
+    def unset_tide(self):
+        """
+        Undoes the above tide functions and returns the object to default
+        """
+        self.cats.SetTimeDep(NULL)
+        self.cats.bTimeFileActive = False
+        self.cats.scaleType = 0
+
+        self.ref_point = (-0.000999,-0.000999,-0.000999)
 
     def text_read(self, fname):
         """
@@ -234,7 +244,7 @@ cdef class CyCatsMover(CyCurrentMover):
         err = self.cats.InitMover()
         if err is not False:
             raise ValueError('CATSMover.compute_velocity_scale(..) '
-                             'returned an error. OSErr: {0}'
+                             'returned an error. Reference point not valid. OSErr: {0}'
                              .format(err))
 
         return True

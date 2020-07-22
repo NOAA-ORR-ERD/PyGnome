@@ -4,63 +4,56 @@ Movers using wind as the forcing function
 
 import os
 import copy
-from datetime import datetime
-import math
 
-import numpy
-np = numpy
+import numpy as np
+
 from colander import (SchemaNode, Bool, String, Float, drop)
 
-from gnome.basic_types import (ts_format,
-                               world_point,
+from gnome.exceptions import ReferencedObjectNotSet
+
+from gnome.basic_types import (world_point,
                                world_point_type,
-                               velocity_rec,
-                               datetime_value_2d)
+                               velocity_rec)
+from gnome.array_types import gat
 
-from gnome.utilities import serializable, rand
-from gnome.utilities import time_utils
-
-from gnome import environment
-from gnome.movers import CyMover, ProcessSchema
 from gnome.cy_gnome.cy_wind_mover import CyWindMover
 from gnome.cy_gnome.cy_gridwind_mover import CyGridWindMover
 from gnome.cy_gnome.cy_ice_wind_mover import CyIceWindMover
 
-from gnome.persist.base_schema import ObjType
-from gnome.exceptions import ReferencedObjectNotSet
+from gnome.utilities.time_utils import sec_to_datetime
+from gnome.utilities.rand import random_with_persistance
 
 
-class WindMoversBaseSchema(ObjType, ProcessSchema):
-    uncertain_duration = SchemaNode(Float(), missing=drop)
-    uncertain_time_delay = SchemaNode(Float(), missing=drop)
-    uncertain_speed_scale = SchemaNode(Float(), missing=drop)
-    uncertain_angle_scale = SchemaNode(Float(), missing=drop)
-    #extrapolate = SchemaNode(Bool(), missing=drop)
+from gnome.environment import Wind, WindSchema
+from gnome.environment.wind import constant_wind
+from gnome.movers import CyMover, ProcessSchema
+from gnome.persist.base_schema import GeneralGnomeObjectSchema
+from gnome.persist.extend_colander import FilenameSchema
+from gnome.persist.validators import convertible_to_seconds
+from gnome.persist.extend_colander import LocalDateTime
+from gnome.utilities.inf_datetime import InfTime, MinusInfTime
 
 
-class WindMoverSchema(WindMoversBaseSchema):
-    """
-    Contains properties required by UpdateWindMover and CreateWindMover
-    """
-    # 'wind' schema node added dynamically
-    name = 'WindMover'
-    description = 'wind mover properties'
-    extrapolate = SchemaNode(Bool(), missing=drop)
+class WindMoversBaseSchema(ProcessSchema):
+    uncertain_duration = SchemaNode(Float(), save=True, update=True,
+                                    missing=drop)
+    uncertain_time_delay = SchemaNode(Float(), save=True, update=True,
+                                      missing=drop)
+    uncertain_speed_scale = SchemaNode(Float(), save=True, update=True,
+                                       missing=drop)
+    uncertain_angle_scale = SchemaNode(Float(), save=True, update=True,
+                                       missing=drop)
 
 
 class WindMoversBase(CyMover):
-    _state = copy.deepcopy(CyMover._state)
-    _state.add(update=['uncertain_duration', 'uncertain_time_delay',
-                       'uncertain_speed_scale', 'uncertain_angle_scale'],
-               save=['uncertain_duration', 'uncertain_time_delay',
-                     'uncertain_speed_scale', 'uncertain_angle_scale'])
+
+    _schema = WindMoversBaseSchema
 
     def __init__(self,
                  uncertain_duration=3,
                  uncertain_time_delay=0,
                  uncertain_speed_scale=2.,
                  uncertain_angle_scale=0.4,
-                 #extrapolate=False,
                  **kwargs):
         """
         This is simply a base class for WindMover and GridWindMover for the
@@ -91,22 +84,19 @@ class WindMoversBase(CyMover):
         # also sets self._uncertain_angle_units
         self.uncertain_angle_scale = uncertain_angle_scale
 
-        #self.extrapolate = extrapolate
-
-        self.array_types.update({'windages',
-                                 'windage_range',
-                                 'windage_persist'})
+        self.array_types.update({'windages': gat('windages'),
+                                 'windage_range': gat('windage_range'),
+                                 'windage_persist': gat('windage_persist')})
 
     # no conversion necessary - simply sets/gets the stored value
     uncertain_speed_scale = \
         property(lambda self: self.mover.uncertain_speed_scale,
-                 lambda self, val: setattr(self.mover,
-                                           'uncertain_speed_scale',
+                 lambda self, val: setattr(self.mover, 'uncertain_speed_scale',
                                            val))
+
     uncertain_angle_scale = \
         property(lambda self: self.mover.uncertain_angle_scale,
-                 lambda self, val: setattr(self.mover,
-                                           'uncertain_angle_scale',
+                 lambda self, val: setattr(self.mover, 'uncertain_angle_scale',
                                            val))
 
     def _seconds_to_hours(self, seconds):
@@ -131,11 +121,6 @@ class WindMoversBase(CyMover):
     def uncertain_time_delay(self, val):
         self.mover.uncertain_time_delay = self._hours_to_seconds(val)
 
-#     extrapolate = property(lambda self: self.mover.extrapolate,
-#                            lambda self, val: setattr(self.mover,
-#                                                      'extrapolate',
-#                                                      val))
-
     def prepare_for_model_step(self, sc, time_step, model_time_datetime):
         """
         Call base class method using super
@@ -150,14 +135,15 @@ class WindMoversBase(CyMover):
 
         # if no particles released, then no need for windage
         # TODO: revisit this since sc.num_released shouldn't be None
-        if sc.num_released is None  or sc.num_released == 0:
+        if sc.num_released is None or sc.num_released == 0:
             return
 
-        rand.random_with_persistance(sc['windage_range'][:, 0],
-                                     sc['windage_range'][:, 1],
-                                     sc['windages'],
-                                     sc['windage_persist'],
-                                     time_step)
+        if self.active:
+            random_with_persistance(sc['windage_range'][:, 0],
+                                    sc['windage_range'][:, 1],
+                                    sc['windages'],
+                                    sc['windage_persist'],
+                                    time_step)
 
     def get_move(self, sc, time_step, model_time_datetime):
         """
@@ -172,13 +158,10 @@ class WindMoversBase(CyMover):
         self.prepare_data_for_get_move(sc, model_time_datetime)
 
         if self.active and len(self.positions) > 0:
-            self.mover.get_move(self.model_time,
-                                time_step,
-                                self.positions,
-                                self.delta,
+            self.mover.get_move(self.model_time, time_step,
+                                self.positions, self.delta,
                                 sc['windages'],
-                                self.status_codes,
-                                self.spill_type)
+                                self.status_codes, self.spill_type)
 
         return (self.delta.view(dtype=world_point_type)
                 .reshape((-1, len(world_point))))
@@ -192,13 +175,29 @@ class WindMoversBase(CyMover):
                 '  uncertain_time_delay={0.uncertain_time_delay}\n'
                 '  uncertain_speed_scale={0.uncertain_speed_scale}\n'
                 '  uncertain_angle_scale={0.uncertain_angle_scale}\n'
-                '  active_start time={0.active_start}\n'
-                '  active_stop time={0.active_stop}\n'
+                '  active_range time={0.active_range}\n'
                 '  current on/off status={0.on}\n')
         return info.format(self)
 
 
-class WindMover(WindMoversBase, serializable.Serializable):
+class WindMoverSchema(WindMoversBaseSchema):
+    """
+    Contains properties required by UpdateWindMover and CreateWindMover
+    """
+    # 'wind' schema node added dynamically
+    wind = GeneralGnomeObjectSchema(
+        acceptable_schemas=[WindSchema],
+        save=True, update=True, save_reference=True
+    )
+    data_start = SchemaNode(
+        LocalDateTime(), validator=convertible_to_seconds, read_only=True
+    )
+    data_stop = SchemaNode(
+        LocalDateTime(), validator=convertible_to_seconds, read_only=True
+    )
+
+
+class WindMover(WindMoversBase):
     """
     Python wrapper around the Cython wind_mover module.
     This class inherits from CyMover and contains CyWindMover
@@ -206,15 +205,13 @@ class WindMover(WindMoversBase, serializable.Serializable):
     The real work is done by the CyWindMover object.  CyMover
     sets everything up that is common to all movers.
     """
-    _state = copy.deepcopy(WindMoversBase._state)
-    _state.add(update=['extrapolate'],
-               save=['extrapolate'])
-    _state.add_field(serializable.Field('wind', save=True, update=True,
-                                        save_reference=True))
     _schema = WindMoverSchema
 
-    def __init__(self, wind=None, extrapolate=False, **kwargs):
-    #def __init__(self, wind=None, **kwargs):
+    _ref_as = 'wind_mover'
+
+    _req_refs = {'wind': Wind}
+
+    def __init__(self, wind=None, **kwargs):
         """
         Uses super to call CyMover base class __init__
 
@@ -233,40 +230,22 @@ class WindMover(WindMoversBase, serializable.Serializable):
         self._wind = None
         if wind is not None:
             self.wind = wind
-            kwargs['make_default_refs'] = \
-                kwargs.pop('make_default_refs', False)
-            kwargs['name'] = \
-                kwargs.pop('name', wind.name)
+            self.name = wind.name
+            kwargs['make_default_refs'] = kwargs.pop('make_default_refs',
+                                                     False)
+            kwargs['name'] = kwargs.pop('name', wind.name)
 
-        self.extrapolate = extrapolate
         # set optional attributes
         super(WindMover, self).__init__(**kwargs)
 
-		# this will have to be updated when wind is set or changed
-        if self.wind is not None:
-            self.real_data_start = time_utils.sec_to_datetime(self.wind.ossm.get_start_time())
-            self.real_data_stop = time_utils.sec_to_datetime(self.wind.ossm.get_end_time())
-
     def __repr__(self):
-        """
-        .. todo::
-            We probably want to include more information.
-        """
-        return ('{0.__class__.__module__}.{0.__class__.__name__}(\n'
-                '{1}'
-                ')'.format(self, self._state_as_str()))
+        return ('{0.__class__.__module__}.{0.__class__.__name__}(\n{1})'
+                .format(self, self._state_as_str()))
 
     def __str__(self):
-        info = ('WindMover - current _state. '
-                'See "wind" object for wind conditions:\n'
-                '{0}'.format(self._state_as_str()))
-        return info
-
-
-    extrapolate = property(lambda self: self.mover.extrapolate,
-                           lambda self, val: setattr(self.mover,
-                                                     'extrapolate',
-                                                     val))
+        return ('WindMover - current _state. '
+                'See "wind" object for wind conditions:\n{0}'
+                .format(self._state_as_str()))
 
     @property
     def wind(self):
@@ -274,12 +253,20 @@ class WindMover(WindMoversBase, serializable.Serializable):
 
     @wind.setter
     def wind(self, value):
-        if not isinstance(value, environment.Wind):
+        if not isinstance(value, Wind):
             raise TypeError('wind must be of type environment.Wind')
         else:
             # update reference to underlying cython object
             self._wind = value
-            self.mover.set_ossm(self.wind.ossm)
+            self.mover.set_ossm(self._wind.ossm)
+
+    @property
+    def data_start(self):
+        return self.wind.data_start
+
+    @property
+    def data_stop(self):
+        return self.wind.data_stop
 
     def prepare_for_model_run(self):
         '''
@@ -290,33 +277,6 @@ class WindMover(WindMoversBase, serializable.Serializable):
         if self.on and self.wind is None:
             msg = "wind object not defined for WindMover"
             raise ReferencedObjectNotSet(msg)
-
-    def serialize(self, json_='webapi'):
-        """
-        Since 'wind' property is saved as a reference when used in save file
-        and 'save' option, need to add appropriate node to WindMover schema
-        """
-        toserial = self.to_serialize(json_)
-        schema = self.__class__._schema()
-        if json_ == 'webapi':
-            # add wind schema
-            schema.add(environment.WindSchema(name='wind'))
-
-        serial = schema.serialize(toserial)
-
-        return serial
-
-    @classmethod
-    def deserialize(cls, json_):
-        """
-        append correct schema for wind object
-        """
-        schema = cls._schema()
-        if 'wind' in json_:
-            schema.add(environment.WindSchema())
-        _to_dict = schema.deserialize(json_)
-
-        return _to_dict
 
 
 def wind_mover_from_file(filename, **kwargs):
@@ -329,10 +289,9 @@ def wind_mover_from_file(filename, **kwargs):
 
     :returns mover: returns a wind mover, built from the file
     """
-    w = environment.Wind(filename=filename, format='r-theta')
-    wm = WindMover(w, **kwargs)
+    w = Wind(filename=filename, coord_sys='r-theta')
 
-    return wm
+    return WindMover(w, name=w.name, **kwargs)
 
 
 def constant_wind_mover(speed, direction, units='m/s'):
@@ -348,43 +307,40 @@ def constant_wind_mover(speed, direction, units='m/s'):
     :return: returns a gnome.movers.WindMover object all set up.
 
     .. note::
-        The time for a constant wind timeseries is irrelevant. 
-        This function simply sets it to datetime.now() accurate to hours.   
+        The time for a constant wind timeseries is irrelevant.
+        This function simply sets it to datetime.now() accurate to hours.
     """
-
-    series = np.zeros((1, ), dtype=datetime_value_2d)
-
-    # note: if there is ony one entry, the time is arbitrary
-    dt = datetime.now().replace(microsecond=0, second=0, minute=0)
-    series[0] = (dt, (speed, direction))
-    wind = environment.Wind(timeseries=series, units=units)
-    w_mover = WindMover(wind)
-    return w_mover
+    return WindMover(constant_wind(speed, direction, units=units))
 
 
 class GridWindMoverSchema(WindMoversBaseSchema):
-    """ Similar to WindMover except it doesn't have wind_id"""
-    wind_file = SchemaNode(String(), missing=drop)
-    topology_file = SchemaNode(String(), missing=drop)
-    wind_scale = SchemaNode(Float(), missing=drop)
-    extrapolate = SchemaNode(Bool(), missing=drop)
+    """
+        Similar to WindMover except it doesn't have wind_id
+    """
+    filename = FilenameSchema(
+        missing=drop, save=True, update=True, isdatafile=True, test_equal=False
+    )
+    topology_file = FilenameSchema(
+        missing=drop, save=True, update=True, isdatafile=True, test_equal=False
+    )
+    wind_scale = SchemaNode(
+        Float(), missing=drop, save=True, update=True
+    )
+    extrapolate = SchemaNode(
+        Bool(), missing=drop, save=True, update=True
+    )
 
 
-class GridWindMover(WindMoversBase, serializable.Serializable):
-    _state = copy.deepcopy(WindMoversBase._state)
-    _state.add(update=['wind_scale', 'extrapolate'], save=['wind_scale', 'extrapolate'])
-    _state.add_field([serializable.Field('wind_file', save=True,
-                    read=True, isdatafile=True, test_for_eq=False),
-                    serializable.Field('topology_file', save=True,
-                    read=True, isdatafile=True, test_for_eq=False)])
+class GridWindMover(WindMoversBase):
 
     _schema = GridWindMoverSchema
 
-    def __init__(self, wind_file, topology_file=None,
+    def __init__(self, filename=None, topology_file=None,
                  extrapolate=False, time_offset=0,
                  **kwargs):
         """
         :param wind_file: file containing wind data on a grid
+        :param filename: file containing wind data on a grid
         :param topology_file: Default is None. When exporting topology, it
                               is stored in this file
         :param wind_scale: Value to scale wind data
@@ -395,56 +351,119 @@ class GridWindMover(WindMoversBase, serializable.Serializable):
         Pass optional arguments to base class
         uses super: super(GridWindMover,self).__init__(\*\*kwargs)
         """
-
-        if not os.path.exists(wind_file):
+        if not os.path.exists(filename):
             raise ValueError('Path for wind file does not exist: {0}'
-                             .format(wind_file))
+                             .format(filename))
 
         if topology_file is not None:
             if not os.path.exists(topology_file):
                 raise ValueError('Path for Topology file does not exist: {0}'
                                  .format(topology_file))
 
-        # is wind_file and topology_file is stored with cy_gridwind_mover?
-        self.wind_file = wind_file
-        self.topology_file = topology_file
         self.mover = CyGridWindMover(wind_scale=kwargs.pop('wind_scale', 1))
-        self.name = os.path.split(wind_file)[1]
+        self.mover.text_read(filename, topology_file)
+
+        # Ideally, we would be able to run the base class initialization first
+        # because we designed the Movers well.  As it is, we inherit from the
+        # CyMover, and the CyMover needs to have a self.mover attribute.
         super(GridWindMover, self).__init__(**kwargs)
 
-        self.mover.text_read(wind_file, topology_file)
-        self.real_data_start = time_utils.sec_to_datetime(self.mover.get_start_time())
-        self.real_data_stop = time_utils.sec_to_datetime(self.mover.get_end_time())
+        # is wind_file and topology_file is stored with cy_gridwind_mover?
+        self.name = os.path.split(filename)[1]
+        self.filename = filename
+        self.topology_file = topology_file
+
         self.mover.extrapolate_in_time(extrapolate)
         self.mover.offset_time(time_offset * 3600.)
+
+    @property
+    def data_start(self):
+        return sec_to_datetime(self.mover.get_start_time())
+
+    @property
+    def data_stop(self):
+        return sec_to_datetime(self.mover.get_end_time())
 
     def __repr__(self):
         """
         .. todo::
             We probably want to include more information.
         """
-        info = 'GridWindMover(\n{0})'.format(self._state_as_str())
-        return info
+        return 'GridWindMover(\n{0})'.format(self._state_as_str())
 
     def __str__(self):
-        info = ('GridWindMover - current _state.\n'
-                '{0}'.format(self._state_as_str()))
-        return info
+        return ('GridWindMover - current _state.\n{0}'
+                .format(self._state_as_str()))
 
     wind_scale = property(lambda self: self.mover.wind_scale,
-                          lambda self, val: setattr(self.mover,
-                                                    'wind_scale',
+                          lambda self, val: setattr(self.mover, 'wind_scale',
                                                     val))
 
     extrapolate = property(lambda self: self.mover.extrapolate,
-                           lambda self, val: setattr(self.mover,
-                                                     'extrapolate',
+                           lambda self, val: setattr(self.mover, 'extrapolate',
                                                      val))
 
     time_offset = property(lambda self: self.mover.time_offset / 3600.,
-                           lambda self, val: setattr(self.mover,
-                                                     'time_offset',
+                           lambda self, val: setattr(self.mover, 'time_offset',
                                                      val * 3600.))
+
+    def get_grid_data(self):
+        return self.get_cells()
+
+    def get_cells(self):
+        """
+            Invokes the GetCellDataHdl method of TimeGridWind_c object.
+            Cross-references point data to get cell coordinates.
+        """
+        cell_data = self.mover._get_cell_data()
+        points = self.get_points()
+
+        dtype = cell_data[0].dtype.descr
+        unstructured_type = dtype[0][1]
+        unstructured = (cell_data.view(dtype=unstructured_type)
+                        .reshape(-1, len(dtype))[:, 1:])
+
+        return points[unstructured]
+
+    def get_points(self):
+        points = (self.mover._get_points()
+                  .astype([('long', '<f8'), ('lat', '<f8')]))
+        points['long'] /= 10 ** 6
+        points['lat'] /= 10 ** 6
+
+        return points
+
+    def get_cell_center_points(self):
+        '''
+        Right now the cython mover only gets the triangular center points,
+        so we need to calculate centers based on the cells themselves.
+
+        Cells will have the format (tl, tr, bl, br)
+        We need to get the rectangular centers
+        Center will be: (tl + ((br - tl) / 2.))
+        '''
+        return (self.mover._get_center_points()
+                .view(dtype='<f8').reshape(-1, 2))
+
+    def get_center_points(self):
+        return self.get_cell_center_points()
+
+    def get_scaled_velocities(self, time):
+        """
+        :param model_time=0:
+        """
+        # regular and curvilinear grids only
+        if self.mover._is_regular_grid():
+            num_cells = self.mover.get_num_points()
+        else:
+            num_tri = self.mover.get_num_triangles()
+            num_cells = num_tri / 2
+
+        # will need to update this for regular grids
+        vels = np.zeros(num_cells, dtype=velocity_rec)
+        self.mover.get_scaled_velocities(time, vels)
+
+        return vels
 
     def export_topology(self, topology_file):
         """
@@ -471,41 +490,22 @@ class GridWindMover(WindMoversBase, serializable.Serializable):
         """
         self.mover.offset_time(time_offset * 3600.)
 
-    def get_start_time(self):
-        """
-        :this will be the real_data_start time (seconds).
-        """
-        return (self.mover.get_start_time())
-
-    def get_end_time(self):
-        """
-        :this will be the real_data_stop time (seconds).
-        """
-        return (self.mover.get_end_time())
 
 class IceWindMoverSchema(WindMoversBaseSchema):
-    filename = SchemaNode(String(), missing=drop)
-    topology_file = SchemaNode(String(), missing=drop)
-    #current_scale = SchemaNode(Float(), missing=drop)
-    #extrapolate = SchemaNode(Bool(), missing=drop)
+    filename = FilenameSchema(
+        missing=drop, save=True, isdatafile=True, test_equal=False
+    )
+    topology_file = FilenameSchema(
+        missing=drop, save=True, isdatafile=True, test_equal=False
+    )
 
 
-class IceWindMover(WindMoversBase, serializable.Serializable):
+class IceWindMover(WindMoversBase):
 
-    #_update = ['wind_scale', 'extrapolate']               
-    #_save = ['wind_scale', 'extrapolate']             
-    _state = copy.deepcopy(WindMoversBase._state)
-
-    #_state.add(update=_update, save=_save)
-    _state.add_field([serializable.Field('filename',
-                                         save=True, read=True, isdatafile=True,
-                                         test_for_eq=False),
-                      serializable.Field('topology_file',
-                                         save=True, read=True, isdatafile=True,
-                                         test_for_eq=False)])
     _schema = IceWindMoverSchema
 
-    def __init__(self, filename,
+    def __init__(self,
+                 filename=None,
                  topology_file=None,
                  extrapolate=False,
                  time_offset=0,
@@ -518,8 +518,11 @@ class IceWindMover(WindMoversBase, serializable.Serializable):
         :param topology_file=None: absolute or relative path to topology file.
                                    If not given, the IceMover will
                                    compute the topology from the data file.
-        :param active_start: datetime when the mover should be active
-        :param active_stop: datetime after which the mover should be inactive
+
+        :param active_range: Range of datetimes for when the mover should be
+                             active
+        :type active_range: 2-tuple of datetimes
+
         :param wind_scale: Value to scale wind data
         :param extrapolate: Allow current data to be extrapolated
                             before and after file data
@@ -545,14 +548,15 @@ class IceWindMover(WindMoversBase, serializable.Serializable):
                                  .format(topology_file))
 
         # check if this is stored with cy_ice_wind_mover?
-        self.filename = filename
         self.name = os.path.split(filename)[1]
-
-        # check if this is stored with cy_ice_wind_mover?
+        self.filename = filename
         self.topology_file = topology_file
 
-        self.mover.text_read(filename, topology_file)
+        # check if this is stored with cy_ice_wind_mover?
+
         self.extrapolate = extrapolate
+
+        self.mover.text_read(filename, topology_file)
         self.mover.extrapolate_in_time(extrapolate)
         self.mover.offset_time(time_offset * 3600.)
 
@@ -560,34 +564,16 @@ class IceWindMover(WindMoversBase, serializable.Serializable):
 
     def __repr__(self):
         return ('IceWindMover('
-                'active_start={1.active_start}, '
-                'active_stop={1.active_stop}, '
-                'on={1.on})'.format(self.mover, self))
+                'active_range={1.active_range}, '
+                'on={1.on})'
+                .format(self.mover, self))
 
     def __str__(self):
         return ('IceWindMover - current _state.\n'
-                '  active_start time={1.active_start}\n'
-                '  active_stop time={1.active_stop}\n'
+                '  active_range time={1.active_range}\n'
                 '  current on/off status={1.on}'
                 .format(self.mover, self))
 
-    # Define properties using lambda functions: uses lambda function, which are
-    # accessible via fget/fset as follows:
-#     current_scale = property(lambda self: self.mover.current_scale,
-#                              lambda self, val: setattr(self.mover,
-#                                                        'current_scale',
-#                                                        val))
-# 
-#     extrapolate = property(lambda self: self.mover.extrapolate,
-#                            lambda self, val: setattr(self.mover,
-#                                                      'extrapolate',
-#                                                      val))
-# 
-#     time_offset = property(lambda self: self.mover.time_offset / 3600.,
-#                            lambda self, val: setattr(self.mover,
-#                                                      'time_offset',
-#                                                      val * 3600.))
-# 
     def get_grid_data(self):
         if self.mover._is_triangle_grid():
             return self.get_triangles()
@@ -605,11 +591,12 @@ class IceWindMover(WindMoversBase, serializable.Serializable):
         :param model_time=0:
         """
         num_tri = self.mover.get_num_triangles()
+
         if self.mover._is_triangle_grid():
             num_cells = num_tri
         else:
             num_cells = num_tri / 2
-        #vels = np.zeros(num_cells, dtype=basic_types.velocity_rec)
+
         vels = np.zeros(num_cells, dtype=velocity_rec)
         self.mover.get_scaled_velocities(model_time, vels)
 
@@ -620,8 +607,8 @@ class IceWindMover(WindMoversBase, serializable.Serializable):
         :param model_time=0:
         """
         num_tri = self.mover.get_num_triangles()
-        #vels = np.zeros(num_tri, dtype=basic_types.velocity_rec)
         vels = np.zeros(num_tri, dtype=velocity_rec)
+
         self.mover.get_ice_velocities(model_time, vels)
 
         return vels
@@ -631,8 +618,8 @@ class IceWindMover(WindMoversBase, serializable.Serializable):
         :param model_time=0:
         """
         num_tri = self.mover.get_num_triangles()
-        #vels = np.zeros(num_tri, dtype=basic_types.velocity_rec)
         vels = np.zeros(num_tri, dtype=velocity_rec)
+
         self.mover.get_movement_velocities(model_time, vels)
 
         return vels
@@ -643,8 +630,10 @@ class IceWindMover(WindMoversBase, serializable.Serializable):
         """
         num_tri = self.mover.get_num_triangles()
         num_cells = num_tri / 2
+
         frac_coverage = np.zeros(num_cells, dtype=np.float64)
         thickness = np.zeros(num_cells, dtype=np.float64)
+
         self.mover.get_ice_fields(model_time, frac_coverage, thickness)
 
         return frac_coverage, thickness
@@ -680,6 +669,4 @@ class IceWindMover(WindMoversBase, serializable.Serializable):
         :param offset_time=0: allow data to be in GMT with a time zone offset
                               (hours).
         """
-        return (self.mover.get_offset_time()) / 3600.
-
-
+        return self.mover.get_offset_time() / 3600.

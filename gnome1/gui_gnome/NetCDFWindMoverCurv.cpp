@@ -282,14 +282,14 @@ OSErr NetCDFWindMoverCurv::TextRead(char *path, TMap **newMap, char *topFilePath
 	status = nc_inq_dimid(ncid, "yc", &latIndexid); 
 	if (status != NC_NOERR) 
 	{	
-		goto OLD;
+		//goto OLD;
 		// eventually try to support old format with new algorithm
 		// issues with mask
-		/*status = nc_inq_dimid(ncid, "y", &latIndexid); 
+		status = nc_inq_dimid(ncid, "y", &latIndexid); 
 		if (status != NC_NOERR) 
 		{
 			err = -1; goto OLD;
-		}*/
+		}
 	}
 	bIsCOOPSWaterMask = true;
 	status = nc_inq_varid(ncid, "latc", &latid);
@@ -306,12 +306,12 @@ OSErr NetCDFWindMoverCurv::TextRead(char *path, TMap **newMap, char *topFilePath
 	status = nc_inq_dimid(ncid, "xc", &lonIndexid);	
 	if (status != NC_NOERR) 
 	{
-		err = -1; goto done;
-		/*status = nc_inq_dimid(ncid, "x", &lonIndexid); 
+		//err = -1; goto done;
+		status = nc_inq_dimid(ncid, "x", &lonIndexid); 
 		if (status != NC_NOERR) 
 		{
 			err = -1; goto done;
-		}*/
+		}
 	}
 	status = nc_inq_varid(ncid, "lonc", &lonid);	
 	if (status != NC_NOERR) 
@@ -728,6 +728,9 @@ OSErr NetCDFWindMoverCurv::ReadTimeData(long index,VelocityFH *velocityH, char* 
 				}
 				/*if (status != NC_NOERR)*//*err = -1; goto done;*/}}	// don't require
 		//if (status != NC_NOERR) {err = -1; goto done;}	// don't require
+		status = nc_get_att_float(ncid, wind_ucmp_id, "scale_factor", &scale_factor);
+		//if (status != NC_NOERR) {err = -1; goto done;}	// don't require scale factor
+	
 	}	
 	
 	status = nc_inq_attlen(ncid, wind_ucmp_id, "units", &velunit_len);
@@ -744,7 +747,6 @@ OSErr NetCDFWindMoverCurv::ReadTimeData(long index,VelocityFH *velocityH, char* 
 				velConversion = 1.0;
 		}
 	}
-	
 	
 	status = nc_close(ncid);
 	if (status != NC_NOERR) {err = -1; goto done;}
@@ -834,8 +836,9 @@ void NetCDFWindMoverCurv::Draw(Rect r, WorldRect view)
 	OSErr err = 0;
 	char errmsg[256];
 	
-	RGBForeColor(&colors[PURPLE]);
-	
+	//RGBForeColor(&colors[PURPLE]);
+	RGBForeColor(&fColor);
+
 	if(bShowArrows || bShowGrid)
 	{
 		if (bShowGrid) 	// make sure to draw grid even if don't draw arrows

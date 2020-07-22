@@ -100,7 +100,7 @@ def test_compute_H_fetch_huge():
     With a huge fetch, should be same as fetch-unlimited
     """
     water = copy(default_water)
-    water.fetch = 1e100  # 10km
+    water.fetch = 1e100  # km
 
     w = Waves(test_wind_5, water)
 
@@ -218,7 +218,7 @@ def test_peak_wave_period(wind_speed, expected):
 
     print 'Wind speed:', w.wind.get_value(start_time)
 
-    T_w = w.peak_wave_period(start_time)
+    T_w = w.peak_wave_period(None, start_time)
 
     assert np.isclose(T_w, expected)
 
@@ -227,7 +227,7 @@ def test_call_no_fetch_or_height():
     "fully developed seas"
     w = Waves(test_wind_5, default_water)
 
-    H, T, Wf, De = w.get_value(start_time)
+    H, T, Wf, De = w.get_value(None, start_time)
 
     print H, T, Wf, De
 
@@ -240,7 +240,7 @@ def test_call_fetch():
     water.fetch = 1e4  # 10km
     w = Waves(test_wind_5, water)
 
-    H, T, Wf, De = w.get_value(start_time)
+    H, T, Wf, De = w.get_value(None, start_time)
 
     print H, T, Wf, De
 
@@ -254,11 +254,11 @@ def test_call_height():
     water.wave_height = 1.0
     w = Waves(test_wind_5, water)
 
-    H, T, Wf, De = w.get_value(start_time)
+    H, T, Wf, De = w.get_value(None, start_time)
 
     print H, T, Wf, De
 
-    assert H == 1.0
+    assert H == .707	# returns root mean square wave height
     # fixme: add some value checks -- what to use???
 
 
@@ -269,30 +269,20 @@ def test_serialize_deseriailize():
     w = Waves(wind, water)
 
     json_ = w.serialize()
-    json_['wind'] = wind.serialize()
-    json_['water'] = water.serialize()
 
     # deserialize and ensure the dict's are correct
-    d_ = Waves.deserialize(json_)
-    print 'd_', d_
-    assert d_['wind'] == Wind.deserialize(json_['wind'])
-    assert d_['water'] == Water.deserialize(json_['water'])
-
-    d_['wind'] = wind
-    d_['water'] = water
-
-    w.update_from_dict(d_)
-    assert w.wind is wind
-    assert w.water is water
-
+    w2 = Waves.deserialize(json_)
+    assert w2.wind == Wind.deserialize(json_['wind'])
+    assert w2.water == Water.deserialize(json_['water'])
+    assert w == w2
 
 def test_get_emulsification_wind():
     wind = constant_wind(3., 0)
     water = Water()
     w = Waves(wind, water)
 
-    print w.get_emulsification_wind(start_time)
-    assert w.get_emulsification_wind(start_time) == 3.0
+    print w.get_emulsification_wind(None, start_time)
+    assert w.get_emulsification_wind(None, start_time) == 3.0
 
 
 def test_get_emulsification_wind_with_wave_height():
@@ -301,11 +291,11 @@ def test_get_emulsification_wind_with_wave_height():
     water.wave_height = 2.0
     w = Waves(wind, water)
 
-    print w.get_value(start_time)
+    print w.get_value(None, start_time)
 
-    print w.get_emulsification_wind(start_time)
+    print w.get_emulsification_wind(None, start_time)
     # input wave height should hav overwhelmed
-    assert w.get_emulsification_wind(start_time) > 3.0
+    assert w.get_emulsification_wind(None, start_time) > 3.0
 
 
 def test_get_emulsification_wind_with_wave_height2():
@@ -314,8 +304,8 @@ def test_get_emulsification_wind_with_wave_height2():
     water.wave_height = 2.0
     w = Waves(wind, water)
 
-    print w.get_value(start_time)
+    print w.get_value(None, start_time)
 
-    print w.get_emulsification_wind(start_time)
+    print w.get_emulsification_wind(None, start_time)
     # input wave height should not have overwhelmed wind speed
-    assert w.get_emulsification_wind(start_time) == 10.0
+    assert w.get_emulsification_wind(None, start_time) == 10.0

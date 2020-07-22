@@ -11,19 +11,18 @@ at all time.
 """
 import copy
 
-import numpy
-np = numpy
+import numpy as np
+
 from numpy import random
 
 from colander import (SchemaNode, Float)
 
 from gnome.basic_types import oil_status, mover_type
 from gnome.utilities.projections import FlatEarthProjection as proj
-from gnome.utilities import serializable
 
 from gnome.movers import Mover, ProcessSchema
 
-from gnome.persist.base_schema import ObjType
+from gnome.persist.base_schema import ObjTypeSchema
 from gnome.persist.extend_colander import NumpyFixedLenSchema
 
 
@@ -37,12 +36,16 @@ class SimpleMoverVelocitySchema(NumpyFixedLenSchema):
     vel_z = SchemaNode(Float())
 
 
-class SimpleMoverSchema(ObjType, ProcessSchema):
-    uncertainty_scale = SchemaNode(Float())
-    velocity = SimpleMoverVelocitySchema()
+class SimpleMoverSchema(ProcessSchema):
+    uncertainty_scale = SchemaNode(
+        Float(), save=True, update=True
+    )
+    velocity = SimpleMoverVelocitySchema(
+        save=True, update=True
+    )
 
 
-class SimpleMover(Mover, serializable.Serializable):
+class SimpleMover(Mover):
 
     """
     simple_mover
@@ -53,17 +56,12 @@ class SimpleMover(Mover, serializable.Serializable):
      think about it)
     """
 
-    _state = copy.deepcopy(Mover._state)
-    _state.add(update=['uncertainty_scale', 'velocity'],
-              save=['uncertainty_scale', 'velocity'])
     _schema = SimpleMoverSchema
 
-    def __init__(
-        self,
-        velocity,
-        uncertainty_scale=0.5,
-        **kwargs
-        ):
+    def __init__(self,
+                 velocity=0,
+                 uncertainty_scale=0.5,
+                 **kwargs):
         """
         simple_mover (velocity)
 
@@ -71,26 +69,24 @@ class SimpleMover(Mover, serializable.Serializable):
 
         :param velocity: a (u, v, w) triple -- in meters per second
 
+        :param uncertainty_scale=0.5: the scale of the uncertainty of the velocity
+
         Remaining kwargs are passed onto Mover's __init__ using super.
         See Mover documentation for remaining valid kwargs.
         """
 
         # use this, to be compatible with whatever we are using for location
-        self.velocity = np.asarray(velocity,
-                                   dtype=mover_type).reshape((3,
-                ))
+        self.velocity = np.asarray(velocity, dtype=mover_type).reshape((3,))
+
         self.uncertainty_scale = uncertainty_scale
         super(SimpleMover, self).__init__(**kwargs)
 
     def __repr__(self):
-        return 'SimpleMover(<%s>)' % self.id
+        return "SimpleMover(velocity={!r}, uncertainty_scale={!r})".format(self.velocity,
+                                                                          self.uncertainty_scale)
 
-    def get_move(
-        self,
-        spill,
-        time_step,
-        model_time,
-        ):
+    def get_move(self, spill,
+                 time_step, model_time):
         """
         moves the particles defined in the spill object
 
@@ -113,7 +109,7 @@ class SimpleMover(Mover, serializable.Serializable):
             status_codes = spill['status_codes']
         except KeyError, err:
             raise ValueError("The spill doesn't have the required "
-                             "data arrays\n{0}".format(err.message))
+                             "data arrays\n{}".format(err))
 
         # which ones should we move?
 
@@ -132,12 +128,12 @@ class SimpleMover(Mover, serializable.Serializable):
                 num = sum(in_water_mask)
                 scale = self.uncertainty_scale * self.velocity \
                     * time_step
-                delta[in_water_mask, 0] += random.uniform(-scale[0],
-                        scale[0], num)
-                delta[in_water_mask, 1] += random.uniform(-scale[1],
-                        scale[1], num)
-                delta[in_water_mask, 2] += random.uniform(-scale[2],
-                        scale[2], num)
+                delta[in_water_mask, 0] += random.uniform(-scale[0], scale[0],
+                                                          num)
+                delta[in_water_mask, 1] += random.uniform(-scale[1], scale[1],
+                                                          num)
+                delta[in_water_mask, 2] += random.uniform(-scale[2], scale[2],
+                                                          num)
 
             # scale for projection
 

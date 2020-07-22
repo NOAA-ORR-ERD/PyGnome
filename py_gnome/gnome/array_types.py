@@ -63,6 +63,9 @@ class ArrayType(AddLogger):
         self.initial_value = initial_value
         self.name = name
 
+    def __repr__(self):
+        return "ArrayType(name={0}, initial_value={1}, shape={2}, dtype={3}".format(self.name, self.initial_value, self.shape, self.dtype)
+
     def initialize_null(self, shape=None):
         """
         initialize array with 0 elements. Used so SpillContainer can
@@ -225,7 +228,7 @@ class ArrayTypeDivideOnSplit(ArrayType):
 # to default values
 _default_values = {'positions': ((3,), world_point_type, 'positions',
                                  (0., 0., 0.)),
-                   'next_positions': ((3,), world_point_type, 'next_positiosn',
+                   'next_positions': ((3,), world_point_type, 'next_positions',
                                       (0., 0., 0.)),
                    'last_water_positions': ((3,), world_point_type,
                                             'last_water_positions',
@@ -250,7 +253,8 @@ _default_values = {'positions': ((3,), world_point_type, 'positions',
                    # It is evenly divided to number of LEs
                    'bulk_init_volume': ((), np.float64, 'bulk_init_volume', 0,
                                         ArrayTypeDivideOnSplit),
-                   'density': ((), np.float64, 'density', 0),
+                   'density': ((), np.float64, 'density', 1000),
+                   'oil_density': ((), np.float64, 'oil_density', 0),
                    'evap_decay_constant': (None, np.float64,
                                            'evap_decay_constant', None),
 
@@ -267,13 +271,15 @@ _default_values = {'positions': ((3,), world_point_type, 'positions',
                    # decided to make it a uint8 instead
                    'at_max_area': ((), np.uint8, 'at_max_area', False),
 
-                   'viscosity': ((), np.float64, 'viscosity', 0),
+                   'viscosity': ((), np.float64, 'viscosity', 1000000000000.),
+                   'oil_viscosity': ((), np.float64, 'oil_viscosity', 0),
                    # fractional water content in emulsion
                    'frac_water': ((), np.float64, 'frac_water', 0),
                    'interfacial_area': ((), np.float64, 'interfacial_area', 0),
                    # use negative as a not yet set flag
                    'bulltime': ((), np.float64, 'bulltime', -1.),
                    'frac_lost': ((), np.float64, 'frac_lost', 0),
+                   'frac_evap': ((), np.float64, 'frac_evap', 0),
 
                    # substance index - used label elements from same substance
                    # used internally only by SpillContainer *if* more than one
@@ -287,45 +293,73 @@ _default_values = {'positions': ((3,), world_point_type, 'positions',
                    'mass': ((), np.float64, 'mass', 0, ArrayTypeDivideOnSplit),
                    'mass_components': (None, np.float64, 'mass_components',
                                        None, ArrayTypeDivideOnSplit),
-                   # frac of mass lost due to evaporation + dissolution.
-                   # Used to update viscosity
+                   # The initial mass of the element
+                   # used to compute frac of mass lost
                    'init_mass': ((), np.float64, 'init_mass', 0,
                                  ArrayTypeDivideOnSplit),
                    'partition_coeff': ((), np.float64, 'partition_coeff', 0),
                    'droplet_avg_size': ((), np.float64, 'droplet_avg_size', 0),
+                   'surface_concentration': ((), np.float64, 'surface_concentration', 0),
                    }
 
+def get_array_type(name):
+    """
+    Returns and instance of an array type appropriate for name, or None if one
+    does not exist
+    """
+    params = _default_values[name]
+    return ArrayType(shape=params[0],
+                     dtype=params[1],
+                     name=params[2],
+                     initial_value=params[3])
+
+gat = get_array_type
 
 # dynamically create the ArrayType objects in this module from _default_values
 # dict. Reason for this logic and subsequent functions is so we only have to
 # update/modify the _default_values dict above
-for key, val in _default_values.iteritems():
-    if len(val) > 4:
-        vars()[key] = val[4](shape=_default_values[key][0],
-                             dtype=_default_values[key][1],
-                             name=_default_values[key][2],
-                             initial_value=_default_values[key][3])
-    else:
-        vars()[key] = ArrayType(shape=_default_values[key][0],
-                                dtype=_default_values[key][1],
-                                name=_default_values[key][2],
-                                initial_value=_default_values[key][3])
-
-
-# list of names of all ArrayTypes defined in this module
-mod = sys.modules[__name__]
+# for key, val in _default_values.iteritems():
+#     if len(val) > 4:
+#         vars()[key] = val[4](shape=_default_values[key][0],
+#                              dtype=_default_values[key][1],
+#                              name=_default_values[key][2],
+#                              initial_value=_default_values[key][3])
+#     else:
+#         vars()[key] = ArrayType(shape=_default_values[key][0],
+#                                 dtype=_default_values[key][1],
+#                                 name=_default_values[key][2],
+#                                 initial_value=_default_values[key][3])
+#
+#
+# # list of names of all ArrayTypes defined in this module
+# mod = sys.modules[__name__]
 
 
 #    define a function to reset all ArrayTypes to defaults
-def reset_to_defaults(names=_default_values.keys()):
-    for name in names:
+def reset_to_defaults(at):
         try:
-            obj = getattr(mod, name)
-            obj.shape = _default_values[name][0]
-            obj.dtype = _default_values[name][1]
-            obj.name = _default_values[name][2]
-            obj.initial_value = _default_values[name][3]
+            obj = at
+            obj.shape = _default_values[at.name][0]
+            obj.dtype = _default_values[at.name][1]
+            obj.name = _default_values[at.name][2]
+            obj.initial_value = _default_values[at.name][3]
 
         except AttributeError:
             # name is not part of the defaults - ignore it
             pass
+
+# The array types that will always be used in the model.
+default_array_types = {'positions': gat('positions'),
+                       'next_positions': gat('next_positions'),
+                       'last_water_positions': gat('last_water_positions'),
+                       'status_codes': gat('status_codes'),
+                       'mass': gat('mass'),
+                       'init_mass': gat('init_mass'),
+                       'age': gat('age'),
+                       'density': gat('density'),
+                       'viscosity': gat('viscosity'),
+                       'surface_concentration': gat('surface_concentration'),
+                       'spill_num': gat('spill_num'),
+                       'id': gat('id')
+                       }
+

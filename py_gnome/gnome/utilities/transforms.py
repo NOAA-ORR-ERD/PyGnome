@@ -5,33 +5,38 @@ def r_theta_to_uv_current(r_theta):
     """
     Converts array of current values given with magnitude, direction into (u,v) wind values.
         Current from 0deg is (u,v) = (0,1), from 45deg (u,v) = (1,1)
-        Basically, rotate clockwise from North. In addition, (u,v) represents the direction 
+        Basically, rotate clockwise from North. In addition, (u,v) represents the direction
         the wind blows towards
-    
-    :param r_theta: NX2 numpy array containing r = r_theta[:,0], theta = r_theta[:,1]. 
+
+    :param r_theta: NX2 numpy array containing r = r_theta[:,0], theta = r_theta[:,1].
                     Theta is in degrees between 0 and 360.
     :returns: NX2 numpy array containing the corresponding uv cartesian velocity vector
     """
 
-    xform = np.matrix([(-1., 0.), (0., -1.)])
-    uv = np.dot(r_theta_to_uv_wind(r_theta).view(dtype=np.matrix),
-                xform)
-    return np.asarray(uv)
+    # ``matrix`` is deprecated, and np.dot does the same thing with
+    # regular arrays anyway.
+    # xform = np.matrix([(-1., 0.), (0., -1.)])
+    # uv = np.dot(r_theta_to_uv_wind(r_theta).view(dtype=np.matrix),
+    #             xform)
+    # return np.asarray(uv)
+
+    xform = np.array([(-1., 0.), (0., -1.)])
+    return np.dot(r_theta_to_uv_wind(r_theta), xform)
 
 
 def uv_to_r_theta_current(uv):
     """
     Converts array of current values given with (u,v) wind values to magnitude, direction.
         Current from 0deg is (u,v) = (0,1), from 45deg (u,v) = (1,1)
-        Basically, rotate clockwise from North. In addition, (u,v) represents the direction 
+        Basically, rotate clockwise from North. In addition, (u,v) represents the direction
         the wind blows towards
-    
-    :param uv: NX2 numpy array, where each row corresponds with a velocity vector 
-    :returns: NX2 numpy array containing polar coordinates r_theta 
+
+    :param uv: NX2 numpy array, where each row corresponds with a velocity vector
+    :returns: NX2 numpy array containing polar coordinates r_theta
     """
 
-    xform = np.matrix([(-1., 0.), (0., -1.)])
-    uv = np.dot(np.matrix(uv.reshape(-1, 2)), xform)
+    xform = np.array([(-1., 0.), (0., -1.)])
+    uv = np.dot(uv.reshape(-1, 2), xform)
     return uv_to_r_theta_wind(uv)
 
 
@@ -39,10 +44,10 @@ def r_theta_to_uv_wind(r_theta):
     """
     Converts array of wind values given with magnitude, direction into (u,v) wind values.
         Wind from 0deg is (u,v) = (0,-1), from 45deg (u,v) = (-1,-1)
-        Basically, rotate clockwise from North. In addition, (u,v) represents the direction 
+        Basically, rotate clockwise from North. In addition, (u,v) represents the direction
         the wind blows towards
-    
-    :param r_theta: NX2 numpy array containing r = r_theta[:,0], theta = r_theta[:,1]. 
+
+    :param r_theta: NX2 numpy array containing r = r_theta[:,0], theta = r_theta[:,1].
                     Theta is in degrees between 0 and 360.
     :returns: NX2 numpy array containing the corresponding uv cartesian velocity vector
     """
@@ -65,7 +70,7 @@ def r_theta_to_uv_wind(r_theta):
 
     # create matrix so -1*0 = 0 and not -0 and let's not screw up original
 
-    uv = np.asarray(-1 * uv.view(dtype=np.matrix))
+    uv = -1 * uv
 
     return uv
 
@@ -74,11 +79,11 @@ def uv_to_r_theta_wind(uv):
     """
     Converts array of wind values given with (u,v) wind values to magnitude, direction.
         Wind from 0deg is (u,v) = (0,-1), from 45deg (u,v) = (-1,-1)
-        Basically, rotate clockwise from North. In addition, (u,v) represents the direction 
+        Basically, rotate clockwise from North. In addition, (u,v) represents the direction
         the wind blows towards
-    
-    :param uv: NX2 numpy array, where each row corresponds with a velocity vector 
-    :returns: NX2 numpy array containing polar coordinates r_theta 
+
+    :param uv: NX2 numpy array, where each row corresponds with a velocity vector
+    :returns: NX2 numpy array containing polar coordinates r_theta
     """
 
     uv = np.asarray(uv, dtype=np.float64).reshape(-1, 2)
@@ -89,11 +94,8 @@ def uv_to_r_theta_wind(uv):
     #      the uv array is transformed (multiply by -1) and atan2 is called with (u,v)
     #      Only to ensure we get the angle per the Wind convention
 
-    uv = np.asarray(-1 * np.matrix(uv))  # create new uv object
-    r_theta[:, 1] = (np.rad2deg(np.arctan2(uv[:, 0], uv[:, 1])) + 360) \
-        % 360  # 0 to 360
-
-    # return np.asarray(r_theta)
+    uv = -1 * uv  # create new uv object
+    r_theta[:, 1] = (np.rad2deg(np.arctan2(uv[:, 0], uv[:, 1])) + 360) % 360  # 0 to 360
 
     return r_theta
 

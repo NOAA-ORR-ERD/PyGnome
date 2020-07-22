@@ -22,7 +22,7 @@ from gnome.utilities.projections import GeoProjection
 from gnome.utilities.remote_data import get_datafile
 
 from gnome.environment import Wind, Tide
-from gnome.map import MapFromBNA
+from gnome.maps import MapFromBNA
 
 from gnome.model import Model
 from gnome.spill import point_line_release_spill
@@ -48,7 +48,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     renderer = Renderer(mapfile,
                         images_dir,
-                        size=(800, 800),
+                        image_size=(800, 800),
                         projection_class=GeoProjection)
 
     renderer.viewport = ((-66.24, 18.39), (-66.1, 18.55))
@@ -80,6 +80,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     wind = Wind(timeseries=series, units='m/s')
     w_mover = WindMover(wind)
+    wind.extrapolation_is_allowed=True
     model.movers += w_mover
 
     print 'adding a cats shio mover:'

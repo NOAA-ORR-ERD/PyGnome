@@ -18,7 +18,10 @@ NOTE: all coordinates are takes as (lon, lat, depth)
 from __future__ import division
 
 import numpy as np
-import profiledeco as pd
+from gnome.gnomeobject import GnomeId
+from gnome.persist.base_schema import ObjTypeSchema
+from colander import drop, TupleSchema, Float, SchemaNode, Int
+
 
 def to_2d_coords(coords):
     """
@@ -30,6 +33,7 @@ def to_2d_coords(coords):
                   a (lon, lat, depth) triple
                   a Nx2 array-like object of (lon,lat) pairs
                   a Nx3 array-like object of (lon, lat, depth) triples
+
     The depth is ignored in all cases
 
     This is probably overly convenient, but the legacy is there...
@@ -43,13 +47,24 @@ def to_2d_coords(coords):
         raise ValueError("coords must be one of:\n"
                          "a (lon, lat) pair\n"
                          "a (lon, lat, depth) triple\n"
-                         "a Nx2 array-like object of (lon,lat) pairs\n"
-                         "a Nx3 array-like object of (lon, lat, depth) triples\n"
+                         "a Nx2 array-like object of (lon, lat)\n"
+                         "a Nx3 array-like object of (lon, lat, depth)\n"
                          )
 
 
+class ProjectionSchema(ObjTypeSchema):
+    bounding_box = TupleSchema(
+        missing=drop, save=True, update=False,
+        children=[TupleSchema(children=[SchemaNode(Float()),
+                                        SchemaNode(Float())]),
+                  TupleSchema(children=[SchemaNode(Float()),
+                                        SchemaNode(Float())])
+                  ])
+    image_size = TupleSchema(save=True, update=True, missing=drop,
+                             children=[SchemaNode(Int()), SchemaNode(Int())])
 
-class NoProjection(object):
+
+class NoProjection(GnomeId):
     """
     This is do-nothing projection class -- returns what it gets.
 
@@ -57,20 +72,17 @@ class NoProjection(object):
 
     used for testing, primarily, and as a definition of the interface
     """
-
-    def __init__(self, bounding_box=None, image_size=None):
-        """
-        create a new do-nothing projection
-        """
-
-        pass
+    _schema = ProjectionSchema
 
     def set_scale(self, bounding_box, image_size=None):
         """
         Does nothing
         """
-
         pass
+
+    @property
+    def bounding_box(self):
+        return self.image_box
 
     def to_pixel(self, coords, asint=False):
         """
@@ -113,29 +125,34 @@ class NoProjection(object):
         return np.asarray(coords, dtype=np.float64, order='C')
 
 
-class GeoProjection(object):
+class GeoProjection(GnomeId):
     """
     This acts as the base class for other projections
 
     This one doesn't really project, but does convert to pixel coords
     i.e. "geo-coordinates"
     """
+    _schema = ProjectionSchema
 
-    def __init__(self, bounding_box=None, image_size=None):
+    def __init__(self, bounding_box=None, image_size=None, *args, **kwargs):
         """
         Create a new projection
 
         Projection(bounding_box, image_size)
 
         :param bounding_box: The bounding box of the map
-        :type bounding_box: Struct of the form:
+        :type bounding_box: Struct of the form::
+
                                 ((min_long, min_lat),
                                  (max_lon,  max_lat))
+
                             or a BoundingBox Object
 
         :param image_size: The size of the map image
         :type image_size: Struct of the form (width, height)
+
         """
+        super(GeoProjection, self).__init__(*args, **kwargs)
         self.center = None
         self.offset = None
         self.scale = None
@@ -148,6 +165,10 @@ class GeoProjection(object):
 
         self.image_box = bounding_box
         self.set_scale(bounding_box, image_size)
+
+    @property
+    def bounding_box(self):
+        return self.image_box
 
     def __eq__(self, other):
         """
@@ -217,15 +238,16 @@ class GeoProjection(object):
 
         :param coords: An array of coordinates
         :type coords: Sequence of NX3
-                          ((long1, lat1, z1),
-                           (long2, lat2, z2),
-                           (long3, lat3, z3),
-                           ...
-                          )
-                      (z is ignored, and there is no z in the returned array)
 
-        :returns: The pixel coords as a similar Nx2 array of integer
-                  x,y coordinates
+        ::
+            ((long1, lat1, z1),
+             (long2, lat2, z2),
+             (long3, lat3, z3),
+             )
+
+        (z is ignored, and there is no z in the returned array)
+
+        :returns: The pixel (x, y) coords as a similar Nx2 array of integer
                   (using the y = 0 at the top, and y increasing down)
 
         NOTE: The values between the minimum of a pixel value to less than the
@@ -233,6 +255,7 @@ class GeoProjection(object):
               the minimum of the bounding box will be in the zeroth pixel, but
               a point  exactly at the max of the bounding box will be
               considered outside the map
+
         """
         coords = to_2d_coords(coords)  # strip off depth, if it's there
 
@@ -281,12 +304,14 @@ class GeoProjection(object):
         converts pixel coords to long-lat coords
 
         :param coords: An array of pixel coordinates (usually integer type
-        :type coords: Sequence of NX2: ((long1, lat1),
-                                        (long2, lat2),
-                                        (long3, lat3),
-                                        ...
-                                        )
-                      (as produced by to_pixel)
+        :type coords: Sequence of NX2::
+                          ((long1, lat1),
+                          (long2, lat2),
+                          (long3, lat3),
+                          ...
+                          )
+
+        (as produced by to_pixel)
 
         :returns: The pixel coords as a similar Nx2 array of floating point
                   x,y coordinates
@@ -301,7 +326,7 @@ class GeoProjection(object):
         """
         coords = np.asarray(coords)
 
-        if np.issubdtype(coords.dtype, int):
+        if np.issubdtype(coords.dtype, np.integer):
             # convert to float64:
             coords = coords.astype(np.float64)
 
@@ -339,7 +364,7 @@ class FlatEarthProjection(GeoProjection):
         dlat = dy * 8.9992801e-06
         dlon = dy * 8.9992801e-06 * cos(ref_lat)
         (based on previous GNOME value: and/or average radius of the earth of
-         6366706.989  m)
+        6366706.989  m)
 
         :param meters: Distances in meters
         :type meters: NX3 numpy array of (dx, dy, dz)
@@ -349,25 +374,25 @@ class FlatEarthProjection(GeoProjection):
         :type ref_positions: NX3, numpy array (Only lat is used here)
 
         :returns delta_lon_lat: Differential (delta) positional values
-                                Nx3 numpy array of
-                                (delta-lon, delta-lat, delta-z)
+                                Nx3 numpy array of (delta-lon, delta-lat, delta-z)
         """
+
         # make a copy -- don't change meters
         delta_lon_lat = np.array(meters, dtype=np.float64)
         if len(delta_lon_lat.shape) == 1:
             if delta_lon_lat.shape[0] == 2:
-                delta_lon_lat = delta_lon_lat.reshape(1,2)
+                delta_lon_lat = delta_lon_lat.reshape(1, 2)
             else:
-                delta_lon_lat = delta_lon_lat.reshape(1,3)
+                delta_lon_lat = delta_lon_lat.reshape(1, 3)
         # reference is possible for reference positions
         ref_positions = np.asarray(ref_positions,
                                    dtype=np.float64)
 
         if len(ref_positions.shape) == 1:
             if ref_positions.shape[0] == 2:
-                ref_positions = ref_positions.reshape(1,2)
+                ref_positions = ref_positions.reshape(1, 2)
             else:
-                ref_positions = ref_positions.reshape(1,3)
+                ref_positions = ref_positions.reshape(1, 3)
 
         delta_lon_lat[:, :2] *= 8.9992801e-06
         delta_lon_lat[:, 0] /= np.cos(np.deg2rad(ref_positions[:, 1]))
@@ -651,12 +676,12 @@ class RectangularGridProjection(NoProjection):
         Converts pixel coords to long-lat coords
 
         :param coords: An array of pixel coordinates (as produced by to_pixel)
-        :type coords: Sequence of Nx2 (usually integer type)
+        :type coords: Sequence of Nx2 (usually integer type)::
                           ((long1, lat1),
-                           (long2, lat2),
-                           (long3, lat3),
-                           ...
-                           )
+                          (long2, lat2),
+                          (long3, lat3),
+                          ...
+                          )
 
         :returns: the pixel coords as a similar Nx2 array of floating point
                   x,y coordinates
@@ -670,7 +695,7 @@ class RectangularGridProjection(NoProjection):
          """
         coords = to_2d_coords(coords)
 
-        if np.issubdtype(coords.dtype, int):
+        if np.issubdtype(coords.dtype, np.integer):
             # convert to float64:
             coords = coords.astype(np.float64)
 

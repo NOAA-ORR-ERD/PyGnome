@@ -205,7 +205,7 @@ Boolean IsPartialPath(char *relativePath)
 	char delimiter = NEWDIRDELIMITER;
 	char macDelimiter = ':';
 	char ibmDelimiter = '\\';
-	char unixDelimiter = '/';	// handle ./, ../, etc
+	//char unixDelimiter = '/';	// handle ./, ../, etc
 	char otherDelimiter;
 
 	char unixDirectoryUp = '.';	// handle ./, ../, etc
@@ -236,7 +236,7 @@ void ResolvePartialPathFromThisFolderPath(char *relativePath, char *thisFolderPa
 	char delimiter = NEWDIRDELIMITER;
 	char ibmDelimiter = '\\';
 	char macOrUnixDelimiter = '/';
-	char classicDelimiter = ':';
+	//char classicDelimiter = ':';
 	char otherDelimiter;
 
 	char unixDirectoryUp = '.';	// handle ./, ../, etc

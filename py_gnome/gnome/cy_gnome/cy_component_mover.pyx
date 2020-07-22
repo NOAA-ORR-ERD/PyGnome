@@ -2,9 +2,10 @@ import os
 
 cimport numpy as cnp
 import numpy as np
+from libc.string cimport memcpy
 
 from type_defs cimport *
-
+from utils cimport _GetHandleSize
 from cy_current_mover cimport CyCurrentMover, dc_mover_to_cmover
 from current_movers cimport ComponentMover_c, CATSMover_c
 from movers cimport Mover_c
@@ -95,7 +96,7 @@ cdef class CyComponentMover(CyCurrentMover):
             ref_point = (-999, -999, -999)
 
         if not isinstance(ref_point, (list, tuple)) or len(ref_point) != 3:
-            raise ValueError('CyCatsMover.__init__(): ref_point needs to be '
+            raise ValueError('CyComponentMover.__init__(): ref_point needs to be '
                              'in the format (long, lat, z)')
 
         self.ref_point = ref_point
@@ -350,4 +351,111 @@ cdef class CyComponentMover(CyCurrentMover):
             raise ValueError("The value for spill type can only be 'forecast'"
                              " or 'uncertainty' - you've chosen: "
                              + str(spill_type))
+
+    def _get_velocity_handle(self, pat):
+        """
+            Invokes the GetVelocityHdl method of TriGridVel_c object
+            to get the velocities for the grid
+        """
+        cdef short tmp_size = sizeof(VelocityFRec)
+        cdef VelocityFH vel_hdl
+        cdef cnp.ndarray[VelocityFRec, ndim = 1] vels
+
+        # allocate memory and copy it over
+        vel_hdl = self.component.GetVelocityHdl(pat)
+        if not vel_hdl:
+            return 0
+
+        sz = _GetHandleSize(<Handle>vel_hdl)
+
+        # will this always work?
+        vels = np.empty((sz / tmp_size,), dtype=basic_types.velocity_rec)
+
+        memcpy(&vels[0], vel_hdl[0], sz)
+
+        return vels
+
+    def _get_center_points(self):
+        """
+            Invokes the GetTriangleCenters method of TriGridVel_c object
+            to get the velocities for the grid
+        """
+        cdef short tmp_size = sizeof(WorldPoint)
+        cdef WORLDPOINTH pts_hdl
+        cdef cnp.ndarray[WorldPoint, ndim = 1] pts
+
+        # allocate memory and copy it over
+        pts_hdl = self.component.GetTriangleCenters()
+        sz = _GetHandleSize(<Handle>pts_hdl)
+
+        # will this always work?
+        pts = np.empty((sz / tmp_size,), dtype=basic_types.w_point_2d)
+
+        memcpy(&pts[0], pts_hdl[0], sz)
+
+        return pts
+
+    def _get_world_points(self):
+        """
+            Invokes the GetTriangleCenters method of TriGridVel_c object
+            to get the velocities for the grid
+        """
+        cdef short tmp_size = sizeof(WorldPoint)
+        cdef WORLDPOINTH pts_hdl
+        cdef cnp.ndarray[WorldPoint, ndim = 1] pts
+
+        # allocate memory and copy it over
+        pts_hdl = self.component.GetWorldPointsHdl()
+        sz = _GetHandleSize(<Handle>pts_hdl)
+
+        # will this always work?
+        pts = np.empty((sz / tmp_size,), dtype=basic_types.w_point_2d)
+
+        memcpy(&pts[0], pts_hdl[0], sz)
+
+        return pts
+
+    def _get_points(self):
+        """
+            Invokes the GetPointsHdl method of TriGridVel_c object
+            to get the points for the grid
+        """
+        cdef short tmp_size = sizeof(LongPoint)
+        cdef LongPointHdl pts_hdl
+        cdef cnp.ndarray[LongPoint, ndim = 1] pts
+
+        # allocate memory and copy it over
+        pts_hdl = self.component.GetPointsHdl()
+        sz = _GetHandleSize(<Handle>pts_hdl)
+
+        # will this always work?
+        pts = np.empty((sz / tmp_size,), dtype=basic_types.long_point)
+
+        memcpy(&pts[0], pts_hdl[0], sz)
+
+        return pts
+
+    def _get_triangle_data(self):
+        """
+            Invokes the GetToplogyHdl method of TriGridVel_c object
+            to get the velocities for the grid
+        """
+        cdef short tmp_size = sizeof(Topology)
+        cdef TopologyHdl top_hdl
+        cdef cnp.ndarray[Topology, ndim = 1] top
+
+        # allocate memory and copy it over
+        top_hdl = self.component.GetTopologyHdl()
+        sz = _GetHandleSize(<Handle>top_hdl)
+
+        # will this always work?
+        top = np.empty((sz / tmp_size,), dtype=basic_types.triangle_data)
+
+        memcpy(&top[0], top_hdl[0], sz)
+
+        return top
+
+    def get_optimize_value(self, model_time, pattern_num):
+        return self.component.GetOptimizeValue(model_time, pattern_num)
+
 

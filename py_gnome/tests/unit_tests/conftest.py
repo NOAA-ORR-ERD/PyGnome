@@ -10,6 +10,7 @@ import os
 from datetime import datetime, timedelta
 import copy
 import shutil
+import collections
 
 import numpy as np
 
@@ -18,25 +19,96 @@ import pytest
 import gnome
 from gnome.basic_types import datetime_value_2d
 
-from gnome.map import MapFromBNA
+from gnome.maps import MapFromBNA
 from gnome.model import Model
 
-from gnome.spill_container import SpillContainer
 
 from gnome.movers import SimpleMover
-from gnome.weatherers import Skimmer
+# from gnome.weatherers import Skimmer
 from gnome.environment import constant_wind, Water, Waves
 from gnome.utilities.remote_data import get_datafile
-import gnome.array_types as gat
+from gnome.array_types import gat
+from gnome.gnomeobject import class_from_objtype, GnomeId
+from gnome.spill.substance import NonWeatheringSubstance
+from gnome.spill_container import SpillContainer
 
 
 base_dir = os.path.dirname(__file__)
 
-test_oil = u'ALASKA NORTH SLOPE (MIDDLE PIPELINE)'
+# test_oil = u'ALASKA NORTH SLOPE (MIDDLE PIPELINE)'
+test_oil = u'oil_ans_mp'
+
+
+def validate_serialize_json(json_, orig_obj):
+    '''
+    Takes the json_ from a gnome object's serialize function, and verifies
+    that it fits the schema. In particular:
+    class_from_objtype must return the original object's class when provided
+    json_['obj_type']
+    all schema nodes set to missing=drop and are None on the original object
+    do not appear in the json_
+    No GnomeId python objects exist in the json
+
+    Note that this should not be used to validate cases where the object may
+    be doing custom serialization or using a custom to_dict. If an object does
+    not do this however, it should be able to pass these tests
+    '''
+    assert class_from_objtype(json_['obj_type']) is orig_obj.__class__
+
+    _schema = orig_obj._schema()
+
+    for v in json_.values():
+        assert not issubclass(v.__class__, GnomeId)
+
+    return True
+
+
+def validate_save_json(json_, zipfile_, orig_obj):
+    '''
+    validates the json_ and zipfile_ of an object. In particular:
+
+    class_from_objtype must return the original object's class when provided
+    json_['obj_type']
+
+    All save_reference attributes have a .json file referenced, and
+    such files also exist in the zipfile_
+
+    All missing=drop attributes that are None on the original object
+    do not appear.  No GnomeId python objects exist in the json
+
+    Note that this should not be used to validate cases where the object may
+    be doing custom save or using a custom to_dict. If an object does
+    not do this however, it should be able to pass these tests
+    '''
+
+    assert class_from_objtype(json_['obj_type']) is orig_obj.__class__
+
+    schema = orig_obj._schema()
+    save_refs = schema.get_nodes_by_attr('save_reference')
+    for n in save_refs:
+        if getattr(orig_obj, n) is not None:
+            if isinstance(getattr(orig_obj, n), collections.Iterable):
+                for i, ref in enumerate(getattr(orig_obj, n)):
+                    assert json_[n][i] == ref.name + '.json'
+                    assert json_[n][i] in zipfile_.namelist()
+            else:
+                ref = getattr(orig_obj, n)
+                assert json_[n] == ref.name + '.json'
+                assert json_[n] in zipfile_.namelist()
+
+#     potential_missing = schema.get_nodes_by_attr('missing')
+#     for n in potential_missing:
+#         if getattr(orig_obj,n) is None:
+#             assert n not in json_
+
+    for v in json_.values():
+        assert not issubclass(v.__class__, GnomeId)
+
+    return True
 
 
 @pytest.fixture(scope="session")
-def dump():
+def dump_folder():
     '''
     create dump folder for output data/files
     session scope so it is only executed the first time it is used
@@ -50,11 +122,11 @@ def dump():
 
     try:
         shutil.rmtree(dump_loc)
-    except:
+    except Exception:
         pass
     try:
         os.makedirs(dump_loc)
-    except:
+    except Exception:
         pass
     return dump_loc
 
@@ -66,7 +138,8 @@ def skip_serial(request):
     here. For now, moved this to unit_tests/conftest.py since all tests are
     contained here
     '''
-    if (request.node.get_marker('serial') and
+    if (hasattr(request.node, 'get_marker') and
+        request.node.get_marker('serial') and
         getattr(request.config, 'slaveinput', {}).get('slaveid', 'local') !=
             'local'):
         # under xdist and serial so skip the test
@@ -125,15 +198,17 @@ def mock_append_data_arrays(array_types, num_elements, data_arrays={}):
 
 
 def sample_sc_release(num_elements=10,
-                      start_pos=(0.0, 0.0, 0.0),
-                      release_time=datetime(2000, 1, 1, 1),
-                      uncertain=False,
-                      time_step=360,
-                      spill=None,
-                      element_type=None,
-                      current_time=None,
-                      arr_types=None,
-                      windage_range=None):
+                         start_pos=(0.0, 0.0, 0.0),
+                         release_time=datetime(2000, 1, 1, 1),
+                         uncertain=False,
+                         time_step=360,
+                         spill=None,
+                         substance=None,
+                         current_time=None,
+                         arr_types=None,
+                         windage_range=None,
+                         units='g',
+                         amount_per_element=1.0):
     """
     Initialize a Spill of type 'spill', add it to a SpillContainer.
     Invoke release_elements on SpillContainer, then return the spill container
@@ -148,21 +223,24 @@ def sample_sc_release(num_elements=10,
     if spill is None:
         spill = gnome.spill.point_line_release_spill(num_elements,
                                                      start_pos,
-                                                     release_time)
-    spill.units = 'g'
-    spill.amount = num_elements
-    if element_type is not None:
-        spill.element_type = element_type
+                                                     release_time,
+                                                     amount=0)
+    spill.units = units
+    spill.amount = amount_per_element * num_elements
+
+    if substance is None:
+        substance = NonWeatheringSubstance()
+    spill.substance = substance
 
     if current_time is None:
         current_time = spill.release_time
 
-    if arr_types is None:
-        # default always has standard windage parameters required by wind_mover
-        arr_types = {'windages', 'windage_range', 'windage_persist'}
-
     if windage_range is not None:
-        spill.set('windage_range', windage_range)
+        spill.substance.windage_range = windage_range
+
+    if arr_types is None:
+        arr_types = {}
+    arr_types.update(spill.all_array_types)
 
     sc = SpillContainer(uncertain)
     sc.spills.add(spill)
@@ -170,6 +248,7 @@ def sample_sc_release(num_elements=10,
     # used for testing so just assume there is a Windage array
     sc.prepare_for_model_run(arr_types)
     sc.release_elements(time_step, current_time)
+
     return sc
 
 
@@ -179,6 +258,7 @@ def get_testdata():
     most of these are used in multiple modules. Some are not, but let's just
     define them all in one place, ie here.
     '''
+    env_data = os.path.join(base_dir, 'test_environment', 'sample_data')
     s_data = os.path.join(base_dir, 'sample_data')
     lis = os.path.join(s_data, 'long_island_sound')
     bos = os.path.join(s_data, 'boston_data')
@@ -186,10 +266,15 @@ def get_testdata():
     curr_dir = os.path.join(s_data, 'currents')
     tide_dir = os.path.join(s_data, 'tides')
     wind_dir = os.path.join(s_data, 'winds')
-    testmap = os.path.join(base_dir, '../sample_data', 'MapBounds_Island.bna')
+    testmap = os.path.join(s_data, 'MapBounds_Island.bna')
     bna_sample = os.path.join(s_data, 'MapBounds_2Spillable2Islands2Lakes.bna')
+    save_update_data = os.path.join(base_dir, 'test_utilities', 'test_save_update')
 
     data = dict()
+
+    get_datafile(os.path.join(env_data, 'staggered_sine_channel.nc'))
+    get_datafile(os.path.join(env_data, '3D_circular.nc'))
+    get_datafile(os.path.join(env_data, 'tri_ring.nc'))
 
     data['CatsMover'] = \
         {'curr': get_datafile(os.path.join(lis, 'tidesWAC.CUR')),
@@ -299,6 +384,16 @@ def get_testdata():
          'cats_curr': get_datafile(os.path.join(lis, r"LI_tidesWAC.CUR")),
          'cats_tide': get_datafile(os.path.join(lis, r"CLISShio.txt"))
          }
+
+    #Save file updater saves
+    data['savefile_update_testdata'] = \
+        {
+            'v0_diesel_mac': get_datafile(os.path.join(save_update_data, 'v0_diesel_mac.zip')),
+            'v0_diesel': get_datafile(os.path.join(save_update_data, 'v0_diesel.zip')),
+            'v0_non_weatherable': get_datafile(os.path.join(save_update_data, 'v0_non_weatherable.zip')),
+            'v1_double_diesel': get_datafile(os.path.join(save_update_data, 'v1_double_diesel.gnome')),
+            'v1_non_weatherable': get_datafile(os.path.join(save_update_data, 'v1_non_weatherable.zip')),
+        }
     return data
 
 
@@ -323,6 +418,7 @@ def invalid_rq():
     return {'rq': bad_rq}
 
 # use this for wind and current deterministic (r,theta)
+
 
 rq = np.array([(1, 0),
                (1, 45),
@@ -441,7 +537,8 @@ def wind_circ(wind_timeseries):
 
     from gnome import environment
     dtv_rq = wind_timeseries['rq']
-    wm = environment.Wind(timeseries=dtv_rq, format='r-theta',
+
+    wm = environment.Wind(timeseries=dtv_rq, coord_sys='r-theta',
                           units='meter per second')
 
     return {'wind': wm, 'rq': dtv_rq, 'uv': wind_timeseries['uv']}
@@ -504,6 +601,7 @@ def sample_sc_no_uncertainty():
     the two spills and returns it. It is used in test_spill_container.py
     and test_elements.py so defined as a fixture.
     """
+    water = Water()
     sc = SpillContainer()
     # Sample data for creating spill
     num_elements = 100
@@ -517,19 +615,22 @@ def sample_sc_no_uncertainty():
     spills = [gnome.spill.point_line_release_spill(num_elements,
                                                    start_position,
                                                    release_time,
-                                                   amount=10, units='l'),
+                                                   amount=10, units='l',
+                                                   water=water),
               gnome.spill.point_line_release_spill(num_elements,
                                                    start_position,
                                                    release_time_2,
                                                    end_position,
-                                                   end_release_time),
+                                                   end_release_time,
+                                                   water=water),
               ]
     sc.spills.add(spills)
     return sc
 
 
-@pytest.fixture(scope='module')
-def sample_model():
+
+# @pytest.fixture(scope='module')
+def sample_model_fixture_base():
     """
     sample model with no outputter and no spills. Use this as a template for
     fixtures to add spills
@@ -556,7 +657,8 @@ def sample_model():
 
     # the image output map
 
-    mapfile = os.path.join(os.path.dirname(__file__), '../sample_data',
+    mapfile = os.path.join(os.path.dirname(__file__),
+                           'sample_data',
                            'MapBounds_Island.bna')
 
     # the land-water map
@@ -581,12 +683,18 @@ def sample_model():
     start_points[:] = (-127.1, 47.93, 0)
     end_points[:] = (-126.5, 48.1, 0)
 
-    return {'model': model, 'release_start_pos': start_points,
-            'release_end_pos': end_points}
+    return {'model': model,
+            'release_start_pos': start_points,
+            'release_end_pos': end_points,
+            }
 
 
-@pytest.fixture(scope='module')
-def sample_model2():
+# make this two fixtures - one module scope, one function scope
+sample_model = pytest.fixture(scope='module')(sample_model_fixture_base)
+sample_model_fcn = pytest.fixture(scope='function')(sample_model_fixture_base)
+
+
+def sample_model2_fixture_base():
     """
     sample model with no outputter and no spills. Use this as a template for
     fixtures to add spills
@@ -643,16 +751,21 @@ def sample_model2():
             'release_end_pos': end_points}
 
 
-@pytest.fixture(scope='function')
-def sample_model_fcn():
-    'sample_model with function scope'
-    return sample_model()
+# make this two fixtures - one module scope, one function scope
+sample_model2 = pytest.fixture(scope='module')(sample_model2_fixture_base)
+sample_model_fcn2 = pytest.fixture(scope='function')(sample_model2_fixture_base)
 
 
-@pytest.fixture(scope='function')
-def sample_model_fcn2():
-    'sample_model with function scope'
-    return sample_model2()
+# @pytest.fixture(scope='function')
+# def sample_model_fcn():
+#     'sample_model with function scope'
+#     return sample_model()
+
+
+# @pytest.fixture(scope='function')
+# def sample_model_fcn2():
+#     'sample_model with function scope'
+#     return sample_model2()
 
 
 def sample_model_weathering(sample_model_fcn,
@@ -666,14 +779,14 @@ def sample_model_weathering(sample_model_fcn,
     model.uncertain = False     # fixme: with uncertainty, copying spill fails!
     model.duration = timedelta(hours=4)
 
-    et = gnome.spill.elements.floating(substance=oil)
+    sub = gnome.spill.substance.GnomeOil(oil)
     start_time = model.start_time + timedelta(hours=1)
-    end_time = start_time + timedelta(seconds=model.time_step*3)
+    end_time = start_time + timedelta(seconds=model.time_step * 3)
     spill = gnome.spill.point_line_release_spill(num_les,
                                                  rel_pos,
                                                  start_time,
                                                  end_release_time=end_time,
-                                                 element_type=et,
+                                                 substance=sub,
                                                  amount=100,
                                                  units='kg')
     model.spills += spill
@@ -692,14 +805,14 @@ def sample_model_weathering2(sample_model_fcn2, oil, temp=311.16):
     model.uncertain = False     # fixme: with uncertainty, copying spill fails!
     model.duration = timedelta(hours=24)
 
-    et = gnome.spill.elements.floating(substance=oil)
+    sub = gnome.spill.substance.GnomeOil(oil)
     start_time = model.start_time
     end_time = start_time
-    spill = gnome.spill.point_line_release_spill(10,
+    spill = gnome.spill.point_line_release_spill(100,
                                                  rel_pos,
                                                  start_time,
                                                  end_release_time=end_time,
-                                                 element_type=et,
+                                                 substance=sub,
                                                  amount=10000,
                                                  units='kg')
     model.spills += spill

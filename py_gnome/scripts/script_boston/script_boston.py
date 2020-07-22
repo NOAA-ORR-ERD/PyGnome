@@ -16,29 +16,32 @@ and netcdf and kml output
 
 
 import os
-from datetime import datetime, timedelta
 
-import numpy as np
+import gnome.scripting as gs
 
-import gnome
-from gnome import scripting
-from gnome.basic_types import datetime_value_2d
+# from datetime import datetime, timedelta
+
+# import numpy as np
+
+# import gnome
+# from gnome import scripting
+# from gnome.basic_types import datetime_value_2d
 
 from gnome.utilities.projections import GeoProjection
-from gnome.utilities.remote_data import get_datafile
+# from gnome.utilities.remote_data import get_datafile
 
-from gnome.environment import Wind, Tide
-from gnome.map import MapFromBNA
+# from gnome.environment import Wind, Tide
+# from gnome.maps import MapFromBNA
 
-from gnome.model import Model
-from gnome.spill import point_line_release_spill
-from gnome.movers import RandomMover, WindMover, CatsMover, ComponentMover
+# from gnome.model import Model
+# from gnome.spill import point_line_release_spill
+# from gnome.movers import RandomMover, WindMover, CatsMover, ComponentMover
 
 
-from gnome.outputters import Renderer, NetCDFOutput, KMZOutput
+# from gnome.outputters import Renderer, NetCDFOutput, KMZOutput
 
 # let's get the console log working:
-gnome.initialize_console_log()
+gs.set_verbose()
 
 # define base directory
 base_dir = os.path.dirname(__file__)
@@ -49,57 +52,59 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # create the maps:
 
     print 'creating the maps'
-    mapfile = get_datafile(os.path.join(base_dir, './MassBayMap.bna'))
-    gnome_map = MapFromBNA(mapfile,
-                           refloat_halflife=1, # hours
-                           raster_size=2048*2048 # about 4 MB
-                           )
+    mapfile = gs.get_datafile(os.path.join(base_dir, './MassBayMap.bna'))
+    gnome_map = gs.MapFromBNA(mapfile,
+                              refloat_halflife=1,  # hours
+                              raster_size=2048 * 2048  # about 4 MB
+                              )
 
-    renderer = Renderer(mapfile,
-                        images_dir,
-                        size=(800, 800),
-                        projection_class=GeoProjection)
+    renderer = gs.Renderer(mapfile,
+                           images_dir,
+                           image_size=(800, 800),
+                           projection_class=GeoProjection)
 
     print 'initializing the model'
-    start_time = datetime(2013, 3, 12, 10, 0)
-
+    # start_time = datetime(2013, 3, 12, 10, 0)
+    start_time = "2013-03-12T10:00"
     # 15 minutes in seconds
     # Default to now, rounded to the nearest hour
-    model = Model(time_step=900,
-                  start_time=start_time,
-                  duration=timedelta(days=1),
-                  map=gnome_map,
-                  uncertain=True)
+    model = gs.Model(time_step=gs.minutes(15),
+                     start_time=start_time,
+                     duration=gs.days(1),
+                     map=gnome_map,
+                     uncertain=True)
 
     print 'adding outputters'
     model.outputters += renderer
 
     netcdf_file = os.path.join(base_dir, 'script_boston.nc')
-    scripting.remove_netcdf(netcdf_file)
-    model.outputters += NetCDFOutput(netcdf_file, which_data='all')
+    gs.remove_netcdf(netcdf_file)
+    model.outputters += gs.NetCDFOutput(netcdf_file, which_data='all')
 
-    model.outputters += KMZOutput(os.path.join(base_dir, 'script_boston.kmz'))
+    model.outputters += gs.KMZOutput(os.path.join(base_dir, 'script_boston.kmz'))
 
     print 'adding a RandomMover:'
-    model.movers += RandomMover(diffusion_coef=100000)
+    model.movers += gs.RandomMover(diffusion_coef=100000)
 
     print 'adding a wind mover:'
 
-    series = np.zeros((2, ), dtype=datetime_value_2d)
-    series[0] = (start_time, (5, 180))
-    series[1] = (start_time + timedelta(hours=18), (5, 180))
+    # series = np.zeros((2, ), dtype=datetime_value_2d)
+    # series[0] = (start_time, (5, 180))
+    # series[1] = (start_time + timedelta(hours=25), (5, 180))
 
-    w_mover = WindMover(Wind(timeseries=series, units='m/s'))
+
+    # w_mover = WindMover(Wind(timeseries=series, units='m/s'))
+    # model.movers += w_mover
+    # model.environment += w_mover.wind
+
+    w_mover = gs.constant_wind_mover(5, 180, units='m/s')
     model.movers += w_mover
-    model.environment += w_mover.wind
-
     print 'adding a cats shio mover:'
 
-    curr_file = get_datafile(os.path.join(base_dir, r"./EbbTides.cur"))
-    tide_file = get_datafile(os.path.join(base_dir, r"./EbbTidesShio.txt"))
+    curr_file = gs.get_datafile(os.path.join(base_dir, r"./EbbTides.cur"))
+    tide_file = gs.get_datafile(os.path.join(base_dir, r"./EbbTidesShio.txt"))
 
-    c_mover = CatsMover(curr_file, tide=Tide(tide_file))
-
+    c_mover = gs.CatsMover(curr_file, tide=gs.Tide(tide_file))
     # this is the value in the file (default)
     c_mover.scale_refpoint = (-70.8875, 42.321333)
     c_mover.scale = True
@@ -108,20 +113,19 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     model.movers += c_mover
 
     # TODO: cannot add this till environment base class is created
-    model.environment += c_mover.tide
+    # model.environment += c_mover.tide
 
     print 'adding a cats ossm mover:'
 
     # ossm_file = get_datafile(os.path.join(base_dir,
     #                          r"./MerrimackMassCoastOSSM.txt"))
-    curr_file = get_datafile(os.path.join(base_dir,
-                             r"./MerrimackMassCoast.cur"))
-    tide_file = get_datafile(os.path.join(base_dir,
-                             r"./MerrimackMassCoastOSSM.txt"))
-    c_mover = CatsMover(curr_file, tide=Tide(tide_file))
+    curr_file = gs.get_datafile(os.path.join(base_dir,
+                                "MerrimackMassCoast.cur"))
+    tide_file = gs.get_datafile(os.path.join(base_dir,
+                                "MerrimackMassCoastOSSM.txt"))
+    c_mover = gs.CatsMover(curr_file, tide=gs.Tide(tide_file))
 
     # but do need to scale (based on river stage)
-
     c_mover.scale = True
     c_mover.scale_refpoint = (-70.65, 42.58333)
     c_mover.scale_value = 1.
@@ -129,9 +133,8 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     model.environment += c_mover.tide
 
     print 'adding a cats mover:'
-
-    curr_file = get_datafile(os.path.join(base_dir, r"MassBaySewage.cur"))
-    c_mover = CatsMover(curr_file)
+    curr_file = gs.get_datafile(os.path.join(base_dir, "MassBaySewage.cur"))
+    c_mover = gs.CatsMover(curr_file)
 
     # but do need to scale (based on river stage)
 
@@ -154,9 +157,9 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # scaleBy WindStress
 
     print "adding a component mover:"
-    component_file1 = get_datafile(os.path.join(base_dir, r"./WAC10msNW.cur"))
-    component_file2 = get_datafile(os.path.join(base_dir, r"./WAC10msSW.cur"))
-    comp_mover = ComponentMover(component_file1, component_file2, w_mover.wind)
+    component_file1 = gs.get_datafile(os.path.join(base_dir, "WAC10msNW.cur"))
+    component_file2 = gs.get_datafile(os.path.join(base_dir, "WAC10msSW.cur"))
+    comp_mover = gs.ComponentMover(component_file1, component_file2, w_mover.wind)
 
     # todo: callback did not work correctly below - fix!
     # comp_mover = ComponentMover(component_file1,
@@ -177,8 +180,8 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     print 'adding a spill'
 
-    end_time = start_time + timedelta(hours=12)
-    spill = point_line_release_spill(num_elements=100,
+    end_time = gs.asdatetime(start_time) + gs.hours(12)
+    spill = gs.point_line_release_spill(num_elements=100,
                                      start_position=(-70.911432,
                                                      42.369142, 0.0),
                                      release_time=start_time,
@@ -190,7 +193,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
 
 if __name__ == "__main__":
-    scripting.make_images_dir()
+    gs.make_images_dir()
     print "setting up the model"
     model = make_model()
     print "running the model"

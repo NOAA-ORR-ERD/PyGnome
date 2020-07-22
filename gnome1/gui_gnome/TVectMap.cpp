@@ -504,7 +504,7 @@ OSErr TVectorMap::ImportMap (char *path)
 	while (err == 0 && !InterruptFlag)
 	{
 		MySpinCursor(); // JLM 8/4/99
-		if (++line >= numLinesText - 1)
+		if (++line > numLinesText - 1)
 			ReadErrCode = 1;
 		else
 		{
@@ -536,7 +536,7 @@ OSErr TVectorMap::ImportMap (char *path)
 		{
 			for (PointIndex = 1; PointIndex <= labs(PointCount); ++PointIndex)
 			{
-				if (++line >= numLinesText - 1)
+				if (++line > numLinesText - 1)
 					ReadErrCode = 1;
 				else
 				{
@@ -588,7 +588,7 @@ OSErr TVectorMap::ImportMap (char *path)
 		for (PointIndex = 1; PointIndex <= PointCount && err == 0; ++PointIndex)
 		{
 //				InterruptFlag = Progress ((long) (((double) TotalBytesRead / (double) FileSize) * 100.0 + 1), "", &ProgressWPtr);
-			if (++line >= numLinesText - 1)
+			if (++line > numLinesText - 1)
 				ReadErrCode = 1;
 			else
 			{
@@ -981,7 +981,7 @@ OSErr TVectorMap::ImportESIData (char *path)
 	while (err == 0 && !InterruptFlag)
 	{
 		MySpinCursor(); // JLM 8/4/99
-		if (++line >= numLinesText - 1)
+		if (++line > numLinesText - 1)
 			ReadErrCode = 1;
 		else
 		{
@@ -1034,7 +1034,7 @@ OSErr TVectorMap::ImportESIData (char *path)
 		for (PointIndex = 1; PointIndex <= PointCount && err == 0; ++PointIndex)
 		{
 //				InterruptFlag = Progress ((long) (((double) TotalBytesRead / (double) FileSize) * 100.0 + 1), "", &ProgressWPtr);
-			if (++line >= numLinesText - 1)
+			if (++line > numLinesText - 1)
 				ReadErrCode = 1;
 			else
 			{

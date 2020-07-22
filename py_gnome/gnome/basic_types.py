@@ -14,7 +14,22 @@ import sys
 import numpy as np
 
 # pull everything from the cython code
-from cy_gnome.cy_basic_types import *
+import cy_gnome.cy_basic_types as cbt
+
+# in lib_gnome, the coordinate systems used (r-theta, uv, etc)
+# are called ts_format, which is not a very descriptive name.
+# the word 'format' can mean a lot of different things depending on
+# what we are talking about.  So we try to be a bit more specific here.
+coord_systems = cbt.ts_format
+ts_format = cbt.ts_format
+oil_status = cbt.oil_status
+seconds = cbt.seconds
+spill_type = cbt.spill_type
+
+# this is a mapping of oil_status code to the meaningful name:
+oil_status_map = { num: name for name, num in vars(oil_status).items() if not name.startswith("_")}
+
+
 
 # Here we customize what a numpy 'long' type is....
 # We do this because numpy does different things with a long
@@ -46,7 +61,7 @@ water_current_type = np.float64
 
 # value has two components: (u, v) or (r, theta) etc
 datetime_value_2d = np.dtype([('time', 'datetime64[s]'),
-                              ('value', mover_type, (2, ))], align=True)
+                              ('value', mover_type, (2,))], align=True)
 
 # value has one component: (u,)
 # convert from datetime_value_1d to time_value_pair by setting 2nd component
@@ -58,12 +73,12 @@ datetime_value_1d = np.dtype([('time', 'datetime64[s]'),
 # Define enums that are independent of C++ here so we
 # don't have to recompile code
 
-wind_datasource = enum(undefined=0, file=1, manual=2, nws=3, buoy=4)
+wind_datasources = cbt.enum(undefined=0, file=1, manual=2, nws=3, buoy=4)
 
 # Define an enum for weathering status. The numpy array will contain np.uint8
 # datatype. Can still define 2 more flags as 2**6, 2**7
 # These are bit flags
-fate = enum(non_weather=1,
+fate = cbt.enum(non_weather=1,
             surface_weather=2,
             subsurf_weather=4,
             skim=8,
@@ -71,8 +86,9 @@ fate = enum(non_weather=1,
             disperse=32,  # marked for chemical_dispersion
             )
 
-numerical_methods = enum(euler=0,
-                         rk4=1)
+numerical_methods = {'Euler': 0,
+                     'RK2': 1,
+                     'RK4': 2}
 
 # ----------------------------------------------------------------
 # Mirror C++ structures, following are used by cython code

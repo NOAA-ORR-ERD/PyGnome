@@ -182,7 +182,7 @@ OSErr CurrentCycleMover_c::get_move(int n, Seconds model_time, Seconds step_len,
 	LERec rec;
 	prec = &rec;
 	
-	WorldPoint3D zero_delta ={0,0,0.};
+	WorldPoint3D zero_delta ={{0,0},0.};
 	
 	for (int i = 0; i < n; i++) {
 		
@@ -288,7 +288,6 @@ OSErr CurrentCycleMover_c::TextRead(char *path, char *topFilePath)
 	Boolean isNetCDFPathsFile = false;
 	TimeGridVel *newTimeGrid = nil;
 
-	//printNote("Got Here CCM\n");
 	memset(fileNamesPath, 0, 256);
 	memset(filePath, 0, 256);
 	strcpy(filePath,path);	// this gets altered in IsNetCDFPathsFile, eventually change that function
@@ -314,13 +313,12 @@ OSErr CurrentCycleMover_c::TextRead(char *path, char *topFilePath)
 			if (!err) newTimeGrid->bIsCycleMover = true;
 			//err = this->InitMover(newTimeGrid);	// dummy variables for now
 			err = newTimeGrid->TextRead(filePath, topFilePath);
-		//printNote("Got Here CCM Text Read\n");
 			if(err) return err;
 			this->SetTimeGrid(newTimeGrid);
 		}
 
 		if (isNetCDFPathsFile) {
-			char errmsg[256];
+			//char errmsg[256];
 
 			err = timeGrid->ReadInputFileNames(fileNamesPath);
 			if (err)
@@ -343,8 +341,6 @@ OSErr CurrentCycleMover_c::TextRead(char *path, char *topFilePath)
 
 	if (IsPtCurFile(linesInFile))
 	{
-		char errmsg[256];
-
 		newTimeGrid = new TimeGridCurTri();
 		if (newTimeGrid)
 		{
@@ -376,7 +372,6 @@ OSErr CurrentCycleMover_c::TextRead(char *path, char *topFilePath)
 	else if (IsGridCurTimeFile(linesInFile, &selectedUnits))
 	{
 		//cerr << "we are opening a GridCurTimeFile..." << "'" << path << "'" << endl;
-		char errmsg[256];
 		newTimeGrid = new TimeGridCurRect();
 		//timeGrid = new TimeGridVel();
 		if (newTimeGrid)
@@ -421,6 +416,64 @@ VelocityRec CurrentCycleMover_c::GetPatValue(WorldPoint p)
 	VelocityRec v = {0,0};
 	printError("CurrentCycleMover_c::GetPatValue is unimplemented");
 	return v;
+}
+
+OSErr CurrentCycleMover_c::GetScaledVelocities(Seconds model_time, VelocityFRec *velocities)
+{
+	return timeGrid->GetScaledVelocities(model_time, velocities);
+}
+
+LongPointHdl CurrentCycleMover_c::GetPointsHdl(void)
+{
+	if (timeGrid->IsRegularGrid())
+	{
+		return timeGrid->GetPointsHdl();
+	}
+	else
+	{
+		return timeGrid->fGrid->GetPointsHdl();
+	}
+}
+
+TopologyHdl CurrentCycleMover_c::GetTopologyHdl(void)
+{
+	return timeGrid->fGrid->GetTopologyHdl();
+}
+
+GridCellInfoHdl CurrentCycleMover_c::GetCellDataHdl(void)
+{
+	return timeGrid->GetCellData();
+}
+
+WORLDPOINTH	CurrentCycleMover_c::GetTriangleCenters(void)
+{	// should rename this function...
+	if (IsTriangleGrid())
+	{
+		if (IsDataOnCells())
+			return timeGrid->fGrid->GetCenterPointsHdl();
+		else
+			return timeGrid->fGrid->GetWorldPointsHdl();
+	}
+	else
+		return timeGrid->GetCellCenters();
+}
+
+long CurrentCycleMover_c::GetNumTriangles(void)
+{
+	long numTriangles = 0;
+	TopologyHdl topoH = GetTopologyHdl();
+	if (topoH) numTriangles = _GetHandleSize((Handle)topoH)/sizeof(**topoH);
+
+	return numTriangles;
+}
+
+long CurrentCycleMover_c::GetNumPoints(void)
+{
+	long numPts = 0;
+	LongPointHdl ptsH = GetPointsHdl();
+	if (ptsH) numPts = _GetHandleSize((Handle)ptsH)/sizeof(**ptsH);
+
+	return numPts;
 }
 
 

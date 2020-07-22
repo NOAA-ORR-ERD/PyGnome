@@ -35,28 +35,22 @@ void RandomVertical_c::Init()
 	fVerticalDiffusionCoefficient = 5; //  cm**2/sec	
 	fVerticalBottomDiffusionCoefficient = .11; //  cm**2/sec, Bushy suggested a larger default	
 	fMixedLayerDepth = 10.; // meters
-	//fHorizontalDiffusionCoefficient = 126; //  cm**2/sec	
-	bUseDepthDependentDiffusion = false;
-	//memset(&fOptimize,0,sizeof(fOptimize));
+	bSurfaceIsAllowed = false; 
+	fHorizontalDiffusionCoefficient = 100000; //  cm**2/sec	
+	fHorizontalDiffusionCoefficientBelowML = 126; //  cm**2/sec	
 }
 
 OSErr RandomVertical_c::PrepareForModelRun()
 {
-	//this -> fOptimize.isFirstStep = true;	// may need this, but no uncertainty at this point
 	return noErr;
 }
 OSErr RandomVertical_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, int* LESetsSizesList)
 {
-	//this -> fOptimize.isOptimizedForStep = true;
-	//this -> fOptimize.value = sqrt(6.*(fDiffusionCoefficient/10000.)*time_step)/METERSPERDEGREELAT; // in deg lat
-	//this -> fOptimize.uncertaintyValue = sqrt(fUncertaintyFactor*6.*(fDiffusionCoefficient/10000.)*time_step)/METERSPERDEGREELAT; // in deg lat
 	return noErr;
 }
 
 void RandomVertical_c::ModelStepIsDone()
 {
-	//if (this -> fOptimize.isFirstStep == true) this -> fOptimize.isFirstStep = false;
-	//memset(&fOptimize,0,sizeof(fOptimize));
 }
 
 
@@ -79,7 +73,7 @@ OSErr RandomVertical_c::get_move(int n, Seconds model_time, Seconds step_len, Wo
 	LERec rec;
 	prec = &rec;
 	
-	WorldPoint3D zero_delta ={0,0,0.};
+	WorldPoint3D zero_delta ={{0,0},0.};
 
 	for (int i = 0; i < n; i++) {
 		// only operate on LE if the status is in water
@@ -114,27 +108,46 @@ double GetDepthAtPoint(WorldPoint p)
 WorldPoint3D RandomVertical_c::GetMove (const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	double	dLong, dLat, z = 0;
-	WorldPoint3D	deltaPoint = {0,0,0.};
+	WorldPoint3D	deltaPoint = {{0,0},0.};
 	WorldPoint refPoint = (*theLE).p;	
 	float rand;
-	OSErr err = 0;
 
 	//if ((*theLE).z==0)	return deltaPoint;
 	// will need a flag to check if LE is supposed to stay on the surface or can be diffused below	
 	// will want to be able to set mixed layer depth, but have a local value that can be changed
-	if ((*theLE).z>0)	// only apply vertical diffusion if there are particles below surface
+	
+	// 9/28/18 Amy would like particles that surface to be put back into the water column
+	// we may eventually have only a percentage of the particles go back in 
+	// this can be turned off by setting bSurfaceIsAllowed to true 
+	if ((*theLE).z>0 || bSurfaceIsAllowed==false)	// only apply vertical diffusion if there are particles below surface
 	{
-		double verticalDiffusionCoefficient;
+		double verticalDiffusionCoefficient, horizontalDiffusionCoefficient;
 		double mixedLayerDepth=fMixedLayerDepth, totalLEDepth, depthAtPoint=INFINITE_DEPTH;
 		float eps = 1.e-6;
+		float rand1, rand2;
 		// diffusion coefficient is O(1) vs O(100000) for horizontal / vertical diffusion
 		// vertical is 3-5 cm^2/s, divide by sqrt of 10^4
 		
+		rand1 = GetRandomFloat(-1.0, 1.0);
+		rand2 = GetRandomFloat(-1.0, 1.0);
+		if ((*theLE).z>mixedLayerDepth)
+			horizontalDiffusionCoefficient = sqrt(6.*(fHorizontalDiffusionCoefficientBelowML/10000.)*timeStep)/METERSPERDEGREELAT;
+		else
+			horizontalDiffusionCoefficient = sqrt(6.*(fHorizontalDiffusionCoefficient/10000.)*timeStep)/METERSPERDEGREELAT;
+		dLong = (rand1 * horizontalDiffusionCoefficient )/ LongToLatRatio3 (refPoint.pLat);
+		dLat  = rand2 * horizontalDiffusionCoefficient;		
+		
+		// code goes here, option to add some uncertainty to horizontal diffusivity
+		deltaPoint.p.pLong = dLong * 1000000;
+		deltaPoint.p.pLat  = dLat  * 1000000;
+
 		// instead diffuse particles above MLD, reflect if necessary and then apply bottom diffusion to all particles
 		// then check top and bottom. Still need to consider what to do with large steps - put randomly into mixed layer / water column ?
 		depthAtPoint = GetDepthAtPoint(refPoint);
 		if (depthAtPoint <= 0) depthAtPoint = INFINITE_DEPTH;	// this should be taken care of in GetDepthAtPoint	
 		// if (depthAtPoint < eps) // should this be an error?
+		totalLEDepth = (*theLE).z+deltaPoint.z;
+
 		if ((*theLE).z<=mixedLayerDepth)
 		{
 			if (fVerticalDiffusionCoefficient==0) return deltaPoint;	

@@ -2,16 +2,18 @@ import os
 
 cimport numpy as cnp
 import numpy as np
+
 from libc.string cimport memcpy
 
 from type_defs cimport *
+from gnome import basic_types
+
 from utils cimport _GetHandleSize
 from movers cimport Mover_c
 from current_movers cimport GridCurrentMover_c, CurrentMover_c
 
-from gnome import basic_types
-from gnome.cy_gnome.cy_mover cimport CyCurrentMoverBase
 from gnome.cy_gnome.cy_helpers cimport to_bytes
+from gnome.cy_gnome.cy_mover cimport CyCurrentMoverBase
 
 
 cdef extern from *:
@@ -22,9 +24,6 @@ cdef extern from *:
 
 
 cdef class CyGridCurrentMover(CyCurrentMoverBase):
-
-    #cdef GridCurrentMover_c *grid_current
-
     def __cinit__(self):
         self.mover = new GridCurrentMover_c()
         self.grid_current = dc_mover_to_gc(self.mover)
@@ -83,7 +82,7 @@ cdef class CyGridCurrentMover(CyCurrentMoverBase):
                  uncertain_time_delay=0,
                  uncertain_along=.5,
                  uncertain_cross=.25,
-                 num_method = 0):
+                 num_method='Euler'):
         """
         .. function:: __init__(self, current_scale=1,
                  uncertain_duration=24*3600, uncertain_time_delay=0,
@@ -101,16 +100,18 @@ cdef class CyGridCurrentMover(CyCurrentMoverBase):
                                 to current flow
         :param current_scale: scale factor applied to current values
         """
-        super(CyGridCurrentMover, self).__init__(uncertain_duration=uncertain_duration,
-                                                 uncertain_time_delay=uncertain_time_delay,
-                                                 up_cur_uncertain=uncertain_along,
-                                                 down_cur_uncertain=-1*uncertain_along,
-                                                 right_cur_uncertain=uncertain_cross,
-                                                 left_cur_uncertain=-1*uncertain_cross)
+        (super(CyGridCurrentMover, self)
+         .__init__(uncertain_duration=uncertain_duration,
+                   uncertain_time_delay=uncertain_time_delay,
+                   up_cur_uncertain=uncertain_along,
+                   down_cur_uncertain=-1*uncertain_along,
+                   right_cur_uncertain=uncertain_cross,
+                   left_cur_uncertain=-1*uncertain_cross))
 
         self.grid_current.fCurScale = current_scale
         self.grid_current.fIsOptimizedForStep = 0
-        self.grid_current.num_method = num_method
+
+        self.num_method = num_method
 
     def __repr__(self):
         return ('CyGridCurrentMover(uncertain_duration={0}, '
@@ -172,14 +173,14 @@ cdef class CyGridCurrentMover(CyCurrentMoverBase):
 
         def __set__(self, value):
             self.grid_current.SetTimeShift(value)
-            
-                #Does this need to be here? - Jay
+
     property num_method:
         def __get__(self):
-            return self.grid_current.num_method
-        
+            return self._num_method
+
         def __set__(self, value):
-            self.grid_current.num_method = value
+            self.grid_current.num_method = basic_types.numerical_methods[value]
+            self._num_method = value
 
     def extrapolate_in_time(self, extrapolate):
         self.grid_current.SetExtrapolationInTime(extrapolate)
@@ -193,13 +194,17 @@ cdef class CyGridCurrentMover(CyCurrentMoverBase):
     def get_start_time(self):
         cdef OSErr err
         cdef Seconds start_time
+
         err = self.grid_current.GetDataStartTime(&start_time)
+
         return start_time
 
     def get_end_time(self):
         cdef OSErr err
         cdef Seconds end_time
+
         err = self.grid_current.GetDataEndTime(&end_time)
+
         return end_time
 
     def get_move(self,
@@ -356,6 +361,12 @@ cdef class CyGridCurrentMover(CyCurrentMoverBase):
         num_tri = self.grid_current.GetNumTriangles()
 
         return num_tri
+
+    def _is_regular_grid(self):
+        """
+            Invokes the IsRegularGrid TimeGridVel_c object
+        """
+        return self.grid_current.IsRegularGrid()
 
     def get_num_points(self):
         """

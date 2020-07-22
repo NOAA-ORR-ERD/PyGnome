@@ -6,12 +6,17 @@ import string
 import os
 import copy
 
-from colander import SchemaNode, String, Float, drop
+from colander import SchemaNode, String, Float, drop, Boolean
 
 import gnome
+from gnome.utilities.time_utils import sec_to_datetime
+from gnome.utilities.inf_datetime import InfDateTime
+from gnome.persist.validators import convertible_to_seconds
+from gnome.persist.extend_colander import LocalDateTime
 
 from .environment import Environment
 from gnome.persist import base_schema
+from gnome.persist.extend_colander import FilenameSchema
 
 # TODO: The name 'convert' is doubly defined as
 #       unit_conversion.convert and...
@@ -20,23 +25,27 @@ from gnome.persist import base_schema
 #       CHB-- I don't think that's a problem -- that's what namespaces are for!
 
 from gnome.utilities.convert import tsformat
-
-from gnome.utilities.serializable import Serializable, Field
-
 from gnome.cy_gnome.cy_ossm_time import CyTimeseries
 from gnome.cy_gnome.cy_shio_time import CyShioTime
 
 
-class TideSchema(base_schema.ObjType):
+class TideSchema(base_schema.ObjTypeSchema):
     'Tide object schema'
-    filename = SchemaNode(String(), missing=drop)
+    filename = FilenameSchema(
+        save=True, update=False, isdatafile=True, test_equal=False
+    )
 
-    scale_factor = SchemaNode(Float(), missing=drop)
+    scale_factor = SchemaNode(
+        Float(), missing=drop, save=True, update=True
+    )
+    extrapolation_is_allowed = SchemaNode(Boolean(), missing=drop, read_only=True)
+    data_start = SchemaNode(LocalDateTime(), read_only=True,
+                            validator=convertible_to_seconds)
+    data_stop = SchemaNode(LocalDateTime(), read_only=True,
+                           validator=convertible_to_seconds)
 
-    name = 'tide'
 
-
-class Tide(Environment, Serializable):
+class Tide(Environment):
 
     """
     todo: baseclass called ScaleTimeseries (or something like that)
@@ -47,21 +56,13 @@ class Tide(Environment, Serializable):
     a cython wrapper around the C++ Shio object
     """
     _ref_as = 'tide'
-    _state = copy.deepcopy(Environment._state)
     _schema = TideSchema
-
-    # add 'filename' as a Field object
-    _update = ['scale_factor']
-    _create = []
-    _create.extend(_update)
-    _state.add(update=_update, save=_create)
-    _state.add_field(Field('filename', save=True, read=True, isdatafile=True,
-                           test_for_eq=False))
 
     def __init__(self,
                  filename,
                  yeardata=os.path.join(os.path.dirname(gnome.__file__),
                                        'data', 'yeardata'),
+                 scale_factor=None,
                  **kwargs):
         """
         Tide information can be obtained from a filename or set as a
@@ -89,16 +90,35 @@ class Tide(Environment, Serializable):
         """
         # define locally so it is available even for OSSM files,
         # though not used by OSSM files
+        super(Tide, self).__init__(**kwargs)
         self._yeardata = None
+        self.filename=filename
         self.cy_obj = self._obj_to_create(filename)
         # self.yeardata = os.path.abspath( yeardata ) # set yeardata
         self.yeardata = yeardata  # set yeardata
-        self.name = kwargs.pop('name', os.path.split(self.filename)[1])
-        self.scale_factor = kwargs.get('scale_factor',
-                                       self.cy_obj.scale_factor)
+        self.name = os.path.split(self.filename)[1]
+        self.scale_factor = scale_factor if scale_factor else self.cy_obj.scale_factor
+
 
         kwargs.pop('scale_factor', None)
-        super(Tide, self).__init__(**kwargs)
+
+    @property
+    def extrapolation_is_allowed(self):
+        return True
+
+    @property
+    def data_start(self):
+        if isinstance(self.cy_obj, CyShioTime):
+            return InfDateTime("-inf")
+        else:
+            return sec_to_datetime(self.cy_obj.get_start_time())
+
+    @property
+    def data_stop(self):
+        if isinstance(self.cy_obj, CyShioTime):
+            return InfDateTime("inf")
+        else:
+            return sec_to_datetime(self.cy_obj.get_end_time())
 
     @property
     def yeardata(self):
@@ -118,9 +138,6 @@ class Tide(Environment, Serializable):
 
         if isinstance(self.cy_obj, CyShioTime):
             self.cy_obj.set_shio_yeardata_path(value)
-
-    filename = property(lambda self: (self.cy_obj.filename, None
-                                      )[self.cy_obj.filename == ''])
 
     scale_factor = property(lambda self:
                             self.cy_obj.scale_factor, lambda self, val:
@@ -161,11 +178,3 @@ class Tide(Environment, Serializable):
             raise ValueError('This does not appear to be a valid file format '
                              'that can be read by OSSM or Shio to get '
                              'tide information')
-
-    def to_serialize(self, json_='webapi'):
-        toserial = super(Tide, self).to_serialize(json_)
-
-        if json_ == 'save':
-            toserial['filename'] = self.cy_obj.path_filename
-
-        return toserial

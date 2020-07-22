@@ -1,40 +1,62 @@
 # Documents the packages required for PyGnome
+# In theory, you should be abel t install all this with:
+# pip install -r requirements.txt
+# in practice, most of these packages are pip-installable, but not all.
+#
+# we recommend using teh conda package mangement system -- it better supports complex
+# binary packages, and we are supporting it
+# the "InstallingWithAnaconda.rst" file for details
 
 pytest
+pytest-timeout
 testfixtures
+
+gitpython
 psutil
 sphinx
 progressbar
+pyshp
 six
 geojson
-repoze.lru 
+repoze.lru
 colander
 gsw             # Thermodynamic Equations Of Seawater - density computation
-oil-library
+pyshp
+#gridded
 
-##    BINARY dependencies: cannot be pip installed
+
+# Binary dependencies that can probably be pip installed
+# these have binary wheels for Windows and Mac at least...
+numpy
+scipy
+pillow
+pyzmq
+Cython
+
+
+## dependencies that aren't on PyPi
+git+https://github.com/NOAA-ORR-ERD/PyNUCOS.git@v2.6.1#egg=unit_conversion
+git+https://github.com/NOAA-ORR-ERD/OilLibrary.git@v1.0.0#egg=oil_library
+
+
+
+## py_gd requires the libgd graphics rendering library
+## This may be easy to get for Linux, but on OS-X and Windows, you are better off using conda
+git+https://github.com/NOAA-ORR-ERD/py_gd.git@v0.1.8.1#egg=py_gd
+
+## Adding in gridded directly from github to avoid conda-forge getting development
+## hung up whenever we need to change something in gridded 
+
+git+https://github.com/NOAA-ORR-ERD/gridded.git@v0.2.2#egg=gridded
+
+##    BINARY dependencies: probably cannot be pip installed
 ##    Following packages requires something more than pip install
 ##    since they have binary dependencies. Following packages are commented
 ##    so pip does not try to install them. Please look at install directions
 ##    in README.md for instructions on installing for your OS.
+##    NOTE: these come with conda and EPD, for isntance.
 
 netCDF4>=1.1.0            # requires netcdf-4 binaries and hdf5
+# gdal
 
-## projections uses interpolate routine so most of py_gnome will work without this
-#  gsw also uses scipy. Expect py_gnome users with a local install to have scipy
-scipy      
 
-## End Binary packages ##
-
-##Binary dependencies that can probably be pip installed
-# these have binary wheels for Windows and Mac at least...
-pillow
-pyzmq
-Cython
-pyugrid
-numpy
-git+https://github.com/NOAA-ORR-ERD/py_gd.git#egg=py_gd
-gdal
-
-## Python only packages: can be pip installed ##
-git+https://github.com/NOAA-ORR-ERD/PyNUCOS.git#egg=unit_conversion

@@ -33,8 +33,8 @@ public:
 	//WORLDPOINTH GetWorldPointsHdl(return WPtH);
 	WORLDPOINTH GetCenterPointsHdl(void);
 	//WORLDPOINTH GetCenterPointsHdl(return CenterPtsH);
-	WORLDPOINTH SetWorldPointsHdl(WORLDPOINTH worldPts){WPtH = worldPts;}
-	WORLDPOINTH SetCenterPointsHdl(WORLDPOINTH centerPts){CenterPtsH = centerPts;}
+	void SetWorldPointsHdl(WORLDPOINTH worldPts){WPtH = worldPts;}
+	void SetCenterPointsHdl(WORLDPOINTH centerPts){CenterPtsH = centerPts;}
 	LongPointHdl GetPointsHdl(void);
 	TopologyHdl GetTopologyHdl(void);
 	VelocityFH GetVelocityHdl(void);

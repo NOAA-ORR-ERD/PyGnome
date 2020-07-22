@@ -1,9 +1,7 @@
 '''
 Test all operations for ice mover work
 '''
-
 import datetime
-import os
 
 import numpy as np
 import pytest
@@ -46,18 +44,24 @@ def test_loop():
     checks there is non-zero motion.
     also checks the motion is same for all LEs
     """
-
-    pSpill = sample_sc_release(num_le, start_pos, rel_time, windage_range=(0.03, 0.03))
+    pSpill = sample_sc_release(num_le, start_pos, rel_time,
+                               windage_range=(0.03, 0.03))
     ice_mover = IceWindMover(ice_file, topology_file)
     delta = _certain_loop(pSpill, ice_mover)
 
-    #_assert_move(delta)	# should get a new example that has some movement...
+    # _assert_move(delta)  # should get a new example that has some movement...
 
-    #assert np.all(delta[:, 0] == delta[0, 0])  # lat move matches for all LEs
-    #assert np.all(delta[:, 1] == delta[0, 1])  # long move matches for all LEs
-    assert np.all(delta[:, 0] == 0)  # in this case ice coverage is > 80% so no wind
-    assert np.all(delta[:, 1] == 0)  # in this case ice coverage is > 80% so no wind
-    assert np.all(delta[:, 2] == 0)  # 'z' is zeros
+    # assert np.all(delta[:, 0] == delta[0, 0])  # lat move matches for all LEs
+    # assert np.all(delta[:, 1] == delta[0, 1])  # long move matches for all LEs
+
+    # in this case ice coverage is > 80% so no wind
+    assert np.all(delta[:, 0] == 0)
+
+    # in this case ice coverage is > 80% so no wind
+    assert np.all(delta[:, 1] == 0)
+
+    # 'z' is zeros
+    assert np.all(delta[:, 2] == 0)
 
     return delta
 
@@ -68,13 +72,15 @@ def test_loop_gridwind():
     checks there is non-zero motion.
     also checks the motion is same for all LEs
     """
-
-    pSpill = sample_sc_release(num_le, start_pos, rel_time, windage_range=(0.03, 0.03))
+    pSpill = sample_sc_release(num_le, start_pos, rel_time,
+                               windage_range=(0.03, 0.03))
     wind = GridWindMover(ice_file, topology_file)
     delta = _certain_loop(pSpill, wind)
 
     _assert_move(delta)
 
+    # the LEs are NOT all the same -- at all!
+    print delta[:, 0]
     assert np.all(delta[:, 0] == delta[0, 0])  # lat move matches for all LEs
     assert np.all(delta[:, 1] == delta[0, 1])  # long move matches for all LEs
     assert np.all(delta[:, 2] == 0)  # 'z' is zeros
@@ -87,22 +93,25 @@ def test_ice_fields():
     test that data is loaded
     checks there is non-zero motion.
     """
+    # pSpill = sample_sc_release(num_le, start_pos, rel_time)
+    # pSpill.spill.set('windage_range', (0.03, 0.03))
 
-    #pSpill = sample_sc_release(num_le, start_pos, rel_time)
-    #pSpill.spill.set('windage_range', (0.03, 0.03))
     ice_mover = IceWindMover(ice_file, topology_file)
-    vels = ice_mover.get_ice_velocities(test_time)	#not sure if we can about ice velocity for wind...
+
+    # not sure if we care about ice velocity for wind...
+    vels = ice_mover.get_ice_velocities(test_time)
+
     frac, thick = ice_mover.get_ice_fields(test_time)
 
     # fraction values between 0 and 1
-    assert (np.all(frac[:] <= 1) and np.all(frac[:] >= 0) and not np.all(frac[:] == 0))
+    assert (np.all(frac[:] > 0) and np.all(frac[:] <= 1))
 
-    # thickness >= 0, < 10 in this example...
-    # this file uses 1e37 rather than a fill value?? should get a different example
-    #assert (np.all(thick[:] <= 10) and np.all(thick[:] >= 0) and not np.all(thick[:] == 0))
-    assert (np.all(thick[:] <= 1e38) and np.all(thick[:] > 0) and not np.all(thick[:] == 0))
+    # thickness >= 0, < 11 in this example...
+    # this file uses 1e37 rather than a fill value??
+    # should get a different example
+    assert (np.all(thick[:] > 0) and np.all(thick[:] <= 11))
 
-    # return frac, thick
+    assert (np.all(thick[:] > 0) and np.all(thick[:] <= 1e38))
 
 
 # def test_uncertain_loop(uncertain_time_delay=0):
@@ -234,9 +243,6 @@ def test_serialize_deserialize():
     """
 
     ice_grid = IceWindMover(ice_file, topology_file)
-    serial = ice_grid.serialize('webapi')
-    dict_ = IceWindMover.deserialize(serial)
-    ice2 = IceWindMover.new_from_dict(dict_)
+    serial = ice_grid.serialize()
+    ice2 = IceWindMover.deserialize(serial)
     assert ice_grid == ice2
-
-    ice_grid.update_from_dict(dict_)  # tests no failures

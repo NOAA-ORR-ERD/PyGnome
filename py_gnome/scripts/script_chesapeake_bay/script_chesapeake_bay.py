@@ -16,7 +16,7 @@ from gnome.utilities.remote_data import get_datafile
 
 from gnome.model import Model
 
-from gnome.map import MapFromBNA
+from gnome.maps import MapFromBNA
 from gnome.environment import Wind
 from gnome.spill import point_line_release_spill
 from gnome.movers import RandomMover, WindMover, GridCurrentMover
@@ -48,7 +48,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # draw_ontop can be 'uncertain' or 'forecast'
     # 'forecast' LEs are in black, and 'uncertain' are in red
     # default is 'forecast' LEs draw on top
-    renderer = Renderer(mapfile, images_dir, size=(800, 600),
+    renderer = Renderer(mapfile, images_dir, image_size=(800, 600),
                         output_timestep=timedelta(hours=2),
                         draw_ontop='forecast')
     # set the viewport to zoom in on the map:
@@ -91,6 +91,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     # default is .4 radians
     w_mover = WindMover(wind, uncertain_angle_scale=0)
+    wind.extrapolation_is_allowed=True
     model.movers += w_mover
 
     print 'adding a current mover:'

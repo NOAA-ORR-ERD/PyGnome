@@ -15,7 +15,7 @@ from gnome.utilities.remote_data import get_datafile
 
 from gnome.model import Model
 
-from gnome.map import MapFromBNA
+from gnome.maps import MapFromBNA
 from gnome.environment import Wind, Tide
 from gnome.spill import point_line_release_spill
 from gnome.movers import RandomMover, WindMover, CatsMover
@@ -43,7 +43,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     model.map = MapFromBNA(mapfile, refloat_halflife=6)  # hours
 
     print 'adding outputters'
-    renderer = Renderer(mapfile, images_dir, size=(800, 600))
+    renderer = Renderer(mapfile, images_dir, image_size=(800, 600))
     renderer.viewport = ((144.6, 13.4), (144.7, 13.5))
     model.outputters += renderer
 
@@ -54,7 +54,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     print 'adding a spill'
     end_time = start_time + timedelta(hours=6)
-    spill = point_line_release_spill(num_elements=10,
+    spill = point_line_release_spill(num_elements=20,
                                      start_position=(144.664166,
                                                      13.441944, 0.0),
                                      release_time=start_time,

@@ -17,6 +17,13 @@ curr_file = testdata['GridCurrentMover']['curr_tri']
 topology_file = testdata['GridCurrentMover']['top_tri']
 
 
+num_le = 4
+start_pos = (-76.149368, 37.74496, 0)
+rel_time = datetime.datetime(2004, 12, 31, 13)
+time_step = 15 * 60  # seconds
+model_time = time_utils.sec_to_date(time_utils.date_to_sec(rel_time))
+
+
 def test_exceptions():
     """
     Test correct exceptions are raised
@@ -32,20 +39,12 @@ def test_exceptions():
         GridCurrentMover(curr_file, topology_file=10)
 
 
-num_le = 4
-start_pos = (-76.149368, 37.74496, 0)
-rel_time = datetime.datetime(2004, 12, 31, 13)
-time_step = 15 * 60  # seconds
-model_time = time_utils.sec_to_date(time_utils.date_to_sec(rel_time))
-
-
 def test_loop():
     """
     test one time step with no uncertainty on the spill
     checks there is non-zero motion.
     also checks the motion is same for all LEs
     """
-
     pSpill = sample_sc_release(num_le, start_pos, rel_time)
     curr = GridCurrentMover(curr_file, topology_file)
     delta = _certain_loop(pSpill, curr)
@@ -68,7 +67,7 @@ def test_uncertain_loop(uncertain_time_delay=0):
     pSpill = sample_sc_release(num_le, start_pos, rel_time,
                                uncertain=True)
     curr = GridCurrentMover(curr_file, topology_file)
-    curr.uncertain_time_delay=uncertain_time_delay
+    curr.uncertain_time_delay = uncertain_time_delay
     u_delta = _uncertain_loop(pSpill, curr)
 
     _assert_move(u_delta)
@@ -94,7 +93,7 @@ def test_certain_uncertain():
     assert np.all(delta[:, :2] == u_delta[:, :2])
 
 
-c_grid = GridCurrentMover(curr_file,topology_file)
+c_grid = GridCurrentMover(curr_file, topology_file)
 
 
 def test_default_props():
@@ -107,7 +106,7 @@ def test_default_props():
     assert c_grid.uncertain_duration == 24
     assert c_grid.uncertain_cross == .25
     assert c_grid.uncertain_along == .5
-    assert c_grid.extrapolate == False
+    assert c_grid.extrapolate is False
     assert c_grid.time_offset == 0
 
 
@@ -137,7 +136,7 @@ def test_extrapolate():
 
     c_grid.extrapolate = True
     print c_grid.extrapolate
-    assert c_grid.extrapolate == True
+    assert c_grid.extrapolate is True
 
 
 def test_offset_time():
@@ -188,10 +187,7 @@ def test_serialize_deserialize():
     """
 
     c_grid = GridCurrentMover(curr_file, topology_file)
-    serial = c_grid.serialize('webapi')
-    dict_ = GridCurrentMover.deserialize(serial)
-    c2 = GridCurrentMover.new_from_dict(dict_)
+    serial = c_grid.serialize()
+    c2 = GridCurrentMover.deserialize(serial)
     assert c_grid == c2
-
-    c_grid.update_from_dict(dict_)  # tests no failures
 

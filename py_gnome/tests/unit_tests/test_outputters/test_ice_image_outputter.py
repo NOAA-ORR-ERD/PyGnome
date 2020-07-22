@@ -22,6 +22,8 @@ from ..conftest import testdata
 from pprint import PrettyPrinter
 pp = PrettyPrinter(indent=2, width=120)
 
+pytest.mark.skip("ice image outputter not usefull -- tests slow")
+
 
 curr_file = testdata['IceMover']['ice_curr_curv']
 topology_file = testdata['IceMover']['ice_top_curv']

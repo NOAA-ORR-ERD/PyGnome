@@ -75,6 +75,13 @@ cdef extern from "ComponentMover_c.h":
         OSErr get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spillID)
         void  SetTimeFile(OSSMTimeValue_c *ossm)    
 
+        LongPointHdl  GetPointsHdl()
+        WORLDPOINTH  GetWorldPointsHdl()
+        VelocityFH  GetVelocityHdl(short pattern)
+        TopologyHdl  GetTopologyHdl()
+        WORLDPOINTH  GetTriangleCenters()
+        double  GetOptimizeValue(unsigned long model_time, short pattern)
+
 
 cdef extern from "GridCurrentMover_c.h":
 
@@ -113,6 +120,7 @@ cdef extern from "GridCurrentMover_c.h":
         WORLDPOINTH  GetCellCenters()
         long  GetNumTriangles()
         long  GetNumPoints()
+        bool  IsRegularGrid()
         bool  IsTriangleGrid()
         bool  IsDataOnCells()
 

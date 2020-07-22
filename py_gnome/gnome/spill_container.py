@@ -13,23 +13,15 @@ import numpy as np
 
 from gnome.basic_types import fate as bt_fate
 from gnome.basic_types import oil_status
-import gnome.array_types as gat
-from gnome.array_types import (positions,
-                               next_positions,
-                               last_water_positions,
-                               status_codes,
-                               spill_num,
-                               id,
-                               mass,
-                               age,
-                               density,
-                               substance,
-                               ArrayType)
+from gnome.array_types import (gat,
+                               ArrayType,
+                               default_array_types)
 
 from gnome.utilities.orderedcollection import OrderedCollection
 import gnome.spill
 from gnome import AddLogger
 from gnome.exceptions import GnomeRuntimeError
+from gnome.spill.substance import NonWeatheringSubstance
 
 
 # Organize information about spills per substance
@@ -41,29 +33,26 @@ from gnome.exceptions import GnomeRuntimeError
 #
 # if more than one type of substance in multiple spills, then label the
 # substances as index into 'substances' list.
-substances_spills = namedtuple('substances_spills',
-                               ['substances',
-                                's_id',
-                                'spills'])
+## no longer needed -- one substance per SpillContainer!
+
+# substances_spills = namedtuple('substances_spills',
+#                                ['substances',
+#                                 's_id',
+#                                 'spills'])
 
 
 class FateDataView(AddLogger):
     _dicts_ = ('surface_weather', 'subsurf_weather', 'skim', 'burn',
                'disperse', 'non_weather', 'all')
 
-    def __init__(self, substance_id):
+    def __init__(self):
         self.reset()
-        self.substance_id = substance_id
+        # self.substance_id = substance_id
 
     def reset(self):
-        self.surface_weather = {}
-        self.subsurf_weather = {}
-        self.skim = {}
-        self.burn = {}
-        self.disperse = {}
-        self.non_weather = {}
-
-        # all substance data - this is required by WeatheringData to update
+        for fate_type in self._dicts_:
+            setattr(self, fate_type, {})
+        # all data - this is required by WeatheringData to update
         # properties of old LEs and properties of newly released LEs
         self.all = {}
 
@@ -75,51 +64,54 @@ class FateDataView(AddLogger):
             # look at all fate data
             w_mask = np.asarray([True] * len(sc))
         else:
-            w_mask = (sc['fate_status'] & getattr(bt_fate, fate) ==
-                      getattr(bt_fate, fate))
+            w_mask = (sc['fate_status'] & getattr(bt_fate, fate) == getattr(bt_fate, fate))
 
         w_mask = np.logical_and(w_mask, sc['mass'] > 0.0)
         return w_mask
 
-    def _set_data(self, sc, array_types, fate_mask, fate):
+    def _set_data(self, sc, array_types, fate_mask, fate_status):
         '''
+        Set the data arrays in the FateDataView
+
         fate_mask is the data already masked for the desired 'fate' option
+
+        fate_status is the status the mask is for ('surface_weather', etc.)
         '''
-        # return all data associated with substance
-        if 'substance' in sc:
-            fate_mask = np.logical_and(sc['substance'] == self.substance_id,
-                                       fate_mask)
+        # # return all data associated with substance
+        # if 'substance' in sc:
+        #     fate_mask = np.logical_and(sc['substance'] == self.substance_id,
+        #                                fate_mask)
 
         if np.all(fate_mask):
             # no need to make a copy of array
-            setattr(self, fate, sc._data_arrays)
+            setattr(self, fate_status, sc._data_arrays)
         else:
-            dict_to_update = getattr(self, fate)
+            dict_to_update = getattr(self, fate_status)
             for at in array_types:
                 array = sc._array_name(at)
-                if array not in dict_to_update:
-                    dict_to_update[array] = sc[array][fate_mask]
 
-            setattr(self, fate, dict_to_update)
+                #if array not in dict_to_update:
+                dict_to_update[array] = sc[array][fate_mask]
 
-    def get_data(self, sc, array_types, fate='surface_weather'):
+            setattr(self, fate_status, dict_to_update)
+
+    def get_data(self, sc, array_types, fate_status='surface_weather'):
         '''
-        Get data that matches 'susbstance_id'. Also, since this is weathering
-        data, only include LEs with 'mass' > 0
+        Get data that matches the given fate_status.
+        Since this is weathering data, only include elements with 'mass' > 0
 
-        'all', 'surface_weather', 'subsurf_weather', 'skim', 'non_weather',
+        Options are: 'all', 'surface_weather', 'subsurf_weather', 'skim', 'non_weather',
         'burn'
         '''
-        # always add 'id' to array_types
-        array_types.update({'id'})
-        self._set_data(sc, array_types,
-                       self._get_fate_mask(sc, fate),
-                       fate)
-        return getattr(self, fate)
+        self._set_data(sc,
+                       array_types,
+                       self._get_fate_mask(sc, fate_status),
+                       fate_status)
+        return getattr(self, fate_status)
 
-    def update_sc(self, sc, fate='surface_weather'):
+    def update_sc(self, sc, fate_status='surface_weather'):
         '''
-        update SC arrays with data viewer arrays for specified fate
+        update SC arrays with FateDataView arrays for specified fate
         - update all arrays just to make sure everything is in sync
 
         After update, remove LEs with mass = 0. Since weatherers call this at
@@ -127,27 +119,31 @@ class FateDataView(AddLogger):
         from the arrays.
 
         .. note:: the 'id' of each LE corresponds with the index into SC array
-            however, if LEs are removed, then this will not be the case. Do not
-            rely on this indexing. Instead, get the mask again - the assumption
-            is that the fate_mask should be the same between getting the data
-            and resync'ing the original arrays in the SC
+                  when it was added. if LEs are removed, then this will not be
+                  the case. Do not rely on this indexing. Instead, get the mask
+                  again - the assumption is that the fate_mask should be the
+                  same between getting the data and resync'ing the original arrays
+                  in the SC
         '''
-        d_to_sync = getattr(self, fate)
+        d_to_sync = getattr(self, fate_status)
 
         if d_to_sync is sc._data_arrays:
+            self.reset()
+            #for fs in self._dicts_:
+            #    self._set_data( sc, getattr(self, fs).keys(), self._get_fate_mask(sc, fs), fs)
             return
 
-        w_mask = self._get_fate_mask(sc, fate)
+        w_mask = self._get_fate_mask(sc, fate_status)
 
-        if 'substance' in sc:
-            w_mask = np.logical_and(sc['substance'] == self.substance_id,
-                                    w_mask)
+        # if 'substance' in sc:
+        #     w_mask = np.logical_and(sc['substance'] == self.substance_id,
+        #                             w_mask)
 
         # if fate_status of LEs was updated, then reset data attribute. This is
         # because the data in the attribute is no longer valid. For instance,
         # if the 'burn' started with 'surface_weather' data_arrays, then
         # marked some of these LEs to be burned, they should no longer be
-        # contained in the 'surface_weather' dict - easisest to reset the dict
+        # contained in the 'surface_weather' dict - easiest to reset the dict
         # and let it be recreated when the next weatherer asks for data.
         reset_view = False
         if ('fate_status' in d_to_sync and
@@ -164,7 +160,7 @@ class FateDataView(AddLogger):
             sc[key][w_mask] = val
 
         if reset_view:
-            setattr(self, fate, {})
+            self.reset()
 
     def _reset_fatedata(self, sc, ix):
         '''
@@ -216,6 +212,7 @@ class SpillContainerData(object):
         self._data_arrays = data_arrays
         self.current_time_stamp = None
         self.mass_balance = {}
+        self.substance = None
 
         # following internal variable is used when comparing two SpillContainer
         # objects. When testing the data arrays are equal, use this tolerance
@@ -288,13 +285,16 @@ class SpillContainerData(object):
         if len(self.__dict__) != len(other.__dict__):
             return False
 
+        if self.substance != other.substance:
+            return False
+
         # check key/val that are not dicts
         val_is_dict = []
         for key, val in self.__dict__.iteritems():
             'compare dict not including _data_arrays'
             if isinstance(val, dict):
                 val_is_dict.append(key)
-            elif key == '_substances_spills' or key == '_fate_data_list':
+            elif key == '_substances_spills' or key == '_fate_data_view':
                 '''
                 this is just another view of the data - no need to write extra
                 code to check equality for this
@@ -360,6 +360,12 @@ class SpillContainerData(object):
         # this is a property in case we want change the internal implementation
         return self._data_arrays
 
+    def keys(self):
+        """
+        a keys() function so it looks a bit more like a dict
+        """
+        return self._data_arrays.keys()
+
 
 class SpillContainer(AddLogger, SpillContainerData):
     """
@@ -378,42 +384,23 @@ class SpillContainer(AddLogger, SpillContainerData):
     """
     def __init__(self, uncertain=False):
         super(SpillContainer, self).__init__(uncertain=uncertain)
-        self.spills = OrderedCollection(dtype=gnome.spill.Spill)
+        self.spills = OrderedCollection(dtype=gnome.spill.spill.Spill)
         self.spills.register_callback(self._spills_changed,
                                       ('add', 'replace', 'remove'))
         self.rewind()
-
-    def __setitem__(self, data_name, array):
-        """
-        Invoke base class __setitem__ method so the _data_array is set
-        correctly.  In addition, create the appropriate ArrayType if it wasn't
-        created by the user.
-        """
-        super(SpillContainer, self).__setitem__(data_name, array)
-        if data_name not in self._array_types:
-            shape = self._data_arrays[data_name].shape[1:]
-            dtype = self._data_arrays[data_name].dtype.type
-
-            self._array_types[data_name] = ArrayType(shape, dtype,
-                                                     name=data_name)
 
     def _reset_arrays(self):
         '''
         reset _array_types dict so it contains default keys/values
         '''
-        gnome.array_types.reset_to_defaults(['spill_num', 'id'])
 
-        self._array_types = {'positions': positions,
-                             'next_positions': next_positions,
-                             'last_water_positions': last_water_positions,
-                             'status_codes': status_codes,
-                             'spill_num': spill_num,
-                             'id': id,
-                             'mass': mass,
-                             'age': age}
+        # copy, cause we don't want to change the defaults!
+        self._array_types = {}
         self._data_arrays = {}
 
+
     def _reset__substances_spills(self):
+        ## Most of this not needed
         '''
         reset internal attributes to None and empty list []:
 
@@ -426,28 +413,34 @@ class SpillContainer(AddLogger, SpillContainerData):
         '''
         # Initialize following either the first time it is used or in
         # prepare_for_model_run() -- it could change with each new spill
-        self._substances_spills = None
-        self._oil_comp_array_len = None
+        self.substance = None
 
-    def _reset__fate_data_list(self):
+        # self._substances_spills = None
+        self._oil_comp_array_len = 1
+
+    def _reset__fate_data_view(self):
         # define the fate view of the data if 'fate_status' is in data arrays
         # 'fate_status' is included if weathering is on
-        self._fate_data_list = []
+        self._fate_data_view = FateDataView()
 
     def reset_fate_dataview(self):
         '''
         reset data arrays for each fate_dataviewer. Each substance that is not
         None has a fate_dataviewer object.
         '''
-        for viewer in self._fate_data_list:
-            viewer.reset()
+        self._fate_data_view.reset()
+        # for viewer in self._fate_data_list:
+        #     viewer.reset()
 
     def _set_substancespills(self):
         '''
         _substances could change when spills are added/deleted
         using _spills_changed callback to reset self._substance_spills to None
-        If 'substance' is None, we still include it in this data structure -
-        all spills that are 'on' are included. A spill that is off isn't really
+
+        This checks to make sure that the substance s set correctly and that
+        there is not more than one substance
+
+        All spills that are 'on' are included. A spill that is off isn't really
         being modeled so ignore it.
 
         .. note::
@@ -456,64 +449,79 @@ class SpillContainer(AddLogger, SpillContainerData):
             view of the data - it doesn't contain any state that needs to be
             persisted.
         '''
-        subs = []
-        spills = []
-        if self._oil_comp_array_len is None:
-            self._oil_comp_array_len = 1
-
+        substance = False
         for spill in self.spills:
             if not spill.on:
                 continue
-            new_subs = spill.get('substance')
-            if new_subs in subs:
-                # substance already defined for another spill
-                ix = subs.index(new_subs)
-                spills[ix].append(spill)
+            if substance is False:  #can't use None, as that means non-weathering
+                substance = spill.substance
             else:
-                # new substance not yet defined
-                subs.append(new_subs)
-                spills.append([spill])
+                if spill.substance != substance:
+                    subs = [spill.substance for spill in self.spills if spill.on]
+                    raise ValueError("A spill container can only hold one substance at a time\n"
+                                     "These are the substances in the on spills:\n"
+                                     "{}".format(subs))
+        # set the number of oil components
+        # fixme: with only one substance this could be determined elsewhere
+        if hasattr(substance, 'num_components'):
+            self._oil_comp_array_len = substance.num_components
+        else:
+            ## fixme -- is this needed for Non-substance?
+            self._oil_comp_array_len = 1
 
-                # also set _oil_comp_array_len to substance with most
-                # components? -- *not* being used right now, but make it so
-                # it works correctly for testing multiple substances
-                if (hasattr(new_subs, 'num_components') and
-                        new_subs.num_components > self._oil_comp_array_len):
-                    self._oil_comp_array_len = new_subs.num_components
+        # it will be False if there are no spills
+        self.substance = NonWeatheringSubstance() if substance is False else substance
 
-        # let's reorder subs so None is in the end:
-        if None in subs:
-            ix = subs.index(None)
-            spills.append(spills.pop(ix))
-            subs.append(subs.pop(ix))
+        #     new_subs = spill.substance
+        #     if new_subs in subs:
+        #         # substance already defined for another spill
+        #         ix = subs.index(new_subs)
+        #         spills[ix].append(spill)
+        #     else:
+        #         # new substance not yet defined
+        #         subs.append(new_subs)
+        #         spills.append([spill])
 
-        s_id = range(len(subs))
+        #         # also set _oil_comp_array_len to substance with most
+        #         # components? -- *not* being used right now, but make it so
+        #         # it works correctly for testing multiple substances
+        #         if (hasattr(new_subs, 'num_components') and
+        #                 new_subs.num_components > self._oil_comp_array_len):
+        #             self._oil_comp_array_len = new_subs.num_components
 
-        # 'data' will be updated when weatherers ask for arrays they need
-        # define the substances list and the list of spills for each substance
-        self._substances_spills = \
-            substances_spills(substances=subs, s_id=s_id, spills=spills)
+        # # let's reorder subs so None is in the end:
+        # if None in subs:
+        #     ix = subs.index(None)
+        #     spills.append(spills.pop(ix))
+        #     subs.append(subs.pop(ix))
 
-        if len(self.get_substances()) > 1:
-            # add an arraytype for substance if more than one substance
-            self._array_types.update({'substance': substance})
+        # s_id = range(len(subs))
 
-        self.logger.info('{0} - number of substances: {1}'.
-                         format(os.getpid(), len(self.get_substances())))
+        # # # 'data' will be updated when weatherers ask for arrays they need
+        # # # define the substances list and the list of spills for each substance
+        # # self._substances_spills = substances_spills(substances=subs,
+        # #                                             s_id=s_id,
+        # #                                             spills=spills)
 
-    def _set_fate_data_list(self):
+        # # if len(self.get_substances()) > 1:
+        # #     # add an arraytype for substance if more than one substance
+        # #     self._array_types.update({'substance': substance})
+
+        # self.logger.info('{0} - number of substances: {1}'.
+        #                  format(os.getpid(), len(self.get_substances())))
+
+    def _set_fate_data(self):
         '''
-        For each substance that is not None, initialize
-        FateDataView(substance_id) object. The substance_id corresponds with
-        self._substance_spills.s_id for each substance.
+        If the substance is not None, initialize the FateDataView object.
         '''
-        self._fate_data_list = []
-        for s_id, subs in zip(self._substances_spills.s_id,
-                              self._substances_spills.substances):
-            if subs is None:
-                continue
+        # self._fate_data_list = []
+        # for s_id, subs in zip(self._substances_spills.s_id,
+        #                       self._substances_spills.substances):
+        #     if subs is None:
+        #         continue
 
-            self._fate_data_list.append(FateDataView(s_id))
+        #     self._fate_data_list.append(FateDataView(s_id))
+        self._fate_data_view = FateDataView()
 
     def _spills_changed(self, *args):
         '''
@@ -521,7 +529,7 @@ class SpillContainer(AddLogger, SpillContainerData):
         Callback simply resets the internal _substance_spills attribute to None
         since the old _substance_spills value could now be invalid.
         '''
-        self._substances_spills = None
+        self._set_substancespills()
 
     def _get_s_id(self, substance):
         '''
@@ -538,24 +546,24 @@ class SpillContainer(AddLogger, SpillContainerData):
 
         return self._substances_spills.s_id[ix]
 
-    def _get_fatedataview(self, substance):
+    def _get_fatedataview(self):
         '''
-        return the FateDataView object associated with substance
+        return the FateDataView object
         '''
-        ix = self._get_s_id(substance)
+        # ix = self._get_s_id(substance)
 
-        if ix is None:
-            msg = "substance named {0} not found".format(substance.name)
-            self.logger.info(msg)
-            return
+        # if ix is None:
+        #     msg = "substance named {0} not found".format(substance.name)
+        #     self.logger.info(msg)
+        #     return
 
-        # check
-        view = self._fate_data_list[ix]
-        if view.substance_id != ix:
-            msg = "substance_id did not match as expected. Check!"
-            raise ValueError(msg)
+        # # check
+        # view = self._fate_data_list[ix]
+        # if view.substance_id != ix:
+        #     msg = "substance_id did not match as expected. Check!"
+        #     raise ValueError(msg)
 
-        return view
+        return self._fate_data_view
 
     def _array_name(self, at):
         '''
@@ -567,46 +575,6 @@ class SpillContainer(AddLogger, SpillContainerData):
             return at
         else:
             return at.name
-
-    def _append_array_types(self, array_types):
-        '''
-        append to self.array_types the input array_types.
-
-        :param array_types: set of array_types to be appended
-        :type array_types: set()
-
-        The set contains either a name as a string, say: 'rise_vel'
-        In this case, get the ArrayType from gnome.array_types.rise_vel
-        Set elements could also be tuples, say: ('rise_vel': ArrayType())
-        In this case the user name of the data_array and its array_type is
-        specified by the tuple so append it.
-
-        .. note:: If a tuple: ('name', ArrayType()), is given and an ArrayType
-            with that name already exists in self._array_types, then it is
-            overwritten.
-        '''
-        for array in array_types:
-            if isinstance(array, basestring):
-                # allow user to override an array_type that might already exist
-                # in self._array_types
-                try:
-                    array = getattr(gat, array)
-                except AttributeError:
-                    msg = ("Skipping {0} - not found in gnome.array_types;"
-                           " and ArrayType is not provided.").format(array)
-                    self.logger.error(msg)
-                    raise GnomeRuntimeError(msg)
-
-            # must be an ArrayType of an object
-            self._array_types[array.name] = array
-
-    def _append_initializer_array_types(self, array_types):
-        # for each array_types, use the name to get the associated initializer
-        for name in array_types:
-            for spill in self.spills:
-                if spill.has_initializer(name):
-                    self._append_array_types(spill.get_initializer(name).
-                                             array_types)
 
     def _append_data_arrays(self, num_released):
         """
@@ -623,6 +591,10 @@ class SpillContainer(AddLogger, SpillContainerData):
                 # per the number of components used to model the oil
                 # currently, we only have one type of oil, so all spills will
                 # model same number of oil_components
+                # fixme: is this getting initilazed for non-weathing oil?!?
+                #        and is atype.shape is None mean it's neccesarily oil components??
+                #        couldn't his be initialized by the spill, which would know how many
+                #        components it needs??
                 a_append = atype.initialize(num_released,
                                             shape=(self._oil_comp_array_len,),
                                             initial_value=tuple([0] * self._oil_comp_array_len))
@@ -630,26 +602,27 @@ class SpillContainer(AddLogger, SpillContainerData):
                 a_append = atype.initialize(num_released)
             self._data_arrays[name] = np.r_[self._data_arrays[name], a_append]
 
-    def _set_substance_array(self, subs_idx, num_rel_by_substance):
-        '''
-        -. update 'substance' array if more than one substance present. The
-        value of array is the index of 'substance' in _substances_spills
-        data structure
-        '''
-        if 'substance' in self:
-            if num_rel_by_substance > 0:
-                self['substance'][-num_rel_by_substance:] = subs_idx
+    # def _set_substance_array(self, subs_idx, num_rel_by_substance):
+    #     '''
+    #     -. update 'substance' array if more than one substance present. The
+    #     value of array is the index of 'substance' in _substances_spills
+    #     data structure
+    #     '''
+    #     if 'substance' in self:
+    #         if num_rel_by_substance > 0:
+    #             self['substance'][-num_rel_by_substance:] = subs_idx
 
     def substancefatedata(self,
                           substance,
                           array_types,
                           fate='surface_weather'):
         '''
+        Only one substance now!
         todo: fix this so it works for type of fate requested
         return the data for specified substance
         data must contain array names specified in 'array_types'
         '''
-        view = self._get_fatedataview(substance)
+        view = self._get_fatedataview()
         return view.get_data(self, array_types, fate)
 
     def iterspillsbysubstance(self):
@@ -659,17 +632,21 @@ class SpillContainer(AddLogger, SpillContainerData):
         DataStructure contains all spills. If some spills contain None for
         substance, these will be returned
         '''
-        if self._substances_spills is None:
-            self._set_substancespills()
-        return self._substances_spills.spills
+        # fixme -- totally unneccesary??
+        # if self._substances_spills is None:
+        #     self._set_substancespills()
+        return self.spills
 
-    def itersubstancedata(self, array_types, fate='surface_weather'):
+    def itersubstancedata(self, array_types, fate_status='surface_weather'):
         '''
-        iterates through and returns the following for each iteration:
-        (substance, substance_data)
+        There is only one substance allowed per SpillContainer, so this is
+        returns the data cooresponding to the fate_status.
 
-        This is used by weatherers - if a substance is None, omit it from
-        the iteration.
+        This is only here to preserve compatiblity
+
+        returns (substance, substance_data)
+
+        This is used by weatherers - if a substance is None, StopIteration is raised
 
         :param array_types: iterable containing array that should be in the
             data. This could be a set of strings corresponding with array names
@@ -683,41 +660,58 @@ class SpillContainer(AddLogger, SpillContainerData):
             elements in_water and on surface if select == 'surface' or
             subsurface if select == 'subsurface'
         '''
-        if self._substances_spills is None:
-            self._set_substancespills()
+        if self.substance is None:
+            return []
+        else:
+            #data = self.data_arrays
+            data = self._fate_data_view.get_data(self, array_types, fate_status)
+            return [(self.substance, data)]
 
-        return zip(self.get_substances(complete=False),
-                   [view.get_data(self, array_types, fate) for view in
-                    self._fate_data_list])
+        # if self._substances_spills is None:
+        #     self._set_substancespills()
 
-    def update_from_fatedataview(self, substance=None,
-                                 fate='surface_weather'):
+        # return zip(self.get_substances(complete=False),
+        #            [view.get_data(self, array_types, fate) for view in
+        #             self._fate_data_list])
+
+    def update_from_fatedataview(self,
+                                 # substance=None,
+                                 fate_status='surface_weather'):
         '''
         let's only update the arrays that were changed
-        only update if a copy of 'data' exists. This is the case if there are
-        more then one substances
+        only update if a copy of 'data' exists.
         '''
-        if substance is not None:
-            view = self._get_fatedataview(substance)
-            view.update_sc(self, fate)
+        self._fate_data_view.update_sc(self, fate_status)
+        # if substance is not None:
+        #     view = self._get_fatedataview(substance)
+        #     view.update_sc(self, fate)
 
-        else:
-            # do for all substances
-            for view in self._fate_data_list:
-                view.update_sc(self, fate)
+        # else:
+        #     # do for all substances
+        #     for view in self._fate_data_list:
+        #         view.update_sc(self, fate)
 
     def get_substances(self, complete=True):
-        '''
-        return substances stored in _substances_spills structure.
-        Include None if complete is True. Default is complete=True.
-        '''
-        if self._substances_spills is None:
-            self._set_substancespills()
-
-        if complete:
-            return self._substances_spills.substances
+        ##fixme: remove this method??
+        """
+        only one substance...
+        """
+        if self.substance is None:
+            return [None] if complete else []
         else:
-            return filter(None, self._substances_spills.substances)
+            return [self.substance]
+
+        # '''
+        # return substances stored in _substances_spills structure.
+        # Include None if complete is True. Default is complete=True.
+        # '''
+        # if self._substances_spills is None:
+        #     self._set_substancespills()
+
+        # if complete:
+        #     return self._substances_spills.substances
+        # else:
+        #     return filter(None, self._substances_spills.substances)
 
     @property
     def total_mass(self):
@@ -751,7 +745,7 @@ class SpillContainer(AddLogger, SpillContainerData):
         This returns a new dict so user cannot add/delete an ArrayType in
         middle of run. Use prepare_for_model_run() to do add an ArrayType.
         """
-        return dict(self._array_types)
+        return self._array_types
 
     def rewind(self):
         """
@@ -771,12 +765,12 @@ class SpillContainer(AddLogger, SpillContainerData):
         for spill in self.spills:
             spill.rewind()
         # create a full set of zero-sized arrays. If we rewound, something
-        # must have changed so let's get back to default _array_types
+        # may have changed so let's get back to default _array_types
         self._reset_arrays()
         self._reset__substances_spills()
-        self._reset__fate_data_list()
-        self.initialize_data_arrays()
-        self.mass_balance = {}  # reset to empty array
+        self._reset__fate_data_view()
+        self._set_substancespills()
+        self.mass_balance = {}  # reset to empty dict
 
     def get_spill_mask(self, spill):
         return self['spill_num'] == self.spills.index(spill)
@@ -794,7 +788,7 @@ class SpillContainer(AddLogger, SpillContainerData):
 
         return u_sc
 
-    def prepare_for_model_run(self, array_types=set()):
+    def prepare_for_model_run(self, array_types=None, time_step=300):
         """
         called when setting up the model prior to 1st time step
         This is considered 0th timestep by model
@@ -831,18 +825,26 @@ class SpillContainer(AddLogger, SpillContainerData):
         # call to prepare_for_model_run()?
         # No! If user made modifications to _array_types before running model,
         # let's keep those. A rewind will reset data_arrays.
-        self._append_array_types(array_types)
-        self._append_initializer_array_types(array_types)
+        if array_types is None:
+            array_types = {}
 
-        if self._substances_spills is None:
-            self._set_substancespills()
+        #self._append_initializer_array_types(array_types)
+        for s in self.spills:
+            s.prepare_for_model_run(time_step)
+        ats = default_array_types.copy()
+        ats.update(array_types)
+        self._array_types = ats
+
+        # if self._substances_spills is None:
+        #     self._set_substancespills()
 
         # also create fate_dataview if 'fate_status' is part of arrays
         if 'fate_status' in self.array_types:
-            self._set_fate_data_list()
+            self._set_fate_data()
 
         # 'substance' data_array may have been added so initialize after
         # _set_substancespills() is invoked
+        self._set_substancespills()
         self.initialize_data_arrays()
 
         # todo: maybe better to let map do this, but it does not have a
@@ -859,12 +861,29 @@ class SpillContainer(AddLogger, SpillContainerData):
         """
         for name, atype in self._array_types.iteritems():
             # Initialize data_arrays with 0 elements
+            # fixme: is every array type with None shape neccesarily
+            #        oil components??
+            #        but it is more than just mass_components
+            #        maybe some other flag??
             if atype.shape is None:
                 num_comp = self._oil_comp_array_len
-                self._data_arrays[name] = \
-                    atype.initialize_null(shape=(num_comp, ))
+                self._data_arrays[name] = atype.initialize_null(shape=(num_comp,))
             else:
                 self._data_arrays[name] = atype.initialize_null()
+
+    def _get_fate_mask(self, fate):
+        '''
+        get fate_status mask over SC - only include LEs with 'mass' > 0.0
+        '''
+        if fate == 'all':
+            # look at all fate data
+            w_mask = np.asarray([True] * len(self))
+        else:
+            w_mask = (self['fate_status'] & getattr(bt_fate, fate) ==
+                      getattr(bt_fate, fate))
+
+        w_mask = np.logical_and(w_mask, self['mass'] > 0.0)
+        return w_mask
 
     def release_elements(self, time_step, model_time):
         """
@@ -878,59 +897,46 @@ class SpillContainer(AddLogger, SpillContainerData):
         todo: may need to update the 'mass' array to use a default of 1.0 but
         will need to define it in particle units or something along those lines
         """
-        total_released = 0
+        total_rel = 0
         # substance index - used label elements from same substance
         # used internally only by SpillContainer - could be a strided array.
         # Simpler to define it only in SpillContainer as opposed to ArrayTypes
         # 'substance': ((), np.uint8, 0)
-        for ix, spills in enumerate(self.iterspillsbysubstance()):
-            num_rel_by_substance = 0
-            for spill in spills:
-                # only spills that are included here - no need to check
-                # spill.on flag
-                num_rel = spill.num_elements_to_release(model_time, time_step)
-                if num_rel > 0:
-                    # update 'spill_num' ArrayType's initial_value so it
-                    # corresponds with spill number for this set of released
-                    # particles - just another way to set value of spill_num
-                    # correctly
-                    self._array_types['spill_num'].initial_value = \
-                        self.spills.index(spill)
+        for spill in self.spills:
+            # only want to include the spills that are turned on.
+            if not spill.on:
+                continue
+            num_rel = spill.release_elements(self, model_time, time_step)
+            if num_rel > 0:
+                # update 'spill_num' ArrayType's initial_value so it
+                # corresponds with spill number for this set of released
+                # particles - just another way to set value of spill_num
+                # correctly
+                self._array_types['spill_num'].initial_value = \
+                    self.spills.index(spill)
 
-                    if len(self['spill_num']) > 0:
-                        # unique identifier for each new element released
-                        # this adjusts the _array_types initial_value since the
-                        # initialize function just calls:
-                        #  range(initial_value, num_released + initial_value)
-                        self._array_types['id'].initial_value = \
-                            self['id'][-1] + 1
-                    else:
-                        # always reset value of first particle released to 0!
-                        # The array_types are shared globally. To initialize
-                        # uncertain spills correctly, reset this to 0.
-                        # To be safe, always reset to 0 when no
-                        # particles are released
-                        self._array_types['id'].initial_value = 0
+                if len(self['spill_num']) > 0:
+                    # unique identifier for each new element released
+                    # this adjusts the _array_types initial_value since the
+                    # initialize function just calls:
+                    #  range(initial_value, num_released + initial_value)
+                    self._array_types['id'].initial_value = \
+                        self['id'][-1] + 1
+                else:
+                    # always reset value of first particle released to 0!
+                    # The array_types are shared globally. To initialize
+                    # uncertain spills correctly, reset this to 0.
+                    # To be safe, always reset to 0 when no
+                    # particles are released
+                    self._array_types['id'].initial_value = 0
 
-                    # append to data arrays - number of oil components is
-                    # currently the same for all spills
-                    self._append_data_arrays(num_rel)
-                    spill.set_newparticle_values(num_rel,
-                                                 model_time,
-                                                 time_step,
-                                                 self._data_arrays)
-                    num_rel_by_substance += num_rel
-
-            # always reset data arrays else the changing arrays are stale
-            self._set_substance_array(ix, num_rel_by_substance)
+                # append to data arrays - number of oil components is
+                # currently the same for all spills
+                total_rel += num_rel
 
             # reset fate_dataview at each step - do it after release elements
-            self.reset_fate_dataview()
-
-            # update total elements released for substance
-            total_released += num_rel_by_substance
-
-        return total_released
+        self.reset_fate_dataview()
+        return total_rel
 
     def split_element(self, ix, num, l_frac=None):
         '''
@@ -966,11 +972,7 @@ class SpillContainer(AddLogger, SpillContainerData):
 
         # update fate_dataview which contains this LE
         # for now we only have one type of substance
-        if len(self._fate_data_list) > 1:
-            msg = "split_elements assumes only one substance is being modeled"
-            self.logger.error(msg)
-
-        self._fate_data_list[0]._reset_fatedata(self, ix)
+        self._fate_data_view._reset_fatedata(self, ix)
 
     def model_step_is_done(self):
         '''
@@ -989,6 +991,7 @@ class SpillContainer(AddLogger, SpillContainerData):
             for key in self._array_types.keys():
                 self._data_arrays[key] = np.delete(self[key], to_be_removed,
                                                    axis=0)
+            self._fate_data_view.reset()
 
     def __str__(self):
         return ('gnome.spill_container.SpillContainer\n'
@@ -1314,7 +1317,7 @@ class SpillContainerPair(SpillContainerPairData):
         '''
         try:
             return self._spill_container.spills.index(spill)
-        except:
+        except Exception:
             return self._u_spill_container.spills.index(spill)
 
     @property

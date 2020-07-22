@@ -26,6 +26,8 @@ from distutils.command.clean import clean
 from distutils.extension import Extension
 from Cython.Distutils import build_ext
 
+from git import Repo
+
 import numpy as np
 
 # could run setup from anywhere
@@ -34,6 +36,15 @@ SETUP_PATH = os.path.dirname(os.path.abspath(__file__))
 # cd to SETUP_PATH, run develop or install, then cd back
 CWD = os.getcwd()
 os.chdir(SETUP_PATH)
+
+repo = Repo('../.')
+
+try:
+    branch_name = repo.active_branch.name
+except TypeError:
+    branch_name = 'no-branch'
+
+last_update = repo.iter_commits().next().committed_datetime.isoformat(),
 
 
 def target_dir(name):
@@ -57,24 +68,8 @@ class cleanall(clean):
         # call base class clean
         clean.run(self)
 
-        # clean remaining cython/cpp files
-        t_path = [os.path.join(SETUP_PATH, 'gnome', 'cy_gnome'),
-                  os.path.join(SETUP_PATH, 'gnome', 'utilities', 'geometry')]
-        exts = ['*.so', 'cy_*.pyd', 'cy_*.cpp', 'cy_*.c']
-
-        for temp in t_path:
-            for ext in exts:
-                for f in glob.glob(os.path.join(temp, ext)):
-                    print "Deleting auto-generated file: {0}".format(f)
-                    try:
-                        if os.path.isdir(f):
-                            shutil.rmtree(f)
-                        else:
-                            os.remove(f)
-                    except OSError as err:
-                        print("Failed to remove {0}. Error: {1}"
-                              .format(f, err))
-                        # raise
+        self.clean_python_files()
+        self.clean_cython_files()
 
         rm_dir = ['pyGnome.egg-info', 'build']
         for dir_ in rm_dir:
@@ -84,6 +79,49 @@ class cleanall(clean):
             except OSError as err:
                 if err.errno != 2:  # ignore the not-found error
                     raise
+
+    def clean_python_files(self):
+        # clean any byte-compiled python files
+        paths = [os.path.join(SETUP_PATH, 'gnome'),
+                 os.path.join(SETUP_PATH, 'scripts'),
+                 os.path.join(SETUP_PATH, 'tests')]
+        exts = ['*.pyc']
+
+        self.clean_files(paths, exts)
+
+    def clean_cython_files(self):
+        # clean remaining cython/cpp files
+        paths = [os.path.join(SETUP_PATH, 'gnome', 'cy_gnome'),
+                 os.path.join(SETUP_PATH, 'gnome', 'utilities', 'geometry')]
+        exts = ['*.so', 'cy_*.pyd', 'cy_*.cpp', 'cy_*.c']
+
+        self.clean_files(paths, exts)
+
+    def clean_files(self, paths, exts):
+        for path in paths:
+            # first, any local files directly under the path
+            for ext in exts:
+                for f in glob.glob(os.path.join(path, ext)):
+                    self.delete_file(f)
+
+            # next, walk any sub-directories
+            for root, dirs, _files in os.walk(path, topdown=False):
+                for d in dirs:
+                    for ext in exts:
+                        for f in glob.glob(os.path.join(root, d, ext)):
+                            self.delete_file(f)
+
+    def delete_file(self, filepath):
+        print "Deleting auto-generated file: {0}".format(filepath)
+        try:
+            if os.path.isdir(filepath):
+                shutil.rmtree(filepath)
+            else:
+                os.remove(filepath)
+        except OSError as err:
+            print("Failed to remove {0}. Error: {1}"
+                  .format(filepath, err))
+            # raise
 
 
 # setup our environment and architecture
@@ -115,6 +153,37 @@ elif sys.platform == "win32":
 # setup our third party libraries environment - for Win32/Mac OSX
 # Linux does not use the libraries in third_party_lib. It links against
 # netcdf shared objects installed by apt-get
+'''
+import subprocess
+
+
+def get_netcdf_libs():
+    """
+    Find the netcdf4 libaries:
+
+    1) if present rely on nc-config
+    2) search for a user env var
+    3) try to look directly for conda libs
+    4) fall back to the versions distributed with the py_gnome code
+    """
+    # check for nc-config
+    try:
+        result = subprocess.check_output(["nc-config", "--libs"]).split()
+        lib_dir = result[0]
+        libs = result[1:]
+        include_dir = subprocess.check_output(["nc-config", "--includedir"])
+
+        print lib_dir
+        print libs
+        print include_dir
+    except OSError:
+        raise NotImplementedError("this setup.py needs nc-config "
+                                  "to find netcdf libs")
+
+get_netcdf_libs()
+'''
+
+
 if sys.platform is "darwin" or "win32":
     third_party_dir = os.path.join('..', 'third_party_lib')
 
@@ -169,6 +238,12 @@ if sys.platform is "darwin" or "win32":
                         for l in netcdf_names]
 
 
+# print netcdf_base
+# print netcdf_libs
+# print netcdf_inc
+# print netcdf_lib_files
+
+
 # the cython extensions to build -- each should correspond to a *.pyx file
 extension_names = ['cy_mover',
                    'cy_helpers',
@@ -183,7 +258,7 @@ extension_names = ['cy_mover',
                    'cy_currentcycle_mover',
                    'cy_ossm_time',
                    'cy_random_mover',
-                   'cy_random_vertical_mover',
+                   'cy_random_mover_3d',
                    'cy_rise_velocity_mover',
                    'cy_land_check',
                    'cy_grid_map',
@@ -248,7 +323,11 @@ cpp_files = [os.path.join(cpp_code_dir, f) for f in cpp_files]
 macros = [('pyGNOME', 1), ]
 
 # Build the extension objects
-compile_args = []
+
+# suppressing certain warnings
+compile_args = ["-Wno-unused-function",  # unused function - cython creates a lot
+                ]
+
 extensions = []
 
 lib = []
@@ -275,9 +354,12 @@ static_lib_files = netcdf_lib_files
 #          We also don't have the static builds for these.
 #          Also, the static_lib_files only need to be linked against
 #          lib_gnome in the following Extension.
+# CHB NOTE: one of these days, we need to figure out how to build against
+#           conda netcdf...
 
 if sys.platform == "darwin":
 
+    print "using these compile arguments:", compile_args
     basic_types_ext = Extension(r'gnome.cy_gnome.cy_basic_types',
                                 ['gnome/cy_gnome/cy_basic_types.pyx'] + cpp_files,
                                 language='c++',
@@ -418,6 +500,7 @@ if sys.platform == "win32":
 extensions.append(Extension("gnome.utilities.geometry.cy_point_in_polygon",
                             sources=sources,
                             include_dirs=include_dirs,
+                            extra_compile_args=compile_args,
                             extra_link_args=link_args,
                             ))
 
@@ -426,35 +509,57 @@ extensions.append(Extension("gnome.utilities.file_tools.filescanner",
                                                   'utilities',
                                                   'file_tools',
                                                   'filescanner.pyx')],
+                            extra_compile_args=compile_args,
                             include_dirs=include_dirs,
                             language="c",
                             ))
 
+
+def get_version():
+    """
+    return the version number from the __init__
+    """
+    for line in open("gnome/__init__.py"):
+        if line.startswith("__version__"):
+            version = line.strip().split('=')[1].strip().strip("'").strip('"')
+            return version
+    raise ValueError("can't find version string in __init__")
+
+
 setup(name='pyGnome',
-      version='0.0.2',
+      version=get_version(),
       ext_modules=extensions,
       packages=find_packages(),
       package_dir={'gnome': 'gnome'},
       package_data={'gnome': ['data/yeardata/*',
-                              'outputters/sample.b64']},
-      requires=['numpy'],   # want other packages here?
+                              'outputters/sample.b64',
+                              'weatherers/platforms.json'
+                              ]},
+      # you are not going to be able to "pip install" this anyway
+      # -- no need for requirements
+      requires=[],   # want other packages here?
       cmdclass={'build_ext': build_ext,
                 'cleanall': cleanall},
 
       # scripts,
 
       # metadata for upload to PyPI
-      author="Gnome team at NOAA ORR",
+      author="Gnome team at NOAA ORR ERD",
       author_email="orr.gnome@noaa.gov",
-      description=("GNOME (General NOAA Operational Modeling Environment) is "
-                   "the modeling tool the Office of Response and "
+      description=("GNOME (General NOAA Operational Modeling Environment) "
+                   "is the modeling tool the Office of Response and "
                    "Restoration's (OR&R) Emergency Response Division uses to "
                    "predict the possible route, or trajectory, a pollutant "
                    "might follow in or on a body of water, such as in an "
-                   "oil spill."),
-      # license=
-      keywords="gnome oilspill modeling",
-      url="https://github.com/NOAA-ORR-ERD/GNOME2"
+                   "oil spill.  "
+                   "It can also be used as a customizable general particle "
+                   "tracking code.\n"
+                   "Branch: {}\n"
+                   "LastUpdate: {}"
+                   .format(branch_name, last_update)),
+      license="Public Domain",
+      keywords="oilspill modeling particle_tracking",
+      url="https://github.com/NOAA-ORR-ERD/PyGnome"
       )
 
 # Change current working directory back to what user originally had

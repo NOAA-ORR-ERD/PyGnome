@@ -94,24 +94,24 @@ void ConvertToDirection (double degrees, char *directionStr)
 	
 	DirectionRec directionTable [] =
 	{
-		  0.0, 	"N",
-	 	 90.0, 	"E",
-	 	180.0, 	"S",
-	 	270.0, 	"W",
+		  {0.0, "N"},
+	 	 {90.0, "E"},
+	 	{180.0, "S"},
+	 	{270.0, "W"},
 
-	 	 45.0, 	"NE",
-	 	135.0, 	"SE",
-	 	225.0, 	"SW",
-		315.0, 	"NW",
+	 	 {45.0, "NE"},
+	 	{135.0, "SE"},
+	 	{225.0, "SW"},
+		{315.0, "NW"},
 
-	 	 22.5,	"NNE",
-	 	 67.5,	"ENE",
-	 	112.5,	"ESE",
-	 	157.5,	"SSE",
-	 	202.5,	"SSW",
-	 	247.5,	"WSW",
-	 	292.5,	"WNW",
-	 	337.5,	"NNW",
+	 	 {22.5,	"NNE"},
+	 	 {67.5,	"ENE"},
+	 	{112.5,	"ESE"},
+	 	{157.5,	"SSE"},
+	 	{202.5,	"SSW"},
+	 	{247.5,	"WSW"},
+	 	{292.5,	"WNW"},
+	 	{337.5,	"NNW"},
 	};
 	
 	strcpy (directionStr, "NNW");		// default if no better match is found

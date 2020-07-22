@@ -1,27 +1,54 @@
 '''
 Weathering Outputter
 '''
-import copy
 import os
+import copy
 from glob import glob
 
 from geojson import dump
 from colander import SchemaNode, String, drop
 
-from gnome.utilities.serializable import Serializable, Field
 
-from .outputter import Outputter, BaseSchema
-
-from gnome.basic_types import oil_status
+from .outputter import Outputter, BaseOutputterSchema
 
 
-class WeatheringOutputSchema(BaseSchema):
-    output_dir = SchemaNode(String(), missing=drop)
+class BaseMassBalanceOutputter(Outputter):
+    """
+    Base class for outputters that need to return results of the mass balance:
+
+    i.e. averaged properties of the LEs
+    """
+    units = {'default': 'kg',
+             'avg_density': 'kg/m^3',
+             'avg_viscosity': 'm^2/s'}
+
+    def gather_mass_balance_data(self, step_num):
+        # return a json-compatible dict of the mass_balance data
+        # only applies to forecast spill_container (Not uncertain)
+        sc = self.cache.load_timestep(step_num).items()[0]
+
+        output_info = {'model_time': sc.current_time_stamp}
+        output_info.update(sc.mass_balance)
+
+        self.logger.debug(self._pid + 'step_num: {0}'.format(step_num))
+
+        for name, val in output_info.iteritems():
+            msg = ('\t{0}: {1}'.format(name, val))
+            self.logger.debug(msg)
+
+        return output_info
 
 
-class WeatheringOutput(Outputter, Serializable):
+class WeatheringOutputSchema(BaseOutputterSchema):
+    output_dir = SchemaNode(
+        String(), missing=drop, save=True, update=True
+    )
+
+
+class WeatheringOutput(BaseMassBalanceOutputter):
     '''
-    class that outputs GNOME weathering results.
+    class that outputs GNOME weathering results on a time step by time step basis
+
     The output is the aggregation of properties for all LEs (aka Mass Balance)
     for a particular time step.
     There are a number of different things we would like to graph:
@@ -31,40 +58,22 @@ class WeatheringOutput(Outputter, Serializable):
     - Biodegradation
     - ???
 
-    However at this time we will simply try to implement an outputter for the
-    halflife Weatherer.
-    Following is the output format.
-
-        {
-        "type": "WeatheringGraphs",
-        "half_life": {"properties": {"mass_components": <Component values>,
-                                     "mass": <total Mass value>,
-                                     }
-                      },
-            ...
-        }
-
     '''
-    _state = copy.deepcopy(Outputter._state)
-
-    # need a schema and also need to override save so output_dir
-    # is saved correctly - maybe point it to saveloc
-    _state += [Field('output_dir', update=True, save=True)]
     _schema = WeatheringOutputSchema
 
+    # Fixme: -- this is a do-nothing __init__
+    #        only here to document the interface
+    # may need it in the future if we refactor out the output_dir handling
     def __init__(self,
                  output_dir=None,   # default is to not output to file
                  **kwargs):
         '''
-        :param str output_dir='./': output directory for geojson files
+        :param str output_dir='./': output directory for the json files
 
-        use super to pass optional \*\*kwargs to base class __init__ method
+        other arguments as defined in the Outputter class
         '''
-        self.output_dir = output_dir
-        self.units = {'default': 'kg',
-                      'avg_density': 'kg/m^3',
-                      'avg_viscosity': 'm^2/s'}
-        super(WeatheringOutput, self).__init__(**kwargs)
+        super(WeatheringOutput, self).__init__(output_dir=output_dir,
+                                               **kwargs)
 
     def write_output(self, step_num, islast_step=False):
         '''
@@ -79,21 +88,9 @@ class WeatheringOutput(Outputter, Serializable):
         if not self._write_step:
             return None
 
-        # return a dict - json of the mass_balance data
-        # weathering outputter should only apply to forecast spill_container
-        sc = self.cache.load_timestep(step_num).items()[0]
-
-        dict_ = {}
-        dict_.update(sc.mass_balance)
-
-        output_info = {'time_stamp': sc.current_time_stamp.isoformat()}
-        output_info.update(sc.mass_balance)
-
-        # output_info.update({'area': hull_area(sc['positions'][sc['status_codes'] == oil_status.in_water])})
-        self.logger.debug(self._pid + 'step_num: {0}'.format(step_num))
-        for name, val in dict_.iteritems():
-            msg = ('\t{0}: {1}'.format(name, val))
-            self.logger.debug(msg)
+        output_info = self.gather_mass_balance_data(step_num)
+        # convert to string
+        output_info['time_stamp'] = output_info.pop('model_time').isoformat()
 
         if self.output_dir:
             output_filename = self.output_to_file(output_info, step_num)
@@ -118,10 +115,13 @@ class WeatheringOutput(Outputter, Serializable):
             for f in files:
                 os.remove(f)
 
-    def rewind(self):
-        'remove previously written files'
-        super(WeatheringOutput, self).rewind()
-        self.clean_output_files()
+    # just use the base class(s) one -- nothing to do here
+    # cleaning out the files is done in prepare_for_model_run
+    # def rewind(self):
+    #     'remove previously written files'
+    #     super(WeatheringOutput, self).rewind()
+
+    #     self.clean_output_files()
 
     def __getstate__(self):
         '''
@@ -139,6 +139,7 @@ class WeatheringOutput(Outputter, Serializable):
                    Model.setup_model_run() function.)
         '''
         odict = self.__dict__.copy()  # copy the dict since we change it
-        del odict['cache']               # remove cache entry
+
+        del odict['cache']  # remove cache entry
 
         return odict

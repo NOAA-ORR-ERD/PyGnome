@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 """
 The waves environment object.
 
@@ -8,35 +7,42 @@ Computes the wave height and percent wave breaking
 Uses the same approach as ADIOS 2
 
 (code ported from old MATLAB prototype code)
-
 """
 from __future__ import division
 
 import copy
+import numpy as np
 
 from gnome import constants
-from gnome.utilities import serializable
-from gnome.utilities.serializable import Field
 from gnome.utilities.weathering import Adios2, LehrSimecek, PiersonMoskowitz
 
 from gnome.persist import base_schema
 from gnome.exceptions import ReferencedObjectNotSet
 
 from .environment import Environment
-from .environment import WaterSchema
+from .water import WaterSchema
 
 from wind import WindSchema
+from gnome.environment.gridded_objects_base import VectorVariableSchema
+from gnome.environment.wind import Wind
+from gnome.environment.water import Water
 
 g = constants.gravity  # the gravitational constant.
 
 
-class WavesSchema(base_schema.ObjType):
+class WavesSchema(base_schema.ObjTypeSchema):
     'Colander Schema for Conditions object'
-    name = 'Waves'
     description = 'waves schema base class'
+    water = WaterSchema(
+        save=True, update=True, save_reference=True
+    )
+    wind = base_schema.GeneralGnomeObjectSchema(
+            acceptable_schemas=[WindSchema, VectorVariableSchema],
+            save_reference=True
+    )
 
 
-class Waves(Environment, serializable.Serializable):
+class Waves(Environment):
     """
     class to compute the wave height for a time series
 
@@ -44,12 +50,8 @@ class Waves(Environment, serializable.Serializable):
     variable, but may be extended in the future
     """
     _ref_as = 'waves'
-    _state = copy.deepcopy(Environment._state)
-    _state += [Field('water', save=True, update=True, save_reference=True),
-               Field('wind', save=True, update=True, save_reference=True)]
+    _req_refs = ['wind', 'water']
     _schema = WavesSchema
-
-    _state['name'].test_for_eq = False
 
     def __init__(self, wind=None, water=None, **kwargs):
         """
@@ -79,20 +81,22 @@ class Waves(Environment, serializable.Serializable):
 
         super(Waves, self).__init__(**kwargs)
 
-    # def update_water(self):
-    #     """
-    #     updates values from water object
+    @property
+    def data_start(self):
+        '''
+            The Waves object doesn't directly manage a time series of data,
+            so it will not have a data range itself.  But it depends upon
+            a Wind and a Water object.  The Water won't have a data range
+            either, but the Wind will.
+            So its data range will be that of the Wind it is associated with.
+        '''
+        return self.wind.data_start
 
-    #     this should be called when you want to make sure new data is Used
+    @property
+    def data_stop(self):
+        return self.wind.data_stop
 
-    #     note: yes, this is kludgy, but it avoids calling self.water.fetch
-    #           all over the place
-    #     """
-    #     self.wave_height = self.water.wave_height
-    #     self.fetch = self.water.fetch
-    #     self.density = self.water.density
-
-    def get_value(self, time):
+    def get_value(self, points, time):
         """
         return the rms wave height, peak period and percent wave breaking
         at a given time. Does not currently support location-variable waves.
@@ -105,19 +109,25 @@ class Waves(Environment, serializable.Serializable):
 
         Units:
           wave_height: meters (RMS height)
-          peak_perid: seconds
+          peak_period: seconds
           whitecap_fraction: unit-less fraction
           dissipation_energy: not sure!! # fixme!
         """
         # make sure are we are up to date with water object
-        wave_height = self.water.wave_height
+        wave_height = self.water.get('wave_height')
 
         if wave_height is None:
-            U = self.wind.get_value(time)[0]  # only need velocity
+            # only need velocity
+            U = self.get_wind_speed(points, time)
             H = self.compute_H(U)
-        else:  # user specified a wave height
-            H = wave_height
-            U = self.pseudo_wind(H)
+        else:
+            # user specified a wave height
+            U = self.get_wind_speed(points, time)
+            H = np.full_like(U, wave_height)
+            #H = wave_height
+            U = self.pseudo_wind(H)	#significant wave height used for pseudo wind
+            H = .707 * H	#Hrms
+
         Wf = self.whitecap_fraction(U)
         T = self.mean_wave_period(U)
 
@@ -125,7 +135,19 @@ class Waves(Environment, serializable.Serializable):
 
         return H, T, Wf, De
 
-    def get_emulsification_wind(self, time):
+    def get_wind_speed(self, points, model_time,
+                       coord_sys='r', fill_value=1.0):
+        '''
+        Wrapper for the weatherers so they can extrapolate
+        '''
+        retval = self.wind.at(points, model_time, coord_sys=coord_sys)
+
+        if isinstance(retval, np.ma.MaskedArray):
+            return retval.filled(fill_value)
+        else:
+            return retval
+
+    def get_emulsification_wind(self, points, time):
         """
         Return the right wind for the wave climate
 
@@ -142,76 +164,85 @@ class Waves(Environment, serializable.Serializable):
         fixme: I'm not sure this is right -- if we stick with the wave energy
                given by the user for dispersion, why not for emulsification?
         """
-        wave_height = self.water.wave_height
-        U = self.wind.get_value(time)[0]  # only need velocity
+        wave_height = self.water.get('wave_height')
+        U = self.get_wind_speed(points, time)  # only need velocity
+
         if wave_height is None:
             return U
         else:  # user specified a wave height
-            return max(U, self.pseudo_wind(wave_height))
+            U = np.where(U < self.pseudo_wind(wave_height),
+                         self.pseudo_wind(wave_height),
+                         U)
+            return U
 
     def compute_H(self, U):
-        return Adios2.wave_height(U, self.water.fetch)
+        U = np.array(U).reshape(-1)
+        return Adios2.wave_height(U, self.water.get('fetch'))
 
     def pseudo_wind(self, H):
+        H = np.array(H).reshape(-1)
         return Adios2.wind_speed_from_height(H)
 
     def whitecap_fraction(self, U):
+        U = np.array(U).reshape(-1)
         return LehrSimecek.whitecap_fraction(U, self.water.salinity)
 
     def mean_wave_period(self, U):
+        U = np.array(U).reshape(-1)
         return Adios2.mean_wave_period(U,
-                                       self.water.wave_height,
-                                       self.water.fetch)
+                                       self.water.get('wave_height'),
+                                       self.water.get('fetch'))
 
-    def peak_wave_period(self, time):
+    def peak_wave_period(self, points, time):
         '''
         :param time: the time you want the wave data for
         :type time: datetime.datetime object
 
         :returns: peak wave period (s)
         '''
-        U = self.wind.get_value(time)[0]
+        U = self.get_wind_speed(points, time)  # only need velocity
+
         return PiersonMoskowitz.peak_wave_period(U)
 
     def dissipative_wave_energy(self, H):
         return Adios2.dissipative_wave_energy(self.water.density, H)
 
-    def serialize(self, json_='webapi'):
-        """
-        Since 'wind'/'water' property is saved as references in save file
-        need to add appropriate node to WindMover schema for 'webapi'
-        """
-        toserial = self.to_serialize(json_)
-        schema = self.__class__._schema()
+    def energy_dissipation_rate(self, H, U):
+        '''
+        c_ub = 100 = dimensionless empirical coefficient to correct
+        for non-Law-of-the-Wall results (Umlauf and Burchard, 2003)
 
-        if json_ == 'webapi':
-            if self.wind:
-                schema.add(WindSchema(name='wind'))
-            if self.water:
-                schema.add(WaterSchema(name='water'))
+        u_c = water friction velocity (m/s)
+               sqrt(rho_air / rho_w) * u_a ~ .03 * u_a
+        u_a = air friction velocity (m/s)
+        z_0 = surface roughness (m) (Taylor and Yelland)
+        c_p = peak wave speed for Pierson-Moskowitz spectrum
+        w_p = peak angular frequency for Pierson-Moskowitz spectrum (1/s)
 
-        return schema.serialize(toserial)
+        TODO: This implementation should be in a utility function.
+              It should not be part of the Waves management object itself.
+        '''
+        if H is 0 or U is 0:
+            return 0
 
-    @classmethod
-    def deserialize(cls, json_):
-        """
-        append correct schema for wind object
-        """
-        schema = cls._schema()
+        c_ub = 100
 
-        if 'wind' in json_:
-            schema.add(WindSchema(name='wind'))
+        c_p = PiersonMoskowitz.peak_wave_speed(U)
+        w_p = PiersonMoskowitz.peak_angular_frequency(U)
 
-        if 'water' in json_:
-            schema.add(WaterSchema(name='water'))
+        z_0 = 1200 * H * ((H / (2*np.pi*c_p)) * w_p)**4.5
+        u_a = .4 * U / np.log(10 / z_0)
+        u_c = .03 * u_a
+        eps = c_ub * u_c**3 / H
 
-        return schema.deserialize(json_)
+        return eps
 
-    def prepare_for_model_run(self, model_time):
+
+    def prepare_for_model_run(self, _model_time):
         if self.wind is None:
-            msg = "wind object not defined for " + self.__class__.__name__
-            raise ReferencedObjectNotSet(msg)
+            raise ReferencedObjectNotSet("wind object not defined for {}"
+                                         .format(self.__class__.__name__))
 
         if self.water is None:
-            msg = "water object not defined for " + self.__class__.__name__
-            raise ReferencedObjectNotSet(msg)
+            raise ReferencedObjectNotSet("water object not defined for {}"
+                                         .format(self.__class__.__name__))

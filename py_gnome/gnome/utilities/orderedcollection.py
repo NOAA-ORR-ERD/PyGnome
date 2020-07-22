@@ -75,7 +75,7 @@ class OrderedCollection(object):
             return self._elems[self._d_index[ident]]
 
     def add(self, elem):
-        'Add an object to the collection '
+        'Add an object to the collection'
         if isinstance(elem, self.dtype):
             l__id = self._s_id(elem)
 
@@ -86,17 +86,24 @@ class OrderedCollection(object):
                 # fire add event only if elem is not already in the list
                 self.fire_event('add', elem)
         else:
-            # assume its an iterable list/tuple of items to be added
+            # assume it's an iterable of items to be added
             try:
                 for e in elem:
                     if not isinstance(e, self.dtype):
-                        raise
+                        raise TypeError('{0}:\n'
+                                        'Expected: {1!r}\n'
+                                        'Got: {2!r}\n of type: {3}'.format(self.__class__.__name__,
+                                                                           self.dtype,
+                                                                           e,
+                                                                           type(e)))
                     self.add(e)
-            except:
-                raise TypeError('{0}: expected {1!r}, '
-                                'got {2!r}'.format(self.__class__.__name__,
-                                                   self.dtype,
-                                                   elem))
+            except TypeError:
+                raise TypeError('{0}:\n'
+                                'Expected: {1!r} or an iterable of {1}.\n'
+                                'Got: {2!r}\n of type: {3}'.format(self.__class__.__name__,
+                                                                   self.dtype,
+                                                                   elem,
+                                                                   type(elem)))
 
     def append(self, elem):
         self.add(elem)
@@ -228,25 +235,39 @@ class OrderedCollection(object):
         return self
 
     def __str__(self):
+        """
+        for __str__, don't show the keys
+        """
         # order by position in list
         itemlist = sorted(self._d_index.items(), key=lambda x: x[1])
 
         # reference the value in list
-        itemlist = [(k, self._elems[v]) for (k, v) in itemlist]
+        itemlist = [self._elems[v] for (k, v) in itemlist]
 
-        if len(itemlist) > 6:  # should we abbreviate the list?
-            strlist = ['\t%s: %s,' % i for i in itemlist[:2]]
+        formatter = '    %s,'
+        if len(itemlist) > 12:  # should we abbreviate the list at all?
+            strlist = [formatter % i for i in itemlist[:2]]
             strlist += ('\t...', '\t...')
-            strlist += ['\t%s: %s,' % i for i in itemlist[-2:]]
+            strlist += [formatter % i for i in itemlist[-2:]]
         else:
-            strlist = ['\t%s: %s,' % i for i in itemlist]
+            strlist = [formatter % i for i in itemlist]
 
         return ('{0}({{\n'
                 '{1}\n'
                 '}})'.format(self.__class__.__name__, '\n'.join(strlist)))
 
     def __repr__(self):
-        return self.__str__()
+        # order by position in list
+        itemlist = sorted(self._d_index.items(), key=lambda x: x[1])
+
+        # reference the value in list
+        itemlist = [(k, self._elems[v]) for (k, v) in itemlist]
+
+        strlist = ['    %s:\n        %r,' % i for i in itemlist]
+
+        return ('{0}({{\n'
+                '{1}\n'
+                '}})'.format(self.__class__.__name__, '\n'.join(strlist)))
 
     def __eq__(self, other):
         """ Equality of two ordered collections """
@@ -266,6 +287,40 @@ class OrderedCollection(object):
     def __ne__(self, other):
         return not self == other
 
+    def update(self, cstruct, refs=None):
+        '''
+        cstruct is meant to be a list of COMPLETE object serializations, or
+        GnomeID appstructs (refs to existing objects).
+        '''
+        if not isinstance(cstruct, list):
+            raise ValueError('Must update an OrderedCollection with a list')
+        current_values = self.values()
+        new_vals = []
+
+        for elem in cstruct:
+            if isinstance(elem, dict):
+                id_ = elem.get('id', None)
+                if id_ is None:
+                    raise ValueError('id of element in OC update dict is missing')
+                if id_ in self._d_index:
+                    #obj currently exists in this collection
+                    obj = self.get(id_)
+                    obj.update(elem)
+                else:
+                    raise ValueError('{0} is not an object contained by this OC'.format(id))
+                new_vals.append(obj)
+            elif isinstance(elem, self.dtype):
+                new_vals.append(elem)
+            else:
+                raise ValueError('update element is not dict or valid type for this OC')
+
+        self.clear()
+        self.add(new_vals)
+
+        return self
+
+
+    #JAH: This is why OCs can be serialized and lists cannot!
     def to_dict(self):
         '''
         Method takes the instance of ordered collection and outputs a list of

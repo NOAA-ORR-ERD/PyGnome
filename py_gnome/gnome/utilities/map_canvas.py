@@ -13,6 +13,7 @@ GNOME-specific.
 
 This version used libgd and py_gd instead of PIL for the rendering
 """
+
 import bisect
 
 import numpy as np
@@ -40,14 +41,14 @@ class MapCanvas(object):
     This version uses a paletted (8 bit) image -- may be updated for RGB images
     at some point.
     """
-
     def __init__(self,
-                 image_size,
+                 image_size=(800, 600),
                  projection=None,
                  viewport=None,
                  preset_colors='BW',
                  background_color='transparent',
-                 colordepth=8):
+                 colordepth=8,
+                 **kwargs):
         """
         create a new map image from scratch -- specifying the size
 
@@ -101,6 +102,7 @@ class MapCanvas(object):
 
         self.projection.set_scale(self.viewport, self.image_size)
         self.graticule = GridLines(self._viewport, self.projection)
+        super(MapCanvas, self).__init__()
 
     def viewport_to_dict(self):
         '''
@@ -133,22 +135,28 @@ class MapCanvas(object):
         or by bounding box
 
         :param center: The point around which the viewport is centered
-        :type a tuple containing an x/y coordinate
+        :type center: tuple of floats (lon, lat)
 
         :param width: Width of the viewport in meters
+        :type width: float
 
         :param height: height of the viewport in meters
+        :type height: float
 
         :param BB: Bounding box of the viewport
                    (overrides all previous parameters)
-        :type a list of tuples containing of the lower left and top right
-              coordinates
+
+        :type BB: a list of tuples containing of the lower left and top right
+              coordinates: ((min_x, min_y),(max_x, max_y))
         """
+
         if BB is None:
             self._viewport.center = center
 
-            distances = self.projection.meters_to_lonlat((width, height, 0),
-                                                         (center[0], center[1], 0))
+            distances = (self.projection
+                         .meters_to_lonlat((width, height, 0),
+                                           (center[0], center[1], 0)))
+
             self._viewport.width = distances[0][0]
             self._viewport.height = distances[0][1]
         else:
@@ -189,9 +197,8 @@ class MapCanvas(object):
         """
         Add a list of colors to the pallette
 
-        :param color_list: list of colors
-                           - each elemnt of the list is a 2-tuple:
-                             ('color_name', (r,g,b))
+        :param color_list: list of colors. Each element of the list is a 2-tuple:
+                           ('color_name', (r,g,b))
         """
         self.fore_image.add_colors(color_list)
         self.back_image.add_colors(color_list)
@@ -386,7 +393,7 @@ class MapCanvas(object):
             self.draw_polyline(line, 'black', 1, background)
 
     def draw_grid(self):
-        #Not Implemeneted in MapCanvas
+        # Not Implemeneted in MapCanvas
         return None
 
     def draw_tags(self, draw_to_back=True):
@@ -413,7 +420,7 @@ class MapCanvas(object):
         save the map image to the specified filename
 
         This copies the foreground image on top of the
-        background image and saves teh whole thing.
+        background image and saves the whole thing.
 
         :param filename: full path of file to be saved to
         :type filename: string
@@ -422,12 +429,10 @@ class MapCanvas(object):
         :type file_type: one of the following:
                          {'png', 'gif', 'jpeg', 'bmp'}
         """
-        # create a new image to composite
-        width, height = self.image_size[:2]
-        image = py_gd.Image(width=width, height=height)
         # copy the pallette from the foreground image
-        print dir(self.fore_image)
-        print self.fore_image.colors
+        # print dir(self.fore_image)
+        # print self.fore_image.colors
+        # fixme: is this being used???
         assert False
 
         self.fore_image.copy(self.back_image,
@@ -506,10 +511,12 @@ class GridLines(object):
                           dimension of the viewport. Graticule will scale up
                           or down only when the number of lines in the viewport
                           falls outside the range.
+
         :type max_lines: tuple of integers, (max, min)
 
         :param DegMinSec: Whether to scale by Degrees/Minute/Seconds,
                           or decimal lon/lat
+
         :type bool
         """
         if viewport is None:
@@ -614,11 +621,14 @@ class GridLines(object):
 
         :param max_lines: the maximum number of lines drawn.
                           (Note: this is NOT the number of lines on the screen
-                                 at any given time.  That is determined by
-                                 the computed interval and the size/location
-                                 of the viewport)
+                          at any given time.  That is determined by
+                          the computed interval and the size/location
+                          of the viewport)
+
         :type max_lines: int
+
         """
+
         if max_lines is not None:
             self.max_lines = max_lines
 
@@ -662,7 +672,7 @@ class GridLines(object):
             else:
                 value = line[0][1]
                 hemi = 'N' if value > 0 else 'S'
-            tag = (str(value)
+            tag = ("{0:.2f}".format(value)
                    if not self.DMS
                    else uc.LatLongConverter.ToDegMinSec(value, ustring=False))
 
@@ -704,19 +714,20 @@ class Viewport(object):
     def __init__(self, BB=None, center=None, width=None, height=None):
         """
         Init the viewport.
+
         Can initialize with center/width/height, and/or with bounding box.
         NOTE: Bounding box takes precedence over any previous parameters
 
         :param center: The point around which the viewport is centered
-        :type a tuple containing an lon/lat coordinate
+        :type center: a tuple containing an lon/lat coordinate
 
         :param width: Width of the viewport (lon)
 
         :param height: height of the viewport (lat)
 
         :param BB: Bounding box of the viewport (overrides previous parameters)
-        :type a list of lon/lat tuples containing the lower left and top right
-              coordinates
+        :type BB:  a list of lon/lat tuples containing the lower left
+                   and top right coordinates
         """
         self._BB = None
         self._center = None

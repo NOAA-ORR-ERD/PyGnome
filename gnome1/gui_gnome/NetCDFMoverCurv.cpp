@@ -149,7 +149,7 @@ OSErr NetCDFMoverCurv::TextRead(char *path, TMap **newMap, char *topFilePath)
 	double *lat_vals=0,*lon_vals=0,timeVal;
 	float *depth_vals=0,*sigma_vals=0,*sigma_vals2=0;
 	static size_t latIndex=0,lonIndex=0,timeIndex,ptIndex[2]={0,0},sigmaIndex=0;
-	static size_t pt_count[2], sigma_count;
+	static size_t pt_count[2], sigma_count, no_interp_str;
 	Seconds startTime, startTime2;
 	double timeConversion = 1., scale_factor = 1.;
 	char errmsg[256] = "";
@@ -286,17 +286,21 @@ OSErr NetCDFMoverCurv::TextRead(char *path, TMap **newMap, char *topFilePath)
 				timeConversion = 24.*3600.;
 		}
 	} 
+
+	status = nc_inq_attlen(ncid,NC_GLOBAL,"no_interp",&no_interp_str);	// this marks files to be treated the old way
+	if (status == NC_NOERR) goto OLD;
+
 	status = nc_inq_dimid(ncid, "yc", &latIndexid); 
 	if (status != NC_NOERR) 
 	{	
-		goto OLD;
+		//goto OLD;
 		// eventually try to support old format with new algorithm
 		// issues with mask
-		/*status = nc_inq_dimid(ncid, "y", &latIndexid); 
+		status = nc_inq_dimid(ncid, "y", &latIndexid); 
 		if (status != NC_NOERR) 
 		{
 			err = -1; goto OLD;
-		}*/
+		}
 	}
 	bIsCOOPSWaterMask = true;
 	status = nc_inq_varid(ncid, "latc", &latid);
@@ -313,12 +317,12 @@ OSErr NetCDFMoverCurv::TextRead(char *path, TMap **newMap, char *topFilePath)
 	status = nc_inq_dimid(ncid, "xc", &lonIndexid);	
 	if (status != NC_NOERR) 
 	{
-		err = -1; goto done;
-		/*status = nc_inq_dimid(ncid, "x", &lonIndexid); 
+		//err = -1; goto done;
+		status = nc_inq_dimid(ncid, "x", &lonIndexid); 
 		if (status != NC_NOERR) 
 		{
 			err = -1; goto done;
-		}*/
+		}
 	}
 	status = nc_inq_varid(ncid, "lonc", &lonid);	
 	if (status != NC_NOERR) 
@@ -675,8 +679,9 @@ OLD:
 			if(err) goto done;*/
 			//err = dynamic_cast<NetCDFMoverCurv *>(this)->ReorderPoints(velocityH,newMap,errmsg);	
 			//if (isLandMask && bIsCOOPSWaterMask) err = ReorderPointsCOOPSMask(landmaskH,newMap,errmsg);
-			if (isLandMask && bIsCOOPSWaterMask) err = ReorderPointsCOOPSMask(landmaskH,newMap,errmsg);
-			else if (isCoopsMask) err = ReorderPointsCOOPSMaskOld(newMap,landmaskH,errmsg);
+			if (isCoopsMask) err = ReorderPointsCOOPSMaskOld(newMap,landmaskH,errmsg);
+			else if (isLandMask && bIsCOOPSWaterMask) err = ReorderPointsCOOPSMask(landmaskH,newMap,errmsg);
+			//else if (isCoopsMask) err = ReorderPointsCOOPSMaskOld(newMap,landmaskH,errmsg);	// do this first
 			else if (bIsCOOPSWaterMask) err = ReorderPointsCOOPSNoMask(newMap,errmsg);
 			else if (isLandMask) err = dynamic_cast<NetCDFMoverCurv *>(this)->ReorderPoints(landmaskH,newMap,errmsg);	
 			//else if (isCOOPSMask) err = ReorderPointsCOOPSMask(landmaskH,newMap,errmsg);
@@ -705,8 +710,9 @@ OLD:
 			else {strcpy(errmsg,"No times in file. Error opening NetCDF file"); err =  -1;}
 			if(err) goto done;*/
 			//err = dynamic_cast<NetCDFMoverCurv *>(this)->ReorderPoints(velocityH,newMap,errmsg);	
-			if (isLandMask && bIsCOOPSWaterMask) err = ReorderPointsCOOPSMask(landmaskH,newMap,errmsg);
-			else if (isCoopsMask) err = ReorderPointsCOOPSMaskOld(newMap,landmaskH,errmsg);
+			if (isCoopsMask) err = ReorderPointsCOOPSMaskOld(newMap,landmaskH,errmsg);
+			else if (isLandMask && bIsCOOPSWaterMask) err = ReorderPointsCOOPSMask(landmaskH,newMap,errmsg);
+			//else if (isCoopsMask) err = ReorderPointsCOOPSMaskOld(newMap,landmaskH,errmsg);	// do this first
 			else if (bIsCOOPSWaterMask) err = ReorderPointsCOOPSNoMask(newMap,errmsg);
 			else if (isLandMask) err = dynamic_cast<NetCDFMoverCurv *>(this)->ReorderPoints(landmaskH,newMap,errmsg);	
 			//if (isLandMask) err = dynamic_cast<NetCDFMoverCurv *>(this)->ReorderPoints(landmaskH,newMap,errmsg);	
@@ -738,8 +744,9 @@ OLD:
 	else {strcpy(errmsg,"No times in file. Error opening NetCDF file"); err =  -1;}
 	if(err) goto done;*/
 	//if (isLandMask) err = ReorderPoints(velocityH,newMap,errmsg);
-	if (isLandMask && bIsCOOPSWaterMask) err = ReorderPointsCOOPSMask(landmaskH,newMap,errmsg);
-	else if (isCoopsMask) err = ReorderPointsCOOPSMaskOld(newMap,landmaskH,errmsg);
+	if (isCoopsMask) err = ReorderPointsCOOPSMaskOld(newMap,landmaskH,errmsg);
+	else if (isLandMask && bIsCOOPSWaterMask) err = ReorderPointsCOOPSMask(landmaskH,newMap,errmsg);
+	//else if (isCoopsMask) err = ReorderPointsCOOPSMaskOld(newMap,landmaskH,errmsg); // do this first
 	else if (bIsCOOPSWaterMask) err = ReorderPointsCOOPSNoMask(newMap,errmsg);
 	else if (isLandMask) err = ReorderPoints(landmaskH,newMap,errmsg);
 	//if (isLandMask) err = ReorderPoints(landmaskH,newMap,errmsg);
@@ -947,7 +954,7 @@ depths:
 			//INDEXH(totalDepthsH,i) = depth_vals[ptIndex];
 			INDEXH(totalDepthsH,i) = INDEXH(fDepthsH,ptIndex);
 		}
-		if (!bIsCOOPSWaterMask)	// code goes here, figure out how to handle depths in this case
+		//if (!bIsCOOPSWaterMask)	// code goes here, figure out how to handle depths in this case
 			((TTriGridVel3D*)fGrid)->SetDepths(totalDepthsH);
 	}
 	

@@ -1,12 +1,15 @@
-cimport numpy as cnp
-import numpy as np
 import os
 
+cimport numpy as cnp
+import numpy as np
+from libc.string cimport memcpy
+
 from type_defs cimport *
+from utils cimport _GetHandleSize
 from movers cimport GridWindMover_c, WindMover_c, Mover_c
 
+from gnome import basic_types
 from cy_mover cimport CyWindMoverBase
-
 from gnome.cy_gnome.cy_helpers cimport to_bytes
 
 
@@ -90,11 +93,10 @@ cdef class CyGridWindMover(CyWindMoverBase):
     def __init__(self, wind_scale=1):
         """
         .. function:: __init__(self, wind_scale=1)
-        
+
         initialize a grid wind mover
-        
+
         :param wind_scale: scale factor applied to wind values
-        
         """
         self.grid_wind.fWindScale = wind_scale
         self.grid_wind.fIsOptimizedForStep = 0
@@ -102,17 +104,17 @@ cdef class CyGridWindMover(CyWindMoverBase):
     property extrapolate:
         def __get__(self):
             return self.grid_wind.GetExtrapolationInTime()
-        
+
         def __set__(self, value):
             self.grid_wind.SetExtrapolationInTime(value)
-        
+
     property time_offset:
         def __get__(self):
             return self.grid_wind.GetTimeShift()
-        
+
         def __set__(self, value):
             self.grid_wind.SetTimeShift(value)
-        
+
     def extrapolate_in_time(self, extrapolate):
         self.grid_wind.SetExtrapolationInTime(extrapolate)
 
@@ -122,13 +124,17 @@ cdef class CyGridWindMover(CyWindMoverBase):
     def get_start_time(self):
         cdef OSErr err
         cdef Seconds start_time
+
         err = self.grid_wind.GetDataStartTime(&start_time)
+
         return start_time
 
     def get_end_time(self):
         cdef OSErr err
         cdef Seconds end_time
+
         err = self.grid_wind.GetDataEndTime(&end_time)
+
         return end_time
 
     def get_move(self,
@@ -168,9 +174,9 @@ cdef class CyGridWindMover(CyWindMoverBase):
         cdef OSErr err
         N = len(ref_points)
 
-        err = self.grid_wind.get_move(N, model_time, step_len, &ref_points[0],
-                            &delta[0], &windages[0], <short *>&LE_status[0],
-                            spill_type, 0)
+        err = self.grid_wind.get_move(N, model_time, step_len,
+                                      &ref_points[0], &delta[0], &windages[0],
+                                      <short *>&LE_status[0], spill_type, 0)
         if err == 1:
             raise ValueError("Make sure numpy arrays for ref_points and"
                              " delta are defined")
@@ -180,9 +186,25 @@ cdef class CyGridWindMover(CyWindMoverBase):
         C++ also throwing this error
         """
         if err == 2:
-            raise ValueError("The value for spill type can only be"
-                             " 'forecast' or 'uncertainty' - you've chosen: "
-                             + str(spill_type))
+            raise ValueError("The value for spill type can only be "
+                             "'forecast' or 'uncertainty' - "
+                             "you've chosen: {}"
+                             .format(spill_type))
+
+    def _is_regular_grid(self):
+        """
+            Invokes the IsRegularGrid TimeGridVel_c object
+        """
+        return self.grid_wind.IsRegularGrid()
+
+    def get_num_points(self):
+        """
+            Invokes the GetNumPoints method of TimeGridVel_c object
+            to get the number of triangles
+        """
+        num_points = self.grid_wind.GetNumPoints()
+
+        return num_points
 
     def get_num_triangles(self):
         """
@@ -193,3 +215,88 @@ cdef class CyGridWindMover(CyWindMoverBase):
 
         return num_tri
 
+    def _get_points(self):
+        """
+            Invokes the GetPointsHdl method of TriGridWind_c object
+            to get the points for the grid
+        """
+        cdef short tmp_size = sizeof(LongPoint)
+        cdef LongPointHdl pts_hdl
+        cdef cnp.ndarray[LongPoint, ndim = 1] pts
+
+        # allocate memory and copy it over
+        pts_hdl = self.grid_wind.GetPointsHdl()
+        sz = _GetHandleSize(<Handle>pts_hdl)
+
+        # will this always work?
+        pts = np.empty((sz / tmp_size,), dtype=basic_types.long_point)
+
+        memcpy(&pts[0], pts_hdl[0], sz)
+
+        return pts
+
+    def _get_center_points(self):
+        """
+            Invokes the GetCellCenters method of TriGridWind_c object
+            to get the velocities for the grid
+        """
+        cdef short tmp_size = sizeof(WorldPoint)
+        cdef WORLDPOINTH pts_hdl
+        cdef cnp.ndarray[WorldPoint, ndim = 1] pts
+
+        # allocate memory and copy it over
+        pts_hdl = self.grid_wind.GetCellCenters()
+        sz = _GetHandleSize(<Handle>pts_hdl)
+
+        # will this always work?
+        pts = np.empty((sz / tmp_size,), dtype=basic_types.w_point_2d)
+
+        memcpy(&pts[0], pts_hdl[0], sz)
+
+        return pts
+
+    def _get_cell_data(self):
+        """
+            Invokes the GetCellDataHdl method of TimeGridWind_c object
+            to get the velocities for the grid
+        """
+        cdef short tmp_size = sizeof(GridCellInfo)
+        cdef GridCellInfoHdl cell_data_hdl
+        cdef cnp.ndarray[GridCellInfo, ndim = 1] cell_data
+
+        # allocate memory and copy it over
+        # should check that cell data exists
+        cell_data_hdl = self.grid_wind.GetCellDataHdl()
+        if not cell_data_hdl:
+            """
+            For now just raise an OSError - until the types of possible errors
+            are defined and enumerated
+            """
+            raise OSError('GridWindMover_c.GetCellDataHdl '
+                          'returned an error.')
+
+        sz = _GetHandleSize(<Handle>cell_data_hdl)
+
+        # will this always work?
+        cell_data = np.empty((sz / tmp_size,), dtype=basic_types.cell_data)
+
+        memcpy(&cell_data[0], cell_data_hdl[0], sz)
+
+        return cell_data
+
+    def get_scaled_velocities(self, Seconds model_time,
+                              cnp.ndarray[VelocityFRec] vels):
+        """
+            Invokes the GetScaledVelocities method of TimeGridVel_c object
+            to get the velocities on the triangles
+        """
+        cdef OSErr err
+
+        err = self.grid_wind.GetScaledVelocities(model_time, &vels[0])
+        if err != 0:
+            """
+            For now just raise an OSError - until the types of possible errors
+            are defined and enumerated
+            """
+            raise OSError('GridWindMover_c.GetScaledVelocities '
+                          'returned an error.')

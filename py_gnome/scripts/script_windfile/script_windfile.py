@@ -20,7 +20,7 @@ from gnome.utilities.remote_data import get_datafile
 
 from gnome.environment import Wind
 # from gnome.environment import Tide
-from gnome.map import MapFromBNA
+from gnome.maps import MapFromBNA
 
 from gnome.model import Model
 from gnome.spill import point_line_release_spill
@@ -48,7 +48,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     renderer = Renderer(mapfile,
                         images_dir,
-                        size=(800, 800),
+                        image_size=(800, 800),
                         )
 
     print 'initializing the model'

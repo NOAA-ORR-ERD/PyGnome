@@ -1,0 +1,32 @@
+name: py_gnome
+
+channels:
+    - NOAA-ORR-ERD
+
+dependencies:
+    - numpy
+    - scipy
+    - pillow
+    - pyzmq
+    - cython>=0.20.1
+    - pytest
+    - netCDF4
+    - matplotlib
+    - gsw 
+    - psutil
+    - sphinx
+    - six
+    - progressbar
+    - geojson
+    - testfixtures
+    - unit_conversion
+    - colander
+
+    # nice to have for testing but
+    # not required by py_gnome
+    - ipython
+    - ipython-notebook
+    - repoze.lru
+
+    # failed to pip install from local path
+    # - -e ../oil_library

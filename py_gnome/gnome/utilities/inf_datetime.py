@@ -171,17 +171,10 @@ class InfDateTime(datetime.datetime):
 
     or a MinusInfTime or InfTime object.
     """
-    def __new__(
-        cls,
-        year,
-        month=None,
-        day=None,
-        hour=0,
-        minute=0,
-        second=0,
-        microsecond=0,
-        tzinfo=None,
-        ):
+    def __new__(cls,
+                year, month=None, day=None,
+                hour=0, minute=0, second=0,
+                microsecond=0, tzinfo=None):
         """
         create a new InfDateTime object
 

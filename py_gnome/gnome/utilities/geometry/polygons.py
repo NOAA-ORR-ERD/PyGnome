@@ -2,6 +2,9 @@
 Polygon module, part of the geometry package
 
 Assorted stuff for working with polygons
+
+FIXME: should this support polygons with holes??? (i.e multiple rings?)
+
 """
 
 import copy
@@ -75,9 +78,11 @@ class Polygon(np.ndarray):
 
     def __getitem__(self, index):
         """
-        Override __getitem__ to return a simple (2, ) ndarray, rather than a
+        Override __getitem__ to return a ndarray, rather than a
         Polygon object
         """
+        if type(index) is slice:
+            return Polygon(np.ndarray.__getitem__(self, index), self.metadata)
         return np.asarray(np.ndarray.__getitem__(self, index))
 
     def __eq__(self, other):
@@ -172,11 +177,14 @@ class Polygon(np.ndarray):
             return Polygon((), metadata=orig_poly.metadata)
 
 
-class PolygonSet:
+class PolygonSet(object):
     # version that uses an Accumulator, rather than all that concatenating
     """
     A set of polygons (or polylines) stored as a single array of vertex data,
     and indexes into that array.
+
+    ##Fixme: maybe this should be a MultiPolygon -- maybe just a name change,
+             but could make for different functionality
     """
 
     def __init__(self, data=None, dtype=np.float64):
@@ -221,10 +229,10 @@ class PolygonSet:
         old_length = self._PointsArray.shape[0]
 
         added_length = polygon.shape[0]
-        self._PointsArray.resize((old_length+added_length, 2))
+        self._PointsArray.resize((old_length + added_length, 2))
         self._PointsArray[-added_length:, :] = polygon
 
-        self._IndexArray.resize((self._IndexArray.shape[0]+1))
+        self._IndexArray.resize((self._IndexArray.shape[0] + 1))
         self._IndexArray[-1] = self._PointsArray.shape[0]
         self._MetaDataList.append(metadata)
 
@@ -319,6 +327,15 @@ class PolygonSet:
         # there is an extra index at the end, so that IndexArray[i+1] works
         return len(self._IndexArray) - 1
 
+    def __iter__(self):
+        for i in range(0, len(self._IndexArray) - 1):
+            yield self[i]
+
+    def __bool__(self):
+        return bool(len(self))
+
+    __nonzero__ = __bool__  # for python 2
+
     def __getitem__(self, index):
         """
         returns a Polygon object
@@ -383,23 +400,23 @@ class PolygonSet:
         return new_polys
 
 
-def test():
-    #  a test function
+# def test():
+#     #  a test function
 
-    p1 = np.array([[1, 2], [3, 4], [5, 6], [7, 8]])
-    p2 = p1 * 5
+#     p1 = np.array([[1, 2], [3, 4], [5, 6], [7, 8]])
+#     p2 = p1 * 5
 
-    set_ = PolygonSet()
-    set_.append(p1)
-    set_.append(p2)
+#     set_ = PolygonSet()
+#     set_.append(p1)
+#     set_.append(p2)
 
-    print set_[0]
-    print set_[1]
+#     print set_[0]
+#     print set_[1]
 
-    print "minimum is: ", set_.GetBoundingBox()[0]
-    print "maximum is: ", set_.GetBoundingBox()[1]
+#     print "minimum is: ", set_.GetBoundingBox()[0]
+#     print "maximum is: ", set_.GetBoundingBox()[1]
 
 
-if __name__ == "__main__":
-    # run a test function
-    test()
+# if __name__ == "__main__":
+#     # run a test function
+#     test()

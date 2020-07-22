@@ -1,11 +1,11 @@
 
 from libc.stdint cimport int32_t
 
-cimport numpy as cnp
-
 from type_defs cimport OSErr, Seconds
 
 from gnome import basic_types
+
+cimport numpy as cnp
 
 
 cdef class CyMover(object):
@@ -51,6 +51,9 @@ cdef class CyMover(object):
         """
         if self.mover:
             self.mover.PrepareForModelRun()
+        else:
+            raise OSError('{0.__class__.__name__}: no C++ mover attached'
+                          .format(self))
 
     def prepare_for_model_step(self,
                                Seconds model_time,
@@ -86,11 +89,15 @@ cdef class CyMover(object):
                 For now just raise an OSError - until the types of possible
                 errors are defined and enumerated
                 """
-                #raise OSError("{0.__class__.__name__} returned an error: {1}"
-                              #.format(self, err))
-                return err
-            else:
-                return 0
+                if err == -2:
+                    raise OSError('{0.__class__.__name__} returned an error: reference point not valid, err = {1}'
+                                  .format(self, err))
+                else:
+                    raise OSError('{0.__class__.__name__} returned an error: {1}'
+                                  .format(self, err))
+        else:
+            raise OSError('{0.__class__.__name__}: no C++ mover attached'
+                          .format(self))
 
     def model_step_is_done(self, cnp.ndarray[short] LE_status=None):
         """
@@ -104,16 +111,21 @@ cdef class CyMover(object):
               released LE.
         """
         cdef OSErr err
-        if LE_status is None:
-            num_LEs = 0
-        else:
-            num_LEs = len(LE_status)
+        if self.mover:
+            if LE_status is None:
+                num_LEs = 0
+            else:
+                num_LEs = len(LE_status)
 
-        if self.mover:
             if num_LEs > 0:
+                # TODO: We should really check the return status here
                 err = self.mover.ReallocateUncertainty(num_LEs, &LE_status[0])
-        if self.mover:
+
+            # TODO: We should really check the return status here
             self.mover.ModelStepIsDone()
+        else:
+            raise OSError('{0.__class__.__name__}: no C++ mover attached'
+                          .format(self))
 
 
 cdef class CyWindMoverBase(CyMover):

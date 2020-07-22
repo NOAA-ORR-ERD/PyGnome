@@ -8,9 +8,9 @@ it works.
 
 The functions being tested do not produce any results.
 '''
+from pytest import raises
 
 from gnome.cy_gnome import cy_mover
-from gnome.cy_gnome import cy_current_mover
 
 cm = cy_mover.CyMover()
 
@@ -26,17 +26,27 @@ def test_str():
 
 
 def test_prepare_for_model_run():
-    cm.prepare_for_model_run()
-    assert True
+    '''
+        Since our CyMover has no encapsulated C++ mover object, we should not
+        be able to run any mover functions
+    '''
+    with raises(OSError):
+        cm.prepare_for_model_run()
 
 
 def test_prepare_for_model_step():
-    """ give it dummy input - it should not do anything"""
-
-    cm.prepare_for_model_step(0, 0, 0)
-    assert True
+    '''
+        Since our CyMover has no encapsulated C++ mover object, we should not
+        be able to run any mover functions
+    '''
+    with raises(OSError):
+        cm.prepare_for_model_step(0, 0, 0)
 
 
 def test_model_step_is_done():
-    cm.model_step_is_done()
-    assert True
+    '''
+        Since our CyMover has no encapsulated C++ mover object, we should not
+        be able to run any mover functions
+    '''
+    with raises(OSError):
+        cm.model_step_is_done()

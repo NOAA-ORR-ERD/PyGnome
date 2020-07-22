@@ -1,75 +1,60 @@
-# import modules so WindMover, RandomMover etc can be imported as:
-# import gnome.movers.WindMover
-# import gnome.movers.RandomMover and so forth ..
+'''
+    __init__.py for the gnome.movers package
+'''
 
-"""
-__init__.py for the gnome package
-
-"""
-
-from movers import Mover, Process, ProcessSchema, CyMover
+from movers import Mover, Process, CyMover, ProcessSchema, PyMover
 from simple_mover import SimpleMover, SimpleMoverSchema
 from wind_movers import (WindMover,
                          WindMoverSchema,
                          constant_wind_mover,
                          wind_mover_from_file,
-                         GridWindMoverSchema,
                          GridWindMover,
-                         IceWindMoverSchema,
-                         IceWindMover)
-from ship_drift_mover import (ShipDriftMoverSchema,
-                              ShipDriftMover)
-from random_movers import (RandomMoverSchema,
-                           RandomMover,
+                         GridWindMoverSchema,
+                         IceWindMover,
+                         IceWindMoverSchema)
+
+from ship_drift_mover import ShipDriftMover, ShipDriftMoverSchema
+from random_movers import (RandomMover,
+                           RandomMoverSchema,
                            IceAwareRandomMover,
-                           RandomVerticalMoverSchema,
-                           RandomVerticalMover)
-from current_movers import (CatsMoverSchema,
-                            CatsMover,
-                            ComponentMoverSchema,
+                           IceAwareRandomMoverSchema,
+                           RandomMover3D,
+                           RandomMover3DSchema)
+
+from current_movers import (CatsMover,
+                            CatsMoverSchema,
                             ComponentMover,
-                            GridCurrentMoverSchema,
+                            ComponentMoverSchema,
                             GridCurrentMover,
-                            IceMoverSchema,
+                            GridCurrentMoverSchema,
                             IceMover,
-                            CurrentCycleMoverSchema,
-                            CurrentCycleMover)
-from vertical_movers import RiseVelocityMoverSchema, RiseVelocityMover
+                            IceMoverSchema,
+                            CurrentCycleMover,
+                            CurrentCycleMoverSchema)
 
-from ugrid_movers import UGridCurrentMover
-from py_ice_mover import PyIceMover
-from py_wind_movers import PyWindMover
+from vertical_movers import (RiseVelocityMover,
+                             RiseVelocityMoverSchema,
+                             TamocRiseVelocityMover)
 
-__all__ = [Mover,
-           CyMover,
-           Process,
-           ProcessSchema,
-           SimpleMover,
-           SimpleMoverSchema,
-           WindMover,
-           WindMoverSchema,
-           constant_wind_mover,
-           wind_mover_from_file,
-           GridWindMoverSchema,
-           GridWindMover,
-           ShipDriftMoverSchema,
-           ShipDriftMover,
-           IceWindMoverSchema,
-           IceWindMover,
-           RandomMoverSchema,
-           RandomMover,
-           IceAwareRandomMover,
-           RandomVerticalMoverSchema,
-           RandomVerticalMover,
-           CatsMoverSchema,
-           CatsMover,
-           ComponentMoverSchema,
-           ComponentMover,
-           GridCurrentMoverSchema,
-           GridCurrentMover,
-           IceMoverSchema,
-           IceMover,
-           CurrentCycleMoverSchema,
-           CurrentCycleMover,
-           RiseVelocityMoverSchema,
-           RiseVelocityMover]
+from py_wind_movers import PyWindMover, PyWindMoverSchema
+from py_current_movers import PyCurrentMover, PyCurrentMoverSchema
+
+
+mover_schemas = [
+    WindMoverSchema,
+    GridWindMoverSchema,
+    IceWindMoverSchema,
+    ShipDriftMoverSchema,
+    SimpleMoverSchema,
+    RandomMoverSchema,
+    IceAwareRandomMoverSchema,
+    RandomMover3DSchema,
+    CatsMoverSchema,
+    ComponentMoverSchema,
+    GridCurrentMoverSchema,
+    IceMoverSchema,
+    CurrentCycleMoverSchema,
+    RiseVelocityMoverSchema,
+    PyWindMoverSchema,
+    PyCurrentMoverSchema
+]

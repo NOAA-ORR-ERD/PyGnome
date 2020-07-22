@@ -98,7 +98,7 @@ def test_get_time_value():
     shio = CyShioTime(shio_file)
     t = time_utils.date_to_sec(datetime(2012, 8, 20, 13))
     time = [t + 3600.*dt for dt in range(10)]
-    vel_rec = shio.get_time_value(time)
+    vel_rec, err = shio.get_time_value(time)
     assert all(vel_rec['u'] != 0)
     assert all(vel_rec['v'] == 0)
 

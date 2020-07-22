@@ -1,3 +1,0 @@
-lower_mississippi Package
-=========================
-

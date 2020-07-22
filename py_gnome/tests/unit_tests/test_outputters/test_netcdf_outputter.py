@@ -23,24 +23,9 @@ from gnome.outputters import NetCDFOutput
 from gnome.model import Model
 from ..conftest import test_oil
 
-
-@pytest.fixture(scope='function')
-def output_filename(output_dir, request):
-    '''
-    trying to create a unique file for tests so pytest_xdist doesn't have
-    issues.
-    '''
-    dirname = output_dir
-    if not os.path.exists(dirname):
-        os.mkdir(dirname)
-
-    file_name = request.function.func_name
-    if request._pyfuncitem._genid is None:
-        file_name += '_sample.nc'
-    else:
-        file_name += '_' + request._pyfuncitem._genid + '_sample.nc'
-
-    return os.path.join(dirname, file_name)
+# file extension to use for test output files
+#  this is used by the output_filename fixture in conftest:
+FILE_EXTENSION = ".nc"
 
 
 @pytest.fixture(scope='function')
@@ -64,7 +49,7 @@ def model(sample_model_fcn, output_filename):
     water = Water()
     model.movers += RandomMover(diffusion_coef=100000)
     model.movers += constant_wind_mover(1.0, 0.0)
-    model.weatherers += Evaporation(water, model.movers[-1].wind)
+    model.weatherers += Evaporation(water=water, wind=model.movers[-1].wind)
 
     model.outputters += NetCDFOutput(output_filename)
 
@@ -131,7 +116,7 @@ def test_exceptions(output_filename):
 def test_exceptions_middle_of_run(model):
     """
     Test attribute exceptions are called when changing parameters in middle of
-    run for 'which_data' and 'netcdf_filename'
+    run for 'which_data' and 'filename'
     """
     model.rewind()
     model.step()
@@ -142,7 +127,7 @@ def test_exceptions_middle_of_run(model):
     assert o_put.middle_of_run
 
     with raises(AttributeError):
-        o_put.netcdf_filename = 'test.nc'
+        o_put.filename = 'test.nc'
 
     with raises(AttributeError):
         o_put.which_data = True
@@ -174,18 +159,19 @@ def test_prepare_for_model_run(model):
     model.rewind()
     model.step()  # should call prepare_for_model_step
 
-    assert os.path.exists(o_put.netcdf_filename)
+    assert os.path.exists(o_put.filename)
 
     if model.uncertain:
-        assert os.path.exists(o_put._u_netcdf_filename)
+        assert os.path.exists(o_put._u_filename)
     else:
-        assert not os.path.exists(o_put._u_netcdf_filename)
+        assert not os.path.exists(o_put._u_filename)
 
 
 @pytest.mark.slow
 def test_write_output_standard(model):
     """
-    rewind model defined by model fixture.
+    Rewind model defined by model fixture.
+
     invoke model.step() till model runs all 5 steps
 
     For each step, compare the standard variables in the model.cache to the
@@ -207,7 +193,7 @@ def test_write_output_standard(model):
     rtol = 0
 
     uncertain = False
-    for file_ in (o_put.netcdf_filename, o_put._u_netcdf_filename):
+    for file_ in (o_put.filename, o_put._u_filename):
         with nc.Dataset(file_) as data:
             dv = data.variables
             time_ = nc.num2date(dv['time'][:], dv['time'].units,
@@ -220,8 +206,15 @@ def test_write_output_standard(model):
                 scp = model._cache.load_timestep(step)
 
                 # check time
-
-                assert scp.LE('current_time_stamp', uncertain) == time_[step]
+                # conversion from floats to datetime can be off by microseconds
+                # fixme: this should probably round!
+                #        this may help:
+                #        https://stackoverflow.com/questions/3463930/how-to-round-the-minute-of-a-datetime-object-python
+                print "***** scp timestamp", scp.LE('current_time_stamp',
+                                                    uncertain)
+                print "***** netcdf time:", time_[step]
+                print type(time_[step])
+                assert scp.LE('current_time_stamp', uncertain) == time_[step].replace(microsecond=0)
 
                 assert np.allclose(scp.LE('positions', uncertain)[:, 0],
                                    (dv['longitude'])[idx[step]:idx[step + 1]],
@@ -283,7 +276,7 @@ def test_write_output_all_data(model):
     _run_model(model)
 
     uncertain = False
-    for file_ in (o_put.netcdf_filename, o_put._u_netcdf_filename):
+    for file_ in (o_put.filename, o_put._u_filename):
         with nc.Dataset(file_) as data:
             idx = np.cumsum((data.variables['particle_count'])[:])
             idx = np.insert(idx, 0, 0)  # add starting index of 0
@@ -304,7 +297,8 @@ def test_write_output_all_data(model):
                     else:
                         nc_var = data.variables[var_name]
                         sc_arr = scp.LE(var_name, uncertain)
-
+                    if var_name == "surface_concentration":
+                        continue
                     if len(sc_arr.shape) == 1:
                         assert np.all(nc_var[idx[step]:idx[step + 1]] ==
                                       sc_arr)
@@ -345,7 +339,7 @@ def test_read_data_exception(model):
     _run_model(model)
 
     with raises(ValueError):
-        NetCDFOutput.read_data(o_put.netcdf_filename)
+        NetCDFOutput.read_data(o_put.filename)
 
 
 @pytest.mark.slow
@@ -378,7 +372,7 @@ def test_read_standard_arrays(model, output_ts_factor, use_time):
     rtol = 0
 
     uncertain = False
-    for file_ in (o_put.netcdf_filename, o_put._u_netcdf_filename):
+    for file_ in (o_put.filename, o_put._u_filename):
         _found_a_matching_time = False
 
         for idx, step in enumerate(range(0, model.num_time_steps,
@@ -456,7 +450,7 @@ def test_read_all_arrays(model):
     rtol = 0
 
     uncertain = False
-    for file_ in (o_put.netcdf_filename, o_put._u_netcdf_filename):
+    for file_ in (o_put.filename, o_put._u_filename):
         _found_a_matching_time = False
         for step in range(model.num_time_steps):
             scp = model._cache.load_timestep(step)
@@ -477,10 +471,10 @@ def test_read_all_arrays(model):
                     elif key == 'mass_balance':
                         assert scp.LE(key, uncertain) == mb
                     else:
-                        # if key not in ['last_water_positions',
-                        #                'next_positions']:
-                        assert np.all(scp.LE(key, uncertain)[:] ==
-                                      nc_data[key])
+                        # not always there
+                        if key not in ['surface_concentration']:
+                            assert np.all(scp.LE(key, uncertain)[:] ==
+                                          nc_data[key])
 
         if _found_a_matching_time:
             print ('\ndata in model matches for output in \n{0}'.format(file_))
@@ -507,17 +501,16 @@ def test_write_output_post_run(model, output_ts_factor):
     o_put.which_data = 'standard'
     o_put.output_timestep = timedelta(seconds=model.time_step * output_ts_factor)
 
-
     del model.outputters[o_put.id]  # remove from list of outputters
 
     _run_model(model)
 
     # clear out old files...
     o_put.clean_output_files()
-    assert not os.path.exists(o_put.netcdf_filename)
+    assert not os.path.exists(o_put.filename)
 
-    if o_put._u_netcdf_filename:
-        assert (not os.path.exists(o_put._u_netcdf_filename))
+    if o_put._u_filename:
+        assert (not os.path.exists(o_put._u_filename))
 
     # now write netcdf output
     o_put.write_output_post_run(model.start_time,
@@ -526,12 +519,12 @@ def test_write_output_post_run(model, output_ts_factor):
                                 cache=model._cache,
                                 uncertain=model.uncertain)
 
-    assert os.path.exists(o_put.netcdf_filename)
+    assert os.path.exists(o_put.filename)
     if model.uncertain:
-        assert os.path.exists(o_put._u_netcdf_filename)
+        assert os.path.exists(o_put._u_filename)
 
     uncertain = False
-    for file_ in (o_put.netcdf_filename, o_put._u_netcdf_filename):
+    for file_ in (o_put.filename, o_put._u_filename):
         ix = 0  # index for grabbing record from NetCDF file
         for step in range(0, model.num_time_steps,
                           int(ceil(output_ts_factor))):
@@ -581,8 +574,7 @@ def test_write_output_post_run(model, output_ts_factor):
     model.outputters += o_put
 
 
-@pytest.mark.parametrize(("json_"), ['save', 'webapi'])
-def test_serialize_deserialize(json_, output_filename):
+def test_serialize_deserialize(output_filename):
     '''
     todo: this behaves in unexpected ways when using the 'model' testfixture.
     For now, define a model in here for the testing - not sure where the
@@ -610,18 +602,14 @@ def test_serialize_deserialize(json_, output_filename):
         model.step()
         print "step: {0}, _start_idx: {1}".format(ix, o_put._start_idx)
 
-    dict_ = o_put.deserialize(o_put.serialize(json_))
-    o_put2 = NetCDFOutput.new_from_dict(dict_)
-    if json_ == 'save':
-        assert o_put == o_put2
-    else:
-        # _start_idx and _middle_of_run should not match
-        assert o_put._start_idx != o_put2._start_idx
-        assert o_put._middle_of_run != o_put2._middle_of_run
-        assert o_put != o_put2
+    o_put2 = NetCDFOutput.deserialize(o_put.serialize())
+    assert o_put == o_put2
+#     assert o_put._start_idx != o_put2._start_idx
+#     assert o_put._middle_of_run != o_put2._middle_of_run
+#     assert o_put != o_put2
 
-    if os.path.exists(o_put.netcdf_filename):
-        print '\n{0} exists'.format(o_put.netcdf_filename)
+    if os.path.exists(o_put.filename):
+        print '\n{0} exists'.format(o_put.filename)
 
 
 @pytest.mark.slow
@@ -646,7 +634,7 @@ def test_var_attr_spill_num(output_filename):
     def _del_nc_file(nc_name):
         try:
             os.remove(nc_name)
-        except:
+        except Exception:
             pass
 
     here = os.path.dirname(__file__)
@@ -676,6 +664,32 @@ def test_var_attr_spill_num(output_filename):
                         data.variables['spill_num'].spills_map)
 
             _del_nc_file(nc_name[ix])
+
+
+def test_surface_concentration_output(model):
+    """
+    make sure the surface concentration is being computed and output
+
+    Rewind model defined by model fixture.
+
+    invoke model.step() till model runs all 5 steps
+
+    For each step, make sure the surface_concentration data is there.
+    """
+    model.rewind()
+    o_put = model.outputters[0]
+
+    # FIXME:
+    # o_put.surface_conc = "kde" # it's now default -- that should change!
+    _run_model(model)
+
+    file_ = o_put.filename
+    with nc.Dataset(file_) as data:
+        dv = data.variables
+        for _step in range(model.num_time_steps):
+            surface_conc = dv['surface_concentration']
+            # FIXME -- maybe should test something more robust...
+            assert not np.all(surface_conc[:] == 0.0)
 
 
 def _run_model(model):

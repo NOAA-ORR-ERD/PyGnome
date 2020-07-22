@@ -60,6 +60,7 @@ class Test_Polygon:
     def test_slice(self):
         P = Polygon([(1, 2), (3, 4), (5, 6)])
         print P[:2]
+        print Polygon([(1, 2), (3, 4)])[:]
         assert P[:2] == Polygon([(1, 2), (3, 4)])
 
     def test_metadata(self):
@@ -89,12 +90,11 @@ class Test_Polygon:
         P = Polygon(p1)
         print P.bounding_box
         assert P.bounding_box == np.array([[1., 2.], [7., 8.]],
-                dtype=np.float)
+                                          dtype=np.float)
 
     def test_size_zero(self):
-        P = Polygon( (), )
+        P = Polygon((), )
         assert len(P) == 0
-
 
 
 class Test_PolygonSet:
@@ -135,6 +135,15 @@ class Test_PolygonSet:
         poly_set = PolygonSet()
 
         assert len(poly_set) == 0
+
+    def test_zero_length_false(self):
+        """
+        A length-zero Polygon set should be Falsey
+        """
+        poly_set = PolygonSet()
+
+        assert not poly_set
+
 
     # def test_pop(self):
     #    pass

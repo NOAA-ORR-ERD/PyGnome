@@ -1,56 +1,42 @@
 """
 grid for wind or current data
 """
-
-import datetime
 import copy
-
-import numpy as np
 
 from colander import (SchemaNode, drop, Float)
 
+from gnome.utilities.time_utils import date_to_sec
+from gnome.persist import base_schema
 from gnome.cy_gnome.cy_grid_curv import CyTimeGridWindCurv
 from gnome.cy_gnome.cy_grid_rect import CyTimeGridWindRect
-from gnome.utilities.time_utils import date_to_sec
-from gnome.utilities.serializable import Serializable, Field
-from gnome.persist import validators, base_schema
 
 from .environment import Environment
 
 
-class GridSchema(base_schema.ObjType):
-    name = 'grid'
+class GridSchema(base_schema.ObjTypeSchema):
     grid_type = SchemaNode(Float(), missing=drop)
 
 
-class Grid(Environment, Serializable):
+class Grid(Environment):
     '''
     Defines a grid for a current or wind
     '''
 
-    _update = []
-
-    # used to create new obj or as readonly parameter
-    _create = []
-    _create.extend(_update)
-
-    _state = copy.deepcopy(Environment._state)
-    _state.add(save=_create, update=_update)
     _schema = GridSchema
-
 
     def __init__(self, filename, topology_file=None, grid_type=1,
                  extrapolate=False, time_offset=0,
                  **kwargs):
         """
-        Initializes a grid object from a file and a grid type
+            Initializes a grid object from a file and a grid type.
 
-        maybe allow a grid to be passed in eventually, otherwise filename required
+            Maybe allow a grid to be passed in eventually, otherwise
+            filename required
 
-        All other keywords are optional. Optional parameters (kwargs):
+            All other keywords are optional. Optional parameters (kwargs):
 
-        :param grid_type: default is 1 - regular grid (eventually figure this out from file)
-
+            :param grid_type: default is 1 - regular grid
+                              (eventually figure this out from file)
         """
         self._grid_type = grid_type
 
@@ -69,9 +55,10 @@ class Grid(Environment, Serializable):
         super(Grid, self).__init__(**kwargs)
 
     def __repr__(self):
+        self_ts = None
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
-                'timeseries={1}'
-                ')').format(self, self_ts)
+                'timeseries={1})'
+                .format(self, self_ts))
 
     def __str__(self):
         return ("Grid ( "
@@ -88,7 +75,6 @@ class Grid(Environment, Serializable):
         """
         # may want a check on value
         self._grid_type = value
-
 
     extrapolate = property(lambda self: self.grid.extrapolate,
                            lambda self, val: setattr(self.grid,
@@ -107,7 +93,6 @@ class Grid(Environment, Serializable):
 
         pass
 
-
     def prepare_for_model_step(self, model_time):
         """
         Make sure we have the right data loaded
@@ -117,10 +102,9 @@ class Grid(Environment, Serializable):
 
     def get_value(self, time, location):
         '''
-        Return the value at specified time and location. 
-
+        Return the value at specified time and location.
         '''
-        data = self.grid.get_value(time,location)
+        data = self.grid.get_value(time, location)
 
         return data
 

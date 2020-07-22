@@ -16,14 +16,14 @@ from gnome.utilities.remote_data import get_datafile
 
 from gnome.model import Model
 
-from gnome.map import MapFromBNA
+from gnome.maps import MapFromBNA
 from gnome.environment import Wind
 from gnome.spill import point_line_release_spill, continuous_release_spill
 from gnome.movers import RandomMover, constant_wind_mover, GridCurrentMover
 
 from gnome.movers.py_wind_movers import PyWindMover
-from gnome.environment.property_classes import WindTS, GridCurrent
-from gnome.movers.py_current_movers import PyGridCurrentMover
+from gnome.environment import WindTS, GridCurrent
+from gnome.movers.py_current_movers import PyCurrentMover
 
 from gnome.outputters import Renderer
 import gnome.utilities.profiledeco as pd
@@ -54,7 +54,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # default is 'forecast' LEs draw on top
     renderer = Renderer(
         mapfile, images_dir, image_size=(600, 1200))
-    renderer.delay=15
+    renderer.delay = 15
 #     renderer.viewport = ((-123.35, 45.6), (-122.68, 46.13))
 #     renderer.viewport = ((-122.9, 45.6), (-122.6, 46.0))
 
@@ -86,7 +86,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
         series.append((start_time + timedelta(hours=i[0]), i[1]))
 
     wind1 = WindTS.constant_wind('wind1', 0.5, 0, 'm/s')
-    wind2 = WindTS(timeseries = series, units='knots', extrapolate=True)
+    wind2 = WindTS(timeseries=series, units='knots', extrapolate=True)
 
 #     wind = Wind(timeseries=series, units='knots')
 
@@ -100,7 +100,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     curr_file = get_datafile('COOPSu_CREOFS24.nc')
     curr = GridCurrent.from_netCDF(name='gc2', filename=curr_file,)
 
-    c_mover = PyGridCurrentMover(curr, extrapolate = True, default_num_method='Trapezoid')
+    c_mover = PyCurrentMover(curr, extrapolate=True, default_num_method='Trapezoid')
 
 #     renderer.add_grid(curr.grid)
 #     renderer.add_vec_prop(curr)

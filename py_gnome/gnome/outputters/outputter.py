@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 """
 outputters.py
 
@@ -9,36 +10,51 @@ module to define classes for GNOME output:
 
 """
 import os
-import copy
 from datetime import timedelta
 
-from colander import SchemaNode, MappingSchema, Bool, drop
+from colander import SchemaNode, Bool, drop, String
 
 
-from gnome.persist import base_schema, extend_colander
-from gnome.utilities.serializable import Serializable, Field
+from gnome.persist import base_schema, extend_colander, validators
+from gnome.array_types import gat
+
+from gnome.utilities.surface_concentration import compute_surface_concentration
+from gnome.gnomeobject import GnomeId
 
 
-class BaseSchema(base_schema.ObjType, MappingSchema):
+class BaseOutputterSchema(base_schema.ObjTypeSchema):
     'Base schema for all outputters - they all contain the following'
-    on = SchemaNode(Bool(), missing=drop)
-    output_zero_step = SchemaNode(Bool())
-    output_last_step = SchemaNode(Bool())
-    output_timestep = SchemaNode(extend_colander.TimeDelta(), missing=drop)
+    on = SchemaNode(
+        Bool(), missing=drop, save=True, update=True
+    )
+    output_zero_step = SchemaNode(
+        Bool(), save=True, update=True
+    )
+    output_last_step = SchemaNode(
+        Bool(), save=True, update=True
+    )
+    output_timestep = SchemaNode(
+        extend_colander.TimeDelta(), missing=drop, save=True, update=True
+    )
+    output_start_time = SchemaNode(
+        extend_colander.LocalDateTime(),
+        validator=validators.convertible_to_seconds,
+        missing=drop, save=True, update=True
+    )
+    surface_conc = SchemaNode(
+        String(allow_empty=True), save=True, update=True
+    )
 
 
-class Outputter(Serializable):
+class Outputter(GnomeId):
     '''
-    base class for all outputters
+    Base class for all outputters
     Since this outputter doesn't do anything, it'll never be used as part
     of a gnome model. As such, it should never need to be serialized
     '''
-    _state = copy.deepcopy(Serializable._state)
-    _state += (Field('on', save=True, update=True),
-               Field('output_zero_step', save=True, update=True),
-               Field('output_last_step', save=True, update=True),
-               Field('output_timestep', save=True, update=True))
-    _schema = BaseSchema
+    _schema = BaseOutputterSchema
+
+    _surf_conc_computed = False
 
     def __init__(self,
                  cache=None,
@@ -46,10 +62,14 @@ class Outputter(Serializable):
                  output_timestep=None,
                  output_zero_step=True,
                  output_last_step=True,
-                 name='',
-                 output_dir=None):
+                 output_start_time=None,
+                 # Fixme: this probably shouldnt be in the base class
+                 output_dir=None,
+                 surface_conc=None,
+                 *args,
+                 **kwargs):
         """
-        sets attributes for all outputters, like output_timestep, cache
+        Sets attributes for all outputters, like output_timestep, cache, etc.
 
         :param cache: sets the cache object from which to read data. The model
             will automatically set this param
@@ -68,26 +88,49 @@ class Outputter(Serializable):
             final step is written regardless of output_timestep
         :type output_last_step: boolean
 
-        :param name='': name for outputter
+        :param output_start_time: default is None in which case it is set to
+            the model time
+        :type output_start_time: datetime object
 
         :param output_dir=None: directory to dump ouput in, if it needs to
                                 do this.
         :type output_dir: string (path)
+
+        :param surface_conc = "": Compute surface concentration
+                                  Any non-zero string will compute (and output)
+                                  the surface concentration the contents of the
+                                  string determine the algorithm used. "kde" is
+                                  currently the only working option.
+        :type surface_conc: string
         """
+
+        ## fixme -- why should this be initilaizable???
+        self._middle_of_run = kwargs.pop('_middle_of_run', False)
+
+        super(Outputter, self).__init__(*args, **kwargs)
+
+        # flag to keep track of _state of the object - is True after calling
+        # prepare_for_model_run
+
+
         self.cache = cache
         self.on = on
         self.output_zero_step = output_zero_step
         self.output_last_step = output_last_step
+
         if output_timestep:
             self._output_timestep = int(output_timestep.total_seconds())
         else:
             self._output_timestep = None
 
+        if output_start_time:
+            self.output_start_time = output_start_time
+        else:
+            self.output_start_time = None
+
         self.sc_pair = None     # set in prepare_for_model_run
 
-        self.name = name
-
-        # make sure the output_dir exits:
+        # make sure the output_dir exists:
         if output_dir is not None:
             try:
                 os.mkdir(output_dir)
@@ -95,6 +138,9 @@ class Outputter(Serializable):
                 pass
 
         self.output_dir = output_dir
+
+        self.surface_conc = surface_conc
+        self.array_types = dict()
 
         # reset internally used variables
         self.rewind()
@@ -116,7 +162,7 @@ class Outputter(Serializable):
         if value is None:
             self._output_timestep = None
         else:
-            self._output_timestep = value.seconds
+            self._output_timestep = value.total_seconds()
 
     def prepare_for_model_run(self,
                               model_start_time=None,
@@ -159,14 +205,14 @@ class Outputter(Serializable):
         # this breaks tests -- probably should fix the tests...
         if model_start_time is None:
             raise TypeError("model_start_time is a required parameter")
-        # if spills is None:
-        #    raise TypeError("spills is a required parameter")
-        # if model_time_step is None:
-        #     raise TypeError("model_time_step is a required parameter")
+
+        self.clean_output_files()
 
         self._model_start_time = model_start_time
         self.model_timestep = model_time_step
+
         self.sc_pair = spills
+
         cache = kwargs.pop('cache', None)
         if cache is not None:
             self.cache = cache
@@ -175,6 +221,8 @@ class Outputter(Serializable):
             self._write_step = True
 
         self._dt_since_lastoutput = 0
+        self._middle_of_run = True
+
 
     def prepare_for_model_step(self, time_step, model_time):
         """
@@ -197,9 +245,31 @@ class Outputter(Serializable):
            update the _dt_since_lastoutput variable
 
         """
+
+        self._surf_conc_computed = False
+
+        d = timedelta(seconds=time_step)
+        if self.output_start_time is not None:
+            if self.output_start_time != self._model_start_time:
+                if model_time + d < self.output_start_time:
+                    self._write_step = False
+                    return
+
+                if model_time + d == self.output_start_time:
+                    self._write_step = True
+                    self._is_first_output = False
+                    return
+
+                if model_time + d > self.output_start_time:
+                    if self._is_first_output:
+                        self._write_step = True
+                        self._is_first_output = False
+                        return
+
         if self._output_timestep is not None:
             self._write_step = False
             self._dt_since_lastoutput += time_step
+
             if self._dt_since_lastoutput >= self._output_timestep:
                 self._write_step = True
                 self._dt_since_lastoutput = (self._dt_since_lastoutput %
@@ -211,6 +281,13 @@ class Outputter(Serializable):
         in a time step. Put any code need for clean-up, etc.
         The write_output method is called by Model after all processing.
         '''
+        pass
+
+    def post_model_run(self):
+        """
+        Override this method if a derived class needs to perform
+        any actions after a model run is complete (StopIteration triggered)
+        """
         pass
 
     def write_output(self, step_num, islast_step=False):
@@ -227,8 +304,11 @@ class Outputter(Serializable):
         :type islast_step: bool
 
         """
-        if (step_num == 0 and self.output_zero_step):
-            self._write_step = True
+        if step_num == 0:
+            if self.output_zero_step:
+                self._write_step = True  # this is the default
+            else:
+                self._write_step = False
 
         if (islast_step and self.output_last_step):
             self._write_step = True
@@ -237,17 +317,39 @@ class Outputter(Serializable):
             raise ValueError('cache object is not defined. It is required'
                              ' prior to calling write_output')
 
+        # compute the surface_concentration if need be
+        # doing this here so that it will only happen if there is an
+        # output step.
+        # this updates the most recent one in the cache
+
+        if (self._write_step and
+                self.surface_conc and
+                not self._surf_conc_computed):
+            # compute the surface concentration and put it in the cache
+            try:
+                sc = self.cache.recent[step_num][0]  # only the certain one
+            except KeyError:
+                # not using the most recent one from cache
+                # so no need to compute
+                # fixme: it may not get into cache at all.
+                pass
+            else:
+                compute_surface_concentration(sc, self.surface_conc)
+                self._surf_conc_computed = True
+
     def clean_output_files(self):
         '''
-        cleans out the output dir
+        Cleans out the output dir
 
         This should be implemented by subclasses that dump files.
 
-        but each outputter type dumps different types of files, and this should
-        only clear out those. So it has to be custom implemented
+        Each outputter type dumps different types of files, and this should
+        only clear out those.
+
+        See the OutputterFilenameMixin for a simple example.
+
         '''
-        raise NotImplementedError('This Outputter does not suport '
-                                  'clearing out files')
+        pass
 
     def rewind(self):
         '''
@@ -259,6 +361,12 @@ class Outputter(Serializable):
         self._model_start_time = None
         self._dt_since_lastoutput = None
         self._write_step = True
+        self._is_first_output = True
+        self._surf_conc_computed = True
+        self._middle_of_run = False
+
+        if self.surface_conc:
+            self.array_types['surface_concentration'] = gat('surface_concentration')
 
     def write_output_post_run(self,
                               model_start_time,
@@ -300,6 +408,7 @@ class Outputter(Serializable):
         Follows the iteration in Model().step() for each step_num
         """
         self.prepare_for_model_run(model_start_time, **kwargs)
+
         model_time = model_start_time
         last_step = False
 
@@ -308,14 +417,21 @@ class Outputter(Serializable):
                 next_ts = (self.cache.load_timestep(step_num).items()[0].
                            current_time_stamp)
                 ts = next_ts - model_time
+
                 self.prepare_for_model_step(ts.seconds, model_time)
 
             if step_num == num_time_steps - 1:
                 last_step = True
 
             self.write_output(step_num, last_step)
-            model_time = (self.cache.load_timestep(step_num).items()[0].
-                          current_time_stamp)
+
+            model_time = (self.cache.load_timestep(step_num)
+                          .items()[0]
+                          .current_time_stamp)
+
+    @property
+    def middle_of_run(self):
+        return self._middle_of_run
 
     # Some utilities for checking valid filenames, etc...
     def _check_filename(self, filename):
@@ -323,8 +439,7 @@ class Outputter(Serializable):
         if os.path.isdir(filename):
             raise ValueError('filename must be a file not a directory.')
 
-        if not os.path.exists(os.path.realpath(os.path.dirname(filename)
-                                               )):
+        if not os.path.exists(os.path.realpath(os.path.dirname(filename))):
             raise ValueError('{0} does not appear to be a valid path'
                              .format(os.path.dirname(filename)))
 
@@ -342,5 +457,45 @@ class Outputter(Serializable):
             raise ValueError('{0} file exists. Enter a filename that '
                              'does not exist in which to save data.'
                              .format(file_))
+
+
+class OutputterFilenameMixin(object):
+    """
+    mixin for outputter that output to a single file
+    """
+
+    def __init__(self, filename, *args, **kwargs):
+
+        super(OutputterFilenameMixin, self).__init__()
+        self.filename = filename
+
+    @property
+    def filename(self):
+        return self._filename
+
+    @filename.setter
+    def filename(self, new_name):
+        if self.middle_of_run:
+            raise AttributeError('This attribute cannot be changed in the '
+                                 'middle of a run')
+        else:
+            self._check_filename(new_name)
+            self._filename = new_name
+
+    def clean_output_files(self):
+        '''
+        deletes output files that may be around
+
+        called by prepare_for_model_run
+
+        here in case it needs to be called from elsewhere
+        '''
+        # super(OutputterFilenameMixin, self).clean_output_files()
+        try:
+            os.remove(self.filename)
+        except OSError:
+            pass  # it must not be there
+
+
 
 

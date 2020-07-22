@@ -10,13 +10,18 @@ import numpy as np
 
 from gnome.utilities.inf_datetime import InfDateTime
 
-from gnome.spill.elements import floating
 from gnome.environment import Water
-from gnome.weatherers import Weatherer, HalfLifeWeatherer
-from oil_library import get_oil_props
+from gnome.spill.substance import GnomeOil
+
 from conftest import weathering_data_arrays, test_oil
 
-subs = get_oil_props(test_oil)
+from gnome.weatherers import (Weatherer,
+                              HalfLifeWeatherer,
+                              NaturalDispersion,
+                              Dissolution,
+                              weatherer_sort)
+
+subs = GnomeOil(test_oil)
 rel_time = datetime(2012, 8, 20, 13)  # yyyy/month/day/hr/min/sec
 
 
@@ -27,9 +32,8 @@ class TestWeatherer:
         print weatherer
         assert weatherer.on
         assert weatherer.active
-        assert weatherer.active_start == InfDateTime('-inf')
-        assert weatherer.active_stop == InfDateTime('inf')
-        assert weatherer.array_types == {'mass_components', 'mass'}
+        assert weatherer.active_range == (InfDateTime('-inf'),
+                                          InfDateTime('inf'))
 
     def test_one_weather(self):
         '''
@@ -41,8 +45,7 @@ class TestWeatherer:
         weatherer = HalfLifeWeatherer(half_lives=hl)
         sc = weathering_data_arrays(weatherer.array_types,
                                     Water(),
-                                    time_step,
-                                    element_type=floating(substance=subs))[0]
+                                    time_step)[0]
 
         print '\nsc["mass"]:\n', sc['mass']
 
@@ -58,3 +61,7 @@ class TestWeatherer:
         print '\nsc["mass"]:\n', sc['mass']
         assert np.allclose(0.5 * orig_mc.sum(1), sc['mass'])
         assert np.allclose(0.5 * orig_mc, sc['mass_components'])
+
+
+def test_sort_order():
+    assert weatherer_sort(Dissolution()) > weatherer_sort(NaturalDispersion())

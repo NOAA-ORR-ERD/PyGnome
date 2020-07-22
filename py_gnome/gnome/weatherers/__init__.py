@@ -8,60 +8,84 @@ from bio_degradation import Biodegradation
 from emulsification import Emulsification
 from weathering_data import WeatheringData
 from spreading import Langmuir, FayGravityViscous, ConstantArea
+from roc import Burn as ROC_Burn
+from roc import Disperse as ROC_Disperse
+from roc import Skim as ROC_Skim
 
 '''
     Weatherers are to be ordered as follows:
 
-    0.  half-life - This weatherer is just used for testing.  It is not used
+    half-life - This weatherer is just used for testing.  It is not used
         with the following real weatherers but we need to include it so
         sorting always works
-    1.  cleanup options including Skimmer, Burn, Beaching
-    2.  chemical dispersion
-    3.  evaporation - assign to all classes in this module
-    4.  natural dispersion
-    5.  oil particle aggregation - what is this?
-    6.  dissolution
-    7.  biodegradation
-    8.  emulsification
-    9.  WeatheringData - defines initialize_data() method to initialize all
+
+    Cleanup options including Skimmer, Burn, Beaching
+
+    WeatheringData - defines initialize_data() method to initialize all
         weathering data arrays. In weather_elements, this updates data arrays
         corresponding with wd properties (density, viscosity)
-    10. FayGravityViscous - initializes the 'fay_area' and 'area' array. Also
+
+    FayGravityViscous - initializes the 'fay_area' and 'area' array. Also
         updates the 'area' and 'fay_area' array
-    11. Langmuir - modifies the 'area' array with fractional coverage based on
+
+    Langmuir - modifies the 'area' array with fractional coverage based on
         langmuir cells.
 
-        removal options have been re-prioritized - Burn, Skim, Disperse, Beach
+    Removal options have been re-prioritized - Burn, Skim, Disperse, Beach
         the first three are listed in reverse order because the marking done
         in prepare_for_model_step prioritizes whichever operation gets marked
         last.
         Once they are marked the weathering order doesn't matter.
 '''
 
-__all__ = [Weatherer,
-           HalfLifeWeatherer,
-           ChemicalDispersion,
-           Skimmer,
-           Burn,
-           Beaching,
-           Evaporation,
-           NaturalDispersion,
-           # OilParticleAggregation,
-           Dissolution,
-           Biodegradation,
-           Emulsification,
-           WeatheringData,
-           FayGravityViscous,
-           ConstantArea,
-           Langmuir,
-           ]
+# NOTE: this list specifies sort order!
+sort_order = [ChemicalDispersion,
+              Skimmer,
+              Burn,
+              ROC_Burn,
+              ROC_Skim,
+              ROC_Disperse,
+              Beaching,
+              HalfLifeWeatherer,
+              Evaporation,
+              NaturalDispersion,
+              # OilParticleAggregation,
+              Dissolution,
+              Biodegradation,
+              Emulsification,
+              WeatheringData,
+              FayGravityViscous,
+              ConstantArea,
+              Langmuir,
+              ]
 
-weatherers_idx = dict([(v, i) for i, v in enumerate(__all__)])
+weatherer_schemas = set()
+for cls in sort_order:
+    if hasattr(cls, '_schema'):
+        weatherer_schemas.add(cls._schema)
+weatherer_schemas = list(weatherer_schemas)
+
+weatherers_idx = dict([(v, i) for i, v in enumerate(sort_order)])
+
+# fixme: decide what to do about spreading ...
+weatherers_by_name = {'evaporation': Evaporation,
+                      'dispersion': NaturalDispersion,
+                      'emulsification': Emulsification,
+                      'dissolution': Dissolution,
+                      'half_life_weatherer': HalfLifeWeatherer,
+                      #  'OPA': OilParticleAggregation,
+                      #  'biodegradation': Biodegradation,
+                      }
+standard_weatherering_sets = {'standard': ('evaporation',
+                                           'dispersion',
+                                           'emulsification')}
 
 
 def weatherer_sort(weatherer):
     '''
         Returns an int describing the sorting order of the weatherer
         or None if an order is not defined for the weatherer
+
+        :param weatherer: weatherer instance
     '''
     return weatherers_idx.get(weatherer.__class__)

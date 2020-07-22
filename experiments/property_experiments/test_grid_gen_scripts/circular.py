@@ -1,45 +1,41 @@
 import numpy as np
 
-from datetime import datetime
-from pysgrid import SGrid
-from gnome.environment.grid_property import GriddedProp
 
 import os
 from datetime import datetime, timedelta
 
-import numpy as np
 
 from gnome import scripting
 from gnome import utilities
 
-from gnome.utilities.remote_data import get_datafile
 
 from gnome.model import Model
 
-from gnome.map import MapFromBNA, GnomeMap
-from gnome.environment import Wind
 from gnome.spill import point_line_release_spill
 from gnome.movers import RandomMover, constant_wind_mover, GridCurrentMover
 
-from gnome.environment.property_classes import GridCurrent
-from gnome.movers.py_current_movers import PyGridCurrentMover
+from gnome.environment import GridCurrent
+from gnome.movers.py_current_movers import PyCurrentMover
 
 from gnome.outputters import Renderer, NetCDFOutput
+
+from gnome.environment.gridded_objects_base import Grid_S, Variable
+
 x, y = np.mgrid[-30:30:61j, -30:30:61j]
 y = np.ascontiguousarray(y.T)
 x = np.ascontiguousarray(x.T)
 # y += np.sin(x) / 1
 # x += np.sin(x) / 5
-g = SGrid(node_lon=x,
+g = Grid_S(node_lon=x,
           node_lat=y)
 g.build_celltree()
-t = datetime(2000,1,1,0,0)
-angs = -np.arctan2(y,x)
-mag = np.sqrt(x**2 + y**2)
+t = datetime(2000, 1, 1, 0, 0)
+angs = -np.arctan2(y, x)
+mag = np.sqrt(x ** 2 + y ** 2)
 vx = np.cos(angs) * mag
 vy = np.sin(angs) * mag
-vx = vx[np.newaxis,:] * 20
-vy = vy[np.newaxis,:] * 20
+vx = vx[np.newaxis, :] * 20
+vy = vy[np.newaxis, :] * 20
 # vx = 1/x[np.newaxis,:]
 # vy = 1/y[np.newaxis,:]
 # vx[vx == np.inf] = 0
@@ -54,18 +50,18 @@ vy = vy[np.newaxis,:] * 20
 # value[:,0] = x
 # value[:,1] = y
 
-vels_x = GriddedProp(name='v_x',units='m/s',time=[t], grid=g, data=vx)
-vels_y = GriddedProp(name='v_y',units='m/s',time=[t], grid=g, data=vy)
-vg = GridCurrent(variables = [vels_y, vels_x], time=[t], grid=g, units='m/s')
-point = np.zeros((1,2))
-print vg.at(point,t)
+vels_x = Variable(name='v_x', units='m/s', time=[t], grid=g, data=vx)
+vels_y = Variable(name='v_y', units='m/s', time=[t], grid=g, data=vy)
+vg = GridCurrent(variables=[vels_y, vels_x], time=[t], grid=g, units='m/s')
+point = np.zeros((1, 2))
+print vg.at(point, t)
 
 # define base directory
 base_dir = os.path.dirname(__file__)
 
 def make_model():
-    duration_hrs=48
-    time_step=900
+    duration_hrs = 48
+    time_step = 900
     num_steps = duration_hrs * 3600 / time_step
     mod = Model(start_time=t,
                 duration=timedelta(hours=duration_hrs),
@@ -78,13 +74,13 @@ def make_model():
                                                   0.5,
                                                   0.0),
                                      release_time=t,
-                                     end_release_time=t+timedelta(hours=4)
+                                     end_release_time=t + timedelta(hours=4)
                                      )
     mod.spills += spill
 
-    method='Trapezoid'
+    method = 'Trapezoid'
     images_dir = method + '-' + str(time_step / 60) + 'min-' + str(num_steps) + 'steps'
-    renderer = Renderer(output_dir=images_dir, image_size=(800,800))
+    renderer = Renderer(output_dir=images_dir, image_size=(800, 800))
     renderer.delay = 5
     renderer.add_grid(g)
     renderer.add_vec_prop(vg)
@@ -92,7 +88,7 @@ def make_model():
     renderer.graticule.set_max_lines(max_lines=0)
     mod.outputters += renderer
 
-    mod.movers += PyGridCurrentMover(current=vg, default_num_method=method, extrapolate=True)
+    mod.movers += PyCurrentMover(current=vg, default_num_method=method, extrapolate=True)
     mod.movers += RandomMover(diffusion_coef=10)
 
     netCDF_fn = os.path.join(base_dir, images_dir + '.nc')
@@ -109,7 +105,7 @@ if __name__ == "__main__":
     startTime = datetime.now()
     for step in model:
         if step['step_num'] == 0:
-            rend.set_viewport(((-10,-10), (10,10)))
+            rend.set_viewport(((-10, -10), (10, 10)))
 #         if step['step_num'] == 0:
 #             rend.set_viewport(((-175, 65), (-160, 70)))
         print "step: %.4i -- memuse: %fMB" % (step['step_num'],

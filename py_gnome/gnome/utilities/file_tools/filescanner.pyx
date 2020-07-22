@@ -111,7 +111,7 @@ def scan(infile, num_to_read=None):
             break
         if num_read > out_arr.shape[0]: # need to make the array bigger
             # NOTE: ndarray.resize does not work in Cython
-            out_arr.resize( ( <int> out_arr.shape[0]*1.2, ), refcheck=False)
+            out_arr.resize((int(out_arr.shape[0]*1.2), ), refcheck=False)
             arr_view = out_arr
             #temp = np.zeros( (num_read+<int> out_arr.shape[0]*1.5) )
             #temp[:num_read-1] = out_arr

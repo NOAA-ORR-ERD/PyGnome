@@ -25,7 +25,7 @@ using std::cout;
 #ifndef pyGNOME
 IceMover_c::IceMover_c (TMap *owner, char *name) : GridCurrentMover_c(owner, name), CurrentMover_c(owner, name)
 {
-	timeGrid = 0;
+	//timeGrid = 0;
 	memset(&fUncertainParams,0,sizeof(fUncertainParams));
 	//fArrowScale = 1.;
 	//fArrowDepth = 0;
@@ -111,12 +111,12 @@ IceMover_c::IceMover_c () : GridCurrentMover_c()
 
 void IceMover_c::Dispose ()
 {
-	if (timeGrid)
+	/*if (timeGrid)
 	{
 		timeGrid -> Dispose();
 		delete timeGrid;	// this causes a crash...
 		timeGrid = nil;
-	}
+	}*/
 	
 	GridCurrentMover_c::Dispose ();
 }
@@ -235,7 +235,7 @@ OSErr IceMover_c::get_move(int n, Seconds model_time, Seconds step_len, WorldPoi
 	LERec rec;
 	prec = &rec;
 	
-	WorldPoint3D zero_delta ={0,0,0.};
+	WorldPoint3D zero_delta ={{0,0},0.};
 	
 	for (int i = 0; i < n; i++) {
 		
@@ -304,7 +304,7 @@ OSErr IceMover_c::TextRead(char *path, char *topFilePath)
 {
 	// this code is for curvilinear grids
 	OSErr err = 0;
-	short gridType, selectedUnits;
+	short gridType/*, selectedUnits*/;
 	char fileNamesPath[256], filePath[256];
 	Boolean isNetCDFPathsFile = false;
 	TimeGridVel *newTimeGrid = nil;
@@ -336,7 +336,7 @@ OSErr IceMover_c::TextRead(char *path, char *topFilePath)
 		}
 
 		if (isNetCDFPathsFile) {
-			char errmsg[256];
+			//char errmsg[256];
 
 			err = timeGrid->ReadInputFileNames(fileNamesPath);
 			if (err)
@@ -416,7 +416,7 @@ OSErr IceMover_c::TextRead(char *path, char *topFilePath)
 		err = -1; return err;
 	}*/
 
-	Error: // JLM 	 10/27/98
+	//Error: // JLM 	 10/27/98
 	//if(newMover) {newMover->Dispose();delete newMover;newMover = 0;};
 	//return 0;
 	return err;

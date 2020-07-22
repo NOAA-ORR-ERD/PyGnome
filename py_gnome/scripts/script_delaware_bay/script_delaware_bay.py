@@ -24,7 +24,7 @@ from gnome.utilities.projections import GeoProjection
 from gnome.utilities.remote_data import get_datafile
 
 from gnome.environment import Wind, Tide
-from gnome.map import MapFromBNA
+from gnome.maps import MapFromBNA
 
 from gnome.model import Model
 from gnome.spill import point_line_release_spill
@@ -47,7 +47,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     mapfile = get_datafile(os.path.join(base_dir, 'DelawareRiverMap.bna'))
     gnome_map = MapFromBNA(mapfile, refloat_halflife=1)  # hours
 
-    renderer = Renderer(mapfile, images_dir, size=(800, 800),
+    renderer = Renderer(mapfile, images_dir, image_size=(800, 800),
                         projection_class=GeoProjection)
 
     print 'initializing the model'
@@ -76,7 +76,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     series = np.zeros((2, ), dtype=datetime_value_2d)
     series[0] = (start_time, (5, 270))
-    series[1] = (start_time + timedelta(hours=18), (5, 270))
+    series[1] = (start_time + timedelta(hours=25), (5, 270))
 
     wind = Wind(timeseries=series, units='m/s')
 

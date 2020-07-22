@@ -11,6 +11,7 @@ from gnome.utilities.time_utils import (zero_time,
 from gnome.utilities.convert import (to_time_value_pair,
                                      tsformat,
                                      to_datetime_value_2d)
+from gnome.persist.base_schema import ObjTypeSchema
 
 
 class TimeseriesError(Exception):
@@ -21,7 +22,10 @@ class TimeseriesError(Exception):
 
 
 class Timeseries(GnomeId):
-    def __init__(self, timeseries=None, filename=None, format='uv'):
+    _schema = ObjTypeSchema
+
+    def __init__(self, timeseries=None, filename=None, coord_sys='uv',
+                 extrapolation_is_allowed=False, **kwargs):
         """
         Initializes a timeseries object from either a timeseries or datafile
         containing the timeseries. If both timeseries and file are given,
@@ -31,19 +35,20 @@ class Timeseries(GnomeId):
 
             timeseries = np.zeros((1,), dtype=basic_types.datetime_value_2d)
 
-        If user provides timeseries, the default format is 'uv'. The C++
-        stores the data in 'uv' format - transformations are done in this
-        Python code (set_timeseries(), get_timeseries()).
+        If user provides timeseries, the default coordinate system is 'uv'.
+        The C++ stores the data in 'uv' coordinates - transformations are done
+        in this Python code (set_timeseries(), get_timeseries()).
 
-        C++ code only transforms the data from 'r-theta' to 'uv' format if
-        data is read from file. And this happens during initialization because
-        C++ stores data in 'uv' format internally.
+        C++ code only transforms the data from 'r-theta' to 'uv' coordinates
+        if data is read from file. And this happens during initialization
+        because C++ stores data in 'uv' coordinates internally.
 
         Units option are not included - let derived classes manage units since
         the units for CyTimeseries (OSSMTimeValue_c) are limited. No unit
         conversion is performed when get_timeseries, set_timeseries is invoked.
-        It does, however convert between 'uv' and 'r-theta' depending on format
-        specified. Choose format='uv' if no transformation is desired.
+        It does, however convert between 'uv' and 'r-theta' depending on the
+        coordinate system specified. Choose coord_sys='uv' if no transformation
+        is desired.
 
         .. note:: For the Wind datafiles, the units will get read from the
         file. These are stored in ossm.user_units. It would be ideal to remove
@@ -55,29 +60,32 @@ class Timeseries(GnomeId):
 
         :param timeseries: numpy array containing time_value_pair
         :type timeseries: numpy.ndarray containing
-            basic_types.datetime_value_2d or basic_types.datetime_value_1d. It
-            gets converted to an array containging basic_types.time_value_pair
-            datatype since that's what the C++ code expects
+                          basic_types.datetime_value_2d or
+                          basic_types.datetime_value_1d.
+                          It gets converted to an array containing
+                          basic_types.time_value_pair datatype since that's
+                          what the C++ code expects
         :param filename: path to a timeseries file from which to read data.
-            Datafile must contain either a 3 line or a 5 line header with
-            following info:
+                         Datafile must contain either a 3 line or a 5 line
+                         header with following info:
 
-            1. Station Name: name of the station as a string
-            2. (long, lat, z): station location as tuple containing floats
-            3. units: for wind this is knots, meteres per second
-            or miles per hour. For datafile containing something other than
-            velocity, this should be 'undefined'
+                         1. Station Name: name of the station as a string
+                         2. (long, lat, z): station location as tuple
+                            containing floats
+                         3. units: for wind this is knots, meteres per second
+                            or miles per hour. For datafile containing
+                            something other than velocity, this should be
+                            'undefined'
 
         Optional parameters (kwargs):
 
-        :param format: (Optional) default timeseries format is
-            magnitude direction: 'r-theta'
-        :type format: string 'r-theta' or 'uv'. Default is 'r-theta'.
+        :param coord_sys: (Optional) default timeseries coordinate system is
+                          magnitude direction: 'r-theta'
+        :type coord_sys: string 'r-theta' or 'uv'. Default is 'r-theta'.
             Converts string to integer defined by
             gnome.basic_types.ts_format.*
-            TODO: 'format' is a python builtin keyword.  We should
-            not use it as an argument name
         """
+        super(Timeseries, self).__init__(**kwargs)
         if (timeseries is None and filename is None):
             timeseries = np.array([(sec_to_date(zero_time()), [0.0, 0.0])],
                                   dtype=basic_types.datetime_value_2d)
@@ -85,14 +93,19 @@ class Timeseries(GnomeId):
         self._filename = filename
 
         if filename is None:
-            self._check_timeseries(timeseries)  # will raise an Exception if it fails
+            # will raise an Exception if it fails
+            self._check_timeseries(timeseries)
+
             datetime_value_2d = self._xform_input_timeseries(timeseries)
-            time_value_pair = to_time_value_pair(datetime_value_2d, format)
+            time_value_pair = to_time_value_pair(datetime_value_2d, coord_sys)
+
             self.ossm = CyTimeseries(timeseries=time_value_pair)
         else:
-            ts_format = tsformat(format)
+            ts_format = tsformat(coord_sys)
             self.ossm = CyTimeseries(filename=self._filename,
                                      file_format=ts_format)
+
+        self.extrapolation_is_allowed = extrapolation_is_allowed
 
     def _check_timeseries(self, timeseries):
         """
@@ -108,7 +121,9 @@ class Timeseries(GnomeId):
             else:
                 for i in timeseries:
                     if not self._is_timeseries_value(i):
-                        raise TimeseriesError('value: %s is not a timeseries value' % (i,))
+                        raise TimeseriesError('value: {} '
+                                              'is not a timeseries value'
+                                              .format(i))
                 return True
 
         if not self._timeseries_is_ascending(timeseries):
@@ -120,11 +135,21 @@ class Timeseries(GnomeId):
 
         return True
 
+    def __len__(self):
+        """
+        length is the number of data points in the timeseries
+        """
+        return self.ossm.get_num_values()
+
+    def __eq__(self, o):
+        t1 = super(Timeseries, self).__eq__(o)
+        return t1 and hasattr(self, 'ossm') and np.all(self.ossm.timeseries == o.ossm.timeseries)
+
     def get_start_time(self):
         """
         :this will be the real_data_start time (seconds).
         """
-        return (self.ossm.get_start_time())
+        return self.ossm.get_start_time()
 
     def get_end_time(self):
         """
@@ -164,19 +189,6 @@ class Timeseries(GnomeId):
         else:
             return True
 
-    # not needed -- _timeseries_is_ascending should catch this
-    # def _timeseries_has_duplicates(self, timeseries):
-    #     # we need to have a valid shape to sort
-    #     if timeseries.shape == ():
-    #         timeseries = np.asarray([timeseries],
-    #                                 dtype=basic_types.datetime_value_2d)
-
-    #     unique = np.unique(timeseries['time'])
-    #     if len(unique) != len(timeseries['time']):
-    #         return True
-    #     else:
-    #         return False
-
     def _xform_input_timeseries(self, timeseries):
         '''
         Ensure input data is numpy array with correct dtype and check
@@ -202,45 +214,67 @@ class Timeseries(GnomeId):
     def filename(self):
         return self._filename
 
-    def get_timeseries(self, datetime=None, format='uv'):
+    @property
+    def extrapolation_is_allowed(self):
+        return self.ossm.extrapolation_is_allowed
+
+    @extrapolation_is_allowed.setter
+    def extrapolation_is_allowed(self, value):
+        self.ossm.extrapolation_is_allowed = value
+
+    def get_timeseries(self, datetime=None, coord_sys='uv'):
         """
-        Returns the timeseries in requested format. If datetime=None,
-        then the original timeseries that was entered is returned.
+        Returns the timeseries in requested coordinate system.
+        If datetime=None, then the original timeseries that was entered is
+        returned.
         If datetime is a list containing datetime objects, then the value
         for each of those date times is determined by the underlying
         C++ object and the timeseries is returned.
 
-        The output format is defined by the strings 'r-theta', 'uv'
+        The output coordinate system is defined by the strings 'r-theta', 'uv'
 
         :param datetime: [optional] datetime object or list of datetime
                          objects for which the value is desired
         :type datetime: datetime object
-        :param format: output format for the times series:
-                       either 'r-theta' or 'uv'
-        :type format: either string or integer value defined by
-                      basic_types.ts_format.* (see cy_basic_types.pyx)
+
+        :param coord_sys: output coordinate system for the times series:
+                          either 'r-theta' or 'uv'
+        :type coord_sys: either string or integer value defined by
+                         basic_types.ts_format.* (see cy_basic_types.pyx)
 
         :returns: numpy array containing dtype=basic_types.datetime_value_2d.
                   Contains user specified datetime and the corresponding
                   values in user specified ts_format
         """
         if datetime is None:
-            datetimeval = to_datetime_value_2d(self.ossm.timeseries, format)
+            datetimeval = to_datetime_value_2d(self.ossm.timeseries, coord_sys)
         else:
             datetime = np.asarray(datetime, dtype='datetime64[s]').reshape(-1)
             timeval = np.zeros((len(datetime), ),
                                dtype=basic_types.time_value_pair)
             timeval['time'] = date_to_sec(datetime)
-            timeval['value'] = self.ossm.get_time_value(timeval['time'])
-            datetimeval = to_datetime_value_2d(timeval, format)
+            (timeval['value'], err) = self.ossm.get_time_value(timeval['time'])
 
-        return datetimeval
+            if err != 0:
+                msg = ('No available data in the time interval that is being '
+                       'modeled\n'
+                       '\tModel time: {}\n'
+                       '\tMover: {} of type {}\n'
+                       .format(datetime, self.name, self.__class__))
 
-    def set_timeseries(self, datetime_value_2d, format='uv'):
+                self.logger.error(msg)
+                raise RuntimeError(msg)
+
+            datetimeval = to_datetime_value_2d(timeval, coord_sys)
+
+        return np.copy(datetimeval)
+
+    def set_timeseries(self, datetime_value_2d, coord_sys='uv'):
         """
         Sets the timeseries to the new value given by a numpy array.  The
-        format for the input data defaults to
-        basic_types.format.magnitude_direction but can be changed by the user
+        coordinate system for the input data defaults to
+        basic_types.format.magnitude_direction but can be changed by the user.
+
         Assumes timeseries is valid so _check_timeseries has been invoked
         and any unit conversions are done. This function simply converts
         datetime_value_2d to time_value_pair and updates the data in underlying
@@ -250,33 +284,13 @@ class Timeseries(GnomeId):
             numpy array
         :type datetime_value_2d: numpy array of dtype
             basic_types.datetime_value_2d
-        :param format: output format for the times series; as defined by
-                       basic_types.format.
-        :type format: either string or integer value defined by
-                      basic_types.format.* (see cy_basic_types.pyx)
+
+        :param coord_sys: output coordinate system for the times series,
+                          as defined by basic_types.ts_format.
+        :type coord_sys: either string or integer value defined by
+                         basic_types.ts_format.* (see cy_basic_types.pyx)
         """
         datetime_value_2d = self._xform_input_timeseries(datetime_value_2d)
-        timeval = to_time_value_pair(datetime_value_2d, format)
+        timeval = to_time_value_pair(datetime_value_2d, coord_sys)
 
         self.ossm.timeseries = timeval
-
-    def __eq__(self, other):
-        '''
-        only checks the timeseries data is equal in (m/s), in 'uv' format
-        filename is irrelevant after data is loaded
-        checks self.get_timeseries() == other.get_timeseries()
-
-        Duck typing check - it does not expect type(self) == type(other)
-        '''
-        self_ts = self.get_timeseries()
-        other_ts = other.get_timeseries()
-        if not np.all(self_ts['time'] == other_ts['time']):
-            return False
-
-        if not np.allclose(self_ts['value'], other_ts['value'], atol=1e-10, rtol=1e-10):
-            return False
-
-        return True
-
-    def __ne__(self, other):
-        return not self == other

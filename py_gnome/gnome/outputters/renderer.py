@@ -1,4 +1,3 @@
-
 """
 renderer_gd.py
 
@@ -10,37 +9,43 @@ This one used the new map_canvas, which uses the gd rendering lib.
 import os
 from os.path import basename
 import glob
-import copy
-import zipfile
+
 import numpy as np
 import py_gd
 
 from colander import SchemaNode, String, drop
 
-from gnome.persist import base_schema, class_from_objtype
-
-from . import Outputter, BaseSchema
-from gnome.utilities.map_canvas import MapCanvas
-from gnome.utilities.serializable import Field
-from gnome.utilities.file_tools import haz_files
-from gnome.utilities import projections
-
 from gnome.basic_types import oil_status
 
-from gnome.utilities.projections import FlatEarthProjection
+from gnome.utilities.file_tools import haz_files
+from gnome.utilities.map_canvas import MapCanvas
 
-class RendererSchema(BaseSchema):
+from gnome.utilities import projections
+from gnome.utilities.projections import ProjectionSchema
 
+from gnome.environment.gridded_objects_base import Grid_S
+
+from gnome.persist import base_schema
+from gnome.persist.extend_colander import FilenameSchema
+
+from . import Outputter, BaseOutputterSchema
+
+
+
+class RendererSchema(BaseOutputterSchema):
     # not sure if bounding box needs defintion separate from LongLatBounds
-    viewport = base_schema.LongLatBounds()
+    viewport = base_schema.LongLatBounds(save=True, update=True)
 
     # following are only used when creating objects, not updating -
     # so missing=drop
-    map_filename = SchemaNode(String(), missing=drop)
-    projection = SchemaNode(String(), missing=drop)
-    image_size = base_schema.ImageSize(missing=drop)
-    output_dir = SchemaNode(String())
-    draw_ontop = SchemaNode(String())
+    map_filename = FilenameSchema(save=True, update=True,
+                                  isdatafile=True, test_equal=False,
+                                  missing=drop,)
+
+    projection = ProjectionSchema(save=True, update=True, missing=drop)
+    image_size = base_schema.ImageSize(save=True, update=False, missing=drop)
+    output_dir = SchemaNode(String(), save=True, update=True, test_equal=False)
+    draw_ontop = SchemaNode(String(), save=True, update=True)
 
 
 class Renderer(Outputter, MapCanvas):
@@ -66,44 +71,11 @@ class Renderer(Outputter, MapCanvas):
                   ('grid_2', (175, 175, 175)),
                   ]
 
-    background_map_name = 'background_map.png'
-    foreground_filename_format = 'foreground_{0:05d}.png'
-    foreground_filename_glob = 'foreground_?????.png'
+    background_map_name = 'background_map.'
+    foreground_filename_format = 'foreground_{0:05d}.'
+    foreground_filename_glob = 'foreground_?????.*'
 
-    # Serialization info:
-    _update = ['viewport', 'map_BB', 'image_size', 'draw_ontop']
-    _create = ['image_size', 'projection', 'draw_ontop']
-
-    _create.extend(_update)
-    _state = copy.deepcopy(Outputter._state)
-    _state.add(save=_create, update=_update)
-    _state.add_field(Field('map_filename',
-                           isdatafile=True,
-                           save=True,
-                           read=True,
-                           test_for_eq=False))
-    _state.add_field(Field('output_dir', save=True, update=True,
-                           test_for_eq=False))
     _schema = RendererSchema
-
-    @classmethod
-    def new_from_dict(cls, dict_):
-        """
-        change projection_type from string to correct type for loading from
-        save file
-        """
-        if 'projection' in dict_:
-            # todo:
-            # The 'projection' isn't stored as a nested object - should
-            # revisit this and see if we can make it consistent with nested
-            # objects ... but this works!
-            # creates an instance of the projection class
-            proj_inst = class_from_objtype(dict_.pop('projection'))()
-            # then creates the object
-            obj = cls(projection=proj_inst, **dict_)
-        else:
-            obj = super(Renderer, cls).new_from_dict(dict_)
-        return obj
 
     def __init__(self,
                  map_filename=None,
@@ -116,14 +88,14 @@ class Renderer(Outputter, MapCanvas):
                  draw_back_to_fore=True,
                  draw_map_bounds=False,
                  draw_spillable_area=False,
+                 formats=['png', 'gif'],
+                 draw_ontop='forecast',
                  cache=None,
                  output_timestep=None,
                  output_zero_step=True,
                  output_last_step=True,
-                 draw_ontop='forecast',
-                 name=None,
+                 output_start_time=None,
                  on=True,
-                 formats=['png', 'gif'],
                  timestamp_attrib={},
                  **kwargs
                  ):
@@ -137,12 +109,13 @@ class Renderer(Outputter, MapCanvas):
 
         :param 2-tuple image_size=(800, 600): size of images to output
 
-        :param projection=None: projection instance to use:
-                                if None, set to projections.FlatEarthProjection()
+        :param projection=None: projection instance to use: If None,
+                                set to projections.FlatEarthProjection()
         :type projection: a gnome.utilities.projection.Projection instance
 
         :param viewport: viewport of map -- what gets drawn and on what scale.
                          Default is full globe: (((-180, -90), (180, 90)))
+                         If not specifies, it will be set to the map's bounds.
         :type viewport: pair of (lon, lat) tuples ( lower_left, upper right )
 
         :param map_BB=None: bounding box of map if None, it will use the
@@ -152,6 +125,14 @@ class Renderer(Outputter, MapCanvas):
                                        foregound image when outputting
                                        the images each time step.
         :type draw_back_to_fore: boolean
+
+        :param formats=['gif']: list of formats to output.
+        :type formats: string or list of strings. Options are:
+                       ['bmp', 'jpg', 'jpeg', 'gif', 'png']
+
+        :param draw_ontop: draw 'forecast' or 'uncertain' LEs on top. Default
+            is to draw 'forecast' LEs, which are in black on top
+        :type draw_ontop: str
 
         Following args are passed to base class Outputter's init:
 
@@ -172,15 +153,6 @@ class Renderer(Outputter, MapCanvas):
             final step is written regardless of output_timestep
         :type output_last_step: boolean
 
-        :param draw_ontop: draw 'forecast' or 'uncertain' LEs on top. Default
-            is to draw 'forecast' LEs, which are in black on top
-        :type draw_ontop: str
-
-        :param formats: list of formats to output.
-                        Default is .png and animated .gif
-        :type formats: list of strings
-
-
         Remaining kwargs are passed onto baseclass's __init__ with a direct
         call: Outputter.__init__(..)
 
@@ -188,6 +160,7 @@ class Renderer(Outputter, MapCanvas):
         projection = (projections.FlatEarthProjection()
                       if projection is None
                       else projection)
+
         # set up the canvas
         self.map_filename = map_filename
         self.output_dir = output_dir
@@ -209,25 +182,26 @@ class Renderer(Outputter, MapCanvas):
                            output_timestep,
                            output_zero_step,
                            output_last_step,
-                           name,
-                           output_dir
-                           )
+                           output_start_time,
+                           output_dir,
+                           **kwargs)
 
         if map_BB is None:
             if not self.land_polygons:
                 map_BB = ((-180, -90), (180, 90))
             else:
                 map_BB = self.land_polygons.bounding_box
+
         self.map_BB = map_BB
 
-        MapCanvas.__init__(self,
-                           image_size,
-                           projection=projection,
-                           viewport=self.map_BB)
+        viewport = self.map_BB if viewport is None else viewport
+        MapCanvas.__init__(self, image_size, projection=projection,
+                           viewport=viewport)
 
         # assorted rendering flags:
         self.draw_map_bounds = draw_map_bounds
         self.draw_spillable_area = draw_spillable_area
+
         self.raster_map = None
         self.raster_map_fill = True
         self.raster_map_outline = False
@@ -241,6 +215,7 @@ class Renderer(Outputter, MapCanvas):
             sep = '_'
         else:
             file_prefix = sep = ''
+
         fn = '{}{}anim.gif'.format(file_prefix, sep)
         self.anim_filename = os.path.join(output_dir, fn)
 
@@ -248,7 +223,9 @@ class Renderer(Outputter, MapCanvas):
         self.delay = 50
         self.repeat = True
         self.timestamp_attribs = {}
+
         self.set_timestamp_attrib(**timestamp_attrib)
+
         self.grids = []
         self.props = []
 
@@ -285,16 +262,28 @@ class Renderer(Outputter, MapCanvas):
         if val not in ['forecast', 'uncertain']:
             raise ValueError("'draw_ontop' must be either 'forecast' or"
                              "'uncertain'. {0} is invalid.".format(val))
+
         self._draw_ontop = val
+
+    @property
+    def formats(self):
+        return self._formats
+
+    @formats.setter
+    def formats(self, val):
+        if isinstance(val, (str, unicode)):
+            val = (val,)
+        self._formats = val
 
     def output_dir_to_dict(self):
         return os.path.abspath(self.output_dir)
 
     def start_animation(self, filename):
         self.animation = py_gd.Animation(filename, self.delay)
-        l = 0 if self.repeat else -1
-        print 'Starting animation'
-        self.animation.begin_anim(self.back_image, l)
+        looping = 0 if self.repeat else -1
+
+        self.logger.info('Starting Animation')
+        self.animation.begin_anim(self.back_image, looping)
 
     def prepare_for_model_run(self, *args, **kwargs):
         """
@@ -313,14 +302,14 @@ class Renderer(Outputter, MapCanvas):
         super(Renderer, self).prepare_for_model_run(*args, **kwargs)
 
         self.clean_output_files()
-
         self.draw_background()
+
         for ftype in self.formats:
             if ftype == 'gif':
                 self.start_animation(self.anim_filename)
             else:
                 self.save_background(os.path.join(self.output_dir,
-                                                  self.background_map_name),
+                                                  self.background_map_name + ftype),
                                      file_type=ftype)
 
     def set_timestamp_attrib(self, **kwargs):
@@ -338,21 +327,23 @@ class Renderer(Outputter, MapCanvas):
 
         :param background: Color of the text background.
                            Color must be present in foreground palette
-        :type background: String
+        :type background: str
 
         :param color: Color of the font. Note that the color must be present
                       in the foreground palette
-        :type color: String
+        :type color: str
 
-        :param size: Size of the font
-        :type size: One of 'tiny', 'small', 'medium', 'large', 'giant'
+        :param size: Size of the font, one of {'tiny', 'small', 'medium',
+                                               'large', 'giant'}
+        :type size: str
 
         :param position: x, y pixel coordinates of where to draw the timestamp.
-        :type position :tuple
+        :type position: tuple
 
         :param align: The reference point of the text bounding box.
-        :type align: One of: ('lt'(left top), 'ct', 'rt','l', 'r','rb', 'cb', 'lb')
-
+                      One of:
+                      {'lt'(left top), 'ct', 'rt', 'l', 'r', 'lb', 'cb', 'rb'}
+        :type align: str
         """
         self.timestamp_attribs.update(kwargs)
 
@@ -366,37 +357,38 @@ class Renderer(Outputter, MapCanvas):
         """
         d = self.timestamp_attribs
         on = d['on'] if 'on' in d else True
+
         if not on:
             return
+
         dt_format = d['format'] if 'format' in d else '%c'
+
         background = d['background'] if 'background' in d else 'white'
+
         color = d['color'] if 'color' in d else 'black'
+
         size = d['size'] if 'size' in d else 'small'
-        position = d['position'] if 'position' in d else (
-            self.fore_image.width / 2, self.fore_image.height)
+
+        default_position = (self.fore_image.width / 2, self.fore_image.height)
+        position = d['position'] if 'position' in d else default_position
+
         align = d['alignment'] if 'alignment' in d else 'cb'
 
-        self.fore_image.draw_text(
-            time.strftime(dt_format), position, size, color, align, background)
+        self.fore_image.draw_text(time.strftime(dt_format),
+                                  position, size, color, align, background)
 
     def clean_output_files(self):
 
         # clear out the output dir:
-        try:
-            os.remove(os.path.join(self.output_dir,
-                                   self.background_map_name))
-        except OSError:
-            # it's not there to delete..
-            pass
+        # get the files (could have different extensions)
+        files = glob.glob(os.path.join(self.output_dir,
+                                       self.background_map_name) + "*")
+        files += glob.glob(os.path.join(self.output_dir,
+                                        self.foreground_filename_glob))
+        files += glob.glob(os.path.join(self.output_dir,
+                                        self.anim_filename) + "*")
 
-        try:
-            os.remove(self.anim_filename)
-        except OSError:
-            # it's not there to delete..
-            pass
-
-        for name in glob.glob(os.path.join(self.output_dir,
-                                           self.foreground_filename_glob)):
+        for name in files:
             os.remove(name)
 
     def draw_background(self):
@@ -408,32 +400,28 @@ class Renderer(Outputter, MapCanvas):
         # create a new background image
         self.clear_background()
         self.draw_land()
+
         if self.raster_map is not None:
             self.draw_raster_map()
+
         self.draw_graticule()
         self.draw_tags()
         self.draw_grids()
 
-    def add_grid(self, grid,
-                 on=True,
-                 color='grid_1',
-                 width=2):
+    def add_grid(self, grid, on=True, color='grid_1', width=2):
         layer = GridVisLayer(grid, self.projection, on, color, width)
+
         self.grids.append(layer)
 
     def draw_grids(self):
         for grid in self.grids:
             grid.draw_to_image(self.back_image)
 
-    def add_vec_prop(self,
-                     prop,
-                     on=True,
-                     color='LE',
-                     mask_color='uncert_LE',
-                     size=3,
-                     width=1,
-                     scale=1000):
-        layer = GridPropVisLayer(prop, self.projection, on, color, mask_color, size, width, scale)
+    def add_vec_prop(self, prop, on=True,
+                     color='LE', mask_color='uncert_LE',
+                     size=3, width=1, scale=1000):
+        layer = GridPropVisLayer(prop, self.projection, on,
+                                 color, mask_color, size, width, scale)
         self.props.append(layer)
 
     def draw_props(self, time):
@@ -445,19 +433,16 @@ class Renderer(Outputter, MapCanvas):
             var = grid.appearance['mask']
             masked_nodes = grid.masked_nodes(time, var)
             dia = grid.appearance['n_size']
-            unmasked_nodes = np.ascontiguousarray(
-                masked_nodes.compressed().reshape(-1, 2))
+
+            unmasked_nodes = np.ascontiguousarray(masked_nodes
+                                                  .compressed().reshape(-1, 2))
+
             self.draw_points(unmasked_nodes, dia, 'black')
-            masked = np.ascontiguousarray(
-                masked_nodes[masked_nodes.mask].prop.reshape(-1, 2))
+
+            masked = np.ascontiguousarray(masked_nodes[masked_nodes.mask]
+                                          .prop.reshape(-1, 2))
+
             self.draw_points(masked, dia, 'uncert_LE')
-#             for i in range(0, grid.nodes.shape[0]):
-#                 if masked_nodes.mask[i, 0] and masked_nodes.mask[i, 1]:
-#                     self.draw_points(
-#                         grid.nodes[i], diameter=dia, color='uncert_LE')
-#                 else:
-#                     self.draw_points(
-#                         grid.nodes[i], diameter=dia, color='black')
 
     def draw_land(self):
         """
@@ -482,10 +467,15 @@ class Renderer(Outputter, MapCanvas):
                                       background=True)
             elif metadata[2] == '2':
                 # this is a lake
-                self.draw_polygon(poly, fill_color='lake', background=True)
+                try:
+                    self.draw_polygon(poly, fill_color='lake', background=True)
+                except ValueError:
+                    pass  # py_gd can't handle 2pt polygons
             else:
-                self.draw_polygon(poly,
-                                  fill_color='land', background=True)
+                try:
+                    self.draw_polygon(poly, fill_color='land', background=True)
+                except ValueError:
+                    pass  # py_gd can't handle 2pt polygons
 
         return None
 
@@ -532,7 +522,7 @@ class Renderer(Outputter, MapCanvas):
         if self.raster_map is not None:
             raster_map = self.raster_map
             projection = raster_map.projection
-            w, h = raster_map.basebitmap.shape
+            w, h = raster_map.raster.shape
 
             if self.raster_map_outline:
                 # vertical lines
@@ -553,12 +543,13 @@ class Renderer(Outputter, MapCanvas):
             if self.raster_map_fill:
                 for i in range(w):
                     for j in range(h):
-                        if raster_map.basebitmap[i, j] == 1:
-                            rect = projection.to_lonlat(np.array(((i, j),
-                                                                  (i + 1, j),
-                                                                  (i + 1, j + 1),
-                                                                  (i, j + 1)),
-                                                                 dtype=np.float64))
+                        if raster_map.raster[i, j] == 1:
+                            rect = (projection
+                                    .to_lonlat(np.array(((i, j),
+                                                         (i + 1, j),
+                                                         (i + 1, j + 1),
+                                                         (i, j + 1)),
+                                                        dtype=np.float64)))
                             self.draw_polygon(rect, fill_color='raster_map',
                                               background=True)
 
@@ -586,17 +577,16 @@ class Renderer(Outputter, MapCanvas):
         prepare_for_model_step determines whether to write the output for
         this step based on output_timestep
         """
-
         super(Renderer, self).write_output(step_num, islast_step)
 
         if not self._write_step:
             return None
 
         image_filename = os.path.join(self.output_dir,
-                                      self.foreground_filename_format
-                                      .format(step_num))
+                                      self.foreground_filename_format.format(step_num))
 
         self.clear_foreground()
+
         if self.draw_back_to_fore:
             self.copy_back_to_fore()
 
@@ -613,6 +603,7 @@ class Renderer(Outputter, MapCanvas):
                 self.draw_elements(scp[1])
 
         time_stamp = scp[0].current_time_stamp
+
         self.draw_timestamp(time_stamp)
         self.draw_props(time_stamp)
 
@@ -620,15 +611,20 @@ class Renderer(Outputter, MapCanvas):
             if ftype == 'gif':
                 self.animation.add_frame(self.fore_image, self.delay)
             else:
+                image_filename += ftype
                 self.save_foreground(image_filename, file_type=ftype)
+
         self.last_filename = image_filename
 
         return {'image_filename': image_filename,
                 'time_stamp': time_stamp}
 
-    def write_output_post_run(self, **kwargs):
-        super(Renderer, **kwargs)
-        if '.gif' in self.formats:
+    def post_model_run(self):
+        """
+        Override this method if a derived class needs to perform
+        any actions after a model run is complete (StopIteration triggered)
+        """
+        if 'gif' in self.formats:
             self.animation.close_anim()
 
     def _draw(self, step_num):
@@ -662,61 +658,38 @@ class Renderer(Outputter, MapCanvas):
         return '{0}.{1}'.format(self.projection.__module__,
                                 self.projection.__class__.__name__)
 
-    def serialize(self, json_='webapi'):
-        toserial = self.to_serialize(json_)
-        schema = self.__class__._schema()
-
+    def to_dict(self, json_=None):
+        dict_ = Outputter.to_dict(self, json_=json_)
+        dict_['map_filename'] = self._filename
         if json_ == 'save':
-            toserial['map_filename'] = self._filename
-
-        return schema.serialize(toserial)
-
-    def save(self, saveloc, references=None, name=None):
-        '''
-        update the 'output_dir' key in the json_ to point to directory
-        inside saveloc, then save the json - do not copy image files or
-        image directory over
-        '''
-        json_ = self.serialize('save')
-        out_dir = os.path.split(json_['output_dir'])[1]
-        # store output_dir relative to saveloc
-        json_['output_dir'] = os.path.join('./', out_dir)
-
-        return self._json_to_saveloc(json_, saveloc, references, name)
-
-    @classmethod
-    def loads(cls, json_data, saveloc, references=None):
-        '''
-        loads object from json_data
-
-        prepend saveloc path to 'output_dir' and create output_dir in saveloc,
-        then call super to load object
-        '''
-        if zipfile.is_zipfile(saveloc):
-            saveloc = os.path.split(saveloc)[0]
-
-        os.mkdir(os.path.join(saveloc, json_data['output_dir']))
-        json_data['output_dir'] = os.path.join(saveloc,
-                                               json_data['output_dir'])
-
-        return super(Renderer, cls).loads(json_data, saveloc, references)
+            dict_['output_dir'] = os.path.join('./', dict_['output_dir'])
+        return dict_
 
 
-class GridVisLayer:
-
-    def __init__(self,
-                 grid,
-                 projection,
-                 on=True,
-                 color='grid_1',
-                 width=1
-                 ):
+class GridVisLayer(object):
+    def __init__(self, grid, projection, on=True,
+                 color='grid_1', width=1):
         self.grid = grid
-        self.projection=projection
-        self.lines = self.grid.get_lines()
+        self.projection = projection
         self.on = on
+
+        self.lines = self._get_lines(grid)
         self.color = color
         self.width = width
+
+    def _get_lines(self, grid):
+        if isinstance(grid, Grid_S):
+            name = 'node'
+
+            lons = getattr(grid, name + '_lon')
+            lats = getattr(grid, name + '_lat')
+
+            return np.ma.dstack((lons[:], lats[:]))
+        else:
+            if grid.edges is None:
+                grid.build_edges()
+
+            return grid.nodes[grid.edges]
 
     def draw_to_image(self, img):
         '''
@@ -726,90 +699,106 @@ class GridVisLayer:
             return
 
         lines = self.projection.to_pixel_multipoint(self.lines, asint=True)
+
         for l in lines:
-            img.draw_polyline(l,
-                              line_color=self.color,
-                              line_width=self.width)
+            img.draw_polyline(l, line_color=self.color, line_width=self.width)
+
         if len(lines[0]) > 2:
-            #curvilinear grid; ugrids never have line segments greater than 2 points
-            for l in lines.transpose((1,0,2)).copy():
-                img.draw_polyline(l,
-                                  line_color=self.color,
+            # curvilinear grid; ugrids never have line segments greater than
+            # 2 points
+            for l in lines.transpose((1, 0, 2)).copy():
+                img.draw_polyline(l, line_color=self.color,
                                   line_width=self.width)
 
 
+class GridPropVisLayer(object):
 
-class GridPropVisLayer:
-
-    def __init__(self,
-                 prop,
-                 projection,
-                 on=True,
-                 color='LE',
-                 mask_color='uncert_LE',
-                 size=3,
-                 width=1,
-                 scale=1000
-                 ):
+    def __init__(self, prop, projection, on=True,
+                 color='LE', mask_color='uncert_LE',
+                 size=3, width=1, scale=1000):
         self.prop = prop
-        self.projection=projection
-        self.on=on
-        self.color=color
-        self.mask_color=mask_color
-        self.size=size
-        self.width=width
-        self.scale=scale
+        self.projection = projection
+        self.on = on
+
+        self.color = color
+        self.mask_color = mask_color
+
+        self.size = size
+        self.width = width
+        self.scale = scale
 
     def draw_to_image(self, img, time):
         if not self.on:
             return
+
         t0 = self.prop.time.index_of(time, extrapolate=True) - 1
+
         data_u = self.prop.variables[0].data[t0]
-        data_u2 = self.prop.variables[0].data[t0+1] if len(self.prop.time)> 1 else data_u
         data_v = self.prop.variables[1].data[t0]
-        data_v2 = self.prop.variables[1].data[t0+1] if len(self.prop.time)> 1 else data_v
+
+        if len(self.prop.time) > 1:
+            data_u2 = self.prop.variables[0].data[t0 + 1]
+            data_v2 = self.prop.variables[1].data[t0 + 1]
+        else:
+            data_u2 = data_u
+            data_v2 = data_v
+
         t_alphas = self.prop.time.interp_alpha(time, extrapolate=True)
+
         data_u = data_u + t_alphas * (data_u2 - data_u)
         data_v = data_v + t_alphas * (data_v2 - data_v)
+
         data_u = data_u.reshape(-1)
         data_v = data_v.reshape(-1)
-        start=end=None
-#         if self.prop.grid.infer_grid(data_u) == 'centers':
-#             start = self.prop.grid.centers
-#         else:
-        try:
-            start = self.prop.grid.nodes.copy().reshape(-1,2)
 
+        start = None
+
+        try:
+            start = self.prop.grid.nodes.copy().reshape(-1, 2)
         except AttributeError:
             start = np.column_stack((self.prop.grid.node_lon,
                                      self.prop.grid.node_lat))
 
-#         deltas = FlatEarthProjection.meters_to_lonlat(data*self.scale, lines[:0])
+        if self.prop.grid.infer_location(data_u) == 'faces':
+            if self.prop.grid.face_coordinates is None:
+                self.prop.grid.build_face_coordinates()
+            start = self.prop.grid.face_coordinates
+
         if hasattr(data_u, 'mask'):
-            start[data_u.mask] = [0.,0.]
+            start[data_u.mask] = [0., 0.]
+
         data_u *= self.scale * 8.9992801e-06
         data_v *= self.scale * 8.9992801e-06
-        data_u /= np.cos(np.deg2rad(start[:,1]))
+        data_u /= np.cos(np.deg2rad(start[:, 1]))
+
         end = start.copy()
-        end[:,0] += data_u
-        end[:,1] += data_v
+        end[:, 0] += data_u
+        end[:, 1] += data_v
+
         if hasattr(data_u, 'mask'):
-            end[data_u.mask] = [0.,0.]
+            end[data_u.mask] = [0., 0.]
+
         bounds = self.projection.image_box
+
         pt1 = ((bounds[0][0] <= start[:, 0]) * (start[:, 0] <= bounds[1][0]) *
                (bounds[0][1] <= start[:, 1]) * (start[:, 1] <= bounds[1][1]))
+
         pt2 = ((bounds[0][0] <= end[:, 0]) * (end[:, 0] <= bounds[1][0]) *
                (bounds[0][1] <= end[:, 1]) * (end[:, 1] <= bounds[1][1]))
+
         start = start[pt1 * pt2]
         end = end[pt1 * pt2]
+
         start = self.projection.to_pixel_multipoint(start, asint=True)
         end = self.projection.to_pixel_multipoint(end, asint=True)
 
         img.draw_dots(start, diameter=self.size, color=self.color)
-        line = np.array([[0.,0.],[0.,0.]])
-        for i in xrange(0,len(start)):
+
+        line = np.array([[0., 0.], [0., 0.]])
+
+        for i in xrange(0, len(start)):
             line[0] = start[i]
             line[1] = end[i]
             img.draw_polyline(line,
-                              line_color = self.color,
-                              line_width = self.width)
+                              line_color=self.color,
+                              line_width=self.width)

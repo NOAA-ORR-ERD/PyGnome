@@ -126,7 +126,7 @@ void GridCurrentMover_c::Dispose ()
 OSErr GridCurrentMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec *velocity,double timeStep,Boolean useEddyUncertainty)
 {
 	LEUncertainRec unrec;
-	double u,v,lengthS,alpha,beta,v0;
+	double u,v,lengthS,alpha,beta;
 	OSErr err = 0;
 	
 	if(!fUncertaintyListH || !fLESetSizesH) return 0; // this is our clue to not add uncertainty
@@ -237,7 +237,7 @@ OSErr GridCurrentMover_c::get_move(int n, Seconds model_time, Seconds step_len, 
 	LERec rec;
 	prec = &rec;
 	
-	WorldPoint3D zero_delta ={0,0,0.};
+	WorldPoint3D zero_delta ={{0,0},0.};
 	
 	for (int i = 0; i < n; i++) {
 		
@@ -287,7 +287,8 @@ WorldPoint3D GridCurrentMover_c::GetMove(const Seconds& model_time, Seconds time
 {
 	OSErr err = 0;
 	char errmsg[256];
-	if (num_method == EULER) { //EULER
+	if (num_method == EULER)
+	{
 		WorldPoint3D	deltaPoint = {{0,0},0.};
 		WorldPoint3D refPoint;
 		double dLong, dLat;
@@ -320,44 +321,77 @@ WorldPoint3D GridCurrentMover_c::GetMove(const Seconds& model_time, Seconds time
 		deltaPoint.p.pLat  = dLat  * 1000000;
 
 		return deltaPoint;
-	} else { //RK4
-		WorldPoint3D deltaD[5] = {{0,0},0}; // [ dummy, dy1, dy2, dy3, dy4 ]
-			double RK_dy_Factors[4] = {0, .5, .5, 1};
-			double RK_Factors[4] = {1./6., 1./3., 1./3., 1./6.};
-			WorldPoint3D finalDelta = {{0,0},0};
-			WorldPoint3D startPoint; // yn
-			startPoint.p = (*theLE).p;
-			startPoint.z = (*theLE).z;
-			VelocityRec scaledVel[4];
-			double dLong, dLat;
-			Boolean useEddyUncertainty = false;
-			// check the interval and set if necessary each time
-			/*if(!fIsOptimizedForStep)
-			{
-				err = timeGrid->SetInterval(errmsg, model_time);
+	}
+	else if (num_method == TRAPEZOID)
+	{
+		WorldPoint3D startPoint, p1, deltaPoint;
+		startPoint.p = (*theLE).p;
+		startPoint.z = (*theLE).z;
+		p1.p = (*theLE).p;
+		p1.z = (*theLE).z;
+		VelocityRec v0, v1;
+		double dLong, dLat;
+		if(!fIsOptimizedForStep)
+		{
+			err = timeGrid->SetInterval(errmsg, model_time + timeStep);
+			if (err) return deltaPoint;
+		}
+		v0 = timeGrid->GetScaledPatValue(model_time, startPoint);
+		v0.u *= fCurScale;
+		v0.v *= fCurScale;
+		dLong = ((v0.u / METERSPERDEGREELAT) * timeStep) / LongToLatRatio3 (startPoint.p.pLat);
+		dLat  =  (v0.v / METERSPERDEGREELAT) * timeStep;
+		p1.p.pLong = p1.p.pLong + dLong * 1000000;
+		p1.p.pLat = p1.p.pLat + dLat * 1000000;
+		v1 = timeGrid->GetScaledPatValue(model_time + timeStep, p1);
+		v1.u *= fCurScale;
+		v1.v *= fCurScale;
+		v1.u += v0.u;
+		v1.v += v0.v;
+		dLong = ((v1.u / METERSPERDEGREELAT) * timeStep/2) / LongToLatRatio3 (startPoint.p.pLat);
+		dLat  =  (v0.v / METERSPERDEGREELAT) * timeStep/2;
+		deltaPoint.p.pLong = dLong * 1000000;
+		deltaPoint.p.pLat  = dLat  * 1000000;
+		return deltaPoint;
+	}
+	else
+	{
+		WorldPoint3D deltaD[5] = {{{0,0},0}}; // [ dummy, dy1, dy2, dy3, dy4 ]
+		double RK_dy_Factors[4] = {0, .5, .5, 1};
+		double RK_Factors[4] = {1./6., 1./3., 1./3., 1./6.};
+		WorldPoint3D finalDelta = {{0,0},0};
+		WorldPoint3D startPoint; // yn
+		startPoint.p = (*theLE).p;
+		startPoint.z = (*theLE).z;
+		VelocityRec scaledVel[4];
+		double dLong, dLat;
+		//Boolean useEddyUncertainty = false;
+		// check the interval and set if necessary each time
+		/*if(!fIsOptimizedForStep)
+		{
+			err = timeGrid->SetInterval(errmsg, model_time);
 
-				if (err) return finalDelta;
-			}*/
+			if (err) return finalDelta;
+		}*/
 
-			for (int i = 0; i < 4; i++) {
-				WorldPoint3D RKDelta = scale_WP(deltaD[i], RK_dy_Factors[i]);
-				// could check the end time and only set interval if RK time is past the end time
-				err = timeGrid->SetInterval(errmsg, model_time + (Seconds)(timeStep*RK_dy_Factors[i]));
-				if (err) return finalDelta;
-				scaledVel[i] = timeGrid->GetScaledPatValue(model_time + (Seconds)(timeStep*RK_dy_Factors[i]), add_two_WP3D(startPoint, RKDelta));
-				scaledVel[i].u *= fCurScale;
-				scaledVel[i].v *= fCurScale;
-				dLong = ((scaledVel[i].u / METERSPERDEGREELAT) * timeStep) / LongToLatRatio3 (startPoint.p.pLat);
-				dLat  =  (scaledVel[i].v / METERSPERDEGREELAT) * timeStep;
-				deltaD[i+1].p.pLong = dLong * 1000000;
-				deltaD[i+1].p.pLat  = dLat  * 1000000;
-			}
+		for (int i = 0; i < 4; i++) {
+			WorldPoint3D RKDelta = scale_WP(deltaD[i], RK_dy_Factors[i]);
+			// could check the end time and only set interval if RK time is past the end time
+			err = timeGrid->SetInterval(errmsg, model_time + (Seconds)(timeStep*RK_dy_Factors[i]));
+			if (err) return finalDelta;
+			scaledVel[i] = timeGrid->GetScaledPatValue(model_time + (Seconds)(timeStep*RK_dy_Factors[i]), add_two_WP3D(startPoint, RKDelta));
+			scaledVel[i].u *= fCurScale;
+			scaledVel[i].v *= fCurScale;
+			dLong = ((scaledVel[i].u / METERSPERDEGREELAT) * timeStep) / LongToLatRatio3 (startPoint.p.pLat);
+			dLat  =  (scaledVel[i].v / METERSPERDEGREELAT) * timeStep;
+			deltaD[i+1].p.pLong = dLong * 1000000;
+			deltaD[i+1].p.pLat  = dLat  * 1000000;
+		}
 
-			for (int i = 0; i <4; i++) {
-				finalDelta = add_two_WP3D(finalDelta, scale_WP(deltaD[i+1], RK_Factors[i]));
-			}
-
-			return finalDelta;
+		for (int i = 0; i <4; i++) {
+			finalDelta = add_two_WP3D(finalDelta, scale_WP(deltaD[i+1], RK_Factors[i]));
+		}
+		return finalDelta;
 	}
 }
 
@@ -397,7 +431,7 @@ OSErr GridCurrentMover_c::TextRead(char *path, char *topFilePath)
 		}
 
 		if (isNetCDFPathsFile) {
-			char errmsg[256];
+			//char errmsg[256];
 
 			err = timeGrid->ReadInputFileNames(fileNamesPath);
 			if (err)
@@ -420,8 +454,6 @@ OSErr GridCurrentMover_c::TextRead(char *path, char *topFilePath)
 
 	if (IsPtCurFile(linesInFile))
 	{
-		char errmsg[256];
-
 		newTimeGrid = new TimeGridCurTri();
 		if (newTimeGrid)
 		{
@@ -453,7 +485,6 @@ OSErr GridCurrentMover_c::TextRead(char *path, char *topFilePath)
 	else if (IsGridCurTimeFile(linesInFile, &selectedUnits))
 	{
 		//cerr << "we are opening a GridCurTimeFile..." << "'" << path << "'" << endl;
-		char errmsg[256];
 		newTimeGrid = new TimeGridCurRect();
 		//timeGrid = new TimeGridVel();
 		if (newTimeGrid)
@@ -507,7 +538,14 @@ OSErr GridCurrentMover_c::GetScaledVelocities(Seconds model_time, VelocityFRec *
 
 LongPointHdl GridCurrentMover_c::GetPointsHdl(void)
 {
-	return timeGrid->fGrid->GetPointsHdl();
+	if (timeGrid->IsRegularGrid())
+	{
+		return timeGrid->GetPointsHdl();
+	}
+	else
+	{
+		return timeGrid->fGrid->GetPointsHdl();
+	}
 }
 
 TopologyHdl GridCurrentMover_c::GetTopologyHdl(void)
@@ -523,7 +561,12 @@ GridCellInfoHdl GridCurrentMover_c::GetCellDataHdl(void)
 WORLDPOINTH	GridCurrentMover_c::GetTriangleCenters(void)
 {	// should rename this function...
 	if (IsTriangleGrid())
-		return timeGrid->fGrid->GetCenterPointsHdl();
+	{
+		if (IsDataOnCells())
+			return timeGrid->fGrid->GetCenterPointsHdl();
+		else
+			return timeGrid->fGrid->GetWorldPointsHdl();
+	}
 	else
 		return timeGrid->GetCellCenters();
 }

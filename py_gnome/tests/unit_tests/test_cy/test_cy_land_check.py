@@ -252,7 +252,7 @@ def test_way_off(pt2):
 
     assert result is None
 
-off_to_off_examples = [( (-10, -10), (30, 30) ), 
+off_to_off_examples = [( (-10, -10), (30, 30) ),
                        ( (30, 30), (-10, -10) ),
                        ( (30, -10), (-10, 30) ),
                        ( (-2, 40), (30, -10) ),
@@ -264,14 +264,14 @@ def test_off_to_off(pt1, pt2):
     # a very simple raster -- no land
     (w, h) = (20, 20)
     raster = np.zeros((w, h), dtype=np.uint8)
+
     result = find_first_pixel(raster, pt1, pt2)
 
     assert result is None
 
-
 # def test_outside_raster(self):
 #         """
-#         test LEs starting form outside the raster bounds
+#         test LEs starting from outside the raster bounds
 #         """
 #         map = RasterMap(refloat_halflife = 6, #hours
 #                         bitmap_array= self.raster,

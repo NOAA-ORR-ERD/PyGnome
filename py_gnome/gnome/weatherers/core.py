@@ -1,26 +1,19 @@
 #!/usr/bin/env python
-import copy
-
 import numpy as np
 
 from colander import SchemaNode
 
 from gnome.persist.extend_colander import NumpyArray
-from gnome.persist.base_schema import ObjType
+from gnome.persist.base_schema import ObjTypeSchema
+from gnome.array_types import gat
 
-from gnome.array_types import mass_components
-from gnome.utilities.serializable import Serializable, Field
+from gnome.utilities.time_utils import date_to_sec, sec_to_datetime
 from gnome.exceptions import ReferencedObjectNotSet
 from gnome.movers.movers import Process, ProcessSchema
 
 
-class WeathererSchema(ObjType, ProcessSchema):
-    '''
-    used to serialize object so need ObjType schema and it only contains
-    attributes defined in base class (ProcessSchema)
-    '''
-    name = 'Weatherer'
-    description = 'weatherer schema base class'
+class WeathererSchema(ProcessSchema):
+    pass
 
 
 class Weatherer(Process):
@@ -30,7 +23,6 @@ class Weatherer(Process):
     as the mover as well. Not Serializable since it does is partial
     implementation
     '''
-    _state = copy.deepcopy(Process._state)
     _schema = WeathererSchema  # nothing new added so use this schema
 
     def __init__(self, **kwargs):
@@ -45,15 +37,17 @@ class Weatherer(Process):
         super(Weatherer, self).__init__(**kwargs)
 
         # arrays that all weatherers will update - use this to ask
-        self.array_types.update({'mass_components', 'mass'})
+        self.array_types.update({'mass_components': gat('mass_components'),
+                                 'fate_status': gat('fate_status'),
+                                 'mass': gat('mass'),
+                                 'init_mass': gat('init_mass')})
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
-                'active_start={0.active_start!r}, '
-                'active_stop={0.active_stop!r}, '
+                'active_range={0.active_range!r}, '
                 'on={0.on}, '
-                'active={0.active}'
-                ')'.format(self))
+                'active={0.active})'
+                .format(self))
 
     def initialize_data(self, sc, num_released):
         '''
@@ -104,18 +98,59 @@ class Weatherer(Process):
         mass_remain = M_0 * np.exp(lambda_ * time)
         return mass_remain
 
+    def get_wind_speed(self, points, model_time,
+                       coord_sys='r', fill_value=1.0):
+        '''
+            Wrapper for the weatherers so they can get wind speeds
+        '''
+        retval = self.wind.at(points, model_time, coord_sys=coord_sys)
+
+        if isinstance(retval, np.ma.MaskedArray):
+            return retval.filled(fill_value)
+        else:
+            return retval
+
+    def check_time(self, wind, model_time):
+        '''
+            Should have an option to extrapolate but for now we do by default
+
+            TODO, FIXME: This function does not appear to be used by anything.
+                         Removing it does not break any of the unit tests.
+                         If it is not used, it should probably go away.
+        '''
+        new_model_time = model_time
+
+        if wind is not None:
+            if model_time is not None:
+                timeval = date_to_sec(model_time)
+                start_time = wind.get_start_time()
+                end_time = wind.get_end_time()
+
+                if end_time == start_time:
+                    return model_time
+
+                if timeval < start_time:
+                    new_model_time = sec_to_datetime(start_time)
+
+                if timeval > end_time:
+                    new_model_time = sec_to_datetime(end_time)
+            else:
+                return model_time
+
+        return new_model_time
+
 
 class HalfLifeWeathererSchema(WeathererSchema):
-    half_lives = SchemaNode(NumpyArray())
+    half_lives = SchemaNode(
+        NumpyArray(), save=True, update=True
+    )
 
 
-class HalfLifeWeatherer(Weatherer, Serializable):
+class HalfLifeWeatherer(Weatherer):
     '''
     Give half-life for all components and decay accordingly
     '''
     _schema = HalfLifeWeathererSchema
-    _state = copy.deepcopy(Weatherer._state)
-    _state += Field('half_lives', save=True, update=True)
 
     def __init__(self, half_lives=(15.*60, ), **kwargs):
         '''
@@ -151,6 +186,7 @@ class HalfLifeWeatherer(Weatherer, Serializable):
         '''
         if not self.active:
             return
+
         if sc.num_released == 0:
             return
 

@@ -2,6 +2,8 @@
 
 """
 basic test to see if everything imports successfully
+
+This may be completely obsolete at this point -- but what the heck
 """
 
 
@@ -9,8 +11,8 @@ def test_import_gnome():
     import gnome
 
 
-def test_import_map():
-    import gnome.map
+def test_import_maps():
+    import gnome.maps
 
 
 def test_import_model():

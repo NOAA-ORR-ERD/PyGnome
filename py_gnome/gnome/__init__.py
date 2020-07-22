@@ -1,19 +1,55 @@
 """
-__init__.py for the gnome package
-
+    __init__.py for the gnome package
 """
 from itertools import chain
 
 import sys
+
 import logging
 import json
+import warnings
+
+import importlib
 
 import unit_conversion as uc
 
-from gnomeobject import GnomeId, init_obj_log, AddLogger
+# just so it will be in the namespace.
+from gnomeobject import GnomeId, AddLogger
+# from gnomeobject import init_obj_log
 
-__version__ = '0.1.1'
+# using a PEP 404 compliant version name
+__version__ = '0.6.5'
+
+
 # a few imports so that the basic stuff is there
+
+def check_dependency_versions():
+    """
+    Checks the versions of the following libraries:
+        gridded
+        oillibrary
+        unit_conversion
+    If the version is not at least as current as what's defined here
+    a warning is displayed
+    """
+    libs = [('gridded', '0.2.4'),
+            ('oil_library', '1.1.2'),
+            ('unit_conversion', '2.6.3')]
+
+    for name, version in libs:
+        # import the lib:
+        try:
+            module = importlib.import_module(name)
+        except ImportError:
+            msg = ("ERROR: The {} package, version >= {}"
+                   "needs to be installed".format(name, version))
+            warnings.warn(msg)
+        else:
+            if module.__version__ < version:
+                msg = ('Version {0} of {1} package is required, '
+                       'but actual version in module is {2}'
+                       .format(version, name, module.__version__))
+                warnings.warn(msg)
 
 
 def initialize_log(config, logfile=None):
@@ -22,7 +58,8 @@ def initialize_log(config, logfile=None):
     config can be a file containing json or it can be a Python dict
 
     :param config: logging configuration as a json file or config dict
-                   it needs to be in the dict config format used by ``logging.dictConfig``:
+                   it needs to be in the dict config format used by
+                   ``logging.dictConfig``:
                    https://docs.python.org/2/library/logging.config.html#logging-config-dictschema
 
     :param logfile=None: optional name of file to log to
@@ -71,21 +108,16 @@ def _valid_units(unit_name):
                                 uc.ConvertDataUnits[unit_name].values()]))
     return tuple(_valid_units)
 
+
 # we have a sort of chicken-egg situation here.  The above functions need
 # to be defined before we can import these modules.
-from . import (map, environment,
-               model, multi_model_broadcast,
-               spill_container, spill,
-               movers, outputters)
+check_dependency_versions()
 
-__all__ = [GnomeId,
-           map,
-           spill,
-           spill_container,
-           movers,
-           environment,
-           model,
-           outputters,
-           initialize_log,
-           AddLogger,
-           multi_model_broadcast]
+from . import (environment,
+               model,
+               # multi_model_broadcast,
+               spill,
+               movers,
+               outputters)
+
+from .maps import map

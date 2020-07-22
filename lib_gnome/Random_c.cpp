@@ -78,7 +78,7 @@ OSErr Random_c::get_move(int n, Seconds model_time, Seconds step_len, WorldPoint
 	LERec rec;
 	prec = &rec;
 	
-	WorldPoint3D zero_delta ={0,0,0.};
+	WorldPoint3D zero_delta ={{0,0},0.};
 
 	for (int i = 0; i < n; i++) {
 		// only operate on LE if the status is in water
@@ -106,13 +106,15 @@ OSErr Random_c::get_move(int n, Seconds model_time, Seconds step_len, WorldPoint
 WorldPoint3D Random_c::GetMove (const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	double		dLong, dLat;
-	WorldPoint3D	deltaPoint = {0,0,0.};
+	WorldPoint3D	deltaPoint = {{0,0},0.};
 	WorldPoint refPoint = (*theLE).p;	
 	float rand1,rand2;
 	double 	diffusionCoefficient;
 	
-	//if (deltaPoint.z > 0) return deltaPoint;	// only use for surface LEs ?
-	
+#ifdef pyGNOME
+	// for pyGNOME we will handle subsurface diffusion with vertical diffusion
+	if ((*theLE).z > 0) return deltaPoint;	// only use for surface LEs ?
+#endif
 	if (bUseDepthDependent)
 	{
 		float depth=0.;

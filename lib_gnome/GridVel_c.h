@@ -49,6 +49,7 @@ public:
 	virtual InterpolationValBilinear GetBilinearInterpolationValues(WorldPoint ref){InterpolationValBilinear ival; memset(&ival,0,sizeof(ival)); return ival;}
 	virtual InterpolationVal GetInterpolationValues(WorldPoint ref){InterpolationVal ival; memset(&ival,0,sizeof(ival)); return ival;}
 	virtual LongPointHdl GetPointsHdl(void){return 0;}
+	virtual WORLDPOINTH GetWorldPointsHdl(void){return 0;}
 	virtual TopologyHdl GetTopologyHdl(void){return 0;}
 	virtual WORLDPOINTH	GetCenterPointsHdl(void){return 0;}
 	virtual double GetDepthAtPoint(WorldPoint p){return 0;}

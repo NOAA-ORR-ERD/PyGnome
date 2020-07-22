@@ -75,3 +75,10 @@ def test_ding_farmer():
                                                             wave_height,
                                                             k_w),
                       1.0)
+
+
+def test_monohan():
+    from gnome.utilities.weathering.monahan import Monahan
+
+    assert np.isclose(Monahan.whitecap_decay_constant(0), 2.54)  # fresh water
+    assert np.isclose(Monahan.whitecap_decay_constant(35), 3.85)  # salt water

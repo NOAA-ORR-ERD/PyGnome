@@ -115,7 +115,7 @@ void CurrentMover_c::UpdateUncertaintyValues(Seconds elapsedTime)
 OSErr CurrentMover_c::ReallocateUncertainty(int numLEs, short* statusCodes)	// remove off map LEs
 {
 	long i,numrec=0,uncertListSize,numLESetsStored;
-	OSErr err=0;
+	//OSErr err=0;
 	
 	if (numLEs == 0 || ! statusCodes) return -1;	// shouldn't happen
 	
@@ -157,12 +157,12 @@ OSErr CurrentMover_c::ReallocateUncertainty(int numLEs, short* statusCodes)	// r
 
 OSErr CurrentMover_c::AllocateUncertainty(int numLESets, int* LESetsSizesList)	// only passing in uncertainty list information
 {
-	long i,j,numrec=0;
-	OSErr err=0;
+	long i, numrec=0;
+	//OSErr err=0;
 	
 	this->DisposeUncertainty(); // get rid of any old values
 	
-	if (numLESets == 0) return -1;	// shouldn't happen - if we get here there should be an uncertainty set
+	//if (numLESets == 0) return -1;	// shouldn't happen - if we get here there should be an uncertainty set - unless there is no spill...
 	
 	if(!(fLESetSizesH = (LONGH)_NewHandle(sizeof(long)*numLESets)))goto errHandler;
 	

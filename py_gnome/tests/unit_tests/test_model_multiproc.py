@@ -1,18 +1,22 @@
 import os
+import sys
+import time
+import traceback
 
 from datetime import datetime, timedelta
 
-from pytest import raises, mark
+import pytest
 
 import numpy as np
 
 from gnome import scripting
 from gnome.basic_types import datetime_value_2d
+from gnome.utilities.inf_datetime import InfDateTime
 
 from gnome.model import Model
 
-from gnome.map import MapFromBNA
-from gnome.environment import Wind, Water, Tide
+from gnome.maps import MapFromBNA
+from gnome.environment import Wind, Water, Waves, Tide
 
 from gnome.spill import point_line_release_spill
 
@@ -22,12 +26,14 @@ from gnome.weatherers import Evaporation, ChemicalDispersion, Burn, Skimmer
 from gnome.outputters import WeatheringOutput, TrajectoryGeoJsonOutput
 
 from gnome.multi_model_broadcast import ModelBroadcaster
+
 from conftest import testdata, test_oil
 
 from pprint import PrettyPrinter
 pp = PrettyPrinter(indent=2, width=120)
 
-pytestmark = mark.skipif("sys.platform=='win32'", reason="skip on windows")
+pytestmark = pytest.mark.skipif("sys.platform=='win32'",
+                                reason="skip on windows")
 
 
 def make_model(uncertain=False,
@@ -78,25 +84,30 @@ def make_model(uncertain=False,
     model.environment += c_mover.tide
 
     print 'adding Weatherers'
-    rel_time = model.spills[0].get('release_time')
+    rel_time = model.spills[0].release_time
     skim_start = rel_time + timedelta(hours=4)
     amount = spill.amount
     units = spill.units
 
-    # define skimmer/burn cleanup options
-    skimmer = Skimmer(0.3*amount, units=units, efficiency=0.3,
-                      active_start=skim_start,
-                      active_stop=skim_start + timedelta(hours=4))
-    # thickness = 1m so area is just 20% of volume
-    volume = spill.get_mass()/spill.get('substance').get_density()
-    burn = Burn(0.2 * volume, 1.0,
-                active_start=skim_start, efficiency=.9)
-    c_disp = ChemicalDispersion(0.1, efficiency=0.5,
-                                active_start=skim_start,
-                                active_stop=skim_start + timedelta(hours=1))
-
     water_env = Water(311.15)
+    waves = Waves(wind, water_env)
     model.environment += water_env
+
+    # define skimmer/burn cleanup options
+    skimmer = Skimmer(0.3 * amount,
+                      units=units,
+                      efficiency=0.3,
+                      active_range=(skim_start,
+                                    skim_start + timedelta(hours=4)))
+    # thickness = 1m so area is just 20% of volume
+    volume = spill.get_mass() / spill.substance.density_at_temp()
+    burn = Burn(0.2 * volume, 1.0,
+                active_range=(skim_start, InfDateTime('inf')),
+                efficiency=.9)
+    c_disp = ChemicalDispersion(0.1, waves=waves, efficiency=0.5,
+                                active_range=(skim_start,
+                                              skim_start + timedelta(hours=1)))
+
     model.weatherers += [Evaporation(water_env, wind),
                          c_disp,
                          burn,
@@ -111,46 +122,64 @@ def make_model(uncertain=False,
     return model
 
 
+@pytest.mark.timeout(30)
 def test_init():
     model = make_model()
 
-    with raises(TypeError):
+    with pytest.raises(TypeError):
+        # no uncertainty arguments
         ModelBroadcaster(model)
 
-    with raises(TypeError):
+    with pytest.raises(TypeError):
+        # no spill amount uncertainties
         ModelBroadcaster(model,
                          ('down', 'normal', 'up'))
 
     model_broadcaster = ModelBroadcaster(model,
                                          ('down', 'normal', 'up'),
                                          ('down', 'normal', 'up'))
-    assert hasattr(model_broadcaster, 'id')
 
-    model_broadcaster.stop()
+    try:
+        assert hasattr(model_broadcaster, 'id')
+    finally:
+        model_broadcaster.stop()
 
 
+@pytest.mark.slow
+@pytest.mark.timeout(30)
 def test_uncertainty_array_size():
     model = make_model()
 
     model_broadcaster = ModelBroadcaster(model,
                                          ('down',),
                                          ('down',))
-    assert len(model_broadcaster.tasks) == 1
-    model_broadcaster.stop()
+
+    try:
+        assert len(model_broadcaster.tasks) == 1
+    finally:
+        model_broadcaster.stop()
 
     model_broadcaster = ModelBroadcaster(model,
                                          ('down', 'up'),
                                          ('down', 'up'))
-    assert len(model_broadcaster.tasks) == 4
-    model_broadcaster.stop()
+
+    try:
+        assert len(model_broadcaster.tasks) == 4
+    finally:
+        model_broadcaster.stop()
 
     model_broadcaster = ModelBroadcaster(model,
                                          ('down', 'normal', 'up'),
                                          ('down', 'normal', 'up'))
-    assert len(model_broadcaster.tasks) == 9
-    model_broadcaster.stop()
+
+    try:
+        assert len(model_broadcaster.tasks) == 9
+    finally:
+        model_broadcaster.stop()
 
 
+@pytest.mark.slow
+@pytest.mark.timeout(30)
 def test_uncertainty_array_indexing():
     model = make_model()
 
@@ -158,102 +187,222 @@ def test_uncertainty_array_indexing():
                                          ('down', 'normal', 'up'),
                                          ('down', 'normal', 'up'))
 
-    print '\nGetting time & spill values for just the (down, down) model:'
-    res = model_broadcaster.cmd('get_wind_timeseries', {}, ('down', 'down'))
-    assert np.allclose([r[0] for r in res], 17.449237)
+    try:
+        res = model_broadcaster.cmd('get_wind_timeseries', {},
+                                    ('down', 'down'))
+        assert np.allclose([r[0] for r in res], 17.449237)
 
-    res = model_broadcaster.cmd('get_spill_amounts', {}, ('down', 'down'))
-    assert np.isclose(res[0], 333.33333)
+        res = model_broadcaster.cmd('get_spill_amounts', {}, ('down', 'down'))
+        assert np.isclose(res[0], 333.33333)
 
-    print '\nGetting time & spill values for just the (up, up) model:'
-    res = model_broadcaster.cmd('get_wind_timeseries', {}, ('up', 'up'))
-    print 'get_wind_timeseries:'
-    assert np.allclose([r[0] for r in res], 20.166224)
+        res = model_broadcaster.cmd('get_wind_timeseries', {}, ('up', 'up'))
+        assert np.allclose([r[0] for r in res], 20.166224)
 
-    res = model_broadcaster.cmd('get_spill_amounts', {}, ('up', 'up'))
-    assert np.isclose(res[0], 1666.66666)
-
-    model_broadcaster.stop()
+        res = model_broadcaster.cmd('get_spill_amounts', {}, ('up', 'up'))
+        assert np.isclose(res[0], 1666.66666)
+    finally:
+        model_broadcaster.stop()
 
 
+def is_none(results):
+    'evaluate the results of a multiproc command that has timed out'
+    return results is None
+
+
+def is_valid(results):
+    'evaluate the results of a multiproc command that successfully returned'
+    return len(results) == 9
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize(('secs', 'timeout', 'expected_runtime', 'valid_func'),
+                         [(5, None, 5, is_valid),
+                          (11, None, 10, is_none),
+                          (4, 5, 4, is_valid),
+                          (5, 4, 4, is_none)
+                          ])
+def test_timeout(secs, timeout, expected_runtime, valid_func):
+    model = make_model()
+
+    model_broadcaster = ModelBroadcaster(model,
+                                         ('down', 'normal', 'up'),
+                                         ('down', 'normal', 'up'))
+
+    try:
+        print '\nsleeping for {} secs...'.format(secs)
+        if timeout is None:
+            begin = time.time()
+            res = model_broadcaster.cmd('sleep', {'secs': secs})
+            end = time.time()
+        else:
+            begin = time.time()
+            res = model_broadcaster.cmd('sleep', {'secs': secs},
+                                        timeout=timeout)
+            end = time.time()
+
+        rt = end - begin
+
+        # runtime duraton should be either:
+        # - the expected response time plus a bit of overhead
+        # - the expected timeout plus a bit of overhead
+        print 'runtime: ', rt
+        assert rt >= expected_runtime
+        assert rt < expected_runtime + (expected_runtime * 0.06)
+
+        assert valid_func(res)
+    finally:
+        model_broadcaster.stop()
+
+
+@pytest.mark.slow
+def test_timeout_2_times():
+    model = make_model()
+
+    model_broadcaster = ModelBroadcaster(model,
+                                         ('down', 'normal', 'up'),
+                                         ('down', 'normal', 'up'))
+
+    try:
+        #
+        # First, we set a short timeout for a command, but a shorter command.
+        # The command should succeed
+        #
+        secs, timeout, expected_runtime = 4, 5, 4
+        print '\nsleeping for {} secs...'.format(secs)
+
+        begin = time.time()
+        res = model_broadcaster.cmd('sleep', {'secs': secs}, timeout=timeout)
+        end = time.time()
+
+        rt = end - begin
+
+        assert rt >= expected_runtime
+        assert rt < expected_runtime + (expected_runtime * 0.06)
+        assert is_valid(res)
+
+        #
+        # Next, run a command with no timeout specified.  The timeout should
+        # have reverted back to the default, and the command should succeed.
+        #
+        secs, expected_runtime = 9, 9
+        print '\nsleeping for {} secs...'.format(secs)
+
+        begin = time.time()
+        res = model_broadcaster.cmd('sleep', {'secs': secs})
+        end = time.time()
+
+        rt = end - begin
+
+        assert rt >= expected_runtime
+        assert rt < expected_runtime + (expected_runtime * 0.06)
+        assert is_valid(res)
+
+    finally:
+        model_broadcaster.stop()
+
+
+@pytest.mark.slow
+@pytest.mark.timeout(30)
 def test_rewind():
     model = make_model()
 
     model_broadcaster = ModelBroadcaster(model,
                                          ('down', 'normal', 'up'),
                                          ('down', 'normal', 'up'))
-    print '\nRewind results:'
-    res = model_broadcaster.cmd('rewind', {})
 
-    assert len(res) == 9
-    assert all([r is None for r in res])
+    try:
+        print '\nRewind results:'
+        res = model_broadcaster.cmd('rewind', {})
 
-    model_broadcaster.stop()
+        assert len(res) == 9
+        assert all([r is None for r in res])
+    finally:
+        model_broadcaster.stop()
 
 
+@pytest.mark.slow
+@pytest.mark.timeout(30)
 def test_step():
     model = make_model()
 
     model_broadcaster = ModelBroadcaster(model,
                                          ('down', 'normal', 'up'),
                                          ('down', 'normal', 'up'))
-    print '\nStep results:'
-    res = model_broadcaster.cmd('step', {})
-    assert len(res) == 9
 
-    model_broadcaster.stop()
+    try:
+        print '\nStep results:'
+        res = model_broadcaster.cmd('step', {})
+        assert len(res) == 9
+    finally:
+        model_broadcaster.stop()
 
 
+@pytest.mark.slow
+@pytest.mark.timeout(30)
 def test_full_run():
     model = make_model()
 
     model_broadcaster = ModelBroadcaster(model,
                                          ('down', 'normal', 'up'),
                                          ('down', 'normal', 'up'))
-    print '\nNumber of time steps:'
-    num_steps = model_broadcaster.cmd('num_time_steps', {})
-    assert len(num_steps) == 9
-    assert len(set(num_steps)) == 1  # all models have the same number of steps
 
-    print '\nStep results:'
-    res = model_broadcaster.cmd('full_run', {})
-    assert len(res) == 9
+    try:
+        print '\nNumber of time steps:'
+        num_steps = model_broadcaster.cmd('num_time_steps', {})
+        assert len(num_steps) == 9
 
-    for n, r in zip(num_steps, res):
-        assert len(r) == n
+        # all models have the same number of steps
+        assert len(set(num_steps)) == 1
 
-    model_broadcaster.stop()
+        print '\nStep results:'
+        res = model_broadcaster.cmd('full_run', {})
+        assert len(res) == 9
+
+        for n, r in zip(num_steps, res):
+            assert len(r) == n
+    finally:
+        model_broadcaster.stop()
 
 
+@pytest.mark.slow
+@pytest.mark.timeout(30)
 def test_cache_dirs():
     model = make_model()
 
     model_broadcaster = ModelBroadcaster(model,
                                          ('down', 'normal', 'up'),
                                          ('down', 'normal', 'up'))
-    print '\nCache directory results:'
-    res = model_broadcaster.cmd('get_cache_dir', {})
 
-    assert all([os.path.isdir(d) for d in res])
-    assert len(set(res)) == 9  # all dirs should be unique
+    try:
+        print '\nCache directory results:'
+        res = model_broadcaster.cmd('get_cache_dir', {})
 
-    model_broadcaster.stop()
+        assert all([os.path.isdir(d) for d in res])
+        assert len(set(res)) == 9  # all dirs should be unique
+    finally:
+        model_broadcaster.stop()
 
 
+@pytest.mark.slow
+@pytest.mark.timeout(30)
 def test_spill_containers_have_uncertainty_off():
     model = make_model(uncertain=True)
 
     model_broadcaster = ModelBroadcaster(model,
                                          ('down', 'normal', 'up'),
                                          ('down', 'normal', 'up'))
-    print '\nSpill results:'
-    res = model_broadcaster.cmd('get_spill_container_uncertainty', {})
-    print [r for r in res]
-    assert not any([r for r in res])
 
-    model_broadcaster.stop()
+    try:
+        print '\nSpill results:'
+        res = model_broadcaster.cmd('get_spill_container_uncertainty', {})
+        print [r for r in res]
+        assert not any([r for r in res])
+    finally:
+        model_broadcaster.stop()
 
 
+@pytest.mark.slow
+@pytest.mark.timeout(30)
 def test_weathering_output_only():
     model = make_model(geojson_output=True)
 
@@ -261,21 +410,58 @@ def test_weathering_output_only():
                                          ('down', 'normal', 'up'),
                                          ('down', 'normal', 'up'))
 
-    res = model_broadcaster.cmd('get_outputters', {})
+    try:
+        res = model_broadcaster.cmd('get_outputters', {})
 
-    assert not [o for r in res for o in r
-                if not isinstance(o, WeatheringOutput)]
+        assert not [o for r in res for o in r
+                    if not isinstance(o, WeatheringOutput)]
 
-    res = model_broadcaster.cmd('step', {})
+        res = model_broadcaster.cmd('step', {})
 
-    assert len(res) == 9
+        assert len(res) == 9
 
-    assert [r.keys() for r in res
-            if ('step_num' in r and
-                'valid' in r and
-                'WeatheringOutput' in r)]
+        assert [r.keys() for r in res
+                if ('step_num' in r and
+                    'valid' in r and
+                    'WeatheringOutput' in r)]
+    finally:
+        model_broadcaster.stop()
 
-    model_broadcaster.stop()
+
+@pytest.mark.slow
+@pytest.mark.timeout(10)
+@pytest.mark.xfail()
+def test_child_exception():
+    '''
+        This one is a bit tricky.  We would like to simulate an exception
+        by making the spill.amount a None value and then instantiating
+        our broadcaster.  This is expected to raise a TypeError based on
+        the current codebase, but could change.
+
+        We would like to get the exception raised in the child process and
+        re-raise it in the broadcaster parent process, complete with good
+        traceback information.
+    '''
+    model = make_model(geojson_output=True)
+
+    model.spills[0].amount = None
+    print 'amount:', model.spills[0].amount
+
+    try:
+        _model_broadcaster = ModelBroadcaster(model,
+                                              ('down', 'normal', 'up'),
+                                              ('down', 'normal', 'up'))
+    except Exception as e:
+        #assert type(e) == TypeError
+        assert type(e) == ValueError
+
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        fmt = traceback.format_exception(exc_type, exc_value, exc_traceback)
+
+        last_file_entry = [l for l in fmt if l.startswith('  File ')][-1]
+        last_file = last_file_entry.split('"')[1]
+
+        assert os.path.basename(last_file) == 'spill.py'
 
 
 if __name__ == '__main__':

@@ -1,9 +1,0 @@
-Sara Long Bridge - 43.088666 N, 70.762 W, scale = 1 (unscaled val = .859034)
-Furber Strait - 43.091166 N, 70.861333 W, scale = 1 (unscaled val = 1)
-General Sullivan Bridge 43.117833 N, 70.826 W, scale = 1 (unscaled val = .8066)
-Portsmouth Entrance - 43.062333 N, 70.705333, scale = 1 (unscaled val = .291185)
-
-Gulf of Maine DAC - 43.183333 N, 70.416666 W, scale = .2 (unscaled val = .228809)
- uncertainty parameters - see PortsmouthWiz.txt
-
-The spillable area has a missing sliver - zoom in at 43.04736N, 70.714336W

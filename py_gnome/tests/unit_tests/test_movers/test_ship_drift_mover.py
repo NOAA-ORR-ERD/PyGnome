@@ -1,7 +1,6 @@
 '''
 Test all operations for ship_drift mover work
 '''
-
 import datetime
 import os
 
@@ -116,7 +115,7 @@ def test_default_props():
     assert w_grid.wind_scale == 1
     assert w_grid.extrapolate is False
     assert w_grid.time_offset == 0
-    assert w_grid.active == True
+    assert w_grid.active is True
     assert w_grid.drift_angle == 0
 
 
@@ -158,10 +157,8 @@ def test_serialize_deserialize():
     """
 
     new_wind = ShipDriftMover(wind_file, topology_file, grid_type=2)
-    serial = new_wind.serialize('webapi')
-    dict_ = ShipDriftMover.deserialize(serial)
-    nw2 = ShipDriftMover.new_from_dict(dict_)
+    serial = new_wind.serialize()
+    nw2 = ShipDriftMover.deserialize(serial)
 
     assert new_wind == nw2
 
-    new_wind.update_from_dict(dict_)

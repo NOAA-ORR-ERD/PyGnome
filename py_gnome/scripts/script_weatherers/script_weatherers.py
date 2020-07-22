@@ -14,10 +14,11 @@ from gnome import scripting
 from gnome.basic_types import datetime_value_2d
 
 from gnome.utilities.remote_data import get_datafile
+from gnome.utilities.inf_datetime import InfDateTime
 
 from gnome.model import Model
 
-from gnome.map import MapFromBNA
+from gnome.maps import MapFromBNA
 from gnome.environment import Wind
 from gnome.spill import point_line_release_spill
 from gnome.movers import RandomMover, WindMover
@@ -57,21 +58,21 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                   uncertain=True)
 
 #     mapfile = get_datafile(os.path.join(base_dir, './ak_arctic.bna'))
-# 
+#
 #     print 'adding the map'
 #     model.map = MapFromBNA(mapfile, refloat_halflife=1)  # seconds
-# 
+#
 #     # draw_ontop can be 'uncertain' or 'forecast'
 #     # 'forecast' LEs are in black, and 'uncertain' are in red
 #     # default is 'forecast' LEs draw on top
-#     renderer = Renderer(mapfile, images_dir, size=(800, 600),
+#     renderer = Renderer(mapfile, images_dir, image_size=(800, 600),
 #                         output_timestep=timedelta(hours=2),
 #                         draw_ontop='forecast')
-# 
+#
 #     print 'adding outputters'
 #     model.outputters += renderer
 
-    model.outputters += WeatheringOutput()
+    model.outputters += WeatheringOutput('.\\')
 
     netcdf_file = os.path.join(base_dir, 'script_weatherers.nc')
     scripting.remove_netcdf(netcdf_file)
@@ -90,19 +91,19 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                                      release_time=start_time,
                                      end_release_time=end_time,
                                      amount=1000,
-                                     substance='ALASKA NORTH SLOPE (MIDDLE PIPELINE)',
+                                     substance='ALASKA NORTH SLOPE (MIDDLE PIPELINE, 1997)',
                                      units='bbl')
 
     # set bullwinkle to .303 to cause mass goes to zero bug at 24 hours (when continuous release ends)
-    spill.element_type._substance._bullwinkle = .303
+    spill.substance._bullwinkle = .303
     model.spills += spill
 
     print 'adding a RandomMover:'
-    #model.movers += RandomMover(diffusion_coef=50000)
+    # model.movers += RandomMover(diffusion_coef=50000)
 
     print 'adding a wind mover:'
 
-    series = np.zeros((2, ), dtype=datetime_value_2d)
+    series = np.zeros((2,), dtype=datetime_value_2d)
     series[0] = (start_time, (20, 0))
     series[1] = (start_time + timedelta(hours=23), (20, 0))
 
@@ -116,33 +117,37 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # define skimmer/burn cleanup options
     skim1_start = start_time + timedelta(hours=15.58333)
     skim2_start = start_time + timedelta(hours=16)
+
+    skim1_active_range = (skim1_start, skim1_start + timedelta(hours=8.))
+    skim2_active_range = (skim2_start, skim2_start + timedelta(hours=12.))
+
     units = spill.units
+
     skimmer1 = Skimmer(80, units=units, efficiency=0.36,
-                      active_start=skim1_start,
-                      active_stop=skim1_start + timedelta(hours=8))
+                      active_range=skim1_active_range)
     skimmer2 = Skimmer(120, units=units, efficiency=0.2,
-                      active_start=skim2_start,
-                      active_stop=skim2_start + timedelta(hours=12))
+                      active_range=skim2_active_range)
 
     burn_start = start_time + timedelta(hours=36)
     burn = Burn(1000., .1,
-                active_start=burn_start, efficiency=.2)
+                active_range=(burn_start, InfDateTime('inf')), efficiency=.2)
 
     chem_start = start_time + timedelta(hours=24)
-    c_disp = ChemicalDispersion(0.5, efficiency=0.4,
-                                active_start=chem_start,
-                                active_stop=chem_start + timedelta(hours=8))
+    chem_active_range = (chem_start, chem_start + timedelta(hours=8))
+#     c_disp = ChemicalDispersion(0.5, efficiency=0.4,
+#                                 active_start=chem_start,
+#                                 active_stop=chem_start + timedelta(hours=8))
 
 
-    model.environment += [Water(280.928), wind,  waves]
+    model.environment += [Water(280.928), wind, waves]
 
-    model.weatherers += Evaporation(water,wind)
+    model.weatherers += Evaporation(water, wind)
     model.weatherers += Emulsification(waves)
-    model.weatherers += NaturalDispersion(waves,water)
+    model.weatherers += NaturalDispersion(waves, water)
     model.weatherers += skimmer1
     model.weatherers += skimmer2
     model.weatherers += burn
-    model.weatherers += c_disp
+#     model.weatherers += c_disp
 
     return model
 
@@ -151,3 +156,4 @@ if __name__ == "__main__":
     scripting.make_images_dir()
     model = make_model()
     model.full_run()
+    model.save('.')

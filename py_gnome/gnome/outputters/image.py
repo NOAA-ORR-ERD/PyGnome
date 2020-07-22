@@ -7,21 +7,28 @@ These will output images for use in the Web client / OpenLayers
 import os
 import copy
 import collections
-from tempfile import NamedTemporaryFile
+import tempfile
+# from tempfile import NamedTemporaryFile
+from colander import SequenceSchema
+from gnome.persist.base_schema import GeneralGnomeObjectSchema
 
 import numpy as np
 
-from gnome.utilities.serializable import Field
 from gnome.utilities.time_utils import date_to_sec
 
 from gnome.utilities.map_canvas import MapCanvas
 
-from gnome.persist import class_from_objtype
+from . import Outputter, BaseOutputterSchema
+from gnome.movers.current_movers import IceMoverSchema
 
-from . import Outputter, BaseSchema
 
-
-class IceImageSchema(BaseSchema):
+class IceImageSchema(BaseOutputterSchema):
+    ice_movers =  SequenceSchema(
+        GeneralGnomeObjectSchema(
+            acceptable_schemas=[IceMoverSchema]
+        ),
+        save=True, update=True, save_reference=True
+    )
     '''
     Nothing is required for initialization
     '''
@@ -34,13 +41,6 @@ class IceImageOutput(Outputter):
         The image is PNG encoded, then Base64 encoded to include in a
         JSON response.
     '''
-    _state = copy.deepcopy(Outputter._state)
-
-    # need a schema and also need to override save so output_dir
-    # is saved correctly - maybe point it to saveloc
-    _state.add_field(Field('ice_movers',
-                           save=True, update=True, iscollection=True))
-
     _schema = IceImageSchema
 
     def __init__(self, ice_movers=None,
@@ -194,9 +194,10 @@ class IceImageOutput(Outputter):
 
         thick_image, conc_image, bb = self.render_images(model_time)
 
-        # info to return to the caller
-        web_mercator = 'EPSG:3857'
+        # web_mercator = 'EPSG:3857'
         equirectangular = 'EPSG:32662'
+
+        # info to return to the caller
         output_dict = {'step_num': step_num,
                        'time_stamp': iso_time,
                        'thickness_image': thick_image,
@@ -234,6 +235,7 @@ class IceImageOutput(Outputter):
         # grabbing our grid data twice.
         mover_grid_bb = None
         mover_grids = []
+
         for mover in self.ice_movers:
             mover_grids.append(mover.get_grid_data())
             mover_grid_bb = mover.get_grid_bounding_box(mover_grids[-1],
@@ -266,34 +268,26 @@ class IceImageOutput(Outputter):
                 canvas.draw_polygon(poly, fill_color=tc)
                 canvas.draw_polygon(poly, fill_color=cc, background=True)
 
-        # diagnostic so we can see what we have rendered.
-        # print '\ndrawing reference objects...'
-        # canvas.draw_graticule(False)
-        # canvas.draw_tags(False)
-        # canvas.save_background('background.png')
-        # canvas.save_foreground('foreground.png')
-
         # py_gd does not currently have the capability to generate a .png
         # formatted buffer in memory. (libgd can be made to do this, but
         # the wrapper is yet to be written)
         # So we will just write to a tempfile and then read it back.
-        with NamedTemporaryFile() as fp:
-            canvas.save_foreground(fp.name)
-            fp.seek(0)
-            thickness_image = fp.read().encode('base64')
+        # If we ever have to do this anywhere else, a context manger would be good.
+        tempdir = tempfile.mkdtemp()
+        tempfilename = os.path.join(tempdir, "gnome_temp_image_file.png")
 
-        with NamedTemporaryFile() as fp:
-            canvas.save_background(fp.name)
-            fp.seek(0)
-            coverage_image = fp.read().encode('base64')
+        canvas.save_foreground(tempfilename)
+        thickness_image = open(tempfilename, 'rb').read().encode('base64')
+
+        canvas.save_background(tempfilename)
+        coverage_image = open(tempfilename, 'rb').read().encode('base64')
+
+        os.remove(tempfilename)
+        os.rmdir(tempdir)
 
         return ("data:image/png;base64,{}".format(thickness_image),
                 "data:image/png;base64,{}".format(coverage_image),
                 mover_grid_bb)
-
-    def rewind(self):
-        'remove previously written files'
-        super(IceImageOutput, self).rewind()
 
     def ice_movers_to_dict(self):
         '''
@@ -302,20 +296,3 @@ class IceImageOutput(Outputter):
         '''
         return self._collection_to_dict(self.ice_movers)
 
-    @classmethod
-    def deserialize(cls, json_):
-        """
-        append correct schema for current mover
-        """
-        schema = cls._schema()
-        _to_dict = schema.deserialize(json_)
-
-        if 'ice_movers' in json_:
-            _to_dict['ice_movers'] = []
-            for i, cm in enumerate(json_['ice_movers']):
-                cm_cls = class_from_objtype(cm['obj_type'])
-                cm_dict = cm_cls.deserialize(json_['ice_movers'][i])
-
-                _to_dict['ice_movers'].append(cm_dict)
-
-        return _to_dict

@@ -21,21 +21,25 @@ cdef extern from "StringFunctions.h":
     void DateToSeconds(DateTimeRec *, Seconds *)
     void SecondsToDate(Seconds, DateTimeRec *)
 
+
 """
-Declare methods for interpolation of timeseries from 
+Declare methods for interpolation of timeseries from
 lib_gnome/OSSMTimeValue_c class and ShioTimeValue
 """
 cdef extern from "OSSMTimeValue_c.h":
     cdef cppclass OSSMTimeValue_c:
         OSSMTimeValue_c() except +
-        # Members
-        string          fileName
-        string          filePath
-        double          fScaleFactor
-        WorldPoint3D    fStationPosition
 
-        # make char array a string - easier to work with in Cython
-        string          fStationName
+        # Members
+        string fileName
+        string filePath
+
+        double fScaleFactor
+
+        bool extrapolationIsAllowed
+
+        WorldPoint3D fStationPosition
+        string fStationName
 
         # Methods
         OSErr   GetTimeValue(Seconds &, VelocityRec *)
@@ -46,10 +50,12 @@ cdef extern from "OSSMTimeValue_c.h":
         short   GetUserUnits()
         void    SetUserUnits(short)
         OSErr   CheckStartTime(Seconds)
+        long    GetNumValues()
         void    Dispose()
         WorldPoint3D    GetStationLocation()
         OSErr           GetDataStartTime(Seconds *startTime)
         OSErr           GetDataEndTime(Seconds *endTime)
+
 
 """
 ShioTimeValue_c.h derives from OSSMTimeValue_c - so no need to redefine methods
@@ -80,12 +86,13 @@ cdef extern from "ShioTimeValue_c.h":
         EbbFloodDataH   fEbbFloodDataHdl  # values to show on list for tidal currents - not sure if these should be available
         HighLowDataH    fHighLowDataHdl
 
-        OSErr       ReadTimeValues(char *path)
+        OSErr       ReadShioValues(char *path)
         OSErr       SetYearDataPath(char *path)
 
         # Not Sure if Following are required/used
         OSErr       GetConvertedHeightValue(Seconds, VelocityRec *)
         OSErr       GetProgressiveWaveValue(Seconds &, VelocityRec *)
+
 
 cdef extern from "Weatherers_c.h":
     OSErr emulsify(int n, unsigned long step_len,
@@ -94,7 +101,7 @@ cdef extern from "Weatherers_c.h":
                    double *frac_evap,
                    int32_t *age,
                    double *bulltime,
-                   double k_emul,
+                   double *k_emul,
                    double emul_time,
                    double emul_C,
                    double S_max,
@@ -110,9 +117,9 @@ cdef extern from "Weatherers_c.h":
                           double *d_disp,
                           double *d_sed,
                           double *droplet_avg_size,
-                          double frac_breaking_waves,
-                          double disp_wave_energy,
-                          double wave_height,
+                          double *frac_breaking_waves,
+                          double *disp_wave_energy,
+                          double *wave_height,
                           double visc_w,
                           double rho_w,
                           double C_sed,
