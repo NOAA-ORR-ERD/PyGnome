@@ -8,10 +8,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
 
-from future import standard_library
-standard_library.install_aliases()
-from builtins import *
-from builtins import object
 import numpy as np
 
 from gnome.basic_types import spill_type, world_point, world_point_type
@@ -43,8 +39,7 @@ class TestRandom(object):
     def move(self, delta):
         self.rm.prepare_for_model_run()
 
-        self.rm.prepare_for_model_step(self.cm.model_time,
-                self.cm.time_step)
+        self.rm.prepare_for_model_step(self.cm.model_time, self.cm.time_step)
         self.rm.get_move(
             self.cm.model_time,
             self.cm.time_step,
@@ -52,7 +47,7 @@ class TestRandom(object):
             delta,
             self.cm.status,
             spill_type.forecast,
-            )
+        )
 
     def test_move(self):
         """
@@ -63,7 +58,8 @@ class TestRandom(object):
         np.set_printoptions(precision=4)
 
         print()
-        print('diffusion_coef = {0:0.1f}'.format(self.rm.diffusion_coef), end=' ')
+        print('diffusion_coef = {0:0.1f}'.format(self.rm.diffusion_coef),
+              end=' ')
         print('get_move output:')
         print(self.cm.delta.view(dtype=np.float64).reshape(-1, 3))
 
@@ -75,12 +71,11 @@ class TestRandom(object):
         ensure no move for z below surface
         """
 
-    	self.cm.ref['z'][:]=100
-        new_delta = np.zeros((self.cm.num_le, ), dtype=world_point)
+        self.cm.ref['z'][:] = 100
+        new_delta = np.zeros((self.cm.num_le,), dtype=world_point)
         self.move(new_delta)
-    	self.cm.ref['z'][:]=0
-        assert np.all(new_delta.view(dtype=np.double).reshape(1, -1)
-                      == 0)
+        self.cm.ref['z'][:] = 0
+        assert np.all(new_delta.view(dtype=np.double).reshape(1, -1) == 0)
 
     def test_zero_coef(self):
         """
@@ -88,11 +83,10 @@ class TestRandom(object):
         """
 
         self.rm.diffusion_coef = 0
-        new_delta = np.zeros((self.cm.num_le, ), dtype=world_point)
+        new_delta = np.zeros((self.cm.num_le,), dtype=world_point)
         self.move(new_delta)
         self.rm.diffusion_coef = 100000
-        assert np.all(new_delta.view(dtype=np.double).reshape(1, -1)
-                      == 0)
+        assert np.all(new_delta.view(dtype=np.double).reshape(1, -1) == 0)
 
     def test_update_coef(self):
         """
@@ -102,7 +96,7 @@ class TestRandom(object):
         """
 
         np.set_printoptions(precision=6)
-        delta = np.zeros((self.cm.num_le, ), dtype=world_point)
+        delta = np.zeros((self.cm.num_le,), dtype=world_point)
         self.move(delta)  # get the move before changing the coefficient
 
         print()
@@ -113,7 +107,7 @@ class TestRandom(object):
         assert self.rm.diffusion_coef == 10
 
         srand(1)
-        new_delta = np.zeros((self.cm.num_le, ), dtype=world_point)
+        new_delta = np.zeros((self.cm.num_le,), dtype=world_point)
         self.move(new_delta)  # get the move after changing coefficient
         print()
         print('diffusion_coef = {0.diffusion_coef}'.format(self.rm), end=' ')
@@ -132,15 +126,17 @@ class TestRandom(object):
         Since seed is not reset, the move should be repeatable
         """
 
-        delta = np.zeros((self.cm.num_le, ), dtype=world_point)
+        delta = np.zeros((self.cm.num_le,), dtype=world_point)
         self.move(delta)
 
         srand(1)
-        new_delta = np.zeros((self.cm.num_le, ), dtype=world_point)
+        new_delta = np.zeros((self.cm.num_le,), dtype=world_point)
         self.move(new_delta)
 
         print()
-        print('-- Do not reset seed and call get move again to get identical results --')
+        print(
+            '-- Do not reset seed and call get move again to get identical results --'
+        )
         print('get_move results 1st time:')
         print(delta.view(dtype=np.float64).reshape(-1, 3))
         print('get_move results 2nd time - same seed:')
@@ -159,7 +155,7 @@ class TestRandom(object):
 
         diff = delta.view(dtype=world_point_type).reshape(-1, 3) \
             - new_delta.view(dtype=world_point_type).reshape(-1, 3)
-        return np.sum(diff ** 2, axis=1) ** .5
+        return np.sum(diff**2, axis=1)**.5
 
 
 if __name__ == '__main__':

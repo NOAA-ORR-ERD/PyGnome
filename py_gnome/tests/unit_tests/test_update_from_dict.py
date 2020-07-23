@@ -2,6 +2,12 @@
 update_from_dict has been giving problems on spills so just add a couple of
 simple tests for spills, and movers orderedcollection
 '''
+
+from __future__ import print_function
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import unicode_literals
+
 import copy
 from datetime import datetime
 
@@ -79,11 +85,8 @@ def define_mdl(test=0):
         return (mdl, json_, True)
 
 
-@pytest.mark.parametrize(("model", "json_", "exp_updated"),
-                         [define_mdl(0),
-                          define_mdl(1),
-                          define_mdl(2),
-                          define_mdl(3)])
-def test_spills_update_from_dict(model, json_, exp_updated):
+@pytest.mark.parametrize("model_num", [0, 1, 2, 3])
+def test_spills_update_from_dict(model_num):
+    model, json_, exp_updated = define_mdl(model_num)
     updated = model.update_from_dict(json_)
     assert updated is exp_updated

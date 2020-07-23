@@ -1,3 +1,8 @@
+from __future__ import print_function
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import unicode_literals
+
 import os
 import sys
 import time
@@ -32,8 +37,9 @@ from .conftest import testdata, test_oil
 from pprint import PrettyPrinter
 pp = PrettyPrinter(indent=2, width=120)
 
-pytestmark = pytest.mark.skipif("sys.platform=='win32'",
-                                reason="skip on windows")
+
+pytestmark = pytest.mark.skipif((sys.version_info.major == 3 or os.name == 'nt'),
+                                reason="skip on windows and py3")
 
 
 def make_model(uncertain=False,

@@ -8,6 +8,7 @@ import numpy as np
 from .grids cimport TimeGridVel_c
 from gnome.basic_types import velocity_rec
 
+from .cy_helpers import filename_as_bytes
 
 @cython.final
 cdef class CyTimeGridVel(object):
@@ -30,10 +31,19 @@ cdef class CyTimeGridVel(object):
 
     def load_data(self, datafile, topology=None):
         cdef OSErr err
+        cdef bytes bdatafile
+        # cdef bytes bdatafile = datafile.encode("ASCII")
+
+        # cdef bytes btopology
+        # btopology = topology.encode("ASCII") if topology is not None else b''
+
+        bdatafile = filename_as_bytes(datafile)
+        btopology = filename_as_bytes(topology)
+
         if topology:
-            err = self.timegrid.TextRead(datafile, topology)
+            err = self.timegrid.TextRead(bdatafile, btopology)
         else:
-            err = self.timegrid.TextRead(datafile, '')
+            err = self.timegrid.TextRead(bdatafile, '')
 
         if err != 0:
             raise Exception('Failed in TextRead')

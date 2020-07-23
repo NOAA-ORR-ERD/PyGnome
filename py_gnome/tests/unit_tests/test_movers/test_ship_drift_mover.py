@@ -5,10 +5,7 @@ from __future__ import print_function
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
-from builtins import str
-from future import standard_library
-standard_library.install_aliases()
-from builtins import *
+
 import datetime
 import os
 
@@ -37,7 +34,11 @@ def test_exceptions():
         ShipDriftMover(os.path.join('./', 'WindSpeedDirSubset.CUR'))
 
     with pytest.raises(TypeError):
-        ShipDriftMover(wind_file, topology_file=10)
+        """
+        note: you can pass in in int -- os.path.exists takes an integer file
+              descriptor
+        """
+        ShipDriftMover(wind_file, topology_file=10.0)
 
 
 def test_string_repr_no_errors():
