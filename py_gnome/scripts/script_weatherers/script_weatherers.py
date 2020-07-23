@@ -18,7 +18,7 @@ from gnome.utilities.inf_datetime import InfDateTime
 
 from gnome.model import Model
 
-from gnome.map import MapFromBNA
+from gnome.maps import MapFromBNA
 from gnome.environment import Wind
 from gnome.spill import point_line_release_spill
 from gnome.movers import RandomMover, WindMover

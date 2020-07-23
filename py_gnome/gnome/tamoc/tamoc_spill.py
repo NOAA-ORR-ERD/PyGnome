@@ -71,7 +71,7 @@ class TamocSpill(Spill):
         try:
             # if it was provided in mass discharge units:
             release_rate = uc.convert(units, "kg/s", release_rate)
-        except uc.NotSupportedUnitError:  # Trying volume discharge units
+        except uc.UnitConversionError:  # Trying volume discharge units
             # must be in volume discharge
             release_rate = uc.convert(units, "m^3/s", release_rate)
             # convert to kg/s discharge with density

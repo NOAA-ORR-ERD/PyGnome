@@ -2,7 +2,7 @@
 model dissolution process
 '''
 from __future__ import division
-import copy
+
 import contextlib
 
 import numpy as np
@@ -152,7 +152,7 @@ class Dissolution(Weatherer):
 
         # print 'droplet_avg_sizes = ', droplet_avg_sizes
 
-        #arom_mask = substance._sara['type'] == 'Aromatics' 
+        #arom_mask = substance._sara['type'] == 'Aromatics'
         sara = np.asarray(substance.sara_type)
         arom_mask = sara == 'Aromatics'
 

@@ -218,7 +218,7 @@ class nc_particle_file:
                                   'longitude']):
         """
         returns the requested variables from trajectory of an individual particle
-        
+
         note: this is very inefficient -- it has to read the entire file to get it.
         """
 

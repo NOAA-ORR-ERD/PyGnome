@@ -23,6 +23,8 @@ from gnome.basic_types import wind_datasources
 from gnome.cy_gnome.cy_ossm_time import ossm_wind_units
 
 from gnome.utilities.time_utils import sec_to_datetime
+from gnome.utilities.time_utils import (zero_time,
+                                        sec_to_date)
 from gnome.utilities.timeseries import Timeseries
 from gnome.utilities.inf_datetime import InfDateTime
 from gnome.utilities.distributions import RayleighDistribution as rayleigh
@@ -31,6 +33,9 @@ from gnome.persist.extend_colander import (DefaultTupleSchema,
                                            LocalDateTime,
                                            DatetimeValue2dArraySchema,
                                            FilenameSchema)
+from gnome.utilities.convert import (to_time_value_pair,
+                                     tsformat,
+                                     to_datetime_value_2d)
 from gnome.persist.validators import convertible_to_seconds
 from gnome.persist import validators, base_schema
 
@@ -92,7 +97,7 @@ class WindSchema(base_schema.ObjTypeSchema):
     description = SchemaNode(String())
 
     # Thanks to CyTimeseries
-    filename = FilenameSchema(isdatafile=True, update=False, test_equal=False)
+    filename = FilenameSchema(save=False, missing=drop, isdatafile=False, update=False, test_equal=False)
 
     updated_at = SchemaNode(LocalDateTime())
     latitude = SchemaNode(Float())
@@ -127,6 +132,7 @@ class Wind(Timeseries, Environment):
     '''
     # object is referenced by others using this attribute name
     _ref_as = 'wind'
+    _gnome_unit = 'm/s'
 
     # default units for input/output data
     _schema = WindSchema
@@ -147,6 +153,7 @@ class Wind(Timeseries, Environment):
         """
         todo: update docstrings!
         """
+        self._timeseries = np.array([(sec_to_date(zero_time()),[0.0, 0.0])], dtype=datetime_value_2d)
         self.updated_at = kwargs.pop('updated_at', None)
         self.source_id = kwargs.pop('source_id', 'undefined')
 
@@ -169,6 +176,7 @@ class Wind(Timeseries, Environment):
             self.name = kwargs.pop('name', os.path.split(self.filename)[1])
             # set _user_units attribute to match user_units read from file.
             self._user_units = self.ossm.user_units
+            self._timeseries = self.get_wind_data(units=self._user_units)
 
             if units is not None:
                 self.units = units
@@ -187,12 +195,19 @@ class Wind(Timeseries, Environment):
             if timeseries is not None:
                 if units is None:
                     raise TypeError('Units must be provided with timeseries')
-
-                self.set_wind_data(timeseries, units, coord_sys)
+                self.units = units
+                self.new_set_timeseries(timeseries, coord_sys)
 
         self.extrapolation_is_allowed = extrapolation_is_allowed
         self.time = kwargs.pop('time', None)
-        self._time = Time(data=self.timeseries['time'].astype(datetime.datetime))
+
+    def update_from_dict(self, dict_, refs=None):
+        if 'units' in dict_.keys():
+            #enforce updating of units before timeseries
+            self.units = dict_.pop('units')
+        if 'timeseries' in dict_.keys():
+            self.timeseries = WindTimeSeriesSchema().deserialize(dict_.pop('timeseries'))
+        super(Wind, self).update_from_dict(dict_, refs=refs)
 
     def _check_units(self, units):
         '''
@@ -239,7 +254,7 @@ class Wind(Timeseries, Environment):
         returns entire timeseries in 'r-theta' coordinate system in the units
         in which the data was entered or as specified by units attribute
         '''
-        return self.get_wind_data(units=self.units)
+        return self._timeseries
 
     @timeseries.setter
     def timeseries(self, value):
@@ -248,8 +263,28 @@ class Wind(Timeseries, Environment):
         self.units attribute. Property converts the units to 'm/s' so Cython/
         C++ object stores timeseries in 'm/s'
         '''
-        self.set_wind_data(value, units=self.units)
-        self.time.data = self.timeseries['time'].astype(datetime.datetime)
+        coord_sys ='r-theta'
+        self.new_set_timeseries(value, coord_sys)
+
+    def new_set_timeseries(self, value, coord_sys):
+        if self._check_timeseries(value):
+            units = self.units
+
+            wind_data = self._xform_input_timeseries(value)
+            self._timeseries = wind_data.copy()
+            wind_data['value'] = self._convert_units(wind_data['value'],
+                                                     coord_sys, units,
+                                                     'meter per second')
+
+            datetime_value_2d = self._xform_input_timeseries(wind_data)
+            timeval = to_time_value_pair(wind_data, coord_sys)
+            self.ossm.timeseries = timeval
+            if not hasattr(self, '_time') or self._time is None:
+                self._time = Time()
+            self.time.data = self._timeseries['time'].astype(datetime.datetime)
+        else:
+            raise ValueError('Bad timeseries as input')
+
 
     @property
     def data_start(self):
@@ -264,15 +299,6 @@ class Wind(Timeseries, Environment):
         The stop time of the valid data for this wind timeseries
         """
         return sec_to_datetime(self.ossm.get_end_time())
-
-    def timeseries_to_dict(self):
-        '''
-        when serializing data - round it to 2 decimal places
-        '''
-        ts = self.get_wind_data(units=self.units)
-        ts['value'][:] = np.round(ts['value'], 2)
-
-        return ts
 
     @property
     def units(self):
@@ -450,6 +476,7 @@ class Wind(Timeseries, Environment):
                                                      'meter per second')
 
             super(Wind, self).set_timeseries(wind_data, coord_sys)
+            self._timeseries = wind_data
         else:
             raise ValueError('Bad timeseries as input')
 
@@ -470,7 +497,7 @@ class Wind(Timeseries, Environment):
 
         return tuple(data[0]['value'])
 
-    def at(self, points, time, coord_sys='r-theta',
+    def at(self, points, time, coord_sys='r-theta', units=None,
            _auto_align=True):
         '''
         Returns the value of the wind at the specified points at the specified

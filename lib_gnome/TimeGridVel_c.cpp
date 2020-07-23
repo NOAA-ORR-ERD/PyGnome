@@ -13835,6 +13835,16 @@ OSErr TimeGridCurTri_c::GetScaledVelocities(Seconds time, VelocityFRec *scaled_v
 	return err;
 }
 
+LongPointHdl TimeGridCurTri_c::GetPointsHdl()
+{
+	return (dynamic_cast<TTriGridVel*>(fGrid)) -> GetPointsHdl();
+}
+
+TopologyHdl TimeGridCurTri_c::GetTopologyHdl(void)
+{
+	return dynamic_cast<TriGridVel_c *>(fGrid)->GetTopologyHdl();
+}
+
 // some extra functions that are not attached to any class
 bool DateValuesAreMinusOne(DateTimeRec &dateTime)
 {

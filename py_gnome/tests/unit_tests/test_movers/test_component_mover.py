@@ -10,7 +10,7 @@ import pytest
 import tempfile
 
 from gnome.movers import ComponentMover
-from gnome.environment import Wind
+from gnome.environment import Wind, constant_wind
 from gnome.utilities import time_utils
 
 from ..conftest import sample_sc_release, testdata
@@ -18,7 +18,8 @@ from ..conftest import sample_sc_release, testdata
 
 curr1_file = testdata['ComponentMover']['curr']
 curr2_file = testdata['ComponentMover']['curr2']
-wnd = Wind(filename=testdata['ComponentMover']['wind'])
+#wnd = Wind(filename=testdata['ComponentMover']['wind'])
+wnd = constant_wind(5., 270, 'knots')
 
 
 def test_exceptions():

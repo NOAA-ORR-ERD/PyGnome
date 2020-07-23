@@ -378,6 +378,7 @@ class TestWeatheringData:
         todo: should this raise a runtime error. May want to change how this
             works
         '''
+        pytest.importorskip("oil_library")
         l.uninstall()
         rel_time = datetime.now().replace(microsecond=0)
         (sc, wd) = self.sample_sc_intrinsic(100, rel_time)

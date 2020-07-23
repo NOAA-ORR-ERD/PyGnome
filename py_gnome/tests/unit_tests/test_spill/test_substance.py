@@ -2,7 +2,7 @@ from gnome.spill.substance import (Substance,
                                    GnomeOil,
                                    NonWeatheringSubstance)
 from gnome.spill.initializers import InitWindages, plume_initializers
-from oil_library.models import Oil
+#from oil_library.models import Oil
 
 class TestSubstance(object):
     '''Test for base class'''

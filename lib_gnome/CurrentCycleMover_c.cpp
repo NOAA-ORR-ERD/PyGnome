@@ -418,4 +418,62 @@ VelocityRec CurrentCycleMover_c::GetPatValue(WorldPoint p)
 	return v;
 }
 
+OSErr CurrentCycleMover_c::GetScaledVelocities(Seconds model_time, VelocityFRec *velocities)
+{
+	return timeGrid->GetScaledVelocities(model_time, velocities);
+}
+
+LongPointHdl CurrentCycleMover_c::GetPointsHdl(void)
+{
+	if (timeGrid->IsRegularGrid())
+	{
+		return timeGrid->GetPointsHdl();
+	}
+	else
+	{
+		return timeGrid->fGrid->GetPointsHdl();
+	}
+}
+
+TopologyHdl CurrentCycleMover_c::GetTopologyHdl(void)
+{
+	return timeGrid->fGrid->GetTopologyHdl();
+}
+
+GridCellInfoHdl CurrentCycleMover_c::GetCellDataHdl(void)
+{
+	return timeGrid->GetCellData();
+}
+
+WORLDPOINTH	CurrentCycleMover_c::GetTriangleCenters(void)
+{	// should rename this function...
+	if (IsTriangleGrid())
+	{
+		if (IsDataOnCells())
+			return timeGrid->fGrid->GetCenterPointsHdl();
+		else
+			return timeGrid->fGrid->GetWorldPointsHdl();
+	}
+	else
+		return timeGrid->GetCellCenters();
+}
+
+long CurrentCycleMover_c::GetNumTriangles(void)
+{
+	long numTriangles = 0;
+	TopologyHdl topoH = GetTopologyHdl();
+	if (topoH) numTriangles = _GetHandleSize((Handle)topoH)/sizeof(**topoH);
+
+	return numTriangles;
+}
+
+long CurrentCycleMover_c::GetNumPoints(void)
+{
+	long numPts = 0;
+	LongPointHdl ptsH = GetPointsHdl();
+	if (ptsH) numPts = _GetHandleSize((Handle)ptsH)/sizeof(**ptsH);
+
+	return numPts;
+}
+
 

@@ -256,4 +256,4 @@ class ElementCache(object):
         # clean out the disk cache
         if os.path.isdir(self._cache_dir):
             shutil.rmtree(self._cache_dir)
-        os.mkdir(self._cache_dir)
+        self.create_new_dir()

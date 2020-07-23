@@ -31,7 +31,7 @@ from gnome.utilities.projections import GeoProjection
 # from gnome.utilities.remote_data import get_datafile
 
 # from gnome.environment import Wind, Tide
-# from gnome.map import MapFromBNA
+# from gnome.maps import MapFromBNA
 
 # from gnome.model import Model
 # from gnome.spill import point_line_release_spill

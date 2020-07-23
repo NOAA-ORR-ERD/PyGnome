@@ -71,6 +71,10 @@ def v0tov1(messages, errors):
         '''
         Takes element type cstruct with a substance, creates an appropriate GnomeOil cstruct
         '''
+        inits = et_json.get('initializers',[])
+        for init in inits:
+            if isinstance(init, dict):
+                init['obj_type'] = init['obj_type'].replace('.elements.', '.')
         if 'substance' not in et_json:
             '''
             Note the id of the new cstructs. The ID IS required at this stage, because
@@ -80,7 +84,7 @@ def v0tov1(messages, errors):
                 "obj_type": "gnome.spill.substance.NonWeatheringSubstance", 
                 "name": "NonWeatheringSubstance", 
                 "standard_density": 1000.0, 
-                "initializers": et_json.get('initializers',[]),
+                "initializers": inits,
                 "is_weatherable": False, 
                 "id": "v0-v1-update-id-0"
             }

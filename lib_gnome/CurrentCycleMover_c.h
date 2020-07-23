@@ -95,6 +95,16 @@ public:
 	//void 				DisposeLoadedData(LoadedData * dataPtr);	
 	//void 				ClearLoadedData(LoadedData * dataPtr);	
 	//OSErr				ReadTimeData(long index,VelocityFH *velocityH, char* errmsg); 
+			OSErr 		GetScaledVelocities(Seconds model_time, VelocityFRec *velocity);
+			TopologyHdl GetTopologyHdl(void);
+			GridCellInfoHdl GetCellDataHdl(void);
+			LongPointHdl GetPointsHdl(void);
+			WORLDPOINTH	GetTriangleCenters();
+			long 		GetNumTriangles(void);
+			long 		GetNumPoints(void);
+			bool 		IsTriangleGrid(){return timeGrid->IsTriangleGrid();}
+			bool 		IsDataOnCells(){return timeGrid->IsDataOnCells();}
+			bool 		IsRegularGrid(){return timeGrid->IsRegularGrid();}
 
 };
 

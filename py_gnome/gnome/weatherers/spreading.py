@@ -72,7 +72,7 @@ class FayGravityViscous(Weatherer):
         # varies over time, may want to do something different
         self._init_relative_buoyancy = None
         self.thickness_limit = thickness_limit
-        self.is_first_step = True
+        #self.is_first_step = True
 
     @lru_cache(4)
     def _gravity_spreading_t0(self,
@@ -309,48 +309,24 @@ class FayGravityViscous(Weatherer):
             # now update area of old LEs - only update till max area is reached
             max_area = blob_init_volume[m_age][0] / self.thickness_limit
             if area[m_age].sum() < max_area:
-                if self.is_first_step:
-                    self.is_first_step = False
-                    # update area
-                    blob_area = self._update_blob_area(water_viscosity,
-                                                       relative_buoyancy,
-                                                       blob_init_volume[m_age][0],
-                                                       age[m_age][0])
 
-                    # blob_area2 = self._update_blob_area(water_viscosity,
-                    #                                     relative_buoyancy,
-                    #                                     blob_init_volume[m_age][0],
-                    #                                     age[m_age][0]/2)
+                C = (PI *
+                    self.spreading_const[1] ** 2 *
+                    (blob_init_volume[m_age][0] ** 2 *
+                    constants.gravity *
+                    relative_buoyancy /
+                    np.sqrt(water_viscosity)) ** (1. / 3.))
 
-                else:
-                    blob_area4 = self._update_blob_area(water_viscosity,
-                                                        relative_buoyancy,
-                                                        blob_init_volume[m_age][0],
-                                                        age[m_age][0])
+                #blob_area_fgv = area[m_age].sum() + .5 * (C**2 / area[m_age].sum()) * time_step	# make sure area > 0
+                blob_area_fgv = .5 * (C**2 / area[m_age].sum()) * time_step	# make sure area > 0
 
-                    C = (PI *
-                         self.spreading_const[1] ** 2 *
-                         (blob_init_volume[m_age][0] ** 2 *
-                          constants.gravity *
-                          relative_buoyancy /
-                          np.sqrt(water_viscosity)) ** (1. / 3.))
+                K = 4 * PI * 2 * .033
 
-                    # blob_area_fgv = .5 * C**2 / area[m_age].sum()	# make sure area > 0
-                    # blob_area_fgv = area[m_age][0] + .5 * (C**2 / area[m_age][0]) * time_step	# make sure area > 0
-                    # blob_area_fgv = area[m_age][0] + .5 * (C**2 / area[m_age][0]) * time_step	# make sure area > 0
-                    blob_area_fgv = area[m_age].sum() + .5 * (C**2 / area[m_age].sum()) * time_step	# make sure area > 0
-                    # blob_area_fgv = blob_area2 + .5 * (C**2 / blob_area2) * time_step	# make sure area > 0
+                #blob_area_diffusion = area[m_age].sum() + ((7 / 6) * K * (area[m_age].sum() / K) ** (1 / 7)) * time_step
+                blob_area_diffusion = ((7 / 6) * K * (area[m_age].sum() / K) ** (1 / 7)) * time_step
 
-                    K = 4 * PI * 2 * .033
-
-                    # blob_area_diffusion = (7 / 6) * K * (area[m_age].sum() / K) ** (1 / 7)
-                    blob_area_diffusion = area[m_age].sum() + ((7 / 6) * K * (area[m_age].sum() / K) ** (1 / 7)) * time_step
-                    # blob_area_diffusion = area[m_age][0] + ((7 / 6) * K * (area[m_age][0] / K) ** (1 / 7)) * time_step
-                    # blob_area_diffusion = blob_area2 + ((7 / 6) * K * (blob_area2 / K) ** (1 / 7)) * time_step
-
-                    # blob_area = blob_area_fgv
-                    blob_area = blob_area_fgv + blob_area_diffusion
-                    # blob_area = blob_area_diffusion
+                #blob_area = blob_area_fgv + blob_area_diffusion
+                blob_area = area[m_age].sum() + blob_area_fgv + blob_area_diffusion
 
                 if blob_area >= max_area:
                     area[m_age] = max_area / m_age.sum()
@@ -401,7 +377,7 @@ class FayGravityViscous(Weatherer):
         # make it None so no stale data
         self._init_relative_buoyancy = None
 
-        self.is_first_step = True
+        #self.is_first_step = True
 
     def _set_init_relative_buoyancy(self, substance):
         '''

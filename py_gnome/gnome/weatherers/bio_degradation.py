@@ -1,0 +1,271 @@
+﻿'''
+model bio degradation process
+'''
+
+from __future__ import division
+from __future__ import unicode_literals
+from __future__ import print_function
+from __future__ import absolute_import
+
+
+# from math import exp, pi
+import numpy as np
+
+# import gnome  # required by deserialize
+# from gnome.utilities.serializable import Serializable, Field
+
+from gnome.weatherers import Weatherer
+from gnome.array_types import gat
+
+from .core import WeathererSchema
+from gnome.environment.waves import WavesSchema
+
+
+# from gnome.array_types import (mass,
+#                                density,
+#                                mass_components,
+#                                droplet_avg_size)
+
+
+# FIXME: this shouldn't need waves -- though we may want to
+#        do something with that in the future.
+class BiodegradationSchema(WeathererSchema):
+    waves = WavesSchema(
+        save=True, update=True, save_reference=True
+    )
+
+
+class Biodegradation(Weatherer):
+
+    _schema = BiodegradationSchema
+    _ref_as = 'biodegradation'
+    _req_refs = ['waves']
+
+    def __init__(self, waves=None, **kwargs):
+
+        if 'arctic' not in kwargs:
+            self.arctic = False  # default is a temperate conditions (>6 deg C)
+        else:
+            self.arctic = kwargs.pop('arctic')
+
+        self.waves = waves
+
+        super(Biodegradation, self).__init__(**kwargs)
+
+        self.array_types.update({'mass':  gat('mass'),
+                                 'mass_components': gat('mass_components'),
+                                 'droplet_avg_size': gat('droplet_avg_size'),
+                                 'positions': gat('positions'),
+                                 })
+
+        #
+        # Original bio degradation formula:
+        #
+        #  m(j, t+1) = m(j, t0) * exp(-K(j) * A(t) / M(t))
+        #
+        #  where
+        #    m(j, t + 1) - mass of pseudocomponent j at time step t + 1
+        #    K(j) - biodegradation rate constant for pseudocomponent j
+        #    A(t) - droplet surface area at time step t
+        #    M(t) - droplet mass at time step t
+        #
+        # Since
+        #
+        #  A(t) / M(t) = 6 / (d(t) * ro(t))
+        #
+        # where
+        #   d(t) - droplet diameter at time step t
+        #   ro(t) - droplet density at time step t
+        #
+        # follows this formula for bio degradation:
+        #
+        #  m(j, t+1) = m(j, t0) * exp(-6 * K(j) / (d(t) * ro(t)))
+        #
+        # and then interative bio degradation formula:
+        #
+        #  m(j, t+1) = m(j, t) * exp(6 * K(j) *
+        #    (1 / (d(t-1) * ro(t-1)) - 1 / (d(t) * ro(t))))
+        #
+        # where
+        #  d(t-1) - droplet diameter at previous (t-1) time step
+        #  ro(t-1) - droplet density at previous (t-1) time step
+        #
+        # So we will keep previous time step specific surface value
+        # (squre meter per kilogram) or yield_factor =  1 / (d * ro)
+        #
+
+        self.prev_yield_factor = None
+
+
+    def prepare_for_model_run(self, sc):
+        '''
+            Add biodegradation key to mass_balance if it doesn't exist.
+            - Assumes all spills have the same type of oil
+            - let's only define this the first time
+        '''
+        if self.on:
+            super(Biodegradation, self).prepare_for_model_run(sc)
+            sc.mass_balance['bio_degradation'] = 0.0
+
+            self.prev_yield_factor = 0.0
+
+
+    def initialize_data(self, sc, num_released):
+        '''
+            Initialize needed weathering data arrays but only if 'on' is True
+        '''
+        if not self.on:
+            return
+
+        pass
+
+
+    def prepare_for_model_step(self, sc, time_step, model_time):
+        '''
+            Set/update arrays used by bio degradation module for this timestep
+        '''
+        super(Biodegradation, self).prepare_for_model_step(sc,
+                                                           time_step,
+                                                           model_time)
+
+        if not self.active:
+            return
+
+
+    def bio_degradate_oil(self, K, data, yield_factor):
+        '''
+            Calculate oil bio degradation
+              K - biodegradation rate coefficients are calculated for
+                  temperate or arctic emvironment conditions
+              yield_factor - specific surface value (sq meter per kg)
+                  yield_factor = 1 / ( d * ro) where
+                  d - droplet diameter
+                  ro - droplet density
+              data['mass_components'] - mass of pseudocomponents
+         '''
+
+        mass_biodegradated = (data['mass_components'] *
+                              np.exp(np.outer(self.prev_yield_factor - yield_factor,
+                              6.0 * K)))
+
+        return mass_biodegradated
+
+
+    def get_K_comp_rates(self, type_and_bp):
+        '''
+            Get bio degradation rate coefficient based on component
+            type and its boiling point for temparate or arctic
+            environment conditions. It must take into consideration
+            saturates below C30 and aromatics only.
+
+              type_and_bp - a tuple ('type', 'boiling_point')
+                - 'type': component type, string
+                - 'boiling_point': float value
+              self.arctic - flag for arctic conditions
+                - TRUE if arctic conditions (below 6 deg C)
+                - FALSE if temperate
+
+            Rate units: kg/m^2 per day(!)
+        '''
+
+        if type_and_bp[0] == 'Saturates':
+            # 722.85 - boiling point for C30 saturate (K)
+            if type_and_bp[1] < 722.85:
+                return 0.000128807242 if self.arctic else 0.000941386396
+            else:
+                # zero rate for C30 and above saturates
+                return 0.0
+
+        elif type_and_bp[0] == 'Aromatics':
+            if type_and_bp[1] < 630.0:
+                return 0.000126982603 if self.arctic else 0.000575541103
+            else:
+                return 0.000021054707 if self.arctic else 0.000084840485
+        else:
+            # zero rate for other than saturates and aromatics
+            return 0.0
+
+
+    def weather_elements(self, sc, time_step, model_time):
+        '''
+            weather elements over time_step
+        '''
+        if not self.active:
+            return
+
+        if sc.num_released == 0:
+            return
+
+        for substance, data in sc.itersubstancedata(self.array_types):
+            if len(data['mass']) is 0:
+                # data does not contain any surface_weathering LEs
+                continue
+
+            # get the substance index
+            indx = sc._substances_spills.substances.index(substance)
+
+            # get pseudocomponent boiling point and its type
+            assert 'boiling_point' in substance._sara.dtype.names
+            type_bp = substance._sara[['type','boiling_point']]
+
+            # get bio degradation rate coefficient array for this substance
+            K_comp_rates = np.asarray(map(self.get_K_comp_rates, type_bp))
+
+            # (!) bio degradation rate coefficients are coming per day
+            # so we need recalculate ones for the time step interval
+            K_comp_rates = K_comp_rates / (60 * 60 * 24) * time_step
+
+            # calculate yield factor (specific surace)
+            if np.any(data['droplet_avg_size']):
+                yield_factor = 1.0 / (data['droplet_avg_size'] * data['density'])
+            else:
+                yield_factor = 0.0
+
+            # calculate the mass over time step
+            bio_deg = self.bio_degradate_oil(K_comp_rates, data, yield_factor)
+
+            # update yield factor for the next time step
+            self.prev_yield_factor = yield_factor
+
+            # calculate mass ballance for bio degradation process - mass loss
+            sc.mass_balance['bio_degradation'] += data['mass'].sum() - bio_deg.sum()
+
+            # update masses
+            data['mass_components'] = bio_deg
+            data['mass'] = data['mass_components'].sum(1)
+
+            # log bio degradated amount
+            self.logger.debug('{0} Amount bio degradated for {1}: {2}'
+                              .format(self._pid,
+                                      substance.name,
+                                      sc.mass_balance['bio_degradation']))
+
+        sc.update_from_fatedataview()
+
+
+    def serialize(self, json_='webapi'):
+
+        toserial = self.to_serialize(json_)
+        schema = self.__class__._schema()
+        serial = schema.serialize(toserial)
+
+        if json_ == 'webapi':
+            if self.waves:
+                serial['waves'] = self.waves.serialize(json_)
+
+        return serial
+
+    @classmethod
+    def deserialize(cls, json_):
+
+        if not cls.is_sparse(json_):
+            schema = cls._schema()
+            dict_ = schema.deserialize(json_)
+
+            if 'waves' in json_:
+                obj = json_['waves']['obj_type']
+                dict_['waves'] = (eval(obj).deserialize(json_['waves']))
+
+            return dict_
+        else:
+            return json_
