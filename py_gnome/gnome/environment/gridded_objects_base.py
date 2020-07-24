@@ -3,6 +3,7 @@ import StringIO
 import copy
 import numpy as np
 import logging
+import warnings
 from functools import wraps
 
 from colander import (SchemaNode, SequenceSchema,
@@ -10,6 +11,7 @@ from colander import (SchemaNode, SequenceSchema,
                       drop)
 
 import gridded
+import unit_conversion as uc
 
 from gnome.persist import base_schema
 from gnome.gnomeobject import GnomeId
@@ -404,17 +406,33 @@ class Variable(gridded.Variable, GnomeId):
                                      'grid': PyGrid,
                                      'depth': Depth})
 
+    _gnome_unit = None #Default assumption for unit type
+
     def __init__(self, extrapolation_is_allowed=False, *args, **kwargs):
         super(Variable, self).__init__(*args, **kwargs)
         self.extrapolation_is_allowed = extrapolation_is_allowed
 
-    def at(self, *args, **kwargs):
+    def at(self, points, time, units=None, *args, **kwargs):
         if ('extrapolate' not in kwargs):
             kwargs['extrapolate'] = False
         if ('unmask' not in kwargs):
             kwargs['unmask'] = True
 
-        return super(Variable, self).at(*args, **kwargs)
+        value = super(Variable, self).at(points, time, *args, **kwargs)
+
+        data_units = self.units if self.units else self._gnome_unit
+        req_units = units if units else data_units
+        if data_units is not None and data_units != req_units:
+            try:
+                value = uc.convert(data_units, req_units, value)
+            except uc.NotSupportedUnitError:
+                if (not uc.is_supported(data_units)):
+                    warnings.warn("{0} units is not supported: {1}".format(self.name, data_units))
+                elif (not uc.is_supported(req_units)):
+                    warnings.warn("Requested unit is not supported: {1}".format(req_units))
+                else:
+                    raise
+        return value
 
     @classmethod
     def new_from_dict(cls, dict_):
@@ -505,6 +523,8 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
                                      'depth': Depth,
                                      'variable': Variable})
 
+    _gnome_unit = None #Default assumption for unit type
+
     def __init__(self,
                  extrapolation_is_allowed=False,
                  *args,
@@ -518,6 +538,12 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
             return super(VectorVariable, cls).new_from_dict(cls.from_netCDF(**dict_).to_dict(), **kwargs)
         else:
             return super(VectorVariable, cls).new_from_dict(dict_, **kwargs)
+
+    def at(self, points, time, units=None, *args, **kwargs):
+        units = units if units else self._gnome_unit #no need to convert here, its handled in the subcomponents
+        value = super(VectorVariable, self).at(points, time, units=units, *args, **kwargs)
+
+        return value
 
     def get_data_vectors(self):
         '''
@@ -541,12 +567,12 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
             raw_u = (raw_u[:, :, 0:-1, ] + raw_u[:, :, 1:]) / 2
             raw_v = (raw_v[:, 0:-1, :] + raw_v[:, 1:, :]) / 2
         #u/v should be interpolated to centers at this point. Now apply appropriate mask
-        
+
         if isinstance(self.grid, Grid_S) and self.grid.center_mask is not None:
             ctr_padding_slice = self.grid.get_padding_slices(self.grid.center_padding)
             if self.grid._cell_tree_mask is None:
                 self.grid.build_celltree()
-        
+
             x = raw_u[:]
             xt = x.shape[0]
             y = raw_v[:]
@@ -586,11 +612,17 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
 
     @property
     def data_start(self):
-        return self.time.min_time.replace(tzinfo=None)
+        try:
+            return self.time.min_time.replace(tzinfo=None)
+        except TypeError: # cftime datetime objects don't have a tzinfo attribute.
+            return self.time.min_time
 
     @property
     def data_stop(self):
-        return self.time.max_time.replace(tzinfo=None)
+        try:
+            return self.time.max_time.replace(tzinfo=None)
+        except TypeError: # cftime datetime objects don't have a tzinfo attribute.
+            return self.time.max_time
 
     def save(self, saveloc='.', refs=None, overwrite=True):
         return GnomeId.save(self, saveloc=saveloc, refs=refs, overwrite=overwrite)

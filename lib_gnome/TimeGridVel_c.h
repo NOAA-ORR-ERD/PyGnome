@@ -446,6 +446,8 @@ public:
 	virtual	bool 		IsTriangleGrid(){return true;}
 	virtual	bool 		IsDataOnCells(){return false;}	// data is on the points
 	virtual OSErr 		GetScaledVelocities(Seconds time, VelocityFRec *scaled_velocity);
+	virtual LongPointHdl		GetPointsHdl();
+	TopologyHdl 		GetTopologyHdl();
 };
 
 

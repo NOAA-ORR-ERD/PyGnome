@@ -70,7 +70,7 @@ from gnome.outputters import (Renderer,
                               ShapeOutput,
                               )
 
-from gnome.map import MapFromBNA, GnomeMap
+from gnome.maps.map import MapFromBNA, GnomeMap
 
 from gnome.environment import (GridCurrent,
                                IceAwareCurrent,

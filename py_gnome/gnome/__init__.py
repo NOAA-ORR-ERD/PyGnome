@@ -32,7 +32,7 @@ def check_dependency_versions():
     If the version is not at least as current as what's defined here
     a warning is displayed
     """
-    libs = [('gridded', '0.2.2'),
+    libs = [('gridded', '0.2.4'),
             ('oil_library', '1.1.2'),
             ('unit_conversion', '2.6.3')]
 
@@ -41,14 +41,15 @@ def check_dependency_versions():
         try:
             module = importlib.import_module(name)
         except ImportError:
-            print ('ERROR: The {} package, version >= {} needs to be installed'
-                   .format(name, version))
-            sys.exit(1)
-        if module.__version__ < version:
-            w = ('Version {0} of {1} package is required, '
-                 'but actual version in module is {2}'
-                 .format(version, name, module.__version__))
-            warnings.warn(w)
+            msg = ("ERROR: The {} package, version >= {}"
+                   "needs to be installed".format(name, version))
+            warnings.warn(msg)
+        else:
+            if module.__version__ < version:
+                msg = ('Version {0} of {1} package is required, '
+                       'but actual version in module is {2}'
+                       .format(version, name, module.__version__))
+                warnings.warn(msg)
 
 
 def initialize_log(config, logfile=None):
@@ -112,10 +113,11 @@ def _valid_units(unit_name):
 # to be defined before we can import these modules.
 check_dependency_versions()
 
-from . import (map,
-               environment,
+from . import (environment,
                model,
                # multi_model_broadcast,
                spill,
                movers,
                outputters)
+
+from .maps import map

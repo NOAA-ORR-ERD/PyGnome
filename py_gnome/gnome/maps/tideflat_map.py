@@ -16,7 +16,7 @@ is no longer a tide flat.
 import numpy as np
 
 from gnome.gnomeobject import GnomeId
-from gnome.map import GnomeMap
+from gnome.maps import GnomeMap
 from gnome.basic_types import oil_status
 from gnome.utilities.time_utils import asdatetime
 

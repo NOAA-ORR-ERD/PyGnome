@@ -3,7 +3,6 @@ import os
 import six
 import copy
 import logging
-import tempfile
 import glob
 import json
 import zipfile
@@ -675,6 +674,9 @@ class GnomeId(AddLogger):
             # the object loses context, the temporary file will automatically
             # delete itself.
             # Should be useful for testing without having to deal with cleanup.
+            # fixme: I'm not sure it's getting deleted -- we should make sure
+            #        And why not use a StringIO object instead, and keep
+            #        it totally in memory?
             zipfile_ = zipfile.ZipFile(tempfile.SpooledTemporaryFile('w+b'),
                                        'a',
                                        compression=zipfile.ZIP_DEFLATED,

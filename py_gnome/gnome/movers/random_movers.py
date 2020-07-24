@@ -141,28 +141,30 @@ class IceAwareRandomMover(RandomMover):
         positions = sc['positions']
         deltas = np.zeros_like(positions)
 
-        interp = self.ice_concentration.at(positions, model_time_datetime,
-                                           extrapolate=True).copy()
-        interp_mask = np.logical_and(interp >= 0.2, interp < 0.8)
+        cctn = (self.ice_concentration.at(positions, model_time_datetime,
+                                            extrapolate=True)
+                  .copy())
 
-        if len(np.where(interp_mask)[0]) != 0:
-            ice_mask = interp.reshape(-1) >= 0.8
+        if np.any(cctn >= 0.2):
+            ice_mask = cctn >= 0.8
+            water_mask = cctn < 0.2
+            interp_mask = np.logical_and(cctn >= 0.2, cctn < 0.8)
+
+            ice_vel_factor = cctn.copy()
+            ice_vel_factor[ice_mask] = 0
+            ice_vel_factor[water_mask] = 1
+            ice_vel_factor[interp_mask] = 1 - ((ice_vel_factor[interp_mask] - 0.2) * 10) / 6
 
             deltas = (super(IceAwareRandomMover, self)
                       .get_move(sc, time_step, model_time_datetime))
 
-            interp = (interp - 0.2) * 10 / 6.
-
-            deltas[:, 0:2][ice_mask] = 0
-
-            # scale winds from 100-0% depending on ice coverage
-            deltas[:, 0:2][interp_mask] *= (1 - interp[interp_mask][:, np.newaxis])
-            deltas[status] = (0, 0, 0)
+            deltas *= ice_vel_factor
+            deltas[status] = (0,0,0)
 
             return deltas
         else:
             return (super(IceAwareRandomMover, self)
-                    .get_move(sc, time_step, model_time_datetime))
+                      .get_move(sc, time_step, model_time_datetime))
 
 
 class RandomMover3DSchema(ProcessSchema):

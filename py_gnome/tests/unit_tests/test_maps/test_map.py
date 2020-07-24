@@ -8,18 +8,27 @@ Designed to be run with py.test
 """
 from __future__ import division
 import os
+import pytest
 
+from pprint import pprint
 import numpy as np
 
-import gnome.map
+
+# import gnome.maps.map
 from gnome.basic_types import oil_status, status_code_type
 from gnome.utilities.projections import NoProjection
 
-from gnome.map import GnomeMap, MapFromBNA, RasterMap  # , MapFromUGrid
+from gnome.maps import GnomeMap, MapFromBNA, RasterMap, ParamMap
+# MapFromUGrid
 
-from conftest import sample_sc_release
+from gnome.gnomeobject import class_from_objtype
 
+from ..conftest import sample_sc_release
+
+
+# fixme: this should realy be in conftest
 basedir = os.path.dirname(__file__)
+basedir = os.path.split(basedir)[0]
 datadir = os.path.normpath(os.path.join(basedir, "sample_data"))
 output_dir = os.path.normpath(os.path.join(basedir, "output_dir"))
 testbnamap = os.path.join(datadir, 'MapBounds_Island.bna')
@@ -35,8 +44,8 @@ def test_in_water_resolution():
 
     # Create an 500x500 pixel map, with an LE refloat half-life of 2 hours
     # (specified here in seconds).
-    m = gnome.map.MapFromBNA(filename=testbnamap, refloat_halflife=2,
-                             raster_size=500 * 500)
+    m = MapFromBNA(filename=testbnamap, refloat_halflife=2,
+                   raster_size=500 * 500)
 
     # Specify coordinates of the two points that make up the
     # southeastern coastline segment of the island in the BNA map.
@@ -157,26 +166,26 @@ class Test_ParamMap:
     '''
 
     def test_on_map(self):
-        pmap = gnome.map.ParamMap((0, 0), 10000, 90)
+        pmap = ParamMap((0, 0), 10000, 90)
         assert pmap.on_map((0, 0, 0))
         assert pmap.on_map((15, 0, 0)) is False
 
     def test_on_land(self):
-        pmap = gnome.map.ParamMap((0, 0), 10000, 90)
+        pmap = ParamMap((0, 0), 10000, 90)
         assert pmap.on_land((0.3, 0, 0)) is True
         assert pmap.on_land((-0.3, 0, 0)) is False
 
     def test_in_water(self):
-        pmap = gnome.map.ParamMap((0, 0), 10000, 90)
+        pmap = ParamMap((0, 0), 10000, 90)
         assert pmap.in_water((-0.3, 0, 0)) is True
         assert pmap.in_water((0.3, 0, 0)) is False
 
     def test_land_generation(self):
-        pmap1 = gnome.map.ParamMap((0, 0), 10000, 90)
+        pmap1 = ParamMap((0, 0), 10000, 90)
         print pmap1.land_points
 
     def test_to_geojson(self):
-        pmap = gnome.map.ParamMap((0, 0), 10000, 90)
+        pmap = ParamMap((0, 0), 10000, 90)
         geo_json = pmap.to_geojson()
 
         assert geo_json['type'] == 'FeatureCollection'
@@ -198,10 +207,10 @@ class Test_ParamMap:
         """
         test create new ParamMap from deserialized dict
         """
-        pmap = gnome.map.ParamMap((5, 5), 12000, 40)
+        pmap = ParamMap((5, 5), 12000, 40)
 
         serial = pmap.serialize()
-        pmap2 = gnome.map.ParamMap.deserialize(serial)
+        pmap2 = ParamMap.deserialize(serial)
 
         assert pmap == pmap2
 
@@ -209,7 +218,7 @@ class Test_ParamMap:
         """
         test create new ParamMap from deserialized dict
         """
-        map1 = gnome.map.ParamMap((5, 5), 12000, 40)
+        map1 = ParamMap((5, 5), 12000, 40)
         assert map1.center == (5, 5, 0)
 
         json_ = {'center': [6, 6]}
@@ -588,16 +597,16 @@ class Test_MapfromBNA:
         """
         test create new object from to_dict
         """
-        gmap = gnome.map.MapFromBNA(testbnamap, 6)
+        gmap = MapFromBNA(testbnamap, 6)
 
         serial = gmap.serialize()
-        map2 = gnome.map.MapFromBNA.deserialize(serial)
+        map2 = MapFromBNA.deserialize(serial)
 
         assert gmap == map2
 
     def test_update_from_dict_MapFromBNA(self):
         'test update_from_dict for MapFromBNA'
-        gmap = gnome.map.MapFromBNA(testbnamap, 6)
+        gmap = MapFromBNA(testbnamap, 6)
 
         dict_ = {}
         dict_['map_bounds'] = [(-10, 10), (10, 10), (10, -10), (-10, -10)]
@@ -865,7 +874,7 @@ def test_resurface_airborne_elements():
 
     spill = {'next_positions': positions}
 
-    m = gnome.map.GnomeMap()
+    m = GnomeMap()
     m.resurface_airborne_elements(spill)
 
     assert spill['next_positions'][:, 2].min() == 0.
@@ -901,9 +910,11 @@ class Test_lake():
         """
         Once loaded, polygons should be there
         """
+        # There should always be map bounds
         assert self.map.map_bounds is not None
 
-        assert self.map.spillable_area is not None
+        # no spillable area in this one
+        assert self.map.spillable_area is None
 
         # NOTE: current version puts land and lakes in the land_polys set
         assert len(self.map.land_polys) == 2
@@ -930,6 +941,140 @@ class Test_lake():
         outfilename = os.path.join(output_dir, "florida_geojson.json")
         with open(outfilename, 'w') as outfile:
             json.dump(gj, outfile, indent=2)
+
+class Test_serialize:
+
+    map = MapFromBNA(bna_with_lake)
+
+    def test_serialize(self):
+        ser = self.map.to_dict()
+        print ser.keys()
+
+        assert ser['spillable_area'] is None
+
+    #need to add the file to file server
+    @pytest.mark.xfail()
+    def test_serialize_from_blob_old(self):
+        # this one uses the "old" name, before moving the map module.
+        json_data = {'approximate_raster_interval': 53.9608870724,
+                     'filename': u'/Users/chris.barker/Hazmat/GitLab/pygnome/py_gnome/tests/unit_tests/sample_data/florida_with_lake_small.bna',
+                     'id': u'b3590b7d-aab1-11ea-8899-1e00b098d304',
+                     'map_bounds': [(-82.8609915978, 24.5472415066),
+                                    (-82.8609915978, 28.1117673335),
+                                    (-80.0313642811, 28.1117673335),
+                                    (-80.0313642811, 24.5472415066)],
+                     'name': u'MapFromBNA_8',
+                     'obj_type': u'gnome.map.MapFromBNA',
+                     'raster_size': 16777216.0,
+                     'spillable_area': None,
+                     'refloat_halflife': 1.0}
+
+        cls = class_from_objtype(json_data['obj_type'])
+    #   obj = cls.load(saveloc, fname, references)
+
+        print "found class:", cls
+        map = cls.deserialize(json_data)
+
+        # when we go to Python3 :-(
+        # assert map.__class__.__qualname__ == "gnome.maps.map.MapFromBNA"
+        assert map.__class__.__name__ == "MapFromBNA"
+        assert map.__class__.__module__ == "gnome.maps.map"
+
+        print map.spillable_area
+        print map.land_polys
+
+        assert map.spillable_area is None
+        assert len(map.map_bounds) == 4
+
+    @pytest.mark.xfail()
+    def test_serialize_from_blob_new(self):
+        # this one uses the "new" name, after moving the map module.
+        json_data = {'approximate_raster_interval': 53.9608870724,
+                     'filename': u'/Users/chris.barker/Hazmat/GitLab/pygnome/py_gnome/tests/unit_tests/sample_data/florida_with_lake_small.bna',
+                     'id': u'b3590b7d-aab1-11ea-8899-1e00b098d304',
+                     'map_bounds': [(-82.8609915978, 24.5472415066),
+                                    (-82.8609915978, 28.1117673335),
+                                    (-80.0313642811, 28.1117673335),
+                                    (-80.0313642811, 24.5472415066)],
+                     'name': u'MapFromBNA_8',
+                     'obj_type': u'gnome.maps.map.MapFromBNA',
+                     'raster_size': 16777216.0,
+                     'spillable_area': None,
+                     'refloat_halflife': 1.0}
+
+        cls = class_from_objtype(json_data['obj_type'])
+    #   obj = cls.load(saveloc, fname, references)
+
+        print "found class:", cls
+        map = cls.deserialize(json_data)
+
+        # when we go to Python3 :-(
+        # assert map.__class__.__qualname__ == "gnome.maps.map.MapFromBNA"
+        assert map.__class__.__name__ == "MapFromBNA"
+        assert map.__class__.__module__ == "gnome.maps.map"
+        print map.spillable_area
+        print map.land_polys
+
+        assert map.spillable_area is None
+        assert len(map.map_bounds) == 4
+
+    def test_deserialize(self):
+        ## fixme: this should fail with no spillable area ?!?
+        jsblob = self.map.serialize()
+
+        jsblob['spillable_area'] = None
+
+        pprint(jsblob)
+
+        # {'approximate_raster_interval': 53.9608870724,
+        #  'filename': u'/Users/chris.barker/Hazmat/GitLab/pygnome/py_gnome/tests/unit_tests/sample_data/florida_with_lake_small.bna',
+        #  'id': u'b3590b7d-aab1-11ea-8899-1e00b098d304',
+        #  'map_bounds': [(-82.8609915978, 24.5472415066),
+        #                 (-82.8609915978, 28.1117673335),
+        #                 (-80.0313642811, 28.1117673335),
+        #                 (-80.0313642811, 24.5472415066)],
+        #  'name': u'MapFromBNA_8',
+        #  'obj_type': u'gnome.maps.map.MapFromBNA',
+        #  'raster_size': 16777216.0,
+        #  'refloat_halflife': 1.0}
+
+        map = MapFromBNA.deserialize(jsblob)
+
+        print map.spillable_area
+        print map.land_polys
+
+        assert map.spillable_area is None
+        assert len(map.map_bounds) == 4
+
+    def test_update_spillable_area_none(self):
+        map = MapFromBNA(bna_with_lake)
+
+        map.update_from_dict({'spillable_area': None})
+
+    def test_update_spillable_area_polygons(self):
+        map = MapFromBNA(bna_with_lake)
+
+        map.update_from_dict({'spillable_area': [[(-82.86099, 24.54724),
+                                                  (-82.86099, 28.11176),
+                                                  (-80.03136, 28.11176),
+                                                  (-80.03136, 24.54724)],
+                                                 [(-82.86099, 24.54724),
+                                                  (-82.86099, 28.11176),
+                                                  (-80.03136, 28.11176),
+                                                  (-80.03136, 24.54724),
+                                                  (-80.03136, 28.11176),
+                                                  (-80.03136, 24.54724),
+                                                  ],
+                                                 ]
+                              })
+
+        assert len(map.spillable_area) == 2
+        assert len(map.spillable_area[1]) == 6
+
+
+
+
+
 
 
 if __name__ == '__main__':

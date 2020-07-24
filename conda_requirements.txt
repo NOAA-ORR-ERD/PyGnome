@@ -31,7 +31,8 @@ tblib>=1.3.*  # needed for child process exception handling.
 #json-c=0.12.1
 libnetcdf=4.6.1
 netCDF4=1.4.1
-cftime>=1.*
+cftime=1.0.*
+#cftime>=1.1
 awesome-slugify>=1.6.5
 regex
 unidecode>=0.04.19
@@ -40,7 +41,7 @@ pyshp=1.2.12
 
 # NOAA maintained packages
 gridded=0.2.5
-pynucos>=2.6.*
+pynucos>=2.8.*
 cell_tree2d>=0.3.*
 py_gd=0.1.* # libgd should get brought in automatically
 
