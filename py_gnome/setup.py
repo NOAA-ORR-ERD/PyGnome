@@ -152,9 +152,6 @@ elif sys.platform == "win32":
 # setup our third party libraries environment - for Win32/Mac OSX
 # Linux does not use the libraries in third_party_lib. It links against
 # netcdf shared objects installed by apt-get
-'''
-import subprocess
-
 
 def get_netcdf_libs():
     """
@@ -165,6 +162,8 @@ def get_netcdf_libs():
     3) try to look directly for conda libs
     4) fall back to the versions distributed with the py_gnome code
     """
+    import subprocess
+
     # check for nc-config
     try:
         result = subprocess.check_output(["nc-config", "--libs"]).split()
@@ -172,20 +171,21 @@ def get_netcdf_libs():
         libs = result[1:]
         include_dir = subprocess.check_output(["nc-config", "--includedir"])
 
-        print lib_dir
-        print libs
-        print include_dir
+        return lib_dir, libs, include_dir
     except OSError:
         raise NotImplementedError("this setup.py needs nc-config "
                                   "to find netcdf libs")
 
-get_netcdf_libs()
-'''
 
-if sys.platform == "win32":
-    raise SystemError("32 bit Windows is not supported")
+# maybe this will wqork with Windows, too" at least with conda?
+if sys.platform in ("linux", "darwin"):
+#if sys.platform in ("linux"):
+    netcdf_base, netcdf_libs, netcdf_inc = get_netcdf_libs()
+    netcdf_lib_files = []
+elif sys.platform in ("win32"):  # but for now, still using our shipped libs.
+# elif sys.platform in ("darwin", "win32"):
+    netcdf_base, netcdf_libs, netcdf_inc = get_netcdf_libs()
 
-if sys.platform == "darwin":
     third_party_dir = os.path.join('..', 'third_party_lib')
 
     # the netCDF environment
@@ -194,7 +194,7 @@ if sys.platform == "darwin":
     netcdf_libs = os.path.join(netcdf_base, 'lib')
     netcdf_inc = os.path.join(netcdf_base, 'include')
 
-    if sys.platform == 'win32':
+    if sys.platform == 'win32':  # oddly, 64 bit Windows is still win32
         # also copy the netcdf *.dlls to cy_gnome directory
         # On windows the dlls have the same names for those used by python's
         # netCDF4 module and PyGnome modules. For PyGnome, we had the latest
@@ -235,14 +235,9 @@ if sys.platform == "darwin":
     else:
         netcdf_names = ('hdf5', 'hdf5_hl', 'netcdf', 'netcdf_c++4')
 
+
     netcdf_lib_files = [os.path.join(netcdf_libs, libfile.format(l))
-                        for l in netcdf_names]
-
-
-# print netcdf_base
-# print netcdf_libs
-# print netcdf_inc
-# print netcdf_lib_files
+                            for l in netcdf_names]
 
 
 # the cython extensions to build -- each should correspond to a *.pyx file
