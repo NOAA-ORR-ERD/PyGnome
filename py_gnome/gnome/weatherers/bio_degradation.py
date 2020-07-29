@@ -202,11 +202,13 @@ class Biodegradation(Weatherer):
                 continue
 
             # get the substance index
-            indx = sc._substances_spills.substances.index(substance)
+            #indx = sc._substances_spills.substances.index(substance)
 
             # get pseudocomponent boiling point and its type
-            assert 'boiling_point' in substance._sara.dtype.names
-            type_bp = substance._sara[['type','boiling_point']]
+            #assert 'boiling_point' in substance._sara.dtype.names
+            assert hasattr(substance,'boiling_point')
+            #type_bp = substance._sara[['type','boiling_point']]
+            type_bp = zip(substance.sara_type, substance.boiling_point)
 
             # get bio degradation rate coefficient array for this substance
             K_comp_rates = np.asarray(map(self.get_K_comp_rates, type_bp))
@@ -243,29 +245,3 @@ class Biodegradation(Weatherer):
         sc.update_from_fatedataview()
 
 
-    def serialize(self, json_='webapi'):
-
-        toserial = self.to_serialize(json_)
-        schema = self.__class__._schema()
-        serial = schema.serialize(toserial)
-
-        if json_ == 'webapi':
-            if self.waves:
-                serial['waves'] = self.waves.serialize(json_)
-
-        return serial
-
-    @classmethod
-    def deserialize(cls, json_):
-
-        if not cls.is_sparse(json_):
-            schema = cls._schema()
-            dict_ = schema.deserialize(json_)
-
-            if 'waves' in json_:
-                obj = json_['waves']['obj_type']
-                dict_['waves'] = (eval(obj).deserialize(json_['waves']))
-
-            return dict_
-        else:
-            return json_

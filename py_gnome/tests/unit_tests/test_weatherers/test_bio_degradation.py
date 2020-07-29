@@ -21,16 +21,12 @@ from gnome.weatherers import (Evaporation,
                               Biodegradation,
                               weatherer_sort)
 
-from .conftest import weathering_data_arrays
+from .conftest import weathering_data_arrays, test_oil
 
 
 from ..conftest import (sample_model_weathering2)
 
 from pprint import PrettyPrinter
-
-pytestmark = pytest.mark.skipif(True,
-                                reason="Biodeg tests all need to be updated")
-
 
 pp = PrettyPrinter(indent=2, width=120)
 
@@ -55,9 +51,10 @@ def test_sort_order():
     waves = Waves(wind, Water())
     bio_deg = Biodegradation(waves)
 
-    assert weatherer_sort(bio_deg) == 9
+    assert weatherer_sort(bio_deg) == 11
 
 
+@pytest.mark.skipif(reason="serialization for weatherers overall needs review")
 def test_serialize_deseriailize():
     'test serialize/deserialize for webapi'
 
@@ -83,12 +80,10 @@ def test_serialize_deseriailize():
 
 def test_prepare_for_model_run():
 
-    et = floating(substance='ABU SAFAH')
     bio_deg = Biodegradation(waves)
 
     (sc, time_step) = weathering_data_arrays(bio_deg.array_types,
-                                             water,
-                                             element_type=et)[:2]
+                                             water)[:2]
 
     assert 'bio_degradation' not in sc.mass_balance
 
@@ -98,19 +93,17 @@ def test_prepare_for_model_run():
 
 
 @pytest.mark.parametrize(('oil', 'temp', 'num_elems', 'expected_mb', 'on'),
-                         [('ABU SAFAH', 311.15, 3, 0.0, True),
-                          ('BAHIA', 311.15, 3, 0.0, True),
-                          ('ALASKA NORTH SLOPE (MIDDLE PIPELINE)', 311.15, 3,
-                           np.nan, False)])
+                         [('oil_ans_mp', 311.15, 3, 0.0, True),
+                          #('ABU SAFAH', 311.15, 3, 0.0, True),
+                          ('oil_bahia', 311.15, 3, 0.0, True),
+                          ('oil_ans_mp', 311.15, 3, np.nan, False)])
 def test_bio_degradation_mass_balance(oil, temp, num_elems, expected_mb, on):
 
-    et = floating(substance=oil)
     bio_deg = Biodegradation(waves)
     (sc, time_step) = weathering_data_arrays(bio_deg.array_types,
                                              water,
-                                             element_type=et,
                                              num_elements=num_elems)[:2]
-    model_time = (sc.spills[0].get('release_time') +
+    model_time = (sc.spills[0].release_time +
                   timedelta(seconds=time_step))
 
     bio_deg.on = on
@@ -128,14 +121,12 @@ def test_bio_degradation_mass_balance(oil, temp, num_elems, expected_mb, on):
 
 @pytest.mark.parametrize(('oil', 'temp', 'expected_balance'),
     # TODO - expected ballance values:
-                         [('ABU SAFAH', 288.7, -1),
-                          ('ALASKA NORTH SLOPE (MIDDLE PIPELINE)', 288.7,
-                           -1),
-                          ('ALASKA NORTH SLOPE, OIL & GAS', 279.261,
-                           -1),
-                          ('BAHIA', 288.7, -1),
-                          ]
-                         )
+                         [(test_oil, 288.7, -1),
+                          #('ABU SAFAH', 288.7, -1),
+                          ('oil_ans_mp', 288.7, -1),
+                          #('ALASKA NORTH SLOPE, OIL & GAS', 279.261,
+                           #-1),
+                          ('oil_bahia', 288.7, -1)])
 def test_bio_degradation_full_run(sample_model_fcn2,
                                   oil, temp, expected_balance):
     '''
