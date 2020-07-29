@@ -121,7 +121,7 @@ class ShapeOutput(Outputter):
             w.field('Depth', 'N')
             w.field('Mass', 'N')
             w.field('Age', 'N')
-            w.field('Surf_Conc', 'F')
+            w.field('Surf_Conc', 'F', decimal=5)
             w.field('Status_Code', 'N')
 
             if sc.uncertain:
