@@ -170,7 +170,9 @@ def get_netcdf_libs():
         lib_dir = result[0]
         libs = result[1:]
         include_dir = subprocess.check_output(["nc-config", "--includedir"])
-
+        include_dir = include_dir.decode("ASCII")
+        lib_dir = lib_dir.decode("ASCII")
+        libs = [l.decode("ASCII") for l in libs]
         return lib_dir, libs, include_dir
     except OSError:
         raise NotImplementedError("this setup.py needs nc-config "
