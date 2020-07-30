@@ -44,7 +44,7 @@ py_gd>=1
 cython
 
 # needed to run tests
-pytest
+pytest<6
 pytest-cov
 pytest-timeout
 testfixtures
