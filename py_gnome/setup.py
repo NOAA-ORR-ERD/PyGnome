@@ -179,8 +179,8 @@ def get_netcdf_libs():
                                   "to find netcdf libs")
 
 
-# maybe this will wqork with Windows, too" at least with conda?
-if sys.platform in ("linux", "darwin"):
+# maybe this will work with Windows, too" at least with conda?
+if sys.platform.startswith("linux") or sys.platform == "darwin":
 #if sys.platform in ("linux"):
     netcdf_base, netcdf_libs, netcdf_inc = get_netcdf_libs()
     netcdf_lib_files = []
