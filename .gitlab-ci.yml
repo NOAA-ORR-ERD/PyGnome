@@ -33,7 +33,7 @@ test_python3:
         - yum install gcc gcc-c++ -y
         - yum install netcdf-devel -y
         - yum install libXext libSM libXrender -y
-        - conda install --file conda_requirements.txt
+        - conda install --file conda_requirements_py3.txt
         - cd ./py_gnome
         - python ./setup.py install
         - cd tests/unit_tests && pytest
