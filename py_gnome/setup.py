@@ -16,6 +16,7 @@ It needs to be imported before any other extensions
 import os
 import sys
 import sysconfig
+import importlib
 import glob
 import shutil
 
@@ -404,6 +405,7 @@ elif sys.platform == "win32":
                                      'cy_basic_types.cp37-win_amd64.lib')]
     libdirs = []
 
+
 elif sys.platform.startswith("linux"):
     # for some reason I have to create build/temp.linux-i686-2.7
     # else the compile fails saying temp.linux-i686-2.7 is not found
@@ -453,13 +455,19 @@ elif sys.platform.startswith("linux"):
     # End building C++ shared object
     compile_args = ["-Wl,-rpath,'$ORIGIN'"]
 
-    lib = ['gnome']
+    # get the lib name -- py3 adds a bunch of platform cruft
+    if sys.version_info.major > 2:
+        suffix = importlib.machinery.EXTENSION_SUFFIXES[0]
+        suffix = suffix[:-3] if suffix.endswith(".so") else suffix
+        libs = ['gnome' + suffix]
+    else:
+        libs = ['gnome']
     basic_types_ext = Extension(r'gnome.cy_gnome.cy_basic_types',
                                 ['gnome/cy_gnome/cy_basic_types.pyx'],
                                 language='c++',
                                 define_macros=macros,
                                 extra_compile_args=compile_args,
-                                libraries=lib,
+                                libraries=libs,
                                 include_dirs=include_dirs,
                                 )
 
