@@ -437,7 +437,7 @@ elif sys.platform.startswith("linux"):
         suffix = importlib.machinery.EXTENSION_SUFFIXES[0]
         libname = 'gnome' + suffix
     else:
-        libname = 'gnome'
+        libname = 'gnome.so'
 
     if 'install' in sys.argv[1]:
         bdir = glob.glob(os.path.join('build/*/gnome/cy_gnome', "lib" + libname))
