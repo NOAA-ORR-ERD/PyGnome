@@ -37,6 +37,8 @@ test_python3:
         - cd ./py_gnome
         - python ./setup.py install
         - cd tests/unit_tests && pytest
+    tags:
+      - docker
 
 test_master:
   stage: test
