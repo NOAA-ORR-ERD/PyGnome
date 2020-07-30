@@ -1,0 +1,7 @@
+version: "3"
+services:
+    test:
+        image: registry.orr.noaa.gov/erd/centos-conda/centos7-python3
+        volumes:
+            - ./:/pygnome
+        entrypoint: ['/bin/bash', '/pygnome/test_setup.sh']
