@@ -404,7 +404,7 @@ elif sys.platform == "win32":
                                      'cy_basic_types.cp37-win_amd64.lib')]
     libdirs = []
 
-elif sys.platform == "linux2":
+elif sys.platform.startswith("linux"):
     # for some reason I have to create build/temp.linux-i686-2.7
     # else the compile fails saying temp.linux-i686-2.7 is not found
     # required for develop or install mode
