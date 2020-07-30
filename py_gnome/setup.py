@@ -432,13 +432,20 @@ elif sys.platform.startswith("linux"):
     # lib.linux-i686-2.7/gnome/cy_gnome
     # This should be moved to build/temp.linux-i686-2.7 so cython files
     # build and link properly
+    # get the lib name -- py3 adds a bunch of platform cruft
+    if sys.version_info.major > 2:
+        suffix = importlib.machinery.EXTENSION_SUFFIXES[0]
+        libname = 'gnome' + suffix
+    else:
+        libname = 'gnome.so'
+
     if 'install' in sys.argv[1]:
-        bdir = glob.glob(os.path.join('build/*/gnome/cy_gnome', 'libgnome.so'))
+        bdir = glob.glob(os.path.join('build/*/gnome/cy_gnome', "lib" + libname))
         if len(bdir) > 1:
-            raise Exception("Found more than one libgnome.so library "
+            raise Exception("Found more than one libgnome library "
                             "during install mode in 'build/*/gnome/cy_gnome'")
         if len(bdir) == 0:
-            raise Exception("Did not find libgnome.so library "
+            raise Exception("Did not find libgnome library "
                             "during install mode in 'build/*/gnome/cy_gnome'")
 
         libpath = os.path.dirname(bdir[0])
@@ -455,13 +462,9 @@ elif sys.platform.startswith("linux"):
     # End building C++ shared object
     compile_args = ["-Wl,-rpath,'$ORIGIN'"]
 
-    # get the lib name -- py3 adds a bunch of platform cruft
-    if sys.version_info.major > 2:
-        suffix = importlib.machinery.EXTENSION_SUFFIXES[0]
-        suffix = suffix[:-3] if suffix.endswith(".so") else suffix
-        libs = ['gnome' + suffix]
-    else:
-        libs = ['gnome']
+    libname = libname[:-3] if libname.endswith(".so") else libname
+
+    libs = [libname]
     basic_types_ext = Extension(r'gnome.cy_gnome.cy_basic_types',
                                 ['gnome/cy_gnome/cy_basic_types.pyx'],
                                 language='c++',
