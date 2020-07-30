@@ -24,6 +24,22 @@ test:
   tags:
     - docker
 
+test_python3:
+    stage: test
+    only:
+        - py23
+    image: registry.orr.noaa.gov/erd/centos-conda/centos7-python3
+    script:
+        - yum install gcc gcc-c++ -y
+        - yum install netcdf-devel -y
+        - yum install libXext libSM libXrender -y
+        - conda install --file conda_requirements_py3.txt
+        - cd ./py_gnome
+        - python ./setup.py install
+        - cd tests/unit_tests && pytest
+    tags:
+      - docker
+
 test_master:
   stage: test
   only:
