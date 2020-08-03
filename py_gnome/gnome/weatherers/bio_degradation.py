@@ -56,6 +56,7 @@ class Biodegradation(Weatherer):
                                  'mass_components': gat('mass_components'),
                                  'droplet_avg_size': gat('droplet_avg_size'),
                                  'positions': gat('positions'),
+                                 'yield_factor': gat('yield_factor'),
                                  })
 
         #
@@ -217,19 +218,20 @@ class Biodegradation(Weatherer):
             # so we need recalculate ones for the time step interval
             K_comp_rates = K_comp_rates / (60 * 60 * 24) * time_step
 
+            self.previous_yield_factor = data['yield_factor']
             # calculate yield factor (specific surace)
             if np.any(data['droplet_avg_size']):
-                yield_factor = 1.0 / (data['droplet_avg_size'] * data['density'])
+                data['yield_factor'] = 1.0 / (data['droplet_avg_size'] * data['density'])
             else:
-                yield_factor = 0.0
+                data['yield_factor'] = 0.0
 
             # calculate the mass over time step
-            bio_deg = self.bio_degradate_oil(K_comp_rates, data, yield_factor)
+            bio_deg = self.bio_degradate_oil(K_comp_rates, data, data['yield_factor'])
 
             # update yield factor for the next time step
-            self.prev_yield_factor = yield_factor
+            #self.prev_yield_factor = yield_factor
 
-            # calculate mass ballance for bio degradation process - mass loss
+            # calculate mass balance for bio degradation process - mass loss
             sc.mass_balance['bio_degradation'] += data['mass'].sum() - bio_deg.sum()
 
             # update masses
