@@ -276,6 +276,8 @@ _default_values = {'positions': ((3,), world_point_type, 'positions',
                    # fractional water content in emulsion
                    'frac_water': ((), np.float64, 'frac_water', 0),
                    'interfacial_area': ((), np.float64, 'interfacial_area', 0),
+                   # internal factor for biodegradation
+                   'yield_factor': ((), np.float64, 'yield_factor', 0),
                    # use negative as a not yet set flag
                    'bulltime': ((), np.float64, 'bulltime', -1.),
                    'frac_lost': ((), np.float64, 'frac_lost', 0),
