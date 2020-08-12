@@ -56,6 +56,7 @@ class Biodegradation(Weatherer):
                                  'mass_components': gat('mass_components'),
                                  'droplet_avg_size': gat('droplet_avg_size'),
                                  'positions': gat('positions'),
+                                 'yield_factor': gat('yield_factor'),
                                  })
 
         #
@@ -202,11 +203,13 @@ class Biodegradation(Weatherer):
                 continue
 
             # get the substance index
-            indx = sc._substances_spills.substances.index(substance)
+            #indx = sc._substances_spills.substances.index(substance)
 
             # get pseudocomponent boiling point and its type
-            assert 'boiling_point' in substance._sara.dtype.names
-            type_bp = substance._sara[['type','boiling_point']]
+            #assert 'boiling_point' in substance._sara.dtype.names
+            assert hasattr(substance,'boiling_point')
+            #type_bp = substance._sara[['type','boiling_point']]
+            type_bp = zip(substance.sara_type, substance.boiling_point)
 
             # get bio degradation rate coefficient array for this substance
             K_comp_rates = np.asarray(map(self.get_K_comp_rates, type_bp))
@@ -215,19 +218,20 @@ class Biodegradation(Weatherer):
             # so we need recalculate ones for the time step interval
             K_comp_rates = K_comp_rates / (60 * 60 * 24) * time_step
 
+            self.previous_yield_factor = data['yield_factor']
             # calculate yield factor (specific surace)
             if np.any(data['droplet_avg_size']):
-                yield_factor = 1.0 / (data['droplet_avg_size'] * data['density'])
+                data['yield_factor'] = 1.0 / (data['droplet_avg_size'] * data['density'])
             else:
-                yield_factor = 0.0
+                data['yield_factor'] = 0.0
 
             # calculate the mass over time step
-            bio_deg = self.bio_degradate_oil(K_comp_rates, data, yield_factor)
+            bio_deg = self.bio_degradate_oil(K_comp_rates, data, data['yield_factor'])
 
             # update yield factor for the next time step
-            self.prev_yield_factor = yield_factor
+            #self.prev_yield_factor = yield_factor
 
-            # calculate mass ballance for bio degradation process - mass loss
+            # calculate mass balance for bio degradation process - mass loss
             sc.mass_balance['bio_degradation'] += data['mass'].sum() - bio_deg.sum()
 
             # update masses
@@ -243,29 +247,3 @@ class Biodegradation(Weatherer):
         sc.update_from_fatedataview()
 
 
-    def serialize(self, json_='webapi'):
-
-        toserial = self.to_serialize(json_)
-        schema = self.__class__._schema()
-        serial = schema.serialize(toserial)
-
-        if json_ == 'webapi':
-            if self.waves:
-                serial['waves'] = self.waves.serialize(json_)
-
-        return serial
-
-    @classmethod
-    def deserialize(cls, json_):
-
-        if not cls.is_sparse(json_):
-            schema = cls._schema()
-            dict_ = schema.deserialize(json_)
-
-            if 'waves' in json_:
-                obj = json_['waves']['obj_type']
-                dict_['waves'] = (eval(obj).deserialize(json_['waves']))
-
-            return dict_
-        else:
-            return json_

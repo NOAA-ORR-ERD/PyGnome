@@ -94,6 +94,7 @@ var_attributes = {
     'frac_coverage': {},
     'bulltime': {},
     'evap_decay_constant': {},
+    'yield_factor': {},
     'partition_coeff': {},
     'droplet_avg_size': {},
     'init_mass': {'long_name': 'initial mass',
@@ -260,6 +261,7 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
                               'bulltime',
                               'partition_coeff',
                               'evap_decay_constant',
+                              'yield_factor',
                               ]
 
     _schema = NetCDFOutputSchema
