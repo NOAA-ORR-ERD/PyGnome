@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 import numpy
 np = numpy
 
-from gnome import scripting
+from gnome import scripting as gs
 from gnome.basic_types import datetime_value_2d
 
 from gnome.utilities.remote_data import get_datafile
@@ -18,7 +18,6 @@ from gnome.utilities.inf_datetime import InfDateTime
 
 from gnome.model import Model
 
-from gnome.map import MapFromBNA
 from gnome.environment import Wind
 from gnome.spill import point_line_release_spill
 from gnome.movers import RandomMover, WindMover
@@ -60,7 +59,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 #     mapfile = get_datafile(os.path.join(base_dir, './ak_arctic.bna'))
 #
 #     print 'adding the map'
-#     model.map = MapFromBNA(mapfile, refloat_halflife=1)  # seconds
+#     model.map = gs.MapFromBNA(mapfile, refloat_halflife=1)  # seconds
 #
 #     # draw_ontop can be 'uncertain' or 'forecast'
 #     # 'forecast' LEs are in black, and 'uncertain' are in red
@@ -75,9 +74,12 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     model.outputters += WeatheringOutput('.\\')
 
     netcdf_file = os.path.join(base_dir, 'script_weatherers.nc')
-    scripting.remove_netcdf(netcdf_file)
-    model.outputters += NetCDFOutput(netcdf_file, which_data='all',
-                                     output_timestep=timedelta(hours=1))
+    gs.remove_netcdf(netcdf_file)
+    model.outputters += NetCDFOutput(netcdf_file,
+                                     which_data='all',
+                                     output_timestep=gs.hours(1),
+                                     surface_conc=None,
+                                     )
 
     print('adding a spill')
     # for now subsurface spill stays on initial layer
@@ -153,7 +155,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
 
 if __name__ == "__main__":
-    scripting.make_images_dir()
+    gs.make_images_dir()
     model = make_model()
     model.full_run()
     model.save('.')

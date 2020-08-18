@@ -5,10 +5,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
-from future import standard_library
-standard_library.install_aliases()
-from builtins import range
-from builtins import *
+
 import os
 from datetime import datetime
 
@@ -279,9 +276,10 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
                  # FIXME: this should not be default, but since we don't have
                  #        a way for WebGNOME to set it yet..
                  surface_conc="kde",
-                 _middle_of_run=False,
+                 # _middle_of_run=False,
                  _start_idx=0,
                  **kwargs):
+        print("in netcdf_outputter:", surface_conc)
         """
         Constructor for Net_CDFOutput object. It reads data from cache and
         writes it to a NetCDF4 format file using the CF convention
@@ -325,9 +323,10 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
         # uncertain file is only written out if model is uncertain
 
         ## why is this even here ?!?!
-        kwargs['_middle_of_run'] = _middle_of_run
+        # kwargs['_middle_of_run'] = _middle_of_run
         super(NetCDFOutput, self).__init__(filename=filename,
                                            surface_conc=surface_conc,
+                                           # _middle_of_run,
                                            **kwargs)
 
         name, ext = os.path.splitext(self.filename)

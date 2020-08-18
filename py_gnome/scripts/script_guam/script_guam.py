@@ -8,14 +8,15 @@ from datetime import datetime, timedelta
 
 import numpy as np
 
-from gnome import scripting
+from gnome import scripting as gs
+
 from gnome.basic_types import datetime_value_2d
 
 from gnome.utilities.remote_data import get_datafile
 
 from gnome.model import Model
 
-from gnome.map import MapFromBNA
+#from gnome.map import MapFromBNA
 from gnome.environment import Wind, Tide
 from gnome.spill import point_line_release_spill
 from gnome.movers import RandomMover, WindMover, CatsMover
@@ -35,12 +36,12 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # 1/2 hr in seconds
     model = Model(start_time=start_time,
                   duration=timedelta(days=2),
-                  time_step=30 * 60, # 30 minutes
+                  time_step=gs.minutes(30),  # 30 * 60,  30 minutes
                   uncertain=False)
 
     print('adding the map')
     mapfile = get_datafile(os.path.join(base_dir, 'GuamMap.bna'))
-    model.map = MapFromBNA(mapfile, refloat_halflife=6)  # hours
+    model.map = gs.MapFromBNA(mapfile, refloat_halflife=6)  # hours
 
     print('adding outputters')
     renderer = Renderer(mapfile, images_dir, image_size=(800, 600))
@@ -48,7 +49,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     model.outputters += renderer
 
     netcdf_file = os.path.join(base_dir, 'script_guam.nc')
-    scripting.remove_netcdf(netcdf_file)
+    gs.remove_netcdf(netcdf_file)
 
     model.outputters += NetCDFOutput(netcdf_file, which_data='all')
 
@@ -72,7 +73,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     series[3] = (start_time + timedelta(hours=48), (5, 0))
 
     wind = Wind(timeseries=series, units='knot')
-    w_mover = WindMover(wind)
+    w_mover = gs.WindMover(wind)
     model.movers += w_mover
     model.environment += w_mover.wind
 
@@ -108,7 +109,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     return model
 
 if __name__ == "__main__":
-    scripting.make_images_dir()
+    gs.make_images_dir()
 
     model = make_model()
     for step in model:
