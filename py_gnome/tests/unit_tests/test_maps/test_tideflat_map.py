@@ -135,7 +135,6 @@ def test_with_gnome_map():
 
     assert not tfm.allowable_spill_position((10.5, 10.5, 0))
 
-
 def test_TideFlatBase():
     """
     doesn't do much but should be able to be created
@@ -182,7 +181,7 @@ def test_tideflat_map_with_both():
     assert tfm.in_water((11, 11, 0))
     assert tfm.allowable_spill_position((13, 13, 0))
 
-    # now the real stuff!
+# now the real stuff!
 
 
 def test_refloat_elements():

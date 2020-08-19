@@ -192,7 +192,7 @@ class Evaporation(Weatherer):
             return
 
         for substance, data in sc.itersubstancedata(self.array_types):
-            if len(data['mass']) is 0:
+            if len(data['mass']) == 0:
                 continue
 
             points = data['positions']
@@ -203,7 +203,7 @@ class Evaporation(Weatherer):
 
             sc.mass_balance['evaporated'] += \
                 np.sum(data['mass_components'][:, :] - mass_remain[:, :])
-  
+
             # log amount evaporated at each step
             self.logger.debug(self._pid + 'amount evaporated for {0}: {1}'.
                               format(substance.name,

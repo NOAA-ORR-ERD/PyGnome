@@ -5,18 +5,10 @@ from __future__ import unicode_literals
 # NOTES:
 #  - Should we just use non-projected coordinates for the raster map?
 #    It makes for a little less computation at every step.
-# from future import standard_library
-# standard_library.install_aliases()
-# from builtins import map
-# from builtins import range
-# from builtins import *
-# from past.utils import old_div
 
 
 from gnome.gnomeobject import GnomeId
 from gnome.environment.gridded_objects_base import PyGrid
-# needed for py3 ??
-# from builtins import property
 
 """
 An implementation of the GNOME land-water map.
@@ -29,14 +21,12 @@ Features:
  - internally, raster is a numpy array
  - land raster is only as big as the land -- if the map bounds are bigger,
    extra space is not in the land map
-
 """
+
 import os
 import math
-# from osgeo import ogr
 
 import py_gd
-# import pyugrid
 
 import numpy as np
 
@@ -388,7 +378,6 @@ class GnomeMap(GnomeId):
         return FeatureCollection([])
 
 
-
 class ParamMap(GnomeMap):
 
     _schema = ParamMapSchema
@@ -422,7 +411,7 @@ class ParamMap(GnomeMap):
         self.units = units if units is not None else 'm'
         self._check_units(self.units)
 
-        if units is not 'm':
+        if units != 'm':
             self._distance = uc.convert("Length", self.units, 'm', distance)
         else:
             self._distance = distance
@@ -771,19 +760,21 @@ class RasterMap(GnomeMap):
 
             for j in range(0, genned_layer.shape[1]):
                 for i in range(0, genned_layer.shape[0]):
-                    genned_layer[i, j] = np.any(self.raster[i * ratio:
-                                                                (i + 1) * ratio, j * ratio:
-                                                                (j + 1) * ratio])
+                    genned_layer[i, j] = np.any(self.raster[
+                                                i * ratio:(i + 1) * ratio,
+                                                j * ratio:(j + 1) * ratio
+                                                ])
 
             self.layers.append(genned_layer)
 
         self.layers.append(self.raster)
-        self.layers = np.array(self.layers)
+        # self.layers = np.array(self.layers)
+        # print("the layers array:", self.layers)
 
     @property
     def ratios(self):
         if self._ratios is None:
-            self._ratios = (16,1,)
+            self._ratios = (16, 1)
         return self._ratios
 
     @ratios.setter

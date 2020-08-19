@@ -704,7 +704,7 @@ class Burn(CleanUpBase):
             return
 
         for substance, data in sc.itersubstancedata(self.array_types, fate_status='burn'):
-            if len(data['mass']) is 0:
+            if len(data['mass']) == 0:
                 return
 
             points = sc['positions']
@@ -864,12 +864,12 @@ class ChemicalDispersion(CleanUpBase):
             self.efficiency = efficiency
 
     def weather_elements(self, sc, time_step, model_time):
-        'for now just take away 0.1% at every step'
+        """for now just take away 0.1% at every step"""
         if not self.active or len(sc) == 0 or not sc.substance.is_weatherable:
             return
 
         for substance, data in sc.itersubstancedata(self.array_types, fate_status='disperse'):
-            if len(data['mass']) is 0:
+            if len(data['mass']) == 0:
                 continue
 
             points = sc['positions']

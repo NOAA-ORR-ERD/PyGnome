@@ -8,11 +8,11 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 
-from future import standard_library
-standard_library.install_aliases()
-from builtins import zip
-from builtins import str
-from builtins import *
+# from future import standard_library
+# standard_library.install_aliases()
+# from builtins import zip
+# from builtins import str
+# from builtins import *
 from past.utils import old_div
 import os
 import json
@@ -2005,7 +2005,7 @@ class Burn(Response):
 
         les = sc.itersubstancedata(self.array_types)
         for substance, data in les:
-            if len(data['mass']) is 0:
+            if len(data['mass']) == 0:
                 sc.mass_balance['systems'][self.id]['state'] = self._state_list
                 sc.mass_balance['systems'][self.id]['area_covered'] += self._ts_area_covered
 
@@ -2431,7 +2431,7 @@ class Skim(Response):
 
         les = sc.itersubstancedata(self.array_types)
         for substance, data in les:
-            if len(data['mass']) is 0:
+            if len(data['mass']) == 0:
                 sc.mass_balance['systems'][self.id]['state'] = self._state_list
                 continue
 
