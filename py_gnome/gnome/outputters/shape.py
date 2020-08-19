@@ -5,9 +5,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
-from future import standard_library
-standard_library.install_aliases()
-from builtins import *
+
 import os
 import zipfile
 
@@ -54,7 +52,7 @@ class ShapeOutput(Outputter):
         filename = filename.split(".zip")[0].split(".shp")[0]
 
         if "." in os.path.split(filename)[-1]:
-            # anything after a doit gets removed
+            # anything after a dot gets removed
             # I *think* pyshp is doing that, but not sure.
             raise ValueError("shape files can't have a dot in the filename")
 
@@ -120,7 +118,12 @@ class ShapeOutput(Outputter):
                      'UNIT["degree",0.0174532925199433]]')
 
         for sc in list(self.sc_pair.items()):
-            w = shp.Writer(shp.POINT)
+            if sc.uncertain:
+                filename = self.filename + '_uncert'
+            else:
+                filename = self.filename
+
+            w = shp.Writer(filename, shapeType=shp.POINT)
             w.autobalance = 1
 
             w.field('Time', 'C')
@@ -198,7 +201,8 @@ class ShapeOutput(Outputter):
         else:
             filename = self.filename
 
-        writer.save(filename)
+        # writer.save(filename)
+        writer.close()
 
         prj_file = open('{}.prj'.format(filename), "w")
         prj_file.write(self.epsg)
@@ -209,7 +213,7 @@ class ShapeOutput(Outputter):
             zipf = zipfile.ZipFile(zfilename, 'w')
 
             for suf in ['shp', 'prj', 'dbf', 'shx']:
-                print(("filename is:", filename))
+                # print(("filename is:", filename))
                 file_to_zip = os.path.split(filename)[-1] + '.' + suf
 
                 zipf.write(os.path.join(self.filedir, file_to_zip),
