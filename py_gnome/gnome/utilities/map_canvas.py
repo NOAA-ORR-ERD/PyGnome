@@ -564,7 +564,7 @@ class GridLines(object):
         The list consists of self.lon_lines vertical lines,
         followed by self.lat_lines horizontal lines.
         """
-        if self.max_lines is 0:
+        if self.max_lines == 0:
             return []
 
         (minlon, minlat) = self.projection.image_box[0]
@@ -593,7 +593,7 @@ class GridLines(object):
         Recomputes the interval and number of lines in each dimension.
         This should be called whenever the viewport changes.
         """
-        if self.max_lines is 0:
+        if self.max_lines == 0:
             return
         img_width = float(self.projection.image_size[0])
         img_height = float(self.projection.image_size[1])
@@ -606,12 +606,12 @@ class GridLines(object):
         height = (self.projection.image_box[1][1] -
                   self.projection.image_box[0][1])
 
-        self.ref_len = width if self.ref_dim is 'w' else height
+        self.ref_len = width if self.ref_dim == 'w' else height
         self.current_interval = self.get_step_size(self.ref_len /
                                                    self.max_lines)
 
-        self.lon_lines = self.max_lines if self.ref_dim is 'w' else None
-        self.lat_lines = self.max_lines if self.ref_dim is 'h' else None
+        self.lon_lines = self.max_lines if self.ref_dim == 'w' else None
+        self.lat_lines = self.max_lines if self.ref_dim == 'h' else None
 
         if self.lon_lines is None:
             self.lon_lines = int(round(self.lat_lines * ratio))
@@ -664,7 +664,7 @@ class GridLines(object):
         edge of the viewport. This may cause the longitude labels to disappear
         if the aspect ratio of the image and viewport are identical.
         """
-        if self.max_lines is 0:
+        if self.max_lines == 0:
             return []
 
         tags = []
@@ -699,7 +699,7 @@ class GridLines(object):
             top = self.projection.image_box[1][1]
             left = self.projection.image_box[0][0]
             anchor = ((value, top)
-                      if hemi is 'E' or hemi is 'W'
+                      if hemi == 'E' or hemi == 'W'
                       else (left, value))
 
             tags.append((tag, anchor))

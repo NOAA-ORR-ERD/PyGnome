@@ -151,8 +151,9 @@ elif sys.platform == "win32":
     libfile = '{0}.lib'  # windows static library filename format
 
 # setup our third party libraries environment - for Win32/Mac OSX
-# Linux does not use the libraries in third_party_lib. It links against
-# netcdf shared objects installed by apt-get
+# fixme: on Windows, should use the conda libs.
+
+# Linux and OS-X should be using conda (or system) libs for netcdf
 
 def get_netcdf_libs():
     """
@@ -358,8 +359,7 @@ static_lib_files = netcdf_lib_files
 
 if sys.platform == "darwin":
 
-    print("using these compile arguments:", compile_args)
-    basic_types_ext = Extension(r'gnome.cy_gnome.cy_basic_types',
+    basic_types_ext = Extension('gnome.cy_gnome.cy_basic_types',
                                 ['gnome/cy_gnome/cy_basic_types.pyx'] + cpp_files,
                                 language='c++',
                                 define_macros=macros,
@@ -386,7 +386,7 @@ elif sys.platform == "win32":
     # build our linking arguments
     libdirs.append(netcdf_libs)
 
-    basic_types_ext = Extension(r'gnome.cy_gnome.cy_basic_types',
+    basic_types_ext = Extension('gnome.cy_gnome.cy_basic_types',
                                 [r'gnome\cy_gnome\cy_basic_types.pyx'] + cpp_files,
                                 language='c++',
                                 define_macros=macros,
@@ -405,7 +405,6 @@ elif sys.platform == "win32":
                                      'cy_basic_types.cp37-win_amd64.lib')]
     libdirs = []
 
-
 elif sys.platform.startswith("linux"):
     # for some reason I have to create build/temp.linux-i686-2.7
     # else the compile fails saying temp.linux-i686-2.7 is not found
@@ -415,6 +414,8 @@ elif sys.platform.startswith("linux"):
         os.makedirs(build_temp)
 
     # Not sure calling setup twice is the way to go - but do this for now
+    #    it should be straightforward to simply build a shared lib.
+    #    but if it ain't broke ...
     # NOTE: This is also linking against the netcdf library (*.so), not
     # the static netcdf. We didn't build a NETCDF static library.
     setup(name='pyGnome',  # not required since ext defines this
@@ -452,7 +453,8 @@ elif sys.platform.startswith("linux"):
 
     else:
         libpath = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                               'gnome', 'cy_gnome')
+                               'gnome',
+                               'cy_gnome')
 
     # Need this for finding lib during linking and at runtime
     # using -rpath to define runtime path. Use $ORIGIN to define libgnome.so
@@ -464,13 +466,13 @@ elif sys.platform.startswith("linux"):
 
     libname = libname[:-3] if libname.endswith(".so") else libname
 
-    libs = [libname]
-    basic_types_ext = Extension(r'gnome.cy_gnome.cy_basic_types',
+    lib = [libname]
+    basic_types_ext = Extension('gnome.cy_gnome.cy_basic_types',
                                 ['gnome/cy_gnome/cy_basic_types.pyx'],
                                 language='c++',
                                 define_macros=macros,
                                 extra_compile_args=compile_args,
-                                libraries=libs,
+                                libraries=lib,
                                 include_dirs=include_dirs,
                                 )
 
@@ -513,16 +515,17 @@ extensions.append(Extension("gnome.utilities.geometry.cy_point_in_polygon",
                             extra_link_args=link_args,
                             ))
 
-# extensions.append(Extension("gnome.utilities.file_tools.filescanner",
-#                             sources=[os.path.join('gnome',
-#                                                   'utilities',
-#                                                   'file_tools',
-#                                                   'filescanner.pyx')],
-#                             extra_compile_args=compile_args,
-#                             include_dirs=include_dirs,
-#                             language="c",
-#                             ))
-
+if sys.version_info.major == 2:
+    # this doesn't work under Python3
+    extensions.append(Extension("gnome.utilities.file_tools.filescanner",
+                                sources=[os.path.join('gnome',
+                                                      'utilities',
+                                                      'file_tools',
+                                                      'filescanner.pyx')],
+                                extra_compile_args=compile_args,
+                                include_dirs=include_dirs,
+                                language="c",
+                                ))
 
 def get_version():
     """
@@ -534,8 +537,9 @@ def get_version():
             return version
     raise ValueError("can't find version string in __init__")
 
+
 for e in extensions:
-    e.cython_directives = {'language_level': "3"} #all are Python-3
+    e.cython_directives = {'language_level': "3"}  # all are Python-3
 
 setup(name='pyGnome',
       version=get_version(),
@@ -555,7 +559,7 @@ setup(name='pyGnome',
       # scripts,
 
       # metadata for upload to PyPI
-      author="Gnome team at NOAA ORR ERD",
+      author="Gnome team at NOAA/ORR/ERD",
       author_email="orr.gnome@noaa.gov",
       description=("GNOME (General NOAA Operational Modeling Environment) "
                    "is the modeling tool the Office of Response and "
