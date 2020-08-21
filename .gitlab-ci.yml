@@ -20,7 +20,7 @@ configure_env:
   tags:
     - docker
   artifacts:
-    expires_in: 10m
+    expire_in: 10m
     paths:
       - ./envs
     
