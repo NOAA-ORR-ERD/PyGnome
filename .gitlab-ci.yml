@@ -19,6 +19,10 @@ configure_env:
     - conda create --prefix ./envs
   tags:
     - docker
+  artifacts:
+    expires_in: 10m
+    paths:
+      - ./envs
     
 test:
   stage: test
