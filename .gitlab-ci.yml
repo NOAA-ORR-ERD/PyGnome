@@ -28,7 +28,7 @@ test:
 
 python3_compile:
     stage: compile
-    allow_failure: false
+    allow_failure: true
     only:
         - py23
     image: registry.orr.noaa.gov/erd/centos-conda/centos7-python3
@@ -50,6 +50,30 @@ python3_test:
     - py23
   script:
     - cd /pygnome/py_gnome/tests/unit_tests && pytest
+
+python3_docs:
+  stage: test
+  allow_failure: false
+  only:
+    - py23
+  script:
+    - yum install make -y
+    - cd /pygnome/py_gnome/documentation && make html
+  artifacts:
+    paths:
+      - /pygnome/py_gnome/documentation/_build/html
+
+build_docs:
+  stage: build
+  only:
+    - py23
+  script:
+    - docker build -f dockerfile-docs /pygnome/py_gnome/documentation/_build/html -t registry.orr.noaa.gov/gnome/pygnome/docs
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker push registry.orr.noaa.gov/gnome/pygnome/docs
+  tags:
+    - shell
+    - build
 
 test_master:
   stage: test
@@ -137,18 +161,3 @@ production:
   tags:
      - shell
      - build
-
-build_docs:
-  stage: build
-  only:
-    - py23
-  script:
-    - docker build -f dockerfile-docs /pygnome/py_gnome/documentation/_build/html -t registry.orr.noaa.gov/gnome/pygnome/docs
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker push registry.orr.noaa.gov/gnome/pygnome/docs
-  artifacts:
-    paths:
-      - /pygnome/py_gnome/documentation/_build/html
-  tags:
-    - shell
-    - build
