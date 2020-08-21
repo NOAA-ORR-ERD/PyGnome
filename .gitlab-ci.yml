@@ -8,8 +8,9 @@ cache:
     - ./envs
 
 before_script:
-  - conda activate ./envs
   - conda init bash
+  - bash
+  - conda activate ./envs
 
 configure_env:
   stage: .pre
