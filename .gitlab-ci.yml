@@ -7,15 +7,20 @@ cache:
   paths:
     - ./envs
 
-configure_env:
-  stage: .pre
-  script:
-    - conda create --prefix ./envs
-
 before_script:
   - conda activate ./envs
   - conda init bash
 
+configure_env:
+  stage: .pre
+  image: registry.orr.noaa.gov/gnome/oillibrary:develop
+  before_script:
+    - echo '' # manual override of before_script because we're on runner 12.3 and inherit options are only 12.9+
+  script:
+    - conda create --prefix ./envs
+  tags:
+    - docker
+    
 test:
   stage: test
   except:
