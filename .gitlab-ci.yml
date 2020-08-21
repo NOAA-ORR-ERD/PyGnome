@@ -5,7 +5,16 @@ stages:
 
 cache:
   paths:
-    - /opt/conda
+    - ./envs
+
+configure_env:
+  stage: .pre
+  script:
+    - conda create --prefix ./envs
+
+before_script:
+  - conda activate ./envs
+  - conda init bash
 
 test:
   stage: test
