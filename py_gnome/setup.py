@@ -5,8 +5,7 @@ The master setup.py file for py_gnome
 you should be able to run :
     python setup.py develop
 
-to build and install the whole thing in development mode
-(it will only work right with distribute, not setuptools)
+To build and install the whole thing in development mode
 All the shared C++ code is compiled with  basic_types.pyx
 
 It needs to be imported before any other extensions
@@ -172,9 +171,11 @@ def get_netcdf_libs():
         lib_dir = result[0]
         libs = result[1:]
         include_dir = subprocess.check_output(["nc-config", "--includedir"])
-        include_dir = include_dir.decode("ASCII")
+        include_dir = include_dir.decode("ASCII").strip()
         lib_dir = lib_dir.decode("ASCII")
         libs = [l.decode("ASCII") for l in libs]
+        print("found netcdf install:")
+        print([lib_dir, libs, include_dir])
         return lib_dir, libs, include_dir
     except OSError:
         raise NotImplementedError("this setup.py needs nc-config "
@@ -183,8 +184,8 @@ def get_netcdf_libs():
 
 # maybe this will work with Windows, too" at least with conda?
 if sys.platform.startswith("linux") or sys.platform == "darwin":
-#if sys.platform in ("linux"):
     netcdf_base, netcdf_libs, netcdf_inc = get_netcdf_libs()
+    print("netcdf include dir (line 188)", netcdf_inc)
     netcdf_lib_files = []
 elif sys.platform in ("win32"):  # but for now, still using our shipped libs.
 # elif sys.platform in ("darwin", "win32"):
@@ -340,13 +341,8 @@ include_dirs = [cpp_code_dir,
                 np.get_include(),
                 netcdf_inc,
                 '.']
+print("include_dirs: (line 344)", include_dirs)
 static_lib_files = netcdf_lib_files
-
-# build cy_basic_types along with lib_gnome so we can use distutils
-# for building everything
-# and putting it in the correct place for linking.
-# cy_basic_types needs to be imported before any other extensions.
-# This is being done in the gnome/cy_gnome/__init__.py
 
 # JS NOTE: 'darwin' and 'win32' statically link against netcdf library.
 #          On linux, we link against the dynamic netcdf libraries (shared
@@ -358,6 +354,10 @@ static_lib_files = netcdf_lib_files
 #           conda netcdf...
 
 if sys.platform == "darwin":
+    # on the mac, the libgnome code is linked into the cy_basic_types
+    #    extension -- which makes it available to all the other extensions
+    #.   as long as it's imported first.
+    # This is being done in the gnome/cy_gnome/__init__.py
 
     basic_types_ext = Extension('gnome.cy_gnome.cy_basic_types',
                                 ['gnome/cy_gnome/cy_basic_types.pyx'] + cpp_files,
@@ -373,6 +373,7 @@ if sys.platform == "darwin":
     static_lib_files = []
 
 elif sys.platform == "win32":
+    # On windows, the
     # build our compile arguments
     macros.append(('_EXPORTS', 1))
     macros.append(('_CRT_SECURE_NO_WARNINGS', 1))
@@ -400,12 +401,21 @@ elif sys.platform == "win32":
     extensions.append(basic_types_ext)
 
     # we will reference this library when building all other extensions
+    # fixme: Where is this getting built??
+    #        That filename needs to be dynamically determined with code somehat like:
+    # if sys.version_info.major > 2:
+    #     suffix = importlib.machinery.EXTENSION_SUFFIXES[0]
+    #     libname = 'gnome' + suffix
+    # else:
+    #     libname = 'gnome.lib'
     static_lib_files = [os.path.join(target_path(),
                                      'Release', 'gnome', 'cy_gnome',
                                      'cy_basic_types.cp37-win_amd64.lib')]
     libdirs = []
 
 elif sys.platform.startswith("linux"):
+    print("in linux stanza (line 416): include dirs")
+    print(include_dirs)
     # for some reason I have to create build/temp.linux-i686-2.7
     # else the compile fails saying temp.linux-i686-2.7 is not found
     # required for develop or install mode
@@ -426,7 +436,8 @@ elif sys.platform.startswith("linux"):
                                  language='c++',
                                  define_macros=macros,
                                  libraries=['netcdf'],
-                                 include_dirs=[cpp_code_dir],
+                                 # include_dirs=[cpp_code_dir],
+                                 include_dirs=include_dirs,
                                  )])
 
     # In install mode, it compiles and builds libgnome inside
@@ -485,6 +496,8 @@ elif sys.platform.startswith("linux"):
 #
 for mod_name in extension_names:
     cy_file = os.path.join("gnome/cy_gnome", mod_name + ".pyx")
+    print("setting up cython extensions")
+    print("include_dirs:", include_dirs)
     extensions.append(Extension('gnome.cy_gnome.' + mod_name,
                                 [cy_file],
                                 language="c++",
