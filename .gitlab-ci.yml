@@ -39,8 +39,7 @@ python3_compile:
         - conda install --file conda_requirements_py3.txt
         - cd ./py_gnome
         - python ./setup.py install
-        - python
-        - import gnome
+        - python -c "import gnome"
     tags:
       - docker
 
