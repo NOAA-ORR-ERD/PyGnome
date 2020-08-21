@@ -59,6 +59,10 @@ python3_compile:
     - python -c "import gnome"
   tags:
     - docker
+  artifacts:
+    expire_in: 1h
+    paths:
+      - ./envs
 
 python3_test:
   stage: test
