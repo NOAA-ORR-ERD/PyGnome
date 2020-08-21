@@ -23,7 +23,7 @@ configure_env:
     expire_in: 5 days
     paths:
       - ./envs
-    
+
 test:
   stage: test
   except:
@@ -55,7 +55,7 @@ python3_compile:
   image: registry.orr.noaa.gov/erd/centos-conda/centos7-python3
   script:
     - yum install gcc gcc-c++ -y
-    - yum install netcdf-devel -y
+#    - yum install netcdf-devel -y
     - yum install libXext libSM libXrender -y
     - conda install --file conda_requirements_py3.txt
     - cd ./py_gnome
@@ -129,7 +129,7 @@ test_master:
 
   tags:
     - docker
-    
+
 test_production:
   stage: test
   only:
