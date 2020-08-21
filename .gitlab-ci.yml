@@ -97,6 +97,8 @@ python3_docs:
 
 build_docs:
   stage: build
+  before_script:
+    - echo '' # manual override of before_script because we're on runner 12.3 and inherit options are only 12.9+
   only:
     - py23
   script:
