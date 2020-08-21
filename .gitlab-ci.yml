@@ -3,6 +3,10 @@ stages:
   - test
   - build
 
+cache:
+  paths:
+    - /opt/conda
+
 test:
   stage: test
   except:
@@ -50,7 +54,7 @@ python3_test:
   only:
     - py23
   script:
-    - cd /pygnome/py_gnome/tests/unit_tests && pytest
+    - cd ./py_gnome/tests/unit_tests && pytest
   tags:
     - docker
 
@@ -62,12 +66,12 @@ python3_docs:
     - py23
   script:
     - yum install make -y
-    - cd /pygnome/py_gnome/documentation && make html
+    - cd ./py_gnome/documentation && make html
   tags:
     - docker
   artifacts:
     paths:
-      - /pygnome/py_gnome/documentation/_build/html
+      - ./py_gnome/documentation/_build/html
 
 build_docs:
   stage: build
