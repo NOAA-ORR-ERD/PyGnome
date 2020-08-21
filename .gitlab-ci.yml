@@ -56,6 +56,7 @@ python3_compile:
   tags:
     - docker
   artifacts:
+    when: always
     expire_in: 1h
     paths:
       - ./envs
