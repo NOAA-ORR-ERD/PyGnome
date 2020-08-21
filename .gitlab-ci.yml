@@ -3,10 +3,6 @@ stages:
   - test
   - build
 
-cache:
-  paths:
-    - ./envs
-
 before_script:
   - source activate ./envs
 
