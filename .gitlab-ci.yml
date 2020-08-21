@@ -20,7 +20,7 @@ configure_env:
   tags:
     - docker
   artifacts:
-    expire_in: 10m
+    expire_in: 5 days
     paths:
       - ./envs
     
@@ -65,7 +65,7 @@ python3_compile:
     - docker
   artifacts:
     when: always
-    expire_in: 1h
+    expire_in: 5 days
     paths:
       - ./envs
 
@@ -100,7 +100,7 @@ build_docs:
   only:
     - py23
   script:
-    - docker build -f dockerfile-docs /pygnome/py_gnome/documentation/_build/html -t registry.orr.noaa.gov/gnome/pygnome/docs
+    - docker build -f dockerfile-docs ./py_gnome/documentation/_build/html -t registry.orr.noaa.gov/gnome/pygnome/docs
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker push registry.orr.noaa.gov/gnome/pygnome/docs
   tags:
