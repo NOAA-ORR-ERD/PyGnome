@@ -59,7 +59,7 @@ python3_compile:
     - yum install libXext libSM libXrender -y
     - conda install --file conda_requirements_py3.txt
     - cd ./py_gnome
-    - python ./setup.py install
+    - python ./setup.py develop
     - python -c "import gnome"
   tags:
     - docker
