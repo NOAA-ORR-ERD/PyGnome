@@ -49,18 +49,18 @@ test:
 
 python3_compile:
   stage: compile
-  allow_failure: true
   only:
     - py23
   image: registry.orr.noaa.gov/erd/centos-conda/centos7-python3
   script:
-    - yum install gcc gcc-c++ -y
+    - yum install gcc gcc-c++ make -y
 #    - yum install netcdf-devel -y
     - yum install libXext libSM libXrender -y
     - conda install --file conda_requirements_py3.txt
     - cd ./py_gnome
     - python ./setup.py develop
     - python -c "import gnome"
+    - cd documentation && make html
   tags:
     - docker
   artifacts:
@@ -68,6 +68,7 @@ python3_compile:
     expire_in: 5 days
     paths:
       - ./envs
+      - ./py_gnome/documentation/_build/html
 
 python3_test:
   stage: test
@@ -79,21 +80,6 @@ python3_test:
     - cd ./py_gnome/tests/unit_tests && pytest
   tags:
     - docker
-
-python3_docs:
-  stage: test
-  image: registry.orr.noaa.gov/erd/centos-conda/centos7-python3
-  allow_failure: false
-  only:
-    - py23
-  script:
-    - yum install make -y
-    - cd ./py_gnome/documentation && make html
-  tags:
-    - docker
-  artifacts:
-    paths:
-      - ./py_gnome/documentation/_build/html
 
 build_docs:
   stage: build
