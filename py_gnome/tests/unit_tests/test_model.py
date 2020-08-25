@@ -11,10 +11,12 @@ import numpy as np
 import pytest
 from pytest import raises
 
+import gnome
+
 from gnome.basic_types import datetime_value_2d
 from gnome.utilities.inf_datetime import InfDateTime
 
-import gnome.map
+from gnome.maps import GnomeMap, MapFromBNA
 from gnome.environment import Wind, Tide, constant_wind, Water, Waves
 from gnome.model import Model
 
@@ -252,7 +254,7 @@ def test_simple_run_rewind():
 
     model = Model()
 
-    model.map = gnome.map.GnomeMap()
+    model.map = GnomeMap()
     a_mover = SimpleMover(velocity=(1., 2., 0.))
 
     model.movers += a_mover
@@ -297,7 +299,7 @@ def test_simple_run_with_map():
 
     model = Model()
 
-    model.map = gnome.map.MapFromBNA(testdata['MapFromBNA']['testmap'],
+    model.map = MapFromBNA(testdata['MapFromBNA']['testmap'],
                                      refloat_halflife=6)  # hours
     a_mover = SimpleMover(velocity=(1., 2., 0.))
 
@@ -339,7 +341,7 @@ def test_simple_run_with_image_output(tmpdir):
     start_time = datetime(2012, 9, 15, 12, 0)
 
     # the land-water map
-    gnome_map = gnome.map.MapFromBNA(testdata['MapFromBNA']['testmap'],
+    gnome_map = MapFromBNA(testdata['MapFromBNA']['testmap'],
                                      refloat_halflife=6)  # hours
     renderer = gnome.outputters.Renderer(testdata['MapFromBNA']['testmap'],
                                          images_dir, image_size=(400, 300))
@@ -399,7 +401,7 @@ def test_simple_run_with_image_output_uncertainty(tmpdir):
     start_time = datetime(2012, 9, 15, 12, 0)
 
     # the land-water map
-    gmap = gnome.map.MapFromBNA(testdata['MapFromBNA']['testmap'],
+    gmap = MapFromBNA(testdata['MapFromBNA']['testmap'],
                                 refloat_halflife=6)  # hours
     renderer = gnome.outputters.Renderer(testdata['MapFromBNA']['testmap'],
                                          images_dir, image_size=(400, 300))
@@ -541,7 +543,7 @@ def test_all_movers(start_time, release_delay, duration):
                                              release_time=release_time)
 
     # the land-water map
-    model.map = gnome.map.GnomeMap()  # the simplest of maps
+    model.map = GnomeMap()  # the simplest of maps
 
     # simple mover
     model.movers += SimpleMover(velocity=(1., -1., 0.))
@@ -950,7 +952,7 @@ def test_contains_object(sample_model_fcn):
     '''
     model = sample_model_weathering(sample_model_fcn, test_oil)
 
-    gnome_map = model.map = gnome.map.GnomeMap()    # make it all water
+    gnome_map = model.map = GnomeMap()    # make it all water
 
     rel_time = model.spills[0].release_time
     model.start_time = rel_time - timedelta(hours=1)
@@ -1047,7 +1049,7 @@ def test_staggered_spills_weathering(sample_model_fcn, delay):
     test exposed a bug, which is now fixed
     '''
     model = sample_model_weathering(sample_model_fcn, test_oil)
-    model.map = gnome.map.GnomeMap()    # make it all water
+    model.map = GnomeMap()    # make it all water
     model.uncertain = False
     rel_time = model.spills[0].release_time
     model.start_time = rel_time - timedelta(hours=1)
@@ -1130,7 +1132,7 @@ def test_two_substance_same(sample_model_fcn, s0=test_oil, s1=test_oil):
     useful for catching bugs when doing a refactor so leave it in.
     '''
     model = sample_model_weathering(sample_model_fcn, s0)
-    model.map = gnome.map.GnomeMap()    # make it all water
+    model.map = GnomeMap()    # make it all water
     model.uncertain = False
     rel_time = model.spills[0].release_time
     model.duration = timedelta(days=1)
@@ -1211,7 +1213,7 @@ def test_two_substance_different(sample_model_fcn, s0=test_oil, s1="ARABIAN MEDI
     useful for catching bugs when doing a refactor so leave it in.
     '''
     model = sample_model_weathering(sample_model_fcn, s0)
-    model.map = gnome.map.GnomeMap()    # make it all water
+    model.map = GnomeMap()    # make it all water
     model.uncertain = False
     rel_time = model.spills[0].release_time
     model.duration = timedelta(days=1)

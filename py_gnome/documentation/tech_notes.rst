@@ -19,7 +19,7 @@ The predicted position is found to be same for an object with different mass. Th
 ​
 I took only one splot (as one drifting buoy with 3000 kg) and drove it with ocean currents.  Then I changed the mass as 1 kg and forced the model with currents, again I got the same position only.
 
-Generally the mass of the object plays a role in drift. But in the above case, i got the same position even after changing the mass of the particle.
+Generally the mass of the object plays a role in drift. But in the above case, I got the same position even after changing the mass of the particle.
 
 Response:
 ---------
@@ -42,11 +42,11 @@ There is also literature from the Search and Rescue field about the wind drift f
 
 Oil is generally at the air-water interface, which theoretically results in a “windage” of 3%, which turns out to work pretty well for fresh oil. GNOME defaults to a windage range of 1.0--4.0% which accounts for the tendency of oil to spread in the downwind direction.
 
-Also, there is sub-grid scale circulations not resolved in the models. This is accounted for by the diffusion parameter.
+Also, there are sub-grid scale circulations not resolved in the models. This is accounted for by the diffusion parameter.
 
 A single object will not diffuse, but it may take a different path depending on these small scale circulations. So it is best to use multiple elements, and apply a random diffusion. The results then are less deterministic, but represent a probability of where the buoy may end up. That is, where the particles are more dense, there is a higher probability that the buoy would be at that location.
 
-As you don’t know the actual windage, you will also want to set a range of windages, accounting for that uncertainty.
+As you don’t know the actual windage, you will also want to set a range of windages, accounting for that uncertainty. IN that case, you should set the windage "persistance" to infinity, so that each particle will have the same value throughout the model run.
 
 Stokes Drift
 ============
@@ -112,8 +112,21 @@ Answer 2:
 
     Liquids evaporate at well below their boiling points. Think of water -- it's BP is 100C, yet it will evaporate fairly rapidly in typical conditions, particularly if spread out very thinly, like oil on water does.
 
+Question:
 
+    Is it applicable to use GNOME to simulate the oil evaporation onshore?  If not, what’s the major difference between oil evaporation at water and onshore?
 
+Answer:
+
+    it was not designed for that,and in the coupled fate and transport model, we turn evaporation off when teh oil is beached. Which isn't right, but ...
+
+    In theory, the same algorithm should work in either on water or on land. Except for two complications:
+
+    1) evaporation is sensitive to temperature. On the water, we use the temp of the water (which may miss solar heating of the dark oil). On land, the water temp isn't relevant, so we would need another temp to use. -- maybe air temp would get close, but with solar heating, maybe not, and it may depend on the substrate.
+
+    2) Spreading / thickness. Evaporation is also sensitive to the exposed surface area, or thickness of the oil -- if it spreads out more, it can evaporate much faster. -- but how would it spread on land? would it pool up in low spots? WE would certainly need a separate spreading approach
+
+    Between these two issues, that's why we turn evaporation off on land.
 
 
 

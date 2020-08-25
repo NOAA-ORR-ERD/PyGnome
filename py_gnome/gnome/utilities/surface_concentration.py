@@ -52,7 +52,7 @@ def surface_conc_kde(sc):
         lon = positions[:, 0]
         lat = positions[:, 1]
 
-        bin_length = 6*3600 #kde will be calculated on particles 0-6hrs, 6-12hrs,...
+        bin_length = 1*3600 #kde will be calculated on particles 0-6hrs, 6-12hrs,...
         t = age.min()
         max_age = age.max()
         

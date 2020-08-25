@@ -11,7 +11,7 @@ from datetime import datetime
 import numpy as np
 
 
-from gnome.map import GnomeMap, MapFromBNA
+from gnome.maps import GnomeMap, MapFromBNA
 from gnome.basic_types import oil_status
 
 from gnome.maps.tideflat_map import (TideflatMap,

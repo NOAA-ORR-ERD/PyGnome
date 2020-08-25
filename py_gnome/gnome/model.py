@@ -20,11 +20,11 @@ from gnome.utilities.orderedcollection import OrderedCollection
 from gnome.spill_container import SpillContainerPair
 from gnome.basic_types import oil_status, fate
 
-from gnome.map import (GnomeMapSchema,
-                       MapFromBNASchema,
-                       ParamMapSchema,
-                       MapFromUGridSchema,
-                       GnomeMap)
+from gnome.maps.map import (GnomeMapSchema,
+                            MapFromBNASchema,
+                            ParamMapSchema,
+                            MapFromUGridSchema,
+                            GnomeMap)
 
 from gnome.environment import Environment, Wind
 from gnome.array_types import gat
@@ -77,6 +77,8 @@ class ModelSchema(ObjTypeSchema):
         List(), missing=drop,
 
     )
+    # fixme: this feels fragile -- couldn't we use subclassing?
+    #        any Schema derived from GnomeMapSchema would be good?
     map = GeneralGnomeObjectSchema(
         acceptable_schemas=(GnomeMapSchema,
                             MapFromBNASchema,
@@ -924,7 +926,7 @@ class Model(GnomeId):
                     # change 'mass_components' in weatherer
                     w.weather_elements(sc, time_step, model_time)
                     #self.logger.info('density after {0}: {1}'.format(w.name, sc['density'][-5:]))
-        
+
         #self.logger.info('density after weather_elements: {0}'.format(sc['density'][-5:]))
 
     def _split_into_substeps(self):
@@ -1432,6 +1434,40 @@ class Model(GnomeId):
             msg = None
             if spill.on:
                 num_spills_on += 1
+
+                start_pos = copy.deepcopy(spill.start_position)
+                if not np.all(self.map.on_map(start_pos)):
+                    msg = ('{0} has start position outside of map bounds'.
+                           format(spill.name))
+                    self.logger.warning(msg)
+
+                    msgs.append(self._warn_pre + msg)
+
+                elif hasattr(spill, 'end_position') and not np.all(spill.end_position == spill.start_position):
+                    end_pos = copy.deepcopy(spill.end_position)
+                    if not np.all(self.map.on_map(end_pos)):
+                        msg = ('{0} has start position outside of map bounds'.
+                               format(spill.name))
+                        self.logger.warning(msg)
+
+                        msgs.append(self._warn_pre + msg)
+
+                #land check needs to be updated for Spatial Release
+                if np.any(self.map.on_land(start_pos)):
+                    msg = ('{0} has start position on land'.
+                           format(spill.name))
+                    self.logger.warning(msg)
+
+                    msgs.append(self._warn_pre + msg)
+
+                elif hasattr(spill, 'end_position') and not np.all(spill.end_position == spill.start_position):
+                    end_pos = copy.deepcopy(spill.end_position)
+                    if np.any(self.map.on_land(end_pos)):
+                        msg = ('{0} has start position on land'.
+                               format(spill.name))
+                        self.logger.warning(msg)
+
+                        msgs.append(self._warn_pre + msg)
 
                 if spill.release_time < self.start_time + self.duration:
                     someSpillIntersectsModel = True

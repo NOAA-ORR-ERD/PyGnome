@@ -25,7 +25,7 @@ from gnome.utilities.remote_data import get_datafile
 from gnome.spill.substance import GnomeOil
 from gnome.spill.initializers import plume_initializers
 from gnome.utilities.distributions import WeibullDistribution, UniformDistribution
-from gnome.map import MapFromBNA
+from gnome.maps import MapFromBNA
 from gnome.model import Model
 from gnome.environment import GridCurrent
 from gnome.spill import point_line_release_spill

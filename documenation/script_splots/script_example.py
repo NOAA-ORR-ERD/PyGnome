@@ -18,7 +18,7 @@ from gnome.environment import Wind
 from gnome.movers import RandomMover, WindMover
 from gnome.spill import Spill
 from gnome.spill.release import release_from_splot_data
-from gnome.map import MapFromBNA    # will be used once we have BNA map
+from gnome.maps import MapFromBNA    # will be used once we have BNA map
 
 from gnome.outputters import Renderer
 from gnome.outputters import NetCDFOutput

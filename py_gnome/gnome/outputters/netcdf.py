@@ -94,6 +94,7 @@ var_attributes = {
     'frac_coverage': {},
     'bulltime': {},
     'evap_decay_constant': {},
+    'yield_factor': {},
     'partition_coeff': {},
     'droplet_avg_size': {},
     'init_mass': {'long_name': 'initial mass',
@@ -260,6 +261,7 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
                               'bulltime',
                               'partition_coeff',
                               'evap_decay_constant',
+                              'yield_factor',
                               ]
 
     _schema = NetCDFOutputSchema
@@ -856,7 +858,7 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
             _stop_ix = _start_ix + data.variables['particle_count'][index]
             elem = data.variables['particle_count'][index]
 
-            c_time = nc.num2pydate(time_[index], time_.units,
+            c_time = nc.num2date(time_[index], time_.units,
                                  calendar=time_.calendar)
 
             arrays_dict['current_time_stamp'] = np.array(c_time)

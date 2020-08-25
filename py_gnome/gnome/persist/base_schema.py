@@ -865,19 +865,27 @@ Polygon = LongLatBounds
 
 class PolygonSetSchema(SequenceSchema):
     polygonset = Polygon()
+
     def serialize(self, appstruct):
         appstruct = [poly.tolist() for poly in appstruct]
-        return super(PolygonSetSchema, self).serialize( appstruct)
+        return super(PolygonSetSchema, self).serialize(appstruct)
 
     def deserialize(self, cstruct):
-        appstruct = super(PolygonSetSchema, self).deserialize(cstruct)
-        if len(appstruct) == 0:
-            appstruct = [(-360, -90), (-360, 90),
-                         (360, 90), (360, -90)]
-        ps = PolygonSet()
-        for poly in appstruct:
-            ps.append(poly)
-        return ps
+        if cstruct is None:
+            return None
+        else:
+            appstruct = super(PolygonSetSchema, self).deserialize(cstruct)
+            if len(appstruct) == 0:
+                # empty --should be None
+                return None
+            # fixme: is there any need to for a PolygonSet here?
+            #        a list of lists would work fine.
+            #        a PolygonSet is created in the spillable_area.setter anyway.
+            ps = PolygonSet()
+            for poly in appstruct:
+                ps.append(poly)
+            return ps
+
 
 class WorldPoint(LongLat):
     'Used to define reference points. 3D positions (long,lat,z)'
