@@ -1,15 +1,12 @@
 '''
 model dissolution process
 '''
+
 from __future__ import division
 from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from future import standard_library
-standard_library.install_aliases()
-from builtins import *
-from past.utils import old_div
 import copy
 import contextlib
 
@@ -160,7 +157,7 @@ class Dissolution(Weatherer):
 
         # print 'droplet_avg_sizes = ', droplet_avg_sizes
 
-        #arom_mask = substance._sara['type'] == 'Aromatics' 
+        #arom_mask = substance._sara['type'] == 'Aromatics'
         sara = np.asarray(substance.sara_type)
         arom_mask = sara == 'Aromatics'
 
@@ -173,8 +170,8 @@ class Dissolution(Weatherer):
         # for each LE.
         # K_ow for non-aromatics are masked to 0.0
         K_ow_comp = arom_mask * BanerjeeHuibers.partition_coeff(mol_wt, rho)
-        data['partition_coeff'] = (old_div((old_div(fmasses * K_ow_comp, mol_wt)).sum(axis=1),
-                                   (old_div(fmasses, mol_wt)).sum(axis=1)))
+        data['partition_coeff'] = ((fmasses * K_ow_comp / mol_wt).sum(axis=1) /
+                                   (fmasses / mol_wt).sum(axis=1))
 
         avg_rhos = self.oil_avg_density(fmasses, rho)
         # print ('oil density at temp = {}'
@@ -256,10 +253,10 @@ class Dissolution(Weatherer):
 
         if len(masses.shape) == 1:
             # a single LE of mass components
-            avg_rho = (old_div(masses, masses.sum()) * densities).sum()
+            avg_rho = (masses / masses.sum() * densities).sum()
         else:
             # multiple LE mass components in a 2D array
-            avg_rho = (((old_div(masses.T, masses.sum(axis=1).T)).T * densities)
+            avg_rho = (((masses.T / masses.sum(axis=1).T).T * densities)
                        .sum(axis=1))
 
         return np.nan_to_num(avg_rho)
@@ -271,10 +268,10 @@ class Dissolution(Weatherer):
 
         if len(masses.shape) == 1:
             # a single LE of mass components
-            return (old_div(masses, densities)).sum()
+            return (masses / densities).sum()
         else:
             # multiple LE mass components in a 2D array
-            return (old_div(masses, densities)).sum(axis=1)
+            return (masses / densities).sum(axis=1)
 
     def state_variable(self, masses, densities, arom_mask):
         # oil component count needs to match
@@ -286,19 +283,19 @@ class Dissolution(Weatherer):
 
         if len(masses.shape) == 1:
             # a single LE of mass components
-            aromatic_volume = (old_div(masses, densities) * arom_mask).sum()
-            S_RA_volume = (old_div(masses, densities) * not_arom_mask).sum()
+            aromatic_volume = (masses / densities * arom_mask).sum()
+            S_RA_volume = (masses / densities * not_arom_mask).sum()
 
-            return old_div(aromatic_volume, S_RA_volume), S_RA_volume
+            return aromatic_volume / S_RA_volume, S_RA_volume
         else:
             # multiple LE mass components in a 2D array
-            aromatic_volume = (old_div(masses, densities) * arom_mask).sum(axis=1)
-            S_RA_volume = (old_div(masses, densities) * not_arom_mask).sum(axis=1)
+            aromatic_volume = (masses / densities * arom_mask).sum(axis=1)
+            S_RA_volume = (masses / densities * not_arom_mask).sum(axis=1)
 
-            return old_div(aromatic_volume, S_RA_volume), S_RA_volume
+            return aromatic_volume / S_RA_volume, S_RA_volume
 
     def beta_coeff(self, k_w, K_ow, v_inert):
-        return old_div(4.84 * k_w, K_ow) * v_inert ** (2.0 / 3.0)
+        return 4.84 * k_w / K_ow * v_inert ** (2.0 / 3.0)
 
     def water_column_time_fraction(self,
                                    points,
@@ -337,13 +334,13 @@ class Dissolution(Weatherer):
 
         if len(masses.shape) == 1:
             # a single LE of mass components
-            mass_fractions = old_div(masses, masses.sum())
+            mass_fractions = masses / masses.sum()
             aggregate_rho = (mass_fractions * densities).sum()
 
             return mass_fractions * aggregate_rho
         else:
             # multiple LE mass components in a 2D array
-            mass_fractions = (old_div(masses.T, masses.sum(axis=1))).T
+            mass_fractions = (masses.T / masses.sum(axis=1)).T
             aggregate_rho = (mass_fractions * densities).sum(axis=1)
 
             return (mass_fractions.T * aggregate_rho).T
@@ -393,7 +390,7 @@ class Dissolution(Weatherer):
         #     print 'K_ow = ', K_ow
 
         # ok, first lets get the xfer rate per unit area (1.27)
-        N_drop_a = ((old_div(C_dis, K_ow)).T * (k_w / 3600.0)).T
+        N_drop_a = ((C_dis / K_ow).T * (k_w / 3600.0)).T
 
         # with printoptions(precision=2):
         #     print 'N_drop_a = ', N_drop_a
@@ -408,7 +405,7 @@ class Dissolution(Weatherer):
         V_drop = (4.0 / 3.0) * np.pi * (droplet_avg_size / 2.0) ** 3.0
         # print 'V_drop = ', V_drop
 
-        num_droplets = old_div(total_volumes, V_drop)
+        num_droplets = total_volumes / V_drop
         # print 'num_droplets = ', num_droplets
 
         total_surface_area = A_drop * num_droplets
@@ -454,14 +451,14 @@ class Dissolution(Weatherer):
             # mass xfer rate (per unit area)
             N_s_a = (0.01 *
                      (U_10 / 3600.0) *
-                     (old_div(c_oil, k_ow)))
+                     (c_oil / k_ow))
 
             N_s = N_s_a * slick_area
         else:
             # multiple LE mass components in a 2D array
             N_s_a = (0.01 * np.prod((U_10 / 3600.0))
                       *
-                     (old_div(c_oil, k_ow)))
+                     (c_oil / k_ow))
 
             # with printoptions(precision=2):
             #     print 'N_s_a = ', N_s_a

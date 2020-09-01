@@ -6,16 +6,7 @@ from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
 
-
-from future import standard_library
-standard_library.install_aliases()
-from builtins import *
-from past.utils import old_div
-import copy
-
 import numpy as np
-
-import gnome
 
 from gnome.array_types import gat
 
@@ -116,7 +107,7 @@ class Emulsification(Weatherer):
             # compute energy dissipation rate (m^2/s^3) based on wave height
             wave_height = self.waves.get_value(model_time)[0]
             if wave_height > 0:
-                eps = old_div((.0355 * wave_height ** .215), ((np.log(6.31 / wave_height ** 1.45)) ** 3))
+                eps = (.0355 * wave_height ** .215) / ((np.log(6.31 / wave_height ** 1.45)) ** 3)
             else:
                 #eps = 0.
                 return
@@ -132,7 +123,7 @@ class Emulsification(Weatherer):
             print(sigma_ow[0])
             v0 = substance.kvis_at_temp(water_temp)	#viscosity is calculated in weathering_data
             if wave_height > 0:
-                delta_T_emul = 1630 + old_div(450, wave_height ** (1.5))
+                delta_T_emul = 1630 + 450 / wave_height ** (1.5)
             else:
                 return
 
@@ -161,8 +152,8 @@ class Emulsification(Weatherer):
             saturates_mask = substance._sara['type'] == 'Saturates'
             aromatics_mask = substance._sara['type'] == 'Aromatics'
 
-            f_sat = old_div((saturates_mask * data['mass_components']).sum(axis=1), data['mass'].sum())
-            f_arom = old_div((aromatics_mask * data['mass_components']).sum(axis=1), data['mass'].sum())
+            f_sat = (saturates_mask * data['mass_components']).sum(axis=1) / data['mass'].sum()
+            f_arom = (aromatics_mask * data['mass_components']).sum(axis=1) / data['mass'].sum()
 
             # will want to use mass_components to update over time
             f_res1 = resin_mask * substance._sara['fraction']
@@ -173,17 +164,17 @@ class Emulsification(Weatherer):
             f_res2 = resin_mask * data['mass_components']
             if data['mass'].sum() == 0:
                 return
-            f_res3 = old_div((resin_mask * data['mass_components']).sum(axis=1), data['mass'].sum())
-            f_asph3 = old_div((asphaltene_mask * data['mass_components']).sum(axis=1), data['mass'].sum())
+            f_res3 = (resin_mask * data['mass_components']).sum(axis=1) / data['mass'].sum()
+            f_asph3 = (asphaltene_mask * data['mass_components']).sum(axis=1) / data['mass'].sum()
 
             if f_res > 0:
-                r_oil = old_div(f_asph, f_res)
+                r_oil = f_asph / f_res
             else:
                 #r_oil = 0
                 return
             if f_asph <= 0:
                 return
-            r_oil3 = np.where(f_res3 > 0, old_div(f_asph3, f_res3), 0)	# check if limits are just for S_b calculation
+            r_oil3 = np.where(f_res3 > 0, f_asph3 / f_res3, 0)	# check if limits are just for S_b calculation
 
             Y_max = .61 + .5 * r_oil - .28 * r_oil **2
             # limit on r_oil3 values or just final Y_max or set Y_max = 0 if out of bounds?
@@ -191,17 +182,17 @@ class Emulsification(Weatherer):
                 Y_max = .9
 
             m = .5 * (visc_max + visc_min)
-            x_visc = old_div((visc_oil - m), (visc_max - visc_min))
+            x_visc = (visc_oil - m) / (visc_max - visc_min)
 
-            x_sig_min = old_div((sigma_ow[0] - sigma_min), sigma_ow[0])
+            x_sig_min = (sigma_ow[0] - sigma_min) / sigma_ow[0]
 
             #m = .5 * (f_max + f_min)
             #x_fasph = (f_asph3 - m) / (f_max - f_min)
             # changed to one-sided, add check for f_asph3 = 0
-            x_fasph = old_div((f_asph3 - f_min), (f_asph3))
+            x_fasph = (f_asph3 - f_min) / (f_asph3)
 
             m = .5 * (r_max + r_min)
-            x_r = old_div((r_oil - m), (r_max - r_min))
+            x_r = (r_oil - m) / (r_max - r_min)
 
             x_s = 0 		# placeholder since this isn't used
 
@@ -219,7 +210,7 @@ class Emulsification(Weatherer):
             print(visc_oil)
             print("r_oil")
             print(r_oil)
-            S_b = .478834 * ((old_div(dens_oil * (1000000*visc_oil)**.25, (1000*sigma_ow[0]))) * r_oil * np.exp(-2 * r_oil**2))**(old_div(1,6))
+            S_b = .478834 * ((dens_oil * (1000000*visc_oil)**.25 / (1000*sigma_ow[0])) * r_oil * np.exp(-2 * r_oil**2))**(1/6)
             S_b[S_b > 1] = 1.
             S_b[S_b < 0] = 0.
             print("S_b")
@@ -227,7 +218,7 @@ class Emulsification(Weatherer):
             T_week = 604800
 
 
-            k_lw = np.where(data['frac_water'] > 0, old_div((1 - S_b), T_week), 0.)
+            k_lw = np.where(data['frac_water'] > 0, (1 - S_b) / T_week, 0.)
 
             #data['frac_water'] += (Bw * (k_emul2 * (Y_max - data['frac_water'])) - k_lw * data['frac_water']) * time_step
             Y_prime = 1.582 * Y_max  # Y_max / (1 - 1/e)
@@ -244,7 +235,7 @@ class Emulsification(Weatherer):
             # doesn't emulsify, avoid the nans
             if Y_max <= 0:
                 return
-            S_max = (6. / constants.drop_min) * (old_div(Y_max, (1.0 - Y_max)))
+            S_max = (6. / constants.drop_min) * (Y_max / (1.0 - Y_max))
 
             #sc.mass_balance['water_content'] += \
                 #np.sum(data['frac_water'][:]) / sc.num_released
@@ -253,7 +244,7 @@ class Emulsification(Weatherer):
             # todo: probably should be weighted avg
             if data['mass'].sum() > 0:
                 sc.mass_balance['water_content'] = \
-                    np.sum(old_div(data['mass'],data['mass'].sum()) * data['frac_water'])
+                    np.sum(data['mass']/data['mass'].sum() * data['frac_water'])
 
             self.logger.debug(self._pid + 'water_content for {0}: {1}'.
                               format(substance.name,
@@ -293,7 +284,7 @@ class Emulsification(Weatherer):
             # doesn't emulsify, avoid the nans
             if Y_max <= 0:
                 return
-            S_max = (6. / constants.drop_min) * (old_div(Y_max, (1.0 - Y_max)))
+            S_max = (6. / constants.drop_min) * (Y_max / (1.0 - Y_max))
 
             emulsify_oil(time_step,
                          data['frac_water'],
@@ -315,7 +306,7 @@ class Emulsification(Weatherer):
             # todo: probably should be weighted avg
             if data['mass'].sum() > 0:
                 sc.mass_balance['water_content'] = \
-                    np.sum(old_div(data['mass'],data['mass'].sum()) * data['frac_water'])
+                    np.sum(data['mass']/data['mass'].sum() * data['frac_water'])
 
             self.logger.debug(self._pid + 'water_content for {0}: {1}'.
                               format(substance.name,
@@ -353,7 +344,7 @@ class Emulsification(Weatherer):
         '''
         logistic function for turning on emulsification
         '''
-        H_log = old_div(1, (1 + np.exp(-1*k*x)))
+        H_log = 1 / (1 + np.exp(-1*k*x))
 
         return H_log
 
@@ -361,7 +352,7 @@ class Emulsification(Weatherer):
         '''
         symmetric function for turning on emulsification
         '''
-        H_4 = old_div(1, (1 + x**(2*k)))
+        H_4 = 1 / (1 + x**(2*k))
 
         return H_4
 
@@ -428,6 +419,6 @@ class Emulsification(Weatherer):
         #K0Y = substance.get('k0y')
         K0Y = 2.02E-06
 
-        k_emul = old_div(6.0 * K0Y * wind_speed * wind_speed, constants.drop_max)
+        k_emul = 6.0 * K0Y * wind_speed * wind_speed / constants.drop_max
 
         return k_emul

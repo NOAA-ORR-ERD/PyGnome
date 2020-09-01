@@ -1,12 +1,10 @@
 #!/usr/bin/env python
+
 from __future__ import division
 from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
-from future import standard_library
-standard_library.install_aliases()
-from builtins import *
-from past.utils import old_div
+
 import numpy as np
 
 from colander import SchemaNode
@@ -94,7 +92,7 @@ class Weatherer(Process):
     def _halflife(self, M_0, factors, time):
         'Assumes our factors are half-life values'
         half = np.float64(0.5)
-        total_mass = M_0 * (half ** (old_div(time, factors)))
+        total_mass = M_0 * (half ** (time / factors))
 
         return total_mass
 

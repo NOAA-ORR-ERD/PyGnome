@@ -6,12 +6,6 @@ from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
 
-
-from future import standard_library
-standard_library.install_aliases()
-from builtins import zip
-from builtins import *
-from past.utils import old_div
 import numpy as np
 
 from gnome import constants
@@ -135,14 +129,14 @@ class NaturalDispersion(Weatherer):
                             sediment,
                             V_entrain,
                             ka)
-            except: 
+            except:
                 import pdb
                 pdb.post_mortem()
 
             sc.mass_balance['natural_dispersion'] += np.sum(disp[:])
 
             if data['mass'].sum() > 0:
-                disp_mass_frac = old_div(np.sum(disp[:]), data['mass'].sum())
+                disp_mass_frac = np.sum(disp[:]) / data['mass'].sum()
 
                 if disp_mass_frac > 1:
                     disp_mass_frac = 1
@@ -156,7 +150,7 @@ class NaturalDispersion(Weatherer):
             sc.mass_balance['sedimentation'] += np.sum(sed[:])
 
             if data['mass'].sum() > 0:
-                sed_mass_frac = old_div(np.sum(sed[:]), data['mass'].sum())
+                sed_mass_frac = np.sum(sed[:]) / data['mass'].sum()
 
                 if sed_mass_frac > 1:
                     sed_mass_frac = 1
