@@ -3,21 +3,20 @@ image outputters
 
 These will output images for use in the Web client / OpenLayers
 
+NOTE: doesn't seem to be tested -- and may not be used anyway.
+
 """
+
 from __future__ import division
 from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
-from future import standard_library
-standard_library.install_aliases()
-from builtins import zip
-from builtins import range
-from builtins import *
-from past.utils import old_div
+
 import os
 import copy
 import collections
 import tempfile
+import base64
 # from tempfile import NamedTemporaryFile
 from colander import SequenceSchema
 from gnome.persist.base_schema import GeneralGnomeObjectSchema
@@ -175,10 +174,9 @@ class IceImageOutput(Outputter):
             return None
 
         scale_range = high_val - low_val
-        q_step_range = old_div(scale_range, len(color_names))
+        q_step_range = scale_range / len(color_names)
 
-        idx = (np.floor(old_div(values, q_step_range))
-               .astype(int)
+        idx = ((values // q_step_range).astype(int)
                .clip(0, len(color_names) - 1))
 
         return color_names[idx]
@@ -282,15 +280,15 @@ class IceImageOutput(Outputter):
         # formatted buffer in memory. (libgd can be made to do this, but
         # the wrapper is yet to be written)
         # So we will just write to a tempfile and then read it back.
-        # If we ever have to do this anywhere else, a context manger would be good.
+        # If we ever have to do this anywhere else, a context manager would be good.
         tempdir = tempfile.mkdtemp()
         tempfilename = os.path.join(tempdir, "gnome_temp_image_file.png")
 
         canvas.save_foreground(tempfilename)
-        thickness_image = open(tempfilename, 'rb').read().encode('base64')
+        thickness_image = base64.b64encode(open(tempfilename, 'rb').read())
 
         canvas.save_background(tempfilename)
-        coverage_image = open(tempfilename, 'rb').read().encode('base64')
+        coverage_image = base64.b64encode(open(tempfilename, 'rb').read())
 
         os.remove(tempfilename)
         os.rmdir(tempdir)

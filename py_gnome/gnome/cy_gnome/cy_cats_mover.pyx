@@ -325,7 +325,7 @@ cdef class CyCatsMover(CyCurrentMover):
         sz = _GetHandleSize(<Handle>vel_hdl)
 
         # will this always work?
-        vels = np.empty((sz / tmp_size,), dtype=basic_types.velocity_rec)
+        vels = np.empty((sz // tmp_size,), dtype=basic_types.velocity_rec)
 
         memcpy(&vels[0], vel_hdl[0], sz)
 

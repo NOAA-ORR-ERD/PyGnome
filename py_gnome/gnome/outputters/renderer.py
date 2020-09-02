@@ -10,12 +10,7 @@ from __future__ import division
 from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
-from future import standard_library
-standard_library.install_aliases()
-from builtins import range
-from builtins import *
-from builtins import object
-from past.utils import old_div
+
 import os
 from os.path import basename
 import glob
@@ -371,18 +366,18 @@ class Renderer(Outputter, MapCanvas):
         if not on:
             return
 
-        dt_format = d['format'] if 'format' in d else '%c'
+        dt_format = d.get('format', '%c')
 
-        background = d['background'] if 'background' in d else 'white'
+        background = d.get('background', 'white')
 
-        color = d['color'] if 'color' in d else 'black'
+        color = d.get('color', 'black')
 
-        size = d['size'] if 'size' in d else 'small'
+        size = d.get('size', 'small')
 
-        default_position = (old_div(self.fore_image.width, 2), self.fore_image.height)
+        default_position = (self.fore_image.width / 2, self.fore_image.height)
         position = d['position'] if 'position' in d else default_position
 
-        align = d['alignment'] if 'alignment' in d else 'cb'
+        align = d.get('alignment', 'cb')
 
         self.fore_image.draw_text(time.strftime(dt_format),
                                   position, size, color, align, background)
