@@ -361,7 +361,7 @@ def test_full_run(sample_model_fcn2, oil, temp, expected_balance):
 @pytest.mark.xfail
 @pytest.mark.parametrize(('oil', 'temp', 'expected_balance'),
                          # [(_sample_oils['benzene'], 288.7, 2.98716)
-                         [('benzene', 288.15, 9731.05479)])
+                         [('oil_benzene', 288.15, 9731.05479)])
 def test_full_run_no_evap(sample_model_fcn2, oil, temp, expected_balance):
     '''
     test dissolution outputs post step for a full run of model. Dump json

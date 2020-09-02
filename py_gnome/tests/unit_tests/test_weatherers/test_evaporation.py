@@ -19,8 +19,6 @@ from gnome.outputters import WeatheringOutput
 from gnome.basic_types import oil_status
 
 from .conftest import weathering_data_arrays, test_oil
-# from ..conftest import (sample_model,
-#                         sample_model_weathering)
 from ..conftest import (# sample_model,
                         sample_model_weathering)
 
@@ -55,8 +53,7 @@ def test_evaporation(oil, temp, num_elems, on):
 
     sc = weathering_data_arrays(evap.array_types, evap.water, time_step)[0]
 
-    model_time = (sc.spills[0].release_time +
-                  timedelta(seconds=time_step))
+    model_time = (sc.spills[0].release_time + timedelta(seconds=time_step))
 
     evap.prepare_for_model_run(sc)
     evap.prepare_for_model_step(sc, time_step, model_time)

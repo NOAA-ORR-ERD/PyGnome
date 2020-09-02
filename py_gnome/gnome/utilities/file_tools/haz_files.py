@@ -247,8 +247,6 @@ def GetNextBNAPolygon(f, dtype=np.float64):
         name = fields[1]
         sname = fields[3]
         num_points = int(fields[4].strip()[1:])
-        # header = header.replace('", "', '","') # some bnas have an extra space
-        # name, rest = header.strip().split('","')
     except (ValueError, IndexError):
         raise ValueError('File has incorrect header for BNA format: {0}'
                          .format(header))
@@ -265,9 +263,9 @@ def GetNextBNAPolygon(f, dtype=np.float64):
                        .format(name))
 
     if FILESCANNER:
-            points = scan(f, num_points * 2)
-            points = np.asarray(points, dtype=dtype)
-            points.shape = (-1, 2)
+        points = scan(f, num_points * 2)
+        points = np.asarray(points, dtype=dtype)
+        points.shape = (-1, 2)
     else:
         points = np.zeros((num_points, 2), dtype)
         for i in range(num_points):
