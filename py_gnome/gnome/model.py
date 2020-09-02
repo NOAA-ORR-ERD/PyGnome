@@ -6,12 +6,6 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 from future import standard_library
-standard_library.install_aliases()
-from builtins import zip
-from builtins import str
-from builtins import range
-from builtins import *
-from past.utils import old_div
 
 import os
 from datetime import datetime, timedelta
@@ -952,7 +946,7 @@ class Model(GnomeId):
                    1 more sub-step than we requested.)
         '''
         time_step = int(self._time_step)
-        sub_step = old_div(time_step, self.weathering_substeps)
+        sub_step = time_step // self.weathering_substeps
 
         indexes = [idx for idx in range(0, time_step + 1, sub_step)]
         res = [(idx, next_idx - idx)
@@ -1056,7 +1050,7 @@ class Model(GnomeId):
         else:
             self.setup_time_step()
             # release half the LEs for this time interval
-            self.release_elements(old_div(self.time_step,2), self.model_time)
+            self.release_elements(self.time_step // 2, self.model_time)
             self.move_elements()
             self.weather_elements()
             self.step_is_done()

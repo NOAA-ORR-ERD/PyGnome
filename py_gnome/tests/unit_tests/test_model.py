@@ -206,11 +206,11 @@ def test_release_end_of_step(duration):
     prev_rel = 0
     for step in model:
         #only half the particles from the previous step would be new
-        new_particles = int((1.0*len(model.spills.LE('positions')) - prev_rel)/2)
+        new_particles = int((1.0*len(model.spills.LE('positions')) - prev_rel)//2)
         if new_particles > 0:
             assert np.all(model.spills.LE('positions')[-new_particles:, :] ==
                           0)
-            assert np.all(model.spills.LE('age')[-new_particles/2:] == 0)
+            assert np.all(model.spills.LE('age')[-new_particles//2:] == 0)
             # assert np.all(model.spills.LE('age')[-new_particles:] ==
             #            (model.model_time + timedelta(seconds=model.time_step)
             #             - model.start_time).seconds)
