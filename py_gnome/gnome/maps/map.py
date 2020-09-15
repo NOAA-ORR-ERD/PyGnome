@@ -186,6 +186,16 @@ class GnomeMap(GnomeId):
                            dtype=np.float64)
         self._map_bounds = np.array(mb)
 
+    def get_map_bounding_box(self):
+
+        bounds = self._map_bounds
+        longs = bounds[:,0]
+        lats = bounds[:,1]
+        left, right = longs.min(), longs.max()
+        bottom, top = lats.min(), lats.max()
+
+        return ((left, bottom), (right, top))
+
     @property
     def spillable_area(self):
         return self._spillable_area
