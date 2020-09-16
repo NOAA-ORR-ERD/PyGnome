@@ -8,15 +8,16 @@ import math
 import warnings
 from datetime import datetime, timedelta
 from gnome.utilities.time_utils import asdatetime
+from gnome.utilities.geometry.geo_routines import random_pt_in_tri
 
 import numpy as np
 
 from colander import (iso8601,
                       SchemaNode, SequenceSchema,
-                      drop, Bool, Int, Float)
+                      drop, Bool, Int, Float, Boolean)
 
 from gnome.persist.base_schema import ObjTypeSchema, WorldPoint, WorldPointNumpy
-from gnome.persist.extend_colander import LocalDateTime
+from gnome.persist.extend_colander import LocalDateTime, FilenameSchema
 from gnome.persist.validators import convertible_to_seconds
 
 from gnome.basic_types import world_point_type
@@ -29,6 +30,12 @@ from gnome.environment.timeseries_objects_base import TimeseriesData,\
     TimeseriesVector
 from gnome.environment.gridded_objects_base import Time
 from math import ceil
+
+from geojson import FeatureCollection, Feature, MultiPolygon
+from shapely.geometry import Polygon, Point
+from pyproj import Proj, transform
+import shapefile as shp
+import trimesh
 
 
 class BaseReleaseSchema(ObjTypeSchema):
@@ -66,18 +73,6 @@ class PointLineReleaseSchema(BaseReleaseSchema):
 
 class StartPositions(SequenceSchema):
     start_position = WorldPoint()
-
-
-class SpatialReleaseSchema(BaseReleaseSchema):
-    '''
-    Contains properties required by UpdateWindMover and CreateWindMover
-    TODO: also need a way to persist list of element_types
-    '''
-    description = 'SpatialRelease object schema'
-    start_position = StartPositions(
-        save=True, update=True
-    )
-    release_mass = SchemaNode(Float())
 
 
 class Release(GnomeId):
@@ -495,7 +490,7 @@ class PointLineRelease(Release):
 
 
 class SpatialRelease2(PointLineRelease):
-    _schema = SpatialReleaseSchema
+    #_schema = SpatialReleaseSchema
 
     @property
     def end_position(self):
@@ -512,6 +507,22 @@ class SpatialRelease2(PointLineRelease):
         return 1.0 * self.num_elements / self.get_num_release_time_steps(ts)
 
 
+class SpatialReleaseSchema(BaseReleaseSchema):
+    '''
+    Contains properties required by UpdateWindMover and CreateWindMover
+    TODO: also need a way to persist list of element_types
+    '''
+    start_position = None
+    end_position = None
+    start_positions = StartPositions(
+        save=True, update=True
+    )
+    random_distribute = SchemaNode(Boolean())
+    filename = FilenameSchema(save=False, missing=drop, isdatafile=False, update=False, test_equal=False)
+    json_file = FilenameSchema(save=True, missing=drop, isdatafile=True, update=False, test_equal=False)
+    release_mass = SchemaNode(Float())
+
+
 class SpatialRelease(Release):
     """
     A simple release class  --  a release of floating non-weathering particles,
@@ -522,7 +533,9 @@ class SpatialRelease(Release):
     def __init__(self,
                  filename=None,
                  polygons=None,
-                 start_positions=None,
+                 weights=None,
+                 json_file=None,
+                 custom_positions=None,
                  random_distribute=True,
                  num_elements=1000,
                  **kwargs):
@@ -532,6 +545,10 @@ class SpatialRelease(Release):
 
         :param polygons: polygons to use in this release
         :type polygons: list of shapely.Polygon
+
+        :param weights: probability weighting for each polygon. Must be the same
+        length as the polygons kwarg, and must sum to 1. If None, weights are
+        generated based on area proportion.
 
         :param start_positions: Nx3 array of release coordinates (lon, lat, z)
         :type start_positions: np.ndarray 
@@ -546,16 +563,114 @@ class SpatialRelease(Release):
         kwargs.pop('start_position', None)
         kwargs.pop('end_position', None)
         super(SpatialRelease, self).__init__(
-            start_position=np.array([0,0,0]),
-            end_position=np.array([0,0,0]),
             **kwargs
         )
-        self.start_position = start_positions
+        self.polygons = polygons
+        if weights is None and self.polygons is not None:
+            weights = self.gen_default_weights(self.polygons)
+        if self.polygons is not None and len(weights) != len(self.polygons):
+            raise ValueError('Weights must be equal in length to provided Polygons')
+        self.weights = weights
         self.random_distribute = random_distribute
-        if num_elements is None:
-            self.num_elements = len(self.start_position)
-        else:
-            self.num_elements = num_elements
+        self.num_elements = num_elements
+        self.custom_positions = custom_positions
+
+    @classmethod
+    def from_shapefile(cls,
+                       filename=None,
+                       **kwargs):
+        sf = shp.Reader(filename)
+        shapes = sf.shapes()
+        oil_polys = []
+        oil_amounts = []
+        field_names = [field[0] for field in sf.fields[1:]]
+        date_id = field_names.index('DATE')
+        time_id = field_names.index('TIME')
+        type_id = field_names.index('OILTYPE')
+        area_id = field_names.index('AREA_GEO')
+        im_date = sf.record()[date_id]
+        im_time = sf.record()[time_id]
+        all_oil_polys = []
+        all_oil_weights = []
+
+        oil_amounts = []
+        for i, shape in enumerate(shapes):
+            oil_type = sf.records()[i][type_id]
+            oil_area = sf.records()[i][area_id] * 1000**2 #area in m2
+            if oil_type == "Thin":
+                thickness = 5e-6
+            else:
+                thickness = 200e-6
+            oil_amounts.append(thickness * oil_area) #oil amount in cubic meters
+
+        #percentage of mass in each Shape. Later this is further broken down per Polygon
+        oil_amount_weights = map(lambda w: w/sum(oil_amounts), oil_amounts)
+
+        #Each Shape contains multiple Polygons. The following extracts these Polygons
+        #and determines the per Polygon weighting out of the total
+        for shape, weight in zip(shapes, oil_amount_weights):
+            shape_polys = []
+            shape_amounts = []
+            shape_subpoly_area_weights = []
+            total_poly_area = 0
+            for i, start_idx in enumerate(shape.parts):
+                sl = None
+                if i < len(shape.parts) - 1:
+                    sl = slice(start_idx, shape.parts[i+1])
+                else:
+                    sl = slice(start_idx, None)
+                points = shape.points[sl]
+                pts = map(lambda pt: transform(Proj(init='epsg:3857'), Proj(init='epsg:4326'), pt[0], pt[1]), points)
+                poly = Polygon(pts)
+                shape_polys.append(poly)
+
+                total_poly_area += poly.area
+            areas = map(lambda s: s.area, shape_polys)
+            #percentage of area each poly contributes to total shape area
+            shape_subpoly_area_weights = map(lambda s: s/total_poly_area, areas)
+            #percentage of mass each poly contributes to total mass
+            oil_poly_weights = map(lambda w: w * weight, shape_subpoly_area_weights)
+            all_oil_polys.extend(shape_polys)
+            all_oil_weights.extend(oil_poly_weights)
+
+        rv = cls(
+            polygons=all_oil_polys,
+            weights=all_oil_weights,
+            **kwargs
+        )
+        return rv
+
+    def gen_default_weights(self, polygons):
+        if polygons is None:
+            return
+        tot_area = sum(map(lambda p: p.area, polygons))
+        weights = map(lambda p: p.area/tot_area, polygons)
+        return weights
+
+
+    def gen_start_positions(self):
+        if self.polygons is None:
+            return
+        if self.weights is None:
+            self.weights = self.gen_default_weights(self.polygons)
+        #generates the start positions for this release. Must be called before usage in a model
+        def gen_release_pts_in_poly(num_pts, poly):
+            pts, tris = trimesh.creation.triangulate_polygon(poly, engine='earcut')
+            tris = map(lambda k: Polygon(k), pts[tris])
+            areas = map(lambda s: s.area, tris)
+            t_area = sum(areas)
+            weights = map(lambda s: s/t_area, areas)
+            rv = map(random_pt_in_tri, np.random.choice(tris, num_pts, p=weights))
+            rv = map(lambda pt: np.append(pt, 0), rv) #add Z coordinate
+            return rv
+        num_pts = self.num_elements
+        weights = self.weights
+        polys = self.polygons
+        pts_per_poly = map(lambda w: int(math.ceil(w*num_pts)), weights)
+        release_pts = []
+        for n, poly in zip(pts_per_poly, polys):
+            release_pts.extend(gen_release_pts_in_poly(n, poly))
+        return np.array(release_pts)
 
     @property
     def start_positions(self):
@@ -568,6 +683,8 @@ class SpatialRelease(Release):
 
     @property
     def start_position(self):
+        if not hasattr(self, "_start_position") or self._start_position is None:
+            self._start_position = self.gen_start_positions()
         return self._start_position
 
     @start_position.setter
@@ -621,6 +738,7 @@ class SpatialRelease(Release):
         self._prepared = False
         self._mass_per_le = 0
         self._release_ts = None
+        self._combined_positions = None
         #self._pos_ts = None
 
     def prepare_for_model_run(self, ts):
@@ -642,6 +760,10 @@ class SpatialRelease(Release):
             max_release = self.num_elements
 
         self.generate_release_timeseries(num_ts, max_release, ts)
+        if self.weights is None:
+            self.weights = self.gen_default_weights(self.polygons)
+        self.start_positions #generates start_positions if not done already via property
+        self._combined_positions = np.vstack((self.start_positions, self.custom_positions))
         self._prepared = True
         self._mass_per_le = self.release_mass*1.0 / max_release
 
@@ -649,7 +771,7 @@ class SpatialRelease(Release):
         '''
         Release timeseries describe release behavior as a function of time.
         _release_ts describes the number of LEs that should exist at time T
-        SpatialRelease does not have a _pos_ts because it uses start_position only
+        SpatialRelease does not have a _pos_ts because it uses start_positions only
         All use TimeseriesData objects.
         '''
         t = None
@@ -694,19 +816,18 @@ class SpatialRelease(Release):
             the release_time
         """
 
-        num_locs = len(self.start_positions)
+        num_locs = len(self._combined_positions)
         if to_rel < num_locs:
             warnings.warn("{0} is releasing fewer LEs than number of start positions at time: {1}".format(self, current_time))
 
         sl = slice(-to_rel, None, 1)
         if self.random_distribute or to_rel < num_locs:
-            idxs = np.random.choice(num_locs, to_rel)
-            data['positions'][sl] = self.start_positions[idxs]
+            data['positions'][sl] = np.random.choice(self._combined_positions, to_rel)
         else:
             qt = num_locs / to_rel #number of times to tile self.start_positions
             rem = num_locs % to_rel #remaining LES to distribute randomly
             qt_pos = np.tile(self.start_positions, (qt, 1))
-            rem_pos = self.start_positions[np.random.choice(num_locs, rem)]
+            rem_pos = np.random.choice(self._combined_positions, rem)]
             pos = np.vstack((qt_pos, rem_pos))
             assert len(pos) == to_rel
             data['positions'][sl] = pos
