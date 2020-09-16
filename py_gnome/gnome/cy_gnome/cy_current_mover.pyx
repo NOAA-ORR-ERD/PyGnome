@@ -116,3 +116,13 @@ cdef class CyCurrentMover(CyMover):
                 '  right_cur_uncertain = {0.right_cur_uncertain}\n'
                 '  left_cur_uncertain = {0.left_cur_uncertain}\n'
                 .format(self))
+
+    def _get_bounds(self):
+        """
+            Invokes the GetBounds method of TriGridVel_c object
+            to get the grid bounds
+        """
+        bounds = self.curr_mover.GetGridBounds()
+
+        return bounds
+
