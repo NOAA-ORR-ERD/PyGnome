@@ -87,10 +87,12 @@ class Release(GnomeId):
                  release_time=None,
                  num_elements=0,
                  release_mass=0,
+                 end_release_time=None,
                  **kwargs):
 
         self.num_elements = num_elements
         self.release_time = asdatetime(release_time)
+        self.end_release_time = asdatetime(end_release_time)
         self.release_mass = release_mass
         self.rewind()
         super(Release, self).__init__(**kwargs)
@@ -137,9 +139,37 @@ class Release(GnomeId):
     @property
     def release_duration(self):
         '''
-        return value in seconds
+        duration over which particles are released in seconds
         '''
-        return 0
+        if self.end_release_time is None:
+            return 0
+        else:
+            return (self.end_release_time - self.release_time).total_seconds()
+
+    @property
+    def end_release_time(self):
+        if self._end_release_time is None:
+            return self.release_time
+        else:
+            return self._end_release_time
+
+    @end_release_time.setter
+    def end_release_time(self, val):
+        '''
+        Set end_release_time.
+        If end_release_time is None or if end_release_time == release_time,
+        it is an instantaneous release.
+
+        Also update reference to set_newparticle_positions - if this was
+        previously an instantaneous release but is now timevarying, we need
+        to update this method
+        '''
+        val = asdatetime(val)
+        if val is not None and self.release_time > val:
+            raise ValueError('end_release_time must be greater than '
+                             'release_time')
+
+        self._end_release_time = val
 
     def LE_timestep_ratio(self, ts):
         '''
@@ -224,6 +254,7 @@ class PointLineRelease(Release):
         if num_elements is None and num_per_timestep is None:
             num_elements = 1000
         super(PointLineRelease, self).__init__(release_time=release_time,
+                                               end_release_time=end_release_time,
                                                num_elements=num_elements,
                                                release_mass = release_mass,
                                                **kwargs)
@@ -236,7 +267,6 @@ class PointLineRelease(Release):
 
         # initializes internal variables: _end_release_time, _start_position,
         # _end_position
-        self.end_release_time = asdatetime(end_release_time)
         self.start_position = start_position
         self.end_position = end_position
 
@@ -264,41 +294,6 @@ class PointLineRelease(Release):
             return True
 
         return False
-
-    @property
-    def release_duration(self):
-        '''
-        duration over which particles are released in seconds
-        '''
-        if self.end_release_time is None:
-            return 0
-        else:
-            return (self.end_release_time - self.release_time).total_seconds()
-
-    @property
-    def end_release_time(self):
-        if self._end_release_time is None:
-            return self.release_time
-        else:
-            return self._end_release_time
-
-    @end_release_time.setter
-    def end_release_time(self, val):
-        '''
-        Set end_release_time.
-        If end_release_time is None or if end_release_time == release_time,
-        it is an instantaneous release.
-
-        Also update reference to set_newparticle_positions - if this was
-        previously an instantaneous release but is now timevarying, we need
-        to update this method
-        '''
-        val = asdatetime(val)
-        if val is not None and self.release_time > val:
-            raise ValueError('end_release_time must be greater than '
-                             'release_time')
-
-        self._end_release_time = val
 
     @property
     def num_per_timestep(self):
@@ -760,12 +755,24 @@ class SpatialRelease(Release):
             max_release = self.num_elements
 
         self.generate_release_timeseries(num_ts, max_release, ts)
+
         if self.weights is None:
             self.weights = self.gen_default_weights(self.polygons)
         self.start_positions #generates start_positions if not done already via property
-        self._combined_positions = np.vstack((self.start_positions, self.custom_positions))
-        self._prepared = True
+
+        if self.start_positions is None:
+            if self.custom_positions is None:
+                raise ValueError('No polygons or custom positions specified, unable to generate release positions')
+            else:
+                self._combined_positions = self.custom_positions
+        else:
+            if self.custom_positions is None:
+                self._combined_positions = self.start_positions
+            else:
+                self._combined_positions = np.vstack((self.start_positions, self.custom_positions))
+
         self._mass_per_le = self.release_mass*1.0 / max_release
+        self._prepared = True
 
     def generate_release_timeseries(self, num_ts, max_release, ts):
         '''
@@ -827,7 +834,7 @@ class SpatialRelease(Release):
             qt = num_locs / to_rel #number of times to tile self.start_positions
             rem = num_locs % to_rel #remaining LES to distribute randomly
             qt_pos = np.tile(self.start_positions, (qt, 1))
-            rem_pos = np.random.choice(self._combined_positions, rem)]
+            rem_pos = np.random.choice(self._combined_positions, rem)
             pos = np.vstack((qt_pos, rem_pos))
             assert len(pos) == to_rel
             data['positions'][sl] = pos
@@ -1136,4 +1143,4 @@ def release_from_splot_data(release_time, filename):
     start_positions = np.repeat(pos, num_per_pos, axis=0)
 
     return SpatialRelease(release_time=release_time,
-                          start_position=start_positions)
+                          custom_positions=start_positions)
