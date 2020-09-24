@@ -307,6 +307,7 @@ class TestSpatialRelease:
         assert sr1._release_ts.at(None, sr1.end_release_time) == 1000
         assert np.all(sr1._release_ts.data == np.linspace(0,1000, len(sr1._release_ts.data)))
         assert sr1._mass_per_le == 2.5
+        assert np.isclose(sum(sr1.weights),1)
 
         #No end_release time. Timeseries must be 2 entries, 1 second apart
 
@@ -318,6 +319,7 @@ class TestSpatialRelease:
         assert sr2._release_ts.at(None, sr2.release_time + timedelta(seconds=2)) == 1000
         assert np.all(sr2._release_ts.data == np.linspace(1000,1000, len(sr2._release_ts.data)))
         assert sr2._mass_per_le == 0
+        assert np.isclose(sum(sr2.weights),1)
 
     def test_rewind(self, sr1):
         sr1.prepare_for_model_run(900)

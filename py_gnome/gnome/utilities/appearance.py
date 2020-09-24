@@ -136,3 +136,6 @@ class GridAppearance(Appearance):
 
 class MoverAppearance(Appearance):
     _schema = AppearanceSchema
+
+class SpatialReleaseSchema(Appearance):
+    _schema = AppearanceSchema

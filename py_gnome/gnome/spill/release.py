@@ -5,14 +5,24 @@ is composed of a release object and an ElementType
 
 import copy
 import math
+import os
 import warnings
+import numpy as np
+import shapefile as shp
+import trimesh
+import geojson
+import zipfile
+import tempfile
+from math import ceil
 from datetime import datetime, timedelta
+from shapely.geometry import Polygon, Point, MultiPoint
+from pyproj import Proj, transform
+
 from gnome.utilities.time_utils import asdatetime
 from gnome.utilities.geometry.geo_routines import random_pt_in_tri
 
-import numpy as np
 
-from colander import (iso8601,
+from colander import (iso8601, String,
                       SchemaNode, SequenceSchema,
                       drop, Bool, Int, Float, Boolean)
 
@@ -29,13 +39,6 @@ from gnome.gnomeobject import GnomeId
 from gnome.environment.timeseries_objects_base import TimeseriesData,\
     TimeseriesVector
 from gnome.environment.gridded_objects_base import Time
-from math import ceil
-
-from geojson import FeatureCollection, Feature, MultiPolygon
-from shapely.geometry import Polygon, Point
-from pyproj import Proj, transform
-import shapefile as shp
-import trimesh
 
 
 class BaseReleaseSchema(ObjTypeSchema):
@@ -69,10 +72,6 @@ class PointLineReleaseSchema(BaseReleaseSchema):
         Float()
     )
     description = 'PointLineRelease object schema'
-
-
-class StartPositions(SequenceSchema):
-    start_position = WorldPoint()
 
 
 class Release(GnomeId):
@@ -484,22 +483,8 @@ class PointLineRelease(Release):
         data['init_mass'][sl] = self._mass_per_le
 
 
-class SpatialRelease2(PointLineRelease):
-    #_schema = SpatialReleaseSchema
-
-    @property
-    def end_position(self):
-        return None
-    
-    @end_position.setter
-    def end_position(self, val):
-        raise TypeError("Cannot set end position on a Spatial Release")
-    
-    def LE_timestep_ratio(self, ts):
-        '''
-        Returns the ratio
-        '''
-        return 1.0 * self.num_elements / self.get_num_release_time_steps(ts)
+class StartPositions(SequenceSchema):
+    start_position = WorldPoint()
 
 
 class SpatialReleaseSchema(BaseReleaseSchema):
@@ -507,15 +492,18 @@ class SpatialReleaseSchema(BaseReleaseSchema):
     Contains properties required by UpdateWindMover and CreateWindMover
     TODO: also need a way to persist list of element_types
     '''
-    start_position = None
-    end_position = None
-    start_positions = StartPositions(
-        save=True, update=True
+    start_position = WorldPoint(
+        save=False, update=False
+    )
+    end_position = WorldPoint(
+        save=False, update=False
     )
     random_distribute = SchemaNode(Boolean())
     filename = FilenameSchema(save=False, missing=drop, isdatafile=False, update=False, test_equal=False)
-    json_file = FilenameSchema(save=True, missing=drop, isdatafile=True, update=False, test_equal=False)
-    release_mass = SchemaNode(Float())
+    #json_file = FilenameSchema(save=True, missing=drop, isdatafile=True, update=False, test_equal=False)
+    # Because file generation on save isn't supported yet
+    json_file = SchemaNode(String(), save=True, update=False, test_equal=False, missing=drop) 
+    custom_positions = StartPositions(save=True, update=True)
 
 
 class SpatialRelease(Release):
@@ -529,6 +517,7 @@ class SpatialRelease(Release):
                  filename=None,
                  polygons=None,
                  weights=None,
+                 thicknesses=None,
                  json_file=None,
                  custom_positions=None,
                  random_distribute=True,
@@ -560,135 +549,160 @@ class SpatialRelease(Release):
         super(SpatialRelease, self).__init__(
             **kwargs
         )
+        self.filename = None
+        if filename is not None and json_file is not None:
+            raise ValueError('May only provide filename or json_file to SpatialRelease')
+        elif filename is not None:
+            polygons, weights, thicknesses = self.__class__.load_shapefile(filename)
+            self.filename = filename
+        elif json_file is not None:
+            polygons, weights, thicknesses = self.__class__.load_geojson(json_file)
+
         self.polygons = polygons
         if weights is None and self.polygons is not None:
             weights = self.gen_default_weights(self.polygons)
         if self.polygons is not None and len(weights) != len(self.polygons):
             raise ValueError('Weights must be equal in length to provided Polygons')
+        
+        self.thicknesses = thicknesses
         self.weights = weights
         self.random_distribute = random_distribute
         self.num_elements = num_elements
-        self.custom_positions = custom_positions
+        self.custom_positions = np.array(custom_positions) if custom_positions is not None else None
+        self._start_positions = self.gen_start_positions()
+
+    @classmethod
+    def load_geojson(cls, filename):
+        #gj = geojson.load(filename)
+        # Currently (9/16/2020), the json_file init parameter and this filename parameter
+        # should always contain the raw GeoJSON. This is in lieu of developing a new
+        # system to generate files when saving
+
+        fc = geojson.FeatureCollection(geojson.loads(filename))
+        weights = fc.weights
+        thicknesses = fc.thicknesses
+        polygons = None
+        if fc.features is not None:
+            polygons = map(lambda f: Polygon(f.coordinates[0]), fc.features)
+        return polygons, weights, thicknesses
+
+    @classmethod
+    def load_shapefile(cls, filename):
+        with zipfile.ZipFile(filename, 'r') as zsf:
+            basename = ''.join(filename.split('.')[:-1])
+            shpfile = filter(lambda f: f.split('.')[-1] == 'shp', zsf.namelist())
+            if len(shpfile) > 0:
+                shpfile = zsf.open(shpfile[0], 'r')
+            else:
+                raise ValueError('No .shp file found')
+            dbffile = filter(lambda f: f.split('.')[-1] == 'dbf', zsf.namelist())[0]
+            dbffile = zsf.open(dbffile, 'r')
+            sf = shp.Reader(shp=shpfile, dbf=dbffile)
+            shapes = sf.shapes()
+            oil_polys = []
+            oil_amounts = []
+            field_names = [field[0] for field in sf.fields[1:]]
+            date_id = field_names.index('DATE')
+            time_id = field_names.index('TIME')
+            type_id = field_names.index('OILTYPE')
+            area_id = field_names.index('AREA_GEO')
+            im_date = sf.record()[date_id]
+            im_time = sf.record()[time_id]
+            all_oil_polys = []
+            all_oil_weights = []
+            all_oil_thicknesses = []
+            shape_oil_thickness = []
+
+            oil_amounts = []
+            for i, shape in enumerate(shapes):
+                oil_type = sf.records()[i][type_id]
+                oil_area = sf.records()[i][area_id] * 1000**2 #area in m2
+                if oil_type == "Thin":
+                    thickness = 5e-6
+                else:
+                    thickness = 200e-6
+                oil_amounts.append(thickness * oil_area) #oil amount in cubic meters
+                shape_oil_thickness.append(thickness)
+
+            #percentage of mass in each Shape. Later this is further broken down per Polygon
+            oil_amount_weights = map(lambda w: w/sum(oil_amounts), oil_amounts)
+
+            #Each Shape contains multiple Polygons. The following extracts these Polygons
+            #and determines the per Polygon weighting out of the total
+            for shape, weight, thickness in zip(shapes, oil_amount_weights, shape_oil_thickness):
+                shape_polys = []
+                shape_amounts = []
+                shape_poly_area_weights = []
+                shape_poly_thickness = []
+                total_poly_area = 0
+                for i, start_idx in enumerate(shape.parts):
+                    sl = None
+                    if i < len(shape.parts) - 1:
+                        sl = slice(start_idx, shape.parts[i+1])
+                    else:
+                        sl = slice(start_idx, None)
+                    points = shape.points[sl]
+                    pts = map(lambda pt: transform(Proj(init='epsg:3857'), Proj(init='epsg:4326'), pt[0], pt[1]), points)
+                    poly = Polygon(pts)
+                    shape_polys.append(poly)
+                    shape_poly_thickness.append(thickness)
+
+                    total_poly_area += poly.area
+                areas = map(lambda s: s.area, shape_polys)
+                #percentage of area each poly contributes to total shape area
+                shape_poly_area_weights = map(lambda s: s/total_poly_area, areas)
+                #percentage of mass each poly contributes to total mass
+                oil_poly_weights = map(lambda w: w * weight, shape_poly_area_weights)
+                all_oil_polys.extend(shape_polys)
+                all_oil_weights.extend(oil_poly_weights)
+
+            return all_oil_polys, all_oil_weights, all_oil_thicknesses
 
     @classmethod
     def from_shapefile(cls,
                        filename=None,
                        **kwargs):
-        sf = shp.Reader(filename)
-        shapes = sf.shapes()
-        oil_polys = []
-        oil_amounts = []
-        field_names = [field[0] for field in sf.fields[1:]]
-        date_id = field_names.index('DATE')
-        time_id = field_names.index('TIME')
-        type_id = field_names.index('OILTYPE')
-        area_id = field_names.index('AREA_GEO')
-        im_date = sf.record()[date_id]
-        im_time = sf.record()[time_id]
-        all_oil_polys = []
-        all_oil_weights = []
-
-        oil_amounts = []
-        for i, shape in enumerate(shapes):
-            oil_type = sf.records()[i][type_id]
-            oil_area = sf.records()[i][area_id] * 1000**2 #area in m2
-            if oil_type == "Thin":
-                thickness = 5e-6
-            else:
-                thickness = 200e-6
-            oil_amounts.append(thickness * oil_area) #oil amount in cubic meters
-
-        #percentage of mass in each Shape. Later this is further broken down per Polygon
-        oil_amount_weights = map(lambda w: w/sum(oil_amounts), oil_amounts)
-
-        #Each Shape contains multiple Polygons. The following extracts these Polygons
-        #and determines the per Polygon weighting out of the total
-        for shape, weight in zip(shapes, oil_amount_weights):
-            shape_polys = []
-            shape_amounts = []
-            shape_subpoly_area_weights = []
-            total_poly_area = 0
-            for i, start_idx in enumerate(shape.parts):
-                sl = None
-                if i < len(shape.parts) - 1:
-                    sl = slice(start_idx, shape.parts[i+1])
-                else:
-                    sl = slice(start_idx, None)
-                points = shape.points[sl]
-                pts = map(lambda pt: transform(Proj(init='epsg:3857'), Proj(init='epsg:4326'), pt[0], pt[1]), points)
-                poly = Polygon(pts)
-                shape_polys.append(poly)
-
-                total_poly_area += poly.area
-            areas = map(lambda s: s.area, shape_polys)
-            #percentage of area each poly contributes to total shape area
-            shape_subpoly_area_weights = map(lambda s: s/total_poly_area, areas)
-            #percentage of mass each poly contributes to total mass
-            oil_poly_weights = map(lambda w: w * weight, shape_subpoly_area_weights)
-            all_oil_polys.extend(shape_polys)
-            all_oil_weights.extend(oil_poly_weights)
-
-        rv = cls(
-            polygons=all_oil_polys,
-            weights=all_oil_weights,
+        polys, weights, thicknesses = cls.load_shapefile(filename)
+        return cls(
+            polygons=polys,
+            weights=weights,
+            thicknesses = thicknesses,
             **kwargs
         )
-        return rv
 
-    def gen_default_weights(self, polygons):
-        if polygons is None:
-            return
-        tot_area = sum(map(lambda p: p.area, polygons))
-        weights = map(lambda p: p.area/tot_area, polygons)
-        return weights
-
-
-    def gen_start_positions(self):
-        if self.polygons is None:
-            return
-        if self.weights is None:
-            self.weights = self.gen_default_weights(self.polygons)
-        #generates the start positions for this release. Must be called before usage in a model
-        def gen_release_pts_in_poly(num_pts, poly):
-            pts, tris = trimesh.creation.triangulate_polygon(poly, engine='earcut')
-            tris = map(lambda k: Polygon(k), pts[tris])
-            areas = map(lambda s: s.area, tris)
-            t_area = sum(areas)
-            weights = map(lambda s: s/t_area, areas)
-            rv = map(random_pt_in_tri, np.random.choice(tris, num_pts, p=weights))
-            rv = map(lambda pt: np.append(pt, 0), rv) #add Z coordinate
-            return rv
-        num_pts = self.num_elements
-        weights = self.weights
-        polys = self.polygons
-        pts_per_poly = map(lambda w: int(math.ceil(w*num_pts)), weights)
-        release_pts = []
-        for n, poly in zip(pts_per_poly, polys):
-            release_pts.extend(gen_release_pts_in_poly(n, poly))
-        return np.array(release_pts)
+    @property
+    def json_file(self):
+        #Placeholder value for the serialization system
+        return None
 
     @property
     def start_positions(self):
-        #alias for start_position
-        return self.start_position
+        if not hasattr(self, "_start_positions") or self._start_positions is None:
+            self._start_positions = self.gen_start_positions()
+        return self._start_positions
     
     @start_positions.setter
     def start_positions(self, val):
-        self.start_position = val
+        self._start_positions = val
 
     @property
     def start_position(self):
-        if not hasattr(self, "_start_position") or self._start_position is None:
-            self._start_position = self.gen_start_positions()
-        return self._start_position
+        if hasattr(self, '_start_positions'):
+            ctr = MultiPoint(self._start_positions).centroid
+            return np.array([ctr.x, ctr.y, 0])
+        else:
+            return np.array([0, 0, 0])
+
+    @property
+    def end_position(self):
+        return self.start_position
 
     @start_position.setter
     def start_position(self, val):
         '''
-        set start_position and also make _delta_pos = None so it gets
-        recomputed when model runs - it should be updated
+        dummy setter for web client
         '''
-        self._start_position = np.array(val, dtype=world_point_type).reshape(-1,3)
+        pass 
 
     @property
     def end_release_time(self):
@@ -729,12 +743,58 @@ class SpatialRelease(Release):
         '''
         return 1.0 * self.num_elements / self.get_num_release_time_steps(ts)
 
+    def gen_default_weights(self, polygons):
+        if polygons is None:
+            return
+        tot_area = sum(map(lambda p: p.area, polygons))
+        weights = map(lambda p: p.area/tot_area, polygons)
+        return weights
+
+    def gen_start_positions(self):
+        if self.polygons is None:
+            return
+        if self.weights is None:
+            self.weights = self.gen_default_weights(self.polygons)
+        #generates the start positions for this release. Must be called before usage in a model
+        def gen_release_pts_in_poly(num_pts, poly):
+            pts, tris = trimesh.creation.triangulate_polygon(poly, engine='earcut')
+            tris = map(lambda k: Polygon(k), pts[tris])
+            areas = map(lambda s: s.area, tris)
+            t_area = sum(areas)
+            weights = map(lambda s: s/t_area, areas)
+            rv = map(random_pt_in_tri, np.random.choice(tris, num_pts, p=weights))
+            rv = map(lambda pt: np.append(pt, 0), rv) #add Z coordinate
+            return rv
+        num_pts = self.num_elements
+        weights = self.weights
+        polys = self.polygons
+        pts_per_poly = map(lambda w: int(math.ceil(w*num_pts)), weights)
+        release_pts = []
+        for n, poly in zip(pts_per_poly, polys):
+            release_pts.extend(gen_release_pts_in_poly(n, poly))
+        return np.array(release_pts)
+
     def rewind(self):
         self._prepared = False
         self._mass_per_le = 0
         self._release_ts = None
         self._combined_positions = None
         #self._pos_ts = None
+
+    def gen_combined_start_positions(self):
+        self.start_positions #generates start_positions if not done already via property
+
+        if self.start_positions is None:
+            if self.custom_positions is None:
+                raise ValueError('No polygons or custom positions specified, unable to generate release positions')
+            else:
+                return self.custom_positions
+        else:
+            if self.custom_positions is None:
+                return self.start_positions
+            else:
+                return np.vstack((self.start_positions, self.custom_positions))
+
 
     def prepare_for_model_run(self, ts):
         '''
@@ -758,7 +818,8 @@ class SpatialRelease(Release):
 
         if self.weights is None:
             self.weights = self.gen_default_weights(self.polygons)
-        self.start_positions #generates start_positions if not done already via property
+
+        self._combined_positions = self.gen_combined_start_positions()
 
         if self.start_positions is None:
             if self.custom_positions is None:
@@ -829,12 +890,12 @@ class SpatialRelease(Release):
 
         sl = slice(-to_rel, None, 1)
         if self.random_distribute or to_rel < num_locs:
-            data['positions'][sl] = np.random.choice(self._combined_positions, to_rel)
+            data['positions'][sl] = self._combined_positions[np.random.randint(0,len(self._combined_positions), to_rel)]
         else:
             qt = num_locs / to_rel #number of times to tile self.start_positions
             rem = num_locs % to_rel #remaining LES to distribute randomly
             qt_pos = np.tile(self.start_positions, (qt, 1))
-            rem_pos = np.random.choice(self._combined_positions, rem)
+            rem_pos = self._combined_positions[np.random.randint(0,len(self._combined_positions), rem)]
             pos = np.vstack((qt_pos, rem_pos))
             assert len(pos) == to_rel
             data['positions'][sl] = pos
@@ -842,6 +903,40 @@ class SpatialRelease(Release):
 
         data['mass'][sl] = self._mass_per_le
         data['init_mass'][sl] = self._mass_per_le
+
+    def to_dict(self, json_=None):
+        dct = super(SpatialRelease, self).to_dict(json_=json_)
+        if json_ == 'save':
+            #stick the geojson in the file for now
+            fc = geojson.FeatureCollection(self.polygons)
+            fc.weights = self.weights
+            fc.thicknesses = self.thicknesses
+            dct['json_file'] = geojson.dumps(fc)
+        return dct
+
+
+    def get_polygons(self):
+        '''
+        Returns an array of lengths, and a list of line arrays.
+        The first array sequentially indexes the second array.
+        When the second array is split up using the first array
+        and the resulting lines are drawn, you should end up with a picture of
+        the polygons.
+        '''
+        np.array(oil_polys[0].exterior.xy[0])
+        polycoords = map(lambda p: np.array(p.exterior.xy).T, self.polygons)
+        lengths = map(len, polycoords)
+        weights = self.weights if self.weights is not None else []
+        thicknesses = self.thicknesses if self.thicknesses is not None else []
+        return lengths, weights, thicknesses, polycoords
+    
+    def get_metadata(self):
+        return np.array(self.weights), np.array(self.thicknesses)
+
+    def get_start_positions(self):
+        #returns all combined start positions in binary form for the API
+        return np.ascontiguousarray(self.gen_combined_start_positions().astype(np.float32))
+
 
 
 def GridRelease(release_time, bounds, resolution):
