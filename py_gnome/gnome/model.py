@@ -1041,9 +1041,10 @@ class Model(GnomeId):
             raise StopIteration("Run complete for {0}".format(self.name))
 
         else:
-            self.setup_time_step()
+            #self.setup_time_step()
             #release half the LEs for this time interval
             self.release_elements(self.time_step/2, self.model_time)
+            self.setup_time_step()
             self.move_elements()
             self.weather_elements()
             self.step_is_done()
