@@ -43,6 +43,7 @@ trimesh
 shapely
 pyproj
 pip #to get mapbox-earcut
+cmake #for mapbox-earcut...
 
 # NOAA maintained packages
 gridded=0.2.5
