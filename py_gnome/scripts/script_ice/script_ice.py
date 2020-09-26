@@ -6,6 +6,11 @@ Example of using gnome in "ice infested waters"
 With the ice and current data coming from a ROMS coupled ocean-ice model.
 """
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 # The gnome.scripting module provides most of what you need for basic scripts
 import gnome.scripting as gs
 
@@ -13,8 +18,11 @@ import os
 # define base directory
 base_dir = os.path.dirname(__file__)
 
+import warnings
 
-gs.PrintFinder()
+warnings.warn("NOTE: there's a bug keeping this from running properly")
+
+# gs.PrintFinder()
 
 
 def make_model(images_dir=os.path.join(base_dir, 'images')):
@@ -57,6 +65,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
 
     print('adding the ice movers')
+    print('getting the datafiles')
     fn = [gs.get_datafile('arctic_avg2_0001_gnome.nc'),
           gs.get_datafile('arctic_avg2_0002_gnome.nc'),
           ]

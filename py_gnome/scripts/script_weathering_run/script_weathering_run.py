@@ -4,10 +4,15 @@ Script to show how to run py_gnome with weathering
 
 This is a "just weathering" run -- no land, currents, etc.
 """
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import os
 from gnome import scripting as gs
 
-print "I am running!"
+print("I am running!")
 
 # define base directory
 base_dir = os.path.dirname(__file__)

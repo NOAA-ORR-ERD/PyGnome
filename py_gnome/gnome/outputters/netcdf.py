@@ -281,7 +281,6 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
                  # _middle_of_run=False,
                  _start_idx=0,
                  **kwargs):
-        print("in netcdf_outputter:", surface_conc)
         """
         Constructor for Net_CDFOutput object. It reads data from cache and
         writes it to a NetCDF4 format file using the CF convention

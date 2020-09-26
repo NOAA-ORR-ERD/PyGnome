@@ -8,36 +8,32 @@ This script uses:
 - rendering of GridCurrent using Renderer
 """
 
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import os
 from datetime import datetime, timedelta
 
-import numpy as np
 
-from gnome import scripting
+import gnome.scripting as gs
+
 from gnome import utilities
-from gnome.basic_types import datetime_value_2d, numerical_methods
 
-from gnome.utilities.remote_data import get_datafile
 
 from gnome.model import Model
 
-from gnome.maps import MapFromBNA
-from gnome.environment import Wind
-from gnome.environment import GridCurrent
-from gnome.spill import point_line_release_spill
-from gnome.movers import RandomMover, constant_wind_mover, GridCurrentMover
-
-from gnome.outputters import Renderer
-from gnome.movers.py_current_movers import PyCurrentMover
-import gnome.utilities.profiledeco as pd
+# import gnome.utilities.profiledeco as pd
 
 # define base directory
 base_dir = os.path.dirname(__file__)
 
 
 def make_model(images_dir=os.path.join(base_dir, 'images')):
-    print('initializing the model')
 
+    print('initializing the model')
     start_time = datetime(2012, 10, 25, 0, 1)
     # start_time = datetime(2015, 12, 18, 06, 01)
 
@@ -47,17 +43,18 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                   duration=timedelta(hours=6),
                   time_step=900)
 
-    mapfile = get_datafile(os.path.join(base_dir, 'nyharbor.bna'))
+    mapfile = gs.get_datafile(os.path.join(base_dir, 'nyharbor.bna'))
 
     print('adding the map')
-    '''TODO: sort out MapFromBna's map_bounds parameter...
-    it does nothing right now, and the spill is out of bounds'''
-    model.map = MapFromBNA(mapfile, refloat_halflife=0.0)  # seconds
+    # TODO: sort out MapFromBna's map_bounds parameter...
+    #       it does nothing right now, and the spill is out of bounds'''
+    print("loading map:", mapfile)
+    model.map = gs.MapFromBNA(mapfile, refloat_halflife=0.0)  # seconds
 
     # draw_ontop can be 'uncertain' or 'forecast'
     # 'forecast' LEs are in black, and 'uncertain' are in red
     # default is 'forecast' LEs draw on top
-    renderer = Renderer(mapfile, images_dir, image_size=(1024, 768))
+    renderer = gs.Renderer(mapfile, images_dir, image_size=(1024, 768))
 #     renderer.viewport = ((-73.5, 40.5), (-73.1, 40.75))
 #     renderer.viewport = ((-122.9, 45.6), (-122.6, 46.0))
 
@@ -69,7 +66,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # - will need diffusion and rise velocity
     # - wind doesn't act
     # - start_position = (-76.126872, 37.680952, 5.0),
-    spill1 = point_line_release_spill(num_elements=1000,
+    spill1 = gs.point_line_release_spill(num_elements=1000,
                                       start_position=(-74.15,
                                                       40.5,
                                                       0.0),
@@ -78,11 +75,11 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     model.spills += spill1
 
     print('adding a RandomMover:')
-    model.movers += RandomMover(diffusion_coef=50000)
+    model.movers += gs.RandomMover(diffusion_coef=50000)
 
     print('adding a wind mover:')
 
-    model.movers += constant_wind_mover(4, 270, units='m/s')
+    model.movers += gs.constant_wind_mover(4, 270, units='m/s')
 
     print('adding a current mover:')
 
@@ -94,15 +91,17 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 #     renderer.delay = 25
 #     u_mover = PyCurrentMover(cf, default_num_method='Euler')
 #     model.movers += u_mover
-# 
+#
 
     return model
 
 
 if __name__ == "__main__":
-    pd.profiler.enable()
+    # NOTE: BNA reading fails with the profiler on!
+    #       issue with resizing a numpy array
+    #pd.profiler.enable()
     startTime = datetime.now()
-    scripting.make_images_dir()
+    gs.make_images_dir()
     model = make_model()
     print("doing full run")
     rend = model.outputters[0]
@@ -115,5 +114,5 @@ if __name__ == "__main__":
         print("step: %.4i -- memuse: %fMB" % (step['step_num'],
                                               utilities.get_mem_use()))
     print(datetime.now() - startTime)
-    pd.profiler.disable()
-    pd.print_stats(0.2)
+    # pd.profiler.disable()
+    # pd.print_stats(0.2)
