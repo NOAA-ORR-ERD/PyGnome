@@ -1532,6 +1532,17 @@ class Model(GnomeId):
             msgs.append('warning: ' + self.__class__.__name__ + ': ' + msg)
             # isValid = False
 
+        map_bounds = self.map.map_bounds
+        map_bounding_box = self.map.get_map_bounding_box()
+        for mover in self.movers:
+            bounds = mover.get_bounds()
+            # check longitude is within map bounds
+            if bounds[1][0] < map_bounding_box[0][0] or bounds[0][0] > map_bounding_box[1][0]:
+                msg = ('One of the movers - {0} - is outside of the map bounds. '
+                        .format(mover.name))
+                self.logger.warning(msg)  # for now make this a warning
+                msgs.append('warning: ' + self.__class__.__name__ + ': ' + msg)
+
         return (msgs, isValid)
 
     def validate(self):

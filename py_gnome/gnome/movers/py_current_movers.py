@@ -179,6 +179,39 @@ class PyCurrentMover(movers.PyMover):
 
             return np.column_stack((lons.reshape(-1), lats.reshape(-1)))
 
+    def get_lat_lon_data(self):
+        """
+            function for getting lat lon data from the mover
+        """
+        if isinstance(self.current.grid, Grid_U):
+            grid_data = self.current.grid.nodes[self.current.grid.faces[:]]
+            dtype = grid_data.dtype.descr
+            unstructured_type = dtype[0][1]
+            lons = (grid_data
+                    .view(dtype=unstructured_type)
+                    .reshape(-1, len(dtype))[0::2, 0])
+            lats = (grid_data
+                    .view(dtype=unstructured_type)
+                    .reshape(-1, len(dtype))[1::2, 0])
+
+            return lons, lats
+        else:
+            lons = self.current.grid.node_lon
+            lats = self.current.grid.node_lat
+
+            return lons.reshape(-1), lats.reshape(-1)
+
+    def get_bounds(self):
+        '''
+            Return a bounding box surrounding the grid data.
+        '''
+        longs, lats = self.get_lat_lon_data()
+
+        left, right = longs.min(), longs.max()
+        bottom, top = lats.min(), lats.max()
+
+        return ((left, bottom), (right, top))
+
     def get_center_points(self):
         if (hasattr(self.current.grid, 'center_lon') and
                 self.current.grid.center_lon is not None):

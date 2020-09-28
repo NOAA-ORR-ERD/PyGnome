@@ -465,6 +465,15 @@ cdef class CyCurrentCycleMover(CyMover):
 
         return num_pts
 
+    def _get_bounds(self):
+        """
+            Invokes the GetBounds method of TriGridVel_c object
+            to get the grid bounds
+        """
+        bounds = self.current_cycle.GetGridBounds()
+
+        return bounds
+
     def get_scaled_velocities(self, Seconds model_time,
                               cnp.ndarray[VelocityFRec] vels):
         """

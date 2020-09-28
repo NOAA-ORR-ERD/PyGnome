@@ -198,6 +198,13 @@ class Mover(Process):
 
         return delta
 
+    def get_bounds(self):
+        '''
+            Return a bounding box surrounding the grid data.
+        '''
+
+        return ((-360, -90), (360, 90))
+
 
 class PyMover(Mover):
     def __init__(self, default_num_method='RK2',
