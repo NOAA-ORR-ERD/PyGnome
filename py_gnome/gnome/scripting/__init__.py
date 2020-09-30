@@ -27,8 +27,13 @@ py_gnome scripts with, e.g.::
                                                                 0.0),
                                                 release_time="2018-04-12T12:30")
 """
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
-import gnome
+# import gnome
+
 from gnome.model import Model
 
 from gnome.basic_types import oil_status_map
@@ -58,7 +63,7 @@ from gnome.spill.spill import (point_line_release_spill,
                                spatial_release_spill,
                                )
 
-from gnome.environment.wind import constant_wind
+from gnome.environment.wind import Wind, constant_wind
 from gnome.movers.wind_movers import (constant_wind_mover,
                                       wind_mover_from_file,
                                       )
@@ -68,6 +73,7 @@ from gnome.outputters import (Renderer,
                               KMZOutput,
                               OilBudgetOutput,
                               ShapeOutput,
+                              WeatheringOutput,
                               )
 
 from gnome.maps.map import MapFromBNA, GnomeMap
