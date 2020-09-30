@@ -1041,9 +1041,10 @@ class Model(GnomeId):
             raise StopIteration("Run complete for {0}".format(self.name))
 
         else:
-            self.setup_time_step()
+            #self.setup_time_step()
             #release half the LEs for this time interval
             self.release_elements(self.time_step/2, self.model_time)
+            self.setup_time_step()
             self.move_elements()
             self.weather_elements()
             self.step_is_done()
@@ -1526,12 +1527,12 @@ class Model(GnomeId):
             msgs.append('warning: ' + self.__class__.__name__ + ': ' + msg)
             # isValid = False
 
-        map_bounds = self.map.map_bounds
         map_bounding_box = self.map.get_map_bounding_box()
         for mover in self.movers:
             bounds = mover.get_bounds()
             # check longitude is within map bounds
-            if bounds[1][0] < map_bounding_box[0][0] or bounds[0][0] > map_bounding_box[1][0]:
+            if (bounds[1][0] < map_bounding_box[0][0] or bounds[0][0] > map_bounding_box[1][0] or 
+                bounds[1][1] < map_bounding_box[0][1] or bounds[0][1] > map_bounding_box[1][1]):
                 msg = ('One of the movers - {0} - is outside of the map bounds. '
                         .format(mover.name))
                 self.logger.warning(msg)  # for now make this a warning

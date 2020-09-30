@@ -16,6 +16,7 @@ test:
 
     # install the requirements
     - conda install --file conda_requirements.txt
+    - pip install mapbox-earcut
 
     - cd ./py_gnome
     - python ./setup.py install

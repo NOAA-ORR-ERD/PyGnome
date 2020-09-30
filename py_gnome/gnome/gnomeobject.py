@@ -801,15 +801,10 @@ class GnomeId(AddLogger):
                         return cls._schema().load(json_, saveloc=folder,
                                                   refs=refs)
         elif isinstance(saveloc, zipfile.ZipFile):
-            # saveloc is a zip archive
+            # saveloc is an already open zip archive
             # extract to a temporary file and retry load
             tempdir = tempfile.mkdtemp()
-            folders = [name for name in saveloc.namelist() if name.endswith('/') and not name.startswith('__MACOSX')]
-            prefix = None
-            if len(folders) == 1:
-                # we allow our model content to be in a single top-level folder
-                prefix = folders[0]
-            extract_zipfile(saveloc, tempdir, prefix)
+            extract_zipfile(saveloc, tempdir)
             return cls.load(saveloc=tempdir, filename=filename, refs=refs)
         else:
             raise ValueError('saveloc was not a string path '
