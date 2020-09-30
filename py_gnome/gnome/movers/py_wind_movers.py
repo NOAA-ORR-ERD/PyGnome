@@ -196,9 +196,6 @@ class PyWindMover(movers.PyMover):
             grid_data = self.wind.grid.nodes[self.wind.grid.faces[:]]
             #grid_data = self.wind.grid.nodes[self.wind.grid.faces[:]]
             dtype = grid_data.dtype.descr
-            print "dtype =  ", dtype, len(dtype)
-            #print "grid_data shape =  ", grid_data.shape()
-            print "grid_data =  ", grid_data[:,0]
             unstructured_type = dtype[0][1]
             lons = (grid_data
                     .view(dtype=unstructured_type)
@@ -207,13 +204,10 @@ class PyWindMover(movers.PyMover):
                     .view(dtype=unstructured_type)
                     .reshape(-1, len(dtype))[1::2, 0])
 
-            print "lens = ", len(lons), len(lats)
             return lons, lats
         else:
             lons = self.wind.grid.node_lon
-            print "lon len = ", len(lons)
             lats = self.wind.grid.node_lat
-            print "lat len = ", len(lats)
 
             #return np.column_stack((lons.reshape(-1), lats.reshape(-1)))
             return lons.reshape(-1), lats.reshape(-1)

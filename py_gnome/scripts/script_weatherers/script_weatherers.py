@@ -11,6 +11,7 @@ import numpy
 np = numpy
 
 from gnome import scripting as gs
+
 from gnome.basic_types import datetime_value_2d
 
 from gnome.utilities.remote_data import get_datafile
@@ -40,7 +41,6 @@ from gnome.persist import load
 # define base directory
 base_dir = os.path.dirname(__file__)
 
-
 water = Water(280.928)
 wind = constant_wind(20., 117, 'knots')
 waves = Waves(wind, water)
@@ -52,10 +52,10 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     # 1 day of data in file
     # 1/2 hr in seconds
-    model = Model(start_time=start_time,
-                  duration=timedelta(days=1.75),
-                  time_step=60 * 60,
-                  uncertain=True)
+    model = gs.Model(start_time=start_time,
+                     duration=timedelta(days=1.75),
+                     time_step=60 * 60,
+                     uncertain=True)
 
 #     mapfile = get_datafile(os.path.join(base_dir, './ak_arctic.bna'))
 #
@@ -72,15 +72,15 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 #     print 'adding outputters'
 #     model.outputters += renderer
 
-    model.outputters += WeatheringOutput('.\\')
+    model.outputters += gs.WeatheringOutput(os.path.join(base_dir, 'output'))
 
     netcdf_file = os.path.join(base_dir, 'script_weatherers.nc')
     gs.remove_netcdf(netcdf_file)
-    model.outputters += NetCDFOutput(netcdf_file,
-                                     which_data='all',
-                                     output_timestep=gs.hours(1),
-                                     surface_conc=None,
-                                     )
+    model.outputters += gs.NetCDFOutput(netcdf_file,
+                                        which_data='all',
+                                        output_timestep=gs.hours(1),
+                                        surface_conc=None,
+                                        )
 
     print('adding a spill')
     # for now subsurface spill stays on initial layer
@@ -88,29 +88,29 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # - wind doesn't act
     # - start_position = (-76.126872, 37.680952, 5.0),
     end_time = start_time + timedelta(hours=24)
-    spill = point_line_release_spill(num_elements=100,
-                                     start_position=(-164.791878561,
-                                                     69.6252597267, 0.0),
-                                     release_time=start_time,
-                                     end_release_time=end_time,
-                                     amount=1000,
-                                     substance='ALASKA NORTH SLOPE (MIDDLE PIPELINE, 1997)',
-                                     units='bbl')
+    spill = gs.point_line_release_spill(num_elements=100,
+                                        start_position=(-164.791878561,
+                                                        69.6252597267, 0.0),
+                                        release_time=start_time,
+                                        end_release_time=end_time,
+                                        amount=1000,
+                                        substance='ALASKA NORTH SLOPE (MIDDLE PIPELINE, 1997)',
+                                        units='bbl')
 
     # set bullwinkle to .303 to cause mass goes to zero bug at 24 hours (when continuous release ends)
     spill.substance._bullwinkle = .303
     model.spills += spill
 
     print('adding a RandomMover:')
-    # model.movers += RandomMover(diffusion_coef=50000)
+    model.movers += RandomMover(diffusion_coef=50000)
 
     print('adding a wind mover:')
 
-    series = np.zeros((2,), dtype=datetime_value_2d)
-    series[0] = (start_time, (20, 0))
-    series[1] = (start_time + timedelta(hours=23), (20, 0))
+    # series = np.zeros((2,), dtype=datetime_value_2d)
+    # series[0] = (start_time, (20, 0))
+    # series[1] = (start_time + timedelta(hours=23), (20, 0))
 
-    wind2 = Wind(timeseries=series, units='knot')
+    # wind2 = gs.Wind(timeseries=series, units='knot')
 
     w_mover = WindMover(wind)
     model.movers += w_mover
@@ -127,9 +127,9 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     units = spill.units
 
     skimmer1 = Skimmer(80, units=units, efficiency=0.36,
-                      active_range=skim1_active_range)
+                       active_range=skim1_active_range)
     skimmer2 = Skimmer(120, units=units, efficiency=0.2,
-                      active_range=skim2_active_range)
+                       active_range=skim2_active_range)
 
     burn_start = start_time + timedelta(hours=36)
     burn = Burn(1000., .1,
@@ -142,7 +142,9 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 #                                 active_stop=chem_start + timedelta(hours=8))
 
 
-    model.environment += [Water(280.928), wind, waves]
+    model.environment += water
+    model.environment += wind
+    model.environment += waves
 
     model.weatherers += Evaporation(water, wind)
     model.weatherers += Emulsification(waves)

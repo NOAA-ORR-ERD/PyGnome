@@ -171,7 +171,7 @@ class InfDateTime(datetime.datetime):
     """
     A special datetime object:
 
-    It is either a regular datetime object, with the provisio
+    It is either a regular datetime object, with the provision
     that it can't be set outside the range given by the module
     variables:
 
