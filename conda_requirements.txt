@@ -42,8 +42,7 @@ pyshp=1.2.12
 trimesh
 shapely
 pyproj
-pip #to get mapbox-earcut
-cmake #for mapbox-earcut...
+mapbox_earcut # from NOAA_ORR_ERD channel
 
 # NOAA maintained packages
 gridded=0.2.5
