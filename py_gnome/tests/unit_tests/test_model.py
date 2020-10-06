@@ -69,7 +69,7 @@ def model(sample_model_fcn, tmpdir):
 
     # print start_points
 
-    release = SpatialRelease(start_position=line_pos,
+    release = SpatialRelease(custom_positions=line_pos,
                              release_time=model.start_time)
 
     model.spills += Spill(release, substance=test_oil)
