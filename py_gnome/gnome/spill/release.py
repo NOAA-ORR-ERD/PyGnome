@@ -493,10 +493,10 @@ class SpatialReleaseSchema(BaseReleaseSchema):
     TODO: also need a way to persist list of element_types
     '''
     start_position = WorldPoint(
-        save=False, update=False
+        save=False, update=False, test_equal=False
     )
     end_position = WorldPoint(
-        save=False, update=False
+        save=False, update=False, test_equal=False
     )
     random_distribute = SchemaNode(Boolean())
     filename = FilenameSchema(save=False, missing=drop, isdatafile=False, update=False, test_equal=False)
