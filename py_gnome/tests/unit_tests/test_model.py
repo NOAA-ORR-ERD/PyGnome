@@ -365,7 +365,7 @@ def test_simple_run_with_image_output(tmpdir):
     start_points[:, 1] = np.linspace(47.93, 48.1, N)
     # print start_points
 
-    spill = Spill(release=SpatialRelease(start_position=start_points,
+    spill = Spill(release=SpatialRelease(custom_positions=start_points,
                                  release_time=start_time))
 
     model.spills += spill
@@ -422,7 +422,7 @@ def test_simple_run_with_image_output_uncertainty(tmpdir):
     start_points[:, 1] = np.linspace(47.93, 48.1, N)
     # print start_points
 
-    release = SpatialRelease(start_position=start_points,
+    release = SpatialRelease(custom_positions=start_points,
                              release_time=start_time)
 
     model.spills += Spill(release)

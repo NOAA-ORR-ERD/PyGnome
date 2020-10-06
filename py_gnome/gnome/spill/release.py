@@ -688,7 +688,7 @@ class SpatialRelease(Release):
     @property
     def start_position(self):
         if hasattr(self, '_start_positions'):
-            ctr = MultiPoint(self._start_positions).centroid
+            ctr = MultiPoint(self.gen_combined_start_positions()).centroid
             return np.array([ctr.x, ctr.y, 0])
         else:
             return np.array([0, 0, 0])
@@ -706,7 +706,7 @@ class SpatialRelease(Release):
 
     @property
     def end_release_time(self):
-        if self._end_release_time is None:
+        if not hasattr(self, '_end_release_time') or self._end_release_time is None:
             return self.release_time
         else:
             return self._end_release_time
@@ -923,12 +923,11 @@ class SpatialRelease(Release):
         and the resulting lines are drawn, you should end up with a picture of
         the polygons.
         '''
-        np.array(oil_polys[0].exterior.xy[0])
         polycoords = map(lambda p: np.array(p.exterior.xy).T, self.polygons)
         lengths = map(len, polycoords)
         weights = self.weights if self.weights is not None else []
         thicknesses = self.thicknesses if self.thicknesses is not None else []
-        return lengths, weights, thicknesses, polycoords
+        return lengths, polycoords
     
     def get_metadata(self):
         return np.array(self.weights), np.array(self.thicknesses)
