@@ -174,8 +174,8 @@ def get_netcdf_libs():
         include_dir = include_dir.decode("ASCII").strip()
         lib_dir = lib_dir.decode("ASCII")
         libs = [l.decode("ASCII") for l in libs]
-        print("found netcdf install:")
-        print([lib_dir, libs, include_dir])
+        # print("found netcdf install:")
+        # print([lib_dir, libs, include_dir])
         return lib_dir, libs, include_dir
     except OSError:
         raise NotImplementedError("this setup.py needs nc-config "
@@ -185,7 +185,7 @@ def get_netcdf_libs():
 # maybe this will work with Windows, too" at least with conda?
 if sys.platform.startswith("linux") or sys.platform == "darwin":
     netcdf_base, netcdf_libs, netcdf_inc = get_netcdf_libs()
-    print("netcdf include dir (line 188)", netcdf_inc)
+    # print("netcdf include dir (line 188)", netcdf_inc)
     netcdf_lib_files = []
 elif sys.platform in ("win32"):  # but for now, still using our shipped libs.
 # elif sys.platform in ("darwin", "win32"):
@@ -341,7 +341,6 @@ include_dirs = [cpp_code_dir,
                 np.get_include(),
                 netcdf_inc,
                 '.']
-print("include_dirs: (line 344)", include_dirs)
 static_lib_files = netcdf_lib_files
 
 # JS NOTE: 'darwin' and 'win32' statically link against netcdf library.
@@ -414,8 +413,8 @@ elif sys.platform == "win32":
     libdirs = []
 
 elif sys.platform.startswith("linux"):
-    print("in linux stanza (line 416): include dirs")
-    print(include_dirs)
+    # print("in linux stanza (line 416): include dirs")
+    # print(include_dirs)
     # for some reason I have to create build/temp.linux-i686-2.7
     # else the compile fails saying temp.linux-i686-2.7 is not found
     # required for develop or install mode
@@ -497,7 +496,7 @@ elif sys.platform.startswith("linux"):
 for mod_name in extension_names:
     cy_file = os.path.join("gnome/cy_gnome", mod_name + ".pyx")
     print("setting up cython extensions")
-    print("include_dirs:", include_dirs)
+    # print("include_dirs:", include_dirs)
     extensions.append(Extension('gnome.cy_gnome.' + mod_name,
                                 [cy_file],
                                 language="c++",

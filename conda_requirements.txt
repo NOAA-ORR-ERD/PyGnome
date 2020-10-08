@@ -37,6 +37,8 @@ awesome-slugify>=1.6.5
 regex
 unidecode>=0.04.19
 pyshp=1.2.12
+pyproj
+
 
 
 # NOAA maintained packages
