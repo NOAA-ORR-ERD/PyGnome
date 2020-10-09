@@ -17,6 +17,7 @@ from math import ceil
 from datetime import datetime, timedelta
 from shapely.geometry import Polygon, Point, MultiPoint
 from pyproj import Proj, transform
+import pyproj
 
 from gnome.utilities.time_utils import asdatetime
 from gnome.utilities.geometry.geo_routines import random_pt_in_tri
@@ -642,7 +643,11 @@ class SpatialRelease(Release):
                     else:
                         sl = slice(start_idx, None)
                     points = shape.points[sl]
-                    pts = map(lambda pt: transform(Proj(init='epsg:3857'), Proj(init='epsg:4326'), pt[0], pt[1]), points)
+                    pts = None
+                    if (pyproj.__version__[0]) < 2:
+                        pts = map(lambda pt: transform(Proj(init='epsg:3857'), Proj(init='epsg:4326'), pt[0], pt[1]), points)
+                    else:
+                        pts = map(lambda pt: transform(Proj('epsg:3857'), Proj('epsg:4326'), pt[0], pt[1]), points)
                     poly = Polygon(pts)
                     shape_polys.append(poly)
                     shape_poly_thickness.append(thickness)
