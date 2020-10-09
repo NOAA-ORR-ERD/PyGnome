@@ -15,7 +15,9 @@ import zipfile
 import tempfile
 from math import ceil
 from datetime import datetime, timedelta
+
 from shapely.geometry import Polygon, Point, MultiPoint
+
 from pyproj import Proj, transform
 
 from gnome.utilities.time_utils import asdatetime
@@ -462,7 +464,7 @@ class PointLineRelease(Release):
         time_step = integer seconds
         '''
         if(time_step == 0):
-            time_step = 1 #to deal with initializing position in instantaneous release case 
+            time_step = 1 #to deal with initializing position in instantaneous release case
 
         sl = slice(-to_rel, None, 1)
         start_position = self._pos_ts.at(None, current_time, extrapolate=True)
@@ -502,7 +504,7 @@ class SpatialReleaseSchema(BaseReleaseSchema):
     filename = FilenameSchema(save=False, missing=drop, isdatafile=False, update=False, test_equal=False)
     #json_file = FilenameSchema(save=True, missing=drop, isdatafile=True, update=False, test_equal=False)
     # Because file generation on save isn't supported yet
-    json_file = SchemaNode(String(), save=True, update=False, test_equal=False, missing=drop) 
+    json_file = SchemaNode(String(), save=True, update=False, test_equal=False, missing=drop)
     custom_positions = StartPositions(save=True, update=True)
 
 
@@ -535,7 +537,7 @@ class SpatialRelease(Release):
         generated based on area proportion.
 
         :param start_positions: Nx3 array of release coordinates (lon, lat, z)
-        :type start_positions: np.ndarray 
+        :type start_positions: np.ndarray
 
         :param random_distribute: If True, all LEs will always be distributed
         among all release locations. Otherwise, LEs will be equally distributed,
@@ -563,7 +565,7 @@ class SpatialRelease(Release):
             weights = self.gen_default_weights(self.polygons)
         if self.polygons is not None and len(weights) != len(self.polygons):
             raise ValueError('Weights must be equal in length to provided Polygons')
-        
+
         self.thicknesses = thicknesses
         self.weights = weights
         self.random_distribute = random_distribute
@@ -586,8 +588,13 @@ class SpatialRelease(Release):
             polygons = map(lambda f: Polygon(f.coordinates[0]), fc.features)
         return polygons, weights, thicknesses
 
-    @classmethod
-    def load_shapefile(cls, filename):
+    @staticmethod
+    def load_shapefile(filename):
+        """
+        load up a spatial release from shapefiles
+
+        shapefiles should be in a zip file
+        """
         with zipfile.ZipFile(filename, 'r') as zsf:
             basename = ''.join(filename.split('.')[:-1])
             shpfile = filter(lambda f: f.split('.')[-1] == 'shp', zsf.namelist())
@@ -642,16 +649,21 @@ class SpatialRelease(Release):
                     else:
                         sl = slice(start_idx, None)
                     points = shape.points[sl]
-                    pts = map(lambda pt: transform(Proj(init='epsg:3857'), Proj(init='epsg:4326'), pt[0], pt[1]), points)
+                    # pts = map(lambda pt: transform(Proj('epsg:3857'),  # pseudo mercator
+                    #                                Proj('epsg:4326'),  # WGS84
+                    #                                pt[0], pt[1]), points)
+                    pts = map(lambda pt: transform(Proj(init='epsg:3857'),  # pseudo mercator
+                                                   Proj(init='epsg:4326'),  # WGS84
+                                                   pt[0], pt[1]), points)
                     poly = Polygon(pts)
                     shape_polys.append(poly)
                     shape_poly_thickness.append(thickness)
 
                     total_poly_area += poly.area
                 areas = map(lambda s: s.area, shape_polys)
-                #percentage of area each poly contributes to total shape area
-                shape_poly_area_weights = map(lambda s: s/total_poly_area, areas)
-                #percentage of mass each poly contributes to total mass
+                # percentage of area each poly contributes to total shape area
+                shape_poly_area_weights = map(lambda s: s / total_poly_area, areas)
+                # percentage of mass each poly contributes to total mass
                 oil_poly_weights = map(lambda w: w * weight, shape_poly_area_weights)
                 all_oil_polys.extend(shape_polys)
                 all_oil_weights.extend(oil_poly_weights)
@@ -680,7 +692,7 @@ class SpatialRelease(Release):
         if not hasattr(self, "_start_positions") or self._start_positions is None:
             self._start_positions = self.gen_start_positions()
         return self._start_positions
-    
+
     @start_positions.setter
     def start_positions(self, val):
         self._start_positions = val
@@ -702,7 +714,7 @@ class SpatialRelease(Release):
         '''
         dummy setter for web client
         '''
-        pass 
+        pass
 
     @property
     def end_release_time(self):
@@ -728,7 +740,7 @@ class SpatialRelease(Release):
                              'release_time')
 
         self._end_release_time = val
-        
+
     @property
     def num_per_timestep(self):
         return None
@@ -929,7 +941,7 @@ class SpatialRelease(Release):
         weights = self.weights if self.weights is not None else []
         thicknesses = self.thicknesses if self.thicknesses is not None else []
         return lengths, weights, thicknesses, polycoords
-    
+
     def get_metadata(self):
         return np.array(self.weights), np.array(self.thicknesses)
 
