@@ -19,6 +19,7 @@ from datetime import datetime, timedelta
 from shapely.geometry import Polygon, Point, MultiPoint
 
 from pyproj import Proj, transform
+import pyproj
 
 from gnome.utilities.time_utils import asdatetime
 from gnome.utilities.geometry.geo_routines import random_pt_in_tri
@@ -495,10 +496,10 @@ class SpatialReleaseSchema(BaseReleaseSchema):
     TODO: also need a way to persist list of element_types
     '''
     start_position = WorldPoint(
-        save=False, update=False
+        save=False, update=False, test_equal=False
     )
     end_position = WorldPoint(
-        save=False, update=False
+        save=False, update=False, test_equal=False
     )
     random_distribute = SchemaNode(Boolean())
     filename = FilenameSchema(save=False, missing=drop, isdatafile=False, update=False, test_equal=False)
@@ -645,16 +646,15 @@ class SpatialRelease(Release):
                 for i, start_idx in enumerate(shape.parts):
                     sl = None
                     if i < len(shape.parts) - 1:
-                        sl = slice(start_idx, shape.parts[i+1])
+                        sl = slice(start_idx, shape.parts[i + 1])
                     else:
                         sl = slice(start_idx, None)
                     points = shape.points[sl]
-                    # pts = map(lambda pt: transform(Proj('epsg:3857'),  # pseudo mercator
-                    #                                Proj('epsg:4326'),  # WGS84
-                    #                                pt[0], pt[1]), points)
-                    pts = map(lambda pt: transform(Proj(init='epsg:3857'),  # pseudo mercator
-                                                   Proj(init='epsg:4326'),  # WGS84
-                                                   pt[0], pt[1]), points)
+                    pts = None
+                    if (pyproj.__version__[0]) < 2:
+                        pts = map(lambda pt: transform(Proj(init='epsg:3857'), Proj(init='epsg:4326'), pt[0], pt[1]), points)
+                    else:
+                        pts = map(lambda pt: transform(Proj('epsg:3857'), Proj('epsg:4326'), pt[0], pt[1]), points)
                     poly = Polygon(pts)
                     shape_polys.append(poly)
                     shape_poly_thickness.append(thickness)
@@ -700,7 +700,7 @@ class SpatialRelease(Release):
     @property
     def start_position(self):
         if hasattr(self, '_start_positions'):
-            ctr = MultiPoint(self._start_positions).centroid
+            ctr = MultiPoint(self.gen_combined_start_positions()).centroid
             return np.array([ctr.x, ctr.y, 0])
         else:
             return np.array([0, 0, 0])
@@ -718,7 +718,7 @@ class SpatialRelease(Release):
 
     @property
     def end_release_time(self):
-        if self._end_release_time is None:
+        if not hasattr(self, '_end_release_time') or self._end_release_time is None:
             return self.release_time
         else:
             return self._end_release_time
@@ -935,13 +935,17 @@ class SpatialRelease(Release):
         and the resulting lines are drawn, you should end up with a picture of
         the polygons.
         '''
-        np.array(oil_polys[0].exterior.xy[0])
         polycoords = map(lambda p: np.array(p.exterior.xy).T, self.polygons)
         lengths = map(len, polycoords)
         weights = self.weights if self.weights is not None else []
         thicknesses = self.thicknesses if self.thicknesses is not None else []
+<<<<<<< HEAD
         return lengths, weights, thicknesses, polycoords
 
+=======
+        return lengths, polycoords
+
+>>>>>>> 6dc9d02fb77cd7778270a1c10ba1c02edd4456c0
     def get_metadata(self):
         return np.array(self.weights), np.array(self.thicknesses)
 

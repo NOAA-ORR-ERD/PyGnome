@@ -42,8 +42,7 @@ pyshp=1.2.12
 trimesh
 shapely
 pyproj
-mapbox_earcut
-
+mapbox_earcut # from NOAA_ORR_ERD channel
 
 # NOAA maintained packages
 gridded=0.2.5
