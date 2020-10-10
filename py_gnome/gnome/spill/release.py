@@ -511,8 +511,10 @@ class SpatialReleaseSchema(BaseReleaseSchema):
 
 class SpatialRelease(Release):
     """
-    A simple release class  --  a release of floating non-weathering particles,
-    with their initial positions pre-specified
+    A release of elements with their initial positions pre-specified
+
+    They can be specified as a set of coordinates (custom_positions)
+    Or as polygons that will be randomly filled with particles
     """
     _schema = SpatialReleaseSchema
 
@@ -528,7 +530,7 @@ class SpatialRelease(Release):
                  **kwargs):
         """
         :param filename: NESDIS shapefile
-        :type filename: string or list of strings
+        :type filename: string or list of strings -- should be a zip file
 
         :param polygons: polygons to use in this release
         :type polygons: list of shapely.Polygon
@@ -547,6 +549,7 @@ class SpatialRelease(Release):
         :param num_elements: If passed as None, number of elements will be equivalent
         to number of start positions. For backward compatibility.
         """
+        # We really should clean this up!
         kwargs.pop('start_position', None)
         kwargs.pop('end_position', None)
         super(SpatialRelease, self).__init__(
@@ -624,19 +627,23 @@ class SpatialRelease(Release):
             oil_amounts = []
             for i, shape in enumerate(shapes):
                 oil_type = sf.records()[i][type_id]
-                oil_area = sf.records()[i][area_id] * 1000**2 #area in m2
-                if oil_type == "Thin":
+                oil_area = sf.records()[i][area_id] * 1000**2  # area in m2
+                if oil_type.lower() == "thin":
                     thickness = 5e-6
-                else:
+                elif oil_type.lower() == "thick":
                     thickness = 200e-6
-                oil_amounts.append(thickness * oil_area) #oil amount in cubic meters
+                else:
+                    raise ValueError('Unknown oil classification: "{}". Should be one of:'
+                                     '"Thick" or "Thin"'.format(oil_type))
+                oil_amounts.append(thickness * oil_area)  # oil amount in cubic meters
                 shape_oil_thickness.append(thickness)
 
-            #percentage of mass in each Shape. Later this is further broken down per Polygon
-            oil_amount_weights = map(lambda w: w/sum(oil_amounts), oil_amounts)
+            # percentage of mass in each Shape.
+            # Later this is further broken down per Polygon
+            oil_amount_weights = map(lambda w: w / sum(oil_amounts), oil_amounts)
 
-            #Each Shape contains multiple Polygons. The following extracts these Polygons
-            #and determines the per Polygon weighting out of the total
+            # Each Shape contains multiple Polygons. The following extracts these Polygons
+            # and determines the per Polygon weighting out of the total
             for shape, weight, thickness in zip(shapes, oil_amount_weights, shape_oil_thickness):
                 shape_polys = []
                 shape_amounts = []
@@ -651,10 +658,16 @@ class SpatialRelease(Release):
                         sl = slice(start_idx, None)
                     points = shape.points[sl]
                     pts = None
-                    if (pyproj.__version__[0]) < 2:
-                        pts = map(lambda pt: transform(Proj(init='epsg:3857'), Proj(init='epsg:4326'), pt[0], pt[1]), points)
+                    # kludge to get around version differences in pyproj
+                    if int(pyproj.__version__[0]) < 2:
+                        Proj1 = Proj(init='epsg:3857')
+                        Proj2 = Proj(init='epsg:4326')
                     else:
-                        pts = map(lambda pt: transform(Proj('epsg:3857'), Proj('epsg:4326'), pt[0], pt[1]), points)
+                        Proj1 = Proj('epsg:3857')
+                        Proj2 = Proj('epsg:4326')
+                    # pts = map(lambda pt: transform(Proj1, Proj2, pt[0], pt[1]), points)
+                    pts = np.array(points)
+                    pts[:,0], pts[:,1] = transform(Proj1, Proj2, pts[:,0], pts[:,1])
                     poly = Polygon(pts)
                     shape_polys.append(poly)
                     shape_poly_thickness.append(thickness)
@@ -667,6 +680,7 @@ class SpatialRelease(Release):
                 oil_poly_weights = map(lambda w: w * weight, shape_poly_area_weights)
                 all_oil_polys.extend(shape_polys)
                 all_oil_weights.extend(oil_poly_weights)
+                all_oil_thicknesses.extend(shape_poly_thickness)
 
             return all_oil_polys, all_oil_weights, all_oil_thicknesses
 
@@ -678,7 +692,7 @@ class SpatialRelease(Release):
         return cls(
             polygons=polys,
             weights=weights,
-            thicknesses = thicknesses,
+            thicknesses=thicknesses,
             **kwargs
         )
 
@@ -793,6 +807,7 @@ class SpatialRelease(Release):
         self._combined_positions = None
         #self._pos_ts = None
 
+
     def gen_combined_start_positions(self):
         self.start_positions #generates start_positions if not done already via property
 
@@ -856,8 +871,8 @@ class SpatialRelease(Release):
         '''
         t = None
         if num_ts == 1:
-            #This is a special case, when the release is short enough a single
-            #timestep encompasses the whole thing.
+            # This is a special case, when the release is short enough a single
+            # timestep encompasses the whole thing.
             if self.release_duration == 0:
                 t = Time([self.release_time, self.end_release_time+timedelta(seconds=1)])
             else:
@@ -871,8 +886,8 @@ class SpatialRelease(Release):
                                               data=np.full(t.data.shape, max_release).astype(int))
         else:
             self._release_ts = TimeseriesData(name=self.name+'_release_ts',
-                                            time=t,
-                                            data=np.linspace(0, max_release, num_ts + 1).astype(int))
+                                              time=t,
+                                              data=np.linspace(0, max_release, num_ts + 1).astype(int))
 
     def num_elements_after_time(self, current_time, time_step):
         '''
@@ -937,15 +952,10 @@ class SpatialRelease(Release):
         '''
         polycoords = map(lambda p: np.array(p.exterior.xy).T, self.polygons)
         lengths = map(len, polycoords)
-        weights = self.weights if self.weights is not None else []
-        thicknesses = self.thicknesses if self.thicknesses is not None else []
-<<<<<<< HEAD
-        return lengths, weights, thicknesses, polycoords
-
-=======
+        # weights = self.weights if self.weights is not None else []
+        # thicknesses = self.thicknesses if self.thicknesses is not None else []
         return lengths, polycoords
 
->>>>>>> 6dc9d02fb77cd7778270a1c10ba1c02edd4456c0
     def get_metadata(self):
         return np.array(self.weights), np.array(self.thicknesses)
 
