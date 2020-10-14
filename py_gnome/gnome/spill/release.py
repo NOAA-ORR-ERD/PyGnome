@@ -657,7 +657,6 @@ class SpatialRelease(Release):
                     else:
                         sl = slice(start_idx, None)
                     points = shape.points[sl]
-                    pts = None
                     # kludge to get around version differences in pyproj
                     if int(pyproj.__version__[0]) < 2:
                         Proj1 = Proj(init='epsg:3857')
@@ -665,9 +664,7 @@ class SpatialRelease(Release):
                     else:
                         Proj1 = Proj('epsg:3857')
                         Proj2 = Proj('epsg:4326')
-                    # pts = map(lambda pt: transform(Proj1, Proj2, pt[0], pt[1]), points)
-                    pts = np.array(points)
-                    pts[:,0], pts[:,1] = transform(Proj1, Proj2, pts[:,0], pts[:,1])
+                    pts = map(lambda pt: transform(Proj1, Proj2, pt[0], pt[1]), points)
                     poly = Polygon(pts)
                     shape_polys.append(poly)
                     shape_poly_thickness.append(thickness)
