@@ -947,14 +947,14 @@ class SpatialRelease(Release):
         and the resulting lines are drawn, you should end up with a picture of
         the polygons.
         '''
-        polycoords = map(lambda p: np.array(p.exterior.xy).T, self.polygons)
-        lengths = map(len, polycoords)
+        polycoords = map(lambda p: np.array(p.exterior.xy).T.astype(np.float32), self.polygons)
+        lengths = np.array(map(len, polycoords))
         # weights = self.weights if self.weights is not None else []
         # thicknesses = self.thicknesses if self.thicknesses is not None else []
         return lengths, polycoords
 
     def get_metadata(self):
-        return np.array(self.weights), np.array(self.thicknesses)
+        return {'weights': self.weights, 'thicknesses': self.thicknesses}
 
     def get_start_positions(self):
         #returns all combined start positions in binary form for the API
