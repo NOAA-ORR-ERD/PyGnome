@@ -948,7 +948,7 @@ class SpatialRelease(Release):
         the polygons.
         '''
         polycoords = map(lambda p: np.array(p.exterior.xy).T.astype(np.float32), self.polygons)
-        lengths = np.array(map(len, polycoords))
+        lengths = np.array(map(len, polycoords)).astype(np.int32)
         # weights = self.weights if self.weights is not None else []
         # thicknesses = self.thicknesses if self.thicknesses is not None else []
         return lengths, polycoords
