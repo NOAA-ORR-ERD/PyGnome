@@ -54,7 +54,7 @@ def model(sample_model, output_dir):
                                              release_time=model.start_time,
                                              end_position=rel_end_pos)
 
-    release = SpatialRelease(start_position=line_pos,
+    release = SpatialRelease(custom_positions=line_pos,
                              release_time=model.start_time)
 
     model.spills += Spill(release)

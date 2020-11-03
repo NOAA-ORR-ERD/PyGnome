@@ -13,9 +13,8 @@ from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from datetime import timedelta, datetime
+from datetime import datetime
 import copy
-import numpy as np
 
 
 import unit_conversion as uc
@@ -37,7 +36,7 @@ from gnome.spill.release import (BaseReleaseSchema,
                                  PointLineReleaseSchema,
                                  SpatialReleaseSchema)
 from gnome.environment.water import WaterSchema
-#from gnome.spill.le import LEData
+# from gnome.spill.le import LEData
 from gnome.spill.substance import (SubstanceSchema,
                                    Substance,
                                    NonWeatheringSubstance,
@@ -269,7 +268,7 @@ class Spill(BaseSpill):
         self.release.end_position = sp
 
     # fixme: We store in standard units! i.e. kilograms!
-    #        so the getter shold jsut return that value.
+    #        so the getter should just return that value.
     @property
     def amount(self):
         rel_mass = self.release.release_mass #kg
@@ -554,23 +553,15 @@ def grid_spill(bounds,
                        resolution grid
     :type resolution: integer
 
-    :param release_time: time the LEs are released (datetime object)
-    :type release_time: datetime.datetime
-
-    :param end_position=None: Optional. For moving source, the end position
-                              If None, then release is from a point source
-    :type end_position: 3-tuple of floats (long, lat, z)
-
-    :param end_release_time=None: optional -- for a time varying release,
-        the end release time. If None, then release is instantaneous
-    :type end_release_time: datetime.datetime
-
     :param substance=None: Type of oil spilled.
     :type substance: str or OilProps
 
     :param float amount=None: mass or volume of oil spilled
 
     :param str units=None: units for amount spilled
+
+    :param release_time: time the LEs are released (datetime object)
+    :type release_time: datetime.datetime
 
     :param tuple windage_range=(.01, .04): Percentage range for windage.
                                            Active only for surface particles
@@ -581,6 +572,7 @@ def grid_spill(bounds,
                                     randomly reset on this time scale
     :param str name='Surface Point/Line Release': a name for the spill
     '''
+
     release = GridRelease(release_time,
                           bounds,
                           resolution)

@@ -712,6 +712,7 @@ class TestGridWind(object):
 
     @pytest.mark.parametrize("coord_sys", ['r-theta', 'r', 'theta', 'u', 'v'])
     def test_at_format(self, coord_sys):
+        # fixme: this could be structured better to make it easier to debug!
         u = Variable(grid=g, data=e1_var)
         v = Variable(grid=g, data=e2_var)
         gw = GridWind(name='test', grid=g, variables=[u, v])
@@ -747,8 +748,6 @@ class TestGridWind(object):
                                _auto_align=False)
 
             ans_mag = np.sqrt(ans[:, 0] ** 2 + ans[:, 1] ** 2)
-            print('ans_mag', ans_mag)
-            print()
 
             ans_dir = np.arctan2(ans[:, 1], ans[:, 0]) * 180.0 / np.pi
 
@@ -762,6 +761,8 @@ class TestGridWind(object):
                                        np.column_stack((ans_mag, ans_dir)))
             else:
                 if coord_sys == 'u':
+                    print(raw_result)
+                    print(ans[:, 0])
                     assert np.allclose(raw_result, ans[:, 0])
                 else:
                     assert np.allclose(raw_result, ans[:, 1])

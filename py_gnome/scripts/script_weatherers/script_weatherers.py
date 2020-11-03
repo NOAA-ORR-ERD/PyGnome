@@ -3,32 +3,25 @@
 Script to test GNOME with all weatherers and response options
 """
 
-import os
-import shutil
-from datetime import datetime, timedelta
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
-import numpy
-np = numpy
-
+<<<<<<< HEAD
 from gnome import scripting as gs
 
 from gnome.basic_types import datetime_value_2d
+=======
+import os
+>>>>>>> develop
 
-from gnome.utilities.remote_data import get_datafile
-from gnome.utilities.inf_datetime import InfDateTime
+from gnome import scripting as gs
 
-from gnome.model import Model
-
-from gnome.maps import MapFromBNA
-from gnome.environment import Wind
-from gnome.spill import point_line_release_spill
-from gnome.movers import RandomMover, WindMover
-
-from gnome.outputters import Renderer
-from gnome.outputters import NetCDFOutput
-from gnome.outputters import WeatheringOutput
 
 from gnome.environment import constant_wind, Water, Waves
+
+
 from gnome.weatherers import (Emulsification,
                               Evaporation,
                               NaturalDispersion,
@@ -37,7 +30,6 @@ from gnome.weatherers import (Emulsification,
                               Skimmer,
                               WeatheringData)
 
-from gnome.persist import load
 # define base directory
 base_dir = os.path.dirname(__file__)
 
@@ -45,14 +37,17 @@ water = Water(280.928)
 wind = constant_wind(20., 117, 'knots')
 waves = Waves(wind, water)
 
+
 def make_model(images_dir=os.path.join(base_dir, 'images')):
     print('initializing the model')
 
-    start_time = datetime(2015, 5, 14, 0, 0)
+    # start_time = datetime(2015, 5, 14, 0, 0)
 
+    start_time = gs.asdatetime("2015-05-14")
     # 1 day of data in file
     # 1/2 hr in seconds
     model = gs.Model(start_time=start_time,
+<<<<<<< HEAD
                      duration=timedelta(days=1.75),
                      time_step=60 * 60,
                      uncertain=True)
@@ -74,6 +69,16 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     model.outputters += gs.WeatheringOutput(os.path.join(base_dir, 'output'))
 
+=======
+                     duration=gs.days(1.75),
+                     time_step=60 * 60,
+                     uncertain=True)
+
+    print('adding outputters')
+
+    model.outputters += gs.WeatheringOutput(os.path.join(base_dir, 'output'))
+
+>>>>>>> develop
     netcdf_file = os.path.join(base_dir, 'script_weatherers.nc')
     gs.remove_netcdf(netcdf_file)
     model.outputters += gs.NetCDFOutput(netcdf_file,
@@ -87,7 +92,11 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # - will need diffusion and rise velocity
     # - wind doesn't act
     # - start_position = (-76.126872, 37.680952, 5.0),
+<<<<<<< HEAD
     end_time = start_time + timedelta(hours=24)
+=======
+    end_time = start_time + gs.hours(24)
+>>>>>>> develop
     spill = gs.point_line_release_spill(num_elements=100,
                                         start_position=(-164.791878561,
                                                         69.6252597267, 0.0),
@@ -102,7 +111,11 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     model.spills += spill
 
     print('adding a RandomMover:')
+<<<<<<< HEAD
     model.movers += RandomMover(diffusion_coef=50000)
+=======
+    model.movers += gs.RandomMover(diffusion_coef=50000)
+>>>>>>> develop
 
     print('adding a wind mover:')
 
@@ -112,17 +125,17 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     # wind2 = gs.Wind(timeseries=series, units='knot')
 
-    w_mover = WindMover(wind)
+    w_mover = gs.WindMover(wind)
     model.movers += w_mover
 
     print('adding weatherers and cleanup options:')
 
     # define skimmer/burn cleanup options
-    skim1_start = start_time + timedelta(hours=15.58333)
-    skim2_start = start_time + timedelta(hours=16)
+    skim1_start = start_time + gs.hours(15.58333)
+    skim2_start = start_time + gs.hours(16)
 
-    skim1_active_range = (skim1_start, skim1_start + timedelta(hours=8.))
-    skim2_active_range = (skim2_start, skim2_start + timedelta(hours=12.))
+    skim1_active_range = (skim1_start, skim1_start + gs.hours(8))
+    skim2_active_range = (skim2_start, skim2_start + gs.hours(12))
 
     units = spill.units
 
@@ -130,17 +143,21 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                        active_range=skim1_active_range)
     skimmer2 = Skimmer(120, units=units, efficiency=0.2,
                        active_range=skim2_active_range)
+<<<<<<< HEAD
+=======
 
-    burn_start = start_time + timedelta(hours=36)
+    burn_start = start_time + gs.hours(36)
+>>>>>>> develop
+
     burn = Burn(1000., .1,
-                active_range=(burn_start, InfDateTime('inf')), efficiency=.2)
+                active_range=(burn_start, gs.InfTime()),
+                efficiency=.2)
 
-    chem_start = start_time + timedelta(hours=24)
-    chem_active_range = (chem_start, chem_start + timedelta(hours=8))
+#    chem_start = start_time + gs.hours(24)
+#     chem_active_range = (chem_start, chem_start + gs.hours(8))
 #     c_disp = ChemicalDispersion(0.5, efficiency=0.4,
 #                                 active_start=chem_start,
-#                                 active_stop=chem_start + timedelta(hours=8))
-
+#                                 active_stop=chem_start + gs.hours(8))
 
     model.environment += water
     model.environment += wind

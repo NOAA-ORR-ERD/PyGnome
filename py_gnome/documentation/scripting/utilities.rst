@@ -1,21 +1,17 @@
 Scripting utilities
-====================================================
+===================
 
-GNOME has a scripting module where many utilties and helper functions can be accessed to simplify common tasks.
-These include helper functions for easier creation of certain types of spills and movers.
-
-To make it easier to write simple scripts, we have set it up so that you can import all teh names in the scripting module with::
+The GNOME scripting module contains most of the gnome objects you will need for scripting, and a number of utilities and helper functions that can be accessed to simplify common tasks.
 
 
-    from gnome.scripting import *
+To make it easier to write simple scripts, we have set it up so that you can import all the names in the scripting module with::
 
-If you want to keep your scripts namespace clean, you can also import them with a short name::
 
     import gnome.scripting as gs
 
-You can now access the names in the scipting module with, e.g. ``gs.Model``
+You can now access the names in the scripting module with, e.g. ``gs.Model``
 
-Examples in this document will use the ``import *`` approach
+Examples in this document will use the ``import as gs`` approach
 
 
 .. note::
@@ -35,13 +31,66 @@ The time_utils module provides handy utilities to make it easier to construct th
 .. automodule:: gnome.scripting.time_utils
 
 
+
 :mod:`gnome.scripting`
 ----------------------
 
-.. automodule:: gnome.scripting
-    :members: constant_wind, constant_wind_mover, wind_mover_from_file, make_images_dir,
-              surface_point_line_spill, subsurface_plume_spill, hours
+.. autoclass:: gnome.scripting.Model
+    :members: __init__
 
+Utilities
+---------
+
+.. automodule:: gnome.scripting
+    :members: make_images_dir, PrintFinder, get_datafile, remove_netcdf,  set_verbose,
+
+
+Time Utilities
+--------------
+
+.. automodule:: gnome.scripting
+    :members: seconds, minutes, hours, days, weeks, InfTime, MinusInfTime, asdatetime
+
+
+Environment Objects
+-------------------
+
+.. automodule:: gnome.scripting
+    :members: constant_wind, GridCurrent, IceAwareCurrent, IceAwareWind, Tide,
+              Water, Waves, Wind
+
+
+Movers
+------
+
+.. automodule:: gnome.scripting
+    :members: constant_wind_mover, CatsMover, ComponentMover, IceAwareRandomMover,
+              PyCurrentMover, PyWindMover, RandomMover, RandomMover3D, RiseVelocityMover,
+              SimpleMover, WindMover, wind_mover_from_file
+
+
+Maps
+----
+
+.. automodule:: gnome.scripting
+    :members: GnomeMap, MapFromBNA
+
+
+Spills
+------
+
+.. automodule:: gnome.scripting
+    :members: point_line_release_spill, surface_point_line_spill,
+              subsurface_plume_spill, grid_spill, spatial_release_spill,
+              subsurface_plume_spill,
+
+
+Outputters
+----------
+
+.. automodule:: gnome.scripting
+    :members: Renderer, KMZOutput, NetCDFOutput, OilBudgetOutput, ShapeOutput,
+              WeatheringOutput
 
 
 

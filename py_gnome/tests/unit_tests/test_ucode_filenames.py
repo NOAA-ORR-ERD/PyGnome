@@ -4,6 +4,11 @@ Created on Apr 11, 2013
 Create a unicode filename and test with object
 '''
 
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import os
 import shutil
 import sys
@@ -105,7 +110,7 @@ def test_ucode_char_in_grid_mover_filename(mover_test):
         invalid_ufile2 = create_ucode_file(file2_, valid=False)
 
     mover_test[0](file1_, file2_)
-    
+
     # valid unicode names should work for both systems
     mover_test[0](ufile1, ufile2)
 

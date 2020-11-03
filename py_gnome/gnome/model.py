@@ -5,8 +5,6 @@ from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from future import standard_library
-
 import os
 from datetime import datetime, timedelta
 import zipfile
@@ -372,7 +370,7 @@ class Model(GnomeId):
         updatable = self._schema().get_nodes_by_attr('update')
         attrs = copy.copy(dict_)
         updated = False
-        for k in list(attrs.keys()):
+        for k in attrs.keys():
             if k not in updatable:
                 attrs.pop(k)
 
@@ -410,7 +408,7 @@ class Model(GnomeId):
 
                     attrs.pop(name)
 
-        for k, v in list(attrs.items()):
+        for k, v in attrs.items():
             if hasattr(self, k):
                 if not updated and self._attr_changed(getattr(self, k), v):
                     updated = True
@@ -597,24 +595,32 @@ class Model(GnomeId):
         return all_objs
 
     def find_by_attr(self, attr, value, collection, allitems=False):
+        # fixme: shouldn't this functionality be in OrderedCollection?
+        #        better yet, have a different way to find things!
         '''
         find first object in collection where the 'attr' attribute matches
         'value'. This is primarily used to find 'wind', 'water', 'waves'
         objects in environment collection. Use the '_ref_as' attribute to
         search.
 
+        # fixme: why don't we look for wind, water or waves directly?
+
         Ignore AttributeError since all objects in collection may not contain
         the attribute over which we are searching.
 
-        :param str attr: attribute whose value must match
-        :param str value: desired value of the attribute
+        :param attr: attribute whose value must match
+        :type attr: str
+
+        :param value: desired value of the attribute
+        :type value: str
+
         :param OrderedCollection collection: the ordered collection in which
             to search
         '''
         items = []
         for item in collection:
             try:
-                if not isinstance(getattr(item, attr), str):
+                if not isinstance(getattr(item, attr), basestring):
                     if any([value == v for v in getattr(item, attr)]):
                         if allitems:
                             items.append(item)
@@ -650,19 +656,19 @@ class Model(GnomeId):
         #simply going for the first-in-line, it is defined here.
         super(Model, self)._attach_default_refs(ref_dict)
 
-        #gathering references IS OPTIONAL. If you are expecting relevant refs
-        #to have already been collected by a parent, this may be skipped.
-        #Since Model is top-level, it should gather what it can
+        # gathering references IS OPTIONAL. If you are expecting relevant refs
+        # to have already been collected by a parent, this may be skipped.
+        # Since Model is top-level, it should gather what it can
         self.gather_ref_as(self.environment, ref_dict)
         self.gather_ref_as(self.map, ref_dict)
         self.gather_ref_as(self.movers, ref_dict)
         self.gather_ref_as(self.weatherers, ref_dict)
         self.gather_ref_as(self.outputters, ref_dict)
 
-        #Provide the references to all contained objects that also use the
-        #default references system by calling _attach_default_refs on each
-        #instance
-        all_spills = [sp for sc in list(self.spills.items()) for sp in list(sc.spills.values())]
+        # Provide the references to all contained objects that also use the
+        # default references system by calling _attach_default_refs on each
+        # instance
+        all_spills = [sp for sc in self.spills.items() for sp in sc.spills.values()]
         for coll in [self.environment,
                      self.weatherers,
                      self.movers,
@@ -745,14 +751,18 @@ class Model(GnomeId):
 
         '''Step 3: Compile array_types and run setup on spills'''
         array_types = dict()
-        for oc in [self.movers, self.outputters, self.environment, self.weatherers, self.spills]:
+        for oc in [self.movers,
+                   self.outputters,
+                   self.environment,
+                   self.weatherers,
+                   self.spills]:
             for item in oc:
                 if (hasattr(item, 'array_types')):
                     array_types.update(item.all_array_types)
 
         self.logger.debug(array_types)
 
-        for sc in list(self.spills.items()):
+        for sc in self.spills.items():
             sc.prepare_for_model_run(array_types, self.time_step)
 
         '''Step 4: Attach default references'''
@@ -768,7 +778,7 @@ class Model(GnomeId):
 
         weathering = False
         for w in self.weatherers:
-            for sc in list(self.spills.items()):
+            for sc in self.spills.items():
                 # weatherers will initialize 'mass_balance' key/values
                 # to 0.0
                 if w.on:
@@ -826,11 +836,11 @@ class Model(GnomeId):
         '''
         # initialize movers differently if model uncertainty is on
         for m in self.movers:
-            for sc in list(self.spills.items()):
+            for sc in self.spills.items():
                 m.prepare_for_model_step(sc, self.time_step, self.model_time)
 
         for w in self.weatherers:
-            for sc in list(self.spills.items()):
+            for sc in self.spills.items():
                 # maybe we will setup a super-sampling step here???
                 w.prepare_for_model_step(sc, self.time_step, self.model_time)
 
@@ -848,7 +858,7 @@ class Model(GnomeId):
          - calls the beaching code to beach the elements that need beaching.
          - sets the new position
         '''
-        for sc in list(self.spills.items()):
+        for sc in self.spills.items():
             if sc.num_released > 0:  # can this check be removed?
                 # possibly refloat elements
                 self.map.refloat_elements(sc, self.time_step, self.model_time)
@@ -923,7 +933,7 @@ class Model(GnomeId):
             # if no weatherers then mass_components array may not be defined
             return
 
-        for sc in list(self.spills.items()):
+        for sc in self.spills.items():
             # elements may have beached to update fate_status
 
             sc.reset_fate_dataview()
@@ -970,17 +980,17 @@ class Model(GnomeId):
         Output data
         '''
         for mover in self.movers:
-            for sc in list(self.spills.items()):
+            for sc in self.spills.items():
                 mover.model_step_is_done(sc)
 
         for w in self.weatherers:
-            for sc in list(self.spills.items()):
+            for sc in self.spills.items():
                 w.model_step_is_done(sc)
 
         for outputter in self.outputters:
             outputter.model_step_is_done()
 
-        for sc in list(self.spills.items()):
+        for sc in self.spills.items():
             '''
             removes elements with oil_status.to_be_removed
             '''
@@ -1013,7 +1023,7 @@ class Model(GnomeId):
         hindcasting.
         '''
         isValid = True
-        for sc in list(self.spills.items()):
+        for sc in self.spills.items():
             # Set the current time stamp only after current_time_step is
             # incremented and before the output is written. Set it to None here
             # just so we're not carrying around the old time_stamp
@@ -1030,11 +1040,11 @@ class Model(GnomeId):
                 raise RuntimeError("Setup model run complete but model "
                                    "is invalid", msgs)
 
-            #going into step 0
+            # going into step 0
             self.current_time_step += 1
-            #only release 1 second, to catch any instantaneous releases
+            # only release 1 second, to catch any instantaneous releases
             self.release_elements(0, self.model_time)
-            #step 0 output
+            # step 0 output
             output_info = self.output_step(isValid)
 
             return output_info
@@ -1048,9 +1058,9 @@ class Model(GnomeId):
             raise StopIteration("Run complete for {0}".format(self.name))
 
         else:
-            self.setup_time_step()
             # release half the LEs for this time interval
-            self.release_elements(self.time_step // 2, self.model_time)
+            self.release_elements(self.time_step / 2, self.model_time)
+            self.setup_time_step()
             self.move_elements()
             self.weather_elements()
             self.step_is_done()
@@ -1071,7 +1081,7 @@ class Model(GnomeId):
 
     def release_elements(self, time_step, model_time):
         num_released = 0
-        for sc in list(self.spills.items()):
+        for sc in self.spills.items():
             sc.current_time_stamp = model_time
             # release particles for next step - these particles will be aged
             # in the next step
@@ -1109,6 +1119,8 @@ class Model(GnomeId):
         except StopIteration:
             self.post_model_run()
             raise
+
+    next = __next__  # for the Py2 iterator protocol
 
     def full_run(self, rewind=True):
         '''
@@ -1374,7 +1386,7 @@ class Model(GnomeId):
         for w in self.weatherers:
             array_types.update(w.array_types)
 
-        for sc in list(self.spills.items()):
+        for sc in self.spills.items():
             sc.prepare_for_model_run(array_types)
             if sc.uncertain:
                 (data, weather_data) = NetCDFOutput.read_data(u_spill_data,
@@ -1424,7 +1436,11 @@ class Model(GnomeId):
         '''
         check the user inputs before running the model
         raise an exception if user can't run the model
+
         todo: check if all spills start after model ends
+
+        fixme: This should probably be broken out into its
+               own module, class, something -- with each test independent.
         '''
         (msgs, isValid) = self.validate()
 
@@ -1458,7 +1474,7 @@ class Model(GnomeId):
 
                         msgs.append(self._warn_pre + msg)
 
-                #land check needs to be updated for Spatial Release
+                # land check needs to be updated for Spatial Release
                 if np.any(self.map.on_land(start_pos)):
                     msg = ('{0} has start position on land'.
                            format(spill.name))
@@ -1466,7 +1482,8 @@ class Model(GnomeId):
 
                     msgs.append(self._warn_pre + msg)
 
-                elif hasattr(spill, 'end_position') and not np.all(spill.end_position == spill.start_position):
+                elif (hasattr(spill, 'end_position')
+                      and not np.all(spill.end_position == spill.start_position)):
                     end_pos = copy.deepcopy(spill.end_position)
                     if np.any(self.map.on_land(end_pos)):
                         msg = ('{0} has start position on land'.
@@ -1532,12 +1549,12 @@ class Model(GnomeId):
             msgs.append('warning: ' + self.__class__.__name__ + ': ' + msg)
             # isValid = False
 
-        map_bounds = self.map.map_bounds
         map_bounding_box = self.map.get_map_bounding_box()
         for mover in self.movers:
             bounds = mover.get_bounds()
             # check longitude is within map bounds
-            if bounds[1][0] < map_bounding_box[0][0] or bounds[0][0] > map_bounding_box[1][0]:
+            if (bounds[1][0] < map_bounding_box[0][0] or bounds[0][0] > map_bounding_box[1][0] or
+                bounds[1][1] < map_bounding_box[0][1] or bounds[0][1] > map_bounding_box[1][1]):
                 msg = ('One of the movers - {0} - is outside of the map bounds. '
                         .format(mover.name))
                 self.logger.warning(msg)  # for now make this a warning
@@ -1712,7 +1729,7 @@ class Model(GnomeId):
                     break
 
             if test_result:
-                for k in list(result.keys()):
+                for k in result.keys():
                     n = elem_val(k, i)
                     result[k].append(n)
 

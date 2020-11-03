@@ -9,8 +9,8 @@ from __future__ import unicode_literals
 
 import os
 import json
-from datetime import datetime, timedelta
-from collections import OrderedDict
+from datetime import timedelta
+# from collections import OrderedDict
 
 import numpy as np
 
@@ -716,7 +716,7 @@ class Disperse(Response):
 
         # time to next state
         if platform is not None:
-            if isinstance(platform, str):
+            if not isinstance(platform, Platform):
                 # find platform name
                 self.platform = Platform(_name=platform)
             else:

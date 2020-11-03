@@ -560,7 +560,7 @@ def sample_spatial_release_spill():
                        (-15, 12, 4.0),
                        (80, -80, 100.0))
 
-    rel = SpatialRelease(datetime(2012, 1, 1, 1), start_positions)
+    rel = SpatialRelease(release_time=datetime(2012, 1, 1, 1), custom_positions=start_positions)
     sp = gnome.spill.Spill(release=rel)
 
     return (sp, start_positions)

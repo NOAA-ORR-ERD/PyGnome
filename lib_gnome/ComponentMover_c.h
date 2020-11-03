@@ -13,6 +13,7 @@
 #include "Basics.h"
 #include "TypeDefs.h"
 #include "CurrentMover_c.h"
+#include "CATSMover_c.h"
 #ifdef pyGNOME
 #include "GridVel_c.h"
 #else
@@ -95,6 +96,7 @@ public:
 
 	virtual WorldPoint3D       GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
 	virtual	Boolean 		VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr);	
+	virtual WorldRect	GetGridBounds(){return pattern1->GetGridBounds();}	
 
 	//void				SetRefPosition (WorldPoint p) { refP = p;}
 	//void				GetRefPosition (WorldPoint *p) { (*p) = refP;}

@@ -33,33 +33,37 @@ data_server = 'http://gnome.orr.noaa.gov/py_gnome_testdata/'
 CHUNKSIZE = 1024 * 1024
 
 
-def get_datafile(file_):
+def get_datafile(filename):
     """
-    Function looks to see if file_ exists in local directory. If it exists,
-    then it simply returns the 'file_' back as a string.
-    If 'file_' does not exist in local filesystem, then it tries to download it
-    from the gnome server (http://gnome.orr.noaa.gov/py_gnome_testdata).
-    If it successfully downloads the file, it puts it in the user specified
-    path given in file_ and returns the 'file_' string.
+    Looks to see if filename exists in local directory. If it exists,
+    then it simply returns the 'filename' back as a string.
 
-    If file is not found or server is down, it rethrows the HTTPError raised
+    If 'filename' does not exist in the local filesystem, then it tries to
+    download it from the gnome server (http://gnome.orr.noaa.gov/py_gnome_testdata).
+    If it successfully downloads the file, it puts it in the user specified
+    path given in filename and returns the 'filename' string.
+
+    If file is not found or server is down, it re-throws the HTTPError raised
     by urllib2.urlopen
 
-    :param file_: path to the file including filename
-    :type file_: string
+    :param filename: path to the file including filename
+    :type filename: string
+
     :exception: raises urllib2.HTTPError if server is down or file not found
                 on server
-    :returns: returns the string 'file_' once it has been downloaded to
+
+    :returns: returns the string 'filename' once it has been downloaded to
               user specified location
+
     """
 
-    if os.path.exists(file_):
-        return file_
+    if os.path.exists(filename):
+        return filename
     else:
 
-        # download file, then return file_ path
+        # download file, then return filename path
 
-        (path_, fname) = os.path.split(file_)
+        (path_, fname) = os.path.split(filename)
         if path_ == '':
             path_ = '.'     # relative to current path
 
@@ -89,7 +93,7 @@ def get_datafile(file_):
             os.makedirs(path_)
 
         sz_read = 0
-        with open(file_, 'wb') as fh:
+        with open(filename, 'wb') as fh:
             # while sz_read < resp.info().getheader('Content-Length')
             # goes into infinite recursion so break loop for len(data) == 0
             while True:
@@ -105,4 +109,4 @@ def get_datafile(file_):
                         pbar.update(CHUNKSIZE)
 
         pbar.finish()
-        return file_
+        return filename

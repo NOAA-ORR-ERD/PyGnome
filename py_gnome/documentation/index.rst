@@ -13,7 +13,7 @@ Contents
   introduction
   installing
   structure
-  scripting
+  scripting/index
   env_obj/index
   customizing
   logging

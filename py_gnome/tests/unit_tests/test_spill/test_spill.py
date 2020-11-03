@@ -2,11 +2,7 @@ from __future__ import division
 from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
-from builtins import range
-from builtins import int
-from future import standard_library
-standard_library.install_aliases()
-from builtins import *
+
 from datetime import datetime, timedelta
 
 from gnome.spill.spill import (Spill)
@@ -16,19 +12,24 @@ from gnome.spill_container import SpillContainer
 
 import pytest
 
+
 @pytest.fixture('function')
 def sp():
     return Spill()
 
+
 rel_time = datetime(2014, 1, 1, 0, 0)
 end_rel_time = rel_time + timedelta(seconds=9000)
 pos = (0, 1, 2)
-end_release_pos = (1,2,3)
+end_release_pos = (1, 2, 3)
+
+
 @pytest.fixture('function')
 def inst_point_spill():
     release = PointLineRelease(rel_time, pos)
     return Spill(release=release,
                  amount=5000)
+
 
 @pytest.fixture('function')
 def inst_point_line_spill():
@@ -38,6 +39,7 @@ def inst_point_line_spill():
     return Spill(release=release,
                  amount=5000)
 
+
 @pytest.fixture('function')
 def cont_point_spill():
     release = PointLineRelease(rel_time,
@@ -45,6 +47,7 @@ def cont_point_spill():
                                end_release_time=end_rel_time)
     return Spill(release=release,
                  amount=5000)
+
 
 @pytest.fixture('function')
 def cont_point_line_spill():
@@ -54,6 +57,7 @@ def cont_point_line_spill():
                                end_release_time=end_rel_time)
     return Spill(release=release,
                  amount=5000)
+
 
 @pytest.fixture('function')
 def cont_point_spill_le_per_ts():
@@ -71,9 +75,9 @@ class TestSpill(object):
 
     def test__init(self):
         sp = Spill()
-        #assert default construction
         assert sp.substance and isinstance(sp.substance, NonWeatheringSubstance)
-        assert sp.release  and isinstance(sp.release, PointLineRelease)
+        assert sp.release and isinstance(sp.release, PointLineRelease)
+
 
     def test_num_per_timestep_release_elements(self):
         'release elements in the context of a spill container'
@@ -94,7 +98,7 @@ class TestSpill(object):
             to_rel = sp.release_elements(sc, model_time, 900)
             if model_time < sp.end_release_time:
                 assert to_rel == 250
-                assert len(sc['spill_num']) == min((ix+1) * 250, 1000)
+                assert len(sc['spill_num']) == min((ix + 1) * 250, 1000)
             else:
                 assert to_rel == 0
 
@@ -118,7 +122,9 @@ class TestSpill(object):
         with pytest.raises(ValueError):
             sp.units = 'inches'
 
-    #These are for when SpillContainer is removed
+
+    # These are for when SpillContainer is removed
+    # NOTE: you can not parametrize on fixtures like this
     @pytest.mark.xfail()
     @pytest.mark.parametrize('spill', [inst_point_spill,
                                        inst_point_line_spill,

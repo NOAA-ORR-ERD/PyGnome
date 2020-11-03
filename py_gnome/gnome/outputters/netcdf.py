@@ -634,20 +634,26 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
             dtype = 'u1'
 
         try:
-            if var_name != "non_weathering":
-                # fixme: TOTAL Kludge --
-                # failing with bad chunksize error for this particular varaible
-                # I have no idea why!!!!
-                var = grp.createVariable(var_name,
-                                         dtype,
-                                         shape,
-                                         zlib=self._compress,
-                                         chunksizes=chunksz)
-            else:
-                var = grp.createVariable(var_name,
-                                         dtype,
-                                         shape,
-                                         zlib=self._compress)
+            var = grp.createVariable(var_name,
+                                     dtype,
+                                     shape,
+                                     zlib=self._compress,
+                                     chunksizes=chunksz)
+#             this should be fixed now since non_weathering is initialized
+#             if var_name != "non_weathering":
+#                 # fixme: TOTAL Kludge --
+#                 # failing with bad chunksize error for this particular varaible
+#                 # I have no idea why!!!!
+#                 var = grp.createVariable(var_name,
+#                                          dtype,
+#                                          shape,
+#                                          zlib=self._compress,
+#                                          chunksizes=chunksz)
+#             else:
+#                 var = grp.createVariable(var_name,
+#                                          dtype,
+#                                          shape,
+#                                          zlib=self._compress)
         except RuntimeError as err:
             msg = ("\narguments are:\n"
                    "\tvar_name: {}\n"

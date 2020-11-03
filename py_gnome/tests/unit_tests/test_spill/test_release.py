@@ -5,6 +5,7 @@ test_spill.py was getting too big so moved the tests that do not use a Spill
 object here - more comprehensive tests of release objects within a Spill are
 in test_spill.py
 """
+
 from __future__ import division
 from __future__ import absolute_import
 from __future__ import print_function
@@ -25,6 +26,7 @@ import numpy as np
 
 from gnome.spill import (Release,
                          PointLineRelease,
+                         SpatialRelease,
                          GridRelease)
 from gnome.spill.release import release_from_splot_data
 from gnome.spill.le import LEData
@@ -87,15 +89,17 @@ def test_release_serialization_deserialization(rel_type):
 rel_time = datetime(2014, 1, 1, 0, 0)
 pos = (0, 10, 20)
 
+
 @pytest.fixture('function')
 def r1():
     #150 minute continuous release
     return PointLineRelease(release_time=rel_time,
                             start_position=pos,
-                            end_position= (10, 20, 30),
-                            end_release_time=rel_time + timedelta(seconds=900)*10,
+                            end_position=(10, 20, 30),
+                            end_release_time=rel_time + timedelta(seconds=900) * 10,
                             num_elements=1000,
                             release_mass=5000)
+
 
 @pytest.fixture('function')
 def r2():
@@ -103,6 +107,7 @@ def r2():
                             start_position=pos,
                             end_position= (10, 20, 30),
                             num_elements=1000)
+
 
 @pytest.fixture('function')
 def r3():
@@ -260,6 +265,98 @@ class TestPointLineRelease(object):
                     assert pos[d] >= r._pos_ts.at(None, r.release_time + timedelta(seconds=ts/4))[d]
                     assert pos[d] <= r._pos_ts.at(None, r.release_time + timedelta(seconds=ts/2))[d]
 
+from shapely.geometry import Polygon
+custom_positions=np.array([[5,6,7], [8,9,10]])
+polys = [Polygon([[0,0],[0,1],[1,0]])]
+
+@pytest.fixture('function')
+def sr1():
+    #150 minute continuous release
+    return SpatialRelease(release_time=rel_time,
+                          end_release_time=rel_time + timedelta(seconds=900)*10,
+                          num_elements=1000,
+                          release_mass=5000,
+                          polygons=polys,
+                          custom_positions=custom_positions)
+
+@pytest.fixture('function')
+def sr2():
+    return SpatialRelease(release_time=rel_time,
+                          num_elements=1000,
+                          polygons=polys)
+
+
+class TestSpatialRelease:
+
+    def test_LE_timestep_ratio(self, sr1):
+        sr1.end_release_time = rel_time + timedelta(seconds=1000)*10
+        #timestep of 10 seconds. 10,000 second release, min 1000 elements exactly
+        assert sr1.LE_timestep_ratio(10) == 1
+        assert sr1.LE_timestep_ratio(20) == 2
+
+    def test_get_num_release_time_steps(self, sr1):
+        assert sr1.get_num_release_time_steps(9000) == 1
+        assert sr1.get_num_release_time_steps(8999) == 2
+        assert sr1.get_num_release_time_steps(900) == 10
+        assert sr1.get_num_release_time_steps(899) == 11
+
+    def test_prepare_for_model_run(self, sr1, sr2):
+        sr1.prepare_for_model_run(900)
+        assert len(sr1._release_ts.data) == 11
+        assert sr1._release_ts.at(None, sr1.release_time) == 0
+        assert sr1._release_ts.at(None, sr1.end_release_time) == 1000
+        assert np.all(sr1._release_ts.data == np.linspace(0,1000, len(sr1._release_ts.data)))
+        assert sr1._mass_per_le == 5
+        assert sr1.get_num_release_time_steps(900) == 10
+
+        #combined positions must exist, and last entries must be custom positions
+        assert sr1._combined_positions is not None and np.all(sr1._combined_positions[-1] == [8,9,10])
+
+        sr1.rewind()
+        assert sr1._combined_positions is None
+        sr1.release_mass = 2500
+        sr1.prepare_for_model_run(450)
+        assert len(sr1._release_ts.data) == 21
+        assert sr1._release_ts.at(None, sr1.release_time) == 0
+        assert sr1._release_ts.at(None, sr1.end_release_time) == 1000
+        assert np.all(sr1._release_ts.data == np.linspace(0,1000, len(sr1._release_ts.data)))
+        assert sr1._mass_per_le == 2.5
+        assert np.isclose(sum(sr1.weights),1)
+
+        #No end_release time. Timeseries must be 2 entries, 1 second apart
+
+        sr2.prepare_for_model_run(900)
+        assert len(sr2._release_ts.data) == 2
+        assert sr2._release_ts.at(None, sr2.release_time) == 1000
+        assert sr2._release_ts.at(None, sr2.release_time - timedelta(seconds=1)) == 1000
+        assert sr2._release_ts.at(None, sr2.release_time + timedelta(seconds=1)) == 1000
+        assert sr2._release_ts.at(None, sr2.release_time + timedelta(seconds=2)) == 1000
+        assert np.all(sr2._release_ts.data == np.linspace(1000,1000, len(sr2._release_ts.data)))
+        assert sr2._mass_per_le == 0
+        assert np.isclose(sum(sr2.weights),1)
+
+    def test_rewind(self, sr1):
+        sr1.prepare_for_model_run(900)
+        assert sr1._prepared is True
+        assert sr1._release_ts is not None
+        sr1.rewind()
+        assert sr1._prepared is False
+        assert sr1._release_ts is None
+
+    def test__eq__(self, sr1, sr2):
+        assert sr1 != sr2
+        assert sr1 == sr1
+
+    def test_serialization(self, sr1):
+        ser = sr1.serialize()
+        deser = SpatialRelease.deserialize(ser)
+        assert deser == sr1
+
+        sr1.prepare_for_model_run(900)
+        ser = sr1.serialize()
+        deser = SpatialRelease.deserialize(ser)
+        assert deser == sr1
+
 
 def test_release_from_splot_data():
     '''
@@ -276,15 +373,12 @@ def test_release_from_splot_data():
 
     exp = np.asarray((44.909252, 44.909252, 30.546749),
                      dtype=int)
-    exp_num_elems = exp.sum()
     rel = release_from_splot_data(datetime(2015, 1, 1), td_file)
-    assert rel.num_elements == exp_num_elems
-    assert len(rel.start_position) == exp_num_elems
     cumsum = np.cumsum(exp)
-    for ix in range(len(cumsum) - 1):
-        assert np.all(rel.start_position[cumsum[ix]] ==
-                      rel.start_position[cumsum[ix]:cumsum[ix + 1]])
-    assert np.all(rel.start_position[0] == rel.start_position[:cumsum[0]])
+    for ix in xrange(len(cumsum) - 1):
+        assert np.all(rel.custom_positions[cumsum[ix]] ==
+                      rel.custom_positions[cumsum[ix]:cumsum[ix + 1]])
+    assert np.all(rel.custom_positions[0] == rel.custom_positions[:cumsum[0]])
 
     os.remove(td_file)
 

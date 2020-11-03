@@ -166,7 +166,7 @@ def v0tov1(messages, errors):
 
 
 def extract_zipfile(zip_file, to_folder='.'):
-    with zipfile.ZipFile(zip_file, 'r') as zf:
+    def work(zf):
         folders = [name for name in zf.namelist() if name.endswith('/') and not name.startswith('__MACOSX')]
         prefix=None
         if len(folders) == 1:
@@ -204,6 +204,12 @@ def extract_zipfile(zip_file, to_folder='.'):
                 if replaced:
                     with open(jsonfile, 'w') as jf:
                         jf.write(contents)
+
+    if isinstance(zip_file, zipfile.ZipFile):
+        work(zip_file)
+    else:
+        with zipfile.ZipFile(zip_file, 'r') as zf:
+            work(zf)
 
 
 def sanitize_filename(fname):

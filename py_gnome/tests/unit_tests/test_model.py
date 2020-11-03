@@ -2,6 +2,12 @@
 '''
 test code for the model class
 '''
+
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import os
 import shutil
 from datetime import datetime, timedelta
@@ -71,7 +77,7 @@ def model(sample_model_fcn, tmpdir):
 
     # print start_points
 
-    release = SpatialRelease(start_position=line_pos,
+    release = SpatialRelease(custom_positions=line_pos,
                              release_time=model.start_time)
 
     model.spills += Spill(release, substance=test_oil)
@@ -367,7 +373,7 @@ def test_simple_run_with_image_output(tmpdir):
     start_points[:, 1] = np.linspace(47.93, 48.1, N)
     # print start_points
 
-    spill = Spill(release=SpatialRelease(start_position=start_points,
+    spill = Spill(release=SpatialRelease(custom_positions=start_points,
                                  release_time=start_time))
 
     model.spills += spill
@@ -424,7 +430,7 @@ def test_simple_run_with_image_output_uncertainty(tmpdir):
     start_points[:, 1] = np.linspace(47.93, 48.1, N)
     # print start_points
 
-    release = SpatialRelease(start_position=start_points,
+    release = SpatialRelease(custom_positions=start_points,
                              release_time=start_time)
 
     model.spills += Spill(release)
@@ -1241,6 +1247,7 @@ def test_weathering_data_attr():
     ts = 900
     s1_rel = datetime.now().replace(microsecond=0)
     s2_rel = s1_rel + timedelta(seconds=ts)
+
     s = [point_line_release_spill(10, (0, 0, 0), s1_rel),
          point_line_release_spill(10, (0, 0, 0), s2_rel)]
 

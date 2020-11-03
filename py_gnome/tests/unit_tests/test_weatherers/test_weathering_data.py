@@ -5,13 +5,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
 from __future__ import unicode_literals
-from builtins import range
-from builtins import zip
-from builtins import dict
-from future import standard_library
-standard_library.install_aliases()
-from builtins import *
-from builtins import object
+
 from datetime import datetime, timedelta
 
 import numpy as np
@@ -184,7 +178,8 @@ class TestWeatheringData(object):
 
         # create a mock_water type on which we can set the density - only for
         # this test
-        mock_water = type('mock_water',
+        # fixme: can we really not simp override the density of a Water object?
+        mock_water = type(str('mock_water'),  # str for py2-3 compatibility
                           (Water,),
                           dict(density=sc['density'][0] - 10))
 
