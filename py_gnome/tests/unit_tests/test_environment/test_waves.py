@@ -8,13 +8,9 @@ from __future__ import division
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-# from builtins import round
-# from future import standard_library
-# standard_library.install_aliases()
-# from builtins import *
-
 import datetime
 import numpy as np
+from math import isclose
 
 from copy import copy
 
@@ -84,9 +80,11 @@ def test_compute_H():
     H = w.compute_H(5)  # five m/s wind
 
     print(H)
+    print(type(H))
 
     # I have no idea what the answers _should_ be
-    # assert H == 0
+    #  so this is just testing that it hasn't changed
+    assert isclose(H, 0.43797, rel_tol=1e-4)
 
 
 def test_compute_H_fetch():
@@ -130,10 +128,11 @@ def test_pseudo_wind(U):
 
     print("testing for U:", U)
     # 0.707 compensates for RMS wave height
-    assert round(w.pseudo_wind(w.compute_H(U) / 0.707), 5) == round(U, 8)
+    print(w.pseudo_wind(w.compute_H(U) / 0.707))
+    assert isclose(w.pseudo_wind(w.compute_H(U) / 0.707), U, rel_tol=1e-6)
 
 
-# note: 200 becuse that's when whitecap fraction would go above 1.0
+# note: 200 because that's when whitecap fraction would go above 1.0
 @pytest.mark.parametrize("U", [0.0, 1.0, 2.0, 2.99, 3.0,
                                4.0, 8.0, 16.0, 32.0, 200.0])
 def test_whitecap_fraction(U):
@@ -150,9 +149,8 @@ def test_whitecap_fraction(U):
     assert f <= 1.0
 
     if U == 4.0:
-        # assert round(f, 8) == round(0.05 / 3.85, 8)
         # included the .5 factor from ADIOS2
-        assert round(f, 8) == round(0.05 / 3.85 / 2, 8)
+        assert isclose(f, (0.05 / 3.85 / 2), rel_tol=1e-6)
 
 
 @pytest.mark.parametrize("U", [0.0, 1.0, 2.0, 3.0, 4.0, 8.0, 16.0, 32.0])
@@ -167,7 +165,6 @@ def test_mean_wave_period(U):
     f = w.mean_wave_period(U)
 
     print(f)
-    # assert False # what else to check for???
 
 
 @pytest.mark.parametrize("U", [0.0, 1.0, 2.0, 3.0, 4.0, 8.0, 16.0, 32.0])
