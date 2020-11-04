@@ -14,7 +14,7 @@ import os
 import warnings
 import numpy as np
 import shapefile as shp
-import trimesh
+# import trimesh # making this optional
 import geojson
 import zipfile
 import tempfile
@@ -779,6 +779,7 @@ class SpatialRelease(Release):
         return weights
 
     def gen_start_positions(self):
+        import trimesh
         if self.polygons is None:
             return
         if self.weights is None:

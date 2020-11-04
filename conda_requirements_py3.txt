@@ -12,6 +12,13 @@
 # NOAA-ORR-ERD
 
 python=3.8.*
+
+# for SpatialRelease
+trimesh
+shapely
+pyproj
+# mapbox_earcut # from NOAA_ORR_ERD channel -- not working
+
 setuptools
 gitpython
 numpy
@@ -39,6 +46,7 @@ gridded
 pynucos
 cell_tree2d
 py_gd>=1
+
 
 # required for building
 cython
