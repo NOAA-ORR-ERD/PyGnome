@@ -5,9 +5,6 @@ from __future__ import unicode_literals
 
 # tests for shapefile outputter
 
-from future import standard_library
-standard_library.install_aliases()
-from builtins import *
 import os
 from datetime import datetime, timedelta
 
