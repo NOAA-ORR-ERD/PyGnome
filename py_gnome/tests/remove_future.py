@@ -2,6 +2,8 @@
 
 """
 script to remove future stuff I wish had never been put in there
+
+can be run on a dir full of python files
 """
 
 from __future__ import print_function
@@ -62,4 +64,3 @@ if __name__ == "__main__":
     for pyfile in dir_to_process.glob('**/*.py'):
         print("processing file:", pyfile)
         strip_file(pyfile)
-        break
