@@ -45,6 +45,7 @@ class MapCanvas(object):
     This version uses a paletted (8 bit) image -- may be updated for RGB images
     at some point.
     """
+
     def __init__(self,
                  image_size=(800, 600),
                  projection=None,
@@ -351,7 +352,7 @@ class MapCanvas(object):
                           line_width=line_width)
 
     def draw_text(self, text_list, size='small', color='black', align='lt',
-                  background='none', draw_to_back=False):
+                  background=None, draw_to_back=False):
         """
         Draw ascii text to the image
 
