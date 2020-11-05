@@ -12,14 +12,13 @@ from __future__ import unicode_literals
 
 import os
 
-try: # the py3 way
+try:  # the py3 way
     from urllib.parse import urljoin
     from urllib.request import urlopen
     from urllib.error import HTTPError
 except ImportError:  # the py2 way
-    from urllib.parse import urljoin
-    from urllib.request import urlopen
-    from urllib.error import HTTPError
+    from urlparse import urljoin
+    from urllib2 import urlopen, HTTPError
 
 
 # import urllib.request, urllib.error, urllib.parse

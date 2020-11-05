@@ -8,9 +8,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
-from future import standard_library
-standard_library.install_aliases()
-from builtins import *
 gas_constant = 8.314
 atmos_pressure = 101325.0
 drop_min = 1.0e-6

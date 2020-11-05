@@ -62,7 +62,7 @@ def validate_serialize_json(json_, orig_obj):
 
     _schema = orig_obj._schema()
 
-    for v in list(json_.values()):
+    for v in json_.values():
         assert not issubclass(v.__class__, GnomeId)
 
     return True
@@ -106,7 +106,7 @@ def validate_save_json(json_, zipfile_, orig_obj):
 #         if getattr(orig_obj,n) is None:
 #             assert n not in json_
 
-    for v in list(json_.values()):
+    for v in json_.values():
         assert not issubclass(v.__class__, GnomeId)
 
     return True
@@ -512,7 +512,7 @@ def sample_graph():
 def wind_timeseries(rq_wind):
     dtv_rq = np.zeros((len(rq_wind['rq']), ),
                       dtype=datetime_value_2d).view(dtype=np.recarray)
-    dtv_rq.time = [datetime(2012, 11, 0o6,
+    dtv_rq.time = [datetime(2012, 11, 6,
                             20, 10 + i, 0)
                    for i in range(len(dtv_rq))]
     dtv_rq.value = rq_wind['rq']
@@ -530,7 +530,7 @@ def wind_circ(wind_timeseries):
     """
     Create Wind object using the time series given by test fixture 'rq_wind'
     'wind' object where timeseries is defined as:
-         - 'time' defined by: [datetime(2012,11,06,20,10+i,0)
+         - 'time' defined by: [datetime(2012,11,6,20,10+i,0)
             for i in range(len(dtv_rq))]
          - 'value' defined by: (r,theta) values ferom rq_wind fixtures, units
             are 'm/s'
@@ -668,7 +668,7 @@ def sample_model_fixture_base():
 
     # the land-water map
 
-    map_ = MapFromBNA(mapfile, refloat_halflife=0o6)  # seconds
+    map_ = MapFromBNA(mapfile, refloat_halflife=6)  # seconds
 
     model = Model(time_step=timedelta(minutes=15),
                   start_time=release_time,
@@ -732,7 +732,7 @@ def sample_model2_fixture_base():
 
     # the land-water map
 
-    map_ = MapFromBNA(mapfile, refloat_halflife=0o6)  # seconds
+    map_ = MapFromBNA(mapfile, refloat_halflife=6)  # seconds
 
     model = Model(time_step=timedelta(minutes=10),
                   start_time=release_time,
