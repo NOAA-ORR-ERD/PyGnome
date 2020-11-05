@@ -1,11 +1,6 @@
 """
 shapefile  outputter
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import os
 import zipfile
 
@@ -52,7 +47,7 @@ class ShapeOutput(Outputter):
         filename = filename.split(".zip")[0].split(".shp")[0]
 
         if "." in os.path.split(filename)[-1]:
-            # anything after a dot gets removed
+            # anything after a doit gets removed
             # I *think* pyshp is doing that, but not sure.
             raise ValueError("shape files can't have a dot in the filename")
 
@@ -117,13 +112,8 @@ class ShapeOutput(Outputter):
                      ',PRIMEM["Greenwich",0],'
                      'UNIT["degree",0.0174532925199433]]')
 
-        for sc in list(self.sc_pair.items()):
-            if sc.uncertain:
-                filename = self.filename + '_uncert'
-            else:
-                filename = self.filename
-
-            w = shp.Writer(filename, shapeType=shp.POINT)
+        for sc in self.sc_pair.items():
+            w = shp.Writer(shp.POINT)
             w.autobalance = 1
 
             w.field('Time', 'C')
@@ -147,7 +137,7 @@ class ShapeOutput(Outputter):
         if not self.on or not self._write_step:
             return None
 
-        for sc in list(self.cache.load_timestep(step_num).items()):
+        for sc in self.cache.load_timestep(step_num).items():
             self._record_shape_entries(sc)
 
             if islast_step:
@@ -201,8 +191,7 @@ class ShapeOutput(Outputter):
         else:
             filename = self.filename
 
-        # writer.save(filename)
-        writer.close()
+        writer.save(filename)
 
         prj_file = open('{}.prj'.format(filename), "w")
         prj_file.write(self.epsg)
@@ -213,7 +202,7 @@ class ShapeOutput(Outputter):
             zipf = zipfile.ZipFile(zfilename, 'w')
 
             for suf in ['shp', 'prj', 'dbf', 'shx']:
-                # print(("filename is:", filename))
+                print "filename is:", filename
                 file_to_zip = os.path.split(filename)[-1] + '.' + suf
 
                 zipf.write(os.path.join(self.filedir, file_to_zip),
