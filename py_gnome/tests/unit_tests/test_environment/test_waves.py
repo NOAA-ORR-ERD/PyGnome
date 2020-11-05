@@ -10,7 +10,6 @@ from __future__ import unicode_literals
 
 import datetime
 import numpy as np
-from math import isclose
 
 from copy import copy
 
@@ -84,7 +83,7 @@ def test_compute_H():
 
     # I have no idea what the answers _should_ be
     #  so this is just testing that it hasn't changed
-    assert isclose(H, 0.43797, rel_tol=1e-4)
+    assert np.isclose(H, 0.43797, rtol=1e-4)
 
 
 def test_compute_H_fetch():
@@ -129,7 +128,7 @@ def test_pseudo_wind(U):
     print("testing for U:", U)
     # 0.707 compensates for RMS wave height
     print(w.pseudo_wind(w.compute_H(U) / 0.707))
-    assert isclose(w.pseudo_wind(w.compute_H(U) / 0.707), U, rel_tol=1e-6)
+    assert np.isclose(w.pseudo_wind(w.compute_H(U) / 0.707), U, rtol=1e-6)
 
 
 # note: 200 because that's when whitecap fraction would go above 1.0
@@ -150,7 +149,7 @@ def test_whitecap_fraction(U):
 
     if U == 4.0:
         # included the .5 factor from ADIOS2
-        assert isclose(f, (0.05 / 3.85 / 2), rel_tol=1e-6)
+        assert np.isclose(f, (0.05 / 3.85 / 2), rtol=1e-6)
 
 
 @pytest.mark.parametrize("U", [0.0, 1.0, 2.0, 3.0, 4.0, 8.0, 16.0, 32.0])

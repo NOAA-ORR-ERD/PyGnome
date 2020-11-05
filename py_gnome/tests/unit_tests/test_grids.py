@@ -1,7 +1,11 @@
 '''
 test grid objects
 '''
-import os
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 from datetime import datetime
 
 import netCDF4 as nc
@@ -13,6 +17,7 @@ from .conftest import testdata
 
 wind_file = testdata['GridWindMover']['wind_curv']
 topology_file = testdata['GridWindMover']['top_curv']
+
 
 def test_grid_wind_rect():
     '''
@@ -43,3 +48,4 @@ def test_grid_wind_curv():
     vel = curv.get_value(time, (-122.934656, 38.27594))
     print("Curv grid - vel: {0}\n".format(vel))
     assert vel.item() != 0
+

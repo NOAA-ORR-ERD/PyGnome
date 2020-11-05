@@ -29,18 +29,14 @@ cdef class CyTimeGridVel(object):
         def __set__(self, value):
             self.timegrid.fTimeShift = value
 
-    def load_data(self, datafile, topology=None):
+    def load_data(self, basestring datafile, basestring topology=None):
         cdef OSErr err
         cdef bytes bdatafile
-        # cdef bytes bdatafile = datafile.encode("ASCII")
-
-        # cdef bytes btopology
-        # btopology = topology.encode("ASCII") if topology is not None else b''
 
         bdatafile = filename_as_bytes(datafile)
-        btopology = filename_as_bytes(topology)
 
         if topology:
+            btopology = filename_as_bytes(topology)
             err = self.timegrid.TextRead(bdatafile, btopology)
         else:
             err = self.timegrid.TextRead(bdatafile, '')

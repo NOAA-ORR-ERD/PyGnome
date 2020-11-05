@@ -57,7 +57,7 @@ cdef bytes to_bytes(unicode ucode):
     the OS.
     It uses locale.getpreferredencoding() to get the filesystem encoding
         For the mac it encodes it as utf-8.
-        For windows this appears to be cp1252.
+        For windows this appears to be cp1252. (on the systems we tested on)
 
     The C++ expects char * so  either of these encodings appear to work. If the
     getpreferredencoding returns a type of encoding that is incompatible with
@@ -73,12 +73,13 @@ cdef bytes to_bytes(unicode ucode):
     return byte_string
 
 
-def filename_as_bytes(filename):
+def filename_as_bytes(basestring filename not None):
     '''
     filename is a python basestring (either string or unicode).
     make it a unicode, then call to_bytes to encode correctly and return
     a byte string
     '''
+
     cdef bytes file_
     filename = os.path.normpath(filename)
     file_ = to_bytes(unicode(filename))
