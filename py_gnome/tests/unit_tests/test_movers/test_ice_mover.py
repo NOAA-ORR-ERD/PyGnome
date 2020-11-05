@@ -10,9 +10,6 @@ from __future__ import unicode_literals
 # And it's not clear this mover is getting used anyway.
 # But these should b re-enabled if we do need it.
 
-from future import standard_library
-standard_library.install_aliases()
-from builtins import *
 import sys
 import pytest
 pytestmark = pytest.mark.skipif(sys.platform=="darwin",

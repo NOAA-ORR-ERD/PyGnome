@@ -10,9 +10,6 @@ from __future__ import unicode_literals
 
 # a few tests that show that the delation to the underlying map works:
 
-from future import standard_library
-standard_library.install_aliases()
-from builtins import *
 import os
 from datetime import datetime
 import numpy as np
