@@ -58,8 +58,7 @@ py_gd=0.1.* # libgd should get brought in automatically
 #zope.interface>=4.1
 
 # required for building
-# note: cython 0.26 introduced a incompatibility that we should address at some point
-cython=0.25.*
+cython=0.29.*. # no version 3 for python2
 
 # needed to run tests
 pytest

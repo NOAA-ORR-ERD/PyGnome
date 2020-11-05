@@ -14,6 +14,8 @@ for each mover
 cdef extern from *:
     Random_c* dynamic_cast_ptr "dynamic_cast<Random_c *>" (Mover_c *) except NULL
 
+
+# @cython.auto_pickle(True)
 cdef class CyRandomMover(cy_mover.CyMover):
 
     cdef Random_c *rand
@@ -95,7 +97,7 @@ cdef class CyRandomMover(cy_mover.CyMover):
         :param delta: the change in position of each particle over step_len
         :type delta: numpy array of WorldPoint3D
         :param le_status: status of each particle - movement is only on particles in water
-        :param spill_type: LEType defining whether spill is forecast or uncertain 
+        :param spill_type: LEType defining whether spill is forecast or uncertain
         :returns: none
         """
         cdef OSErr err

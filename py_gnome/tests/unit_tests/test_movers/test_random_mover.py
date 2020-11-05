@@ -8,6 +8,9 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
 
+
+import copy
+import pickle
 import datetime
 import numpy as np
 
@@ -29,6 +32,30 @@ def test_exceptions():
 
     with pytest.raises(ValueError):
         RandomMover(uncertain_factor=0)
+
+
+def test_deepcopy():
+    """
+    tests if you can deepcopy one -- which means you can also pickle it
+    """
+    rm = RandomMover(diffusion_coef=1e6)
+
+    rm2 = copy.deepcopy(rm)
+
+    assert rm == rm2
+    assert rm is not rm2
+
+
+def test_pickle():
+    """
+    this *should* be the same as deepcopy, but just to make sure
+    """
+    rm = RandomMover(diffusion_coef=1e4)
+
+    rm2 = pickle.loads(pickle.dumps(rm))
+
+    assert rm == rm2
+    assert rm is not rm2
 
 
 class TestRandomMover(object):
