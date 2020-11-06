@@ -15,7 +15,6 @@ cdef extern from *:
     Random_c* dynamic_cast_ptr "dynamic_cast<Random_c *>" (Mover_c *) except NULL
 
 
-# @cython.auto_pickle(True)
 cdef class CyRandomMover(cy_mover.CyMover):
 
     cdef Random_c *rand
@@ -42,6 +41,9 @@ cdef class CyRandomMover(cy_mover.CyMover):
 
         self.rand.fDiffusionCoefficient = diffusion_coef
         self.rand.fUncertaintyFactor = uncertain_factor
+
+    def __reduce__(self):
+        return (CyRandomMover, (self.diffusion_coef, self.uncertain_factor))
 
     property diffusion_coef:
         def __get__(self):
