@@ -190,7 +190,7 @@ g_objects = (
 def test_serial_deserial(saveloc_, obj):
     'test save/load functionality'
     print("********")
-    print("Checking:", obj)
+    print("Checking:", type(obj))
     print("********")
     json_ = obj.serialize()
     obj2 = obj.__class__.deserialize(json_)
@@ -199,10 +199,10 @@ def test_serial_deserial(saveloc_, obj):
 
 
 @pytest.mark.parametrize("obj", g_objects)
-def test_save_load(saveloc_, obj):
+def test_save_load_fun(saveloc_, obj):
     'test save/load functionality'
     print("********")
-    print("Checking:", obj)
+    print("Checking:", type(obj))
     print("********")
 
     _json_, zipfile_, _refs = obj.save(saveloc_)
