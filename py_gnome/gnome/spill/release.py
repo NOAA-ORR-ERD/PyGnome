@@ -664,8 +664,7 @@ class SpatialRelease(Release):
                         Proj2 = Proj(init='epsg:4326')
                         pts = map(lambda pt: transform(Proj1, Proj2, pt[0], pt[1]), points)
                     else:
-                        from pyproj import Transformer
-                        transformer = Transformer.from_crs("epsg:3857", "epsg:4326", always_xy=True)
+                        transformer = pyproj.Transformer.from_crs("epsg:3857", "epsg:4326", always_xy=True)
                         pts = map(lambda pt: transformer.transform(pt[0],pt[1]), points)
                     poly = Polygon(pts)
                     shape_polys.append(poly)
