@@ -133,22 +133,28 @@ class TestObjectSerialization(object):
     @pytest.mark.parametrize('obj', [CyOSSMTime, CyTimeseries])
     def test_repr(self, obj):
         '''
+        fixme: we probably don't need these tests --
+               do we ever have to rebuild from the repr?
+
             Test that the repr method produces a string capable of reproducing
             the object.
         '''
-        import gnome
-        from numpy import array
-
+        print("filename:", testdata['timeseries']['wind_ts'])
         ossmT = obj(filename=testdata['timeseries']['wind_ts'],
                     file_format=ts_format.magnitude_direction)
 
+        import gnome
+        from numpy import array
+
+        rep = repr(ossmT)
+        print(rep)
         new_ossm = eval(repr(ossmT))
 
         assert new_ossm == ossmT
         assert repr(new_ossm) == repr(ossmT)
 
 
-'Tests for child CyTimeseries object'
+# Tests for child CyTimeseries object
 
 
 class TestCyTimeseries(object):

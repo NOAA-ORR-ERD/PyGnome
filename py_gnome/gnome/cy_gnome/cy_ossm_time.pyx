@@ -1,4 +1,5 @@
 import os
+import locale
 
 import numpy as np
 
@@ -44,13 +45,13 @@ cdef class CyOSSMTime(object):
         if self.time_dep is not NULL:
             del self.time_dep
 
-    def __init__(self, basestring filename, int file_format=0,
+    def __init__(self, unicode filename, int file_format=0,
                  scale_factor=1,
                  extrapolation_is_allowed=False):
         """
         Initialize object - takes either file or time value pair to initialize
 
-        :param basestring filename: path to file containing time series data.
+        :param unicode filename: path to file containing time series data.
             It valid user_units are defined in the file, it uses them;
             otherwise, it defaults the user_units to meters_per_sec.
         :param int file_format: one of the values defined by enum type,
@@ -96,7 +97,7 @@ cdef class CyOSSMTime(object):
             derived classes may initialize with timeseries in which case this
             will be '' or None
             '''
-            fname = <bytes>self.time_dep.fileName
+            cdef unicode fname = self.time_dep.fileName.decode(locale.getpreferredencoding())
             if fname == '':
                 return None
             return fname
@@ -248,7 +249,7 @@ cdef class CyOSSMTime(object):
 
         return vel_rec, err
 
-    def _read_time_values(self, filename):
+    def _read_time_values(self, unicode filename):
         """
         For OSSMTimeValue_c().ReadTimeValues()
             Format for the data file. This is an enum type in C++
@@ -277,7 +278,7 @@ cdef class CyOSSMTime(object):
             Make this private since the constructor will likely call this
             when object is instantiated
         """
-        file_ = filename_as_bytes(filename)
+        cdef bytes file_ = filename_as_bytes(filename)
 
         values = basic_types.ts_format.__members__.values()
         if self._file_format not in values:
@@ -327,14 +328,14 @@ cdef class CyTimeseries(CyOSSMTime):
         else:
             self.time_dep = NULL
 
-    def __init__(self, basestring filename=None, int file_format=0,
+    def __init__(self, unicode filename=None, int file_format=0,
                  cnp.ndarray[TimeValuePair, ndim=1] timeseries=None,
                  scale_factor=1,
                  extrapolation_is_allowed=False):
         """
         Initialize object - takes either file or time value pair to initialize
 
-        :param basestring filename: path to file containing time series data.
+        :param unicode filename: path to file containing time series data.
             It valid user_units are defined in the file, it uses them;
             otherwise, it defaults the user_units to meters_per_sec.
         :param int file_format: one of the values defined by enum type,
