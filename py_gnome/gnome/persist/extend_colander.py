@@ -6,11 +6,12 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
+from past.types import basestring
+
 import datetime
+import os
 
 import numpy as np
-import six
-import os
 
 from colander import (Float, DateTime, Sequence, Tuple, List,
                       TupleSchema, SequenceSchema, null, SchemaNode, String, Invalid)
@@ -208,7 +209,7 @@ class TimeDelta(Float):
 #         return rv
 #
 #     def deserialize(self, node, cstruct):
-#         if isinstance(cstruct, six.string_types):
+#         if isinstance(cstruct, basestring):
 #             return cstruct
 #         else:
 #             return super(Filename, self).deserialize(node, cstruct)
@@ -218,7 +219,7 @@ class OrderedCollectionType(Sequence):
     #identical to SequenceSchema except it can tolerate a 'get'
     def _validate(self, node, value, accept_scalar):
         if (hasattr(value, '__iter__') and
-            not isinstance(value, six.string_types)):
+            not isinstance(value, basestring)):
             return list(value)
         if accept_scalar:
             return [value]

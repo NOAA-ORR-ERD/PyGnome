@@ -3,11 +3,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-# from future import standard_library
-# standard_library.install_aliases()
-# from builtins import *
-
-import six
+from past.types import basestring
 
 from colander import Float, SchemaNode, SequenceSchema, Boolean
 import numpy as np
@@ -207,7 +203,7 @@ class GnomeOil(Oil, Substance):
         oil_info = name
         if name in _sample_oils:
             oil_info = _sample_oils[name]
-        elif isinstance(name, six.string_types):
+        elif isinstance(name, basestring):
             # check if it's json from save file or from client
             if kwargs.get('component_density', False):
                 oil_info = kwargs

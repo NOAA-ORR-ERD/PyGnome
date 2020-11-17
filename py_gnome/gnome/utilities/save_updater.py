@@ -5,6 +5,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
 
+from past.types import basestring
 
 import json
 import logging
@@ -12,7 +13,6 @@ import glob
 import sys
 import contextlib
 import os
-import six
 import re
 import zipfile
 
@@ -27,21 +27,24 @@ errortypes = [
 
 @contextlib.contextmanager
 def remember_cwd(new_wd):
-    curdir= os.getcwd()
+    curdir = os.getcwd()
     os.chdir(new_wd)
-    try: yield
-    finally: os.chdir(curdir)
+    try:
+        yield
+    finally:
+        os.chdir(curdir)
 
 
 def update_savefile(save_directory):
-    if not isinstance(save_directory, six.string_types) or not os.path.isdir(save_directory):
-        raise ValueError('Must unzip save to directory in order to upgrade it to latest version')
+    if not isinstance(save_directory, basestring) or not os.path.isdir(save_directory):
+        raise ValueError('Must unzip save to directory in order to upgrade it to '
+                         'the latest version')
 
     messages = []
     errors = []
 
     with remember_cwd(save_directory):
-        #get current save file version
+        # get current save file version
         allfiles = glob.glob('*')
         if 'version.txt' in allfiles:
             with open('version.txt') as fp:
@@ -50,7 +53,7 @@ def update_savefile(save_directory):
             v = 0
 
         for i in range(v, len(all_update_steps)):
-            #execute update
+            # execute update
             step = all_update_steps[i]
             messages, errors = step(messages, errors)
 
@@ -73,9 +76,10 @@ def v0tov1(messages, errors):
     '''
     def Substance_from_ElementType(et_json, water):
         '''
-        Takes element type cstruct with a substance, creates an appropriate GnomeOil cstruct
+        Takes element type cstruct with a substance, creates an appropriate
+        GnomeOil cstruct
         '''
-        inits = et_json.get('initializers',[])
+        inits = et_json.get('initializers', [])
         for init in inits:
             if isinstance(init, dict):
                 init['obj_type'] = init['obj_type'].replace('.elements.', '.')
@@ -116,12 +120,18 @@ def v0tov1(messages, errors):
         with open(fname, 'r') as fn:
             json_ = json.load(fn)
             if 'obj_type' in json_:
-                if 'Water' in json_['obj_type'] and 'environment' in json_['obj_type'] and water_json is None:
+                if ('Water' in json_['obj_type']
+                    and 'environment' in json_['obj_type']
+                    and water_json is None):
                     water_json = (fname, json_)
-                if 'element_type.ElementType' in json_['obj_type'] and element_type_json is None:
+
+                if ('element_type.ElementType' in json_['obj_type']
+                    and element_type_json is None):
                     element_type_json = (fname, json_)
+
                 if 'gnome.spill.spill.Spill' in json_['obj_type']:
                     spills.append((fname, json_))
+
                 if 'initializers' in json_['obj_type']:
                     inits.append((fname, json_))
 
@@ -129,7 +139,7 @@ def v0tov1(messages, errors):
     if water_json is None:
         water_json = (None, None)
 
-    substance=None
+    substance = None
     if element_type_json is not None:
         substance = Substance_from_ElementType(element_type_json[1], water_json[1])
         substance_fn = sanitize_filename(substance['name'] + '.json')
@@ -141,7 +151,6 @@ def v0tov1(messages, errors):
             err = errortypes[2].format(fn, e)
             errors.append(err)
             return messages, errors
-
 
     # Write modified and new files
     if substance is not None:
@@ -167,8 +176,9 @@ def v0tov1(messages, errors):
 
 def extract_zipfile(zip_file, to_folder='.'):
     def work(zf):
-        folders = [name for name in zf.namelist() if name.endswith('/') and not name.startswith('__MACOSX')]
-        prefix=None
+        folders = [name for name in zf.namelist()
+                   if name.endswith('/') and not name.startswith('__MACOSX')]
+        prefix = None
         if len(folders) == 1:
             # we allow our model content to be in a single top-level folder
             prefix = folders[0]
@@ -176,7 +186,7 @@ def extract_zipfile(zip_file, to_folder='.'):
         fn_edits = {}
         for name in zf.namelist():
             if (prefix and name.find(prefix) != 0) or name.endswith('/'):
-                #ignores the __MACOSX files
+                # ignores the __MACOSX files
                 pass
             else:
                 orig = os.path.basename(name)
@@ -188,11 +198,12 @@ def extract_zipfile(zip_file, to_folder='.'):
                 target = os.path.join(to_folder, fn)
                 with open(target, 'wb') as f:
                     f.write(zf.read(name))
-        if len(fn_edits) > 0 :
-            log.info('Save file contained invalid names. Editing extracted json to maintain save file integrity.')
-            for jsonfile in glob.glob(os.path.join(to_folder,'*.json')):
-                #if any file name edits were made, references may need to be updated too
-                #otherwise the .json file wont be found
+        if len(fn_edits) > 0:
+            log.info('Save file contained invalid names. '
+                     'Editing extracted json to maintain save file integrity.')
+            for jsonfile in glob.glob(os.path.join(to_folder, '*.json')):
+                # if any file name edits were made, references may need to be updated too
+                # otherwise the .json file wont be found
                 contents = None
                 replaced = False
                 with open(jsonfile, 'r') as jf:
@@ -220,4 +231,8 @@ def sanitize_filename(fname):
     else:
         return re.sub(r'[/]', "", fname)
 
-all_update_steps = [v0tov1,]
+
+all_update_steps = [v0tov1]
+
+
+

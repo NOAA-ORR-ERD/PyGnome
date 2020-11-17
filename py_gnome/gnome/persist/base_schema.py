@@ -2,17 +2,17 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
+from past.types import basestring
+
 
 # import pdb
 import datetime
 import zipfile
-import six
 import logging
 import collections
 import os
 import json
 import tempfile
-import copy
 
 from colander import (SchemaNode, deferred, drop, required, Invalid, UnsupportedFields,
                       SequenceSchema, TupleSchema, MappingSchema, Mapping,
@@ -25,6 +25,7 @@ from gnome.persist.extend_colander import OrderedCollectionType
 from gnome.utilities.geometry.polygons import PolygonSet
 
 log = logging.getLogger(__name__)
+
 
 @deferred
 def now(node, kw):
@@ -139,7 +140,7 @@ class ObjType(SchemaType):
 #                     if d in dict_:
 #                         if dict_[d] is None:
 #                             continue
-#                         elif isinstance(dict_[d], six.string_types):
+#                         elif isinstance(dict_[d], basestring):
 #                             dict_[d] = os.path.split(dict_[d])[1]
 #                         elif isinstance(dict_[d], collections.Iterable):
 #                             #List, tuple, etc
@@ -339,7 +340,7 @@ class ObjType(SchemaType):
         for d in datafiles:
             if json_[d] is None:
                 continue
-            elif isinstance(json_[d], six.string_types):
+            elif isinstance(json_[d], basestring):
                 json_[d] = self._process_supporting_file(json_[d], zipfile_)
             elif isinstance(json_[d], collections.Iterable):
                 # List, tuple, etc
@@ -494,7 +495,7 @@ class ObjType(SchemaType):
             tmpdir = tempfile.mkdtemp()
 
         for d in datafiles:
-            if isinstance(cstruct[d], six.string_types):
+            if isinstance(cstruct[d], basestring):
                 cstruct[d] = self._load_supporting_file(cstruct[d],
                                                         saveloc, tmpdir)
                 log.info('Extracted file {0}'.format(cstruct[d]))

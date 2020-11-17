@@ -219,7 +219,6 @@ class Oil(object):
         self._pour_point = pour_point
         self._flash_point = flash_point
         self.solubility = solubility
-        #self._k_v2 = 2416.0
         self._k_v2 = None
 
         # set the PC properties
@@ -234,13 +233,13 @@ class Oil(object):
 
         self._bullwinkle = None
         self._bulltime = None
-        #self.product_type = "Refined"
+        # self.product_type = "Refined"
 
-    @classmethod
-    def from_json(cls, data):
-        if type(data) in (str, str):
-            data = json.loads(data)
-        return cls(**num_pcs)
+    # @classmethod
+    # def from_json(cls, data):
+    #     if type(data) in (str, str):
+    #         data = json.loads(data)
+    #     return cls(**num_pcs)
 
 
     def __eq__(self, other):
@@ -274,26 +273,26 @@ class Oil(object):
         processing is done to each attribute. They are presented as is.
         """
 
-        data = {'name':self.name,
-                       'api':self.api,
-                       'adios_oil_id':self.adios_oil_id,
-                       'pour_point':self._pour_point,
-                       'flash_point':self._flash_point,
-                       'solubility':self.solubility,
-                       'bullwinkle_fraction':self.bullwinkle,
-                       'bullwinkle_time':self.bulltime,
-                       'densities':self.densities,
-                       'density_ref_temps':self.density_ref_temps,
-                       'density_weathering':self.density_weathering,
-                       'kvis':self.kvis,
-                       'kvis_ref_temps':self.kvis_ref_temps,
-                       'kvis_weathering':self.kvis_weathering,
-                       'emulsion_water_fraction_max':self.emulsion_water_fraction_max,
-                       'mass_fraction':self.mass_fraction.tolist(),
-                       'boiling_point':self.boiling_point.tolist(),
-                       'molecular_weight':self.molecular_weight.tolist(),
-                       'component_density':self.component_density.tolist(),
-                       'sara_type':self.sara_type}
+        data = {'name': self.name,
+                       'api': self.api,
+                       'adios_oil_id': self.adios_oil_id,
+                       'pour_point': self._pour_point,
+                       'flash_point': self._flash_point,
+                       'solubility': self.solubility,
+                       'bullwinkle_fraction': self.bullwinkle,
+                       'bullwinkle_time': self.bulltime,
+                       'densities': self.densities,
+                       'density_ref_temps': self.density_ref_temps,
+                       'density_weathering': self.density_weathering,
+                       'kvis': self.kvis,
+                       'kvis_ref_temps': self.kvis_ref_temps,
+                       'kvis_weathering': self.kvis_weathering,
+                       'emulsion_water_fraction_max': self.emulsion_water_fraction_max,
+                       'mass_fraction': self.mass_fraction.tolist(),
+                       'boiling_point': self.boiling_point.tolist(),
+                       'molecular_weight': self.molecular_weight.tolist(),
+                       'component_density': self.component_density.tolist(),
+                       'sara_type': self.sara_type}
 
         return data
 
@@ -311,27 +310,27 @@ class Oil(object):
 
         json_ = super(Oil, self).to_dict(json_=json_)
 
-        data = {'name':self.name,
-                       'api':self.api,
-                       'adios_oil_id':self.adios_oil_id,
-                       #'pour_point':self.pour_point(),
-                       'pour_point':self._pour_point,
-                       'flash_point':self._flash_point,
-                       'solubility':self.solubility,
-                       'bullwinkle_fraction':self.bullwinkle,
-                       'bullwinkle_time':self.bulltime,
-                       'densities':self.densities,
-                       'density_ref_temps':self.density_ref_temps,
-                       'density_weathering':self.density_weathering,
-                       'kvis':self.kvis,
-                       'kvis_ref_temps':self.kvis_ref_temps,
-                       'kvis_weathering':self.kvis_weathering,
-                       'emulsion_water_fraction_max':self.emulsion_water_fraction_max,
-                       'mass_fraction':self.mass_fraction.tolist(),
-                       'boiling_point':self.boiling_point.tolist(),
-                       'molecular_weight':self.molecular_weight.tolist(),
-                       'component_density':self.component_density.tolist(),
-                       'sara_type':self.sara_type}
+        data = {'name': self.name,
+                'api': self.api,
+                'adios_oil_id': self.adios_oil_id,
+                # 'pour_point': self.pour_point(),
+                'pour_point': self._pour_point,
+                'flash_point': self._flash_point,
+                'solubility': self.solubility,
+                'bullwinkle_fraction': self.bullwinkle,
+                'bullwinkle_time': self.bulltime,
+                'densities': self.densities,
+                'density_ref_temps': self.density_ref_temps,
+                'density_weathering': self.density_weathering,
+                'kvis': self.kvis,
+                'kvis_ref_temps': self.kvis_ref_temps,
+                'kvis_weathering': self.kvis_weathering,
+                'emulsion_water_fraction_max': self.emulsion_water_fraction_max,
+                'mass_fraction': self.mass_fraction.tolist(),
+                'boiling_point': self.boiling_point.tolist(),
+                'molecular_weight': self.molecular_weight.tolist(),
+                'component_density': self.component_density.tolist(),
+                'sara_type': self.sara_type}
 
         data.update(json_)
         return data

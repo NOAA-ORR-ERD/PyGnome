@@ -8,7 +8,6 @@ from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import six
 from datetime import datetime, timedelta
 
 import numpy as np
@@ -90,17 +89,21 @@ class PlumeGenerator(object):
 
     @time_step_delta.setter
     def time_step_delta(self, val):
-        if type(val) not in six.integer_types + (float,) or val == 0:
+        try:
+            val = float(val)
+            if val == 0.0:
+                raise ValueError()
+        except ValueError:
             raise ValueError('time_step_delta needs to be a non-zero number')
-        else:
-            self._time_step_delta = val
 
-            if self.end_release_time is not None:
-                self.time_steps = ((self.end_release_time - self.release_time)
-                                   .total_seconds())
-                self.time_steps /= self._time_step_delta
-            else:
-                self.time_steps = None
+        self._time_step_delta = val
+
+        if self.end_release_time is not None:
+            self.time_steps = ((self.end_release_time - self.release_time)
+                               .total_seconds())
+            self.time_steps /= self._time_step_delta
+        else:
+            self.time_steps = None
 
     def _seconds_from_beginning(self, time):
         '''
@@ -109,8 +112,8 @@ class PlumeGenerator(object):
         '''
         if time < self.release_time:
             time = self.release_time
-        elif (self.end_release_time is not None and
-              time > self.end_release_time):
+        elif (self.end_release_time is not None
+              and time > self.end_release_time):
             time = self.end_release_time
 
         return (time - self.release_time).total_seconds()

@@ -4,8 +4,10 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+from future.utils import with_metaclass
+from past.types import basestring
+
 import os
-import six
 import copy
 import logging
 import glob
@@ -136,7 +138,7 @@ class GnomeObjMeta(type):
         return super(GnomeObjMeta, cls).__new__(cls, name, parents, dct)
 
 
-class GnomeId(six.with_metaclass(GnomeObjMeta, AddLogger)):
+class GnomeId(with_metaclass(GnomeObjMeta, AddLogger)):
 # py3 way, when we get there
 # class GnomeId(AddLogger, metaclass=GnomeObjMeta):
     '''
@@ -150,7 +152,7 @@ class GnomeId(six.with_metaclass(GnomeObjMeta, AddLogger)):
         self.__class__._instance_count += 1
 
         if name:
-            if isinstance(name, six.string_types) and '/' in name or '\\' in name:
+            if isinstance(name, basestring) and '/' in name or '\\' in name:
                 raise ValueError("Invalid slash character in object name: {0}".format(name))
             self.name = name
         self._appearance = _appearance
@@ -754,7 +756,7 @@ class GnomeId(six.with_metaclass(GnomeObjMeta, AddLogger)):
         if not refs:
             refs = Refs()
 
-        if isinstance(saveloc, six.string_types):
+        if isinstance(saveloc, basestring):
             if os.path.isdir(saveloc):
                 #run the savefile update system
                 if apply_update_patches:
