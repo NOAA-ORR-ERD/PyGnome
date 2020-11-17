@@ -348,7 +348,7 @@ class ObjType(SchemaType):
                     json_[d][i] = self._process_supporting_file(filename,
                                                                 zipfile_)
 
-        #Finally, write the json itself to the zipfile, and return the json
+        # Finally, write the json itself to the zipfile, and return the json
         if fname not in zipfile_.namelist():
             zipfile_.writestr(fname, json.dumps(json_, indent=True))
         return json_

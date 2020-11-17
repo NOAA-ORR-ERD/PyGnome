@@ -370,11 +370,14 @@ class Model(GnomeId):
             refs = Refs()
             self._schema.register_refs(self._schema(), self, refs)
         updatable = self._schema().get_nodes_by_attr('update')
-        attrs = copy.copy(dict_)
+
         updated = False
-        for k in attrs.keys():
-            if k not in updatable:
-                attrs.pop(k)
+        attrs = {k: v for k, v in dict_.items() if k in updatable}
+        # all the below in one comprehension :-)
+        # attrs = copy.copy(dict_)
+        # for k in list(attrs.keys()):
+        #     if k not in updatable:
+        #         attrs.pop(k)
 
         for name in updatable:
             node = self._schema().get(name)
