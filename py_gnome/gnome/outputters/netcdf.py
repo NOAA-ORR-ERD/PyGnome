@@ -789,6 +789,9 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
 
         try:
             os.remove(self._u_filename)
+        except OSError:
+            pass  # it must not be there
+        try:
             os.remove(self.forecast_filename)
         except OSError:
             pass  # it must not be there
