@@ -658,13 +658,14 @@ class SpatialRelease(Release):
                         sl = slice(start_idx, None)
                     points = shape.points[sl]
                     # kludge to get around version differences in pyproj
+                    Proj1 = Proj2 = pts = None
                     if int(pyproj.__version__[0]) < 2:
                         Proj1 = Proj(init='epsg:3857')
                         Proj2 = Proj(init='epsg:4326')
+                        pts = map(lambda pt: transform(Proj1, Proj2, pt[0], pt[1]), points)
                     else:
-                        Proj1 = Proj('epsg:3857')
-                        Proj2 = Proj('epsg:4326')
-                    pts = map(lambda pt: transform(Proj1, Proj2, pt[0], pt[1]), points)
+                        transformer = pyproj.Transformer.from_crs("epsg:3857", "epsg:4326", always_xy=True)
+                        pts = map(lambda pt: transformer.transform(pt[0],pt[1]), points)
                     poly = Polygon(pts)
                     shape_polys.append(poly)
                     shape_poly_thickness.append(thickness)
@@ -948,7 +949,7 @@ class SpatialRelease(Release):
         the polygons.
         '''
         polycoords = map(lambda p: np.array(p.exterior.xy).T.astype(np.float32), self.polygons)
-        lengths = np.array(map(len, polycoords))
+        lengths = np.array(map(len, polycoords)).astype(np.int32)
         # weights = self.weights if self.weights is not None else []
         # thicknesses = self.thicknesses if self.thicknesses is not None else []
         return lengths, polycoords
