@@ -26,12 +26,18 @@ from distutils.command.clean import clean
 from distutils.extension import Extension
 from Cython.Distutils import build_ext
 
+import sysconfig
+
 from git import Repo
 
 import numpy as np
 
 # could run setup from anywhere
 SETUP_PATH = os.path.dirname(os.path.abspath(__file__))
+
+# the extension used for compiled modules
+comp_modules_ext = sysconfig.get_config_var('EXT_SUFFIX')
+
 
 # cd to SETUP_PATH, run develop or install, then cd back
 CWD = os.getcwd()
@@ -409,7 +415,7 @@ elif sys.platform == "win32":
     #     libname = 'gnome.lib'
     static_lib_files = [os.path.join(target_path(),
                                      'Release', 'gnome', 'cy_gnome',
-                                     'cy_basic_types.cp37-win_amd64.lib')]
+                                     'cy_basic_types'+ comp_modules_ext)]
     libdirs = []
 
 elif sys.platform.startswith("linux"):
