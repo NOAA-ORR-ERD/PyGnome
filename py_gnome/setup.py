@@ -26,8 +26,6 @@ from distutils.command.clean import clean
 from distutils.extension import Extension
 from Cython.Distutils import build_ext
 
-import sysconfig
-
 from git import Repo
 
 import numpy as np
@@ -36,7 +34,10 @@ import numpy as np
 SETUP_PATH = os.path.dirname(os.path.abspath(__file__))
 
 # the extension used for compiled modules
+# why is this so ugly?!? on py2?
 comp_modules_ext = sysconfig.get_config_var('EXT_SUFFIX')
+if comp_modules_ext is None:
+    comp_modules_ext = '.dll' if 'win' in sys.platform else ".so"
 
 
 # cd to SETUP_PATH, run develop or install, then cd back
