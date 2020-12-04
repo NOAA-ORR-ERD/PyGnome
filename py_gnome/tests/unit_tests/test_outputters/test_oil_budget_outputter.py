@@ -116,7 +116,7 @@ def test_model_full_run_output(model, output_dir):
 
     print(len(csv_file))
 
-    assert len(csv_file) == 26
+    assert len(csv_file) == 52
 
     assert csv_file[0].split(",")[0] == "Model Time"
 

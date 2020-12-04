@@ -27,6 +27,7 @@ from distutils.extension import Extension
 from Cython.Distutils import build_ext
 
 import sysconfig
+import platform
 
 from git import Repo
 
@@ -36,7 +37,12 @@ import numpy as np
 SETUP_PATH = os.path.dirname(os.path.abspath(__file__))
 
 # the extension used for compiled modules
-comp_modules_ext = sysconfig.get_config_var('EXT_SUFFIX')
+if sysconfig.get_python_version().split('.')[0] == '3':
+    py_impl = ['.'] + [c.lower() for c in platform.python_implementation() if c.isupper()]
+    py_impl = py_impl + sysconfig.get_python_version().split('.') + ['-'] + [sysconfig.get_platform().replace('-','_')]
+    comp_modules_ext = ''.join(py_impl) + '.lib'
+else:
+    comp_modules_ext = '.lib'
 
 
 # cd to SETUP_PATH, run develop or install, then cd back
@@ -187,6 +193,17 @@ def get_netcdf_libs():
         raise NotImplementedError("this setup.py needs nc-config "
                                   "to find netcdf libs")
 
+def get_conda_includes_win():
+    """
+    If this is being run within a conda environment, use CONDA_PREFIX
+    and get the include, bin, and lib dirs off that. If no CONDA_PREFIX is found,
+    revert to the old third_party_libs
+    """
+    prefix = os.environ['CONDA_PREFIX']
+    lib_dir = os.path.join(prefix, 'Library', 'lib')
+    inc_dir = os.path.join(prefix, 'Library', 'include')
+    bin_dir = os.path.join(prefix, 'Library', 'bin')
+    return lib_dir, inc_dir, bin_dir
 
 # maybe this will work with Windows, too" at least with conda?
 if sys.platform.startswith("linux") or sys.platform == "darwin":
@@ -195,59 +212,66 @@ if sys.platform.startswith("linux") or sys.platform == "darwin":
     netcdf_lib_files = []
 elif sys.platform in ("win32"):  # but for now, still using our shipped libs.
 # elif sys.platform in ("darwin", "win32"):
-    netcdf_base, netcdf_libs, netcdf_inc = get_netcdf_libs()
-
     third_party_dir = os.path.join('..', 'third_party_lib')
-
-    # the netCDF environment
-    netcdf_base = os.path.join(third_party_dir, 'netcdf-4.3',
-                               sys.platform, architecture)
-    netcdf_libs = os.path.join(netcdf_base, 'lib')
-    netcdf_inc = os.path.join(netcdf_base, 'include')
-
-    if sys.platform == 'win32':  # oddly, 64 bit Windows is still win32
-        # also copy the netcdf *.dlls to cy_gnome directory
-        # On windows the dlls have the same names for those used by python's
-        # netCDF4 module and PyGnome modules. For PyGnome, we had the latest
-        # netcdf dlls from UCARR site but this was giving DLL import errors.
-        # Netcdf dlls that come with Python's netCDF4 module (C. Gohlke's site)
-        # were different from the netcdf4 DLLs we got from UCARR.
-        # For now, third_party_lib contains the DLLs installed in site-packages
-        # from C. Gohlke's site.
-        #
-        # Alternatively, we could also look for python netCDF4 package and copy
-        # DLLs from site-packages. This way the DLLs used and loaded by PyGnome
-        # are the same as the DLL used and expected by netCDF4. PyGnome loads
-        # the DLL with cy_basic_types.pyd and it also imports netCDF4 when
-        # netcdf_outputters module is imported - this was causing the previous
-        # conflict. The DLL loaded in memory should be consistent - that's the
-        # best understanding of current issue!
-        # STILL WORKING ON A MORE PERMANENT SOLUTION
-        win_dlls = os.path.join(netcdf_base, 'bin')
-        dlls_path = os.path.join(os.getcwd(), win_dlls)
-
-        for dll in glob.glob(os.path.join(dlls_path, '*.dll')):
-            dlls_dst = os.path.join(os.getcwd(), 'gnome/cy_gnome/')
-
-            dll_name = os.path.split(dll)[1]
-            if sys.argv[1] == 'cleanall' or sys.argv[1] == 'clean':
-                rm_dll = os.path.join(dlls_dst, dll_name)
-                if os.path.exists(rm_dll):
-                    os.remove(rm_dll)
-                    print("deleted: " + rm_dll)
-            else:
-                # Note: weird permissions/file locking thing on Windows --
-                #       couldn't delete or overwrite the dll...
-                #       so only copy if it's not there already
-                if not os.path.isfile(os.path.join(dlls_dst, dll_name)):
-                    print("copy: " + dll + " to: " + dlls_dst)
-                    shutil.copy(dll, dlls_dst)
-        netcdf_names = ('netcdf',)
+    if 'CONDA_PREFIX' in os.environ:
+        netcdf_libs, netcdf_inc, netcdf_dll = get_conda_includes_win()
+        if sys.platform == 'win32':
+            netcdf_names = ('netcdf',)
+        else:
+            netcdf_names = ('hdf5', 'hdf5_hl', 'netcdf', 'netcdf_c++4')
+        netcdf_lib_files = [os.path.join(netcdf_libs, libfile.format(l))
+                            for l in netcdf_names]
     else:
-        netcdf_names = ('hdf5', 'hdf5_hl', 'netcdf', 'netcdf_c++4')
+
+        # the netCDF environment
+        netcdf_base = os.path.join(third_party_dir, 'netcdf-4.3',
+                                sys.platform, architecture)
+        netcdf_libs = os.path.join(netcdf_base, 'lib')
+        netcdf_inc = os.path.join(netcdf_base, 'include')
+
+        if sys.platform == 'win32':  # oddly, 64 bit Windows is still win32
+            # also copy the netcdf *.dlls to cy_gnome directory
+            # On windows the dlls have the same names for those used by python's
+            # netCDF4 module and PyGnome modules. For PyGnome, we had the latest
+            # netcdf dlls from UCARR site but this was giving DLL import errors.
+            # Netcdf dlls that come with Python's netCDF4 module (C. Gohlke's site)
+            # were different from the netcdf4 DLLs we got from UCARR.
+            # For now, third_party_lib contains the DLLs installed in site-packages
+            # from C. Gohlke's site.
+            #
+            # Alternatively, we could also look for python netCDF4 package and copy
+            # DLLs from site-packages. This way the DLLs used and loaded by PyGnome
+            # are the same as the DLL used and expected by netCDF4. PyGnome loads
+            # the DLL with cy_basic_types.pyd and it also imports netCDF4 when
+            # netcdf_outputters module is imported - this was causing the previous
+            # conflict. The DLL loaded in memory should be consistent - that's the
+            # best understanding of current issue!
+            # STILL WORKING ON A MORE PERMANENT SOLUTION
+            win_dlls = os.path.join(netcdf_base, 'bin')
+            dlls_path = os.path.join(os.getcwd(), win_dlls)
+
+            for dll in glob.glob(os.path.join(dlls_path, '*.dll')):
+                dlls_dst = os.path.join(os.getcwd(), 'gnome/cy_gnome/')
+
+                dll_name = os.path.split(dll)[1]
+                if sys.argv[1] == 'cleanall' or sys.argv[1] == 'clean':
+                    rm_dll = os.path.join(dlls_dst, dll_name)
+                    if os.path.exists(rm_dll):
+                        os.remove(rm_dll)
+                        print("deleted: " + rm_dll)
+                else:
+                    # Note: weird permissions/file locking thing on Windows --
+                    #       couldn't delete or overwrite the dll...
+                    #       so only copy if it's not there already
+                    if not os.path.isfile(os.path.join(dlls_dst, dll_name)):
+                        print("copy: " + dll + " to: " + dlls_dst)
+                        shutil.copy(dll, dlls_dst)
+            netcdf_names = ('netcdf',)
+        else:
+            netcdf_names = ('hdf5', 'hdf5_hl', 'netcdf', 'netcdf_c++4')
 
 
-    netcdf_lib_files = [os.path.join(netcdf_libs, libfile.format(l))
+        netcdf_lib_files = [os.path.join(netcdf_libs, libfile.format(l))
                             for l in netcdf_names]
 
 
