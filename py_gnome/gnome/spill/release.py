@@ -974,7 +974,7 @@ def GridRelease(release_time, bounds, resolution):
                     (max_lon, max_lat))
     :type bounds: 2x2 numpy array or equivalent
 
-    :param resolution: resolution of grid -- it will be a resoluiton X resolution grid
+    :param resolution: resolution of grid -- it will be a resolution X resolution grid
     :type resolution: integer
     """
     lon = np.linspace(bounds[0][0], bounds[1][0], resolution)
@@ -983,7 +983,7 @@ def GridRelease(release_time, bounds, resolution):
     positions = np.c_[lon.flat, lat.flat, np.zeros((resolution * resolution),)]
 
     return SpatialRelease(release_time=release_time,
-                          start_position=positions)
+                          custom_positions=positions)
 
 
 class ContinuousSpatialRelease(SpatialRelease):
