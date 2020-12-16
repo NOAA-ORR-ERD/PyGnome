@@ -37,7 +37,7 @@ SETUP_PATH = os.path.dirname(os.path.abspath(__file__))
 # why is this so ugly?!? on py2?
 comp_modules_ext = sysconfig.get_config_var('EXT_SUFFIX')
 if comp_modules_ext is None:
-    comp_modules_ext = '.dll' if 'win' in sys.platform else ".so"
+    comp_modules_ext = '.lib' if 'win' in sys.platform else ".so"
 
 
 # cd to SETUP_PATH, run develop or install, then cd back
