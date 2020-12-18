@@ -41,7 +41,7 @@ class TestRelease:
 #     """
 #     bounds = ((0, 10), (2, 12))
 #     release = GridRelease(datetime.now(), bounds, 3)
-#
+
 #     assert np.array_equal(release.start_position, [[0., 10., 0.],
 #                                                    [1., 10., 0.],
 #                                                    [2., 10., 0.],
@@ -53,7 +53,6 @@ class TestRelease:
 #                                                    [2., 12., 0.]])
 
 # todo: add other release to this test - need schemas for all
-
 rel_time = datetime(2012, 8, 20, 13)
 rel_type = [PointLineRelease(release_time=rel_time,
                              num_elements=5,

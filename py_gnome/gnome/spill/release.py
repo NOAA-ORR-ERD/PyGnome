@@ -3,16 +3,13 @@ release objects that define how elements are released. A Spill() objects
 is composed of a release object and an ElementType
 '''
 
-import copy
 import math
-import os
 import warnings
 import numpy as np
 import shapefile as shp
 import trimesh
 import geojson
 import zipfile
-import tempfile
 from math import ceil
 from datetime import datetime, timedelta
 
@@ -25,11 +22,10 @@ from gnome.utilities.time_utils import asdatetime
 from gnome.utilities.geometry.geo_routines import random_pt_in_tri
 
 
-from colander import (iso8601, String,
-                      SchemaNode, SequenceSchema,
-                      drop, Bool, Int, Float, Boolean)
+from colander import (String, SchemaNode, SequenceSchema, drop, Int, Float,
+                      Boolean)
 
-from gnome.persist.base_schema import ObjTypeSchema, WorldPoint, WorldPointNumpy
+from gnome.persist.base_schema import ObjTypeSchema, WorldPoint
 from gnome.persist.extend_colander import LocalDateTime, FilenameSchema
 from gnome.persist.validators import convertible_to_seconds
 
@@ -573,8 +569,13 @@ class SpatialRelease(Release):
         self.thicknesses = thicknesses
         self.weights = weights
         self.random_distribute = random_distribute
+        if custom_positions is not None:
+            self.custom_positions = np.array(custom_positions)
+            # num_elements = len(self.custom_positions)
+            # print("setting num_elements to:", num_elements)
+        else:
+            self.custom_positions = None
         self.num_elements = num_elements
-        self.custom_positions = np.array(custom_positions) if custom_positions is not None else None
         self._start_positions = self.gen_start_positions()
 
     @classmethod
@@ -983,7 +984,9 @@ def GridRelease(release_time, bounds, resolution):
     positions = np.c_[lon.flat, lat.flat, np.zeros((resolution * resolution),)]
 
     return SpatialRelease(release_time=release_time,
-                          custom_positions=positions)
+                          custom_positions=positions,
+                          num_elements=len(positions),
+                          )
 
 
 class ContinuousSpatialRelease(SpatialRelease):
