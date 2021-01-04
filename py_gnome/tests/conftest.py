@@ -27,6 +27,17 @@ def pytest_addoption(parser):
                            'used to run tests skipped by xdist'))
 
 
+def pytest_configure(config):
+    """
+    adding stuff to configuration
+
+    in this case, the "run" marker
+    """
+    config.addinivalue_line(
+        "markers", "slow: mark test as slow, to run only when --runslow flag is used"
+    )
+
+
 def pytest_runtest_setup(item):
     '''
     pytest builtin hook
