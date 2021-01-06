@@ -214,7 +214,7 @@ class Oil(object):
         self.bull_time = bullwinkle_time
         self._pour_point = pour_point
         self._flash_point = flash_point
-        self.solubility = solubility	
+        self.solubility = solubility
         #self._k_v2 = 2416.0
         self._k_v2 = None
 
@@ -435,7 +435,7 @@ class Oil(object):
             Get the oil density at a temperature or temperatures.
 
             Note: there is a catch-22 which prevents us from getting
-                  the min_temp in all casees:
+                  the min_temp in all cases:
                   - to estimate pour point, we need viscosities
                   - if we need to convert dynamic viscosities to
                     kinematic, we need density at 15C
@@ -628,7 +628,9 @@ class Oil(object):
 
         for x in range(0,len(kvis)):
             if weathering[x] == 0:	#also check None
-                kvis_list.append(KVis(m_2_s=kvis[x],ref_temp_k=kvis_ref_temps[x],weathering=0.0))
+                kvis_list.append(KVis(m_2_s=kvis[x],
+                                      ref_temp_k=kvis_ref_temps[x],
+                                      weathering=0.0))
 
        # agg = dict(kvis_list)
 
@@ -741,11 +743,11 @@ class Oil(object):
         # check for user input value, otherwise set to -999 as a flag
         bulltime = -999.
 
-        if self._bulltime is not None:	
+        if self._bulltime is not None:
             return self._bulltime
         else:
             if self.bull_time is not None:
-                return self.bull_time 
+                return self.bull_time
             else:
                 return bulltime
             #return bulltime
