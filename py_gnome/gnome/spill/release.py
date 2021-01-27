@@ -990,7 +990,7 @@ def GridRelease(release_time, bounds, resolution):
     positions = np.c_[lon.flat, lat.flat, np.zeros((resolution * resolution),)]
 
     return SpatialRelease(release_time=release_time,
-                          start_position=positions)
+                          custom_positions=positions)
 
 
 class ContinuousSpatialRelease(SpatialRelease):

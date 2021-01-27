@@ -772,7 +772,7 @@ def spatial_release_spill(start_positions,
     A spatial release is a spill that releases elements at known locations.
     '''
     release = SpatialRelease(release_time=release_time,
-                             start_position=start_positions,
+                             custom_positions=start_positions,
                              name=name)
     retv = Spill(release=release,
                  water=water,
