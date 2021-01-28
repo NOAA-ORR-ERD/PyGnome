@@ -370,7 +370,7 @@ def test_release_from_splot_data():
                      dtype=int)
     rel = release_from_splot_data(datetime(2015, 1, 1), td_file)
     cumsum = np.cumsum(exp)
-    for ix in xrange(len(cumsum) - 1):
+    for ix in range(len(cumsum) - 1):
         assert np.all(rel.custom_positions[cumsum[ix]] ==
                       rel.custom_positions[cumsum[ix]:cumsum[ix + 1]])
     assert np.all(rel.custom_positions[0] == rel.custom_positions[:cumsum[0]])

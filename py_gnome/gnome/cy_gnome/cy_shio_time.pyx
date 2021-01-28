@@ -1,5 +1,6 @@
 import numpy as np
 import os
+import locale
 
 cimport numpy as cnp
 from libc.string cimport memcpy
@@ -79,7 +80,7 @@ cdef class CyShioTime(CyOSSMTime):
                 raise ValueError("Path could not be correctly be set by "
                                  "ShioTimeValue_c.SetYearDataPath(...)")
         else:
-            raise IOError("No such file: " + yeardata_path)
+            raise IOError("No such file: " + yeardata_path_)
 
     def _read_time_values(self, filename):
         '''
@@ -101,7 +102,7 @@ cdef class CyShioTime(CyOSSMTime):
     property yeardata:
         def __get__(self):
             """ get path of yeardata files """
-            return <bytes>self.shio.fYearDataPath
+            return self.shio.fYearDataPath.decode(locale.getpreferredencoding())
 
         def __set__(self, value):
             """ set path of yeardata files """
@@ -115,7 +116,7 @@ cdef class CyShioTime(CyOSSMTime):
             """
             cdef bytes sType
             sType = self.shio.fStationType
-            return sType
+            return sType.decode(locale.getpreferredencoding())
 
     def __repr__(self):
         """
