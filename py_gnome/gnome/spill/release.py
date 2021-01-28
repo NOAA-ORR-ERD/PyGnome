@@ -9,15 +9,14 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import copy
+
 import math
-import os
 import warnings
 import numpy as np
 import shapefile as shp
 # import trimesh # making this optional
 import geojson
 import zipfile
-import tempfile
 from math import ceil
 from datetime import datetime, timedelta
 
@@ -30,11 +29,10 @@ from gnome.utilities.time_utils import asdatetime
 from gnome.utilities.geometry.geo_routines import random_pt_in_tri
 
 
-from colander import (iso8601, String,
-                      SchemaNode, SequenceSchema,
-                      drop, Bool, Int, Float, Boolean)
+from colander import (String, SchemaNode, SequenceSchema, drop, Int, Float,
+                      Boolean)
 
-from gnome.persist.base_schema import ObjTypeSchema, WorldPoint, WorldPointNumpy
+from gnome.persist.base_schema import ObjTypeSchema, WorldPoint
 from gnome.persist.extend_colander import LocalDateTime, FilenameSchema
 from gnome.persist.validators import convertible_to_seconds
 
@@ -44,8 +42,8 @@ from gnome.utilities.plume import Plume, PlumeGenerator
 
 from gnome.outputters import NetCDFOutput
 from gnome.gnomeobject import GnomeId
-from gnome.environment.timeseries_objects_base import TimeseriesData,\
-    TimeseriesVector
+from gnome.environment.timeseries_objects_base import (TimeseriesData,
+                                                       TimeseriesVector)
 from gnome.environment.gridded_objects_base import Time
 
 
@@ -53,6 +51,7 @@ class BaseReleaseSchema(ObjTypeSchema):
     release_time = SchemaNode(
         LocalDateTime(), validator=convertible_to_seconds,
     )
+
 
 class PointLineReleaseSchema(BaseReleaseSchema):
     '''
@@ -578,8 +577,13 @@ class SpatialRelease(Release):
         self.thicknesses = thicknesses
         self.weights = weights
         self.random_distribute = random_distribute
+        if custom_positions is not None:
+            self.custom_positions = np.array(custom_positions)
+            # num_elements = len(self.custom_positions)
+            # print("setting num_elements to:", num_elements)
+        else:
+            self.custom_positions = None
         self.num_elements = num_elements
-        self.custom_positions = np.array(custom_positions) if custom_positions is not None else None
         self._start_positions = self.gen_start_positions()
 
     @classmethod
@@ -830,8 +834,7 @@ class SpatialRelease(Release):
 
     def prepare_for_model_run(self, ts):
         '''
-        :param ts: integer seconds
-        :param amount: integer kilograms
+        :param ts: timestep as integer seconds
         '''
         if self._prepared:
             self.rewind()
@@ -879,11 +882,13 @@ class SpatialRelease(Release):
             # This is a special case, when the release is short enough a single
             # timestep encompasses the whole thing.
             if self.release_duration == 0:
-                t = Time([self.release_time, self.end_release_time+timedelta(seconds=1)])
+                t = Time([self.release_time,
+                          self.end_release_time + timedelta(seconds=1)])
             else:
                 t = Time([self.release_time, self.end_release_time])
         else:
-            t = Time([self.release_time + timedelta(seconds=ts * step) for step in range(0,num_ts + 1)])
+            t = Time([self.release_time + timedelta(seconds=ts * step)
+                      for step in range(0, num_ts + 1)])
             t.data[-1] = self.end_release_time
         if self.release_duration == 0:
             self._release_ts = TimeseriesData(name=self.name+'_release_ts',
@@ -981,7 +986,7 @@ def GridRelease(release_time, bounds, resolution):
                     (max_lon, max_lat))
     :type bounds: 2x2 numpy array or equivalent
 
-    :param resolution: resolution of grid -- it will be a resoluiton X resolution grid
+    :param resolution: resolution of grid -- it will be a resolution X resolution grid
     :type resolution: integer
     """
     lon = np.linspace(bounds[0][0], bounds[1][0], resolution)
@@ -990,7 +995,9 @@ def GridRelease(release_time, bounds, resolution):
     positions = np.c_[lon.flat, lat.flat, np.zeros((resolution * resolution),)]
 
     return SpatialRelease(release_time=release_time,
-                          start_position=positions)
+                          custom_positions=positions,
+                          num_elements=len(positions),
+                          )
 
 
 class ContinuousSpatialRelease(SpatialRelease):
