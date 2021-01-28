@@ -1504,6 +1504,8 @@ def map_from_rectangular_grid(mask, lon, lat, refine=1, **kwargs):
 def grid_from_nc(filename):
     """
     generates a grid_mask and lat lon from a conforming netcdf file
+
+    NOTE: poorly tested, and will only work on a regular grid
     """
     import netCDF4
 

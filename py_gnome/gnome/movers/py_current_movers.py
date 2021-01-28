@@ -9,8 +9,8 @@ import numpy as np
 from colander import (SchemaNode, Bool, Float, drop)
 
 from gnome.basic_types import oil_status
-from gnome.basic_types import (world_point_type,
-                               status_code_type)
+# from gnome.basic_types import (world_point_type,
+#                                status_code_type)
 
 from gnome.utilities.projections import FlatEarthProjection
 
@@ -62,6 +62,7 @@ class PyCurrentMover(movers.PyMover):
                  uncertain_across=.25,
                  uncertain_cross=.25,
                  default_num_method='RK2',
+                 grid_topology=None,
                  **kwargs
                  ):
         """
@@ -90,7 +91,8 @@ class PyCurrentMover(movers.PyMover):
                            Default: RK2
         """
 
-        (super(PyCurrentMover, self).__init__(default_num_method=default_num_method, **kwargs))
+        (super(PyCurrentMover, self).__init__(default_num_method=default_num_method,
+                                              **kwargs))
         self.filename = filename
         self.current = current
 
@@ -99,6 +101,7 @@ class PyCurrentMover(movers.PyMover):
                 raise ValueError("must provide a filename or current object")
             else:
                 self.current = GridCurrent.from_netCDF(filename=self.filename,
+                                                       grid_topology=grid_topology,
                                                        **kwargs)
         self.scale_value = scale_value
 

@@ -109,7 +109,7 @@ cdef class CyOSSMTime(object):
             todo: check if we really need this - if we don't need to pickle
             then just do away with this code
             '''
-            fname = <bytes>self.time_dep.filePath
+            cdef unicode fname = self.time_dep.filePath.decode(locale.getpreferredencoding())
             return (fname, None)[fname == '']
 
     property scale_factor:
@@ -163,7 +163,7 @@ cdef class CyOSSMTime(object):
             if not sName:   # empty string
                 return None
 
-            return sName
+            return sName.decode(locale.getpreferredencoding())
 
     property extrapolation_is_allowed:
         def __get__(self):

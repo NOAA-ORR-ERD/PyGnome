@@ -12,7 +12,7 @@
 #include "Replacements.h"
 #endif
 
-DAGTreeStruct gDagTree;	
+DAGTreeStruct gDagTree;
 WORLDPOINTDH gCoord;
 Side_List **gSidesList;
 long gAllocatedDagLength = 0;
@@ -31,19 +31,19 @@ char gErrStr[256];
 long FindThirdVertex(long triNum, TopologyHdl THdl, long pointA, long pointB)
 {
 	long pointC;
-	
+
 	if (triNum == -1) {pointC = -1;}
-	else if ((*THdl)[triNum].vertex1 == pointA && (*THdl)[triNum].vertex2 == pointB) 
+	else if ((*THdl)[triNum].vertex1 == pointA && (*THdl)[triNum].vertex2 == pointB)
 		{pointC = (*THdl)[triNum].vertex3;}
-	else if ((*THdl)[triNum].vertex2 == pointA && (*THdl)[triNum].vertex3 == pointB) 
+	else if ((*THdl)[triNum].vertex2 == pointA && (*THdl)[triNum].vertex3 == pointB)
 		{pointC = (*THdl)[triNum].vertex1;}
-	else if ((*THdl)[triNum].vertex3 == pointA && (*THdl)[triNum].vertex1 == pointB) 
+	else if ((*THdl)[triNum].vertex3 == pointA && (*THdl)[triNum].vertex1 == pointB)
 		{pointC = (*THdl)[triNum].vertex2;}
-	else if ((*THdl)[triNum].vertex1 == pointB && (*THdl)[triNum].vertex2 == pointA) 
+	else if ((*THdl)[triNum].vertex1 == pointB && (*THdl)[triNum].vertex2 == pointA)
 		{pointC = (*THdl)[triNum].vertex3;}
-	else if ((*THdl)[triNum].vertex2 == pointB && (*THdl)[triNum].vertex3 == pointA) 
+	else if ((*THdl)[triNum].vertex2 == pointB && (*THdl)[triNum].vertex3 == pointA)
 		{pointC = (*THdl)[triNum].vertex1;}
-	else if ((*THdl)[triNum].vertex3 == pointB && (*THdl)[triNum].vertex1 == pointA) 
+	else if ((*THdl)[triNum].vertex3 == pointB && (*THdl)[triNum].vertex1 == pointA)
 		{pointC = (*THdl)[triNum].vertex2;}
 	return (pointC);
 }
@@ -58,20 +58,20 @@ int SideListCompare(void const *x1, void const *x2)
 	Side_List *p1,*p2;
 	p1 = (Side_List*)x1;
 	p2 = (Side_List*)x2;
-	
+
 	if (p1->triRight < p2->triRight)
-		return -1;  
+		return -1;
 	else if (p1->triRight > p2->triRight)
 		return 1;
 	else return 0;
-		
+
 }
 ///////////////////////////////////////////////////////////////////////////////////
 
 
-Side_List**  BuildSideList(TopologyHdl topoHdl, char *errStr) 
+Side_List**  BuildSideList(TopologyHdl topoHdl, char *errStr)
 {
-	
+
 	Side_List **sideListHdl;		// What we want to get.
 	//Side_List tempSide;				// Temporary storage for a side during sorting.
 	long sideCount;					// The total number of sides
@@ -80,35 +80,35 @@ Side_List**  BuildSideList(TopologyHdl topoHdl, char *errStr)
 								// The maximum number of sides for a given number of triangles.
 								// The first +1 is for the single triangle case, the second +1 is
 								// for the array index (I do not define the zero segment)
-	//long numBoundarySeg;				// The total number of boundary segments in the domain.					
+	//long numBoundarySeg;				// The total number of boundary segments in the domain.
 	long i;								// index & counter
 
 	sideListHdl = (Side_List**)_NewHandleClear((maxSides+1)*sizeof(Side_List));
-	if(!sideListHdl) 
+	if(!sideListHdl)
 	{
 		strcpy(errStr,"Out of memory in BuildSideList");
 		return (nil);
 	}
 
-	sideCount = 0;	
+	sideCount = 0;
 								//  The triangle (triangle[0]) is outside.  This case
 								//		does not need to go through the loop.
 	for (i=0;i<numTriangle;i++)					// increment after using
-	{	 
+	{
 		if ((*topoHdl)[i].adjTri3 < i)
 		{
-			// safety check 
+			// safety check
 			if(sideCount > maxSides)
 			{
 				strcpy(errStr,"MaxSides exceeded in BuildSideList");
-				if(sideListHdl) DisposeHandle((Handle)sideListHdl); 
+				if(sideListHdl) DisposeHandle((Handle)sideListHdl);
 				return (nil);
 			}
 			(*sideListHdl)[sideCount].p1 = (*topoHdl)[i].vertex1;  // Move around always in the same direction
 			 								// as the numbering scheme: 1->2->3->1->2 ...
 			(*sideListHdl)[sideCount].p2 = (*topoHdl)[i].vertex2;
 			(*sideListHdl)[sideCount].triLeft = i;	//By definition in our geometry, the triangle to
-												// the left of our segment will always be the 
+												// the left of our segment will always be the
 												// the triangle that we are in.
 			(*sideListHdl)[sideCount].triRight = (*topoHdl)[i].adjTri3; // By our geometry, the triangle adj on
 												// the right will be the traiangle across from the
@@ -116,12 +116,12 @@ Side_List**  BuildSideList(TopologyHdl topoHdl, char *errStr)
 			(*sideListHdl)[sideCount].triLeftP3 = (*topoHdl)[i].vertex3;
 			(*sideListHdl)[sideCount].triRightP3 = FindThirdVertex((*topoHdl)[i].adjTri3,topoHdl,(*topoHdl)[i].vertex1,(*topoHdl)[i].vertex2);
 			(*sideListHdl)[sideCount].topoIndex = (i)*6;
-												
+
 			sideCount++;								//Increment the counter for a new side.
 		}
 		if ((*topoHdl)[i].adjTri1 < i)
 		{
-			// safety check 
+			// safety check
 			if(sideCount > maxSides){strcpy(errStr,"MaxSides exceeded in BuildSideList");
 						if(sideListHdl) DisposeHandle((Handle)sideListHdl); return (nil);}
 			(*sideListHdl)[sideCount].p1 = (*topoHdl)[i].vertex2;
@@ -135,11 +135,11 @@ Side_List**  BuildSideList(TopologyHdl topoHdl, char *errStr)
 		}
 		if ((*topoHdl)[i].adjTri2 < i)
 		{
-			// safety check 
+			// safety check
 			if(sideCount > maxSides)
 			{
 				strcpy(errStr,"MaxSides exceeded in BuildSideList");
-				if(sideListHdl) DisposeHandle((Handle)sideListHdl); 
+				if(sideListHdl) DisposeHandle((Handle)sideListHdl);
 				return (nil);
 			}
 			(*sideListHdl)[sideCount].p1 = (*topoHdl)[i].vertex3;
@@ -154,29 +154,29 @@ Side_List**  BuildSideList(TopologyHdl topoHdl, char *errStr)
 	}
 // Count the number of boundary segments.
 //	numBoundarySeg = 0;
-//	for (i=0;i<sideCount;i++) 
+//	for (i=0;i<sideCount;i++)
 //	{
 //		if ((*sideListHdl)[i].triRight == -1) (numBoundarySeg++);
 //	}
-	
+
 	// Sort The List so that boundary segments are first.
 	_HLock((Handle)sideListHdl);
 	qsort((*sideListHdl),sideCount,sizeof(Side_List),SideListCompare);
 	_HUnlock((Handle)sideListHdl);
 
-	
+
 	_SetHandleSize((Handle)sideListHdl,(sideCount)*sizeof(Side_List));
 	return(sideListHdl);
 }
 
 OSErr LatLongTransform(LongPointHdl vertices)// may need to read in the doubles then convert later
 {
-	long i,npoints = _GetHandleSize((Handle)vertices)/sizeof(LongPoint);	
+	long i,npoints = _GetHandleSize((Handle)vertices)/sizeof(LongPoint);
 	double deg2rad = 3.14159/180.;
 	double R = 8000,dLat,dLong,Height,Width,scalefactor,tx,ty;
 	double xmin=1e6,xmax=-1e6,ymin=1e6,ymax=-1e6;
 	WORLDPOINTDH coord=0;
-	
+
 	if(!(coord = (WORLDPOINTDH) _NewHandleClear(sizeof(WorldPointD) * npoints)))return -1;
 	for(i=0;i<npoints;i++)
 	{
@@ -198,7 +198,7 @@ OSErr LatLongTransform(LongPointHdl vertices)// may need to read in the doubles 
 	scalefactor = (Height > Width) ? 1/Height : 1/Width;
 	tx = scalefactor * Width/dLong;
 	ty = scalefactor * Height/dLat;
-	
+
 	for(i= 0; i < npoints ; i++)
 	{
 		(*coord)[i].pLong = tx * ((*coord)[i].pLong - xmin);
@@ -211,10 +211,10 @@ OSErr LatLongTransform(LongPointHdl vertices)// may need to read in the doubles 
 void ConvertSegNoToTopIndex(Side_List **sl, DAGTreeStruct dagTree)
 {
 	long nnodes = dagTree.numBranches,i;
-	DAG** dagHdl;	
-	
+	DAG** dagHdl;
+
 	dagHdl = dagTree.treeHdl;
-	
+
 	for(i=0;i<nnodes;i++)
 	{
 		(*dagHdl)[i].topoIndex = (*sl)[(*dagHdl)[i].topoIndex].topoIndex;
@@ -225,7 +225,7 @@ DAGTreeStruct  MakeDagTree(TopologyHdl topoHdl, LongPoint **pointList, char *err
 {
 	Side_List **sidesList = 0;
 	DAGTreeStruct  dagTree;
-	long numSidesInList;		
+	long numSidesInList;
 	long nodeNum;					// The index in the current side list for the node (segment)
 									//			to split across.
 	strcpy(errStr,"");
@@ -234,12 +234,12 @@ DAGTreeStruct  MakeDagTree(TopologyHdl topoHdl, LongPoint **pointList, char *err
 	sidesList=BuildSideList(topoHdl, errStr);
 
 	//input checking
-	if(sidesList == nil) 
-	{ 
+	if(sidesList == nil)
+	{
 		strcpy(errStr,"sideList is nil in MakeDagTree");
 		goto done;
 	}
-	
+
 	LatLongTransform(pointList);
 	gSidesList = sidesList;
 
@@ -251,26 +251,26 @@ DAGTreeStruct  MakeDagTree(TopologyHdl topoHdl, LongPoint **pointList, char *err
 	}
 
 	// make a better guess of size here
-	gErrStr[0] = 0;	
+	gErrStr[0] = 0;
 	gAllocatedDagLength = 2*numSidesInList;
 
-	gDagTree.numBranches=0;	
+	gDagTree.numBranches=0;
 	gDagTree.treeHdl = (DAG**)_NewHandleClear(gAllocatedDagLength*sizeof(DAG));
-	if(!gDagTree.treeHdl)  
-	{ 
+	if(!gDagTree.treeHdl)
+	{
 		strcpy(errStr,"Out of memory in MakeDagTree");
 		goto done;
 	}
-	
+
 	srand(SEED);
 	//srand(SEED+1);
-	
+
 	nodeNum = newNodexx(sidesList);
 	split(sidesList, nodeNum);
 	//	Nothing should come back until DAG is completed.
 
 	//gDagTree.numBranches--;  	// Had one too many increments in the split recursion.
-	
+
 	if(gErrStr[0])
 	{
 		strcpy(errStr,gErrStr);
@@ -280,13 +280,13 @@ DAGTreeStruct  MakeDagTree(TopologyHdl topoHdl, LongPoint **pointList, char *err
 		gDagTree.numBranches = 0;
 		goto done;
 	}
-	
+
 	ConvertSegNoToTopIndex(sidesList,gDagTree);
 
 	dagTree = gDagTree;
 	gDagTree.treeHdl = nil;// the handle is now their responsibility
 	gDagTree.numBranches = 0;
-	
+
 done:
 	if(sidesList)
 	{
@@ -306,16 +306,16 @@ done:
 
 int NodeTestCompare(void const *x1, void const *x2)
 {
-	Test *p1,*p2;	
+	Test *p1,*p2;
 	p1 = (Test*)x1;
 	p2 = (Test*)x2;
-	
-	if (p1->countTotal < p2->countTotal) 
+
+	if (p1->countTotal < p2->countTotal)
 		return -1;  // first less than second
 	else if (p1->countTotal > p2->countTotal)
 		return 1;
 	else return 0;// same,equivalent
-	
+
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -334,8 +334,8 @@ void IncrementGDagTree(void)
 	{									// then allocate more memory
 		long newNumber = gAllocatedDagLength + NUMTOALLOCATE;
 		_SetHandleSize((Handle)gDagTree.treeHdl,newNumber* sizeof(DAG));
-		
-		err = _MemError();	
+
+		err = _MemError();
 		if (err)
 		{
 			strcpy(gErrStr,"Not enough memory to expand the DAG tree structure");
@@ -362,17 +362,17 @@ long newNodexx(Side_List **sides_node)
 	long numBoundSides_node = 0;
 	Test tN[NUMTESTS];
 	long numTests = NUMTESTS;
-	long location;					// result of right or left routine
+	long location = 0;					// result of right or left routine
 	long testNodeP1, testNodeP2;	// points in test node segment
-	long i,j;						// Counters
+	long i, j;						// Counters
 	//char str[512];
-	//long	start, end;		
-	
+	//long	start, end;
+
 	for (i=0; i<numSides_node; i++)
 	{
 		if ((*sides_node)[i].triRight == -1) numBoundSides_node++;
 	}
-	
+
 	// Old Way
 	//if (numSides_node == numBoundSides_node){
 	//	new_node = (rand() % numSides_node)+1;
@@ -382,7 +382,7 @@ long newNodexx(Side_List **sides_node)
 	//	return (numBoundSides_node+new_node);
 
 	//start = TickCount();
-	
+
 	if (numSides_node < numTests) numTests = numSides_node;  // Don't do more tests than the total
 															// number of sides to test.
 	for (i=0;i<numTests;i++)
@@ -430,7 +430,7 @@ long oldNodeNum(long pt1, long pt2)
 {
 	long segNum = -999;	// The number that we are looking for
 	long j=0; 			// An index
-	
+
 	while (segNum == -999)
 	{
 		if ((*gSidesList)[j].p1 == pt1 && (*gSidesList)[j].p2 == pt2) segNum = j;
@@ -467,7 +467,7 @@ void split(Side_List **sideListH, long nodeNum)
 	}
 
 	if(gErrStr[0] ) goto done;
-	if(sideListH == nil) 
+	if(sideListH == nil)
 	{
 		strcpy(gErrStr,"Nil handle passed to split");
 		goto done;
@@ -475,7 +475,7 @@ void split(Side_List **sideListH, long nodeNum)
 
 	branchNum = gDagTree.numBranches;
 	IncrementGDagTree();
-				
+
 	(*gDagTree.treeHdl)[branchNum].topoIndex = oldNodeNum(((*sideListH)[nodeNum]).p1,((*sideListH)[nodeNum]).p2);
 
 	sidesLeftH = (Side_List **)_NewHandleClear((numSideInList)*sizeof(Side_List));
@@ -491,7 +491,7 @@ void split(Side_List **sideListH, long nodeNum)
 	// Do the actual splitting
 	for (i=0;i<numSideInList; i++) {
 		if(i == nodeNum) continue; // skip the case that nodeNum = i
-		
+
 		// find the points associated with the test side
 		location = Right_or_Left(nodeP1,nodeP2,(*sideListH)[i].p1,(*sideListH)[i].p2);
 
@@ -510,19 +510,19 @@ void split(Side_List **sideListH, long nodeNum)
 				break;
 		}
 	}
-	
-	
+
+
 // trim sidesL and sidesR to numSidesL and numSidesR, respectively
 	_SetHandleSize((Handle)sidesLeftH,(numSidesL)*sizeof(Side_List));
 	_SetHandleSize((Handle)sidesRightH,(numSidesR)*sizeof(Side_List));
-	
+
 	sideListForNode = (*sideListH)[nodeNum];
-	
+
 	// Left Hand Side
 	if (numSidesL ==0) {
 		(*gDagTree.treeHdl)[branchNum].branchLeft = -8;
 		// Fake a split
-		if (sideListForNode.triLeft == -1) 
+		if (sideListForNode.triLeft == -1)
 		{
 			strcpy(gErrStr,"Boundary not set up correctly - outside is on LHS");
 			goto done;
@@ -542,12 +542,12 @@ void split(Side_List **sideListH, long nodeNum)
 
 
 	// Right Hand Side
-	if (numSidesR == 0) 
+	if (numSidesR == 0)
 	{
 		// Fake a split
 		(*gDagTree.treeHdl)[branchNum].branchRight = -8;  // place holder for steps in dag to all tri
 	}
-	else 
+	else
 	{
 		(*gDagTree.treeHdl)[branchNum].branchRight = gDagTree.numBranches;
 		if(gErrStr[0]) goto done;
@@ -556,14 +556,14 @@ void split(Side_List **sideListH, long nodeNum)
 		split(sidesRightH,nodeNum); 			// recursively for RHS
 		//sidesRightH = nil; // split disposed of this hdl
 	}
-	
+
 done:
 
 	if(sidesRightH) DisposeHandle((Handle) sidesRightH);
 	sidesRightH = nil;
 	if(sidesLeftH) DisposeHandle((Handle) sidesLeftH);
 	sidesLeftH = nil;
-	
+
 	return;
 }
 
@@ -587,34 +587,34 @@ done:
 //////////////////////////////////////////////////////////////////////////////////////////////////
 int	Right_or_Left(long ref_p1,long ref_p2, long test_seg_p1, long test_seg_p2)
 {
-	//long ref_p1_h, ref_p1_v, ref_p2_h, ref_p2_v;	
-	//long test_p1_h, test_p1_v, test_p2_h, test_p2_v;	
-													
-	double ref_h, ref_v;								
-	double test1_h, test1_v;							
-	double test2_h, test2_v;							
-	
-	double cp_1;						
-	double cp_2;						
+	//long ref_p1_h, ref_p1_v, ref_p2_h, ref_p2_v;
+	//long test_p1_h, test_p1_v, test_p2_h, test_p2_v;
+
+	double ref_h, ref_v;
+	double test1_h, test1_v;
+	double test2_h, test2_v;
+
+	double cp_1;
+	double cp_2;
 	int location;
 
 
-	ref_h = ((*gCoord)[ref_p2].pLong - (*gCoord)[ref_p1].pLong);	
+	ref_h = ((*gCoord)[ref_p2].pLong - (*gCoord)[ref_p1].pLong);
 	ref_v = ((*gCoord)[ref_p2].pLat - (*gCoord)[ref_p1].pLat);
 	test1_h = ((*gCoord)[test_seg_p1].pLong - (*gCoord)[ref_p1].pLong);
 	test1_v = ((*gCoord)[test_seg_p1].pLat - (*gCoord)[ref_p1].pLat);
 	test2_h = ((*gCoord)[test_seg_p2].pLong - (*gCoord)[ref_p1].pLong);
 	test2_v = ((*gCoord)[test_seg_p2].pLat - (*gCoord)[ref_p1].pLat);
-	
+
 	cp_1 = test1_h* ref_v - test1_v * ref_h;
 	cp_2 = test2_h* ref_v - test2_v * ref_h;
-	
+
 	//Test for segments that share one point
 	if (ref_p1 == test_seg_p1)
 		cp_1 = 0.;
 	else if (ref_p1 == test_seg_p2)
 		cp_2 = 0.;
-		
+
 	if (ref_p2 == test_seg_p1)
 		cp_1 = 0.;
 	else if (ref_p2 == test_seg_p2)
@@ -632,7 +632,7 @@ int	Right_or_Left(long ref_p1,long ref_p2, long test_seg_p1, long test_seg_p2)
 		else if (cp_2 == 0.)  location = 0.;
 		// This could mean that the segments are the same.....
 		else if (cp_2 < 0.) location=-1;
-		}	
+		}
 	else if (cp_1 < 0.)
 		{
 		if (cp_2 > 0.) location = 0;

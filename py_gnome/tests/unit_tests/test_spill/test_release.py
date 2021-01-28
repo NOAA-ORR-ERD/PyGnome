@@ -47,7 +47,7 @@ class TestRelease(object):
 #     """
 #     bounds = ((0, 10), (2, 12))
 #     release = GridRelease(datetime.now(), bounds, 3)
-#
+
 #     assert np.array_equal(release.start_position, [[0., 10., 0.],
 #                                                    [1., 10., 0.],
 #                                                    [2., 10., 0.],
@@ -59,7 +59,6 @@ class TestRelease(object):
 #                                                    [2., 12., 0.]])
 
 # todo: add other release to this test - need schemas for all
-
 rel_time = datetime(2012, 8, 20, 13)
 rel_type = [PointLineRelease(release_time=rel_time,
                              num_elements=5,
@@ -370,7 +369,7 @@ def test_release_from_splot_data():
                      dtype=int)
     rel = release_from_splot_data(datetime(2015, 1, 1), td_file)
     cumsum = np.cumsum(exp)
-    for ix in xrange(len(cumsum) - 1):
+    for ix in range(len(cumsum) - 1):
         assert np.all(rel.custom_positions[cumsum[ix]] ==
                       rel.custom_positions[cumsum[ix]:cumsum[ix + 1]])
     assert np.all(rel.custom_positions[0] == rel.custom_positions[:cumsum[0]])
