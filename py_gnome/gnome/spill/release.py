@@ -997,6 +997,7 @@ def GridRelease(release_time, bounds, resolution):
     return SpatialRelease(release_time=release_time,
                           custom_positions=positions,
                           num_elements=len(positions),
+                          )
 
 
 class ContinuousSpatialRelease(SpatialRelease):
