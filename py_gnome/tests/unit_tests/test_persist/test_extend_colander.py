@@ -27,7 +27,7 @@ from gnome.environment.timeseries_objects_base import (TimeseriesData,
 from gnome.utilities.serializable_demo_objects import DemoObj
 
 
-@pytest.fixture('class')
+@pytest.fixture(scope='class')
 def dates():
     return np.array([datetime(2000, 1, 1, 0),
                      datetime(2000, 1, 1, 2),
@@ -36,12 +36,12 @@ def dates():
                      datetime(2000, 1, 1, 8), ])
 
 
-@pytest.fixture('class')
+@pytest.fixture(scope='class')
 def series_data():
     return np.array([1, 3, 6, 10, 15])
 
 
-@pytest.fixture('class')
+@pytest.fixture(scope='class')
 def series_data2():
     return np.array([2, 6, 12, 20, 30])
 

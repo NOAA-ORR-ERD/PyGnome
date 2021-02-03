@@ -9,7 +9,7 @@ from __future__ import unicode_literals
 
 
 import numpy as np
-import collections
+import collections.abc as collections
 import warnings
 
 from gnome.gnomeobject import AddLogger
@@ -59,7 +59,7 @@ class LEData(collections.MutableMapping, AddLogger, dict):
         will always be the number of elements that are contained in a
         SpillContainer.
         """
-        return 0 if len(list(self._arrs.values())) is 0 else len(list(self._arrs.values())[0])
+        return 0 if len(list(self._arrs.values())) == 0 else len(list(self._arrs.values())[0])
 
     def __getitem__(self, key):
         return self._arrs[key]

@@ -615,9 +615,11 @@ class SpatialRelease(Release):
                 shpfile = zsf.open(shpfile[0], 'r')
             else:
                 raise ValueError('No .shp file found')
-            dbffile = [f for f in zsf.namelist() if f.split('.')[-1] == 'dbf']
-            print("dbffile:", dbffile)
-            dbffile = zsf.open(dbffile, 'r')
+            dbffile = [f for f in zsf.namelist() if f.split('.')[-1] == 'dbf'][0]
+            if len(dbffile) > 0:
+                dbffile = zsf.open(dbffile[0], 'r')
+            else:
+                raise ValueError('No .dbf file found')
             sf = shp.Reader(shp=shpfile, dbf=dbffile)
             shapes = sf.shapes()
             oil_polys = []

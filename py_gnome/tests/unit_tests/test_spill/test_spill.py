@@ -13,7 +13,7 @@ from gnome.spill_container import SpillContainer
 import pytest
 
 
-@pytest.fixture('function')
+@pytest.fixture(scope='function')
 def sp():
     return Spill()
 
@@ -24,14 +24,14 @@ pos = (0, 1, 2)
 end_release_pos = (1, 2, 3)
 
 
-@pytest.fixture('function')
+@pytest.fixture(scope='function')
 def inst_point_spill():
     release = PointLineRelease(rel_time, pos)
     return Spill(release=release,
                  amount=5000)
 
 
-@pytest.fixture('function')
+@pytest.fixture(scope='function')
 def inst_point_line_spill():
     release = PointLineRelease(rel_time,
                                pos,
@@ -40,7 +40,7 @@ def inst_point_line_spill():
                  amount=5000)
 
 
-@pytest.fixture('function')
+@pytest.fixture(scope='function')
 def cont_point_spill():
     release = PointLineRelease(rel_time,
                                pos,
@@ -49,7 +49,7 @@ def cont_point_spill():
                  amount=5000)
 
 
-@pytest.fixture('function')
+@pytest.fixture(scope='function')
 def cont_point_line_spill():
     release = PointLineRelease(rel_time,
                                pos,
@@ -59,7 +59,7 @@ def cont_point_line_spill():
                  amount=5000)
 
 
-@pytest.fixture('function')
+@pytest.fixture(scope='function')
 def cont_point_spill_le_per_ts():
     release = PointLineRelease(rel_time,
                                pos,

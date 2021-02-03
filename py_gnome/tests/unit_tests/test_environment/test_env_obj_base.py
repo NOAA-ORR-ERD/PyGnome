@@ -22,7 +22,7 @@ from gnome.environment.timeseries_objects_base import (TimeseriesData,
 from .gen_analytical_datasets import gen_all
 
 
-@pytest.fixture('class')
+@pytest.fixture(scope='class')
 def dates():
     return np.array([dt.datetime(2000, 1, 1, 0),
                      dt.datetime(2000, 1, 1, 2),
@@ -31,12 +31,12 @@ def dates():
                      dt.datetime(2000, 1, 1, 8), ])
 
 
-@pytest.fixture('class')
+@pytest.fixture(scope='class')
 def series_data():
     return np.array([1, 3, 6, 10, 15])
 
 
-@pytest.fixture('class')
+@pytest.fixture(scope='class')
 def series_data2():
     return np.array([2, 6, 12, 20, 30])
 
@@ -515,5 +515,5 @@ class TestGridVectorProp(object):
         assert gc.varnames[0] == 'u'
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     pass

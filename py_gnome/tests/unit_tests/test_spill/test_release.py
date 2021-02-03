@@ -84,7 +84,7 @@ rel_time = datetime(2014, 1, 1, 0, 0)
 pos = (0, 10, 20)
 
 
-@pytest.fixture('function')
+@pytest.fixture(scope='function')
 def r1():
     #150 minute continuous release
     return PointLineRelease(release_time=rel_time,
@@ -95,7 +95,7 @@ def r1():
                             release_mass=5000)
 
 
-@pytest.fixture('function')
+@pytest.fixture(scope='function')
 def r2():
     return PointLineRelease(release_time=rel_time,
                             start_position=pos,
@@ -103,7 +103,7 @@ def r2():
                             num_elements=1000)
 
 
-@pytest.fixture('function')
+@pytest.fixture(scope='function')
 def r3():
     return PointLineRelease(release_time=rel_time,
                             start_position=pos,
@@ -263,7 +263,7 @@ from shapely.geometry import Polygon
 custom_positions=np.array([[5,6,7], [8,9,10]])
 polys = [Polygon([[0,0],[0,1],[1,0]])]
 
-@pytest.fixture('function')
+@pytest.fixture(scope='function')
 def sr1():
     #150 minute continuous release
     return SpatialRelease(release_time=rel_time,
@@ -273,7 +273,7 @@ def sr1():
                           polygons=polys,
                           custom_positions=custom_positions)
 
-@pytest.fixture('function')
+@pytest.fixture(scope='function')
 def sr2():
     return SpatialRelease(release_time=rel_time,
                           num_elements=1000,
