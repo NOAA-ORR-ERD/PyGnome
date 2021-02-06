@@ -380,7 +380,7 @@ short GetReferenceCurve(CONSTITUENT *constituent,	// Amplitude-phase array struc
 
 short GetJulianDayHr(short day,		// day of month (1 - 31)
 					short month,	// month (1- 12)
-					short year,		// year (1993 - 2020)
+					short year,		// year (1993 - 2025)
 					double *hour);	// returns hours from beginning of year
 
 short GetTideHeight(	DateTimeRec *BeginDate,DateTimeRec *EndDate,
