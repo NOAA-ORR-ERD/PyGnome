@@ -3,12 +3,13 @@ NetCDF outputter - write the nc_particles netcdf file format
 '''
 import os
 from datetime import datetime
+import zipfile
 
 import netCDF4 as nc
 
 import numpy as np
 
-from colander import SchemaNode, String, drop, Int, Bool
+from colander import SchemaNode, String, Boolean, drop, Int, Bool
 
 from gnome import __version__
 from gnome.basic_types import oil_status, world_point_type
@@ -174,6 +175,9 @@ class NetCDFOutputSchema(BaseOutputterSchema):
     _middle_of_run = SchemaNode(
         Bool(), missing=drop, save=True, read_only=True, test_equal=False
     )
+    zip_output = SchemaNode(
+        Boolean(), missing=drop, save=True, update=True
+    )
 
 
 class NetCDFOutput(Outputter, OutputterFilenameMixin):
@@ -268,6 +272,7 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
 
     def __init__(self,
                  filename,
+                 zip_output=False,
                  which_data='standard',
                  compress=True,
                  # FIXME: this should not be default, but since we don't have
@@ -283,6 +288,8 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
         :param filename: Required parameter. The filename in which to
             store the NetCDF data.
         :type filename: str. or unicode
+
+        :param zip_output=True: whether to zip up the output netcdf files
 
         :param which_data='standard':
             If 'standard', write only standard data.
@@ -326,9 +333,15 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
 
         name, ext = os.path.splitext(self.filename)
         self._u_filename = '{0}_uncertain{1}'.format(name, ext)
+        self.forecast_filename = self.filename
+        self.zip_filename = '{0}.{1}'.format(name, 'zip')
 
         # fixme: move to base class?
         self.name = os.path.split(filename)[1]
+
+        self.zip_output = zip_output
+        if self.zip_output is True:
+            self.filename = self.zip_filename
 
         if which_data.lower() in self.which_data_lu:
             self._which_data = which_data.lower()
@@ -493,6 +506,7 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
     def prepare_for_model_run(self,
                               model_start_time,
                               spills,
+                              uncertain = False,
                               **kwargs):
         """
         .. function:: prepare_for_model_run(model_start_time,
@@ -536,13 +550,16 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
         use super to pass model_start_time, cache=None and
         remaining kwargs to base class method
         """
-        super(NetCDFOutput, self).prepare_for_model_run(model_start_time,
-                                                        spills, **kwargs)
         if not self.on:
             return
 
+        super(NetCDFOutput, self).prepare_for_model_run(model_start_time,
+                                                        spills, **kwargs)
+
         # this should have been called by the superclass version
         # self.clean_output_files()
+
+        self.uncertain = uncertain
 
         self._update_var_attributes(spills)
 
@@ -550,7 +567,7 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
             if sc.uncertain:
                 file_ = self._u_filename
             else:
-                file_ = self.filename
+                file_ = self.forecast_filename
 
             self._file_exists_error(file_)
 
@@ -628,20 +645,26 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
             dtype = 'u1'
 
         try:
-            if var_name != "non_weathering":
-                # fixme: TOTAL Kludge --
-                # failing with bad chunksize error for this particular varaible
-                # I have no idea why!!!!
-                var = grp.createVariable(var_name,
-                                         dtype,
-                                         shape,
-                                         zlib=self._compress,
-                                         chunksizes=chunksz)
-            else:
-                var = grp.createVariable(var_name,
-                                         dtype,
-                                         shape,
-                                         zlib=self._compress)
+            var = grp.createVariable(var_name,
+                                     dtype,
+                                     shape,
+                                     zlib=self._compress,
+                                     chunksizes=chunksz)
+#             this should be fixed now since non_weathering is initialized
+#             if var_name != "non_weathering":
+#                 # fixme: TOTAL Kludge --
+#                 # failing with bad chunksize error for this particular varaible
+#                 # I have no idea why!!!!
+#                 var = grp.createVariable(var_name,
+#                                          dtype,
+#                                          shape,
+#                                          zlib=self._compress,
+#                                          chunksizes=chunksz)
+#             else:
+#                 var = grp.createVariable(var_name,
+#                                          dtype,
+#                                          shape,
+#                                          zlib=self._compress)
         except RuntimeError as err:
             msg = ("\narguments are:\n"
                    "\tvar_name: {}\n"
@@ -687,7 +710,7 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
             if sc.uncertain and self._u_filename is not None:
                 file_ = self._u_filename
             else:
-                file_ = self.filename
+                file_ = self.forecast_filename
 
             time_stamp = sc.current_time_stamp
 
@@ -726,11 +749,33 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
                                                 )
                         grp.variables[key][idx] = val
 
+        if islast_step:
+            if self.zip_output is True:
+                self._zip_output_files()
+ 
         self._start_idx = _end_idx  # set _start_idx for the next timestep
 
         return {'filename': (self.filename,
                              self._u_filename),
                 'time_stamp': time_stamp}
+
+    def _zip_output_files(self):
+        zfilename = self.zip_filename
+        zipf = zipfile.ZipFile(zfilename, 'w')
+
+        forcst_file = self.forecast_filename
+        dir, file_to_zip = os.path.split(forcst_file)
+        zipf.write(forcst_file,
+                   arcname=file_to_zip)
+        os.remove(forcst_file)
+        if self.uncertain is True:
+           uncrtn_file = self._u_filename
+           dir, file_to_zip = os.path.split(uncrtn_file)
+           zipf.write(uncrtn_file,
+                      arcname=file_to_zip)
+           os.remove(uncrtn_file)
+
+        zipf.close()
 
     def clean_output_files(self):
         '''
@@ -744,6 +789,10 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
 
         try:
             os.remove(self._u_filename)
+        except OSError:
+            pass  # it must not be there
+        try:
+            os.remove(self.forecast_filename)
         except OSError:
             pass  # it must not be there
 

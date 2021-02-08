@@ -4,8 +4,8 @@ import numpy as np
 from colander import (SchemaNode, Bool, Float, drop)
 
 from gnome.basic_types import oil_status
-from gnome.basic_types import (world_point_type,
-                               status_code_type)
+# from gnome.basic_types import (world_point_type,
+#                                status_code_type)
 
 from gnome.utilities.projections import FlatEarthProjection
 
@@ -58,6 +58,7 @@ class PyCurrentMover(movers.PyMover):
                  uncertain_across=.25,
                  uncertain_cross=.25,
                  default_num_method='RK2',
+                 grid_topology=None,
                  **kwargs
                  ):
         """
@@ -86,7 +87,8 @@ class PyCurrentMover(movers.PyMover):
                            Default: RK2
         """
 
-        (super(PyCurrentMover, self).__init__(default_num_method=default_num_method, **kwargs))
+        (super(PyCurrentMover, self).__init__(default_num_method=default_num_method,
+                                              **kwargs))
         self.filename = filename
         self.current = current
 
@@ -95,6 +97,7 @@ class PyCurrentMover(movers.PyMover):
                 raise ValueError("must provide a filename or current object")
             else:
                 self.current = GridCurrent.from_netCDF(filename=self.filename,
+                                                       grid_topology=grid_topology,
                                                        **kwargs)
         self.scale_value = scale_value
 
@@ -173,6 +176,39 @@ class PyCurrentMover(movers.PyMover):
             lats = self.current.grid.node_lat
 
             return np.column_stack((lons.reshape(-1), lats.reshape(-1)))
+
+    def get_lat_lon_data(self):
+        """
+            function for getting lat lon data from the mover
+        """
+        if isinstance(self.current.grid, Grid_U):
+            grid_data = self.current.grid.nodes[self.current.grid.faces[:]]
+            dtype = grid_data.dtype.descr
+            unstructured_type = dtype[0][1]
+            lons = (grid_data
+                    .view(dtype=unstructured_type)
+                    .reshape(-1, len(dtype))[0::2, 0])
+            lats = (grid_data
+                    .view(dtype=unstructured_type)
+                    .reshape(-1, len(dtype))[1::2, 0])
+
+            return lons, lats
+        else:
+            lons = self.current.grid.node_lon
+            lats = self.current.grid.node_lat
+
+            return lons.reshape(-1), lats.reshape(-1)
+
+    def get_bounds(self):
+        '''
+            Return a bounding box surrounding the grid data.
+        '''
+        longs, lats = self.get_lat_lon_data()
+
+        left, right = longs.min(), longs.max()
+        bottom, top = lats.min(), lats.max()
+
+        return ((left, bottom), (right, top))
 
     def get_center_points(self):
         if (hasattr(self.current.grid, 'center_lon') and

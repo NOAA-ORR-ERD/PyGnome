@@ -47,7 +47,7 @@ class ShapeOutput(Outputter):
         filename = filename.split(".zip")[0].split(".shp")[0]
 
         if "." in os.path.split(filename)[-1]:
-            # anything after a doit gets removed
+            # anything after a dot gets removed
             # I *think* pyshp is doing that, but not sure.
             raise ValueError("shape files can't have a dot in the filename")
 
@@ -62,6 +62,7 @@ class ShapeOutput(Outputter):
     def prepare_for_model_run(self,
                               model_start_time,
                               spills,
+                              uncertain = False,
                               **kwargs):
         """
         .. function:: prepare_for_model_run(model_start_time,
@@ -101,6 +102,8 @@ class ShapeOutput(Outputter):
                                                        spills,
                                                        **kwargs)
 
+
+        self.uncertain = uncertain
 
         # shouldn't be required if prepare_for_model_ run cleaned them out.
         self._file_exists_error(self.filename + '.zip')
@@ -151,6 +154,10 @@ class ShapeOutput(Outputter):
         output_info = {'time_stamp': sc.current_time_stamp.isoformat(),
                        'output_filename': output_filename}
 
+        if islast_step:
+            if self.uncertain is True:
+                self._zip_output_files()
+ 
         return output_info
 
     def _record_shape_entries(self, sc):
@@ -211,6 +218,27 @@ class ShapeOutput(Outputter):
                 os.remove(filename + '.' + suf)
 
             zipf.close()
+
+    def _zip_output_files(self):
+        if self.zip_output is True:
+            zfilename_temp = self.filename + '_temp' + '.zip'
+            zfilename = self.filename + '.zip'
+            zipf = zipfile.ZipFile(zfilename_temp, 'w')
+
+            forcst_file = zfilename
+            dir, file_to_zip = os.path.split(forcst_file)
+            zipf.write(forcst_file,
+                       arcname=file_to_zip)
+            os.remove(forcst_file)
+            if self.uncertain is True:
+               uncrtn_file = self.filename + '_uncert' + '.zip'
+               dir, file_to_zip = os.path.split(uncrtn_file)
+               zipf.write(uncrtn_file,
+                          arcname=file_to_zip)
+               os.remove(uncrtn_file)
+
+            zipf.close()
+            os.rename(zfilename_temp, zfilename)
 
     def rewind(self):
         '''

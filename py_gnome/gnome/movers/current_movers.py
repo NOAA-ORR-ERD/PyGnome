@@ -124,6 +124,14 @@ class CurrentMoversBase(CyMover):
 
         return points
 
+    def get_bounds(self):
+        '''
+            Right now the cython mover only gets the triangular center points.
+        '''
+        bounds = self.mover._get_bounds()
+        current_bounds = ((bounds["loLong"] / 1e6, bounds["loLat"] / 1e6), (bounds["hiLong"] / 1e6, bounds["hiLat"] / 1e6))
+        return current_bounds
+
 
 class CatsMoverSchema(CurrentMoversBaseSchema):
     '''static schema for CatsMover'''

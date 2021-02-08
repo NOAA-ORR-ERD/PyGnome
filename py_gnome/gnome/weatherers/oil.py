@@ -9,7 +9,6 @@ from backports.functools_lru_cache import lru_cache
 
 import json
 import numpy as np
-from scipy.optimize import curve_fit
 
 from colander import (SchemaNode, Int, String, Float, drop)
 
@@ -30,19 +29,19 @@ class Density():
                 .format(self))
 
 
-class KVis():
+# class KVis():
 
-    def __init__(self, m_2_s, ref_temp_k, weathering=0):
-        self.m_2_s = m_2_s
-        self.ref_temp_k = ref_temp_k
-        self.weathering = weathering
+#     def __init__(self, m_2_s, ref_temp_k, weathering=0):
+#         self.m_2_s = m_2_s
+#         self.ref_temp_k = ref_temp_k
+#         self.weathering = weathering
 
-    def __repr__(self):
-        return ('<KVis({0.m_2_s} m^2/s at {0.ref_temp_k}K, w={0.weathering})>'
-                .format(self))
+#     def __repr__(self):
+#         return ('<KVis({0.m_2_s} m^2/s at {0.ref_temp_k}K, w={0.weathering})>'
+#                 .format(self))
 
-    def __getitem__(self, item):
-        return getattr(self, item)
+#     def __getitem__(self, item):
+#         return getattr(self, item)
 
 
 def density_at_temp(ref_density, ref_temp_k, temp_k, k_rho_t=0.0008):
@@ -71,7 +70,7 @@ def vol_expansion_coeff(rho_0, t_0, rho_1, t_1):
     return k_rho_t
 
 
-def kvis_at_temp(ref_kvis, ref_temp_k, temp_k, k_v2=2416.0):
+def kvis_at_temp(ref_kvis, ref_temp_k, temp_k, k_v2=2100):
     '''
         Source: Adios2
 
@@ -79,11 +78,14 @@ def kvis_at_temp(ref_kvis, ref_temp_k, temp_k, k_v2=2416.0):
         then we can estimate what its viscosity might be at
         another temperature.
 
-        Note: Bill's most recent viscosity document, and an analysis of the
+        Note: An analysis of the
               multi-KVis oils in our oil library suggest that a value of
-              2416.0 (Abu Eishah 1999) would be a good default value for k_v2.
+              2100 would be a good default value for k_v2.
     '''
-    return ref_kvis * np.exp(k_v2 / temp_k - k_v2 / ref_temp_k)
+    print("kvis_at_temp called")
+    print(ref_kvis, ref_temp_k, temp_k, k_v2)
+    print("A:", ref_kvis * np.exp(-k_v2 / ref_temp_k))
+    return ref_kvis * np.exp((k_v2 / temp_k) - (k_v2 / ref_temp_k))
 
 
 class OilSchema(ObjTypeSchema):
@@ -214,8 +216,7 @@ class Oil(object):
         self.bull_time = bullwinkle_time
         self._pour_point = pour_point
         self._flash_point = flash_point
-        self.solubility = solubility	
-        #self._k_v2 = 2416.0
+        self.solubility = solubility
         self._k_v2 = None
 
         # set the PC properties
@@ -230,6 +231,10 @@ class Oil(object):
 
         self._bullwinkle = None
         self._bulltime = None
+
+        # these will be initialized when used
+        self._k_v2 = None # decay constant for viscosity curve
+        self._visc_A = None # constant for viscosity curve
         #self.product_type = "Refined"
 
     @classmethod
@@ -270,26 +275,26 @@ class Oil(object):
         processing is done to each attribute. They are presented as is.
         """
 
-        data = {'name':self.name,
-                       'api':self.api,
-                       'adios_oil_id':self.adios_oil_id,
-                       'pour_point':self._pour_point,
-                       'flash_point':self._flash_point,
-                       'solubility':self.solubility,
-                       'bullwinkle_fraction':self.bullwinkle,
-                       'bullwinkle_time':self.bulltime,
-                       'densities':self.densities,
-                       'density_ref_temps':self.density_ref_temps,
-                       'density_weathering':self.density_weathering,
-                       'kvis':self.kvis,
-                       'kvis_ref_temps':self.kvis_ref_temps,
-                       'kvis_weathering':self.kvis_weathering,
-                       'emulsion_water_fraction_max':self.emulsion_water_fraction_max,
-                       'mass_fraction':self.mass_fraction.tolist(),
-                       'boiling_point':self.boiling_point.tolist(),
-                       'molecular_weight':self.molecular_weight.tolist(),
-                       'component_density':self.component_density.tolist(),
-                       'sara_type':self.sara_type}
+        data = {'name': self.name,
+                       'api': self.api,
+                       'adios_oil_id': self.adios_oil_id,
+                       'pour_point': self._pour_point,
+                       'flash_point': self._flash_point,
+                       'solubility': self.solubility,
+                       'bullwinkle_fraction': self.bullwinkle,
+                       'bullwinkle_time': self.bulltime,
+                       'densities': self.densities,
+                       'density_ref_temps': self.density_ref_temps,
+                       'density_weathering': self.density_weathering,
+                       'kvis': self.kvis,
+                       'kvis_ref_temps': self.kvis_ref_temps,
+                       'kvis_weathering': self.kvis_weathering,
+                       'emulsion_water_fraction_max': self.emulsion_water_fraction_max,
+                       'mass_fraction': self.mass_fraction.tolist(),
+                       'boiling_point': self.boiling_point.tolist(),
+                       'molecular_weight': self.molecular_weight.tolist(),
+                       'component_density': self.component_density.tolist(),
+                       'sara_type': self.sara_type}
 
         return data
 
@@ -307,27 +312,27 @@ class Oil(object):
 
         json_ = super(Oil, self).to_dict(json_=json_)
 
-        data = {'name':self.name,
-                       'api':self.api,
-                       'adios_oil_id':self.adios_oil_id,
-                       #'pour_point':self.pour_point(),
-                       'pour_point':self._pour_point,
-                       'flash_point':self._flash_point,
-                       'solubility':self.solubility,
-                       'bullwinkle_fraction':self.bullwinkle,
-                       'bullwinkle_time':self.bulltime,
-                       'densities':self.densities,
-                       'density_ref_temps':self.density_ref_temps,
-                       'density_weathering':self.density_weathering,
-                       'kvis':self.kvis,
-                       'kvis_ref_temps':self.kvis_ref_temps,
-                       'kvis_weathering':self.kvis_weathering,
-                       'emulsion_water_fraction_max':self.emulsion_water_fraction_max,
-                       'mass_fraction':self.mass_fraction.tolist(),
-                       'boiling_point':self.boiling_point.tolist(),
-                       'molecular_weight':self.molecular_weight.tolist(),
-                       'component_density':self.component_density.tolist(),
-                       'sara_type':self.sara_type}
+        data = {'name': self.name,
+                'api': self.api,
+                'adios_oil_id': self.adios_oil_id,
+                #'pour_point': self.pour_point(),
+                'pour_point': self._pour_point,
+                'flash_point': self._flash_point,
+                'solubility': self.solubility,
+                'bullwinkle_fraction': self.bullwinkle,
+                'bullwinkle_time': self.bulltime,
+                'densities': self.densities,
+                'density_ref_temps': self.density_ref_temps,
+                'density_weathering': self.density_weathering,
+                'kvis': self.kvis,
+                'kvis_ref_temps': self.kvis_ref_temps,
+                'kvis_weathering': self.kvis_weathering,
+                'emulsion_water_fraction_max': self.emulsion_water_fraction_max,
+                'mass_fraction': self.mass_fraction.tolist(),
+                'boiling_point': self.boiling_point.tolist(),
+                'molecular_weight': self.molecular_weight.tolist(),
+                'component_density': self.component_density.tolist(),
+                'sara_type': self.sara_type}
 
         data.update(json_)
         return data
@@ -414,6 +419,7 @@ class Oil(object):
         '''
             return a list of densities for the oil at a specified state
             of weathering.
+            #fixme: this should not happen here!
             We include the API as a density if:
             - the specified weathering is 0
             - the culled list of densities does not contain a measurement
@@ -424,9 +430,11 @@ class Oil(object):
         weathering = [d for d in self.density_weathering]
         new_densities = []
 
-        for x in range(0,len(densities)):
-            if weathering[x] == 0:	#also check None
-                new_densities.append(Density(kg_m_3=densities[x],ref_temp_k=density_ref_temps[x],weathering=0.0))
+        for x in range(0, len(densities)):
+            if weathering[x] == 0: # also check None
+                new_densities.append(Density(kg_m_3=densities[x],
+                                             ref_temp_k=density_ref_temps[x],
+                                             weathering=0.0))
 
         return sorted(new_densities, key=lambda d: d.ref_temp_k)
 
@@ -435,7 +443,7 @@ class Oil(object):
             Get the oil density at a temperature or temperatures.
 
             Note: there is a catch-22 which prevents us from getting
-                  the min_temp in all casees:
+                  the min_temp in all cases:
                   - to estimate pour point, we need viscosities
                   - if we need to convert dynamic viscosities to
                     kinematic, we need density at 15C
@@ -474,7 +482,7 @@ class Oil(object):
         k_rho_t = self._vol_expansion_coeff(densities, temperature)
 
         rho_t = density_at_temp(ref_density, ref_temp_k,
-                                    temperature, k_rho_t)
+                                temperature, k_rho_t)
 
         if len(rho_t) == 1:
             return rho_t[0]
@@ -485,6 +493,7 @@ class Oil(object):
 
     @property
     def standard_density(self):
+        # fixme: this should simply be a set value
         '''
             Standard density is simply the density at 15C, which is the
             default temperature for density_at_temp()
@@ -566,6 +575,7 @@ class Oil(object):
 
             We accept only a scalar temperature or a sequence of temperatures
         '''
+        # fixme: this is NOT how to do this!
         if hasattr(temperature, '__iter__'):
             # we like to deal with numpy arrays as opposed to simple iterables
             temperature = np.array(temperature)
@@ -613,111 +623,69 @@ class Oil(object):
 
 
     def kvis_at_temp(self, temp_k=288.15, weathering=0.0):
-        shape = None
+        """
+        Compute the kinematic viscosity of the oil as a function of temperature
 
-        if hasattr(temp_k, '__iter__'):
-            # we like to deal with numpy arrays as opposed to simple iterables
-            temp_k = np.array(temp_k)
-            shape = temp_k.shape
-            temp_k = temp_k.reshape(-1)
+        :param temp_k: temperatures to compute at: can be scalar or array of values.
+                       should be in Kelvin
 
-        kvis = [d for d in self.kvis]
-        kvis_ref_temps = [d for d in self.kvis_ref_temps]
-        weathering = [d for d in self.kvis_weathering]
-        kvis_list = []
+        :param weathering: fraction weathered -- currently not implemented
 
-        for x in range(0,len(kvis)):
-            if weathering[x] == 0:	#also check None
-                kvis_list.append(KVis(m_2_s=kvis[x],ref_temp_k=kvis_ref_temps[x],weathering=0.0))
+        viscosity as a function of temp is given by:
+        v = A exp(k_v2 / T)
 
-       # agg = dict(kvis_list)
+        with constants determined from measured data
+        """
+        if weathering != 0.0:
+            raise NotImplementedError("computing viscosity of weathered oil"
+                                      "is not implemented yet")
 
-        #new_kvis_list = zip(*[(KVis(m_2_s=k, ref_temp_k=t, weathering=w), e)
-        #             for (t, w), (k, e) in sorted(agg.iteritems())])
-        #kvis_list = [kv for kv in self.aggregate_kvis()[0]
-                     #if (kv.weathering == weathering)]
-        closest_kvis = self.closest_to_temperature(kvis_list, temp_k)
+        temp_k = np.asarray(temp_k)
 
-        if closest_kvis is not None:
-            try:
-                # treat as a list
-                ref_kvis, ref_temp_k = zip(*[(kv[0].m_2_s, kv[0].ref_temp_k)
-                                             for kv in closest_kvis])
-                if len(closest_kvis) > 1:
-                    ref_kvis = np.array(ref_kvis).reshape(temp_k.shape)
-                    ref_temp_k = np.array(ref_temp_k).reshape(temp_k.shape)
-                else:
-                    ref_kvis, ref_temp_k = ref_kvis[0], ref_temp_k[0]
-            except TypeError:
-                # treat as a scalar
-                ref_kvis, ref_temp_k = (closest_kvis[0].m_2_s,
-                                        closest_kvis[0].ref_temp_k)
-        else:
-            return None
+        if self._k_v2 is None or self._visc_A is None:
+            self.determine_visc_constants()
 
-        if self._k_v2 is None:
-            self.determine_k_v2(kvis_list)
+        return self._visc_A * np.exp(self._k_v2 / temp_k)
 
-        kvis_t = kvis_at_temp(ref_kvis, ref_temp_k, temp_k, self._k_v2)
 
-        if shape is not None:
-            return kvis_t.reshape(shape)
-        else:
-            return kvis_t
-
-    def determine_k_v2(self, kvis_list=None):
+    def determine_visc_constants(self):
         '''
-            The value k_v2 is the coefficient of exponential decay used
-            when calculating kinematic viscosity as a function of
-            temperature.
-            - If the oil contains two or more viscosity measurements, then
-              we will make an attempt at determining k_v2 using a least
-              squares fit.
-            - Otherwise we will need to choose a reasonable average default
-              value.  Bill's most recent viscosity document, and an
-              analysis of the multi-KVis oils in our oil library suggest that
-              a value of 2416.0 (Abu Eishah 1999) would be a good default
-              value.
+        viscosity as a function of temp is given by:
+
+        v = A exp(k_v2 / T)
+
+        The constants, A and k_v2 are determined from the viscosity data:
+
+        If only one data point, a default value for k_vs is used:
+           2100 K, based on analysis of data in the ADIOS database as of 2018
+
+        If two data points, the two constants are directly computed
+
+        If three or more, the constants are computed by a least squares fit.
         '''
-        self._k_v2 = 2416.0
+        # find viscosity measurements with zero weathering
 
-        def exp_func(temp_k, a, k_v2):
-            return a * np.exp(k_v2 / temp_k)
+        # this sets:
+        self._k_v2 = None # decay constant for viscosity curve
+        self._visc_A = None
 
-        if kvis_list is None:
-            kvis_list = [kv for kv in self.aggregate_kvis()[0]
-                         if (kv.weathering in (None, 0.0))]
+        kvis = [k for k, w in zip(self.kvis, self.kvis_weathering) if w == 0.0]
+        kvis_ref_temps = [t for t, w in zip(self.kvis_ref_temps,
+                                            self.kvis_weathering) if w == 0.0]
 
-        if len(kvis_list) < 2:
-            return
-
-        ref_temp_k, ref_kvis = zip(*[(k.ref_temp_k, k.m_2_s)
-                                     for k in kvis_list])
-
-        for k in np.logspace(3.6, 4.5, num=8):
-            # k = log range from about 5000-32000
-            a_coeff = ref_kvis[0] * np.exp(-k / ref_temp_k[0])
-
-            try:
-                popt, pcov = curve_fit(exp_func, ref_temp_k, ref_kvis,
-                                       p0=(a_coeff, k), maxfev=2000)
-
-                # - we want our covariance to be a reasonably small number,
-                #   but it can get into the thousands even for a good fit.
-                #   So we will only check for inf values.
-                # - for sample sizes < 3, the covariance is unreliable.
-                if len(ref_kvis) > 2 and np.any(pcov == np.inf):
-                    print 'covariance too high.'
-                    continue
-
-                if popt[1] <= 1.0:
-                    continue
-
-                self._k_v2 = popt[1]
-                break
-            except (ValueError, RuntimeError):
-                continue
-
+        if len(kvis) == 1:  # use default k_v2
+            self._k_v2 = 2100.0
+            self._visc_A = kvis[0] * np.exp(-self._k_v2 / kvis_ref_temps[0])
+        else:
+            # do a least squares fit to the data
+            # viscs = np.array(kvis)
+            # temps = np.array(kvis_ref_temps)
+            b = np.log(kvis)
+            A = np.c_[np.ones_like(b), 1.0 / np.array(kvis_ref_temps)]
+            x, residuals, rank, s = np.linalg.lstsq(A, b, rcond=None)
+            self._k_v2 = x[1]
+            self._visc_A = np.exp(x[0])
+        return
 
     def get(self, prop):
         'get oil props'
@@ -741,11 +709,11 @@ class Oil(object):
         # check for user input value, otherwise set to -999 as a flag
         bulltime = -999.
 
-        if self._bulltime is not None:	
+        if self._bulltime is not None:
             return self._bulltime
         else:
             if self.bull_time is not None:
-                return self.bull_time 
+                return self.bull_time
             else:
                 return bulltime
             #return bulltime

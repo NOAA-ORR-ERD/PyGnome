@@ -64,6 +64,7 @@ public:
 	VelocityRec			GetPatValue (WorldPoint p);
 	VelocityRec 		GetScaledPatValue(const Seconds& model_time, WorldPoint p,Boolean * useEddyUncertainty);//JLM 5/12/99
 	
+	virtual WorldRect	GetGridBounds(){return timeGrid->GetGridBounds();}	
 	/*virtual OSErr		GetStartTime(Seconds *startTime);
 	 virtual OSErr		GetEndTime(Seconds *endTime);*/
 	//virtual double		GetStartUVelocity(long index);

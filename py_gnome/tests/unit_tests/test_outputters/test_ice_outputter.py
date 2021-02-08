@@ -16,6 +16,9 @@ from gnome.outputters import IceGeoJsonOutput, IceJsonOutput
 
 from ..conftest import testdata
 
+pytest.mark.skip("ice outputter not currently useful -- tests slow")
+
+
 curr_file = testdata['IceMover']['ice_curr_curv']
 topology_file = testdata['IceMover']['ice_top_curv']
 c_ice_mover = IceMover(curr_file, topology_file)
@@ -42,7 +45,7 @@ def model(sample_model, output_dir):
                                              release_time=model.start_time,
                                              end_position=start_pos)
 
-    release = SpatialRelease(start_position=line_pos,
+    release = SpatialRelease(custom_positions=line_pos,
                              release_time=model.start_time)
 
     model.spills += Spill(release)
