@@ -368,6 +368,15 @@ cdef class CyGridCurrentMover(CyCurrentMoverBase):
         """
         return self.grid_current.IsRegularGrid()
 
+    def _get_bounds(self):
+        """
+            Invokes the GetBounds method of TriGridVel_c object
+            to get the grid bounds
+        """
+        bounds = self.grid_current.GetGridBounds()
+
+        return bounds
+
     def get_num_points(self):
         """
             Invokes the GetNumPoints method of TriGridVel_c object

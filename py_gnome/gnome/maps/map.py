@@ -4,7 +4,6 @@
 from gnome.gnomeobject import GnomeId
 from gnome.environment.gridded_objects_base import PyGrid
 from __builtin__ import property
-
 """
 An implementation of the GNOME land-water map.
 
@@ -27,7 +26,7 @@ import py_gd
 
 import numpy as np
 
-from colander import SchemaNode, String, Float, Integer, Boolean
+from colander import SchemaNode, String, Float, Integer, Boolean, drop
 
 from geojson import FeatureCollection, Feature, MultiPolygon
 
@@ -78,6 +77,7 @@ class MapFromBNASchema(RasterMapSchema):
         String(), isdatafile=True, test_equal=False)
     refloat_halflife = SchemaNode(Float())
     raster_size = SchemaNode(Float())
+    shift_lons = SchemaNode(Integer(), missing=drop)
     approximate_raster_interval = SchemaNode(Float(), save=False, update=False, read_only=True)
 
 
@@ -185,6 +185,16 @@ class GnomeMap(GnomeId):
                            (360, 90), (360, -90)),
                            dtype=np.float64)
         self._map_bounds = np.array(mb)
+
+    def get_map_bounding_box(self):
+
+        bounds = self._map_bounds
+        longs = bounds[:,0]
+        lats = bounds[:,1]
+        left, right = longs.min(), longs.max()
+        bottom, top = lats.min(), lats.max()
+
+        return ((left, bottom), (right, top))
 
     @property
     def spillable_area(self):
@@ -1053,6 +1063,20 @@ class RasterMap(GnomeMap):
         return self.projection.to_pixel(coords)
 
 
+def ShiftLon360(points):
+    try:
+        points[points[:,0]<0,0] = points[:,0]+360
+    except ValueError:
+        pass
+    return points
+            
+def ShiftLon180(points):
+    try:
+        points[points[:,0]>180,0] = points[:,0]-360
+    except ValueError:
+        pass
+    return points
+            
 class MapFromBNA(RasterMap):
     """
     A raster land-water map, created from file with polygons in it.
@@ -1066,6 +1090,7 @@ class MapFromBNA(RasterMap):
                  raster_size=4096 * 4096,
                  map_bounds=None,
                  spillable_area=None,
+                 shift_lons=0,
                  **kwargs):
         """
         Creates a RasterMap from a data file.
@@ -1080,8 +1105,12 @@ class MapFromBNA(RasterMap):
                             raster -- the actual size will match the
                             aspect ratio of the bounding box of the land
         :type raster_size: integer
+        
+        :param shiftLons: shift longitudes to be in -180 to 180 coords or 0 to 360.
+                          180, or 360 are valid inputs
+        :type shiftLons: integer
 
-        Optional arguments (kwargs):
+        Optional arguments (kwargs):        
 
         :param refloat_halflife: the half-life (in hours) for the re-floating.
 
@@ -1096,6 +1125,7 @@ class MapFromBNA(RasterMap):
         """
         self.filename = filename
         self._raster_size = raster_size
+        self.shift_lons = shift_lons
 
         # fixme: do some file type checking here.
         polygons = haz_files.ReadBNA(filename, 'PolygonSet')
@@ -1111,6 +1141,12 @@ class MapFromBNA(RasterMap):
 
         land_polys = PolygonSet()  # and lakes....
         spillable_area_bna = PolygonSet()
+        
+        #add if based on input param 
+        if shift_lons == 360:
+            polygons.TransformData(ShiftLon360)
+        elif shift_lons == 180:
+            polygons.TransformData(ShiftLon180)
 
         for p in polygons:
             if p.metadata[1].lower().replace(' ', '') == 'spillablearea':
@@ -1160,6 +1196,7 @@ class MapFromBNA(RasterMap):
             **kwargs)
         return None
 
+    
     def build_raster(self, land_polys=None, BB=None):
         """
         Build the underlying raster used for the map

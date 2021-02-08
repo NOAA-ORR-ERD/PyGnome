@@ -410,3 +410,13 @@ cdef class CyCatsMover(CyCurrentMover):
         memcpy(&top[0], top_hdl[0], sz)
 
         return top
+
+    def _get_bounds(self):
+        """
+            Invokes the GetBounds method of TriGridVel_c object
+            to get the grid bounds
+        """
+        bounds = self.cats.GetGridBounds()
+
+        return bounds
+

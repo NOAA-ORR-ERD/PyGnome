@@ -89,7 +89,7 @@ class WeatheringData(Weatherer):
            water temperature which is constant for now.
         '''
         # nothing released yet - set everything to 0.0
-        for key in ('avg_density', 'floating', 'amount_released',
+        for key in ('avg_density', 'floating', 'amount_released', 'non_weathering',
                     'avg_viscosity'):
             sc.mass_balance[key] = 0.0
 

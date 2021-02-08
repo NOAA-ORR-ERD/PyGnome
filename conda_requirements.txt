@@ -38,6 +38,11 @@ regex
 unidecode>=0.04.19
 pyshp=1.2.12
 
+#for SpatialRelease
+trimesh
+shapely
+pyproj
+mapbox_earcut # from NOAA_ORR_ERD channel
 
 # NOAA maintained packages
 gridded=0.2.5

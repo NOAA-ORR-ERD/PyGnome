@@ -21,6 +21,7 @@ cdef extern from "CurrentMover_c.h":
         double fDownCurUncertainty
         double fRightCurUncertainty
         double fLeftCurUncertainty
+        WorldRect 	GetGridBounds()
 
 cdef extern from "CATSMover_c.h":
     cdef cppclass CATSMover_c(CurrentMover_c):
