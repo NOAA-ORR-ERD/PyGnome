@@ -37,7 +37,7 @@ print("gnome path is:", gnome_path)
 cy_gnome_path = pathlib.Path(gnome_path) / 'cy_gnome'
 
 print("stuff in cygnome:")
-for p in cy_gnome_path.glob("*.so"):
+for p in cy_gnome_path.glob("*"):
     print(p)
 
 
