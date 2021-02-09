@@ -11,7 +11,7 @@ from enum import IntEnum
 # from gnome.utilities.enum import IntEnum
 
 # pull stuff in from the C++ headers
-from .type_defs cimport *
+from gnome.cy_gnome.type_defs cimport *
 
 
 '''
