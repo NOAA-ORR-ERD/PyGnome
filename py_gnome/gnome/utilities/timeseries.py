@@ -111,7 +111,7 @@ class Timeseries(GnomeId):
             self.ossm = CyTimeseries(timeseries=time_value_pair)
         else:
             ts_format = tsformat(coord_sys)
-            self.ossm = CyTimeseries(filename=fn,
+            self.ossm = CyTimeseries(filename=filename,
                                      file_format=ts_format)
 
         self.extrapolation_is_allowed = extrapolation_is_allowed
