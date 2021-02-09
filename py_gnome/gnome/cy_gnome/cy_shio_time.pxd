@@ -9,3 +9,4 @@ from .cy_ossm_time cimport CyOSSMTime
 
 cdef class CyShioTime(CyOSSMTime):
     cdef ShioTimeValue_c * shio
+    cdef unicode _yeardata_path

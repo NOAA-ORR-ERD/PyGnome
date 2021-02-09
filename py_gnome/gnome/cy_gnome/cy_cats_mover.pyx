@@ -80,6 +80,19 @@ cdef class CyCatsMover(CyCurrentMover):
         # self.cats.fOptimize.isOptimizedForStep = 0
         # self.cats.fOptimize.isFirstStep = 1
 
+    def __reduce__(self):
+        super_reduce = super(CyCatsMover, self).__reduce__()
+        return (
+            CyCatsMover,
+            (
+                self.cats.scaleType,
+                self.cats.scaleValue,
+                self.cats.fEddyDiffusion,
+                0.1,
+                self.ref_point,
+            ) + super_reduce[1]
+        )
+
     property scale_type:
         def __get__(self):
             return self.cats.scaleType

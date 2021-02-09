@@ -229,10 +229,10 @@ class PolygonSet(object):
         old_length = self._PointsArray.shape[0]
 
         added_length = polygon.shape[0]
-        self._PointsArray.resize((old_length + added_length, 2))
+        self._PointsArray.resize((old_length + added_length, 2), refcheck=False)
         self._PointsArray[-added_length:, :] = polygon
 
-        self._IndexArray.resize((self._IndexArray.shape[0] + 1))
+        self._IndexArray.resize((self._IndexArray.shape[0] + 1), refcheck=False)
         self._IndexArray[-1] = self._PointsArray.shape[0]
         self._MetaDataList.append(metadata)
 

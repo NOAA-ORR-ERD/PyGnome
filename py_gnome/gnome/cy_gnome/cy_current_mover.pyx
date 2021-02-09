@@ -49,6 +49,19 @@ cdef class CyCurrentMover(CyMover):
         self.curr_mover.fLeftCurUncertainty = left_cur_uncertain
         self.curr_mover.fRightCurUncertainty = right_cur_uncertain
 
+    def __reduce__(self):
+        return (
+            CyCurrentMover,
+            (
+                self.curr_mover.fDuration,
+                self.curr_mover.fUncertainStartTime,
+                self.curr_mover.fUpCurUncertainty,
+                self.curr_mover.fDownCurUncertainty,
+                self.curr_mover.fLeftCurUncertainty,
+                self.curr_mover.fRightCurUncertainty,
+            )
+        )
+
     property uncertain_duration:
         def __get__(self):
             return self.curr_mover.fDuration

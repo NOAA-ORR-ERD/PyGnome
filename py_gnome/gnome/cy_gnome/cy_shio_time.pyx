@@ -39,7 +39,7 @@ cdef class CyShioTime(CyOSSMTime):
             self.shio = NULL
 
     def __init__(self,
-                 basestring filename=None,
+                 unicode filename,
                  scale_factor=1,
                  daylight_savings_off=False,  # let shio figure out by default
                  yeardata=None):
@@ -48,6 +48,7 @@ cdef class CyShioTime(CyOSSMTime):
         scale_factor. The file_format is always set to 0 since shio is neither
         in 'uv', nor 'r-theta' format and Shio does not use this for data read
         """
+        print(filename)
         super(CyShioTime, self).__init__(filename, 0, scale_factor)
 
         # base class will set file_format to basic_types.ts_format.uv
@@ -56,6 +57,18 @@ cdef class CyShioTime(CyOSSMTime):
             yeardata = os.path.join(os.path.dirname(basic_types.__file__),
                                     'data/yeardata/')
         self.set_shio_yeardata_path(yeardata)
+        self._yeardata_path = yeardata
+
+    def __reduce__(self):
+        return (
+            CyShioTime,
+            (
+                self._cy_filename,
+                self.time_dep.fScaleFactor,
+                self.shio.daylight_savings_off,
+                self._yeardata_path
+            )
+        )
 
     def set_shio_yeardata_path(self, yeardata_path_):
         """

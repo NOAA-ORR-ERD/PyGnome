@@ -11,6 +11,7 @@ cdef class CyOSSMTime:
     cdef OSSMTimeValue_c * time_dep
     cdef object _user_units_dict
     cdef public int _file_format
+    cdef unicode _cy_filename
 
 
 # dynamic cast ossm object to shio object

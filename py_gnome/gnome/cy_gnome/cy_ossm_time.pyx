@@ -51,7 +51,7 @@ cdef class CyOSSMTime(object):
         """
         Initialize object - takes either file or time value pair to initialize
 
-        :param unicode filename: path to file containing time series data.
+        :param basestring filename: path to file containing time series data.
             It valid user_units are defined in the file, it uses them;
             otherwise, it defaults the user_units to meters_per_sec.
         :param int file_format: one of the values defined by enum type,
@@ -67,9 +67,21 @@ cdef class CyOSSMTime(object):
 
         self._file_format = file_format
         self._read_time_values(filename)
+        self._cy_filename = filename
 
         self.time_dep.fScaleFactor = scale_factor
         self.time_dep.extrapolationIsAllowed = extrapolation_is_allowed
+
+    def __reduce__(self):
+        return (
+            CyOSSMTime, 
+            (
+                self._cy_filename,
+                self._file_format,
+                self.time_dep.fScaleFactor,
+                self.time_dep.extrapolationIsAllowed
+            )
+        )
 
     property user_units:
         def __get__(self):
@@ -376,6 +388,22 @@ cdef class CyTimeseries(CyOSSMTime):
             self.time_dep.SetUserUnits(-1)
 
         self.time_dep.extrapolationIsAllowed = extrapolation_is_allowed
+
+    def __reduce__(self):
+        fn = None
+        if hasattr(self, '_cy_filename'):
+            fn = self._cy_filename
+        else:
+            fn = None
+        return (CyTimeseries,
+            (
+                fn,
+                self._file_format,
+                self._get_time_value_handle(),
+                self.scale_factor,
+                self.time_dep.extrapolationIsAllowed
+            )
+        )
 
     property timeseries:
         def __get__(self):
