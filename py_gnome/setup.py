@@ -26,7 +26,6 @@ from distutils.command.clean import clean
 from distutils.extension import Extension
 from Cython.Distutils import build_ext
 
-import sysconfig
 import platform
 from git import Repo
 
@@ -40,10 +39,11 @@ SETUP_PATH = os.path.dirname(os.path.abspath(__file__))
 # comp_modules_ext = sysconfig.get_config_var('EXT_SUFFIX')
 # if comp_modules_ext is None:
 #     comp_modules_ext = '.lib' if 'win' in sys.platform else ".so"
-if sysconfig.get_python_version().split('.')[0] == '3':
-    py_impl = ['.'] + [c.lower() for c in platform.python_implementation() if c.isupper()]
-    py_impl = py_impl + sysconfig.get_python_version().split('.') + ['-'] + [sysconfig.get_platform().replace('-','_')]
-    win_comp_modules_ext = ''.join(py_impl) + '.lib'
+if sys.version_info.major == 3:
+    # py_impl = ['.'] + [c.lower() for c in platform.python_implementation() if c.isupper()]
+    # py_impl = py_impl + sysconfig.get_python_version().split('.') + ['-'] + [sysconfig.get_platform().replace('-','_')]
+    # win_comp_modules_ext = ''.join(py_impl) + '.lib'
+    win_comp_modules_ext = sysconfig.get_config_var('EXT_SUFFIX')
 else:
     win_comp_modules_ext = '.lib'
 
@@ -151,6 +151,8 @@ else:
 
 if sys.platform == 'darwin':
     # for the mac -- we need to set the -arch flag
+    # FixMe: we needed to do this back in the day with "fat" binaries
+    # still required?
     os.environ['ARCHFLAGS'] = "-arch {0}".format(architecture)
 
     libfile = 'lib{0}.a'  # OSX static library filename format
