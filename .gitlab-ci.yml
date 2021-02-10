@@ -55,7 +55,7 @@ python3_compile:
     - py23
   image: registry.orr.noaa.gov/erd/centos-conda/centos7-python3
   script:
-    - echo "compiling: python3_compile"
+    - echo "compiling python3_compile"
     - yum install gcc gcc-c++ make -y
 #    - yum install netcdf-devel -y
     - yum install libXext libSM libXrender -y
