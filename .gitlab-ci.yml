@@ -23,6 +23,7 @@ configure_env:
     expire_in: 5 days
     paths:
       - ./envs
+      - /builds/gnome
 
 test:
   stage: test
