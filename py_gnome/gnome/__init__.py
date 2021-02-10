@@ -52,7 +52,7 @@ def check_dependency_versions():
                    "needs to be installed".format(name, version))
             warnings.warn(msg)
         else:
-            if module.__version__ < version:
+            if module.__version__ > version:
                 msg = ('Version {0} of {1} package is required, '
                        'but actual version in module is {2}'
                        .format(version, name, module.__version__))

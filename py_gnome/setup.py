@@ -18,6 +18,7 @@ import sysconfig
 import importlib
 import glob
 import shutil
+import datetime
 
 # to support "develop" mode:
 from setuptools import setup, find_packages
@@ -52,14 +53,15 @@ else:
 CWD = os.getcwd()
 os.chdir(SETUP_PATH)
 
-repo = Repo('../.')
-
 try:
+    repo = Repo('../.')
     branch_name = repo.active_branch.name
-except TypeError:
+    last_update = next(repo.iter_commits()).committed_datetime.isoformat(),
+    # except TypeError:
+    #     branch_name = 'no-branch'
+except:  # anything goes wrong -- we want to keep moving
     branch_name = 'no-branch'
-
-last_update = next(repo.iter_commits()).committed_datetime.isoformat(),
+    last_update = datetime.datetime.now().isoformat()
 
 
 def target_dir(name):

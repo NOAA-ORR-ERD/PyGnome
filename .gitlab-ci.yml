@@ -8,7 +8,7 @@ cache:
     - ./envs
 
 before_script:
-  - source activate ./envs
+  - conda activate ./envs
 
 configure_env:
   stage: .pre
@@ -55,12 +55,14 @@ python3_compile:
     - py23
   image: registry.orr.noaa.gov/erd/centos-conda/centos7-python3
   script:
+    - echo "compiling: python3_compile"
     - yum install gcc gcc-c++ make -y
 #    - yum install netcdf-devel -y
     - yum install libXext libSM libXrender -y
     - conda install --file conda_requirements_py3.txt
     - cd ./py_gnome
-    - python -m pip install ./
+    - python setup.py install
+#    - python -m pip install ./  # not set up for a pip build :-(
     - cd ../  # make sure that it won't find the source gnome package.
     - python -c "import gnome"
     - cd py_gnome/documentation && make html
