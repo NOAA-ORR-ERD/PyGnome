@@ -59,7 +59,7 @@ python3_compile:
     - yum install libXext libSM libXrender -y
     - conda install --file conda_requirements_py3.txt
     - cd ./py_gnome
-    - python ./setup.py develop
+    - python ./setup.py install
     - python -c "import gnome"
     - cd documentation && make html
   tags:
