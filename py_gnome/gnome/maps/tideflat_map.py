@@ -133,7 +133,7 @@ class TideflatBase(GnomeId):
         points = np.asarray(points, dtype=np.float64)
         if points.shape[1] != 3:
             raise ValueError("points should be a Nx3 array or equivalent")
-        return np.zeros(points.shape[0], dtype=np.bool)
+        return np.zeros(points.shape[0], dtype=bool)
 
     def is_wet(self, points, time):
         return np.logical_not(self.is_dry(points, time))
@@ -181,6 +181,6 @@ class SimpleTideflat(TideflatBase):
 
         # check time first
         if model_time < self.dry_start or model_time > self.dry_end:
-            return np.zeros(points.shape[0], dtype=np.bool)
+            return np.zeros(points.shape[0], dtype=bool)
 
         return points_in_poly(self.bounds, points)

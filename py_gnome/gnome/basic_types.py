@@ -20,29 +20,8 @@ import numpy as np
 # using the Py3 enum type
 from enum import IntEnum
 
-#For debugging on the CI
-import importlib, pathlib
-print("******** in basic_types.py *******")
-print("sys.path:")
-for p in sys.path:
-    print(p)
-    if p.endswith("py_gnome"):
-        gnome_path = p
-print("** end sys.path\n")
-
-gnome_path = importlib.util.find_spec('gnome').submodule_search_locations[0]
-
-print("gnome path is:", gnome_path)
-
-cy_gnome_path = pathlib.Path(gnome_path) / 'cy_gnome'
-
-print("stuff in cygnome:")
-for p in cy_gnome_path.glob("*"):
-    print(p)
-
-
 # pull everything from the cython code
-import gnome.cy_gnome.cy_basic_types as cbt
+from .cy_gnome import cy_basic_types as cbt
 
 # in lib_gnome, the coordinate systems used (r-theta, uv, etc)
 # are called ts_format, which is not a very descriptive name.

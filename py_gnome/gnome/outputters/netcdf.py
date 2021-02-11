@@ -645,7 +645,7 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
 
     def _create_nc_var(self, grp, var_name, dtype, shape, chunksz):
         # fixme: why is this even here? it's wrapping a single call???
-        if dtype == np.bool:
+        if dtype == bool:
             # this is not primitive so it is not understood
             # Make it 8-bit unsigned - numpy stores True/False in 1 byte
             dtype = 'u1'
@@ -758,7 +758,7 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
         if islast_step:
             if self.zip_output is True:
                 self._zip_output_files()
- 
+
         self._start_idx = _end_idx  # set _start_idx for the next timestep
 
         return {'filename': (self.filename,

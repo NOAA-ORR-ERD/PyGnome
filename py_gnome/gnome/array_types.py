@@ -269,7 +269,7 @@ _default_values = {'positions': ((3,), world_point_type, 'positions',
                    'area': ((), np.float64, 'area', 0),
                    'frac_coverage': ((), np.float64, 'frac_coverage', 1.0),
 
-                   # decided not to use np.bool since netcdf needs a primitive
+                   # decided not to use bool since netcdf needs a primitive
                    # type. The conversion would need to happen between bool on
                    # write and read in NetCDFOutput - requires more code so
                    # decided to make it a uint8 instead

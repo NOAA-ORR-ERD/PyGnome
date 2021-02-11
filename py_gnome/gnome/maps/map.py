@@ -629,7 +629,7 @@ class ParamMap(GnomeMap):
             r_idx = r_idx[np.where(rnd <= refloat_probability)[0]]
         elif self._refloat_halflife < 0.0:
             # fake for nothing gets refloated.
-            r_idx = np.array((), np.bool)
+            r_idx = np.array((), bool)
 
         if r_idx.size > 0:
             # check is not required, but why do this operation if no particles
@@ -1021,7 +1021,7 @@ class RasterMap(GnomeMap):
             r_idx = r_idx[np.where(rnd <= refloat_probability)[0]]
         elif self._refloat_halflife < 0.0:
             # fake for nothing gets refloated.
-            r_idx = np.array((), np.bool)
+            r_idx = np.array((), bool)
 
         if r_idx.size > 0:
             # check is not required, but why do this operation if no particles

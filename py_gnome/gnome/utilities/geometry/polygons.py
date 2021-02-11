@@ -200,7 +200,7 @@ class PolygonSet(object):
         self.dtype = dtype
         if data is None:
             self._PointsArray = np.zeros((0, 2), self.dtype)
-            self._IndexArray = np.array((0,), dtype=np.int)
+            self._IndexArray = np.array((0,), dtype=np.int32)
             self._MetaDataList = []
         else:
             self._PointsArray = np.array(data[0])
@@ -285,7 +285,7 @@ class PolygonSet(object):
 
         """
         self._PointsArray = np.array(PointData[0], self.dtype)
-        self._IndexArray = np.array(PointData[1], dtype=np.int)
+        self._IndexArray = np.array(PointData[1], dtype=np.int32)
         if MetaData is not None:
             self._DataArray = MetaData
         else:

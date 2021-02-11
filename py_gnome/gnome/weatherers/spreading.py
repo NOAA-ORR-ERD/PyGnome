@@ -194,7 +194,7 @@ class FayGravityViscous(Weatherer):
             This is the age of each LE. The LEs with the same age belong to
             the same blob. Age is in seconds.
         :type age: numpy array of int32
-        :param at_max_area: np.bool array. If a blob reaches max_area beyond
+        :param at_max_area: bool array. If a blob reaches max_area beyond
             which it will not spread, toggle the LEs associated with that blob
             to True. Max spreading is based on min thickness based on initial
             viscosity of oil. This is used by Langmuir since the process acts
@@ -280,7 +280,7 @@ class FayGravityViscous(Weatherer):
             This is the age of each LE. The LEs with the same age belong to
             the same blob. Age is in seconds.
         :type age: numpy array of int32
-        :param at_max_area: np.bool array. If a blob reaches max_area beyond
+        :param at_max_area: bool array. If a blob reaches max_area beyond
             which it will not spread, toggle the LEs associated with that blob
             to True. Max spreading is based on min thickness based on initial
             viscosity of oil. This is used by Langmuir since the process acts
