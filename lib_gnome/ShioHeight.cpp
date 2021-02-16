@@ -1145,7 +1145,7 @@ short GetJulianDayHr(short day,		// day of month (1 - 31)
 	
 	if( (day<1) || (day>DaysInMonth[month] ) ){ err=4; goto Error; } // Bad day
 	
-	if( (year<1904) || (year>2020) ){ err=5; goto Error; } // Bad year
+	if( (year<1904) || (year>2025) ){ err=5; goto Error; } // Bad year
 	
 	// Compute the hour now
 	for(i=1;i<month; i++){
