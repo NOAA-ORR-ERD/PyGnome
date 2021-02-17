@@ -4,6 +4,10 @@ __init__.py for the utilities package
 a few small things here, 'cause why not?
 
 """
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
 import sys
 import warnings

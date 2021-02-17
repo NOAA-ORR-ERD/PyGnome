@@ -4,6 +4,10 @@ in one place. The 'units' serve as documentation ** do not mess with them **.
 There is no unit conversion when using these constants - they are used as is
 in the code, implicitly assuming the units are SI and untouched.
 '''
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 gas_constant = 8.314
 atmos_pressure = 101325.0
 drop_min = 1.0e-6

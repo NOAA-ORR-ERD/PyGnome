@@ -1,4 +1,16 @@
 #!/usr/bin/env python
+from __future__ import print_function
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import unicode_literals
+
+# from builtins import str
+# from builtins import range
+# from future import standard_library
+# standard_library.install_aliases()
+# from builtins import *
+# from builtins import object
+
 from pytest import raises, mark
 
 from gnome.movers.simple_mover import SimpleMover
@@ -18,7 +30,7 @@ def s_id(val):
 
 def test_getslice():
     # getting a slice returns a new list
-    l_ = range(6)
+    l_ = list(range(6))
     oc = OrderedCollection(l_)
     b = oc[:3]
     b[0] = 10
@@ -39,7 +51,7 @@ def test_remake():
 
 def test_clear():
     'test clear()'
-    oc = OrderedCollection(range(4))
+    oc = OrderedCollection(list(range(4)))
     oc.clear()
 
     assert len(oc) == 0
@@ -52,7 +64,7 @@ def test_clear():
 
 def test_values():
     'OrderedCollection().values() works like a dict.values()'
-    x = range(5)
+    x = list(range(5))
     oc = OrderedCollection(x)
     del x[-2]
     del oc[-2]
@@ -268,7 +280,7 @@ class TestOrderedCollection(object):
     def test_int_to_dict(self, json_):
         '''added a to_dict() method - test this method for int dtype.
         Tests the try, except is working correctly'''
-        items = range(5)
+        items = list(range(5))
         oc = OrderedCollection(items)
         self._to_dict_assert(oc, items, json_)
 
@@ -310,7 +322,7 @@ class TestOrderedCollection(object):
         assert obj_oc[1].id == upd_list[1]['id']
         assert len(obj_oc) == 2
 
-class ObjToAdd:
+class ObjToAdd(object):
     'Define a helper class (mutable object) for use in TestCallbacks'
     def __init__(self):
         self.reset()
@@ -321,7 +333,7 @@ class ObjToAdd:
         self.replace_callback = False
 
 
-class TestCallbacks:
+class TestCallbacks(object):
 
     to_add = [ObjToAdd(), ObjToAdd(), ObjToAdd()]
 
@@ -450,8 +462,8 @@ def test_str():
                                   SimpleMover(velocity=(4.0, -1.0, 0.0))
                                   ])
 
-    print repr(mymovers)
-    print str(mymovers)
+    print(repr(mymovers))
+    print(str(mymovers))
 
     assert repr(mymovers).startswith("OrderedCollection(")
     assert str(mymovers).startswith("OrderedCollection(")

@@ -2,6 +2,11 @@
 module contains objects that contain weather related data. For example,
 the Wind object defines the Wind conditions for the spill
 """
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import string
 import os
 import glob
@@ -157,9 +162,9 @@ class Tide(Environment):
 
         lines = [fh.readline() for i in range(4)]
 
-        if len(lines[1]) == 0:
+        if len(lines[1]) == 0:  # should not be needed with Universal newlines, or on py3
             # look for \r for lines instead of \n
-            lines = string.split(lines[0], '\r', 4)
+            lines = lines[0].split('\r', 4)
 
         if len(lines[1]) == 0:
             # if this is still 0, then throw an error!
@@ -173,10 +178,10 @@ class Tide(Environment):
         if all([shio_file[i] == (lines[i])[:len(shio_file[i])]
                 for i in range(4)]):
             return CyShioTime(filename)
-        elif len(string.split(lines[3], ',')) == 7:
+        elif len(lines[3].split(',')) == 7:
             # maybe log / display a warning that v=0 for tide file and will be
             # ignored
-            # if float( string.split(lines[3],',')[-1]) != 0.0:
+            # if float((lines[3].split(',')[-1]) != 0.0:
             return CyTimeseries(filename, file_format=tsformat('uv'))
         else:
             raise ValueError('This does not appear to be a valid file format '

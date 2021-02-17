@@ -1,6 +1,10 @@
 '''
 test object in environment module
 '''
+from __future__ import print_function
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import unicode_literals
 import pytest
 from pytest import raises
 
@@ -69,9 +73,9 @@ def test_Water_init(attr, sub_attr, value):
         setattr(w, attr, value)
     else:
         sub_value = getattr(w, attr)
-        print 'sub_value = ', sub_value
+        print('sub_value = ', sub_value)
         sub_value[sub_attr] = value
-        print 'sub_value = ', sub_value
+        print('sub_value = ', sub_value)
 
     w = Water()
 

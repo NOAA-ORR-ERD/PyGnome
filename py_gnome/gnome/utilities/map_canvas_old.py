@@ -8,6 +8,10 @@ the web version.
 This should have the basic drawing stuff. Specific rendering, like
 dealing with spill_containers, etc, should be in the rendere subclass.
 """
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 import numpy as np
 
 from PIL import Image, ImageDraw
@@ -162,7 +166,7 @@ class MapCanvas(object):
         todo: this happens in multiple places so maybe worthwhile to define
         custom serialize/deserialize -- but do this for now
         '''
-        return map(tuple, self.viewport.tolist())
+        return list(map(tuple, self.viewport.tolist()))
 
     @property
     def viewport(self):
@@ -170,7 +174,7 @@ class MapCanvas(object):
         returns the current value of viewport of map:
         the bounding box of the image
         """
-        print 'property viewport()...'
+        print('property viewport()...')
         return self._viewport.BB
 
     @viewport.setter

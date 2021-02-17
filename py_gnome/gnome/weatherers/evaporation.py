@@ -1,6 +1,12 @@
 '''
 model evaporation process
 '''
+
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import copy
 
 import numpy as np
@@ -195,7 +201,7 @@ class Evaporation(Weatherer):
 
             sc.mass_balance['evaporated'] += \
                 np.sum(data['mass_components'][:, :] - mass_remain[:, :])
-  
+
             # log amount evaporated at each step
             self.logger.debug(self._pid + 'amount evaporated for {0}: {1}'.
                               format(substance.name,

@@ -5,6 +5,10 @@ unit tests for the cache system
 
 designed to be run with py.test
 """
+from __future__ import print_function
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import unicode_literals
 
 import os
 
@@ -14,7 +18,6 @@ from datetime import datetime, timedelta
 
 import pytest
 
-import gnome
 from gnome.utilities import cache
 
 from gnome.spill_container import SpillContainerPairData
@@ -276,8 +279,8 @@ def test_read_back_from_memory():
 
     scp1 = c.load_timestep(1)
 
-    print scp1
-    print scp1._spill_container._data_arrays
+    print(scp1)
+    print(scp1._spill_container._data_arrays)
     assert np.array_equal(scp1._spill_container['positions'],
                           sc['positions'])
 

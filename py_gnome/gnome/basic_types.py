@@ -8,26 +8,35 @@ Imports all the symbols from cy_basic_types.pyx
 Adds some for Python-only use
 
 """
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
 import sys
 
 import numpy as np
 
+# using the Py3 enum type
+from enum import IntEnum
+
 # pull everything from the cython code
-import cy_gnome.cy_basic_types as cbt
+from .cy_gnome import cy_basic_types as cbt
 
 # in lib_gnome, the coordinate systems used (r-theta, uv, etc)
 # are called ts_format, which is not a very descriptive name.
 # the word 'format' can mean a lot of different things depending on
 # what we are talking about.  So we try to be a bit more specific here.
-coord_systems = cbt.ts_format
+# pull the enums from the cython version
+
 ts_format = cbt.ts_format
 oil_status = cbt.oil_status
-seconds = cbt.seconds
 spill_type = cbt.spill_type
 
+seconds = cbt.seconds
+
 # this is a mapping of oil_status code to the meaningful name:
-oil_status_map = { num: name for name, num in vars(oil_status).items() if not name.startswith("_")}
+oil_status_map = {num: name for name, num in oil_status.__members__.items()}
 
 
 
@@ -46,7 +55,7 @@ oil_status_map = { num: name for name, num in vars(oil_status).items() if not na
 if sys.platform == 'win32':
     np_long = np.int
 elif sys.platform in ('darwin', 'linux2', 'linux'):
-    if sys.maxint > 2147483647:
+    if sys.maxsize > 2147483647:
         np_long = np.long
     else:
         np_long = np.int
@@ -69,26 +78,40 @@ datetime_value_2d = np.dtype([('time', 'datetime64[s]'),
 datetime_value_1d = np.dtype([('time', 'datetime64[s]'),
                               ('value', mover_type, ())], align=True)
 
+
 # enums that are same as C++ values are defined in cy_basic_types
 # Define enums that are independent of C++ here so we
 # don't have to recompile code
+# fixme: that seems dangerous!
+class wind_datasources(IntEnum):
+    undefined = 0
+    file = 1
+    manual = 2
+    nws = 3
+    buoy = 4
 
-wind_datasources = cbt.enum(undefined=0, file=1, manual=2, nws=3, buoy=4)
 
 # Define an enum for weathering status. The numpy array will contain np.uint8
 # datatype. Can still define 2 more flags as 2**6, 2**7
 # These are bit flags
-fate = cbt.enum(non_weather=1,
-            surface_weather=2,
-            subsurf_weather=4,
-            skim=8,
-            burn=16,
-            disperse=32,  # marked for chemical_dispersion
-            )
+class fate(IntEnum):
+    """
+    An enum for weathering status. The numpy array will contain np.uint8
+    datatype. Can still define 2 more flags as 2**6, 2**7
+    These are bit flags
+    """
+    non_weather = 1,
+    surface_weather = 2,
+    subsurf_weather = 4,
+    skim = 8,
+    burn = 16,
+    disperse = 32,  # marked for chemical_dispersion
 
-numerical_methods = {'Euler': 0,
-                     'RK2': 1,
-                     'RK4': 2}
+
+class numerical_methods(IntEnum):
+    Euler = 0
+    RK2 = 1
+    RK4 = 2
 
 # ----------------------------------------------------------------
 # Mirror C++ structures, following are used by cython code

@@ -3,11 +3,14 @@ oil removal from various cleanup options
 add these as weatherers
 '''
 from __future__ import division
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
 
 import os
 import json
-from datetime import datetime, timedelta
-from collections import OrderedDict
+from datetime import timedelta
+# from collections import OrderedDict
 
 import numpy as np
 
@@ -92,7 +95,7 @@ class Response(Weatherer):
 
     @units.setter
     def units(self, u_dict):
-        for prop, unit in u_dict.iteritems():
+        for prop, unit in u_dict.items():
             if (prop in self._units_type and
                     unit not in self._units_type[prop][1]):
                 msg = ('{0} are invalid units for {1}. Ignore it'
@@ -565,13 +568,13 @@ class Platform(GnomeId):
 
         if eff_pr > max_pr:
             # log warning?
-            print ('Computed pump rate is too high for this platform. '
-                   'Using max instead')
+            self.logger.warning('Computed pump rate is too high for this platform. '
+                             'Using max instead')
 
             return max_pr
         elif eff_pr < min_pr:
-            print ('Computed pump rate is too low for this platform. '
-                   'Using min instead')
+            self.logger.warning('Computed pump rate is too low for this platform. '
+                             'Using min instead')
 
             return min_pr
         else:
@@ -642,37 +645,39 @@ class Disperse(Response):
     _req_refs = ['wind']
     _schema = DisperseSchema
 
+    # fixme: could this be a function?
     wind_eff_list = [15, 30, 45, 60, 70, 78, 80, 82,
                      83, 84, 84, 84, 84, 84, 83, 83,
                      82, 80, 79, 78, 77, 75, 73, 71,
                      69, 67, 65, 63, 60, 58, 55, 53,
                      50, 47, 44, 41, 38]
-    visc_eff_table = OrderedDict([(1, 68),
-                                  (2, 71),
-                                  (3, 72.5),
-                                  (4, 74),
-                                  (5, 75),
-                                  (7, 77),
-                                  (10, 78),
-                                  (20, 80),
-                                  (40, 83.5),
-                                  (70, 85.5),
-                                  (100, 87),
-                                  (300, 89.5),
-                                  (500, 90.5),
-                                  (700, 91),
-                                  (1000, 92),
-                                  (2000, 91),
-                                  (3000, 83),
-                                  (5000, 52),
-                                  (7000, 32),
-                                  (10000, 17),
-                                  (20000, 11),
-                                  (30000, 8.5),
-                                  (40000, 7),
-                                  (50000, 6.5),
-                                  (100000, 6),
-                                  (1000000, 0)])
+
+    visc_eff_table = np.array([(1, 68),
+                               (2, 71),
+                               (3, 72.5),
+                               (4, 74),
+                               (5, 75),
+                               (7, 77),
+                               (10, 78),
+                               (20, 80),
+                               (40, 83.5),
+                               (70, 85.5),
+                               (100, 87),
+                               (300, 89.5),
+                               (500, 90.5),
+                               (700, 91),
+                               (1000, 92),
+                               (2000, 91),
+                               (3000, 83),
+                               (5000, 52),
+                               (7000, 32),
+                               (10000, 17),
+                               (20000, 11),
+                               (30000, 8.5),
+                               (40000, 7),
+                               (50000, 6.5),
+                               (100000, 6),
+                               (1000000, 0)])
 
     def __init__(self,
                  transit=None,
@@ -711,7 +716,7 @@ class Disperse(Response):
 
         # time to next state
         if platform is not None:
-            if isinstance(platform, basestring):
+            if not isinstance(platform, Platform):
                 # find platform name
                 self.platform = Platform(_name=platform)
             else:
@@ -840,7 +845,7 @@ class Disperse(Response):
         else:
             avg_visc = 1000000
 
-        visc_eff = visc_eff_table[visc_eff_table.keys()[np.searchsorted(visc_eff_table.keys(), avg_visc)]] / 100
+        visc_eff = visc_eff_table[np.searchsorted(visc_eff_table[:, 0], avg_visc), 1] / 100
 
         return wind_eff * visc_eff
 
@@ -855,10 +860,9 @@ class Disperse(Response):
         idxs = self.dispersable_oil_idxs(sc)
         visc = sc['viscosity'][idxs] * 1000000
 
-        visc_idxs = np.array([np.searchsorted(visc_eff_table.keys(), v)
-                              for v in visc])
-        visc_eff = np.array([visc_eff_table[visc_eff_table.keys()[v]]
-                             for v in visc_idxs]) / 100
+        # fixme: linear interpolation instead?
+        visc_idxs = np.searchsorted(visc_eff_table[:, 0], visc)
+        visc_eff = visc_eff_table[visc_idxs][:,1] / 100
 
         return wind_eff * visc_eff
 
@@ -948,7 +952,7 @@ class Disperse(Response):
                     self.report.append((model_time,
                                         'Deactivating due to insufficient '
                                         'time remaining to conduct sortie'))
-                    print self.report[-1]
+                    # print(self.report[-1])
                     self._time_remaining -= min(self._time_remaining, ttni)
                     model_time, time_step = self.update_time(self._time_remaining,
                                                              model_time,
@@ -1018,7 +1022,7 @@ class Disperse(Response):
                                         'on {} kg of oil'
                                         .format(disp_actual, spray_time,
                                                 oil_avail)))
-                    print self.report[-1]
+                    # print(self.report[-1])
 
                     self.state.append(['onsite', spray_time.total_seconds()])
 
@@ -1097,7 +1101,7 @@ class Disperse(Response):
 
                 if self._time_remaining > zero:
                     self.report.append((model_time, 'Returned to base'))
-                    print self.report[-1]
+                    # print(self.report[-1])
 
                     refuel_reload = timedelta(seconds=self.platform
                                               .refuel_reload(simul=self
@@ -1120,7 +1124,7 @@ class Disperse(Response):
                                                          time_step)
                 if self._time_remaining > zero:
                     self.report.append((model_time, 'Refuel/reload complete'))
-                    print self.report[-1]
+                    # print(self.report[-1])
 
                     self._remaining_dispersant = self.platform.get('payload',
                                                                    'm^3')
@@ -1145,7 +1149,7 @@ class Disperse(Response):
                 self.report.append((model_time,
                                     'Disperse operation has ended and is '
                                     'deactivated'))
-                print self.report[-1]
+                # print(self.report[-1])
 
                 break
 
@@ -1157,7 +1161,7 @@ class Disperse(Response):
 
                     self.report.append((model_time,
                                         'Begin new operational period'))
-                    print self.report[-1]
+                    # print(self.report[-1])
 
                     continue
 
@@ -1179,7 +1183,7 @@ class Disperse(Response):
 
                         self.report.append((model_time,
                                             'Begin new operational period'))
-                        print self.report[-1]
+                        # print(self.report[-1])
                     else:
                         interval_idx = self.index_of(model_time -
                                                      time_step +
@@ -1188,7 +1192,7 @@ class Disperse(Response):
                         self.report.append((model_time,
                                             'Ending current operational '
                                             'period'))
-                        print self.report[-1]
+                        # print(self.report[-1])
 
             elif self.cur_state == 'ready':
                 if self.platform.sortie_possible(ttni, self.transit,
@@ -1196,7 +1200,7 @@ class Disperse(Response):
                     # sortie is possible, so start immediately
 
                     self.report.append((model_time, 'Starting sortie'))
-                    print self.report[-1]
+                    # print(self.report[-1])
 
                     self._next_state_time = (model_time +
                                              timedelta(seconds=self.platform
@@ -1211,7 +1215,7 @@ class Disperse(Response):
                     self.report.append((model_time,
                                         'Retiring due to insufficient '
                                         'time remaining to conduct sortie'))
-                    print self.report[-1]
+                    # print(self.report[-1])
 
                     self._time_remaining -= min(self._time_remaining, ttni)
                     model_time, time_step = self.update_time(self._time_remaining,
@@ -1233,7 +1237,7 @@ class Disperse(Response):
 
                 if self._time_remaining > zero:
                     self.report.append((model_time, 'Reached slick'))
-                    print self.report[-1]
+                    # print(self.report[-1])
 
                     self._op_start = model_time
                     self._op_end = (model_time +
@@ -1253,7 +1257,7 @@ class Disperse(Response):
                     self.report.append((model_time,
                                         'Starting approach for pass {}'
                                         .format(self._cur_pass_num)))
-                    print self.report[-1]
+                    # print(self.report[-1])
 
             elif self.cur_state == 'approach':
                 time_left = self._next_state_time - model_time
@@ -1369,7 +1373,7 @@ class Disperse(Response):
                         self.report.append((model_time,
                                             'Starting disperse pass {}'
                                             .format(self._cur_pass_num)))
-                        print self.report[-1]
+                        # print(self.report[-1])
 
                         self.cur_state = 'disperse_' + str(self._cur_pass_num)
                         self._next_state_time = (model_time +
@@ -1503,7 +1507,7 @@ class Disperse(Response):
 
                 if self._time_remaining > zero:
                     self.report.append((model_time, 'Refuel/reload complete'))
-                    print self.report[-1]
+                    # print(self.report[-1])
 
                     self._remaining_dispersant = self.platform.get('payload',
                                                                    'm^3')
@@ -1525,7 +1529,7 @@ class Disperse(Response):
 
                 if self._time_remaining > zero:
                     self.report.append((model_time, 'Cascade complete'))
-                    print self.report[-1]
+                    # print(self.report[-1])
                     self.cur_state = 'ready'
             else:
                 raise ValueError('current state is not recognized: {}'
@@ -1533,7 +1537,7 @@ class Disperse(Response):
 
     def reset_for_return_to_base(self, model_time, message):
         self.report.append((model_time, message))
-        print self.report[-1]
+        # print(self.report[-1])
 
         o_w_t_t = timedelta(seconds=self.platform
                             .one_way_transit_time(self.transit, payload=False))
@@ -1596,7 +1600,7 @@ class Disperse(Response):
             # org_mass = sc['mass'][idxs]
 
             removed = self._remove_mass_indices(sc, mass_to_remove, idxs)
-            print 'index, original mass, removed mass, final mass'
+            # print('index, original mass, removed mass, final mass')
 
             # masstab = np.column_stack((idxs,
             #                            org_mass,
@@ -2371,8 +2375,8 @@ class Skim(Response):
 
     def _transit(self, sc, time_step, model_time):
         # transiting back to shore to offload
-        print('time', self._time_remaining)
-        print('remaining', self._transit_remaining)
+        # print('time', self._time_remaining)
+        # print('remaining', self._transit_remaining)
 
         if self._time_remaining >= self._transit_remaining:
             self._state_list.append(['transit', self._transit_remaining])
@@ -2459,7 +2463,6 @@ class Skim(Response):
 
 
 if __name__ == '__main__':
-    print None
     d = Disperse(name='test')
     p = Platform(_name='Test Platform')
     import pprint as pp
@@ -2473,10 +2476,10 @@ if __name__ == '__main__':
     ser2 = p2.serialize()
     pp.pprint(ser2)
 
-    print 'INCORRECT BELOW'
+    print('INCORRECT BELOW')
 
     for k, v in ser.items():
         if p2.serialize()[k] != v:
-            print p2.serialize()[k]
+            print(p2.serialize()[k])
 
     pass

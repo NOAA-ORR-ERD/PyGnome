@@ -4,6 +4,10 @@ gnome oil object
 This provides an Oil object that can be used in the GNOME weathering algorithms.
 
 """
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
 
 from backports.functools_lru_cache import lru_cache
 
@@ -15,13 +19,12 @@ from colander import (SchemaNode, Int, String, Float, drop)
 from gnome.persist.base_schema import ObjTypeSchema
 
 
-class Density():
+class Density(object):
 
     def __init__(self, kg_m_3, ref_temp_k, weathering=0):
         self.kg_m_3 = kg_m_3
         self.ref_temp_k = ref_temp_k
         self.weathering = weathering
-
 
     def __repr__(self):
         return ('<Density({0.kg_m_3} kg/m^3 at {0.ref_temp_k}K), '
@@ -29,7 +32,7 @@ class Density():
                 .format(self))
 
 
-# class KVis():
+# class KVis(object):
 
 #     def __init__(self, m_2_s, ref_temp_k, weathering=0):
 #         self.m_2_s = m_2_s
@@ -231,17 +234,14 @@ class Oil(object):
 
         self._bullwinkle = None
         self._bulltime = None
+        self._k_v2 = None  # decay constant for viscosity curve
+        self._visc_A = None  # constant for viscosity curve
 
-        # these will be initialized when used
-        self._k_v2 = None # decay constant for viscosity curve
-        self._visc_A = None # constant for viscosity curve
-        #self.product_type = "Refined"
-
-    @classmethod
-    def from_json(cls, data):
-        if type(data) in (str, unicode):
-            data = json.loads(data)
-        return cls(**num_pcs)
+    # @classmethod
+    # def from_json(cls, data):
+    #     if type(data) in (str, str):
+    #         data = json.loads(data)
+    #     return cls(**num_pcs)
 
 
     def __eq__(self, other):
@@ -255,7 +255,7 @@ class Oil(object):
         d1 = self.get_dict()
         d2 = other.get_dict()
 
-        for key, val in d1.iteritems():
+        for key, val in d1.items():
             o_val = d2[key]
 
             if isinstance(val, np.ndarray):
@@ -315,7 +315,6 @@ class Oil(object):
         data = {'name': self.name,
                 'api': self.api,
                 'adios_oil_id': self.adios_oil_id,
-                #'pour_point': self.pour_point(),
                 'pour_point': self._pour_point,
                 'flash_point': self._flash_point,
                 'solubility': self.solubility,
@@ -369,8 +368,8 @@ class Oil(object):
         C_2i = 0.19 * self.boiling_point - 18
 
         var = 1. / (self.boiling_point - C_2i) - 1. / (temp - C_2i)
-        ln_Pi_Po = (D_S * (self.boiling_point - C_2i) ** 2 /
-                    (D_Zb * R_cal * self.boiling_point) * var)
+        ln_Pi_Po = ((D_S * (self.boiling_point - C_2i) ** 2 /
+                    (D_Zb * R_cal * self.boiling_point)) * var)
         Pi = np.exp(ln_Pi_Po) * atmos_pressure
 
         return Pi
@@ -411,8 +410,8 @@ class Oil(object):
         rho_idxs1 = (rho_idxs0 + 1).clip(0, len(obj_list) - 1)
         rho_idxs1[low_and_oob] = 0
 
-        return zip([obj_list[i] for i in rho_idxs0],
-                   [obj_list[i] for i in rho_idxs1])
+        return list(zip([obj_list[i] for i in rho_idxs0],
+                   [obj_list[i] for i in rho_idxs1]))
 
 
     def get_densities(self):
@@ -618,8 +617,8 @@ class Oil(object):
 
         agg = dict(kvis_list)
 
-        return zip(*[(KVis(m_2_s=k, ref_temp_k=t, weathering=w), e)
-                     for (t, w), (k, e) in sorted(agg.iteritems())])
+        return list(zip(*[(KVis(m_2_s=k, ref_temp_k=t, weathering=w), e)
+                     for (t, w), (k, e) in sorted(agg.items())]))
 
 
     def kvis_at_temp(self, temp_k=288.15, weathering=0.0):
@@ -648,6 +647,7 @@ class Oil(object):
         return self._visc_A * np.exp(self._k_v2 / temp_k)
 
 
+
     def determine_visc_constants(self):
         '''
         viscosity as a function of temp is given by:
@@ -663,9 +663,6 @@ class Oil(object):
 
         If three or more, the constants are computed by a least squares fit.
         '''
-        # find viscosity measurements with zero weathering
-
-        # this sets:
         self._k_v2 = None # decay constant for viscosity curve
         self._visc_A = None
 

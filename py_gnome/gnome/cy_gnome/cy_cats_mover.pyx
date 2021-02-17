@@ -4,11 +4,11 @@ cimport numpy as cnp
 import numpy as np
 from libc.string cimport memcpy
 
-from type_defs cimport *
-from utils cimport _GetHandleSize
-from movers cimport Mover_c
-from current_movers cimport CATSMover_c
-from cy_current_mover cimport CyCurrentMover, dc_mover_to_cmover
+from .type_defs cimport *
+from .utils cimport _GetHandleSize
+from .movers cimport Mover_c
+from .current_movers cimport CATSMover_c
+from .cy_current_mover cimport CyCurrentMover, dc_mover_to_cmover
 
 from gnome import basic_types
 from gnome.cy_gnome.cy_ossm_time cimport CyOSSMTime
@@ -79,6 +79,19 @@ cdef class CyCatsMover(CyCurrentMover):
         # # make-shifting for now.
         # self.cats.fOptimize.isOptimizedForStep = 0
         # self.cats.fOptimize.isFirstStep = 1
+
+    def __reduce__(self):
+        super_reduce = super(CyCatsMover, self).__reduce__()
+        return (
+            CyCatsMover,
+            (
+                self.cats.scaleType,
+                self.cats.scaleValue,
+                self.cats.fEddyDiffusion,
+                0.1,
+                self.ref_point,
+            ) + super_reduce[1]
+        )
 
     property scale_type:
         def __get__(self):
@@ -325,7 +338,7 @@ cdef class CyCatsMover(CyCurrentMover):
         sz = _GetHandleSize(<Handle>vel_hdl)
 
         # will this always work?
-        vels = np.empty((sz / tmp_size,), dtype=basic_types.velocity_rec)
+        vels = np.empty((sz // tmp_size,), dtype=basic_types.velocity_rec)
 
         memcpy(&vels[0], vel_hdl[0], sz)
 

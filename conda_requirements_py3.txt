@@ -1,0 +1,70 @@
+# Documents the conda packages required for PyGnome
+#  this covers py_gnome and the oil_library
+#  This should be the minimal conda install
+#  install with:
+#    conda install --file conda_requirements.txt
+#
+#  or create an environmemnt:
+#    conda create -n gnome --file conda_requirements.txt
+# These packages would all be in one of the following channels:
+# defaults
+# conda-forge
+# NOAA-ORR-ERD
+
+python=3.8.*
+
+# for SpatialRelease
+trimesh
+shapely
+pyproj
+mapbox_earcut # from NOAA_ORR_ERD channel -- not working
+
+setuptools
+gitpython
+numpy
+scipy
+gsw
+psutil
+progressbar
+pyzmq
+six
+geojson
+colander
+
+tblib # still needed for child process exception handling.
+
+netCDF4
+# awesome-slugify>=1.6.5
+# regex
+# unidecode>=0.04.19
+pyshp
+future  # while maintaining py2/3 compatibility
+
+
+# NOAA maintained packages
+gridded
+pynucos
+cell_tree2d
+py_gd>=1
+
+
+# required for building
+cython
+
+# needed to run tests
+pytest<6
+pytest-cov
+pytest-timeout
+testfixtures
+
+# nice to have for development, not required to run
+matplotlib
+ipython
+notebook # this gets you Jupyter notebook without all the QT stuff
+
+# required to build docs
+sphinx
+sphinx_rtd_theme
+nbsphinx
+
+

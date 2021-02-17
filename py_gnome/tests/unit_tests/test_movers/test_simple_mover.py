@@ -7,6 +7,10 @@ test code for the simple_mover class
 
 designed to be run with py.test
 """
+from __future__ import print_function
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import unicode_literals
 
 import numpy as np
 
@@ -24,7 +28,7 @@ def test_basic_move():
     mover = simple_mover.SimpleMover(velocity=(1.0, 10.0, 0.0))
 
     delta = mover.get_move(sp, time_step=100.0, model_time=None)
-    print delta
+    print(delta)
 
     # expected = np.zeros_like(delta)
 

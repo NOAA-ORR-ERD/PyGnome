@@ -1,10 +1,19 @@
 '''
 test functions in remote_data module
 '''
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
 import os
 import shutil
-from urllib2 import HTTPError, URLError
+
+try:  # the py3 way
+    from urllib.error import HTTPError, URLError
+except ImportError:  # the py2 way
+    from urllib2 import HTTPError, URLError
+
 
 from gnome.utilities.remote_data import get_datafile
 

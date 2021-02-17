@@ -22,7 +22,7 @@ from gnome.exceptions import ReferencedObjectNotSet
 def test_exceptions():
     with pytest.raises(AttributeError):
         go = GnomeId()
-        print '\n id exists: {0}'.format(go.id)  # calls getter, assigns an id
+        print('\n id exists: {0}'.format(go.id))  # calls getter, assigns an id
         go.id = uuid1()
 
 
@@ -80,8 +80,8 @@ def test_base_validate(obj, make_default_refs, objvalid):
     '''
     obj.make_default_refs = make_default_refs
     (out, isvalid) = obj.validate()
-    print out
-    print isvalid
+    print(out)
+    print(isvalid)
     assert isvalid is objvalid
     assert len(out) > 0
 

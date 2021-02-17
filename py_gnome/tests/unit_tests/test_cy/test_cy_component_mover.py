@@ -1,3 +1,7 @@
+from __future__ import print_function
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import unicode_literals
 import os
 
 import numpy as np
@@ -6,7 +10,7 @@ import gnome
 from gnome import basic_types
 from gnome.cy_gnome import cy_component_mover, cy_ossm_time
 from gnome.environment import Wind
-import cy_fixtures
+from . import cy_fixtures
 
 from ..conftest import testdata
 
@@ -53,8 +57,8 @@ class ComponentMove(cy_fixtures.CyTestMove):
             self.status,
             basic_types.spill_type.forecast,
             )
-        print
-        print self.delta
+        print()
+        print(self.delta)
 
     def uncertain_move(self):
         """
@@ -69,8 +73,8 @@ class ComponentMove(cy_fixtures.CyTestMove):
             self.status,
             basic_types.spill_type.uncertainty,
             )
-        print
-        print self.u_delta
+        print()
+        print(self.u_delta)
 
 
 def test_move():
@@ -78,9 +82,9 @@ def test_move():
     test get_move for forecast and uncertain LEs
     """
 
-    print
-    print '--------------'
-    print 'test certain_move and uncertain_move are different'
+    print()
+    print('--------------')
+    print('test certain_move and uncertain_move are different')
     tgt = ComponentMove()
     tgt.certain_move()
     tgt.uncertain_move()
@@ -96,9 +100,9 @@ def test_certain_move():
     test get_move for forecast LEs
     """
 
-    print
-    print '--------------'
-    print 'test_certain_move'
+    print()
+    print('--------------')
+    print('test_certain_move')
     tgt = ComponentMove()
     tgt.certain_move()
 
@@ -115,9 +119,9 @@ def test_uncertain_move():
     test get_move for uncertainty LEs
     """
 
-    print
-    print '--------------'
-    print 'test_uncertain_move'
+    print()
+    print('--------------')
+    print('test_uncertain_move')
     tgt = ComponentMove()
     tgt.uncertain_move()
 
@@ -144,7 +148,7 @@ def test_pat1_angle():
     """
 
     c_component.pat1_angle = 10
-    print c_component.pat1_angle
+    print(c_component.pat1_angle)
     assert c_component.pat1_angle == 10
 
 
@@ -154,7 +158,7 @@ def test_pat1_speed():
     """
 
     c_component.pat1_speed = 5
-    print c_component.pat1_speed
+    print(c_component.pat1_speed)
     assert c_component.pat1_speed == 5
 
 

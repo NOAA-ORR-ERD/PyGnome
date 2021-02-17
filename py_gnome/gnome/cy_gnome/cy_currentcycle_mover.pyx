@@ -5,17 +5,18 @@ import numpy as np
 
 from libc.string cimport memcpy
 
-from type_defs cimport *
+from .type_defs cimport *
+
 from gnome import basic_types
 
-from utils cimport _GetHandleSize
+from .utils cimport _GetHandleSize
 
 from gnome.cy_gnome.cy_helpers cimport to_bytes
 from gnome.cy_gnome.cy_ossm_time cimport CyOSSMTime
 from gnome.cy_gnome.cy_shio_time cimport CyShioTime
 
-from movers cimport Mover_c
-from current_movers cimport CurrentCycleMover_c
+from .movers cimport Mover_c
+from .current_movers cimport CurrentCycleMover_c
 from gnome.cy_gnome.cy_mover cimport CyMover
 
 
@@ -201,7 +202,9 @@ cdef class CyCurrentCycleMover(CyMover):
             return self._num_method
 
         def __set__(self, value):
-            self._num_method = value
+            # _num_method is a char* in C++ code
+            cdef bytes bvalue = value.encode('ASCII')
+            self._num_method = bvalue
             self.current_cycle.num_method = basic_types.numerical_methods[value]
 
     def extrapolate_in_time(self, extrapolate):

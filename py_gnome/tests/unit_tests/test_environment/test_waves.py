@@ -3,6 +3,10 @@
 """
 test code for the wave calculations
 """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import unicode_literals
 
 import datetime
 import numpy as np
@@ -74,10 +78,12 @@ def test_compute_H():
     w = Waves(test_wind_5, default_water)
     H = w.compute_H(5)  # five m/s wind
 
-    print H
+    print(H)
+    print(type(H))
 
     # I have no idea what the answers _should_ be
-    # assert H == 0
+    #  so this is just testing that it hasn't changed
+    assert np.isclose(H, 0.43797, rtol=1e-4)
 
 
 def test_compute_H_fetch():
@@ -91,7 +97,7 @@ def test_compute_H_fetch():
     w = Waves(test_wind_5, water)  # 10km
     H = w.compute_H(5)  # five m/s wind
 
-    print H
+    print(H)
     # assert H == 0
 
 
@@ -119,12 +125,13 @@ def test_pseudo_wind(U):
     """
     w = Waves(test_wind_5, default_water)
 
-    print "testing for U:", U
+    print("testing for U:", U)
     # 0.707 compensates for RMS wave height
-    assert round(w.pseudo_wind(w.compute_H(U) / 0.707), 5) == round(U, 8)
+    print(w.pseudo_wind(w.compute_H(U) / 0.707))
+    assert np.isclose(w.pseudo_wind(w.compute_H(U) / 0.707), U, rtol=1e-6)
 
 
-# note: 200 becuse that's when whitecap fraction would go above 1.0
+# note: 200 because that's when whitecap fraction would go above 1.0
 @pytest.mark.parametrize("U", [0.0, 1.0, 2.0, 2.99, 3.0,
                                4.0, 8.0, 16.0, 32.0, 200.0])
 def test_whitecap_fraction(U):
@@ -132,7 +139,7 @@ def test_whitecap_fraction(U):
     Fraction whitcapping -- doesn't really check values
     but should catch gross errors!
     """
-    print "testing for U:", U
+    print("testing for U:", U)
 
     w = Waves(test_wind_5, default_water)
     f = w.whitecap_fraction(U)
@@ -141,9 +148,8 @@ def test_whitecap_fraction(U):
     assert f <= 1.0
 
     if U == 4.0:
-        # assert round(f, 8) == round(0.05 / 3.85, 8)
         # included the .5 factor from ADIOS2
-        assert round(f, 8) == round(0.05 / 3.85 / 2, 8)
+        assert np.isclose(f, (0.05 / 3.85 / 2), rtol=1e-6)
 
 
 @pytest.mark.parametrize("U", [0.0, 1.0, 2.0, 3.0, 4.0, 8.0, 16.0, 32.0])
@@ -153,12 +159,11 @@ def test_mean_wave_period(U):
     """
     w = Waves(test_wind_5, default_water)
 
-    print "testing for U:", U
+    print("testing for U:", U)
 
     f = w.mean_wave_period(U)
 
-    print f
-    # assert False # what else to check for???
+    print(f)
 
 
 @pytest.mark.parametrize("U", [0.0, 1.0, 2.0, 3.0, 4.0, 8.0, 16.0, 32.0])
@@ -166,7 +171,7 @@ def test_mean_wave_period_with_fetch(U):
     """
     Test the wave period
     """
-    print "testing for U:", U
+    print("testing for U:", U)
 
     water = copy(default_water)
     water.fetch = 1e4  # 10km
@@ -174,7 +179,7 @@ def test_mean_wave_period_with_fetch(U):
 
     T = w.mean_wave_period(U)
 
-    print T
+    print(T)
     # assert False # what else to check for???
 
 
@@ -187,7 +192,7 @@ def test_wave_energy(H, expected):
     """
     Test the dissipative wave energy
     """
-    print "testing for H:", H
+    print("testing for H:", H)
 
     water = copy(default_water)
     water.fetch = 1e4  # 10km
@@ -195,7 +200,7 @@ def test_wave_energy(H, expected):
 
     De = w.dissipative_wave_energy(H)
 
-    print De
+    print(De)
 
     # Note: Right now we are just documenting the results that we are
     #       getting.  The expected values need to be checked for validity.
@@ -216,7 +221,7 @@ def test_peak_wave_period(wind_speed, expected):
 
     w = Waves(test_wind, default_water)
 
-    print 'Wind speed:', w.wind.get_value(start_time)
+    print('Wind speed:', w.wind.get_value(start_time))
 
     T_w = w.peak_wave_period(None, start_time)
 
@@ -229,9 +234,9 @@ def test_call_no_fetch_or_height():
 
     H, T, Wf, De = w.get_value(None, start_time)
 
-    print H, T, Wf, De
+    print(H, T, Wf, De)
 
-    print "Need to check reasonable numbers"
+    print("Need to check reasonable numbers")
 
 
 def test_call_fetch():
@@ -242,9 +247,9 @@ def test_call_fetch():
 
     H, T, Wf, De = w.get_value(None, start_time)
 
-    print H, T, Wf, De
+    print(H, T, Wf, De)
 
-    print "Need to check reasonable numbers"
+    print("Need to check reasonable numbers")
 
 
 def test_call_height():
@@ -256,7 +261,7 @@ def test_call_height():
 
     H, T, Wf, De = w.get_value(None, start_time)
 
-    print H, T, Wf, De
+    print(H, T, Wf, De)
 
     assert H == .707	# returns root mean square wave height
     # fixme: add some value checks -- what to use???
@@ -281,7 +286,7 @@ def test_get_emulsification_wind():
     water = Water()
     w = Waves(wind, water)
 
-    print w.get_emulsification_wind(None, start_time)
+    print(w.get_emulsification_wind(None, start_time))
     assert w.get_emulsification_wind(None, start_time) == 3.0
 
 
@@ -291,9 +296,9 @@ def test_get_emulsification_wind_with_wave_height():
     water.wave_height = 2.0
     w = Waves(wind, water)
 
-    print w.get_value(None, start_time)
+    print(w.get_value(None, start_time))
 
-    print w.get_emulsification_wind(None, start_time)
+    print(w.get_emulsification_wind(None, start_time))
     # input wave height should hav overwhelmed
     assert w.get_emulsification_wind(None, start_time) > 3.0
 
@@ -304,8 +309,8 @@ def test_get_emulsification_wind_with_wave_height2():
     water.wave_height = 2.0
     w = Waves(wind, water)
 
-    print w.get_value(None, start_time)
+    print(w.get_value(None, start_time))
 
-    print w.get_emulsification_wind(None, start_time)
+    print(w.get_emulsification_wind(None, start_time))
     # input wave height should not have overwhelmed wind speed
     assert w.get_emulsification_wind(None, start_time) == 10.0

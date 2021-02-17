@@ -18,5 +18,5 @@ from gnome.map import MapFromBNA
 
 start = time.clock()
 map = MapFromBNA(map_filename)
-print "it took %s seconds"%(time.clock() - start)
+print("it took %s seconds"%(time.clock() - start))
 

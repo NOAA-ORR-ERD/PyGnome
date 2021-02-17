@@ -5,8 +5,7 @@ The master setup.py file for py_gnome
 you should be able to run :
     python setup.py develop
 
-to build and install the whole thing in development mode
-(it will only work right with distribute, not setuptools)
+To build and install the whole thing in development mode
 All the shared C++ code is compiled with  basic_types.pyx
 
 It needs to be imported before any other extensions
@@ -16,8 +15,10 @@ It needs to be imported before any other extensions
 import os
 import sys
 import sysconfig
+import importlib
 import glob
 import shutil
+import datetime
 
 # to support "develop" mode:
 from setuptools import setup, find_packages
@@ -26,6 +27,7 @@ from distutils.command.clean import clean
 from distutils.extension import Extension
 from Cython.Distutils import build_ext
 
+import platform
 from git import Repo
 
 import numpy as np
@@ -33,18 +35,33 @@ import numpy as np
 # could run setup from anywhere
 SETUP_PATH = os.path.dirname(os.path.abspath(__file__))
 
+# the extension used for compiled modules
+# # why is this so ugly?!? on py2?
+# comp_modules_ext = sysconfig.get_config_var('EXT_SUFFIX')
+# if comp_modules_ext is None:
+#     comp_modules_ext = '.lib' if 'win' in sys.platform else ".so"
+if sys.version_info.major == 3:
+    # py_impl = ['.'] + [c.lower() for c in platform.python_implementation() if c.isupper()]
+    # py_impl = py_impl + sysconfig.get_python_version().split('.') + ['-'] + [sysconfig.get_platform().replace('-','_')]
+    # win_comp_modules_ext = ''.join(py_impl) + '.lib'
+    win_comp_modules_ext = sysconfig.get_config_var('EXT_SUFFIX')
+else:
+    win_comp_modules_ext = '.lib'
+
+
 # cd to SETUP_PATH, run develop or install, then cd back
 CWD = os.getcwd()
 os.chdir(SETUP_PATH)
 
-repo = Repo('../.')
-
 try:
+    repo = Repo('../.')
     branch_name = repo.active_branch.name
-except TypeError:
+    last_update = next(repo.iter_commits()).committed_datetime.isoformat(),
+    # except TypeError:
+    #     branch_name = 'no-branch'
+except:  # anything goes wrong -- we want to keep moving
     branch_name = 'no-branch'
-
-last_update = repo.iter_commits().next().committed_datetime.isoformat(),
+    last_update = datetime.datetime.now().isoformat()
 
 
 def target_dir(name):
@@ -73,7 +90,7 @@ class cleanall(clean):
 
         rm_dir = ['pyGnome.egg-info', 'build']
         for dir_ in rm_dir:
-            print "Deleting auto-generated directory: {0}".format(dir_)
+            print("Deleting auto-generated directory: {0}".format(dir_))
             try:
                 shutil.rmtree(dir_)
             except OSError as err:
@@ -112,16 +129,15 @@ class cleanall(clean):
                             self.delete_file(f)
 
     def delete_file(self, filepath):
-        print "Deleting auto-generated file: {0}".format(filepath)
+        print("Deleting auto-generated file: {0}".format(filepath))
         try:
             if os.path.isdir(filepath):
                 shutil.rmtree(filepath)
             else:
                 os.remove(filepath)
         except OSError as err:
-            print("Failed to remove {0}. Error: {1}"
-                  .format(filepath, err))
-            # raise
+            print(("Failed to remove {0}. Error: {1}"
+                  .format(filepath, err)))
 
 
 # setup our environment and architecture
@@ -137,6 +153,8 @@ else:
 
 if sys.platform == 'darwin':
     # for the mac -- we need to set the -arch flag
+    # FixMe: we needed to do this back in the day with "fat" binaries
+    # still required?
     os.environ['ARCHFLAGS'] = "-arch {0}".format(architecture)
     # so that we can use more modern C++ (10.6 is the default for python2.7)
     if 'MACOSX_DEPLOYMENT_TARGET' not in os.environ:
@@ -154,11 +172,9 @@ elif sys.platform == "win32":
     libfile = '{0}.lib'  # windows static library filename format
 
 # setup our third party libraries environment - for Win32/Mac OSX
-# Linux does not use the libraries in third_party_lib. It links against
-# netcdf shared objects installed by apt-get
-'''
-import subprocess
+# fixme: on Windows, should use the conda libs.
 
+# Linux and OS-X should be using conda (or system) libs for netcdf
 
 def get_netcdf_libs():
     """
@@ -169,82 +185,104 @@ def get_netcdf_libs():
     3) try to look directly for conda libs
     4) fall back to the versions distributed with the py_gnome code
     """
+    import subprocess
+
     # check for nc-config
     try:
         result = subprocess.check_output(["nc-config", "--libs"]).split()
         lib_dir = result[0]
         libs = result[1:]
         include_dir = subprocess.check_output(["nc-config", "--includedir"])
-
-        print lib_dir
-        print libs
-        print include_dir
+        include_dir = include_dir.decode("ASCII").strip()
+        lib_dir = lib_dir.decode("ASCII")
+        libs = [l.decode("ASCII") for l in libs]
+        # print("found netcdf install:")
+        # print([lib_dir, libs, include_dir])
+        return lib_dir, libs, include_dir
     except OSError:
         raise NotImplementedError("this setup.py needs nc-config "
                                   "to find netcdf libs")
 
-get_netcdf_libs()
-'''
+def get_conda_includes_win():
+    """
+    If this is being run within a conda environment, use CONDA_PREFIX
+    and get the include, bin, and lib dirs off that. If no CONDA_PREFIX is found,
+    revert to the old third_party_libs
+    """
+    prefix = os.environ['CONDA_PREFIX']
+    lib_dir = os.path.join(prefix, 'Library', 'lib')
+    inc_dir = os.path.join(prefix, 'Library', 'include')
+    bin_dir = os.path.join(prefix, 'Library', 'bin')
+    return lib_dir, inc_dir, bin_dir
 
-
-if sys.platform is "darwin" or "win32":
+# maybe this will work with Windows, too" at least with conda?
+if sys.platform.startswith("linux") or sys.platform == "darwin":
+    netcdf_base, netcdf_libs, netcdf_inc = get_netcdf_libs()
+    # print("netcdf include dir (line 188)", netcdf_inc)
+    netcdf_lib_files = []
+elif sys.platform in ("win32"):  # but for now, still using our shipped libs.
+# elif sys.platform in ("darwin", "win32"):
     third_party_dir = os.path.join('..', 'third_party_lib')
-
-    # the netCDF environment
-    netcdf_base = os.path.join(third_party_dir, 'netcdf-4.3',
-                               sys.platform, architecture)
-    netcdf_libs = os.path.join(netcdf_base, 'lib')
-    netcdf_inc = os.path.join(netcdf_base, 'include')
-
-    if sys.platform == 'win32':
-        # also copy the netcdf *.dlls to cy_gnome directory
-        # On windows the dlls have the same names for those used by python's
-        # netCDF4 module and PyGnome modules. For PyGnome, we had the latest
-        # netcdf dlls from UCARR site but this was giving DLL import errors.
-        # Netcdf dlls that come with Python's netCDF4 module (C. Gohlke's site)
-        # were different from the netcdf4 DLLs we got from UCARR.
-        # For now, third_party_lib contains the DLLs installed in site-packages
-        # from C. Gohlke's site.
-        #
-        # Alternatively, we could also look for python netCDF4 package and copy
-        # DLLs from site-packages. This way the DLLs used and loaded by PyGnome
-        # are the same as the DLL used and expected by netCDF4. PyGnome loads
-        # the DLL with cy_basic_types.pyd and it also imports netCDF4 when
-        # netcdf_outputters module is imported - this was causing the previous
-        # conflict. The DLL loaded in memory should be consistent - that's the
-        # best understanding of current issue!
-        # STILL WORKING ON A MORE PERMANENT SOLUTION
-        win_dlls = os.path.join(netcdf_base, 'bin')
-        dlls_path = os.path.join(os.getcwd(), win_dlls)
-
-        for dll in glob.glob(os.path.join(dlls_path, '*.dll')):
-            dlls_dst = os.path.join(os.getcwd(), 'gnome/cy_gnome/')
-
-            dll_name = os.path.split(dll)[1]
-            if sys.argv[1] == 'cleanall' or sys.argv[1] == 'clean':
-                rm_dll = os.path.join(dlls_dst, dll_name)
-                if os.path.exists(rm_dll):
-                    os.remove(rm_dll)
-                    print "deleted: " + rm_dll
-            else:
-                # Note: weird permissions/file locking thing on Windows --
-                #       couldn't delete or overwrite the dll...
-                #       so only copy if it's not there already
-                if not os.path.isfile(os.path.join(dlls_dst, dll_name)):
-                    print "copy: " + dll + " to: " + dlls_dst
-                    shutil.copy(dll, dlls_dst)
-        netcdf_names = ('netcdf',)
+    if 'CONDA_PREFIX' in os.environ:
+        netcdf_libs, netcdf_inc, netcdf_dll = get_conda_includes_win()
+        if sys.platform == 'win32':
+            netcdf_names = ('netcdf',)
+        else:
+            netcdf_names = ('hdf5', 'hdf5_hl', 'netcdf', 'netcdf_c++4')
+        netcdf_lib_files = [os.path.join(netcdf_libs, libfile.format(l))
+                            for l in netcdf_names]
     else:
-        netcdf_names = ('hdf5', 'hdf5_hl', 'netcdf', 'netcdf_c++4')
 
-    netcdf_lib_files = [os.path.join(netcdf_libs, libfile.format(l))
-                        for l in netcdf_names]
+        # the netCDF environment
+        netcdf_base = os.path.join(third_party_dir, 'netcdf-4.3',
+                                sys.platform, architecture)
+        netcdf_libs = os.path.join(netcdf_base, 'lib')
+        netcdf_inc = os.path.join(netcdf_base, 'include')
+
+        if sys.platform == 'win32':  # oddly, 64 bit Windows is still win32
+            # also copy the netcdf *.dlls to cy_gnome directory
+            # On windows the dlls have the same names for those used by python's
+            # netCDF4 module and PyGnome modules. For PyGnome, we had the latest
+            # netcdf dlls from UCARR site but this was giving DLL import errors.
+            # Netcdf dlls that come with Python's netCDF4 module (C. Gohlke's site)
+            # were different from the netcdf4 DLLs we got from UCARR.
+            # For now, third_party_lib contains the DLLs installed in site-packages
+            # from C. Gohlke's site.
+            #
+            # Alternatively, we could also look for python netCDF4 package and copy
+            # DLLs from site-packages. This way the DLLs used and loaded by PyGnome
+            # are the same as the DLL used and expected by netCDF4. PyGnome loads
+            # the DLL with cy_basic_types.pyd and it also imports netCDF4 when
+            # netcdf_outputters module is imported - this was causing the previous
+            # conflict. The DLL loaded in memory should be consistent - that's the
+            # best understanding of current issue!
+            # STILL WORKING ON A MORE PERMANENT SOLUTION
+            win_dlls = os.path.join(netcdf_base, 'bin')
+            dlls_path = os.path.join(os.getcwd(), win_dlls)
+
+            for dll in glob.glob(os.path.join(dlls_path, '*.dll')):
+                dlls_dst = os.path.join(os.getcwd(), 'gnome/cy_gnome/')
+
+                dll_name = os.path.split(dll)[1]
+                if sys.argv[1] == 'cleanall' or sys.argv[1] == 'clean':
+                    rm_dll = os.path.join(dlls_dst, dll_name)
+                    if os.path.exists(rm_dll):
+                        os.remove(rm_dll)
+                        print("deleted: " + rm_dll)
+                else:
+                    # Note: weird permissions/file locking thing on Windows --
+                    #       couldn't delete or overwrite the dll...
+                    #       so only copy if it's not there already
+                    if not os.path.isfile(os.path.join(dlls_dst, dll_name)):
+                        print("copy: " + dll + " to: " + dlls_dst)
+                        shutil.copy(dll, dlls_dst)
+            netcdf_names = ('netcdf',)
+        else:
+            netcdf_names = ('hdf5', 'hdf5_hl', 'netcdf', 'netcdf_c++4')
 
 
-# print netcdf_base
-# print netcdf_libs
-# print netcdf_inc
-# print netcdf_lib_files
+        netcdf_lib_files = [os.path.join(netcdf_libs, libfile.format(l))
+                            for l in netcdf_names]
 
 
 # the cython extensions to build -- each should correspond to a *.pyx file
@@ -346,12 +384,6 @@ include_dirs = [cpp_code_dir,
                 '.']
 static_lib_files = netcdf_lib_files
 
-# build cy_basic_types along with lib_gnome so we can use distutils
-# for building everything
-# and putting it in the correct place for linking.
-# cy_basic_types needs to be imported before any other extensions.
-# This is being done in the gnome/cy_gnome/__init__.py
-
 # JS NOTE: 'darwin' and 'win32' statically link against netcdf library.
 #          On linux, we link against the dynamic netcdf libraries (shared
 #          objects) since netcdf, hdf5 can be installed with a package manager.
@@ -362,9 +394,12 @@ static_lib_files = netcdf_lib_files
 #           conda netcdf...
 
 if sys.platform == "darwin":
-    # include_dirs.append('/Library/Developer/CommandLineTools/usr/include/c++/v1/')
-    print "using these compile arguments:", compile_args
-    basic_types_ext = Extension(r'gnome.cy_gnome.cy_basic_types',
+    # on the mac, the libgnome code is linked into the cy_basic_types
+    #    extension -- which makes it available to all the other extensions
+    #.   as long as it's imported first.
+    # This is being done in the gnome/cy_gnome/__init__.py
+
+    basic_types_ext = Extension('gnome.cy_gnome.cy_basic_types',
                                 ['gnome/cy_gnome/cy_basic_types.pyx'] + cpp_files,
                                 language='c++',
                                 define_macros=macros,
@@ -378,6 +413,7 @@ if sys.platform == "darwin":
     static_lib_files = []
 
 elif sys.platform == "win32":
+    # On windows, the
     # build our compile arguments
     macros.append(('_EXPORTS', 1))
     macros.append(('_CRT_SECURE_NO_WARNINGS', 1))
@@ -391,7 +427,7 @@ elif sys.platform == "win32":
     # build our linking arguments
     libdirs.append(netcdf_libs)
 
-    basic_types_ext = Extension(r'gnome.cy_gnome.cy_basic_types',
+    basic_types_ext = Extension('gnome.cy_gnome.cy_basic_types',
                                 [r'gnome\cy_gnome\cy_basic_types.pyx'] + cpp_files,
                                 language='c++',
                                 define_macros=macros,
@@ -405,12 +441,21 @@ elif sys.platform == "win32":
     extensions.append(basic_types_ext)
 
     # we will reference this library when building all other extensions
+    # fixme: Where is this getting built??
+    #        That filename needs to be dynamically determined with code somehat like:
+    # if sys.version_info.major > 2:
+    #     suffix = importlib.machinery.EXTENSION_SUFFIXES[0]
+    #     libname = 'gnome' + suffix
+    # else:
+    #     libname = 'gnome.lib'
     static_lib_files = [os.path.join(target_path(),
                                      'Release', 'gnome', 'cy_gnome',
-                                     'cy_basic_types.lib')]
+                                     'cy_basic_types'+ win_comp_modules_ext)]
     libdirs = []
 
-elif sys.platform == "linux2":
+elif sys.platform.startswith("linux"):
+    # print("in linux stanza (line 416): include dirs")
+    # print(include_dirs)
     # for some reason I have to create build/temp.linux-i686-2.7
     # else the compile fails saying temp.linux-i686-2.7 is not found
     # required for develop or install mode
@@ -419,6 +464,8 @@ elif sys.platform == "linux2":
         os.makedirs(build_temp)
 
     # Not sure calling setup twice is the way to go - but do this for now
+    #    it should be straightforward to simply build a shared lib.
+    #    but if it ain't broke ...
     # NOTE: This is also linking against the netcdf library (*.so), not
     # the static netcdf. We didn't build a NETCDF static library.
     setup(name='pyGnome',  # not required since ext defines this
@@ -429,27 +476,36 @@ elif sys.platform == "linux2":
                                  language='c++',
                                  define_macros=macros,
                                  libraries=['netcdf'],
-                                 include_dirs=[cpp_code_dir],
+                                 # include_dirs=[cpp_code_dir],
+                                 include_dirs=include_dirs,
                                  )])
 
     # In install mode, it compiles and builds libgnome inside
     # lib.linux-i686-2.7/gnome/cy_gnome
     # This should be moved to build/temp.linux-i686-2.7 so cython files
     # build and link properly
+    # get the lib name -- py3 adds a bunch of platform cruft
+    if sys.version_info.major > 2:
+        suffix = importlib.machinery.EXTENSION_SUFFIXES[0]
+        libname = 'gnome' + suffix
+    else:
+        libname = 'gnome.so'
+
     if 'install' in sys.argv[1]:
-        bdir = glob.glob(os.path.join('build/*/gnome/cy_gnome', 'libgnome.so'))
+        bdir = glob.glob(os.path.join('build/*/gnome/cy_gnome', "lib" + libname))
         if len(bdir) > 1:
-            raise Exception("Found more than one libgnome.so library "
+            raise Exception("Found more than one libgnome library "
                             "during install mode in 'build/*/gnome/cy_gnome'")
         if len(bdir) == 0:
-            raise Exception("Did not find libgnome.so library "
+            raise Exception("Did not find libgnome library "
                             "during install mode in 'build/*/gnome/cy_gnome'")
 
         libpath = os.path.dirname(bdir[0])
 
     else:
         libpath = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                               'gnome', 'cy_gnome')
+                               'gnome',
+                               'cy_gnome')
 
     # Need this for finding lib during linking and at runtime
     # using -rpath to define runtime path. Use $ORIGIN to define libgnome.so
@@ -459,8 +515,10 @@ elif sys.platform == "linux2":
     # End building C++ shared object
     compile_args = ["-Wl,-rpath,'$ORIGIN'"]
 
-    lib = ['gnome']
-    basic_types_ext = Extension(r'gnome.cy_gnome.cy_basic_types',
+    libname = libname[:-3] if libname.endswith(".so") else libname
+
+    lib = [libname]
+    basic_types_ext = Extension('gnome.cy_gnome.cy_basic_types',
                                 ['gnome/cy_gnome/cy_basic_types.pyx'],
                                 language='c++',
                                 define_macros=macros,
@@ -478,6 +536,8 @@ elif sys.platform == "linux2":
 #
 for mod_name in extension_names:
     cy_file = os.path.join("gnome/cy_gnome", mod_name + ".pyx")
+    print("setting up cython extensions")
+    # print("include_dirs:", include_dirs)
     extensions.append(Extension('gnome.cy_gnome.' + mod_name,
                                 [cy_file],
                                 language="c++",
@@ -508,16 +568,17 @@ extensions.append(Extension("gnome.utilities.geometry.cy_point_in_polygon",
                             extra_link_args=link_args,
                             ))
 
-extensions.append(Extension("gnome.utilities.file_tools.filescanner",
-                            sources=[os.path.join('gnome',
-                                                  'utilities',
-                                                  'file_tools',
-                                                  'filescanner.pyx')],
-                            extra_compile_args=compile_args,
-                            include_dirs=include_dirs,
-                            language="c",
-                            ))
-
+if sys.version_info.major == 2:
+    # this doesn't work under Python3
+    extensions.append(Extension("gnome.utilities.file_tools.filescanner",
+                                sources=[os.path.join('gnome',
+                                                      'utilities',
+                                                      'file_tools',
+                                                      'filescanner.pyx')],
+                                extra_compile_args=compile_args,
+                                include_dirs=include_dirs,
+                                language="c",
+                                ))
 
 def get_version():
     """
@@ -529,6 +590,9 @@ def get_version():
             return version
     raise ValueError("can't find version string in __init__")
 
+
+for e in extensions:
+    e.cython_directives = {'language_level': "3"}  # all are Python-3
 
 setup(name='pyGnome',
       version=get_version(),
@@ -548,7 +612,7 @@ setup(name='pyGnome',
       # scripts,
 
       # metadata for upload to PyPI
-      author="Gnome team at NOAA ORR ERD",
+      author="Gnome team at NOAA/ORR/ERD",
       author_email="orr.gnome@noaa.gov",
       description=("GNOME (General NOAA Operational Modeling Environment) "
                    "is the modeling tool the Office of Response and "

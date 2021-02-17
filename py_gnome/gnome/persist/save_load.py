@@ -1,6 +1,11 @@
 '''
 Save/load gnome objects
 '''
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import os
 import shutil
 import json
@@ -34,7 +39,7 @@ class Refs(dict):
         '''
         base_name = obj.obj_type.split('.')[-1]
 
-        num_of_same_type = [v for v in self.values()
+        num_of_same_type = [v for v in list(self.values())
                             if v.obj_type == obj.obj_type]
 
         return base_name + num_of_same_type + 1
@@ -59,14 +64,14 @@ class References(object):
 
     @property
     def files(self):
-        return self._refs.keys()
+        return list(self._refs.keys())
 
     def get_reference(self, obj):
         '''
         return key if obj already exists in references list
         else return None
         '''
-        for key, item in self._refs.iteritems():
+        for key, item in list(self._refs.items()):
             if item is obj:
                 return key
 
@@ -454,7 +459,7 @@ class Savable(object):
         try:
             _to_dict = cls.deserialize(json_data)
         except colander.Invalid as e:
-            print('Class {0} failed to deserialize.'.format(cls.__name__))
+            print(('Class {0} failed to deserialize.'.format(cls.__name__)))
             raise e
 
         if ref_dict:
@@ -567,14 +572,14 @@ def is_savezip_valid(savezip):
 
             # integer division - it will floor
             if (zi.compress_size > 0 and
-                    zi.file_size / zi.compress_size > _max_compress_ratio):
+                    (zi.file_size / zi.compress_size) > _max_compress_ratio):
                 # 4) Found a file with
                 #    uncompressed_size/compressed_size > _max_compress_ratio.
                 #    Rejecting.
                 log.warning('file compression ratio is {0}. '
                             'maximum must be less than {1}. '
                             'Rejecting zipfile'
-                            .format(zi.file_size / zi.compress_size,
+                            .format((zi.file_size / zi.compress_size),
                                     _max_compress_ratio))
                 return False
 

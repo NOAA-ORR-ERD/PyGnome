@@ -29,7 +29,7 @@ for name in foreground_files:
     comp_file = os.path.join(images_dir, 'composite' + name[-10:])
     cmd = 'composite -compose atop %s %s %s' % (name, background_file,
             comp_file)
-    print cmd
+    print(cmd)
     os.system(cmd)
 
 # build the animated GIF
@@ -37,7 +37,7 @@ for name in foreground_files:
 cmd = 'convert  -delay 20  -loop 0 %s*.png  %s' \
     % (os.path.join(images_dir, 'composite'), os.path.join(images_dir,
        '00-gnome_movie.gif'))
-print 'building the GIF:'
-print cmd
+print('building the GIF:')
+print(cmd)
 os.system(cmd)
 

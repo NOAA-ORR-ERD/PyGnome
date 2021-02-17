@@ -7,6 +7,10 @@ not sure how to test for real, but at least this tells you that you can call the
 
 designed to be run with py.test
 """
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
 
 import pytest
 
@@ -39,6 +43,6 @@ def test_increase():
     """
     import array
     start = get_mem_use()
-    l = [array.array('b', b'some bytes'*1024) for i in xrange(10000)]
+    l = [array.array('b', b'some bytes'*1024) for i in range(10000)]
 
     assert get_mem_use() > start

@@ -4,6 +4,11 @@ Created on Apr 11, 2013
 Create a unicode filename and test with object
 '''
 
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import os
 import shutil
 import sys
@@ -21,8 +26,8 @@ def create_ucode_file(filename, valid=True):
     copies it to a new file. The new file has an accented unicode
     character.
 
-    The boolean flag valid either uses a valid unicode (\u00e1) character or
-    an invalid one (\u0301).
+    The boolean flag valid either uses a valid unicode (\\u00e1) character or
+    an invalid one (\\u0301).
     They are both valid on the Mac since it uses UTF-8; however, on windows,
     the defalut encoding is cp1252, so it should raise the
     UnicodeEncodeError for an invalid flag
@@ -34,9 +39,9 @@ def create_ucode_file(filename, valid=True):
     # new name with unicode char
 
     if valid:
-        fname = name + '_' + u'\u00e1' + '.' + ext
+        fname = name + '_' + '\u00e1' + '.' + ext
     else:
-        fname = name + '_' + u'a\u0301' + '.' + ext
+        fname = name + '_' + 'a\u0301' + '.' + ext
 
     ufile = os.path.join(path_, fname)
     shutil.copyfile(filename, ufile)
@@ -71,7 +76,7 @@ def test_ucode_char_in_filename(test_case):
     elif sys.platform == 'darwin':
         test_case[0](filename=invalid_ufile)
 
-    print '{0}({1}) passed the test'.format(test_case[0], test_case[1])
+    print('{0}({1}) passed the test'.format(test_case[0], test_case[1]))
     assert True
 
 gridmover_ = [(GridCurrentMover, os.path.join(r'currents', r'ny_cg.nc'
@@ -105,7 +110,7 @@ def test_ucode_char_in_grid_mover_filename(mover_test):
         invalid_ufile2 = create_ucode_file(file2_, valid=False)
 
     mover_test[0](file1_, file2_)
-    
+
     # valid unicode names should work for both systems
     mover_test[0](ufile1, ufile2)
 
@@ -116,6 +121,6 @@ def test_ucode_char_in_grid_mover_filename(mover_test):
         # todo: also need a test case for linux2
         mover_test[0](invalid_ufile1, invalid_ufile2)
 
-    print '{0}({1},{2}) passed the test'.format(mover_test[0],
-            mover_test[1], mover_test[2])
+    print('{0}({1},{2}) passed the test'.format(mover_test[0],
+            mover_test[1], mover_test[2]))
     assert True

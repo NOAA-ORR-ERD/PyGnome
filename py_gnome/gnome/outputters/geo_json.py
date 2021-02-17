@@ -2,6 +2,15 @@
 GeoJson outputter
 Does not contain a schema for persistence yet
 '''
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
+# from future import standard_library
+# standard_library.install_aliases()
+# from builtins import *
+
 import copy
 import os
 from glob import glob
@@ -128,7 +137,7 @@ class TrajectoryGeoJsonOutput(Outputter):
         c_features = []
         uc_features = []
 
-        for sc in self.cache.load_timestep(step_num).items():
+        for sc in list(self.cache.load_timestep(step_num).items()):
             position = self._dataarray_p_types(sc['positions'])
             status = self._dataarray_p_types(sc['status_codes'])
             mass = self._dataarray_p_types(sc['mass'])
@@ -177,6 +186,8 @@ class TrajectoryGeoJsonOutput(Outputter):
         filename = os.path.join(self.output_dir,
                                 file_format.format(step_num))
 
+        print("output to file")
+        print(type(json_content))
         with open(filename, 'w+') as outfile:
             dump(json_content, outfile, indent=True)
 
@@ -216,12 +227,12 @@ class TrajectoryGeoJsonOutput(Outputter):
     #     self.clean_output_files()
 
     def clean_output_files(self):
-        print "in clean_output_files"
+        print("in clean_output_files")
         if self.output_dir:
             files = glob(os.path.join(self.output_dir, 'geojson_*.geojson'))
 
-            print "files are:"
-            print files
+            print("files are:")
+            print(files)
 
             for f in files:
                 os.remove(f)
@@ -296,7 +307,7 @@ class IceGeoJsonOutput(Outputter):
         if self.on is False or not self._write_step:
             return None
 
-        for sc in self.cache.load_timestep(step_num).items():
+        for sc in list(self.cache.load_timestep(step_num).items()):
             # gets the current timestep ?
             pass
 

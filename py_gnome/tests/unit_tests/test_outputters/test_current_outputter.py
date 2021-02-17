@@ -1,6 +1,10 @@
 '''
 tests for geojson outputter
 '''
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 from datetime import datetime
 
 import numpy as np
@@ -85,11 +89,11 @@ def test_current_grid_json_output(model):
         # There should be only one key, but we will iterate anyway.
         # We just want to verify here that our keys exist in the movers
         # collection.
-        for k in fcs.keys():
+        for k in list(fcs.keys()):
             assert model.movers.index(k) > 0
 
         # Check that our structure is correct.
-        for fc in fcs.values():
+        for fc in list(fcs.values()):
             assert 'direction' in fc
             assert 'magnitude' in fc
             assert len(fc['direction']) > 0

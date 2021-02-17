@@ -1,6 +1,10 @@
 '''
 Test all operations for gridcurrent mover work
 '''
+from __future__ import print_function
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import unicode_literals
 
 import datetime
 import os
@@ -86,14 +90,14 @@ def test_certain_uncertain():
 
     delta = test_loop()
     u_delta = test_uncertain_loop()
-    print
-    print delta
-    print u_delta
+    print()
+    print(delta)
+    print(u_delta)
     assert np.all(delta[:, :2] != u_delta[:, :2])
     assert np.all(delta[:, 2] == u_delta[:, 2])
     uncertain_time_delay = 3
     u_delta = test_uncertain_loop(uncertain_time_delay)
-    print u_delta
+    print(u_delta)
     assert np.all(delta[:, :2] == u_delta[:, :2])
 
 
@@ -129,7 +133,7 @@ def test_scale_value():
     """
 
     c_cycle.current_scale = 2
-    print c_cycle.current_scale
+    print(c_cycle.current_scale)
     assert c_cycle.current_scale == 2
 
 
@@ -139,7 +143,7 @@ def test_extrapolate():
     """
 
     c_cycle.extrapolate = True
-    print c_cycle.extrapolate
+    print(c_cycle.extrapolate)
     assert c_cycle.extrapolate == True
 
 
@@ -149,7 +153,7 @@ def test_offset_time():
     """
 
     c_cycle.time_offset = -8
-    print c_cycle.time_offset
+    print(c_cycle.time_offset)
     assert c_cycle.time_offset == -8
 
 
@@ -160,8 +164,8 @@ def _assert_move(delta):
     helper function to test assertions
     """
 
-    print
-    print delta
+    print()
+    print(delta)
     assert np.all(delta[:, :2] != 0)
     assert np.all(delta[:, 2] == 0)
 

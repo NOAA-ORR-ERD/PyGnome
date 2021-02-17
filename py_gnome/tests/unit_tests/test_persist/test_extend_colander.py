@@ -6,6 +6,10 @@ tests for our extensions to colander
 Not complete at all!
 
 """
+from __future__ import print_function
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import unicode_literals
 import os
 from datetime import datetime
 import pprint as pp
@@ -23,7 +27,7 @@ from gnome.environment.timeseries_objects_base import (TimeseriesData,
 from gnome.utilities.serializable_demo_objects import DemoObj
 
 
-@pytest.fixture('class')
+@pytest.fixture(scope='class')
 def dates():
     return np.array([datetime(2000, 1, 1, 0),
                      datetime(2000, 1, 1, 2),
@@ -32,12 +36,12 @@ def dates():
                      datetime(2000, 1, 1, 8), ])
 
 
-@pytest.fixture('class')
+@pytest.fixture(scope='class')
 def series_data():
     return np.array([1, 3, 6, 10, 15])
 
 
-@pytest.fixture('class')
+@pytest.fixture(scope='class')
 def series_data2():
     return np.array([2, 6, 12, 20, 30])
 
@@ -72,7 +76,7 @@ class Test_LocalDateTime(object):
         dt_str = '2016-02-12T13:32:00+03:00'
 
         result = self.dts.deserialize(None, dt_str)
-        print repr(result)
+        print(repr(result))
 
         assert result == datetime(2016, 2, 12, 13, 32)
 

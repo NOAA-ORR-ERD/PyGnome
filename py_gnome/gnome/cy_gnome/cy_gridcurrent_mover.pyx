@@ -5,12 +5,12 @@ import numpy as np
 
 from libc.string cimport memcpy
 
-from type_defs cimport *
+from .type_defs cimport *
 from gnome import basic_types
 
-from utils cimport _GetHandleSize
-from movers cimport Mover_c
-from current_movers cimport GridCurrentMover_c, CurrentMover_c
+from .utils cimport _GetHandleSize
+from .movers cimport Mover_c
+from .current_movers cimport GridCurrentMover_c, CurrentMover_c
 
 from gnome.cy_gnome.cy_helpers cimport to_bytes
 from gnome.cy_gnome.cy_mover cimport CyCurrentMoverBase
@@ -180,7 +180,8 @@ cdef class CyGridCurrentMover(CyCurrentMoverBase):
 
         def __set__(self, value):
             self.grid_current.num_method = basic_types.numerical_methods[value]
-            self._num_method = value
+            cdef bytes bvalue = value.encode('ASCII')
+            self._num_method = bvalue
 
     def extrapolate_in_time(self, extrapolate):
         self.grid_current.SetExtrapolationInTime(extrapolate)
@@ -273,7 +274,7 @@ cdef class CyGridCurrentMover(CyCurrentMoverBase):
         sz = _GetHandleSize(<Handle>pts_hdl)
 
         # will this always work?
-        pts = np.empty((sz / tmp_size,), dtype=basic_types.long_point)
+        pts = np.empty((sz // tmp_size,), dtype=basic_types.long_point)
 
         memcpy(&pts[0], pts_hdl[0], sz)
 
@@ -293,7 +294,7 @@ cdef class CyGridCurrentMover(CyCurrentMoverBase):
         sz = _GetHandleSize(<Handle>pts_hdl)
 
         # will this always work?
-        pts = np.empty((sz / tmp_size,), dtype=basic_types.w_point_2d)
+        pts = np.empty((sz // tmp_size,), dtype=basic_types.w_point_2d)
 
         memcpy(&pts[0], pts_hdl[0], sz)
 
@@ -314,7 +315,7 @@ cdef class CyGridCurrentMover(CyCurrentMoverBase):
         sz = _GetHandleSize(<Handle>top_hdl)
 
         # will this always work?
-        top = np.empty((sz / tmp_size,), dtype=basic_types.triangle_data)
+        top = np.empty((sz // tmp_size,), dtype=basic_types.triangle_data)
 
         memcpy(&top[0], top_hdl[0], sz)
 
@@ -335,7 +336,7 @@ cdef class CyGridCurrentMover(CyCurrentMoverBase):
         sz = _GetHandleSize(<Handle>cell_data_hdl)
 
         # will this always work?
-        cell_data = np.empty((sz / tmp_size,), dtype=basic_types.cell_data)
+        cell_data = np.empty((sz // tmp_size,), dtype=basic_types.cell_data)
 
         memcpy(&cell_data[0], cell_data_hdl[0], sz)
 

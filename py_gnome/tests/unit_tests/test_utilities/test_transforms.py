@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import unicode_literals
 import numpy as np
 
 from gnome.utilities.transforms import r_theta_to_uv_wind, \
@@ -31,19 +35,19 @@ inv_atol = 1e-10
 
 def test_r_theta_to_uv_wind(rq_wind):
     uv_out = r_theta_to_uv_wind(rq_wind['rq'])
-    print 'actual (u,v): '
-    print uv_out
-    print 'computed (u,v): '
-    print rq_wind['uv']
+    print('actual (u,v): ')
+    print(uv_out)
+    print('computed (u,v): ')
+    print(rq_wind['uv'])
     assert np.allclose(uv_out, rq_wind['uv'], atol, rtol)
 
 
 def test_uv_to_r_theta_wind(rq_wind):
     rq_out = uv_to_r_theta_wind(rq_wind['uv'])
-    print 'actual (r,theta): '
-    print rq_out
-    print 'computed (r,theta): '
-    print rq_wind['rq']
+    print('actual (r,theta): ')
+    print(rq_out)
+    print('computed (r,theta): ')
+    print(rq_wind['rq'])
     assert np.allclose(rq_out, rq_wind['rq'], atol, rtol)
 
 
@@ -55,10 +59,10 @@ def test_wind_inverse(rq_rand):
     """
 
     rq_out = uv_to_r_theta_wind(r_theta_to_uv_wind(rq_rand['rq']))
-    print 'actual (r,theta): '
-    print rq_rand['rq']
-    print 'computed (r,theta): '
-    print rq_out
+    print('actual (r,theta): ')
+    print(rq_rand['rq'])
+    print('computed (r,theta): ')
+    print(rq_out)
     assert np.allclose(rq_out, rq_rand['rq'], inv_atol, rtol)
 
 
@@ -80,10 +84,10 @@ def test_current_inverse(rq_rand):
     """
 
     rq_out = uv_to_r_theta_current(r_theta_to_uv_current(rq_rand['rq']))
-    print 'actual (r,theta): '
-    print rq_rand['rq']
-    print 'computed (r,theta): '
-    print rq_out
+    print('actual (r,theta): ')
+    print(rq_rand['rq'])
+    print('computed (r,theta): ')
+    print(rq_out)
     assert np.allclose(rq_out, rq_rand['rq'], inv_atol, rtol)
 
 

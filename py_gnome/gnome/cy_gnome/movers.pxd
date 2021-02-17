@@ -5,10 +5,10 @@ from libcpp cimport bool
 
 from libc.stdint cimport int32_t
 
-from type_defs cimport *
-from utils cimport OSSMTimeValue_c
+from .type_defs cimport *
+from .utils cimport OSSMTimeValue_c
 
-from grids cimport GridVel_c, TimeGridVel_c
+from .grids cimport GridVel_c, TimeGridVel_c
 """
 Following are used by some of the methods of the movers
 Currently, it looks like all methods are exposed from C++ so

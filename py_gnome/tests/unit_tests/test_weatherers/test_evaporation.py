@@ -1,6 +1,11 @@
 '''
 Test evaporation module
 '''
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import unicode_literals
+
 from datetime import timedelta, datetime
 
 import pytest
@@ -13,8 +18,7 @@ from gnome.weatherers import Evaporation
 from gnome.outputters import WeatheringOutput
 from gnome.basic_types import oil_status
 
-from conftest import weathering_data_arrays, test_oil
-
+from .conftest import weathering_data_arrays, test_oil
 from ..conftest import (# sample_model,
                         sample_model_weathering)
 
@@ -69,18 +73,18 @@ def test_evaporation(oil, temp, num_elems, on):
         else:
             assert np.all(sc['evap_decay_constant'][mask, :] == 0.0)
 
-    print '\nevap_decay_const', sc['evap_decay_constant']
-    print 'frac_lost', sc['frac_lost']
+    print('\nevap_decay_const', sc['evap_decay_constant'])
+    print('frac_lost', sc['frac_lost'])
 
     if on:
         assert sc.mass_balance['evaporated'] > 0.0
-        print 'total evaporated', sc.mass_balance['evaporated']
+        print('total evaporated', sc.mass_balance['evaporated'])
     else:
         assert 'evaporated' not in sc.mass_balance
         assert np.all(sc['mass_components'] == init_mass)
 
 
-class TestDecayConst:
+class TestDecayConst(object):
     '''
     WIP - Currently has one working test, but may have more so grouped it in
     a class
@@ -120,17 +124,17 @@ class TestDecayConst:
         (m1, m2) = self.setup_test(delay, (10, 10))
         m2.time_step = 900
 
-        for ix in xrange(m1.num_time_steps):
+        for ix in range(m1.num_time_steps):
             w1 = m1.step()['WeatheringOutput']
             if ix == 0:
                 w2 = m2.step()['WeatheringOutput']
 
             if ix > 0:
-                for _ in xrange(4):
+                for _ in range(4):
                     w2 = m2.step()['WeatheringOutput']
 
-                val1 = w1.values()
-                val2 = w2.values()
+                val1 = list(w1.values())
+                val2 = list(w2.values())
                 d_time1 = val1.pop(4)
                 d_time2 = val2.pop(4)
 
@@ -154,16 +158,16 @@ class TestDecayConst:
         (m1, m2) = self.setup_test(end_time_delay, (2*num_les_one_per_ts,
                                                     4 * num_les_one_per_ts))
 
-        for ix in xrange(m1.num_time_steps):
+        for ix in range(m1.num_time_steps):
             w1 = m1.step()['WeatheringOutput']
             w2 = m2.step()['WeatheringOutput']
 
             d_time1 = w1.pop('time_stamp')
             d_time2 = w2.pop('time_stamp')
 
-            print "Completed step ", ix
+            print("Completed step ", ix)
             assert d_time1 == d_time2
-            assert np.allclose(w1.values(), w2.values())
+            assert np.allclose(list(w1.values()), list(w2.values()))
 
 
 def assert_helper(sc, new_p):
@@ -172,7 +176,7 @@ def assert_helper(sc, new_p):
     arrays = {'evap_decay_constant', 'mass_components', 'mass', 'status_codes'}
 
     substances_list = sc.itersubstancedata(arrays)
-    print substances_list
+    print(substances_list)
     for substance, data in substances_list:
         if len(sc) > new_p:
             old_le = len(sc) - new_p
@@ -190,8 +194,7 @@ def assert_helper(sc, new_p):
 
         if new_p > 0:
             #new_p/2 because of new step release behavior May 2020
-            assert np.all(data['evap_decay_constant'][-(new_p/2):, :] ==
-                          0.0)
+            assert np.all(data['evap_decay_constant'][ - (new_p // 2):, :] == 0.0)
 
 
 @pytest.mark.parametrize(('oil', 'temp'), [('oil_6', 333.0),
@@ -212,7 +215,7 @@ def test_full_run(sample_model_fcn, oil, temp):
     init_rho = model.spills[0].substance.density_at_temp(temp)
     init_vis = model.spills[0].substance.kvis_at_temp(temp)
     for step in model:
-        for sc in model.spills.items():
+        for sc in list(model.spills.items()):
             assert_helper(sc, sc.num_released - released)
             released = sc.num_released
             if sc.num_released > 0:
@@ -222,14 +225,14 @@ def test_full_run(sample_model_fcn, oil, temp):
             mask = sc['status_codes'] == oil_status.in_water
             assert sc.mass_balance['floating'] == np.sum(sc['mass'][mask])
 
-            print ("Amount released: {0}".
-                   format(sc.mass_balance['amount_released']))
-            print "Mass floating: {0}".format(sc.mass_balance['floating'])
-            print "Mass evap: {0}".format(sc.mass_balance['evaporated'])
-            print "LEs in water: {0}".format(sum(mask))
-            print "Mass on land: {0}".format(np.sum(sc['mass'][~mask]))
+            print(("Amount released: {0}".
+                   format(sc.mass_balance['amount_released'])))
+            print("Mass floating: {0}".format(sc.mass_balance['floating']))
+            print("Mass evap: {0}".format(sc.mass_balance['evaporated']))
+            print("LEs in water: {0}".format(sum(mask)))
+            print("Mass on land: {0}".format(np.sum(sc['mass'][~mask])))
 
-            print "Completed step: {0}\n".format(step['step_num'])
+            print("Completed step: {0}\n".format(step['step_num']))
 
     # print("failing on purpose")
     # assert False
@@ -248,7 +251,7 @@ def test_full_run_evap_not_active(sample_model_fcn):
         assert 'evaporated' not in step['WeatheringOutput']
         assert ('time_stamp' in step['WeatheringOutput'])
 
-        print ("Completed step: {0}".format(step['step_num']))
+        print(("Completed step: {0}".format(step['step_num'])))
 
 
 @pytest.mark.skipif(reason="serialization for weatherers overall needs review")

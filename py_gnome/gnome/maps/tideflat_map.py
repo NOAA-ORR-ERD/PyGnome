@@ -12,11 +12,15 @@ Then the movers will not move the particles while that flag is set.
 It is set back to in_water when the water depth indicates the tide flat
 is no longer a tide flat.
 """
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
 import numpy as np
 
 from gnome.gnomeobject import GnomeId
-from gnome.maps import GnomeMap
+# from gnome.maps import GnomeMap
 from gnome.basic_types import oil_status
 from gnome.utilities.time_utils import asdatetime
 
@@ -34,6 +38,7 @@ class TideflatMap(GnomeId):
     Not subclassed from a GnomeMap, as it delgates to the passed-in map
     instead
     """
+
     def __init__(self, land_map, tideflat):
         """
         initialize a TideflatMap
@@ -128,7 +133,7 @@ class TideflatBase(GnomeId):
         points = np.asarray(points, dtype=np.float64)
         if points.shape[1] != 3:
             raise ValueError("points should be a Nx3 array or equivalent")
-        return np.zeros(points.shape[0], dtype=np.bool)
+        return np.zeros(points.shape[0], dtype=bool)
 
     def is_wet(self, points, time):
         return np.logical_not(self.is_dry(points, time))
@@ -176,6 +181,6 @@ class SimpleTideflat(TideflatBase):
 
         # check time first
         if model_time < self.dry_start or model_time > self.dry_end:
-            return np.zeros(points.shape[0], dtype=np.bool)
+            return np.zeros(points.shape[0], dtype=bool)
 
         return points_in_poly(self.bounds, points)

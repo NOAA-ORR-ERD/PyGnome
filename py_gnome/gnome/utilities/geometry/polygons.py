@@ -11,7 +11,7 @@ import copy
 
 import numpy as np
 
-import BBox
+from . import BBox
 
 
 class Polygon(np.ndarray):
@@ -164,7 +164,7 @@ class Polygon(np.ndarray):
         # special_case if last point matches first point
         last_same = 1 if np.array_equal(orig_poly[0], orig_poly[-1]) else 0
         thinned = [orig_poly[0]]
-        for j in xrange(len(sc_poly)-last_same):
+        for j in range(len(sc_poly)-last_same):
             point = sc_poly[j]
             if not np.array_equal(point, prev_point):
                 thinned.append(orig_poly[j])
@@ -200,7 +200,7 @@ class PolygonSet(object):
         self.dtype = dtype
         if data is None:
             self._PointsArray = np.zeros((0, 2), self.dtype)
-            self._IndexArray = np.array((0,), dtype=np.int)
+            self._IndexArray = np.array((0,), dtype=np.int32)
             self._MetaDataList = []
         else:
             self._PointsArray = np.array(data[0])
@@ -229,10 +229,10 @@ class PolygonSet(object):
         old_length = self._PointsArray.shape[0]
 
         added_length = polygon.shape[0]
-        self._PointsArray.resize((old_length + added_length, 2))
+        self._PointsArray.resize((old_length + added_length, 2), refcheck=False)
         self._PointsArray[-added_length:, :] = polygon
 
-        self._IndexArray.resize((self._IndexArray.shape[0] + 1))
+        self._IndexArray.resize((self._IndexArray.shape[0] + 1), refcheck=False)
         self._IndexArray[-1] = self._PointsArray.shape[0]
         self._MetaDataList.append(metadata)
 
@@ -285,7 +285,7 @@ class PolygonSet(object):
 
         """
         self._PointsArray = np.array(PointData[0], self.dtype)
-        self._IndexArray = np.array(PointData[1], dtype=np.int)
+        self._IndexArray = np.array(PointData[1], dtype=np.int32)
         if MetaData is not None:
             self._DataArray = MetaData
         else:

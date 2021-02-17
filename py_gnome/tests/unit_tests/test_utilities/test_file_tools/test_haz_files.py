@@ -15,7 +15,7 @@ from gnome.utilities.file_tools import haz_files
 
 ## NOTE: according to:
 ## http://www.softwright.com/faq/support/boundary_file_bna_format.html
-## polygons in BNA shouls have the first and last popint the same.
+## polygons in BNA shouls have the first and last point the same.
 ## these tests (Nor the code) do not enforce that, but rather add the extra
 ## point if it's not there
 
@@ -23,7 +23,7 @@ basedir = os.path.dirname(__file__)
 
 #  write a simple test bna file
 
-file(os.path.join(basedir, 'test.bna'), 'w'
+open(os.path.join(basedir, 'test.bna'), 'w'
      ).write('''"Another Name","Another Type", 7
 -81.531753540039,31.134635925293
 -81.531150817871,31.134529113769
@@ -75,7 +75,7 @@ test_bna = os.path.join(basedir, 'test.bna')
 
 #  write a simple test bna file with invalid data
 
-file(os.path.join(basedir, 'test_bad.bna'), 'w'
+open(os.path.join(basedir, 'test_bad.bna'), 'w'
      ).write('''"An too-small polygon","Another Type", 2
 -81.531753540039,31.134635925293
 -81.531150817871,31.134529113769
@@ -110,7 +110,7 @@ class Test_bna_list:
         assert self.polys[2][2] == 'A name with, a comma'
 
     def test_sname(self):
-        print self.polys[0]
+        print(self.polys[0])
         assert self.polys[0][3] == 'Another Type'
         assert self.polys[1][3] == '6'
         assert self.polys[2][3] == '1'
@@ -150,7 +150,7 @@ class Test_bna_polygonset:
         assert len(self.polys) == 6
 
     def test_type(self):
-        print self.polys[0]
+        print(self.polys[0])
         assert self.polys[0].metadata[0] == 'polygon'
         assert self.polys[3].metadata[0] == 'polyline'
         assert self.polys[4].metadata[0] == 'point'
@@ -161,7 +161,7 @@ class Test_bna_polygonset:
         assert self.polys[2].metadata[1] == 'A name with, a comma'
 
     def test_sname(self):
-        print self.polys[0]
+        print(self.polys[0])
         assert self.polys[0].metadata[2] == 'Another Type'
         assert self.polys[1].metadata[2] == '6'
         assert self.polys[2].metadata[2] == '1'

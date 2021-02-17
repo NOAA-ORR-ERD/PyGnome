@@ -1,3 +1,9 @@
+from __future__ import print_function
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import unicode_literals
+
+
 import copy
 from datetime import datetime
 
@@ -518,7 +524,7 @@ class GridCurrent(VelocityGrid, Environment):
 
             if 'degree' in self.angle.units:
                 raw_ang = raw_ang * np.pi/180.
-            
+
             ctr_mask = gridded.utilities.gen_celltree_mask_from_center_mask(self.grid.center_mask, angle_padding_slice)
             ang = raw_ang.reshape(-1)
             ang = np.ma.MaskedArray(ang, mask = ctr_mask.reshape(-1))

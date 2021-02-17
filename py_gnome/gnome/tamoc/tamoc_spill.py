@@ -5,6 +5,10 @@ This file contains the definitions to create a TAMOC simulation in GNOME and
 run the simulation in a seemless integration with GNOME.
 
 """
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
 from datetime import datetime, timedelta
 
@@ -142,7 +146,7 @@ class TamocSpill(Spill):
         try:
             self._substance = GnomeOil.get_GnomeOil(val)
         except Exception:
-            if isinstance(val, basestring):
+            if isinstance(val, str):
                 raise
 
             self.logger.info('Failed to get_oil_props for {0}. Use as is '

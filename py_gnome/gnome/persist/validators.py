@@ -3,6 +3,11 @@ Created on Feb 26, 2013
 
 Define general purpose functions that can used as validators
 '''
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import time
 
 import numpy as np
@@ -23,7 +28,7 @@ def convertible_to_seconds(node, value):
         return
 
     try:
-        time.mktime(list(value.timetuple()))
+        time.mktime(value.timetuple())
     except (OverflowError, ValueError):
         raise Invalid(node, 'Invalid date.')
 

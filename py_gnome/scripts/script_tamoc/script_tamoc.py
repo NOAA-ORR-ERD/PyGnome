@@ -119,7 +119,7 @@ def make_model():
     base_dir, images_dir, outfiles_dir = set_directory_structure()
 
     # Set up the modeling environment
-    print '\n-- Initializing the Model         --'
+    print('\n-- Initializing the Model         --')
     start_time = "2019-06-01T12:00"
     model = gs.Model(start_time=start_time,
                      duration=gs.days(3),
@@ -127,11 +127,11 @@ def make_model():
                      uncertain=False)
 
     # Add a map
-    print '\n-- Adding a Map                   --'
+    print('\n-- Adding a Map                   --')
     model.map = gs.GnomeMap()
 
     # Add image output
-    print '\n-- Adding Image Outputters        --'
+    print('\n-- Adding Image Outputters        --')
     renderer = gs.Renderer(output_dir=images_dir,
                            image_size=(1024, 768),
                            output_timestep=gs.hours(1),
@@ -139,7 +139,7 @@ def make_model():
     model.outputters += renderer
 
     # Add NetCDF output
-    print '\n-- Adding NetCDF Outputter        --'
+    print('\n-- Adding NetCDF Outputter        --')
     if not os.path.exists(outfiles_dir):
         os.mkdir(outfiles_dir)
     netcdf_file = os.path.join(outfiles_dir, 'script_tamoc.nc')
@@ -150,7 +150,7 @@ def make_model():
     model.outputters += file_writer
 
     # Add a spill object
-    print '\n-- Adding a Point Spill           --'
+    print('\n-- Adding a Point Spill           --')
     end_release_time = model.start_time + gs.hours(12)
     point_source = ts.TamocSpill(num_elements=100,
                                  start_position=(0.0, 0.0, 1000.),
@@ -175,7 +175,7 @@ def make_model():
                                           wind_dir=225.)
 
     # Add a uniform current in the easterly direction
-    print '\n-- Adding Currents                --'
+    print('\n-- Adding Currents                --')
     uniform_current = gs.SimpleMover(velocity=(0.1, 0.0, 0.))
     model.movers += uniform_current
 
@@ -184,7 +184,7 @@ def make_model():
     model.movers += wind_mover
 
     # Add particle diffusion...note, units are in cm^2/s
-    print '\n-- Adding Particle Diffusion      --'
+    print('\n-- Adding Particle Diffusion      --')
     particle_diffusion = gs.RandomMover3D(
                          horizontal_diffusion_coef_above_ml=100000.,
                          horizontal_diffusion_coef_below_ml=10000.,
@@ -194,7 +194,7 @@ def make_model():
     model.movers += particle_diffusion
 
     # Add rise velocity for droplets
-    print '\n-- Adding Particle Rise Velocity  --'
+    print('\n-- Adding Particle Rise Velocity  --')
     # fixme: we do have code for rise velocity:
     #  gnome.movers.RiseVelocityMover
     #  let's test that later
@@ -203,7 +203,7 @@ def make_model():
 
 
     # Add dissolution
-    print '\n-- Adding Weathering              --'
+    print('\n-- Adding Weathering              --')
     evaporation = Evaporation(water=water,
                               wind=wind)
     model.weatherers += evaporation
@@ -233,9 +233,9 @@ def run_model(model):
         A gnome.Model simulation object
 
     """
-    print '\n-- RUNNING TAMOC-GNOME SIMULATION --'
+    print('\n-- RUNNING TAMOC-GNOME SIMULATION --')
     for step in model:
-        print '   Step: %.4i' % (step['step_num'])
+        print('   Step: %.4i' % (step['step_num']))
 
     return model
 

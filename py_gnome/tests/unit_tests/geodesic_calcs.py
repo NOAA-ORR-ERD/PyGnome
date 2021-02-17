@@ -6,7 +6,7 @@ Created on Wed Feb 15 10:15:03 2012
 @author: brian.zelenke
 """
 
-from __future__ import division
+
 import numpy as np
 
 

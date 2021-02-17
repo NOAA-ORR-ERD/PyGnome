@@ -50,7 +50,7 @@ from gnome.environment.environment_objects import IceAwareCurrent
 base_dir = os.path.dirname(__file__)
 
 def make_model(images_dir=os.path.join(base_dir, 'images')):
-    print 'initializing the model'
+    print('initializing the model')
 
     # set up the modeling environment
     start_time = datetime(2016, 9, 23, 0, 0)
@@ -59,7 +59,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                   time_step=30 * 60,
                   uncertain=False)
 
-    print 'adding the map'
+    print('adding the map')
     model.map = GnomeMap()  # this is a "water world -- no land anywhere"
 
     # renderere is only top-down view on 2d -- but it's something
@@ -69,7 +69,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                         )
     renderer.viewport = ((196.14, 71.89), (196.18, 71.93))
 
-    print 'adding outputters'
+    print('adding outputters')
     model.outputters += renderer
 
     # Also going to write the results out to a netcdf file
@@ -81,7 +81,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                                      # output most of the data associated with the elements
                                      output_timestep=timedelta(hours=2))
 
-    print "adding Horizontal and Vertical diffusion"
+    print("adding Horizontal and Vertical diffusion")
 
     # Horizontal Diffusion
     model.movers += RandomMover(diffusion_coef=500)
@@ -90,11 +90,11 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                                         vertical_diffusion_coef_below_ml=.11,
                                         mixed_layer_depth=10)
 
-    print 'adding Rise Velocity'
+    print('adding Rise Velocity')
     # droplets rise as a function of their density and radius
     model.movers += TamocRiseVelocityMover()
 
-    print 'adding a circular current and eastward current'
+    print('adding a circular current and eastward current')
     fn = 'hycom_glb_regp17_2016092300_subset.nc'
     fn_ice = 'hycom-cice_ARCu0.08_046_2016092300_subset.nc'
     iconc = IceConcentration.from_netCDF(filename=fn_ice)
@@ -106,7 +106,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     model.movers += constant_wind_mover(20, 315, units='knots')
 
     # Now to add in the TAMOC "spill"
-    print "Adding TAMOC spill"
+    print("Adding TAMOC spill")
 
     model.spills += tamoc_spill.TamocSpill(release_time=start_time,
                                         start_position=(196.16, 71.91, 40.0),
@@ -126,7 +126,7 @@ if __name__ == "__main__":
     model = make_model()
     model.spills[0].update_environment_conditions(model.model_time)
     model.spills[0].tamoc_parameters['depth'] = model.spills[0].start_position[2]
-    print "about to start running the model"
+    print("about to start running the model")
     for step in model:
         if step['step_num'] == 0:
             for d in model.spills[0].droplets:
@@ -136,5 +136,5 @@ if __name__ == "__main__":
 #            print sp.tamoc_parameters
 #            sp.update_environment_conditions(model.model_time)
 #            print sp.tamoc_parameters
-        print step
+        print(step)
         # model.

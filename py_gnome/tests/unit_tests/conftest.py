@@ -6,6 +6,11 @@ The scope="module" on the fixtures ensures it is only invoked once per test
 module
 """
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import os
 from datetime import datetime, timedelta
 import copy
@@ -36,7 +41,7 @@ from gnome.spill_container import SpillContainer
 base_dir = os.path.dirname(__file__)
 
 # test_oil = u'ALASKA NORTH SLOPE (MIDDLE PIPELINE)'
-test_oil = u'oil_ans_mp'
+test_oil = 'oil_ans_mp'
 
 
 def validate_serialize_json(json_, orig_obj):
@@ -186,7 +191,7 @@ def mock_append_data_arrays(array_types, num_elements, data_arrays={}):
     array_types = dict(array_types)
     data_arrays = copy.deepcopy(data_arrays)
 
-    for name, array_type in array_types.iteritems():
+    for name, array_type in array_types.items():
         # initialize null arrays so they exist before appending
         if name not in data_arrays:
             data_arrays[name] = array_type.initialize_null()
@@ -507,7 +512,7 @@ def sample_graph():
 def wind_timeseries(rq_wind):
     dtv_rq = np.zeros((len(rq_wind['rq']), ),
                       dtype=datetime_value_2d).view(dtype=np.recarray)
-    dtv_rq.time = [datetime(2012, 11, 06,
+    dtv_rq.time = [datetime(2012, 11, 6,
                             20, 10 + i, 0)
                    for i in range(len(dtv_rq))]
     dtv_rq.value = rq_wind['rq']
@@ -525,7 +530,7 @@ def wind_circ(wind_timeseries):
     """
     Create Wind object using the time series given by test fixture 'rq_wind'
     'wind' object where timeseries is defined as:
-         - 'time' defined by: [datetime(2012,11,06,20,10+i,0)
+         - 'time' defined by: [datetime(2012,11,6,20,10+i,0)
             for i in range(len(dtv_rq))]
          - 'value' defined by: (r,theta) values ferom rq_wind fixtures, units
             are 'm/s'
@@ -663,7 +668,7 @@ def sample_model_fixture_base():
 
     # the land-water map
 
-    map_ = MapFromBNA(mapfile, refloat_halflife=06)  # seconds
+    map_ = MapFromBNA(mapfile, refloat_halflife=6)  # seconds
 
     model = Model(time_step=timedelta(minutes=15),
                   start_time=release_time,
@@ -727,7 +732,7 @@ def sample_model2_fixture_base():
 
     # the land-water map
 
-    map_ = MapFromBNA(mapfile, refloat_halflife=06)  # seconds
+    map_ = MapFromBNA(mapfile, refloat_halflife=6)  # seconds
 
     model = Model(time_step=timedelta(minutes=10),
                   start_time=release_time,
@@ -825,7 +830,7 @@ def saveloc_(tmpdir, request):
     '''
     create a temporary save location
     '''
-    name = 'save_' + request.function.func_name
+    name = 'save_' + request.function.__name__
     name = tmpdir.mkdir(name).strpath
 
     return name
