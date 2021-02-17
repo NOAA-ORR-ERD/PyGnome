@@ -17,7 +17,7 @@ python=3.8.*
 trimesh
 shapely
 pyproj
-# mapbox_earcut # from NOAA_ORR_ERD channel -- not working
+mapbox_earcut # from NOAA_ORR_ERD channel -- not working
 
 setuptools
 gitpython
