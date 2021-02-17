@@ -1069,14 +1069,14 @@ def ShiftLon360(points):
     except ValueError:
         pass
     return points
-            
+
 def ShiftLon180(points):
     try:
         points[points[:,0]>180,0] = points[:,0]-360
     except ValueError:
         pass
     return points
-            
+
 class MapFromBNA(RasterMap):
     """
     A raster land-water map, created from file with polygons in it.
@@ -1105,12 +1105,12 @@ class MapFromBNA(RasterMap):
                             raster -- the actual size will match the
                             aspect ratio of the bounding box of the land
         :type raster_size: integer
-        
+
         :param shiftLons: shift longitudes to be in -180 to 180 coords or 0 to 360.
                           180, or 360 are valid inputs
         :type shiftLons: integer
 
-        Optional arguments (kwargs):        
+        Optional arguments (kwargs):
 
         :param refloat_halflife: the half-life (in hours) for the re-floating.
 
@@ -1141,8 +1141,8 @@ class MapFromBNA(RasterMap):
 
         land_polys = PolygonSet()  # and lakes....
         spillable_area_bna = PolygonSet()
-        
-        #add if based on input param 
+
+        #add if based on input param
         if shift_lons == 360:
             polygons.TransformData(ShiftLon360)
         elif shift_lons == 180:
@@ -1196,7 +1196,7 @@ class MapFromBNA(RasterMap):
             **kwargs)
         return None
 
-    
+
     def build_raster(self, land_polys=None, BB=None):
         """
         Build the underlying raster used for the map
@@ -1496,6 +1496,8 @@ def map_from_rectangular_grid(mask, lon, lat, refine=1, **kwargs):
 def grid_from_nc(filename):
     """
     generates a grid_mask and lat lon from a conforming netcdf file
+
+    NOTE: poorly tested, and will only work on a regular grid
     """
     import netCDF4
 

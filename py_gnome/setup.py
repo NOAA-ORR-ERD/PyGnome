@@ -138,8 +138,11 @@ else:
 if sys.platform == 'darwin':
     # for the mac -- we need to set the -arch flag
     os.environ['ARCHFLAGS'] = "-arch {0}".format(architecture)
-
+    # so that we can use more modern C++ (10.6 is the default for python2.7)
+    if 'MACOSX_DEPLOYMENT_TARGET' not in os.environ:
+        os.environ['MACOSX_DEPLOYMENT_TARGET'] = "10.9"
     libfile = 'lib{0}.a'  # OSX static library filename format
+
 elif sys.platform == "win32":
     # We are now pretty much only supporting the Microsoft package:
     #     "Microsoft Visual C++ Compiler for Python 2.7"
@@ -326,6 +329,7 @@ macros = [('pyGNOME', 1), ]
 
 # suppressing certain warnings
 compile_args = ["-Wno-unused-function",  # unused function - cython creates a lot
+                "-stdlib=libc++",  # to use the "correct" C++ libs
                 ]
 
 extensions = []
@@ -358,7 +362,7 @@ static_lib_files = netcdf_lib_files
 #           conda netcdf...
 
 if sys.platform == "darwin":
-
+    # include_dirs.append('/Library/Developer/CommandLineTools/usr/include/c++/v1/')
     print "using these compile arguments:", compile_args
     basic_types_ext = Extension(r'gnome.cy_gnome.cy_basic_types',
                                 ['gnome/cy_gnome/cy_basic_types.pyx'] + cpp_files,
