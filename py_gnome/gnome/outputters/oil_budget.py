@@ -82,7 +82,7 @@ class OilBudgetOutput(BaseMassBalanceOutputter, OutputterFilenameMixin):
         super(OilBudgetOutput, self).prepare_for_model_run(model_start_time,
                                                            spills,
                                                            **kwargs)
-        outfile = open(self.filename, 'w')
+        outfile = open(self.filename, 'w', newline='')
         self.csv_writer = csv.writer(outfile)
         # write the header
         self.csv_writer.writerow(self.header_row)
