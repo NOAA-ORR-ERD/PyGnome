@@ -42,7 +42,7 @@ future  # while maintaining py2/3 compatibility
 
 
 # NOAA maintained packages
-gridded
+gridded=0.2.5
 pynucos
 cell_tree2d
 py_gd>=1

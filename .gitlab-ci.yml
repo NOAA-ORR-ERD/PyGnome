@@ -30,6 +30,7 @@ test:
     - production
     - master
     - py23
+    - test
   image: registry.orr.noaa.gov/gnome/oillibrary:develop
   script:
     - yum install gcc gcc-c++ -y
