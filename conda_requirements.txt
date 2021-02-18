@@ -48,7 +48,7 @@ pyproj
 mapbox_earcut # from NOAA_ORR_ERD channel
 
 # NOAA maintained packages
-gridded=0.2.5
+gridded=0.3.0
 pynucos>=2.8.*
 cell_tree2d>=0.3.*
 py_gd=0.1.* # libgd should get brought in automatically

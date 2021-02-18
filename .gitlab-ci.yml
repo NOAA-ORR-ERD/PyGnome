@@ -8,6 +8,7 @@ cache:
     - ./$CI_PIPELINE_ID
 
 before_script:
+  - echo $CI_PIPELINE_ID
   - source activate ./$CI_PIPELINE_ID
 
 configure_env:
