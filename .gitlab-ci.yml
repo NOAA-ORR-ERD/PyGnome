@@ -5,10 +5,10 @@ stages:
 
 cache:
   paths:
-    - ./envs
+    - ./$CI_PIPELINE_ID
 
 before_script:
-  - source activate ./envs
+  - source activate ./$CI_PIPELINE_ID
 
 configure_env:
   stage: .pre
@@ -16,13 +16,13 @@ configure_env:
   before_script:
     - echo '' # manual override of before_script because we're on runner 12.3 and inherit options are only 12.9+
   script:
-    - conda create --prefix ./envs
+    - conda create --prefix ./$CI_PIPELINE_ID
   tags:
     - docker
   artifacts:
     expire_in: 5 days
     paths:
-      - ./envs
+      - ./$CI_PIPELINE_ID
 
 test:
   stage: test
@@ -30,7 +30,7 @@ test:
     - production
     - master
     - py23
-    - test
+    - develop
   image: registry.orr.noaa.gov/gnome/oillibrary:develop
   script:
     - yum install gcc gcc-c++ -y
@@ -72,7 +72,7 @@ develop_compile:
     when: always
     expire_in: 5 days
     paths:
-      - ./envs
+      - ./$CI_PIPELINE_ID
       - ./py_gnome/documentation/_build/html
 
 develop_test:
