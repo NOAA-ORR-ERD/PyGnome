@@ -10,7 +10,7 @@ cache:
 before_script:
   - pwd
   - echo $CI_PIPELINE_ID
-  - source activate /$CI_PIPELINE_ID
+  - source activate ./$CI_PIPELINE_ID
 
 configure_env:
   stage: .pre
