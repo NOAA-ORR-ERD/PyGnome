@@ -2,9 +2,15 @@
 module contains objects that contain weather related data. For example,
 the Wind object defines the Wind conditions for the spill
 """
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import string
 import os
-import copy
+import glob
+from datetime import datetime
 
 from colander import SchemaNode, String, Float, drop, Boolean
 
@@ -18,15 +24,18 @@ from .environment import Environment
 from gnome.persist import base_schema
 from gnome.persist.extend_colander import FilenameSchema
 
-# TODO: The name 'convert' is doubly defined as
-#       unit_conversion.convert and...
-#       gnome.utilities.convert
-#       This will inevitably cause namespace collisions.
-#       CHB-- I don't think that's a problem -- that's what namespaces are for!
-
 from gnome.utilities.convert import tsformat
 from gnome.cy_gnome.cy_ossm_time import CyTimeseries
 from gnome.cy_gnome.cy_shio_time import CyShioTime
+
+
+def _get_shio_yeardata_limits():
+    gnome_dir = os.path.split(os.path.split(os.path.abspath(__file__))[0])[0]
+    yeardata_dir = os.path.join(gnome_dir, 'data', 'yeardata')
+    years = [int(name[-4:]) for name in glob.glob(yeardata_dir + "/#????")]
+    return (min(years), max(years))
+
+SHIO_YEARDATA_LIMITS = _get_shio_yeardata_limits()
 
 
 class TideSchema(base_schema.ObjTypeSchema):
@@ -109,14 +118,14 @@ class Tide(Environment):
     @property
     def data_start(self):
         if isinstance(self.cy_obj, CyShioTime):
-            return InfDateTime("-inf")
+            return datetime(SHIO_YEARDATA_LIMITS[0], 1, 1)
         else:
             return sec_to_datetime(self.cy_obj.get_start_time())
 
     @property
     def data_stop(self):
         if isinstance(self.cy_obj, CyShioTime):
-            return InfDateTime("inf")
+            return datetime(SHIO_YEARDATA_LIMITS[1], 12, 31, 23, 59)
         else:
             return sec_to_datetime(self.cy_obj.get_end_time())
 
@@ -153,9 +162,9 @@ class Tide(Environment):
 
         lines = [fh.readline() for i in range(4)]
 
-        if len(lines[1]) == 0:
+        if len(lines[1]) == 0:  # should not be needed with Universal newlines, or on py3
             # look for \r for lines instead of \n
-            lines = string.split(lines[0], '\r', 4)
+            lines = lines[0].split('\r', 4)
 
         if len(lines[1]) == 0:
             # if this is still 0, then throw an error!
@@ -169,10 +178,10 @@ class Tide(Environment):
         if all([shio_file[i] == (lines[i])[:len(shio_file[i])]
                 for i in range(4)]):
             return CyShioTime(filename)
-        elif len(string.split(lines[3], ',')) == 7:
+        elif len(lines[3].split(',')) == 7:
             # maybe log / display a warning that v=0 for tide file and will be
             # ignored
-            # if float( string.split(lines[3],',')[-1]) != 0.0:
+            # if float((lines[3].split(',')[-1]) != 0.0:
             return CyTimeseries(filename, file_format=tsformat('uv'))
         else:
             raise ValueError('This does not appear to be a valid file format '

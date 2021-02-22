@@ -4,6 +4,10 @@
 Tests the Exception Handling and logging messages for being outside a valid
 time interval
 """
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
 from datetime import datetime
 import numpy as np

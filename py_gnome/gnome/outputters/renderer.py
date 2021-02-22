@@ -6,6 +6,11 @@ module to hold all the map rendering code.
 This one used the new map_canvas, which uses the gd rendering lib.
 
 """
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import os
 from os.path import basename
 import glob
@@ -271,7 +276,7 @@ class Renderer(Outputter, MapCanvas):
 
     @formats.setter
     def formats(self, val):
-        if isinstance(val, (str, unicode)):
+        if isinstance(val, str):
             val = (val,)
         self._formats = val
 
@@ -361,18 +366,18 @@ class Renderer(Outputter, MapCanvas):
         if not on:
             return
 
-        dt_format = d['format'] if 'format' in d else '%c'
+        dt_format = d.get('format', '%c')
 
-        background = d['background'] if 'background' in d else 'white'
+        background = d.get('background', 'white')
 
-        color = d['color'] if 'color' in d else 'black'
+        color = d.get('color', 'black')
 
-        size = d['size'] if 'size' in d else 'small'
+        size = d.get('size', 'small')
 
         default_position = (self.fore_image.width / 2, self.fore_image.height)
         position = d['position'] if 'position' in d else default_position
 
-        align = d['alignment'] if 'alignment' in d else 'cb'
+        align = d.get('alignment', 'cb')
 
         self.fore_image.draw_text(time.strftime(dt_format),
                                   position, size, color, align, background)
@@ -591,7 +596,7 @@ class Renderer(Outputter, MapCanvas):
             self.copy_back_to_fore()
 
         # draw prop for self.draw_ontop second so it draws on top
-        scp = self.cache.load_timestep(step_num).items()
+        scp = list(self.cache.load_timestep(step_num).items())
         if len(scp) == 1:
             self.draw_elements(scp[0])
         else:
@@ -634,7 +639,7 @@ class Renderer(Outputter, MapCanvas):
         """
 
         # draw prop for self.draw_ontop second so it draws on top
-        scp = self.cache.load_timestep(step_num).items()
+        scp = list(self.cache.load_timestep(step_num).items())
         if len(scp) == 1:
             self.draw_elements(scp[0])
         else:
@@ -796,7 +801,7 @@ class GridPropVisLayer(object):
 
         line = np.array([[0., 0.], [0., 0.]])
 
-        for i in xrange(0, len(start)):
+        for i in range(0, len(start)):
             line[0] = start[i]
             line[1] = end[i]
             img.draw_polyline(line,

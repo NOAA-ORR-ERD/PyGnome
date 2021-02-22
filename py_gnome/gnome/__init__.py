@@ -1,6 +1,10 @@
 """
     __init__.py for the gnome package
 """
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 from itertools import chain
 
 import sys
@@ -14,11 +18,11 @@ import importlib
 import unit_conversion as uc
 
 # just so it will be in the namespace.
-from gnomeobject import GnomeId, AddLogger
+from .gnomeobject import GnomeId, AddLogger
 # from gnomeobject import init_obj_log
 
 # using a PEP 404 compliant version name
-__version__ = '0.6.5'
+__version__ = '0.7.0'
 
 
 # a few imports so that the basic stuff is there
@@ -29,12 +33,15 @@ def check_dependency_versions():
         gridded
         oillibrary
         unit_conversion
+        py_gd
     If the version is not at least as current as what's defined here
     a warning is displayed
     """
     libs = [('gridded', '0.2.4'),
             ('oil_library', '1.1.2'),
-            ('unit_conversion', '2.6.3')]
+            ('unit_conversion', '2.6.3'),
+            ('py_gd', '1.0.1'),
+            ]
 
     for name, version in libs:
         # import the lib:
@@ -45,7 +52,7 @@ def check_dependency_versions():
                    "needs to be installed".format(name, version))
             warnings.warn(msg)
         else:
-            if module.__version__ < version:
+            if module.__version__ > version:
                 msg = ('Version {0} of {1} package is required, '
                        'but actual version in module is {2}'
                        .format(version, name, module.__version__))
@@ -65,7 +72,7 @@ def initialize_log(config, logfile=None):
     :param logfile=None: optional name of file to log to
 
     '''
-    if isinstance(config, basestring):
+    if isinstance(config, str):
         config = json.load(open(config, 'r'))
 
     if logfile is not None:
@@ -103,9 +110,9 @@ def initialize_console_log(level='debug'):
 
 def _valid_units(unit_name):
     'convenience function to get all valid units accepted by unit_conversion'
-    _valid_units = uc.GetUnitNames(unit_name)
+    _valid_units = list(uc.GetUnitNames(unit_name))
     _valid_units.extend(chain(*[val[1] for val in
-                                uc.ConvertDataUnits[unit_name].values()]))
+                                list(uc.ConvertDataUnits[unit_name].values())]))
     return tuple(_valid_units)
 
 

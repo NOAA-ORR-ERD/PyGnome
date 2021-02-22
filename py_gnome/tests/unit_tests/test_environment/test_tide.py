@@ -1,12 +1,17 @@
 '''
 Test all operations for cats mover work
 '''
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
 import os
 
 import pytest
 from pytest import raises
 
+from gnome.environment.tide import SHIO_YEARDATA_LIMITS
 from gnome.environment import Tide
 from gnome.utilities.remote_data import get_datafile
 
@@ -15,6 +20,13 @@ from ..conftest import testdata
 
 shio_file = testdata['timeseries']['tide_shio']
 ossm_file = testdata['timeseries']['tide_ossm']
+
+
+def test_shio_data_limits():
+    """
+    make sure we can get the SHIO year data limits
+    """
+    assert SHIO_YEARDATA_LIMITS == (1980, 2025)
 
 
 def test_exceptions():

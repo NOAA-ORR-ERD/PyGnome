@@ -1,9 +1,19 @@
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
 # NOTES:
 #  - Should we just use non-projected coordinates for the raster map?
 #    It makes for a little less computation at every step.
+
+
 from gnome.gnomeobject import GnomeId
 from gnome.environment.gridded_objects_base import PyGrid
-from __builtin__ import property
+
+# why was this ever here???
+# from __builtin__ import property
+
+
 """
 An implementation of the GNOME land-water map.
 
@@ -15,14 +25,12 @@ Features:
  - internally, raster is a numpy array
  - land raster is only as big as the land -- if the map bounds are bigger,
    extra space is not in the land map
-
 """
+
 import os
 import math
-# from osgeo import ogr
 
 import py_gd
-# import pyugrid
 
 import numpy as np
 
@@ -164,7 +172,7 @@ class GnomeMap(GnomeId):
     def _attr_array_to_dict(self, np_array):
         '''convert np_array to list of tuples, used for map_bounds,
         spillable_area'''
-        return map(tuple, np_array.tolist())
+        return list(map(tuple, np_array.tolist()))
 
     def _attr_from_list_to_array(self, l_):
         '''
@@ -385,7 +393,6 @@ class GnomeMap(GnomeId):
         return FeatureCollection([])
 
 
-
 class ParamMap(GnomeMap):
 
     _schema = ParamMapSchema
@@ -419,7 +426,7 @@ class ParamMap(GnomeMap):
         self.units = units if units is not None else 'm'
         self._check_units(self.units)
 
-        if units is not 'm':
+        if units != 'm':
             self._distance = uc.convert("Length", self.units, 'm', distance)
         else:
             self._distance = distance
@@ -622,7 +629,7 @@ class ParamMap(GnomeMap):
             r_idx = r_idx[np.where(rnd <= refloat_probability)[0]]
         elif self._refloat_halflife < 0.0:
             # fake for nothing gets refloated.
-            r_idx = np.array((), np.bool)
+            r_idx = np.array((), bool)
 
         if r_idx.size > 0:
             # check is not required, but why do this operation if no particles
@@ -632,10 +639,10 @@ class ParamMap(GnomeMap):
             spill_container['status_codes'][r_idx] = oil_status.in_water
 
     def update_from_dict(self, data):
-        if ('center' in data.keys() or
-                'distance' in data.keys() or
-                'bearing' in data.keys() or
-                'units' in data.keys()):
+        if ('center' in list(data.keys()) or
+                'distance' in list(data.keys()) or
+                'bearing' in list(data.keys()) or
+                'units' in list(data.keys())):
             self.build(
                 data.pop('center', self.center),
                 data.pop('distance', self.distance),
@@ -654,7 +661,9 @@ class ParamMap(GnomeMap):
                             properties={'name': 'Shoreline Polys'},
                             geometry=MultiPolygon(coordinates=[shoreline_geo]))
 
-        return FeatureCollection([shoreline])
+        stuff = FeatureCollection([shoreline])
+
+        return stuff
 
 
 class RasterMap(GnomeMap):
@@ -766,19 +775,21 @@ class RasterMap(GnomeMap):
 
             for j in range(0, genned_layer.shape[1]):
                 for i in range(0, genned_layer.shape[0]):
-                    genned_layer[i, j] = np.any(self.raster[i * ratio:
-                                                                (i + 1) * ratio, j * ratio:
-                                                                (j + 1) * ratio])
+                    genned_layer[i, j] = np.any(self.raster[
+                                                i * ratio:(i + 1) * ratio,
+                                                j * ratio:(j + 1) * ratio
+                                                ])
 
             self.layers.append(genned_layer)
 
         self.layers.append(self.raster)
-        self.layers = np.array(self.layers)
+        # self.layers = np.array(self.layers)
+        # print("the layers array:", self.layers)
 
     @property
     def ratios(self):
         if self._ratios is None:
-            self._ratios = (16,1,)
+            self._ratios = (16, 1)
         return self._ratios
 
     @ratios.setter
@@ -812,10 +823,10 @@ class RasterMap(GnomeMap):
 
     @property
     def approximate_raster_interval(self):
-        orig, diag = self.projection.to_lonlat(np.array([(0,0),(1,1)]))
-        orig = np.r_[orig, 0] #make (lat, lon) into (lat, lon, z)
+        orig, diag = self.projection.to_lonlat(np.array([(0, 0), (1, 1)]))
+        orig = np.r_[orig, 0]  # make (lat, lon) into (lat, lon, z)
         diag = np.r_[diag, 0]
-        diff = self.projection.lonlat_to_meters(orig-diag, orig)
+        diff = self.projection.lonlat_to_meters(orig - diag, orig)
 
         return np.average(np.abs(diff))
 
@@ -887,7 +898,7 @@ class RasterMap(GnomeMap):
 
         returns: a (N,) array of bools - true for particles that are on land
         """
-        mask = map(point_in_poly, [self.map_bounds] * len(coords), coords)
+        mask = list(map(point_in_poly, [self.map_bounds] * len(coords), coords))
         racpy = np.copy(coords)[mask]
         mskgph = self.raster[racpy[:, 0], racpy[:, 1]]
 
@@ -1010,7 +1021,7 @@ class RasterMap(GnomeMap):
             r_idx = r_idx[np.where(rnd <= refloat_probability)[0]]
         elif self._refloat_halflife < 0.0:
             # fake for nothing gets refloated.
-            r_idx = np.array((), np.bool)
+            r_idx = np.array((), bool)
 
         if r_idx.size > 0:
             # check is not required, but why do this operation if no particles
@@ -1206,18 +1217,16 @@ class MapFromBNA(RasterMap):
         # now draw the raster map with a map_canvas:
         # determine the size:
 
-
         # stretch the bounding box, to get approximate aspect ratio in
         # projected coords.
-
         land_polys = self.land_polys if land_polys is None else land_polys
         BB = land_polys.bounding_box if BB is None else BB
         raster_size = self.raster_size
 
-        aspect_ratio = (np.cos(BB.Center[1] * np.pi / 180) *(BB.Width / BB.Height))
+        aspect_ratio = np.cos(BB.Center[1] * np.pi / 180) * (BB.Width / BB.Height)
 
         w = int(np.sqrt(raster_size * aspect_ratio))
-        h = int(raster_size / w)
+        h = raster_size // w
 
         canvas = MapCanvas(image_size=(w, h),
                            preset_colors=None,
@@ -1403,11 +1412,10 @@ class MapFromUGrid(RasterMap):
 
         # stretch the bounding box, to get approximate aspect ratio in
         # projected coords.
-        aspect_ratio = (np.cos(BB.Center[1] * np.pi / 180) *
-                        (BB.Width / BB.Height))
+        aspect_ratio = (np.cos(BB.Center[1] * np.pi / 180) * (BB.Width / BB.Height))
 
         w = int(np.sqrt(raster_size * aspect_ratio))
-        h = int(raster_size / w)
+        h = raster_size // w
 
         canvas = MapCanvas(image_size=(w, h),
                            preset_colors=None,
@@ -1581,7 +1589,7 @@ def refine_axis(old_axis, refine):
 def map_from_regular_grid(grid_mask, lon, lat, refine=4, refloat_halflife=1,
                           map_bounds=None):
     """
-    note: poorly tested -- here to save it in case we need it in the future
+    note: untested -- here to save it in case we need it in the future
 
     makes a raster map from a regular grid: i.e delta_lon and delta-lat are
     constant.

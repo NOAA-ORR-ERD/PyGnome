@@ -9,6 +9,11 @@ which is defined in a gnome model if there are weatherers defined.
 For now just define a FayGravityInertial class here
 It is only used by WeatheringData to update the 'area' and related arrays
 '''
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 
 import numpy as np
 
@@ -116,12 +121,13 @@ class WeatheringData(Weatherer):
         water_rho = self.water.get('density')
 
         for substance, data in sc.itersubstancedata(self.array_types, fate_status='all'):
-            
+
             if not substance.is_weatherable or len(data['density']) == 0:
                 self._aggregated_data(sc, 0)
                 continue
 
-            k_rho = self._get_k_rho_weathering_dens_update(substance)
+            k_rho = self._get_k_rho_weathering_dens_update(substance,
+                                                           self.water.get('temperature', 'K'))
 
             # sub-select mass_components array by substance.num_components.
             # Currently, physics for modeling multiple spills with different
@@ -157,7 +163,7 @@ class WeatheringData(Weatherer):
             v0 = substance.kvis_at_temp(self.water.get('temperature', 'K'))
 
             if v0 is not None:
-                kv1 = self._get_kv1_weathering_visc_update(v0)
+                kv1 = self._get_kv1_weathering_visc_update(v0, self.visc_curvfit_param)
                 fw_d_fref = data['frac_water'] / self.visc_f_ref
 
                 data['viscosity'] = (v0 * np.exp(kv1 * data['frac_evap']) * (1 + (fw_d_fref / (1.187 - fw_d_fref))) ** 2.49 )
@@ -235,8 +241,9 @@ class WeatheringData(Weatherer):
             else:
                 data.mass_balance['amount_released'] = amount_released
 
+    @staticmethod
     @lru_cache(1)
-    def _get_kv1_weathering_visc_update(self, v0):
+    def _get_kv1_weathering_visc_update(v0, visc_curvfit_param):
         '''
         kv1 is constant.
         It defining the exponential change in viscosity as it weathers due to
@@ -251,7 +258,7 @@ class WeatheringData(Weatherer):
         lru_cache on this function to cache the result for a given initial
         viscosity: v0
         '''
-        kv1 = np.sqrt(v0) * self.visc_curvfit_param
+        kv1 = np.sqrt(v0) * visc_curvfit_param
 
         if kv1 < 1:
             kv1 = 1
@@ -260,8 +267,9 @@ class WeatheringData(Weatherer):
 
         return kv1
 
+    @staticmethod
     @lru_cache(1)
-    def _get_k_rho_weathering_dens_update(self, substance):
+    def _get_k_rho_weathering_dens_update(substance, temp_in_k):
         '''
         use lru_cache on substance. substance is an OilProps object, if this
         object stays the same, then return the cached value for k_rho
@@ -270,7 +278,7 @@ class WeatheringData(Weatherer):
         '''
         # update density/viscosity/relative_buoyancy/area for previously
         # released elements
-        rho0 = substance.density_at_temp(self.water.get('temperature', 'K'))
+        rho0 = substance.density_at_temp(temp_in_k)
 
         # dimensionless constant
         k_rho = (rho0 /

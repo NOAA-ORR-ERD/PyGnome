@@ -1,10 +1,29 @@
 '''
 Download data from remote server
 '''
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
+# from future import standard_library
+# standard_library.install_aliases()
+# from builtins import *
 
 import os
-import urllib2
-from urlparse import urljoin
+
+try:  # the py3 way
+    from urllib.parse import urljoin
+    from urllib.request import urlopen
+    from urllib.error import HTTPError
+except ImportError:  # the py2 way
+    from urlparse import urljoin
+    from urllib2 import urlopen, HTTPError
+
+
+# import urllib.request, urllib.error, urllib.parse
+
+# from urllib.parse import urljoin
 
 from progressbar import (ProgressBar, Percentage, FileTransferSpeed,
                          ETA, Bar)
@@ -48,8 +67,8 @@ def get_datafile(filename):
             path_ = '.'     # relative to current path
 
         try:
-            resp = urllib2.urlopen(urljoin(data_server, fname))
-        except urllib2.HTTPError, ex:
+            resp = urlopen(urljoin(data_server, fname))
+        except HTTPError as ex:
             ex.msg = ("{0}. '{1}' not found on server or server is down"
                       .format(ex.msg, fname))
             raise ex
@@ -66,7 +85,7 @@ def get_datafile(filename):
                    ]
 
         pbar = ProgressBar(widgets=widgets,
-                           maxval=int(resp.info().getheader('Content-Length'))
+                           maxval=int(resp.info()['Content-Length'])
                            ).start()
 
         if not os.path.exists(path_):

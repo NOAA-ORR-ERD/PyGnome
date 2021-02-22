@@ -2,6 +2,10 @@
 import all fixtures from ../conftest.py so if user runs tests from this
 directory, all fixtures are found
 '''
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 from gnome.environment import constant_wind, Water, Waves
 
 from gnome.weatherers import WeatheringData, FayGravityViscous

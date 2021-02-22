@@ -5,6 +5,10 @@ tests for teh json outputter
 
 VERY incomplete!
 """
+from __future__ import print_function
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import unicode_literals
 
 import pytest
 
@@ -18,13 +22,13 @@ def test_deserialize():
     '''
 
     json_from_api = {#'on': True,
-                     'obj_type': u'gnome.outputters.json.SpillJsonOutput',
+                     'obj_type': 'gnome.outputters.json.SpillJsonOutput',
                      'name': None,
                      'output_zero_step': True,
                      'output_start_time': None,
                      'output_last_step': True,
                      'surface_conc': 'kde',
-                     'json_': u'webapi',
+                     'json_': 'webapi',
                      '_additional_data': [],
                      # 'id': u'4c64ca4f-4cbc-11e8-8899-acbc32795771',
                      }
@@ -34,7 +38,7 @@ def test_deserialize():
     sjo = SpillJsonOutput.deserialize(json_from_api)
 
     # fixme -- need more tests!
-    print sjo
+    print(sjo)
 
 
 

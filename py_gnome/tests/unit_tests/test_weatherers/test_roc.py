@@ -1,6 +1,10 @@
 '''
 tests for ROC
 '''
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import unicode_literals
 from datetime import datetime, timedelta
 
 import numpy as np
@@ -32,7 +36,7 @@ water = Water()
 waves = Waves(wind, water)
 
 
-class ROCTests:
+class ROCTests(object):
     @classmethod
     def mk_objs(cls, sample_model_fcn2):
         model = sample_model_weathering2(sample_model_fcn2, test_oil, 333.0)
@@ -43,7 +47,7 @@ class ROCTests:
         model.weatherers += Evaporation(wind=wind, water=water)
         model.weatherers += Emulsification(waves=waves)
 
-        return (model.spills.items()[0], model)
+        return (list(model.spills.items())[0], model)
 
     def prepare_test_objs(self, obj_arrays=None):
         self.model.rewind()
@@ -225,20 +229,20 @@ class TestROCBurn(ROCTests):
         self.model.rewind()
 
         for step in self.model:
-            print 'amount in boom', self.sc.mass_balance['boomed']
+            print('amount in boom', self.sc.mass_balance['boomed'])
             assert self.sc.mass_balance['boomed'] >= 0
-            print '===========', step['step_num'], '=============='
-            print 'collecting', burn._is_collecting
-            print 'transiting', burn._is_transiting
-            print 'burning', burn._is_burning
-            print 'cleaning', burn._is_cleaning
+            print('===========', step['step_num'], '==============')
+            print('collecting', burn._is_collecting)
+            print('transiting', burn._is_transiting)
+            print('burning', burn._is_burning)
+            print('cleaning', burn._is_cleaning)
 
     def test_serialization(self):
         b = TestROCBurn.burn
         ser = b.serialize()
         b2 = Burn.deserialize(ser)
 
-        print b._diff(b2)
+        print(b._diff(b2))
         assert b == b2
 
     def test_step(self, sample_model_fcn2):
@@ -251,7 +255,7 @@ class TestROCBurn(ROCTests):
 class TestPlatform(ROCTests):
     def test_construction(self):
         p = Platform()
-        assert p.units == dict([(k, v[0]) for k, v in Platform._attr.items()])
+        assert p.units == dict([(k, v[0]) for k, v in list(Platform._attr.items())])
 
         p = Platform(_name="Test Platform")
         assert p.transit_speed == 150
@@ -348,35 +352,35 @@ class TestRocChemDispersion(ROCTests):
         self.reset_and_release()
         disp.prepare_for_model_run(self.sc)
 
-        print self.model.start_time
-        print self.disp.timeseries
+        print(self.model.start_time)
+        print(self.disp.timeseries)
         assert disp.cur_state == 'retired'
 
         self.model.step()
-        print self.model.current_time_step
+        print(self.model.current_time_step)
 
         self.model.step()
-        print self.model.spills.items()[0]['viscosity']
+        print(list(self.model.spills.items())[0]['viscosity'])
         assert disp.cur_state == 'en_route'
-        print disp._next_state_time
+        print(disp._next_state_time)
 
         self.model.step()
         assert disp.cur_state == 'en_route'
-        print disp.transit
-        print disp.platform.transit_speed
-        print disp.platform.one_way_transit_time(disp.transit)/60
+        print(disp.transit)
+        print(disp.platform.transit_speed)
+        print(disp.platform.one_way_transit_time(disp.transit)/60)
 
         while disp.cur_state == 'en_route':
             self.model.step()
             off = self.model.current_time_step * self.model.time_step
-            print self.model.start_time + timedelta(seconds=off)
+            print(self.model.start_time + timedelta(seconds=off))
 
-        print 'pump_rate ', disp.platform.eff_pump_rate(disp.dosage)
+        print('pump_rate ', disp.platform.eff_pump_rate(disp.dosage))
 
         try:
             for _step in self.model:
                 off = self.model.current_time_step * self.model.time_step
-                print self.model.start_time + timedelta(seconds=off)
+                print(self.model.start_time + timedelta(seconds=off))
         except StopIteration:
             pass
 
@@ -411,7 +415,7 @@ class TestRocChemDispersion(ROCTests):
         try:
             for _step in self.model:
                 off = self.model.current_time_step * self.model.time_step
-                print self.model.start_time + timedelta(seconds=off)
+                print(self.model.start_time + timedelta(seconds=off))
         except StopIteration:
             pass
 
@@ -481,35 +485,35 @@ class TestRocChemDispersion(ROCTests):
 
         self.reset_and_release()
         disp.prepare_for_model_run(self.sc)
-        print self.model.start_time
-        print self.disp.timeseries
+        print(self.model.start_time)
+        print(self.disp.timeseries)
         assert disp.cur_state == 'retired'
 
         self.model.step()
-        print self.model.current_time_step
+        print(self.model.current_time_step)
 
         self.model.step()
-        print self.model.spills.items()[0]['viscosity']
+        print(list(self.model.spills.items())[0]['viscosity'])
         assert disp.cur_state == 'en_route'
-        print disp._next_state_time
+        print(disp._next_state_time)
 
         self.model.step()
         assert disp.cur_state == 'en_route'
-        print disp.transit
-        print disp.platform.transit_speed
-        print disp.platform.one_way_transit_time(disp.transit) / 60
+        print(disp.transit)
+        print(disp.platform.transit_speed)
+        print(disp.platform.one_way_transit_time(disp.transit) / 60)
 
         while disp.cur_state == 'en_route':
             self.model.step()
             off = self.model.current_time_step * self.model.time_step
-            print self.model.start_time + timedelta(seconds=off)
+            print(self.model.start_time + timedelta(seconds=off))
 
-        print 'pump_rate ', disp.platform.eff_pump_rate(disp.dosage)
+        print('pump_rate ', disp.platform.eff_pump_rate(disp.dosage))
 
         try:
             for _step in self.model:
                 off = self.model.current_time_step * self.model.time_step
-                print self.model.start_time + timedelta(seconds=off)
+                print(self.model.start_time + timedelta(seconds=off))
         except StopIteration:
             pass
 

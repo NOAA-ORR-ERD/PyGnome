@@ -1,9 +1,12 @@
 '''
 Movers using wind as the forcing function
 '''
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
 
 import os
-import copy
 
 import numpy as np
 
@@ -629,7 +632,7 @@ class IceWindMover(WindMoversBase):
         :param model_time=0:
         """
         num_tri = self.mover.get_num_triangles()
-        num_cells = num_tri / 2
+        num_cells = num_tri // 2
 
         frac_coverage = np.zeros(num_cells, dtype=np.float64)
         thickness = np.zeros(num_cells, dtype=np.float64)

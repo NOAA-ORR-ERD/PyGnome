@@ -1,6 +1,10 @@
 '''
 Test natural dispersion module
 '''
+from __future__ import print_function
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import unicode_literals
 from datetime import timedelta
 
 import pytest
@@ -14,7 +18,7 @@ from gnome.weatherers import (NaturalDispersion,
                               Emulsification)
 from gnome.outputters import WeatheringOutput
 
-from conftest import weathering_data_arrays
+from .conftest import weathering_data_arrays
 from ..conftest import (sample_model_weathering,
                         sample_model_weathering2)
 
@@ -124,7 +128,7 @@ def test_full_run(sample_model_fcn2, oil, temp, dispersed):
     model.set_make_default_refs(True)
 
     for step in model:
-        for sc in model.spills.items():
+        for sc in list(model.spills.items()):
             if step['step_num'] > 0:
                 # print ("Dispersed: {0}".
                 #        format(sc.mass_balance['natural_dispersion']))
@@ -135,8 +139,8 @@ def test_full_run(sample_model_fcn2, oil, temp, dispersed):
                 assert (sc.mass_balance['natural_dispersion'] > 0)
                 assert (sc.mass_balance['sedimentation'] > 0)
 
-    sc = model.spills.items()[0]
-    print (sc.mass_balance['natural_dispersion'], dispersed)
+    sc = list(model.spills.items())[0]
+    print((sc.mass_balance['natural_dispersion'], dispersed))
 
     assert np.isclose(sc.mass_balance['natural_dispersion'], dispersed,
                       atol=0.001)

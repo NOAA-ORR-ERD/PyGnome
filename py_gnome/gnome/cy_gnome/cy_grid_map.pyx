@@ -2,8 +2,8 @@ cimport numpy as cnp
 import numpy as np
 import os
 
-from type_defs cimport *
-from grids cimport GridMap_c
+from .type_defs cimport *
+from .grids cimport GridMap_c
 from gnome.cy_gnome.cy_helpers cimport to_bytes
 #cimport cy_mover
 

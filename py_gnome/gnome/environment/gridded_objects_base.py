@@ -1,8 +1,13 @@
+from __future__ import print_function
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import unicode_literals
+
+
 import datetime
-import StringIO
 import copy
 import numpy as np
-import logging
+# import logging
 import warnings
 from functools import wraps
 
@@ -562,8 +567,8 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
             # must be roms-style staggered
             u_padding_slice = (np.s_[:],) + self.grid.get_padding_slices(self.grid.edge1_padding)
             v_padding_slice = (np.s_[:],) + self.grid.get_padding_slices(self.grid.edge2_padding)
-            raw_u = raw_u[u_padding_slice].filled(0)
-            raw_v = raw_v[v_padding_slice].filled(0)
+            raw_u = np.ma.filled(raw_u[u_padding_slice], 0)
+            raw_v = np.ma.filled(raw_v[v_padding_slice], 0)
             raw_u = (raw_u[:, :, 0:-1, ] + raw_u[:, :, 1:]) / 2
             raw_v = (raw_v[:, 0:-1, :] + raw_v[:, 1:, :]) / 2
         #u/v should be interpolated to centers at this point. Now apply appropriate mask
@@ -585,8 +590,8 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
             x = x.compressed().reshape(xt, -1)
             y = y.compressed().reshape(yt,-1)
         else:
-            raw_u = raw_u.filled(0).reshape(raw_u.shape[0], -1)
-            raw_v = raw_v.filled(0).reshape(raw_v.shape[0], -1)
+            raw_u = np.ma.filled(raw_u, 0).reshape(raw_u.shape[0], -1)
+            raw_v = np.ma.filled(raw_v, 0).reshape(raw_v.shape[0], -1)
             r = np.stack((raw_u, raw_v))
             return np.ascontiguousarray(r, np.float32)
 

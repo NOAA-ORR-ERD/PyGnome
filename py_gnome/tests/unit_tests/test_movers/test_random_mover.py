@@ -3,7 +3,14 @@ unittests for random mover
 
 designed to be run with py.test
 """
+from __future__ import print_function
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import unicode_literals
 
+
+import copy
+import pickle
 import datetime
 import numpy as np
 
@@ -27,7 +34,45 @@ def test_exceptions():
         RandomMover(uncertain_factor=0)
 
 
-class TestRandomMover:
+def test_deepcopy():
+    """
+    tests if you can deepcopy one -- which means you can also pickle it
+    """
+    rm = RandomMover(diffusion_coef=1e6)
+
+    rm2 = copy.deepcopy(rm)
+
+    assert rm is not rm2
+    assert rm == rm2
+    # not totally sure that equality works:
+    assert rm.diffusion_coef == rm2.diffusion_coef
+    assert rm.uncertain_factor == rm2.uncertain_factor
+
+    # make sure it does something:
+    model_time = datetime.datetime(2012, 8, 20, 13)  # yyyy/month/day/hr/min/sec
+    sc = sample_sc_release(num_elements=10,
+                           start_pos=(0.0, 0.0, 0.0),
+                           release_time=model_time,
+                           )
+    # model_time = sec_to_date(date_to_sec(rel_time) + 1)
+    delta = rm2.get_move(sc, 900, model_time)
+    np.alltrue(delta[:, :2] != 0.0)
+
+
+
+def test_pickle():
+    """
+    this *should* be the same as deepcopy, but just to make sure
+    """
+    rm = RandomMover(diffusion_coef=1e4)
+
+    rm2 = pickle.loads(pickle.dumps(rm))
+
+    assert rm == rm2
+    assert rm is not rm2
+
+
+class TestRandomMover(object):
 
     """
     gnome.RandomMover() test
@@ -47,26 +92,18 @@ class TestRandomMover:
 
     def reset_pos(self):
         self.pSpill['positions'] = (0., 0., 0.)
-        print self.pSpill['positions']
+        print(self.pSpill['positions'])
 
     def test_string_representation_matches_repr_method(self):
         """
         Just print repr and str
         """
 
-        print
-        print repr(self.mover)
-        print str(self.mover)
+        print()
+        print(repr(self.mover))
+        print(str(self.mover))
         assert True
 
-    def test_id_matches_builtin_id(self):
-
-        # It is not a good assumption that the obj.id property
-        # will always contain the id(obj) value.  For example it could
-        # have been overloaded with, say, a uuid1() generator.
-        # assert id(self.mover) == self.mover.id
-
-        pass
 
     def test_change_diffusion_coef(self):
         self.mover.diffusion_coef = 200000
@@ -83,18 +120,18 @@ class TestRandomMover:
         num_elements = 10
 
         sc = sample_sc_release(num_elements=num_elements,
-                           start_pos=(0.0, 0.0, 0.0),
-                           release_time=self.model_time,
-                           )
+                               start_pos=(0.0, 0.0, 0.0),
+                               release_time=self.model_time,
+                               )
         # set z positions:
         sc['positions'][:, 2] = 100
 
         delta = self.mover.get_move(sc,
-                            self.time_step,
-                            self.model_time,
-                            )
+                                    self.time_step,
+                                    self.model_time,
+                                    )
 
-        print delta
+        print(delta)
 
         assert np.alltrue(delta[:, :] == 0.0)
 

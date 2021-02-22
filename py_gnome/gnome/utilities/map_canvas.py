@@ -13,6 +13,10 @@ GNOME-specific.
 
 This version used libgd and py_gd instead of PIL for the rendering
 """
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
 
 import bisect
 
@@ -41,6 +45,7 @@ class MapCanvas(object):
     This version uses a paletted (8 bit) image -- may be updated for RGB images
     at some point.
     """
+
     def __init__(self,
                  image_size=(800, 600),
                  projection=None,
@@ -110,7 +115,7 @@ class MapCanvas(object):
         todo: this happens in multiple places so maybe worthwhile to define
         custom serialize/deserialize -- but do this for now
         '''
-        return map(tuple, self._viewport.BB)
+        return list(map(tuple, self._viewport.BB))
 
     @property
     def viewport(self):
@@ -347,7 +352,7 @@ class MapCanvas(object):
                           line_width=line_width)
 
     def draw_text(self, text_list, size='small', color='black', align='lt',
-                  background='none', draw_to_back=False):
+                  background=None, draw_to_back=False):
         """
         Draw ascii text to the image
 
@@ -560,7 +565,7 @@ class GridLines(object):
         The list consists of self.lon_lines vertical lines,
         followed by self.lat_lines horizontal lines.
         """
-        if self.max_lines is 0:
+        if self.max_lines == 0:
             return []
 
         (minlon, minlat) = self.projection.image_box[0]
@@ -589,7 +594,7 @@ class GridLines(object):
         Recomputes the interval and number of lines in each dimension.
         This should be called whenever the viewport changes.
         """
-        if self.max_lines is 0:
+        if self.max_lines == 0:
             return
         img_width = float(self.projection.image_size[0])
         img_height = float(self.projection.image_size[1])
@@ -602,12 +607,12 @@ class GridLines(object):
         height = (self.projection.image_box[1][1] -
                   self.projection.image_box[0][1])
 
-        self.ref_len = width if self.ref_dim is 'w' else height
+        self.ref_len = width if self.ref_dim == 'w' else height
         self.current_interval = self.get_step_size(self.ref_len /
                                                    self.max_lines)
 
-        self.lon_lines = self.max_lines if self.ref_dim is 'w' else None
-        self.lat_lines = self.max_lines if self.ref_dim is 'h' else None
+        self.lon_lines = self.max_lines if self.ref_dim == 'w' else None
+        self.lat_lines = self.max_lines if self.ref_dim == 'h' else None
 
         if self.lon_lines is None:
             self.lon_lines = int(round(self.lat_lines * ratio))
@@ -660,7 +665,7 @@ class GridLines(object):
         edge of the viewport. This may cause the longitude labels to disappear
         if the aspect ratio of the image and viewport are identical.
         """
-        if self.max_lines is 0:
+        if self.max_lines == 0:
             return []
 
         tags = []
@@ -686,16 +691,16 @@ class GridLines(object):
                     seconds = 0
 
                 if seconds != 0:
-                    tag = u"%id%i'%i\"%c" % (degrees, minutes, seconds, hemi)
+                    tag = "%id%i'%i\"%c" % (degrees, minutes, seconds, hemi)
                 elif minutes != 0:
-                    tag = u"%id%i'%c" % (degrees, minutes, hemi)
+                    tag = "%id%i'%c" % (degrees, minutes, hemi)
                 else:
-                    tag = u"%id%c" % (degrees, hemi)
+                    tag = "%id%c" % (degrees, hemi)
 
             top = self.projection.image_box[1][1]
             left = self.projection.image_box[0][0]
             anchor = ((value, top)
-                      if hemi is 'E' or hemi is 'W'
+                      if hemi == 'E' or hemi == 'W'
                       else (left, value))
 
             tags.append((tag, anchor))

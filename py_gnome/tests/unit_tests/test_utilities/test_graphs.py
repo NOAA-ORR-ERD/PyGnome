@@ -3,6 +3,10 @@ Tests serialize/deserialize to create and update objects
 
 It just tests the interface works, doesn't actually change values
 '''
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
 #This code not in use, and MPL not always available
 import pytest

@@ -1,3 +1,7 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 import os
 import datetime as dt
 
@@ -15,10 +19,10 @@ from gnome.environment.gridded_objects_base import (Variable,
 from gnome.environment.timeseries_objects_base import (TimeseriesData,
                                                        TimeseriesVector)
 
-from gen_analytical_datasets import gen_all
+from .gen_analytical_datasets import gen_all
 
 
-@pytest.fixture('class')
+@pytest.fixture(scope='class')
 def dates():
     return np.array([dt.datetime(2000, 1, 1, 0),
                      dt.datetime(2000, 1, 1, 2),
@@ -27,17 +31,17 @@ def dates():
                      dt.datetime(2000, 1, 1, 8), ])
 
 
-@pytest.fixture('class')
+@pytest.fixture(scope='class')
 def series_data():
     return np.array([1, 3, 6, 10, 15])
 
 
-@pytest.fixture('class')
+@pytest.fixture(scope='class')
 def series_data2():
     return np.array([2, 6, 12, 20, 30])
 
 
-class TestTime:
+class TestTime(object):
     test_class = Time
 
     def test_construction(self, dates):
@@ -106,7 +110,7 @@ class TestTime:
         assert t == new_instance
 
 
-class TestTimeseriesData:
+class TestTimeseriesData(object):
     test_class = TimeseriesData
 
     def get_tsd_instance(self, dates, series_data):
@@ -176,7 +180,7 @@ class TestTimeseriesData:
         assert t == new_instance
 
 
-class TestTimeseriesVector:
+class TestTimeseriesVector(object):
     test_class = TimeseriesVector
 
     def get_tsv_instance(self, dates, series_data, series_data2):
@@ -408,7 +412,7 @@ Quad
 '''
 
 
-class TestGriddedProp:
+class TestGriddedProp(object):
     def test_construction(self):
         data = sinusoid['u'][:]
         grid = PyGrid.from_netCDF(dataset=sinusoid)
@@ -448,7 +452,7 @@ class TestGriddedProp:
     #                           np.cos(points[:, 0] / 2) / 2))
 
 
-class TestGridVectorProp:
+class TestGridVectorProp(object):
     def test_construction(self):
         curr_file = os.path.join(s_data, 'staggered_sine_channel.nc')
         u = Variable.from_netCDF(filename=curr_file, varname='u_rho')
@@ -511,5 +515,5 @@ class TestGridVectorProp:
         assert gc.varnames[0] == 'u'
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     pass

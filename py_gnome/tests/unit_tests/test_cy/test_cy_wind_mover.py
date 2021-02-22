@@ -5,6 +5,10 @@ unit tests for cy_wind_mover wrapper
 
 designed to be run with py.test
 """
+from __future__ import print_function
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import unicode_literals
 import os
 
 import numpy as np
@@ -21,7 +25,7 @@ from gnome.utilities import projections
 from gnome.cy_gnome.cy_ossm_time import CyTimeseries
 from gnome.cy_gnome.cy_wind_mover import CyWindMover
 
-import cy_fixtures
+from . import cy_fixtures
 from ..conftest import testdata
 
 datadir = os.path.join(os.path.dirname(__file__), r"sample_data")
@@ -160,7 +164,7 @@ class ConstantWindWithOSSM(cy_fixtures.CyTestMove):
                          spill_type.uncertainty)
 
 
-class TestConstantWind:
+class TestConstantWind(object):
 
     msg = '{0} is not within a tolerance of {1}'
     cw = ConstantWind()
@@ -178,10 +182,10 @@ class TestConstantWind:
         """
         # the move should be the same from both objects
 
-        print
-        print 'test_constant_wind'
-        print self.cw.delta
-        print self.cww_ossm.delta
+        print()
+        print('test_constant_wind')
+        print(self.cw.delta)
+        print(self.cww_ossm.delta)
         np.testing.assert_equal(self.cw.delta, self.cww_ossm.delta,
                                 'test_constant_wind() failed', 0)
 
@@ -215,23 +219,23 @@ class TestConstantWind:
     def test_move_uncertain(self):
         self.cw.test_move_uncertain()
         self.cww_ossm.test_move_uncertain()
-        print '=================================================='
-        print ' Check move for uncertain LEs (test_move_uncertain)  '
-        print '--- ConstandWind ------'
-        print 'Forecast LEs delta: '
-        print self.cw.delta
-        print 'Uncertain LEs delta: '
-        print self.cw.u_delta
-        print '--- ConstandWind with OSSM ------'
-        print 'Forecast LEs delta: '
-        print self.cww_ossm.delta
-        print 'Uncertain LEs delta: '
-        print self.cww_ossm.u_delta
+        print('==================================================')
+        print(' Check move for uncertain LEs (test_move_uncertain)  ')
+        print('--- ConstandWind ------')
+        print('Forecast LEs delta: ')
+        print(self.cw.delta)
+        print('Uncertain LEs delta: ')
+        print(self.cw.u_delta)
+        print('--- ConstandWind with OSSM ------')
+        print('Forecast LEs delta: ')
+        print(self.cww_ossm.delta)
+        print('Uncertain LEs delta: ')
+        print(self.cww_ossm.u_delta)
         assert np.all(self.cw.delta != self.cw.u_delta)
         assert np.all(self.cww_ossm.delta != self.cww_ossm.u_delta)
 
 
-class TestVariableWind:
+class TestVariableWind(object):
     """
     Uses OSSMTimeValue_c to define a variable wind
     - variable wind has 'v' component, so movement
@@ -268,7 +272,7 @@ class TestVariableWind:
                              self.cm.status,
                              spill_type.forecast)
 
-            print self.delta
+            print(self.delta)
             assert np.all(self.delta['lat'] != 0)
             assert np.all(self.delta['long'] == 0)
             assert np.all(self.delta['z'] == 0)
@@ -349,7 +353,7 @@ def test_z_greater_than_0():
     assert np.all((cw.delta['z'])[2:] == 0)
 
 
-class TestObjectSerialization:
+class TestObjectSerialization(object):
     '''
         Test all the serialization and deserialization methods that are
         available to the CyTimeseries object.

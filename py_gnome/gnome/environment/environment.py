@@ -2,8 +2,13 @@
 module contains objects that contain weather related data. For example,
 the Wind object defines the Wind conditions for the spill
 """
-import copy
 
+from __future__ import print_function
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import unicode_literals
+
+import copy
 
 try:
     from functools import lru_cache  # it's built-in on py3

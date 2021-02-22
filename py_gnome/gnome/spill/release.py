@@ -3,11 +3,18 @@ release objects that define how elements are released. A Spill() objects
 is composed of a release object and an ElementType
 '''
 
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
+
+import copy
+
 import math
 import warnings
 import numpy as np
 import shapefile as shp
-import trimesh
+# import trimesh # making this optional
 import geojson
 import zipfile
 from math import ceil
@@ -35,8 +42,8 @@ from gnome.utilities.plume import Plume, PlumeGenerator
 
 from gnome.outputters import NetCDFOutput
 from gnome.gnomeobject import GnomeId
-from gnome.environment.timeseries_objects_base import TimeseriesData,\
-    TimeseriesVector
+from gnome.environment.timeseries_objects_base import (TimeseriesData,
+                                                       TimeseriesVector)
 from gnome.environment.gridded_objects_base import Time
 
 
@@ -44,6 +51,7 @@ class BaseReleaseSchema(ObjTypeSchema):
     release_time = SchemaNode(
         LocalDateTime(), validator=convertible_to_seconds,
     )
+
 
 class PointLineReleaseSchema(BaseReleaseSchema):
     '''
@@ -590,7 +598,7 @@ class SpatialRelease(Release):
         thicknesses = fc.thicknesses
         polygons = None
         if fc.features is not None:
-            polygons = map(lambda f: Polygon(f.coordinates[0]), fc.features)
+            polygons = [Polygon(f.coordinates[0]) for f in fc.features]
         return polygons, weights, thicknesses
 
     @staticmethod
@@ -602,13 +610,16 @@ class SpatialRelease(Release):
         """
         with zipfile.ZipFile(filename, 'r') as zsf:
             basename = ''.join(filename.split('.')[:-1])
-            shpfile = filter(lambda f: f.split('.')[-1] == 'shp', zsf.namelist())
+            shpfile = [f for f in zsf.namelist() if f.split('.')[-1] == 'shp']
             if len(shpfile) > 0:
                 shpfile = zsf.open(shpfile[0], 'r')
             else:
                 raise ValueError('No .shp file found')
-            dbffile = filter(lambda f: f.split('.')[-1] == 'dbf', zsf.namelist())[0]
-            dbffile = zsf.open(dbffile, 'r')
+            dbffile = [f for f in zsf.namelist() if f.split('.')[-1] == 'dbf']
+            if len(dbffile) > 0:
+                dbffile = zsf.open(dbffile[0], 'r')
+            else:
+                raise ValueError('No .dbf file found')
             sf = shp.Reader(shp=shpfile, dbf=dbffile)
             shapes = sf.shapes()
             oil_polys = []
@@ -640,7 +651,7 @@ class SpatialRelease(Release):
                 shape_oil_thickness.append(thickness)
 
             # percentage of mass in each Shape.
-            # Later this is further broken down per Polygon
+            # Latteer this is further broken down per Polygon
             oil_amount_weights = map(lambda w: w / sum(oil_amounts), oil_amounts)
 
             # Each Shape contains multiple Polygons. The following extracts these Polygons
@@ -771,11 +782,12 @@ class SpatialRelease(Release):
     def gen_default_weights(self, polygons):
         if polygons is None:
             return
-        tot_area = sum(map(lambda p: p.area, polygons))
-        weights = map(lambda p: p.area/tot_area, polygons)
+        tot_area = sum([p.area for p in polygons])
+        weights = [p.area/tot_area for p in polygons]
         return weights
 
     def gen_start_positions(self):
+        import trimesh
         if self.polygons is None:
             return
         if self.weights is None:
@@ -783,12 +795,12 @@ class SpatialRelease(Release):
         #generates the start positions for this release. Must be called before usage in a model
         def gen_release_pts_in_poly(num_pts, poly):
             pts, tris = trimesh.creation.triangulate_polygon(poly, engine='earcut')
-            tris = map(lambda k: Polygon(k), pts[tris])
-            areas = map(lambda s: s.area, tris)
+            tris = [Polygon(k) for k in pts[tris]]
+            areas = [s.area for s in tris]
             t_area = sum(areas)
-            weights = map(lambda s: s/t_area, areas)
-            rv = map(random_pt_in_tri, np.random.choice(tris, num_pts, p=weights))
-            rv = map(lambda pt: np.append(pt, 0), rv) #add Z coordinate
+            weights = [s/t_area for s in areas]
+            rv = [random_pt_in_tri(s) for s in np.random.choice(tris, num_pts, p=weights)]
+            rv = [np.append(pt, 0) for pt in rv] #add Z coordinate
             return rv
         num_pts = self.num_elements
         weights = self.weights
@@ -950,7 +962,7 @@ class SpatialRelease(Release):
         and the resulting lines are drawn, you should end up with a picture of
         the polygons.
         '''
-        polycoords = map(lambda p: np.array(p.exterior.xy).T.astype(np.float32), self.polygons)
+        polycoords = [np.array(p.exterior.xy).T.astype(np.float32) for p in self.polygons]
         lengths = np.array(map(len, polycoords)).astype(np.int32)
         # weights = self.weights if self.weights is not None else []
         # thicknesses = self.thicknesses if self.thicknesses is not None else []
@@ -1242,7 +1254,7 @@ class InitElemsFromFile(Release):
         Will set positions and all other data arrays if data for them was found
         in the NetCDF initialization file.
         '''
-        for key, val in self._init_data.iteritems():
+        for key, val in self._init_data.items():
             if key in data_arrays:
                 data_arrays[key][-num_new_particles:] = val
 

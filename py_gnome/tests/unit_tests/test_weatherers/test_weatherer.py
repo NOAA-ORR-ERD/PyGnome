@@ -3,6 +3,10 @@
 '''
 Unit tests for the Weatherer classes
 '''
+from __future__ import print_function
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import unicode_literals
 
 from datetime import datetime
 
@@ -13,7 +17,7 @@ from gnome.utilities.inf_datetime import InfDateTime
 from gnome.environment import Water
 from gnome.spill.substance import GnomeOil
 
-from conftest import weathering_data_arrays, test_oil
+from .conftest import weathering_data_arrays, test_oil
 
 from gnome.weatherers import (Weatherer,
                               HalfLifeWeatherer,
@@ -25,11 +29,11 @@ subs = GnomeOil(test_oil)
 rel_time = datetime(2012, 8, 20, 13)  # yyyy/month/day/hr/min/sec
 
 
-class TestWeatherer:
+class TestWeatherer(object):
     def test_init(self):
         weatherer = Weatherer()
 
-        print weatherer
+        print(weatherer)
         assert weatherer.on
         assert weatherer.active
         assert weatherer.active_range == (InfDateTime('-inf'),
@@ -47,7 +51,7 @@ class TestWeatherer:
                                     Water(),
                                     time_step)[0]
 
-        print '\nsc["mass"]:\n', sc['mass']
+        print('\nsc["mass"]:\n', sc['mass'])
 
         orig_mc = np.copy(sc['mass_components'])
 
@@ -58,7 +62,7 @@ class TestWeatherer:
         weatherer.weather_elements(sc, time_step, model_time)
         weatherer.model_step_is_done()
 
-        print '\nsc["mass"]:\n', sc['mass']
+        print('\nsc["mass"]:\n', sc['mass'])
         assert np.allclose(0.5 * orig_mc.sum(1), sc['mass'])
         assert np.allclose(0.5 * orig_mc, sc['mass_components'])
 

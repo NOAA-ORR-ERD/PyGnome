@@ -24,7 +24,7 @@ base_dir = os.path.dirname(__file__)
 images_dir = os.path.join(base_dir, 'images')
 
 WINDAGE = 0.03
-print "running with windage:", WINDAGE
+print("running with windage:", WINDAGE)
 
 # gs.set_verbose('info')
 # pf = gs.PrintFinder()

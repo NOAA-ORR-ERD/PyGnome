@@ -1,4 +1,9 @@
-import movers
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
+
+from . import movers
 import numpy as np
 
 from colander import (SchemaNode, Bool, Float, drop)
@@ -18,7 +23,6 @@ from gnome.persist.base_schema import ObjTypeSchema
 from gnome.persist.validators import convertible_to_seconds
 from gnome.persist.extend_colander import LocalDateTime, FilenameSchema
 from gnome.persist.base_schema import GeneralGnomeObjectSchema
-from __builtin__ import property
 
 
 class PyCurrentMoverSchema(ObjTypeSchema):

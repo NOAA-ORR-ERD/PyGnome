@@ -94,4 +94,7 @@ def main(argv):
 
 
 if __name__ == "__main__":
-    main(sys.argv)
+    if sys.version_info.major >= 3:
+        print("Relinking is not required for Py3 -- try using plain setup.py")
+    else:
+        main(sys.argv)

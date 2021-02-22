@@ -1,12 +1,38 @@
 stages:
+  - compile
   - test
   - build
+
+cache:
+  paths:
+    - ./$CI_PIPELINE_ID
+
+before_script:
+  - pwd
+  - echo $CI_PIPELINE_ID
+  - source activate ./$CI_PIPELINE_ID
+
+configure_env:
+  stage: .pre
+  image: registry.orr.noaa.gov/erd/centos-conda/centos7-python3
+  before_script:
+    - echo '' # manual override of before_script because we're on runner 12.3 and inherit options are only 12.9+
+  script:
+    - conda create --prefix ./$CI_PIPELINE_ID
+  tags:
+    - docker
+  artifacts:
+    expire_in: 5 days
+    paths:
+      - ./$CI_PIPELINE_ID
 
 test:
   stage: test
   except:
     - production
     - master
+    - py23
+    - develop
   image: registry.orr.noaa.gov/gnome/oillibrary:develop
   script:
     - yum install gcc gcc-c++ -y
@@ -24,6 +50,57 @@ test:
 
   tags:
     - docker
+
+develop_compile:
+  stage: compile
+  only:
+    - develop
+  image: registry.orr.noaa.gov/erd/centos-conda/centos7-python3
+  script:
+    - echo "compiling python3_compile"
+    - yum install gcc gcc-c++ make -y
+#    - yum install netcdf-devel -y
+    - yum install libXext libSM libXrender -y
+    - conda install --file conda_requirements_py3.txt
+    - cd ./py_gnome
+    - python setup.py install
+#    - python -m pip install ./  # not set up for a pip build :-(
+    - cd ../  # make sure that it won't find the source gnome package.
+    - python -c "import gnome"
+    - cd py_gnome/documentation && make html
+  tags:
+    - docker
+  artifacts:
+    when: always
+    expire_in: 5 days
+    paths:
+      - ./$CI_PIPELINE_ID
+      - ./py_gnome/documentation/_build/html
+
+develop_test:
+  stage: test
+  allow_failure: true
+  image: registry.orr.noaa.gov/erd/centos-conda/centos7-python3
+  only:
+    - develop
+  script:
+    - cd ./py_gnome/tests/unit_tests && pytest
+  tags:
+    - docker
+
+build_docs:
+  stage: build
+  before_script:
+    - echo '' # manual override of before_script because we're on runner 12.3 and inherit options are only 12.9+
+  only:
+    - master
+  script:
+    - docker build -f dockerfile-docs ./py_gnome/documentation/_build/html -t registry.orr.noaa.gov/gnome/pygnome/docs
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker push registry.orr.noaa.gov/gnome/pygnome/docs
+  tags:
+    - shell
+    - build
 
 test_master:
   stage: test
@@ -45,7 +122,7 @@ test_master:
 
   tags:
     - docker
-    
+
 test_production:
   stage: test
   only:
@@ -69,11 +146,10 @@ test_production:
 
 develop:
   stage: build
+  before_script:
+    - echo '' # manual override of before_script because we're on runner 12.3 and inherit options are only 12.9+
   script:
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker pull registry.orr.noaa.gov/gnome/oillibrary:develop
-    - docker tag registry.orr.noaa.gov/gnome/oillibrary:develop oillibrary
-    - docker build -f dockerfile . -t registry.orr.noaa.gov/gnome/pygnome:develop
+    - docker build . -t registry.orr.noaa.gov/gnome/pygnome:develop
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker push registry.orr.noaa.gov/gnome/pygnome:develop
   only:

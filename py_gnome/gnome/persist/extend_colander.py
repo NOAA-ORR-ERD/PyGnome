@@ -2,11 +2,16 @@
 Extend colander's basic types for serialization/deserialization
 of gnome specific types
 '''
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+from past.types import basestring
+
 import datetime
+import os
 
 import numpy as np
-import six
-import os
 
 from colander import (Float, DateTime, Sequence, Tuple, List,
                       TupleSchema, SequenceSchema, null, SchemaNode, String, Invalid)
@@ -130,8 +135,8 @@ class DatetimeValue2dArray(Sequence):
             return null
 
         # getting serialized by PyGnome so data should be correct
-        series = zip(appstruct['time'].astype(object),
-                     appstruct['value'].tolist())
+        series = list(zip(appstruct['time'].astype(object),
+                     appstruct['value'].tolist()))
 
         return super(DatetimeValue2dArray, self).serialize(node, series)
 
@@ -155,7 +160,7 @@ class DatetimeValue1dArray(Sequence):
         if appstruct is null:  # colander.null
             return null
 
-        appstruct = zip(appstruct['time'].astype(object), appstruct['value'])
+        appstruct = list(zip(appstruct['time'].astype(object), appstruct['value']))
 
         return super(DatetimeValue1dArray, self).serialize(node, appstruct)
 
@@ -204,7 +209,7 @@ class TimeDelta(Float):
 #         return rv
 #
 #     def deserialize(self, node, cstruct):
-#         if isinstance(cstruct, six.string_types):
+#         if isinstance(cstruct, basestring):
 #             return cstruct
 #         else:
 #             return super(Filename, self).deserialize(node, cstruct)
@@ -214,7 +219,7 @@ class OrderedCollectionType(Sequence):
     #identical to SequenceSchema except it can tolerate a 'get'
     def _validate(self, node, value, accept_scalar):
         if (hasattr(value, '__iter__') and
-            not isinstance(value, six.string_types)):
+            not isinstance(value, basestring)):
             return list(value)
         if accept_scalar:
             return [value]

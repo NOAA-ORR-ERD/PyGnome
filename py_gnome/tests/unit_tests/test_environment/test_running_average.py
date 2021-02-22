@@ -1,3 +1,12 @@
+from __future__ import print_function
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import unicode_literals
+
+# from future import standard_library
+# standard_library.install_aliases()
+# from builtins import *
+
 import os
 from datetime import datetime
 
@@ -32,7 +41,7 @@ def test_av_from_variable_wind():
     wm = Wind(timeseries=[(datetime(2012, 9, 7, 8, 0), (10, 270)),
                           (datetime(2012, 9, 7, 14, 0), (28, 270)),
                           (datetime(2012, 9, 7, 20, 0), (28, 270)),
-                          (datetime(2012, 9, 8, 02, 0), (10, 270))],
+                          (datetime(2012, 9, 8, 0o2, 0), (10, 270))],
               units='m/s')
 
     # wm = Wind(filename=wind_file)
@@ -97,15 +106,15 @@ def test_full_run():
     running_av.prepare_for_model_run(model_time)
     running_av.prepare_for_model_step(model_time)
 
-    print "running_av"
-    print running_av.ossm.timeseries[:]
+    print("running_av")
+    print(running_av.ossm.timeseries[:])
 
     model_time = datetime(2015, 1, 1, 4, 0)
     running_av.prepare_for_model_run(model_time)
     running_av.prepare_for_model_step(model_time)
 
-    print "running_av2"
-    print running_av.ossm.timeseries[:]
+    print("running_av2")
+    print(running_av.ossm.timeseries[:])
 
     assert np.all(running_av.ossm.timeseries['value']['u'][3:9] == 15)
 
@@ -146,15 +155,15 @@ def test_full_run_extended():
     running_av.prepare_for_model_run(model_time)
     running_av.prepare_for_model_step(model_time)
 
-    print "running_av"
-    print running_av.ossm.timeseries[:]
+    print("running_av")
+    print(running_av.ossm.timeseries[:])
 
     model_time = datetime(2015, 1, 5, 4, 0)
     running_av.prepare_for_model_run(model_time)
     running_av.prepare_for_model_step(model_time)
 
-    print "running_av2"
-    print running_av.ossm.timeseries[:]
+    print("running_av2")
+    print(running_av.ossm.timeseries[:])
 
     assert np.all(running_av.ossm.timeseries['value']['u'][:] == 15)
 

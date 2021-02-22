@@ -4,12 +4,12 @@ cimport numpy as cnp
 import numpy as np
 from libc.string cimport memcpy
 
-from type_defs cimport *
-from utils cimport _GetHandleSize
-from movers cimport GridWindMover_c, WindMover_c, Mover_c
+from .type_defs cimport *
+from .utils cimport _GetHandleSize
+from .movers cimport GridWindMover_c, WindMover_c, Mover_c
 
 from gnome import basic_types
-from cy_mover cimport CyWindMoverBase
+from .cy_mover cimport CyWindMoverBase
 from gnome.cy_gnome.cy_helpers cimport to_bytes
 
 

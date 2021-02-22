@@ -2,9 +2,9 @@ cimport numpy as cnp
 import numpy as np
 
 # following exist in gnome.cy_gnome
-from type_defs cimport *
-from utils cimport emulsify
-from utils cimport adios2_disperse
+from .type_defs cimport *
+from .utils cimport emulsify
+from .utils cimport adios2_disperse
 from libc.stdint cimport *
 
 

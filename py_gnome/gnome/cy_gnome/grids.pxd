@@ -5,7 +5,7 @@ so Wind and Current objects can be initialized in Python independent of movers
 
 from libcpp cimport bool
 
-from type_defs cimport (OSErr,
+from .type_defs cimport (OSErr,
                         LoadedData,
                         VelocityFH,
                         VelocityRec,

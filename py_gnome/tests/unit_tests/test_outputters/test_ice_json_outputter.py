@@ -1,6 +1,10 @@
 '''
 tests for geojson outputter
 '''
+from __future__ import print_function
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import unicode_literals
 import time
 from datetime import datetime
 from numbers import Number
@@ -70,7 +74,7 @@ def test_ice_geojson_output(model):
 
     begin = time.time()
     for step in model:
-        print '\n\ngot step at: ', time.time() - begin
+        print('\n\ngot step at: ', time.time() - begin)
 
         assert 'step_num' in step
         assert 'IceJsonOutput' in step
@@ -82,11 +86,11 @@ def test_ice_geojson_output(model):
         # There should be only one key, but we will iterate anyway.
         # We just want to verify here that our keys exist in the movers
         # collection.
-        for k in fcs.keys():
+        for k in list(fcs.keys()):
             assert model.movers.index(k) > 0
 
         # Check that our structure is correct.
-        for fc_list in fcs.values():
+        for fc_list in list(fcs.values()):
             assert 'concentration' in fc_list
             assert 'thickness' in fc_list
 

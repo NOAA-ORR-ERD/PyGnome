@@ -6,6 +6,10 @@ only started -- needs to be fleshed out and tested.
 key missing feature: having it build a full schema from subclasses
 
 """
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
 from gnome.persist.schema_decorator import serializable
 
@@ -14,7 +18,7 @@ from colander import SchemaNode, String, Float, Integer, Boolean
 
 def test_simple():
     @serializable
-    class Example():
+    class Example(object):
         x = 5 # not a schema object
         y = Float()
         z = Integer(strict=True)

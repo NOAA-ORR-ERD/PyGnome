@@ -4,6 +4,10 @@ Outputter for dumping teh oil budget as a CSV file
 (Or maybe other formats in the future)
 
 """
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
 
 import csv
 
@@ -78,7 +82,7 @@ class OilBudgetOutput(BaseMassBalanceOutputter, OutputterFilenameMixin):
         super(OilBudgetOutput, self).prepare_for_model_run(model_start_time,
                                                            spills,
                                                            **kwargs)
-        outfile = open(self.filename, 'w')
+        outfile = open(self.filename, 'w', newline='')
         self.csv_writer = csv.writer(outfile)
         # write the header
         self.csv_writer.writerow(self.header_row)
@@ -105,8 +109,8 @@ class OilBudgetOutput(BaseMassBalanceOutputter, OutputterFilenameMixin):
         # print mass_balself._model_start_time).total_seconds() / 3600
         model_time = mass_balance_data['model_time']
         run_time = (model_time - self._model_start_time).total_seconds()
-        hours = int(run_time / 3600)
-        minutes = int((run_time - hours * 3600) / 60)
+        hours = int(run_time // 3600)
+        minutes = int((run_time - hours * 3600) // 60)
         row = ["{}:{:02d}".format(hours, minutes),
                model_time.strftime("%Y-%m-%d %H:%M")]
         for category in self.budget_categories:

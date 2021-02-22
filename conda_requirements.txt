@@ -20,10 +20,12 @@ gsw=3.0.3
 psutil>=4.3
 progressbar>=2.3
 pyzmq>=16
-six>=1.10
+future
+pathlib
 geojson>=1.3
 backports.functools_lru_cache>=1.5
 colander>=1.4
+
 
 tblib>=1.3.*  # needed for child process exception handling.
 
@@ -36,7 +38,8 @@ cftime=1.0.*
 awesome-slugify>=1.6.5
 regex
 unidecode>=0.04.19
-pyshp=1.2.12
+pyshp
+pyproj
 
 #for SpatialRelease
 trimesh
@@ -45,7 +48,7 @@ pyproj
 mapbox_earcut # from NOAA_ORR_ERD channel
 
 # NOAA maintained packages
-gridded=0.2.5
+gridded=0.3.0
 pynucos>=2.8.*
 cell_tree2d>=0.3.*
 py_gd=0.1.* # libgd should get brought in automatically
@@ -56,8 +59,7 @@ py_gd=0.1.* # libgd should get brought in automatically
 #zope.interface>=4.1
 
 # required for building
-# note: cython 0.26 introduced a incompatibility that we should address at some point
-cython=0.25.*
+cython=0.29.*  # no version 3 for python2
 
 # needed to run tests
 pytest

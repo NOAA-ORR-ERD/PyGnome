@@ -1,3 +1,12 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
+# from future import standard_library
+# standard_library.install_aliases()
+# from builtins import *
+
 import datetime
 
 import numpy as np
@@ -102,7 +111,7 @@ class Timeseries(GnomeId):
             self.ossm = CyTimeseries(timeseries=time_value_pair)
         else:
             ts_format = tsformat(coord_sys)
-            self.ossm = CyTimeseries(filename=self._filename,
+            self.ossm = CyTimeseries(filename=filename,
                                      file_format=ts_format)
 
         self.extrapolation_is_allowed = extrapolation_is_allowed

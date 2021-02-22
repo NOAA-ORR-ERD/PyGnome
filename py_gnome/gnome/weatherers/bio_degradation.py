@@ -1,4 +1,4 @@
-﻿'''
+'''
 model bio degradation process
 '''
 
@@ -97,7 +97,6 @@ class Biodegradation(Weatherer):
 
         self.prev_yield_factor = None
 
-
     def prepare_for_model_run(self, sc):
         '''
             Add biodegradation key to mass_balance if it doesn't exist.
@@ -110,7 +109,6 @@ class Biodegradation(Weatherer):
 
             self.prev_yield_factor = 0.0
 
-
     def initialize_data(self, sc, num_released):
         '''
             Initialize needed weathering data arrays but only if 'on' is True
@@ -119,7 +117,6 @@ class Biodegradation(Weatherer):
             return
 
         pass
-
 
     def prepare_for_model_step(self, sc, time_step, model_time):
         '''
@@ -131,7 +128,6 @@ class Biodegradation(Weatherer):
 
         if not self.active:
             return
-
 
     def bio_degradate_oil(self, K, data, yield_factor):
         '''
@@ -150,7 +146,6 @@ class Biodegradation(Weatherer):
                               6.0 * K)))
 
         return mass_biodegradated
-
 
     def get_K_comp_rates(self, type_and_bp):
         '''
@@ -186,7 +181,6 @@ class Biodegradation(Weatherer):
             # zero rate for other than saturates and aromatics
             return 0.0
 
-
     def weather_elements(self, sc, time_step, model_time):
         '''
             weather elements over time_step
@@ -202,17 +196,21 @@ class Biodegradation(Weatherer):
                 # data does not contain any surface_weathering LEs
                 continue
 
-            # get the substance index
-            #indx = sc._substances_spills.substances.index(substance)
-
             # get pseudocomponent boiling point and its type
-            #assert 'boiling_point' in substance._sara.dtype.names
-            assert hasattr(substance,'boiling_point')
-            #type_bp = substance._sara[['type','boiling_point']]
-            type_bp = zip(substance.sara_type, substance.boiling_point)
+            if not hasattr(substance, 'boiling_point'):
+                raise ValueError("Invalid Substance: no boiling point")
+            # # assert hasattr(substance, 'boiling_point')
+            # #type_bp = substance._sara[['type','boiling_point']]
+            # type_bp = zip(substance.sara_type, substance.boiling_point)
+
+            # print("type_bp:", list(type_bp))
+
+            # raise Exception
 
             # get bio degradation rate coefficient array for this substance
-            K_comp_rates = np.asarray(map(self.get_K_comp_rates, type_bp))
+            K_comp_rates = np.asarray([self.get_K_comp_rates(tbp) for tbp in
+                                       zip(substance.sara_type,
+                                           substance.boiling_point)])
 
             # (!) bio degradation rate coefficients are coming per day
             # so we need recalculate ones for the time step interval

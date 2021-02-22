@@ -1,6 +1,10 @@
 '''
 Test all operations for ice mover work
 '''
+from __future__ import print_function
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import unicode_literals
 import datetime
 
 import numpy as np
@@ -80,7 +84,7 @@ def test_loop_gridwind():
     _assert_move(delta)
 
     # the LEs are NOT all the same -- at all!
-    print delta[:, 0]
+    print(delta[:, 0])
     assert np.all(delta[:, 0] == delta[0, 0])  # lat move matches for all LEs
     assert np.all(delta[:, 1] == delta[0, 1])  # long move matches for all LEs
     assert np.all(delta[:, 2] == 0)  # 'z' is zeros
@@ -212,8 +216,8 @@ def _assert_move(delta):
     helper function to test assertions
     """
 
-    print
-    print delta
+    print()
+    print(delta)
     assert np.all(delta[:, :2] != 0)
     assert np.all(delta[:, 2] == 0)
 

@@ -47,7 +47,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                   duration=timedelta(days=1),
                   uncertain=False)
 
-    print 'adding outputters'
+    print('adding outputters')
     renderer = Renderer(output_dir=images_dir,
                         image_size=(800, 800),
                         # viewport=((-70.25, 41.75), # FIXME -- why doesn't this work?
@@ -70,10 +70,10 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                                     surface_conc="kde",
                                     )
 
-    print 'adding a RandomMover:'
+    print('adding a RandomMover:')
     model.movers += RandomMover(diffusion_coef=100000)
 
-    print 'adding a wind mover:'
+    print('adding a wind mover:')
 
     series = np.zeros((2, ), dtype=datetime_value_2d)
     series[0] = (start_time, (5, 270))
@@ -83,7 +83,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     model.movers += w_mover
     model.environment += w_mover.wind
 
-    print 'adding a spill'
+    print('adding a spill')
 
     end_time = start_time + timedelta(hours=12)
     spill = point_line_release_spill(num_elements=100,
@@ -101,10 +101,10 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
 if __name__ == "__main__":
     scripting.make_images_dir()
-    print "setting up the model"
+    print("setting up the model")
     model = make_model()
-    print "running the model"
+    print("running the model")
     for step in model:
-        print step
+        print(step)
 
 

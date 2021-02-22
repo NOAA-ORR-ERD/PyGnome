@@ -1,4 +1,9 @@
-import six
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
+from past.types import basestring
 
 from colander import Float, SchemaNode, SequenceSchema, Boolean
 import numpy as np
@@ -198,20 +203,20 @@ class GnomeOil(Oil, Substance):
         oil_info = name
         if name in _sample_oils:
             oil_info = _sample_oils[name]
-        elif isinstance(name, six.string_types):
+        elif isinstance(name, basestring):
             # check if it's json from save file or from client
             if kwargs.get('component_density', False):
                 oil_info = kwargs
-            else:                
+            else:
                 from oil_library import get_oil_props
-                if kwargs.get('adios_oil_id', False): 
+                if kwargs.get('adios_oil_id', False):
                     # init the oilprops from dictionary, old form
                     oil_obj = get_oil_props(kwargs)
-                else: 
+                else:
                     # use name to get oil from oil library
-                    oil_obj = get_oil_props(name) 
+                    oil_obj = get_oil_props(name)
                 oil_info = oil_obj.get_gnome_oil()
-                
+
             kwargs['name'] = name #this is important; it passes name up to GnomeId to be handled there!
         else:
             raise ValueError('Must provide an oil name or OilLibrary.Oil '
@@ -242,7 +247,18 @@ class GnomeOil(Oil, Substance):
         self.array_types['mass_components'].shape = (self.num_components,)
         self.array_types['mass_components'].initial_value = (self.mass_fraction,)
 
+    def __hash__(self):
+        """
+        needs to be hashable, so that it can be used in lru-cache
+
+        Oils will only hash equal if they are the same object --
+        that's limiting, but OK.
+        """
+        return id(self)
+
     def __eq__(self, other):
+        if id(self) == id(other):
+            return True
         t1 = Substance.__eq__(self, other)
         t2 = Oil.__eq__(self, other)
         return t1 and t2
@@ -306,7 +322,7 @@ class GnomeOil(Oil, Substance):
             arrs['density'][sl] = density
 
         substance_kvis = self.kvis_at_temp(water_temp)
-        
+
         fates = np.logical_and(arrs['positions'][sl, 2] == 0, arrs['status_codes'][sl] == oil_status.in_water)
 
         # set status for new_LEs correctly
@@ -314,7 +330,7 @@ class GnomeOil(Oil, Substance):
             arrs['fate_status'][sl] = np.choose(fates, [fate.subsurf_weather, fate.surface_weather])
             if substance_kvis is not None:
                 arrs['viscosity'][sl] = substance_kvis
-        
+
         # initialize mass_components
         arrs['mass_components'][sl] = (np.asarray(self.mass_fraction, dtype=np.float64) * (arrs['mass'][sl].reshape(len(arrs['mass'][sl]), -1)))
         super(GnomeOil, self).initialize_LEs(to_rel, arrs)

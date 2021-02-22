@@ -4,6 +4,10 @@ tests of how a continuous spill releases in an actual model run
 See: https://gitlab.orr.noaa.gov/gnome/pygnome/-/issues/75
 
 """
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
 
 import pytest
 from datetime import datetime

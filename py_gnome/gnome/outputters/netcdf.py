@@ -1,6 +1,11 @@
 '''
 NetCDF outputter - write the nc_particles netcdf file format
 '''
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import os
 from datetime import datetime
 import zipfile
@@ -22,6 +27,7 @@ from .outputter import Outputter, BaseOutputterSchema, OutputterFilenameMixin
 # Big dict that stores the attributes for the standard data arrays
 # in the output - these are constants. The instance var_attributes are stored
 # with the NetCDFOutput object
+
 var_attributes = {
     'time': {'long_name': 'time since the beginning of the simulation',
              'standard_name': 'time',
@@ -55,10 +61,9 @@ var_attributes = {
             },
     'status_codes': {
         'long_name': 'particle status code',
-        'flag_values': " ".join(["%i" % i for i in oil_status._int]),
-        'flag_meanings': " ".join(["%i: %s," % pair for pair in
-                                   sorted(zip(oil_status._int,
-                                              oil_status._attr))])
+        'flag_values': [v.value for v in oil_status],
+        'flag_meanings': " ".join("{}:{}".format(v.name, v.value)
+                                  for v in oil_status)
                      },
     'spill_num': {'long_name': 'spill to which the particle belongs'},
     'id': {'long_name': 'particle ID',
@@ -278,7 +283,7 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
                  # FIXME: this should not be default, but since we don't have
                  #        a way for WebGNOME to set it yet..
                  surface_conc="kde",
-                 _middle_of_run=False,
+                 # _middle_of_run=False,
                  _start_idx=0,
                  **kwargs):
         """
@@ -326,9 +331,10 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
         # uncertain file is only written out if model is uncertain
 
         ## why is this even here ?!?!
-        kwargs['_middle_of_run'] = _middle_of_run
+        # kwargs['_middle_of_run'] = _middle_of_run
         super(NetCDFOutput, self).__init__(filename=filename,
                                            surface_conc=surface_conc,
+                                           # _middle_of_run,
                                            **kwargs)
 
         name, ext = os.path.splitext(self.filename)
@@ -563,7 +569,7 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
 
         self._update_var_attributes(spills)
 
-        for sc in self.sc_pair.items():
+        for sc in list(self.sc_pair.items()):
             if sc.uncertain:
                 file_ = self._u_filename
             else:
@@ -578,7 +584,7 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
                 # create a dict with dims {2: 'two', 3: 'three' ...}
                 # use this to define the NC variable's shape in code below
                 d_dims = {len(dim): name
-                          for name, dim in rootgrp.dimensions.iteritems()
+                          for name, dim in list(rootgrp.dimensions.items())
                           if len(dim) > 0}
 
                 # create the time/particle_count variables
@@ -639,7 +645,7 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
 
     def _create_nc_var(self, grp, var_name, dtype, shape, chunksz):
         # fixme: why is this even here? it's wrapping a single call???
-        if dtype == np.bool:
+        if dtype == bool:
             # this is not primitive so it is not understood
             # Make it 8-bit unsigned - numpy stores True/False in 1 byte
             dtype = 'u1'
@@ -706,7 +712,7 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
         if self.on is False or not self._write_step:
             return None
 
-        for sc in self.cache.load_timestep(step_num).items():
+        for sc in list(self.cache.load_timestep(step_num).items()):
             if sc.uncertain and self._u_filename is not None:
                 file_ = self._u_filename
             else:
@@ -741,7 +747,7 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
                 # write mass_balance data
                 if sc.mass_balance:
                     grp = rootgrp.groups['mass_balance']
-                    for key, val in sc.mass_balance.iteritems():
+                    for key, val in list(sc.mass_balance.items()):
                         if key not in grp.variables:
                             self._create_nc_var(grp,
                                                 key, 'float', ('time', ),
@@ -752,7 +758,7 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
         if islast_step:
             if self.zip_output is True:
                 self._zip_output_files()
- 
+
         self._start_idx = _end_idx  # set _start_idx for the next timestep
 
         return {'filename': (self.filename,
@@ -962,7 +968,7 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
             if 'mass_balance' in data.groups:
                 mb = data.groups['mass_balance']
 
-                for key, val in mb.variables.iteritems():
+                for key, val in list(mb.variables.items()):
                     # assume SI units
                     weathering_data[key] = val[index]
 
