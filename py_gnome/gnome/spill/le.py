@@ -9,13 +9,16 @@ from __future__ import unicode_literals
 
 
 import numpy as np
-import collections.abc as collections
+try:
+    from collections import abc
+except ImportError:
+    import abc
 import warnings
 
 from gnome.gnomeobject import AddLogger
 from gnome.array_types import default_array_types
 
-class LEData(collections.MutableMapping, AddLogger, dict):
+class LEData(abc.MutableMapping, AddLogger, dict):
     """
 
     """

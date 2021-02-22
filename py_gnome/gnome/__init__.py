@@ -37,10 +37,10 @@ def check_dependency_versions():
     If the version is not at least as current as what's defined here
     a warning is displayed
     """
-    libs = [('gridded', '0.2.4'),
-            ('oil_library', '1.1.2'),
-            ('unit_conversion', '2.6.3'),
-            ('py_gd', '1.0.1'),
+    libs = [('gridded', '0.3.0'),
+            ('oil_library', '1.1.3'),
+            ('unit_conversion', '2.10'),
+            ('py_gd', '0.1.7'),
             ]
 
     for name, version in libs:
@@ -48,11 +48,11 @@ def check_dependency_versions():
         try:
             module = importlib.import_module(name)
         except ImportError:
-            msg = ("ERROR: The {} package, version >= {}"
+            msg = ("ERROR: The {} package, version >= {} "
                    "needs to be installed".format(name, version))
             warnings.warn(msg)
         else:
-            if module.__version__ > version:
+            if module.__version__ < version:
                 msg = ('Version {0} of {1} package is required, '
                        'but actual version in module is {2}'
                        .format(version, name, module.__version__))

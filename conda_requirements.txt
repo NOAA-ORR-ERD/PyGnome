@@ -48,10 +48,10 @@ pyproj
 mapbox_earcut # from NOAA_ORR_ERD channel
 
 # NOAA maintained packages
-gridded=0.3.0
-pynucos>=2.8.*
+gridded>=0.3.0
+pynucos>=2.10
 cell_tree2d>=0.3.*
-py_gd=0.1.* # libgd should get brought in automatically
+py_gd>=0.1.8 # libgd should get brought in automatically
 
 # needed for OilLibrary
 #SQLAlchemy>=1.0.13
