@@ -149,6 +149,9 @@ develop:
   before_script:
     - echo '' # manual override of before_script because we're on runner 12.3 and inherit options are only 12.9+
   script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker pull registry.orr.noaa.gov/gnome/oillibrary:develop
+    - docker tag registry.orr.noaa.gov/gnome/oillibrary:develop oillibrary
     - docker build . -t registry.orr.noaa.gov/gnome/pygnome:develop
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker push registry.orr.noaa.gov/gnome/pygnome:develop
