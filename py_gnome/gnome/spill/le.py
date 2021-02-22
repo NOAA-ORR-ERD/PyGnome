@@ -10,15 +10,17 @@ from __future__ import unicode_literals
 
 import numpy as np
 try:
-    from collections import abc
+    from collections.abc import MutableMapping
 except ImportError:
-    import abc
+    from collections import MutableMapping
 import warnings
 
 from gnome.gnomeobject import AddLogger
 from gnome.array_types import default_array_types
 
-class LEData(abc.MutableMapping, AddLogger, dict):
+
+class LEData(MutableMapping, AddLogger, dict):
+    # Fixme: we need a docstring here!
     """
 
     """
