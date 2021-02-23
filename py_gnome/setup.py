@@ -41,10 +41,9 @@ SETUP_PATH = os.path.dirname(os.path.abspath(__file__))
 # if comp_modules_ext is None:
 #     comp_modules_ext = '.lib' if 'win' in sys.platform else ".so"
 if sys.version_info.major == 3:
-    # py_impl = ['.'] + [c.lower() for c in platform.python_implementation() if c.isupper()]
-    # py_impl = py_impl + sysconfig.get_python_version().split('.') + ['-'] + [sysconfig.get_platform().replace('-','_')]
-    # win_comp_modules_ext = ''.join(py_impl) + '.lib'
-    win_comp_modules_ext = sysconfig.get_config_var('EXT_SUFFIX')
+    py_impl = ['.'] + [c.lower() for c in platform.python_implementation() if c.isupper()]
+    py_impl = py_impl + sysconfig.get_python_version().split('.') + ['-'] + [sysconfig.get_platform().replace('-','_')]
+    win_comp_modules_ext = ''.join(py_impl) + '.lib'
 else:
     win_comp_modules_ext = '.lib'
 
