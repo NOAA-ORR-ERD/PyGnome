@@ -8,13 +8,10 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-<<<<<<< HEAD
 from gnome import scripting as gs
 
 from gnome.basic_types import datetime_value_2d
-=======
 import os
->>>>>>> develop
 
 from gnome import scripting as gs
 
