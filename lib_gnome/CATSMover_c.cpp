@@ -43,6 +43,7 @@ CATSMover_c::CATSMover_c () : CurrentMover_c() {
 	refPt3D.p.pLat = -999;
 	refPt3D.z = 0;
 	bApplyLogProfile = false;
+	current_tide_value.u = current_tide_value.v = 1.;
 
 	memset(&fOptimize, 0, sizeof(fOptimize));
 }
@@ -61,6 +62,7 @@ CATSMover_c::CATSMover_c(TMap *owner, char *name) : CurrentMover_c(owner, name)
 	fEddyV0 = 0.1; // JLM 5/20/99
 
 	bApplyLogProfile = false;
+	current_tide_value.u = current_tide_value.v = 1.;
 
 	memset(&fOptimize, 0, sizeof(fOptimize));
 
@@ -277,6 +279,7 @@ OSErr CATSMover_c::AddUncertainty(long setIndex, long leIndex,
 OSErr CATSMover_c::PrepareForModelRun()
 {
 	this->fOptimize.isFirstStep = true;
+	this->current_tide_value.u = this->current_tide_value.v = 1.;
 	return CurrentMover_c::PrepareForModelRun();
 }
 
@@ -305,6 +308,17 @@ OSErr CATSMover_c::PrepareForModelStep(const Seconds &model_time,
 	//note: DIVIDED by timestep because this is later multiplied by the timestep
 	this->fOptimize.isOptimizedForStep = true;
 	this->fOptimize.value = sqrt(6 * (fEddyDiffusion / 10000) / time_step);
+
+	// check if tide data is in range
+	if (timeDep && bTimeFileActive) {
+		// VelocityRec errVelocity={1,1};
+		// JLM 11/22/99, if there are no time file values, use zero not 1
+		VelocityRec errVelocity = {0, 1};
+
+		err = timeDep->GetTimeValue(model_time, &this->current_tide_value);
+		if (err)
+			this->current_tide_value = errVelocity;
+	}
 
 	return err;
 }
@@ -409,11 +423,13 @@ VelocityRec CATSMover_c::GetScaledPatValue(const Seconds &model_time,
 	if (timeDep && bTimeFileActive) {
 		// VelocityRec errVelocity={1,1};
 		// JLM 11/22/99, if there are no time file values, use zero not 1
-		VelocityRec errVelocity = {0, 1};
+		/*VelocityRec errVelocity = {0, 1};
 
-		err = timeDep->GetTimeValue(model_time, &timeValue); // AH 07/10/2012
+		err = timeDep->GetTimeValue(model_time, &timeValue);
 		if (err)
-			timeValue = errVelocity;
+			timeValue = errVelocity;*/
+		timeValue.u = this->current_tide_value.u;	// this is calculated in prepare_for_model_step
+		timeValue.v = this->current_tide_value.v;
 	}
 
 	patVelocity = GetPatValue(p);

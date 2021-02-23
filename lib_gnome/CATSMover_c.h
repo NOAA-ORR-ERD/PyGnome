@@ -52,6 +52,7 @@ public:
 	double			fEddyDiffusion;			// cm**2/s minimum eddy velocity for uncertainty
 	double			fEddyV0;			//  in m/s, used for cutoff of minimum eddy for uncertainty
 	TCM_OPTIMZE fOptimize; // this does not need to be saved to the save file	
+	VelocityRec	current_tide_value;		// tide value calculated in prepare_for_model_step
 	
 #ifndef pyGNOME
 						CATSMover_c (TMap *owner, char *name);
