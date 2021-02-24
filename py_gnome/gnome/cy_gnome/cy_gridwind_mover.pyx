@@ -229,7 +229,7 @@ cdef class CyGridWindMover(CyWindMoverBase):
         sz = _GetHandleSize(<Handle>pts_hdl)
 
         # will this always work?
-        pts = np.empty((sz / tmp_size,), dtype=basic_types.long_point)
+        pts = np.empty((sz // tmp_size,), dtype=basic_types.long_point)
 
         memcpy(&pts[0], pts_hdl[0], sz)
 
@@ -249,7 +249,7 @@ cdef class CyGridWindMover(CyWindMoverBase):
         sz = _GetHandleSize(<Handle>pts_hdl)
 
         # will this always work?
-        pts = np.empty((sz / tmp_size,), dtype=basic_types.w_point_2d)
+        pts = np.empty((sz // tmp_size,), dtype=basic_types.w_point_2d)
 
         memcpy(&pts[0], pts_hdl[0], sz)
 
@@ -278,7 +278,7 @@ cdef class CyGridWindMover(CyWindMoverBase):
         sz = _GetHandleSize(<Handle>cell_data_hdl)
 
         # will this always work?
-        cell_data = np.empty((sz / tmp_size,), dtype=basic_types.cell_data)
+        cell_data = np.empty((sz // tmp_size,), dtype=basic_types.cell_data)
 
         memcpy(&cell_data[0], cell_data_hdl[0], sz)
 

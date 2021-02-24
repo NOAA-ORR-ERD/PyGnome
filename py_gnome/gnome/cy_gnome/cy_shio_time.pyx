@@ -191,7 +191,7 @@ cdef class CyShioTime(CyOSSMTime):
 #         if self.shio.fStationType == 'C':
 #             # allocate memory and copy it over
 #             sz = _GetHandleSize(<Handle>self.shio.fEbbFloodDataHdl)
-#             ebb_flood = np.empty((sz / tmp_size,),
+#             ebb_flood = np.empty((sz // tmp_size,),
 #                                  dtype=basic_types.ebb_flood_data)
 #             memcpy(&ebb_flood[0], self.shio.fEbbFloodDataHdl[0], sz)
 #             return ebb_flood
@@ -214,7 +214,7 @@ cdef class CyShioTime(CyOSSMTime):
 #
 #             # allocate memory and copy it over
 #             sz = _GetHandleSize(<Handle>self.shio.fHighLowDataHdl)
-#             high_low = np.empty((sz / tmp_size,),
+#             high_low = np.empty((sz // tmp_size,),
 #                                 dtype=basic_types.ebb_flood_data)
 #             memcpy(&high_low[0], self.shio.fHighLowDataHdl[0], sz)
 #             return high_low

@@ -77,7 +77,7 @@ cdef class CyIceWindMover(CyGridWindMover):
 #         sz = _GetHandleSize(<Handle>pts_hdl)
 #
 #         # will this always work?
-#         pts = np.empty((sz / tmp_size,), dtype=basic_types.long_point)
+#         pts = np.empty((sz // tmp_size,), dtype=basic_types.long_point)
 #
 #         memcpy(&pts[0], pts_hdl[0], sz)
 #
@@ -97,7 +97,7 @@ cdef class CyIceWindMover(CyGridWindMover):
 #         sz = _GetHandleSize(<Handle>pts_hdl)
 #
 #         # will this always work?
-#         pts = np.empty((sz / tmp_size,), dtype=basic_types.w_point_2d)
+#         pts = np.empty((sz // tmp_size,), dtype=basic_types.w_point_2d)
 #
 #         memcpy(&pts[0], pts_hdl[0], sz)
 #
@@ -118,7 +118,7 @@ cdef class CyIceWindMover(CyGridWindMover):
 #         sz = _GetHandleSize(<Handle>top_hdl)
 #
 #         # will this always work?
-#         top = np.empty((sz / tmp_size,), dtype=basic_types.triangle_data)
+#         top = np.empty((sz // tmp_size,), dtype=basic_types.triangle_data)
 #
 #         memcpy(&top[0], top_hdl[0], sz)
 #
