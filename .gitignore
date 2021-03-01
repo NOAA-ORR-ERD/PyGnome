@@ -1,3 +1,9 @@
+# ignore files for branch out_rast
+py_gnome/gnome/utilities/*
+py_gnome/tests/*
+4.3
+23.0
+
 # ignore following files
 node_modules
 *.swp
