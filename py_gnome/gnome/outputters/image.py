@@ -13,11 +13,12 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import os
-import copy
 import collections
 import tempfile
 import base64
-# from tempfile import NamedTemporaryFile
+
+from collections.abc import Iterable
+
 from colander import SequenceSchema
 from gnome.persist.base_schema import GeneralGnomeObjectSchema
 
@@ -62,7 +63,7 @@ class IceImageOutput(Outputter):
             :type ice_movers: An ice_mover object or sequence of ice_mover
                               objects.
 
-            Use super to pass optional \*\*kwargs to base class __init__ method
+            Use super to pass optional kwargs to base class __init__ method
         '''
         # this is a place where we store our gradient color infomration
         self.gradient_lu = {}

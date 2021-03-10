@@ -27,7 +27,6 @@ gsw
 psutil
 progressbar
 pyzmq
-six
 geojson
 colander
 

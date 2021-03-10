@@ -116,8 +116,8 @@ def ReadDOGSFile(filename):
         # initialize arrays
 
     Npoints = int(Header['NOBJ'])
-    Coords = np.zeros((Npoints, 2), dtype=np.float)
-    Depths = np.zeros((Npoints,), dtype=np.float)
+    Coords = np.zeros((Npoints, 2), dtype=np.float64)
+    Depths = np.zeros((Npoints,), dtype=np.float64)
 
     line = line.split(',')
     for n in range(Npoints):
@@ -299,7 +299,7 @@ def WriteBNA(filename, polyset):
             outfile.write('%.8f, %.8f \n' % (point[0], point[1]))
 
 
-def ReadBNA(filename, polytype="list", dtype=np.float):
+def ReadBNA(filename, polytype="list", dtype=np.float64):
     """
     Read a bna file.
 
@@ -313,7 +313,7 @@ def ReadBNA(filename, polytype="list", dtype=np.float):
     - "BNADataClass": A BNAData class object -- this may be broken now!
 
     The dtype parameter specifies what numpy data type you want the points
-    data in -- it defaults to np.float (C double)
+    data in -- it defaults to float (C double)
     """
     fd = open(filename, 'rU')
 
@@ -353,7 +353,7 @@ def ReadBNA(filename, polytype="list", dtype=np.float):
             num_points = int(line)
             Types.append(Type)
             Names.append(Name)
-            polygon = np.zeros((num_points, 2), np.float)
+            polygon = np.zeros((num_points, 2), np.float64)
 
             for i in range(num_points):
                 polygon[i, :] = list(map(float, fd.readline().split(',')))

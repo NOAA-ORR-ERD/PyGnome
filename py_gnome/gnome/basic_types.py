@@ -39,7 +39,6 @@ seconds = cbt.seconds
 oil_status_map = {num: name for name, num in oil_status.__members__.items()}
 
 
-
 # Here we customize what a numpy 'long' type is....
 # We do this because numpy does different things with a long
 # that can mismatch what Cython does with the numpy ctypes.
@@ -52,16 +51,18 @@ oil_status_map = {num: name for name, num in oil_status.__members__.items()}
 # on Win64:
 # - unknown what numpy does
 # - Presumably an int64 would be a ctype 'long' ???
+# we should clean this up! -- on Python3, I think np.compat.long == int
+# can we just decide on a int width for all of these??
 if sys.platform == 'win32':
     np_long = np.int
 elif sys.platform in ('darwin', 'linux2', 'linux'):
     if sys.maxsize > 2147483647:
-        np_long = np.long
+        np_long = np.compat.long
     else:
-        np_long = np.int
+        np_long = int
 else:
     # untested platforms will just default to 64 bit
-    np_long = np.long
+    np_long = np.compat.long
 
 mover_type = np.float64
 world_point_type = np.float64

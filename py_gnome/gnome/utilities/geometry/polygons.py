@@ -23,7 +23,7 @@ class Polygon(np.ndarray):
     dict.
 
     """
-    def __new__(Polygon, points, metadata=None, copy=True, dtype=np.float):
+    def __new__(Polygon, points, metadata=None, copy=True, dtype=np.float64):
         # fixme: this needs a better way to index and loop to get a point
         """
         Takes Points as an array. Data is any python sequence that can be

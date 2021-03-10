@@ -7,8 +7,6 @@ from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from collections import Iterable
-
 import numpy as np
 from colander import SchemaNode, SequenceSchema, String, drop
 
@@ -65,7 +63,7 @@ class SpillJsonOutput(Outputter):
         :param list current_movers: A list or collection of current grid mover
                                     objects.
 
-        use super to pass optional \*\*kwargs to base class __init__ method
+        use super to pass optional kwargs to base class __init__ method
         '''
         self._additional_data =_additional_data if _additional_data else []
 
@@ -188,7 +186,7 @@ class CurrentJsonOutput(Outputter):
         :param list current_movers: A list or collection of current grid mover
                                     objects.
 
-        use super to pass optional \*\*kwargs to base class __init__ method
+        use super to pass optional kwargs to base class __init__ method
         '''
         self.current_movers = current_movers
 
@@ -308,15 +306,23 @@ class IceJsonOutput(Outputter):
             :type ice_movers: An ice_mover object or sequence of ice_mover
                               objects.
 
-            Use super to pass optional \*\*kwargs to base class __init__ method
+            Use super to pass optional kwargs to base class __init__ method
         '''
-        if (isinstance(ice_movers, Iterable) and
-                not isinstance(ice_movers, str)):
-            self.ice_movers = ice_movers
-        elif ice_movers is not None:
+        if ice_movers is None:
+            self.ice_movers = tuple()
+        elif isinstance(ice_movers, str):
             self.ice_movers = (ice_movers,)
         else:
-            self.ice_movers = tuple()
+            self.ice_movers = tuple(ice_movers)
+
+        # below is more twisted logic for the above
+        # if (isinstance(ice_movers, Iterable) and
+        #         not isinstance(ice_movers, str)):
+        #     self.ice_movers = ice_movers
+        # elif ice_movers is not None:
+        #     self.ice_movers = (ice_movers,)
+        # else:
+        #     self.ice_movers = tuple()
 
         super(IceJsonOutput, self).__init__(**kwargs)
 

@@ -7,14 +7,8 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-# from future import standard_library
-# standard_library.install_aliases()
-# from builtins import *
-
-import copy
 import os
 from glob import glob
-from collections import Iterable
 
 import numpy as np
 
@@ -287,13 +281,20 @@ class IceGeoJsonOutput(Outputter):
 
             Use super to pass optional \*\*kwargs to base class __init__ method
         '''
-        if (isinstance(ice_movers, Iterable) and
-                not isinstance(ice_movers, str)):
-            self.ice_movers = ice_movers
-        elif ice_movers is not None:
+        if ice_movers is None:
+            self.ice_movers = tuple()
+        elif isinstance(ice_movers, str):
             self.ice_movers = (ice_movers,)
         else:
-            self.ice_movers = tuple()
+            self.ice_movers = tuple(ice_movers)
+
+        # if (isinstance(ice_movers, Iterable) and
+        #         not isinstance(ice_movers, str)):
+        #     self.ice_movers = ice_movers
+        # elif ice_movers is not None:
+        #     self.ice_movers = (ice_movers,)
+        # else:
+        #     self.ice_movers = tuple()
 
         super(IceGeoJsonOutput, self).__init__(**kwargs)
 
