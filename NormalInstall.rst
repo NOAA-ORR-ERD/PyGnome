@@ -1,6 +1,14 @@
 Installation without conda / Anaconda
 =====================================
 
+**WARNING:** These notes are out of date and not tested. All our development work is done using conda and conda-forge -- there are a few too many dependencies not well supported by "pure" pip / PyPi packages at this point.
+
+Note that current PyGNOME is Python 3 (>= 3.8) -- some of these notes are for Python2. But if you do get this working, please consider supplying a Pull Request with updated notes.
+
+
+Building everything by hand / with pip
+-------------------------------------
+
 Since this is development work, it might be good to create and run this
 in a virtual environment. `Virtualenv <http://www.virtualenv.org/en/latest/>`__ and `Virtual envwrapper <http://virtualenvwrapper.readthedocs.org/en/latest/>`__ eases
 management of virtual environments.
