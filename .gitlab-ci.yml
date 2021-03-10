@@ -61,7 +61,7 @@ develop_compile:
     - yum install gcc gcc-c++ make -y
 #    - yum install netcdf-devel -y
     - yum install libXext libSM libXrender -y
-    - conda install --file conda_requirements_py3.txt
+    - conda install --file conda_requirements.txt
     - cd ./py_gnome
     - python setup.py install
 #    - python -m pip install ./  # not set up for a pip build :-(
