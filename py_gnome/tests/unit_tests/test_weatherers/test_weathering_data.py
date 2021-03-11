@@ -384,13 +384,16 @@ class TestWeatheringData(object):
         todo: should this raise a runtime error. May want to change how this
             works
         '''
-        pytest.importorskip("oil_library")
         l.uninstall()
         rel_time = datetime.now().replace(microsecond=0)
         (sc, wd) = self.sample_sc_intrinsic(100, rel_time)
         wd.water.set('temperature', 288, 'K')
         wd.water.set('salinity', 0, 'psu')
-        new_subs = GnomeOil('TEXTRACT, STAR ENTERPRISE')
+        new_subs = GnomeOil('oil_crude')
+        # reset the density
+        new_subs.densities = [1004.0]
+        new_subs.density_ref_temps = [288.15]
+
         new_subs.water = wd.water
         sc.spills[0].substance = new_subs
         ats = {}
