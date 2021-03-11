@@ -538,6 +538,19 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
         self.extrapolation_is_allowed = extrapolation_is_allowed
 
     @classmethod
+    def from_netCDF(cls, *args, **kwargs):
+        # only here to provide a docstring
+        """
+        create a Vector Environment object
+
+        :param filename: One of:
+                        - path to a netcdf file
+                        - list of paths to a netcdf file
+                        - an open netCDF4.Dataset
+        """
+        return super().from_netCDF(*args, **kwargs)
+
+    @classmethod
     def new_from_dict(cls, dict_, **kwargs):
         if not dict_.get('variables', False):
             return super(VectorVariable, cls).new_from_dict(cls.from_netCDF(**dict_).to_dict(), **kwargs)

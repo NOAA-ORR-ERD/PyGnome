@@ -540,6 +540,21 @@ class GridCurrent(VelocityGrid, Environment):
             return super(GridCurrent, self).get_data_vectors()
 
 class GridWind(VelocityGrid, Environment):
+    """
+    Gridded winds -- usually from netcdf files from meteorological models.
+
+    This will most often be initialized from netcdf files as so:
+
+    `wind = GridWind.from_netCDF(filename="a/path/to/a/netcdf_file.nc")
+
+    filename can be:
+
+    * An already open netCDF4 Dataset
+
+    * A single path to a netcdf file
+
+    * A list of paths to a set of netcdf files with timeseries
+    """
     _ref_as = 'wind'
     _gnome_unit = 'm/s'
     default_names = {'u': ['air_u', 'Air_U', 'air_ucmp', 'wind_u'],
