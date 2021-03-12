@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 """
 Script to test GNOME with all weatherers and response options
+
+Note: this version is using the WEatherers individually
+      see script_weathering_run to see an easier way
 """
 
 from __future__ import absolute_import
@@ -44,38 +47,31 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # 1 day of data in file
     # 1/2 hr in seconds
     model = gs.Model(start_time=start_time,
-<<<<<<< HEAD
-                     duration=timedelta(days=1.75),
-                     time_step=60 * 60,
-                     uncertain=True)
-
-#     mapfile = get_datafile(os.path.join(base_dir, './ak_arctic.bna'))
-#
-#     print 'adding the map'
-#     model.map = gs.MapFromBNA(mapfile, refloat_halflife=1)  # seconds
-#
-#     # draw_ontop can be 'uncertain' or 'forecast'
-#     # 'forecast' LEs are in black, and 'uncertain' are in red
-#     # default is 'forecast' LEs draw on top
-#     renderer = Renderer(mapfile, images_dir, image_size=(800, 600),
-#                         output_timestep=timedelta(hours=2),
-#                         draw_ontop='forecast')
-#
-#     print 'adding outputters'
-#     model.outputters += renderer
-
-    model.outputters += gs.WeatheringOutput(os.path.join(base_dir, 'output'))
-
-=======
                      duration=gs.days(1.75),
                      time_step=60 * 60,
                      uncertain=True)
+
+# #     mapfile = get_datafile(os.path.join(base_dir, './ak_arctic.bna'))
+# #
+# #     print 'adding the map'
+# #     model.map = gs.MapFromBNA(mapfile, refloat_halflife=1)  # seconds
+# #
+# #     # draw_ontop can be 'uncertain' or 'forecast'
+# #     # 'forecast' LEs are in black, and 'uncertain' are in red
+# #     # default is 'forecast' LEs draw on top
+# #     renderer = Renderer(mapfile, images_dir, image_size=(800, 600),
+# #                         output_timestep=timedelta(hours=2),
+# #                         draw_ontop='forecast')
+# #
+# #     print 'adding outputters'
+# #     model.outputters += renderer
+
+#     model.outputters += gs.WeatheringOutput(os.path.join(base_dir, 'output'))
 
     print('adding outputters')
 
     model.outputters += gs.WeatheringOutput(os.path.join(base_dir, 'output'))
 
->>>>>>> develop
     netcdf_file = os.path.join(base_dir, 'script_weatherers.nc')
     gs.remove_netcdf(netcdf_file)
     model.outputters += gs.NetCDFOutput(netcdf_file,
@@ -89,11 +85,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # - will need diffusion and rise velocity
     # - wind doesn't act
     # - start_position = (-76.126872, 37.680952, 5.0),
-<<<<<<< HEAD
-    end_time = start_time + timedelta(hours=24)
-=======
     end_time = start_time + gs.hours(24)
->>>>>>> develop
     spill = gs.point_line_release_spill(num_elements=100,
                                         start_position=(-164.791878561,
                                                         69.6252597267, 0.0),
@@ -108,11 +100,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     model.spills += spill
 
     print('adding a RandomMover:')
-<<<<<<< HEAD
-    model.movers += RandomMover(diffusion_coef=50000)
-=======
     model.movers += gs.RandomMover(diffusion_coef=50000)
->>>>>>> develop
 
     print('adding a wind mover:')
 
@@ -140,21 +128,19 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                        active_range=skim1_active_range)
     skimmer2 = Skimmer(120, units=units, efficiency=0.2,
                        active_range=skim2_active_range)
-<<<<<<< HEAD
-=======
 
     burn_start = start_time + gs.hours(36)
->>>>>>> develop
 
     burn = Burn(1000., .1,
                 active_range=(burn_start, gs.InfTime()),
                 efficiency=.2)
 
-#    chem_start = start_time + gs.hours(24)
-#     chem_active_range = (chem_start, chem_start + gs.hours(8))
-#     c_disp = ChemicalDispersion(0.5, efficiency=0.4,
-#                                 active_start=chem_start,
-#                                 active_stop=chem_start + gs.hours(8))
+    chem_start = start_time + gs.hours(24)
+    c_disp = ChemicalDispersion(fraction_sprayed=0.5,
+                                efficiency=0.4,
+                                active_range=(chem_start, chem_start + gs.hours(8)),
+                                waves=waves,
+                                )
 
     model.environment += water
     model.environment += wind
@@ -166,7 +152,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     model.weatherers += skimmer1
     model.weatherers += skimmer2
     model.weatherers += burn
-#     model.weatherers += c_disp
+    model.weatherers += c_disp
 
     return model
 
