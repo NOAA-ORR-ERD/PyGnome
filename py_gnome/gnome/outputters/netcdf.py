@@ -763,7 +763,7 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
 
         return {'filename': (self.filename,
                              self._u_filename),
-                'time_stamp': time_stamp}
+                'time_stamp': time_stamp.isoformat()}
 
     def _zip_output_files(self):
         zfilename = self.zip_filename
