@@ -1,5 +1,4 @@
 
-# branch out_rast HWR-llc work
 
 ![Gnome Logo](graphics/new_gnome_icon/GNOME_logo_450px-wide.png)
 

@@ -3,6 +3,7 @@ py_gnome/gnome/utilities/*
 py_gnome/tests/*
 4.3
 23.0
+sandbox
 
 # ignore following files
 node_modules

@@ -2,6 +2,7 @@
 from outputter import Outputter, BaseOutputterSchema
 from netcdf import NetCDFOutput, NetCDFOutputSchema
 from renderer import Renderer, RendererSchema
+from rasterer import Rasterer, RastererSchema
 from weathering import WeatheringOutput
 from binary import BinaryOutput, BinaryOutputSchema
 from geo_json import (TrajectoryGeoJsonOutput,
@@ -19,6 +20,7 @@ from oil_budget import OilBudgetOutput
 outputters = [Outputter,
               NetCDFOutput,
               Renderer,
+              Rasterer,
               WeatheringOutput,
               BinaryOutput,
               TrajectoryGeoJsonOutput,

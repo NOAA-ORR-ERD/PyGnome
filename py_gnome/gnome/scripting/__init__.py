@@ -70,6 +70,7 @@ from gnome.movers.wind_movers import (constant_wind_mover,
                                       )
 
 from gnome.outputters import (Renderer,
+                              Rasterer,
                               NetCDFOutput,
                               KMZOutput,
                               OilBudgetOutput,
