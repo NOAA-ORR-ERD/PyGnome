@@ -505,6 +505,11 @@ class SpatialReleaseSchema(BaseReleaseSchema):
     end_position = WorldPoint(
         save=False, update=False, test_equal=False
     )
+    end_release_time = SchemaNode(
+        LocalDateTime(), missing=drop,
+        validator=convertible_to_seconds,
+        save=True, update=True
+    )
     random_distribute = SchemaNode(Boolean())
     filename = FilenameSchema(save=False, missing=drop, isdatafile=False, update=False, test_equal=False)
     #json_file = FilenameSchema(save=True, missing=drop, isdatafile=True, update=False, test_equal=False)
@@ -563,8 +568,11 @@ class SpatialRelease(Release):
         if filename is not None and json_file is not None:
             raise ValueError('May only provide filename or json_file to SpatialRelease')
         elif filename is not None:
-            polygons, weights, thicknesses = self.__class__.load_shapefile(filename)
+            release_time, polygons, weights, thicknesses = self.__class__.load_shapefile(filename)
             self.filename = filename
+            if release_time is not None: #because nesdis files can contain a release time
+                self.release_time = release_time
+                self.end_release_time = release_time #but not a release duration??
         elif json_file is not None:
             polygons, weights, thicknesses = self.__class__.load_geojson(json_file)
 
@@ -631,6 +639,12 @@ class SpatialRelease(Release):
             area_id = field_names.index('AREA_GEO')
             im_date = sf.record()[date_id]
             im_time = sf.record()[time_id]
+            parsed_time = ''.join([d for d in im_time if d.isdigit()])
+            release_time = None
+            try:
+                release_time = datetime.strptime(im_date + ' ' + parsed_time, '%m/%d/%Y %H%M')
+            except ValueError as ve:
+                warnings.warn('Could not parse shapefile time: ' + str(ve))
             all_oil_polys = []
             all_oil_weights = []
             all_oil_thicknesses = []
@@ -692,14 +706,16 @@ class SpatialRelease(Release):
                 all_oil_weights.extend(oil_poly_weights)
                 all_oil_thicknesses.extend(shape_poly_thickness)
 
-            return all_oil_polys, all_oil_weights, all_oil_thicknesses
+            return release_time, all_oil_polys, all_oil_weights, all_oil_thicknesses
 
     @classmethod
     def from_shapefile(cls,
                        filename=None,
                        **kwargs):
-        polys, weights, thicknesses = cls.load_shapefile(filename)
+        release_time, polys, weights, thicknesses = cls.load_shapefile(filename)
         return cls(
+            release_time=release_time,
+            end_release_time=release_time,
             polygons=polys,
             weights=weights,
             thicknesses=thicknesses,
