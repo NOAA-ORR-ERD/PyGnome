@@ -8,6 +8,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import numpy as np
+from collections.abc import Iterable
 from colander import SchemaNode, SequenceSchema, String, drop
 
 from gnome.utilities.time_utils import date_to_sec
@@ -308,21 +309,13 @@ class IceJsonOutput(Outputter):
 
             Use super to pass optional kwargs to base class __init__ method
         '''
-        if ice_movers is None:
-            self.ice_movers = tuple()
-        elif isinstance(ice_movers, str):
+        if (isinstance(ice_movers, Iterable) and
+                not isinstance(ice_movers, str)):
+            self.ice_movers = ice_movers
+        elif ice_movers is not None:
             self.ice_movers = (ice_movers,)
         else:
-            self.ice_movers = tuple(ice_movers)
-
-        # below is more twisted logic for the above
-        # if (isinstance(ice_movers, Iterable) and
-        #         not isinstance(ice_movers, str)):
-        #     self.ice_movers = ice_movers
-        # elif ice_movers is not None:
-        #     self.ice_movers = (ice_movers,)
-        # else:
-        #     self.ice_movers = tuple()
+            self.ice_movers = tuple()
 
         super(IceJsonOutput, self).__init__(**kwargs)
 

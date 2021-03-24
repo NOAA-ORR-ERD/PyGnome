@@ -341,11 +341,11 @@ class Grid_R(gridded.grids.Grid_R, GnomeId):
     def get_lines(self):
 
         lon_lines = np.array([[(lon, self.node_lat[0]),
-                               (lon, self.node_lat[len(self.node_lat) / 2]),
+                               (lon, self.node_lat[len(self.node_lat) // 2]),
                                (lon, self.node_lat[-1])]
                               for lon in self.node_lon], dtype=np.float32)
         lat_lines = np.array([[(self.node_lon[0], lat),
-                               (self.node_lon[len(self.node_lon) / 2], lat),
+                               (self.node_lon[len(self.node_lon) // 2], lat),
                                (self.node_lon[-1], lat)]
                               for lat in self.node_lat], dtype=np.float32)
 
