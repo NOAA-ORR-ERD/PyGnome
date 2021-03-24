@@ -5,30 +5,47 @@ Installation without conda / Anaconda
 
 Note that current PyGNOME is Python 3 (>= 3.8) -- some of these notes are for Python2. But if you do get this working, please consider supplying a Pull Request with updated notes.
 
+Overview:
+---------
+
+pyGNOME has a lot of dependencies -- you can find the full list by looking at the conda_requirements.txt file.
+
+Most of them are well maintained 3rd party packages, that can be installed via pip, or by following the package author's instructions.
+
+But a few are maintained by the GNOME team at NOAA. These are all best installed by downloading the source code from the NOAA-ORR-ERD gitHub organization, and building and installing them from that source. These are:
+
+unit_conversion (pynucos): https://github.com/NOAA-ORR-ERD/PyNUCOS
+
+gridded: https://github.com/NOAA-ORR-ERD/gridded
+
+cell_tree2d (required by gridded): https://github.com/NOAA-ORR-ERD/cell_tree2d
+
+py_gd: https://github.com/NOAA-ORR-ERD/py_gd
+
+
+
+
 
 Building everything by hand / with pip
 -------------------------------------
 
 Since this is development work, it might be good to create and run this
-in a virtual environment. `Virtualenv <http://www.virtualenv.org/en/latest/>`__ and `Virtual envwrapper <http://virtualenvwrapper.readthedocs.org/en/latest/>`__ eases
-management of virtual environments.
+in a virtual environment of some sort: virtualenv, pipenv, etc.
 
-A virtualenv is **not required** to run PyGnome. But you may be working
-in an environment (on a corporate network, for example) that restricts
-your access to the system files on your computer. In such a case, you
-may require a virtualenv in order to freely install python packages in
-python's site-packages area. (site-packages is the standard place where
-python installers will put packages after building them)
+A virtual environment is **not required** to run PyGnome.
+But you may be working in an environment (on a corporate network, for example) that restricts your access to the system files on your computer.
+In such a case, you may require a virtualenv in order to freely install python packages in python's site-packages dir. (site-packages is the standard place where python installers will put packages after building them)
 
 You may also want to consider using conda environments -- see above.
 
-There is C++/Cython code that must be built - you will need the correct C compiler and recent setuptools, etc. See "Installing With Anaconda" for more detail.
+There is C++/Cython code that must be built - you will need the correct C compiler and recent setuptools, etc. See "Installing With Anaconda" for more detail (or online for docs on "building C extensions to Python")
 
 python.org
 ==========
 
-The following has been tested against `Python
-2.7 <https://www.python.org/downloads/>`__
+Most people use Python itself from Python.org:
+
+https://www.python.org/downloads/
 
 Linux (Tested in 64-bit, CentOS)
 --------------------------------
