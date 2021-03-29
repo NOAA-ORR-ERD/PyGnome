@@ -510,6 +510,11 @@ class SpatialReleaseSchema(BaseReleaseSchema):
         validator=convertible_to_seconds,
         save=True, update=True
     )
+
+    polygon_info = SchemaNode(
+        SequenceSchema
+    )
+
     random_distribute = SchemaNode(Boolean())
     filename = FilenameSchema(save=False, missing=drop, isdatafile=False, update=False, test_equal=False)
     #json_file = FilenameSchema(save=True, missing=drop, isdatafile=True, update=False, test_equal=False)
@@ -531,7 +536,6 @@ class SpatialRelease(Release):
                  filename=None,
                  polygons=None,
                  weights=None,
-                 thicknesses=None,
                  json_file=None,
                  custom_positions=None,
                  random_distribute=True,
@@ -544,9 +548,11 @@ class SpatialRelease(Release):
         :param polygons: polygons to use in this release
         :type polygons: list of shapely.Polygon
 
-        :param weights: probability weighting for each polygon. Must be the same
+        :param weights: LE placement probability weighting for each polygon. Must be the same
         length as the polygons kwarg, and must sum to 1. If None, weights are
         generated based on area proportion.
+
+        :param thicknesses: thicknesses of oil in each polygon provided
 
         :param start_positions: Nx3 array of release coordinates (lon, lat, z)
         :type start_positions: np.ndarray
@@ -582,7 +588,6 @@ class SpatialRelease(Release):
         if self.polygons is not None and len(weights) != len(self.polygons):
             raise ValueError('Weights must be equal in length to provided Polygons')
 
-        self.thicknesses = thicknesses
         self.weights = weights
         self.random_distribute = random_distribute
         if custom_positions is not None:
@@ -593,139 +598,6 @@ class SpatialRelease(Release):
             self.custom_positions = None
         self.num_elements = num_elements
         self._start_positions = self.gen_start_positions()
-
-    @classmethod
-    def load_geojson(cls, filename):
-        #gj = geojson.load(filename)
-        # Currently (9/16/2020), the json_file init parameter and this filename parameter
-        # should always contain the raw GeoJSON. This is in lieu of developing a new
-        # system to generate files when saving
-
-        fc = geojson.FeatureCollection(geojson.loads(filename))
-        weights = fc.weights
-        thicknesses = fc.thicknesses
-        polygons = None
-        if fc.features is not None:
-            polygons = [Polygon(f.coordinates[0]) for f in fc.features]
-        return polygons, weights, thicknesses
-
-    @staticmethod
-    def load_shapefile(filename):
-        """
-        load up a spatial release from shapefiles
-
-        shapefiles should be in a zip file
-        """
-        with zipfile.ZipFile(filename, 'r') as zsf:
-            basename = ''.join(filename.split('.')[:-1])
-            shpfile = [f for f in zsf.namelist() if f.split('.')[-1] == 'shp']
-            if len(shpfile) > 0:
-                shpfile = zsf.open(shpfile[0], 'r')
-            else:
-                raise ValueError('No .shp file found')
-            dbffile = [f for f in zsf.namelist() if f.split('.')[-1] == 'dbf']
-            if len(dbffile) > 0:
-                dbffile = zsf.open(dbffile[0], 'r')
-            else:
-                raise ValueError('No .dbf file found')
-            sf = shp.Reader(shp=shpfile, dbf=dbffile)
-            shapes = sf.shapes()
-            oil_polys = []
-            oil_amounts = []
-            field_names = [field[0] for field in sf.fields[1:]]
-            date_id = field_names.index('DATE')
-            time_id = field_names.index('TIME')
-            type_id = field_names.index('OILTYPE')
-            area_id = field_names.index('AREA_GEO')
-            im_date = sf.record()[date_id]
-            im_time = sf.record()[time_id]
-            parsed_time = ''.join([d for d in im_time if d.isdigit()])
-            release_time = None
-            try:
-                release_time = datetime.strptime(im_date + ' ' + parsed_time, '%m/%d/%Y %H%M')
-            except ValueError as ve:
-                warnings.warn('Could not parse shapefile time: ' + str(ve))
-            all_oil_polys = []
-            all_oil_weights = []
-            all_oil_thicknesses = []
-            shape_oil_thickness = []
-
-            oil_amounts = []
-            for i, shape in enumerate(shapes):
-                oil_type = sf.records()[i][type_id]
-                oil_area = sf.records()[i][area_id] * 1000**2  # area in m2
-                if oil_type.lower() == "thin":
-                    thickness = 5e-6
-                elif oil_type.lower() == "thick":
-                    thickness = 200e-6
-                else:
-                    raise ValueError('Unknown oil classification: "{}". Should be one of:'
-                                     '"Thick" or "Thin"'.format(oil_type))
-                oil_amounts.append(thickness * oil_area)  # oil amount in cubic meters
-                shape_oil_thickness.append(thickness)
-
-            # percentage of mass in each Shape.
-            # Latteer this is further broken down per Polygon
-            oil_amount_weights = map(lambda w: w / sum(oil_amounts), oil_amounts)
-
-            # Each Shape contains multiple Polygons. The following extracts these Polygons
-            # and determines the per Polygon weighting out of the total
-            for shape, weight, thickness in zip(shapes, oil_amount_weights, shape_oil_thickness):
-                shape_polys = []
-                shape_amounts = []
-                shape_poly_area_weights = []
-                shape_poly_thickness = []
-                total_poly_area = 0
-                for i, start_idx in enumerate(shape.parts):
-                    sl = None
-                    if i < len(shape.parts) - 1:
-                        sl = slice(start_idx, shape.parts[i + 1])
-                    else:
-                        sl = slice(start_idx, None)
-                    points = shape.points[sl]
-                    # kludge to get around version differences in pyproj
-                    Proj1 = Proj2 = pts = None
-                    if int(pyproj.__version__[0]) < 2:
-                        Proj1 = Proj(init='epsg:3857')
-                        Proj2 = Proj(init='epsg:4326')
-                        pts = map(lambda pt: transform(Proj1, Proj2, pt[0], pt[1]), points)
-                    else:
-                        transformer = pyproj.Transformer.from_crs("epsg:3857", "epsg:4326", always_xy=True)
-                        pts = map(lambda pt: transformer.transform(pt[0],pt[1]), points)
-                    poly = Polygon(pts)
-                    shape_polys.append(poly)
-                    shape_poly_thickness.append(thickness)
-
-                    total_poly_area += poly.area
-                areas = map(lambda s: s.area, shape_polys)
-                # percentage of area each poly contributes to total shape area
-                shape_poly_area_weights = map(lambda s: s / total_poly_area, areas)
-                # percentage of mass each poly contributes to total mass
-                oil_poly_weights = map(lambda w: w * weight, shape_poly_area_weights)
-                all_oil_polys.extend(shape_polys)
-                all_oil_weights.extend(oil_poly_weights)
-                all_oil_thicknesses.extend(shape_poly_thickness)
-
-            return release_time, all_oil_polys, all_oil_weights, all_oil_thicknesses
-
-    @classmethod
-    def from_shapefile(cls,
-                       filename=None,
-                       **kwargs):
-        release_time, polys, weights, thicknesses = cls.load_shapefile(filename)
-        return cls(
-            release_time=release_time,
-            end_release_time=release_time,
-            polygons=polys,
-            weights=weights,
-            thicknesses=thicknesses,
-            **kwargs
-        )
-
-    @property
-    def json_file(self):
-        #Placeholder value for the serialization system
-        return None
 
     @property
     def start_positions(self):
@@ -1018,9 +890,212 @@ def GridRelease(release_time, bounds, resolution):
                           )
 
 
+class NESDISReleaseSchema(SpatialReleaseSchema):
+    pass
+
+
+class NESDISRelease(SpatialRelease):
+    '''
+    A SpatialRelease subclass that has functions and data specifically for
+    representing NESDIS shapefiles within GNOME
+    '''
+    _schema = NESDISReleaseSchema()
+
+    def __init__(self,
+                 filename=None,
+                 thicknesses=None,
+                 json_file=None,
+                 **kwargs):
+        """
+        :param filename: NESDIS shapefile
+        :type filename: string or list of strings -- should be a zip file
+
+        :param polygons: polygons to use in this release
+        :type polygons: list of shapely.Polygon
+
+        :param weights: LE placement probability weighting for each polygon. Must be the same
+        length as the polygons kwarg, and must sum to 1. If None, weights are
+        generated based on area proportion.
+
+        :param thicknesses: thicknesses of oil in each polygon provided
+
+        :param start_positions: Nx3 array of release coordinates (lon, lat, z)
+        :type start_positions: np.ndarray
+
+        :param random_distribute: If True, all LEs will always be distributed
+        among all release locations. Otherwise, LEs will be equally distributed,
+        and only remainder will be placed randomly
+
+        :param num_elements: If passed as None, number of elements will be equivalent
+        to number of start positions. For backward compatibility.
+        """
+        # We really should clean this up!
+        kwargs.pop('start_position', None)
+        kwargs.pop('end_position', None)
+        self.filename = None
+        if filename is not None and json_file is not None:
+            raise ValueError('May only provide filename or json_file to SpatialRelease')
+        elif filename is not None:
+            release_time, polygons, weights, thicknesses = self.__class__.load_shapefile(filename)
+            kwargs['release_time'] = release_time
+            if release_time is not None: #because nesdis files can contain a release time
+                self.release_time = release_time
+                self.end_release_time = release_time #but not a release duration??
+        elif json_file is not None:
+            polygons, weights, thicknesses = self.__class__.load_geojson(json_file)
+        if filename or json_file:
+            kwargs['polygons'] = polygons
+            kwargs['weights'] = weights
+        
+        self.thicknesses = thicknesses
+        super(NESDISRelease, self).__init__(
+            **kwargs
+        )
+
+    @classmethod
+    def load_geojson(cls, filename):
+        #gj = geojson.load(filename)
+        # Currently (9/16/2020), the json_file init parameter and this filename parameter
+        # should always contain the raw GeoJSON. This is in lieu of developing a new
+        # system to generate files when saving
+
+        fc = geojson.FeatureCollection(geojson.loads(filename))
+        weights = fc.weights
+        thicknesses = fc.thicknesses
+        polygons = None
+        if fc.features is not None:
+            polygons = [Polygon(f.coordinates[0]) for f in fc.features]
+        return polygons, weights, thicknesses
+
+    @staticmethod
+    def load_shapefile(filename):
+        """
+        load up a spatial release from shapefiles
+
+        shapefiles should be in a zip file
+        """
+        with zipfile.ZipFile(filename, 'r') as zsf:
+            basename = ''.join(filename.split('.')[:-1])
+            #need to hunt down the correct pair of shp/dbf. NESDIS files may
+            #have a 'point' as well as a 'polygon' file...
+            #Going to just go with eliminating choices that contain 'Point Source' and the like for now..
+            shpfiles = [f for f in zsf.namelist() if f.split('.')[-1] == 'shp' and 'point' not in f.lower()]
+            dbffiles = [f for f in zsf.namelist() if f.split('.')[-1] == 'dbf' and 'point' not in f.lower()]
+            if len(shpfiles) == 0:
+                raise ValueError('No .shp file found')
+            elif len(shpfiles) > 1:
+                warnings.warn('More than one .shp file found. Using {0}'.format(shpfiles[0]))
+            shpfile = zsf.open(shpfiles[0], 'r')
+            if len(dbffiles) == 0:
+                raise ValueError('No .dbf file found')
+            elif len(dbffiles) > 1:
+                warnings.warn('More than one .shp file found. Using {0}'.format(shpfiles[0]))
+            dbffile = zsf.open(dbffiles[0], 'r')
+            sf = shp.Reader(shp=shpfile, dbf=dbffile)
+
+            shapes = sf.shapes()
+            oil_polys = []
+            oil_amounts = []
+            field_names = [field[0] for field in sf.fields[1:]]
+            date_id = field_names.index('DATE')
+            time_id = field_names.index('TIME')
+            type_id = field_names.index('OILTYPE')
+            area_id = field_names.index('AREA_GEO')
+            im_date = sf.record()[date_id]
+            im_time = sf.record()[time_id]
+            parsed_time = ''.join([d for d in im_time if d.isdigit()])
+            release_time = None
+            try:
+                release_time = datetime.strptime(im_date + ' ' + parsed_time, '%m/%d/%Y %H%M')
+            except ValueError as ve:
+                warnings.warn('Could not parse shapefile time: ' + str(ve))
+            all_oil_polys = []
+            all_oil_weights = []
+            all_oil_thicknesses = []
+            shape_oil_thickness = []
+
+            oil_amounts = []
+            for i, shape in enumerate(shapes):
+                oil_type = sf.records()[i][type_id]
+                oil_area = sf.records()[i][area_id] * 1000**2  # area in m2
+                if oil_type.lower() == "thin":
+                    thickness = 5e-6
+                elif oil_type.lower() == "thick":
+                    thickness = 200e-6
+                else:
+                    raise ValueError('Unknown oil classification: "{}". Should be one of:'
+                                     '"Thick" or "Thin"'.format(oil_type))
+                oil_amounts.append(thickness * oil_area)  # oil amount in cubic meters
+                shape_oil_thickness.append(thickness)
+
+            # percentage of mass in each Shape.
+            # Later this is further broken down per Polygon
+            oil_amount_weights = map(lambda w: w / sum(oil_amounts), oil_amounts)
+
+            # Each Shape contains multiple Polygons. The following extracts these Polygons
+            # and determines the per Polygon weighting out of the total
+            for shape, weight, thickness in zip(shapes, oil_amount_weights, shape_oil_thickness):
+                shape_polys = []
+                shape_amounts = []
+                shape_poly_area_weights = []
+                shape_poly_thickness = []
+                total_poly_area = 0
+                for i, start_idx in enumerate(shape.parts):
+                    sl = None
+                    if i < len(shape.parts) - 1:
+                        sl = slice(start_idx, shape.parts[i + 1])
+                    else:
+                        sl = slice(start_idx, None)
+                    points = shape.points[sl]
+                    # kludge to get around version differences in pyproj
+                    Proj1 = Proj2 = pts = None
+                    if int(pyproj.__version__[0]) < 2:
+                        Proj1 = Proj(init='epsg:3857')
+                        Proj2 = Proj(init='epsg:4326')
+                        pts = map(lambda pt: transform(Proj1, Proj2, pt[0], pt[1]), points)
+                    else:
+                        transformer = pyproj.Transformer.from_crs("epsg:3857", "epsg:4326", always_xy=True)
+                        pts = map(lambda pt: transformer.transform(pt[0],pt[1]), points)
+                    poly = Polygon(pts)
+                    shape_polys.append(poly)
+                    shape_poly_thickness.append(thickness)
+
+                    total_poly_area += poly.area
+                areas = map(lambda s: s.area, shape_polys)
+                # percentage of area each poly contributes to total shape area
+                shape_poly_area_weights = map(lambda s: s / total_poly_area, areas)
+                # percentage of mass each poly contributes to total mass
+                oil_poly_weights = map(lambda w: w * weight, shape_poly_area_weights)
+                all_oil_polys.extend(shape_polys)
+                all_oil_weights.extend(oil_poly_weights)
+                all_oil_thicknesses.extend(shape_poly_thickness)
+
+            return release_time, all_oil_polys, all_oil_weights, all_oil_thicknesses
+
+    @classmethod
+    def from_shapefile(cls,
+                       filename=None,
+                       **kwargs):
+        release_time, polys, weights, thicknesses = cls.load_shapefile(filename)
+        return cls(
+            release_time=release_time,
+            end_release_time=release_time,
+            polygons=polys,
+            weights=weights,
+            thicknesses=thicknesses,
+            **kwargs
+        )
+
+    @property
+    def json_file(self):
+        #Placeholder value for the serialization system
+        return None
+
+
 class ContinuousSpatialRelease(SpatialRelease):
     """
     continuous release of elements from specified positions
+    NOTE 3/23/2021: THIS IS NOT FUNCTIONAL
     """
     def __init__(self,
                  release_time=None,
