@@ -32,6 +32,21 @@ def make_images_dir(images_dir=None):
         shutil.rmtree(images_dir)
     os.mkdir(images_dir)
 
+def make_rasters_dir(rasters_dir=None):
+    """
+    Create output directory for rasters.
+    If it already exists, delete all old output files
+
+    """
+    if rasters_dir is None:
+        rasters_dir = os.path.join(os.getcwd(), 'rasters')
+
+    print 'rasters_dir is:', rasters_dir
+
+    if os.path.isdir(rasters_dir):
+        print 'removing...', rasters_dir
+        shutil.rmtree(rasters_dir)
+    os.mkdir(rasters_dir)
 
 def remove_netcdf(netcdf_file):
     """

@@ -19,6 +19,7 @@ from gnome.persist import base_schema, extend_colander, validators
 from gnome.array_types import gat
 
 from gnome.utilities.surface_concentration import compute_surface_concentration
+from gnome.utilities.time_utils import asdatetime
 from gnome.gnomeobject import GnomeId
 
 
@@ -124,7 +125,7 @@ class Outputter(GnomeId):
             self._output_timestep = None
 
         if output_start_time:
-            self.output_start_time = output_start_time
+            self.output_start_time = asdatetime(output_start_time)
         else:
             self.output_start_time = None
 

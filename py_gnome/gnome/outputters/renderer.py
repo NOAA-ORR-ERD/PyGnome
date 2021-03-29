@@ -581,7 +581,6 @@ class Renderer(Outputter, MapCanvas):
 
         if not self._write_step:
             return None
-
         image_filename = os.path.join(self.output_dir,
                                       self.foreground_filename_format.format(step_num))
 

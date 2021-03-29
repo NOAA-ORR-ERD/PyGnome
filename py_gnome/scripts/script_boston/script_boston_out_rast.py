@@ -50,7 +50,8 @@ gs.set_verbose()
 base_dir = os.path.dirname(__file__)
 
 
-def make_model(images_dir=os.path.join(base_dir, 'images')):
+def make_model(images_dir=os.path.join(base_dir, 'images'),
+               rasters_dir=os.path.join(base_dir, 'rasters')):
 
     # create the maps:
 
@@ -60,16 +61,40 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                               refloat_halflife=1,  # hours
                               raster_size=2048 * 2048  # about 4 MB
                               )
-
     renderer = gs.Renderer(mapfile,
                            images_dir,
                            image_size=(800, 800),
                            projection_class=GeoProjection)
     
+#    ras_centers = [{'start_time': "2013-03-12T12:00",
+#                    'end_time': "2013-03-12T18:45",
+#                    'centers': []
+#                   },
+#                   {'start_time': "2013-03-12T19:00",
+#                    'end_time': "2013-03-12T22:00",
+#                    'centers': [(-70.900, 42.400),
+#                                (-70.925, 42.375)]
+#                   },
+#                   {'start_time': "2013-03-12T22:15",
+#                    'end_time': "2013-03-31T00:00",
+#                    'centers': [(-70.55, 42.354),
+#                                (-70.42, 42.000),
+#                                (-70.00, 42.100)]
+#                   }] 
+    ras_centers = [{'start_time': "2013-03-12T12:00",
+                    'end_time': "2013-03-31T18:45",
+                    'centers': []
+                   }] 
 
-    rasterer = gs.Rasterer(mapfile, 
+
+    
+    rasterer = gs.Rasterer(mapfile,
+                           rasters_dir,
+                           centers = ras_centers,
                            epsg_out = 'epsg:26986',
-                           output_timestep = gs.minutes(120),
+                           diagnostic = False,
+                           output_start_time = "2013-03-12T16:00",
+                           output_timestep = gs.hours(3),
                            output_zero_step = False)
 
     print 'initializing the model'
@@ -193,11 +218,13 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     print 'adding a spill'
 
     end_time = gs.asdatetime(start_time) + gs.hours(12)
-    spill = gs.point_line_release_spill(num_elements=100,
+    spill = gs.point_line_release_spill(num_elements=1000,
                                      start_position=(-70.911432,
                                                      42.369142, 0.0),
                                      release_time=start_time,
-                                     end_release_time=end_time)
+                                     end_release_time=end_time,
+                                     amount = 100,
+                                     units = 'bbl')
 
     model.spills += spill
 
@@ -206,6 +233,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
 if __name__ == "__main__":
     gs.make_images_dir()
+    gs.make_rasters_dir()
     print "setting up the model"
     model = make_model()
     print "running the model"
