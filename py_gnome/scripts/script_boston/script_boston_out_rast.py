@@ -14,10 +14,8 @@ This one uses:
 and netcdf and kml output
 """
 # temp imports from hodge
-import pdb
+#import pdb
 import os
-from matplotlib import pyplot as plt
-from shapely import geometry, errors
 #------
 
 import gnome.scripting as gs
@@ -66,37 +64,28 @@ def make_model(images_dir=os.path.join(base_dir, 'images'),
                            image_size=(800, 800),
                            projection_class=GeoProjection)
     
-#    ras_centers = [{'start_time': "2013-03-12T12:00",
-#                    'end_time': "2013-03-12T18:45",
-#                    'centers': []
-#                   },
-#                   {'start_time': "2013-03-12T19:00",
-#                    'end_time': "2013-03-12T22:00",
-#                    'centers': [(-70.900, 42.400),
-#                                (-70.925, 42.375)]
-#                   },
-#                   {'start_time': "2013-03-12T22:15",
-#                    'end_time': "2013-03-31T00:00",
-#                    'centers': [(-70.55, 42.354),
-#                                (-70.42, 42.000),
-#                                (-70.00, 42.100)]
-#                   }] 
+#-----------rasterer code------------------------------------------------------
     ras_centers = [{'start_time': "2013-03-12T12:00",
                     'end_time': "2013-03-31T18:45",
                     'centers': []
-                   }] 
-
+                   }]
+    # example for including multiple centers
+    #              'centers': [(-70.55, 42.354),
+    #                          (-70.42, 42.000),
+    #                          (-70.00, 42.100)]
 
     
     rasterer = gs.Rasterer(mapfile,
                            rasters_dir,
                            centers = ras_centers,
                            epsg_out = 'epsg:26986',
-                           diagnostic = False,
+                           diagnostic = True,
+                           diagnostic_show = True,
+                           diagnostic_extent = [[240000, 280000],[880000, 920000]],
                            output_start_time = "2013-03-12T16:00",
-                           output_timestep = gs.hours(3),
+                           output_timestep = gs.hours(10),
                            output_zero_step = False)
-
+#------------------------------------------------------------------------------
     print 'initializing the model'
     # start_time = datetime(2013, 3, 12, 10, 0)
     start_time = "2013-03-12T10:00"
@@ -111,8 +100,9 @@ def make_model(images_dir=os.path.join(base_dir, 'images'),
     print 'adding outputters'
     model.outputters += renderer
     
-    # inputs here that need to be passed to rasterer
+#-----------rasterer code------------------------------------------------------
     model.outputters += rasterer
+#------------------------------------------------------------------------------
     
     netcdf_file = os.path.join(base_dir, 'script_boston.nc')
     gs.remove_netcdf(netcdf_file)
@@ -217,6 +207,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images'),
 
     print 'adding a spill'
 
+    # increased number of elements and added amount, units values for calculating kg/m^2
     end_time = gs.asdatetime(start_time) + gs.hours(12)
     spill = gs.point_line_release_spill(num_elements=1000,
                                      start_position=(-70.911432,
@@ -239,5 +230,4 @@ if __name__ == "__main__":
     print "running the model"
 
 
-#    pdb.set_trace()
     model.full_run()

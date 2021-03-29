@@ -8,8 +8,8 @@ author: Matt Hodge (HWR-llc)
 """
 # temp imports from hodge
 import pdb
-from matplotlib import pyplot as plt
 # permanent imports from hodge
+from matplotlib import pyplot as plt
 from shapely import geometry, errors
 from scipy.spatial import Voronoi, voronoi_plot_2d, distance
 from scipy.interpolate import griddata
@@ -28,7 +28,6 @@ from colander import SchemaNode, String, drop
 from gnome.basic_types import oil_status
 
 from gnome.utilities.file_tools import haz_files
-from gnome.utilities.map_canvas import MapCanvas
 
 from gnome.utilities import projections
 from gnome.utilities.projections import ProjectionSchema
@@ -43,19 +42,13 @@ from . import Outputter, BaseOutputterSchema
 
 
 class RastererSchema(BaseOutputterSchema):
-    # not sure if bounding box needs defintion separate from LongLatBounds
-    viewport = base_schema.LongLatBounds(save=True, update=True)
-
     # following are only used when creating objects, not updating -
     # so missing=drop
     map_filename = FilenameSchema(save=True, update=True,
                                   isdatafile=True, test_equal=False,
                                   missing=drop,)
-
     projection = ProjectionSchema(save=True, update=True, missing=drop)
-    image_size = base_schema.ImageSize(save=True, update=False, missing=drop)
     output_dir = SchemaNode(String(), save=True, update=True, test_equal=False)
-    draw_ontop = SchemaNode(String(), save=True, update=True)
 
 
 class Rasterer(Outputter):
@@ -72,13 +65,13 @@ class Rasterer(Outputter):
                  map_filename=None,
                  output_dir='./',
                  projection=None,
-                 map_BB=None,
                  land_polygons=None,
-                 draw_map_bounds=False,
                  epsg_out=None,
                  epsg_in=None,
                  model_domain=None,
                  diagnostic=None,
+                 diagnostic_show=None,
+                 diagnostic_extent=None,
                  centers=None,
                  cache=None,
                  output_timestep=None,
@@ -95,15 +88,36 @@ class Rasterer(Outputter):
         :param str map_filename=None: name of file for basemap (BNA)
         :type map_filename: str
 
-        :param str output_dir='./': directory to output the images
+        :param str output_dir='./': directory to output the rasters
 
+        !!! preserve projection for more GNOME-like implementation of EPSG
         :param projection=None: projection instance to use: If None,
                                 set to projections.FlatEarthProjection()
         :type projection: a gnome.utilities.projection.Projection instance
+        !!! -------------------------------------------------------------------
+        
+        :param land_polygons=None: for use if land polygons passed to outputter
+                                  instead of loaded from map_filename
+        
+        :param str epsg_out=None: EPSG coordinate system for raster projection
+        
+        :param str epsg_in=None: EPSG coordinate system for GNOME EPSG: 4326        
 
-        :param map_BB=None: bounding box of map if None, it will use the
-                            bounding box of the mapfile.
+        :param model_domain=None: GNOME model domain as
+        :type geometry: a shapely.geometry.polygon.Polygon instance
+        
+        :param boolean diagnostic=None: T/F for whether to save Voronoi Polygons
+        
+        :param boolean diagnostic_show=None: T/F for whether to show Voronoi
+            polygons during processing
+                                             
+        :param diagnostic_extent=None: optional predefined window to evaluate
+            Voronoi polgyons
 
+        :param list centers=None: dict that defines start/end times for 
+            use of centers in subdividing splots prior
+            to generation of Voronoi polygons
+        
         Following args are passed to base class Outputter's init:
 
         :param cache: sets the cache object from which to read prop. The model
@@ -123,13 +137,19 @@ class Rasterer(Outputter):
             final step is written regardless of output_timestep
         :type output_last_step: boolean
 
+        :param datetime output_start_time: time to begin generating rasters
+            initialized as string, converted to datetim with 
+            gnome.utilities.timeutils asdatetime
+
         Remaining kwargs are passed onto baseclass's __init__ with a direct
         call: Outputter.__init__(..)
 
         """
-        projection = (projections.FlatEarthProjection()
-                      if projection is None
-                      else projection)
+        #!!! preserve for more GNOME-like implementation of EPSG
+#        projection = (projections.FlatEarthProjection()
+#                      if projection is None
+#                      else projection)
+        #!!!------------------------------------------------------------------
 
         # set up boundaries
         self.map_filename = map_filename
@@ -147,7 +167,18 @@ class Rasterer(Outputter):
         self.epsg_out = Proj(init=epsg_out)
         self.epsg_in = Proj(init='epsg:4326')
         self.centers = centers
-        self.diagnostic = diagnostic
+        if diagnostic is not None:
+            self.diagnostic = diagnostic
+            if diagnostic_extent is not None:
+                self.diagnostic_extent = np.array(diagnostic_extent)
+            else:
+                self.diagnostic_extent = None
+        else:
+            self.diagnostic = False
+        if diagnostic_show is not None:
+            self.diagnostic_show = diagnostic_show
+        else:
+            self.diagnostic_show = False
         for center in self.centers:
             center['start_time'] = asdatetime(center['start_time'])
             center['end_time'] = asdatetime(center['end_time'])
@@ -172,6 +203,8 @@ class Rasterer(Outputter):
         Does not take any other input arguments; however, to keep the interface
         the same for all outputters, define ``**kwargs`` and pass into the
         base class
+        
+        generates model_domain
 
         """
         super(Rasterer, self).prepare_for_model_run(*args, **kwargs)
@@ -181,10 +214,28 @@ class Rasterer(Outputter):
 
 
     def post_model_run(self):
+        """
+        any post-processing of rasters after run is complete.
+        
+        Nothing included in method at this time.
+
+        """
         print('rasterer post model run actions')
     
-        # support functions for processing
-    def diagnostic_plot(self, vor_polys, **kwargs):       
+
+    def diagnostic_plot(self, vor_polys, step_num, **kwargs):
+        """
+        generates plot of Voronoi polygions for review.
+        
+        vor_polys - Voronoi polygons returned from Voronoi (ScipPy.spatial)
+        step_num - GNOME model run step number for saving plot to file
+
+        kwargs:
+            point - to plot an individual point (i.e., highlight) by id from the
+                Voronoi diagram, passed as integer/id
+            extent - to specify plot window extents, passed as numpy array
+                [[x_min, x_max], [y_min, y_max]]
+        """
         voronoi_plot_2d(vor_polys, show_points=True, show_vertices=False, line_colors='b')
         # model domain outer boundary
         m_d_o_x, m_d_o_y = self.model_domain.exterior.xy
@@ -216,33 +267,30 @@ class Rasterer(Outputter):
             # extent must be NumPy array [[minX, maxX][minY, maxY]]
             extents = kwargs['extent']
             plt.xlim(extents[0][0], extents[0,1])
-            plt.ylim(extents[1][0], extents[1][1])
-            
-        if 'save' in kwargs.keys():
-            # save must be a path to a directory where the file will be saved
-            save_path = kwargs['save']
-            # check for existing diagnostics
-            diag_files_cnt = len([f for f in os.listdir(save_path) if 'diag_' in f])
-            save_name = '/diag_' + str(diag_files_cnt).zfill(3) + '.png'
-            plt.savefig(save_path + save_name)       
-        plt.show()
-        # example code snippets for kwargs
-        # save
-        # diagnostic_plot(vor_polys, self.model_domain, save=r'D:\Hodge.WaterResources\Development\oil\gnomeVerter\files\input\adcirc\gnome\output')
-        # point
-        # diagnostic_plot(vor_polys, self.model_domain, point=40)
-        # extent
-        # extent_window = np.array([[233100, 233300],[900300, 900400]])
-        # diagnostic_plot(vor_polys, self.model_domain, extent=extent_window) 
+            plt.ylim(extents[1][0], extents[1][1])            
+        # save must be a path to a directory where the file will be saved
+        png_name = 'vor_' + '{:0>4d}'.format(step_num) + '.png'
+        plt.savefig(os.path.join(self.output_dir, png_name))
+        if self.diagnostic_show == True:
+            plt.show()
     
     def get_unit_vector(self, pt_1, pt_2):
+        """
+        Return unit vector along line defined by 2 points
+        """
         # each point to be xy pair as list or numpy array
         x_del = pt_2[0] - pt_1[0]
         y_del = pt_2[1] - pt_1[1]
         mag = (x_del**2 + y_del**2)**0.5
         unit_vector = np.asarray([x_del/mag, y_del/mag])
         return unit_vector
+    
     def get_new_external_xy(self, point, origin_vert, act_region_index, vor_polys, first):
+        """
+        Addresses open polygons returned by Voronoi.
+        Determines open side of polygon and creates new closed polygon.
+        See wiki page for conceptual explanation
+        """
         # need perpendicular unit vector that goes between 2 splot points
         # loop to find next adjacent region
         for region in range(0,len(vor_polys.regions)):
@@ -272,7 +320,6 @@ class Rasterer(Outputter):
             region_xys = [vor_polys.vertices[ind] for ind in region_close_list[region]]
             tmp_poly = geometry.Polygon(region_xys)
             if not test_line.touches(tmp_poly):
-    #            print 'flipping perp_vector'
                 perp_vector = perp_vector * -1
                 new_xy_for_polyline = np.asarray(origin_xy) + perp_vector * dist_model_bound * 2
                 new_xy_for_pl_point = geometry.Point(new_xy_for_polyline)
@@ -282,11 +329,25 @@ class Rasterer(Outputter):
             new_xy_for_polyline = np.asarray(origin_xy) + perp_vector * dist_model_bound * 2
             new_xy_for_pl_point = geometry.Point(new_xy_for_polyline)
         return new_xy_for_polyline
+    
     def get_thick(self, splots_xyms, **kwargs):
+        """
+        Determine thickness of oil in units of kg/m^2 based on mass of splots
+        from GNOME and area of related Voronoi polygon.
+        
+        Parameter is numpy structured array splots_xyms where structure is:
+            'x' (x-coordinate), 'y' (y-coordinate), 'm' (mass), 's' (particle state) 
+
+        Returns numpy structured array of splots where structure is:
+            'x' (x-coordinate), 'y' (y-coordinate), 'kg_m2' (thickness)
+        And optional return of Voronoi polygons if self.diagnostic is True
+        """
         if len(kwargs.keys()) == 0:
             diagnostic = False
         elif 'diagnostic' in kwargs.keys():
             diagnostic = kwargs['diagnostic']
+            if diagnostic == True:
+                step_num = kwargs['step_num']
         else:
             diagnostic = False
         splots_cnt = len(splots_xyms)
@@ -294,9 +355,11 @@ class Rasterer(Outputter):
         splots_xy_arr = np.array(splots_xy.tolist()[0])
 
         vor_polys = Voronoi(splots_xy_arr, furthest_site=False)
-        extent_window = np.array([[240000, 280000],[880000, 920000]])
-        if self.diagnostic == True:
-            self.diagnostic_plot(vor_polys, extent=extent_window)        
+        if diagnostic == True:
+            if self.diagnostic_extent is not None:
+                self.diagnostic_plot(vor_polys, step_num, extent=self.diagnostic_extent)
+            else:
+                self.diagnostic_plot(vor_polys, step_num)
         splots_thick = np.zeros((splots_cnt), dtype=[('x','float64'),('y','float64'),('kg_m2','float64')]) 
         # note: polygon order in vor_polys is the same order as they are entered in splots_xy_arr, splots_xyms
         # get max distance to point locations
@@ -390,8 +453,11 @@ class Rasterer(Outputter):
         else:
             return splots_thick
 
-
     def reproj_points(self, xs, ys):
+        """
+        Converts list of lon, list of lat to epgs_out x,y pairs, 
+        required for Voronoi
+        """
         sp_x, sp_y = transform(self.epsg_in, self.epsg_out, 
                                xs,
                                ys)
@@ -399,7 +465,12 @@ class Rasterer(Outputter):
         for i in range(0, len(sp_x)):
             ret_arr.append((sp_x[i], sp_y[i]))
         return ret_arr
+
     def get_spillable(self):
+        """
+        Returns spillable area definition from self.land_polygons
+        throws error if spillable area not in self.land_polygons
+        """
         sa_bool = False
         for i in range(0, len(self.land_polygons)):
             if 'SpillableArea' in self.land_polygons[i].metadata:
@@ -418,7 +489,14 @@ class Rasterer(Outputter):
             return spillable, land_only             
             
     def get_model_domain_geo_poly(self):
-        # find spillable area
+        """
+        Convert polygons in self.land_polygons to a closed model domain
+        (i.e., area of open water) polygon. 
+        Begins with spillable area, and trims spillable area based on other land
+        boundaries included in self.land_polygons.
+        
+        Returns shapely.geometry.polygon.Polygon instance
+        """
         spill_poly, land_polys = self.get_spillable()
         sap_xy = self.reproj_points(spill_poly.points[:, 0], spill_poly.points[:, 1])
         sap_geo_poly = geometry.Polygon(sap_xy)
@@ -444,22 +522,44 @@ class Rasterer(Outputter):
                 tmp_mod_dom = tmp_mod_dom[big_ind]
         model_domain = tmp_mod_dom
         return model_domain
+    
     def get_xyms(self, timestep):
-            splots_cnt = len(timestep._data_arrays['id'])
-            xyms = np.zeros((splots_cnt),
-                            dtype=[('x', 'float64'), ('y','float64'), 
-                                   ('mass','float64'), ('status_code', 'int32')])
-            sc_x, sc_y = transform(self.epsg_in, self.epsg_out,
-                                   timestep._data_arrays['positions'][:,0],
-                                   timestep._data_arrays['positions'][:,1])
-            xyms['x'] = sc_x
-            xyms['y'] = sc_y
-            xyms['mass'] = timestep._data_arrays['mass']
-            xyms['status_code'] = timestep._data_arrays['status_codes']
-            return xyms
+        """
+        Extracts lon, lat, mass and state of splots from GNOME model result
+        timestep.
+        Converts (lon, lat) for given self.epsg_out
+        
+        Returns numpy structured array with structure:
+            'x' (x-coordinate), 'y' (y-coordinate), 'm' (mass), 's' (particle state) 
+        """
+        splots_cnt = len(timestep._data_arrays['id'])
+        xyms = np.zeros((splots_cnt),
+                        dtype=[('x', 'float64'), ('y','float64'), 
+                               ('mass','float64'), ('status_code', 'int32')])
+        sc_x, sc_y = transform(self.epsg_in, self.epsg_out,
+                               timestep._data_arrays['positions'][:,0],
+                               timestep._data_arrays['positions'][:,1])
+        xyms['x'] = sc_x
+        xyms['y'] = sc_y
+        xyms['mass'] = timestep._data_arrays['mass']
+        xyms['status_code'] = timestep._data_arrays['status_codes']
+        return xyms
 
 
     def get_centers(self, ts_datetime):
+        """
+        compares timestamp for current GNOME time_step to parameter for
+        rasterer to determine whether a center or multiple centers have been
+        specified for rasterer.
+        
+        If no center is provided, only one Voronoi diagram is developed.
+        If multiple centers are provided, ...
+        timestep.
+        Converts (lon, lat) for given self.epsg_out
+        
+        Returns numpy structured array with structure:
+            'x' (x-coordinate), 'y' (y-coordinate), 'm' (mass), 's' (particle state) 
+        """        
         ret_centers = None
         for timespan in self.centers:
             if ((ts_datetime >= timespan['start_time']) and (ts_datetime <= timespan['end_time'])):
@@ -579,7 +679,7 @@ class Rasterer(Outputter):
             ts_centers_cnt = len(ts_centers)
             if ts_centers_cnt < 2:
                 if self.diagnostic == True:
-                    xyth, grp_voronoi = self.get_thick(xyms, diagnostic=True)
+                    xyth, grp_voronoi = self.get_thick(xyms, diagnostic=True, step_num=step_num)
                 else:
                     xyth = self.get_thick(xyms, diagnostic=False)
             else:
@@ -592,7 +692,7 @@ class Rasterer(Outputter):
                 xyms_grpd = self.subspill(xyms, cur_centers_xy)
                 for group in range(0,len(xyms_grpd)):
                     if self.diagnostic == True:
-                        xyth_grpd, grp_voronoi = self.get_thick(xyms_grpd[group], diagnostic=True)
+                        xyth_grpd, grp_voronoi = self.get_thick(xyms_grpd[group], diagnostic=True, step_num=step_num)
                     else:
                         xyth_grpd = self.get_thick(xyms_grpd[group], diagnostic=False)
                     if group == 0:
@@ -605,10 +705,3 @@ class Rasterer(Outputter):
             file_name = 'ras_' + '{:0>4d}'.format(step_num) + '.asc'
             self.create_raster_ascii(file_name, xyth)    
         print('rasterer output files')
-
-#    def get_splot_array(self, scp):
-        
-
-    def test_hi(self):
-        print('hey, I added an outputter --> rasterer')
-
