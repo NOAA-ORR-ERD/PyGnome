@@ -311,8 +311,12 @@ class Outputter(GnomeId):
             else:
                 self._write_step = False
 
+
         if (islast_step and self.output_last_step):
             self._write_step = True
+        elif islast_step:
+            self._write_step = False
+
 
         if (self._write_step and self.cache is None):
             raise ValueError('cache object is not defined. It is required'

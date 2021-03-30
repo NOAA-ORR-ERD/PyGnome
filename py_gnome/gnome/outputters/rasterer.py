@@ -183,6 +183,7 @@ class Rasterer(Outputter):
             center['start_time'] = asdatetime(center['start_time'])
             center['end_time'] = asdatetime(center['end_time'])
             center['centers'] = np.array(center['centers'], dtype=[('lon', 'float64'), ('lat', 'float64')])
+#        self.output_last_step = output_last_step
 
         Outputter.__init__(self,
                            cache,
@@ -209,7 +210,6 @@ class Rasterer(Outputter):
         """
         super(Rasterer, self).prepare_for_model_run(*args, **kwargs)
        
-        print('rasterer model run prep')
         self.model_domain = self.get_model_domain_geo_poly()
 
 
@@ -220,7 +220,7 @@ class Rasterer(Outputter):
         Nothing included in method at this time.
 
         """
-        print('rasterer post model run actions')
+        self.logger.info('rasterer post model run actions')
     
 
     def diagnostic_plot(self, vor_polys, step_num, **kwargs):
@@ -337,7 +337,7 @@ class Rasterer(Outputter):
         
         Parameter is numpy structured array splots_xyms where structure is:
             'x' (x-coordinate), 'y' (y-coordinate), 'm' (mass), 's' (particle state) 
-
+        
         Returns numpy structured array of splots where structure is:
             'x' (x-coordinate), 'y' (y-coordinate), 'kg_m2' (thickness)
         And optional return of Voronoi polygons if self.diagnostic is True
@@ -401,7 +401,8 @@ class Rasterer(Outputter):
                             poly_line_xys.append(new_xy_for_polyline)
                         else:
                             # this is a catch for an unconsidered polygon definition
-                            print 'case not considered, may need to debug'
+                            self.logger.error('encountered Voronoi polygon definition not addressed in code')
+                            raise ValueError(point)
                             pdb.set_trace()
                     elif self.model_domain.contains(first_point):
                         origin_vert = region_verts[first_vert_index]
@@ -426,7 +427,7 @@ class Rasterer(Outputter):
                     # this is a catch for a faulty voronoi diagram
                     pdb.set_trace()                              
                 if poly.is_empty:
-                    print 'entire polygon outside'
+                    self.logger.warning('entire polygon outside model domain')
                     splots_thick[point]['kg_m2'] = splots_xyms[point]['mass']
                 else:
                     new_poly_cent_x = poly.centroid.xy[0][0]
@@ -553,12 +554,10 @@ class Rasterer(Outputter):
         specified for rasterer.
         
         If no center is provided, only one Voronoi diagram is developed.
-        If multiple centers are provided, ...
-        timestep.
-        Converts (lon, lat) for given self.epsg_out
+        If multiple centers are provided, multiple Voronoi diagrams developed
+        based on sub-divided sets of splots.
         
-        Returns numpy structured array with structure:
-            'x' (x-coordinate), 'y' (y-coordinate), 'm' (mass), 's' (particle state) 
+        Returns numpy array of centers in lon, lat
         """        
         ret_centers = None
         for timespan in self.centers:
@@ -568,10 +567,16 @@ class Rasterer(Outputter):
         if isinstance(ret_centers, np.ndarray):
             return ret_centers
         else:
-            print('timestep outside of range of centers')
+            self.logger.warning('timestep outside of date range for centers')
             return np.array([])
 
     def subspill(self, splots_xyms, centers_xy):
+        """
+        divides splots into sub groups based on proximity to multiple (i.e., 
+        more than one center).
+        
+        Returns list of numpy structured arrays of xymys (see get_xmys)
+        """        
         splots_xy = splots_xyms[['x','y']].reshape(-1, splots_xyms.size)
         splots_xy_arr = np.array(splots_xy.tolist()[0])
         centers_xy_arr = np.array(centers_xy.tolist())
@@ -587,11 +592,15 @@ class Rasterer(Outputter):
             act_group = center_groups[splot]
             splots_xyms_grpd[act_group][splots_xyms_grpd_index[act_group]] = splots_xyms[splot]
             splots_xyms_grpd_index[act_group] += 1
-#            print 'act_group: ' + str(act_group) + ' - ' + str(splots_xyms_grpd_index) 
         return splots_xyms_grpd
     
     def create_raster_ascii(self, file_name, splots_xyth):
-        print 'creating raster with ascii'
+        """
+        interpolates splot locations and thickness to two-dimensional grid 
+        using scipy.interpolate.griddata.
+        
+        After interpolation, writes to ascii file format with save_2_asc
+        """         
         buff_perc = 0.05
         int_perc = 0.01
         min_x = np.min(splots_xyth['x'])
@@ -645,31 +654,21 @@ class Rasterer(Outputter):
 
     def write_output(self, step_num, islast_step=False):
         """
-        generate ascii raster file, according to current parameters.
+        generate ascii raster file, according to given parameters (e.g., spill
+        centers).
 
         :param step_num: the model step number you want rendered.
         :type step_num: int
 
-        :param islast_step: default is False. Flag that indicates that step_num
-            is last step. If 'output_last_step' is True then this is written
-            out
-        :type islast_step: bool
-
-        :returns: A dict of info about this step number if this step
-            is to be output, None otherwise.
-            'step_num': step_num
-            'image_filename': filename
-            'time_stamp': time_stamp # as ISO string
-
         use super to call base class write_output method
 
-        If this is last step, then prop is written; otherwise
-        prepare_for_model_step determines whether to write the output for
-        this step based on output_timestep
+        Returns nothing.
         """
         super(Rasterer, self).write_output(step_num, islast_step)
         if not self._write_step:
             return None # if _write_step False, do not write
+        self.logger.info('creating ascii raster at step: ' + str(step_num))
+
         # pull relevant results for processing
         scp = self.cache.load_timestep(step_num).items()
         if len(scp)  < 3: # place holder to consider forecasting
@@ -683,7 +682,7 @@ class Rasterer(Outputter):
                 else:
                     xyth = self.get_thick(xyms, diagnostic=False)
             else:
-                print('developing multiple spill centers')
+                self.logger.info('raster based on multiple spill centers')
                 cur_centers_xy = np.zeros((ts_centers_cnt),dtype=[('x','float64'), ('y','float64')])
                 for center in range(0, ts_centers_cnt):
                     cur_centers_xy[center] = transform(self.epsg_in, self.epsg_out, 
@@ -704,4 +703,3 @@ class Rasterer(Outputter):
                         all_voronoi.append(grp_voronoi)
             file_name = 'ras_' + '{:0>4d}'.format(step_num) + '.asc'
             self.create_raster_ascii(file_name, xyth)    
-        print('rasterer output files')

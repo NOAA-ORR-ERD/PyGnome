@@ -5,7 +5,7 @@ py_gnome/tests/*
 23.0
 sandbox
 py_gnome/scripts/script_boston/script_boston.py
-py_gnome/scripts/script_boston/raster
+py_gnome/scripts/script_boston/rasters
 
 # ignore following files
 node_modules

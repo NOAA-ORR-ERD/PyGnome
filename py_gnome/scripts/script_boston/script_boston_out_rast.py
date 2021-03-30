@@ -75,16 +75,17 @@ def make_model(images_dir=os.path.join(base_dir, 'images'),
     #                          (-70.00, 42.100)]
 
     
-    rasterer = gs.Rasterer(mapfile,
-                           rasters_dir,
-                           centers = ras_centers,
-                           epsg_out = 'epsg:26986',
-                           diagnostic = True,
-                           diagnostic_show = True,
-                           diagnostic_extent = [[240000, 280000],[880000, 920000]],
-                           output_start_time = "2013-03-12T16:00",
-                           output_timestep = gs.hours(10),
-                           output_zero_step = False)
+rasterer = gs.Rasterer(mapfile,
+                       rasters_dir,
+                       centers = ras_centers,
+                       epsg_out = 'epsg:26986',
+                       diagnostic = False,
+                       diagnostic_show = False,
+                       diagnostic_extent = [[240000, 280000],[880000, 920000]],
+                       output_start_time = "2013-03-12T16:00",
+                       output_timestep = gs.hours(9),
+                       output_zero_step = False,
+                       output_last_step = False)
 #------------------------------------------------------------------------------
     print 'initializing the model'
     # start_time = datetime(2013, 3, 12, 10, 0)
