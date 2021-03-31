@@ -199,7 +199,7 @@ class GnomeOil(Oil, Substance):
     _schema = GnomeOilSchema
     _req_refs = ['water']
 
-    def __init__(self, name=None, water=None, **kwargs):
+    def __init__(self, name=None, filename=None, water=None, **kwargs):
         oil_info = name
         if name in _sample_oils:
             oil_info = _sample_oils[name]
@@ -208,14 +208,22 @@ class GnomeOil(Oil, Substance):
             if kwargs.get('component_density', False):
                 oil_info = kwargs
             else:
-                from oil_library import get_oil_props
                 if kwargs.get('adios_oil_id', False):
+                    from oil_library import get_oil_props
                     # init the oilprops from dictionary, old form
                     oil_obj = get_oil_props(kwargs)
+                    oil_info = oil_obj.get_gnome_oil()
                 else:
                     # use name to get oil from oil library
-                    oil_obj = get_oil_props(name)
-                oil_info = oil_obj.get_gnome_oil()
+                    #from oil_library import get_oil_props
+                    #oil_obj = get_oil_props(name)
+                    import adios_db
+                    from adios_db.models.oil.oil import Oil as Oil_db
+                    from adios_db.computation.gnome_oil import make_gnome_oil
+                    oil_obj = Oil_db.from_file(filename[0])
+                    oil_info = make_gnome_oil(oil_obj)
+
+                #oil_info = oil_obj.get_gnome_oil()
 
             kwargs['name'] = name #this is important; it passes name up to GnomeId to be handled there!
         else:
