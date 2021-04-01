@@ -493,7 +493,6 @@ class PointLineRelease(Release):
 class StartPositions(SequenceSchema):
     start_position = WorldPoint()
 
-
 class SpatialReleaseSchema(BaseReleaseSchema):
     '''
     Contains properties required by UpdateWindMover and CreateWindMover
@@ -509,10 +508,6 @@ class SpatialReleaseSchema(BaseReleaseSchema):
         LocalDateTime(), missing=drop,
         validator=convertible_to_seconds,
         save=True, update=True
-    )
-
-    polygon_info = SchemaNode(
-        SequenceSchema
     )
 
     random_distribute = SchemaNode(Boolean())
@@ -819,7 +814,7 @@ class SpatialRelease(Release):
         if self.random_distribute or to_rel < num_locs:
             data['positions'][sl] = self._combined_positions[np.random.randint(0,len(self._combined_positions), to_rel)]
         else:
-            qt = num_locs / to_rel #number of times to tile self.start_positions
+            qt = num_locs // to_rel #number of times to tile self.start_positions
             rem = num_locs % to_rel #remaining LES to distribute randomly
             qt_pos = np.tile(self.start_positions, (qt, 1))
             rem_pos = self._combined_positions[np.random.randint(0,len(self._combined_positions), rem)]
@@ -891,7 +886,15 @@ def GridRelease(release_time, bounds, resolution):
 
 
 class NESDISReleaseSchema(SpatialReleaseSchema):
-    pass
+    thickness = SequenceSchema(
+        SchemaNode(Float())
+    )
+    area = SequenceSchema(
+        SchemaNode(Float())
+    )
+    oil_types = SequenceSchema(
+        SchemaNode(String())
+    )
 
 
 class NESDISRelease(SpatialRelease):
@@ -904,6 +907,8 @@ class NESDISRelease(SpatialRelease):
     def __init__(self,
                  filename=None,
                  thicknesses=None,
+                 area=None,
+                 oil_types=None,
                  json_file=None,
                  **kwargs):
         """
@@ -918,6 +923,8 @@ class NESDISRelease(SpatialRelease):
         generated based on area proportion.
 
         :param thicknesses: thicknesses of oil in each polygon provided
+
+        :param oil_types: string name of oil type in polygon ('thick', 'thin', etc)
 
         :param start_positions: Nx3 array of release coordinates (lon, lat, z)
         :type start_positions: np.ndarray
