@@ -832,10 +832,8 @@ class SpatialRelease(Release):
             #stick the geojson in the file for now
             fc = geojson.FeatureCollection(self.polygons)
             fc.weights = self.weights
-            fc.thicknesses = self.thicknesses
             dct['json_file'] = geojson.dumps(fc)
         return dct
-
 
     def get_polygons(self):
         '''
@@ -886,10 +884,10 @@ def GridRelease(release_time, bounds, resolution):
 
 
 class NESDISReleaseSchema(SpatialReleaseSchema):
-    thickness = SequenceSchema(
+    thicknesses = SequenceSchema(
         SchemaNode(Float())
     )
-    area = SequenceSchema(
+    record_areas = SequenceSchema(
         SchemaNode(Float())
     )
     oil_types = SequenceSchema(
@@ -902,12 +900,12 @@ class NESDISRelease(SpatialRelease):
     A SpatialRelease subclass that has functions and data specifically for
     representing NESDIS shapefiles within GNOME
     '''
-    _schema = NESDISReleaseSchema()
+    _schema = NESDISReleaseSchema
 
     def __init__(self,
                  filename=None,
                  thicknesses=None,
-                 area=None,
+                 record_areas=None,
                  oil_types=None,
                  json_file=None,
                  **kwargs):
@@ -943,18 +941,22 @@ class NESDISRelease(SpatialRelease):
         if filename is not None and json_file is not None:
             raise ValueError('May only provide filename or json_file to SpatialRelease')
         elif filename is not None:
-            release_time, polygons, weights, thicknesses = self.__class__.load_shapefile(filename)
+            release_time, polygons, weights, thicknesses, record_areas, oil_types = self.__class__.load_shapefile(filename)
             kwargs['release_time'] = release_time
             if release_time is not None: #because nesdis files can contain a release time
                 self.release_time = release_time
                 self.end_release_time = release_time #but not a release duration??
         elif json_file is not None:
-            polygons, weights, thicknesses = self.__class__.load_geojson(json_file)
+            #load_geojson needs to get fixed...
+            polygons, weights, thicknesses, record_areas, oil_types = self.__class__.load_geojson(json_file)
         if filename or json_file:
             kwargs['polygons'] = polygons
             kwargs['weights'] = weights
         
+        self.filename = filename
         self.thicknesses = thicknesses
+        self.record_areas = record_areas
+        self.oil_types = oil_types
         super(NESDISRelease, self).__init__(
             **kwargs
         )
@@ -969,10 +971,12 @@ class NESDISRelease(SpatialRelease):
         fc = geojson.FeatureCollection(geojson.loads(filename))
         weights = fc.weights
         thicknesses = fc.thicknesses
+        record_areas = fc.record_areas
+        oil_types = fc.oil_types
         polygons = None
         if fc.features is not None:
             polygons = [Polygon(f.coordinates[0]) for f in fc.features]
-        return polygons, weights, thicknesses
+        return polygons, weights, thicknesses, record_areas, oil_types
 
     @staticmethod
     def load_shapefile(filename):
@@ -1020,11 +1024,14 @@ class NESDISRelease(SpatialRelease):
             all_oil_weights = []
             all_oil_thicknesses = []
             shape_oil_thickness = []
+            record_areas = []
+            oil_thicknesses = []
+            oil_types = []
 
             oil_amounts = []
             for i, shape in enumerate(shapes):
                 oil_type = sf.records()[i][type_id]
-                oil_area = sf.records()[i][area_id] * 1000**2  # area in m2
+                record_area = sf.records()[i][area_id] * 1000**2  # area in m2
                 if oil_type.lower() == "thin":
                     thickness = 5e-6
                 elif oil_type.lower() == "thick":
@@ -1032,8 +1039,11 @@ class NESDISRelease(SpatialRelease):
                 else:
                     raise ValueError('Unknown oil classification: "{}". Should be one of:'
                                      '"Thick" or "Thin"'.format(oil_type))
-                oil_amounts.append(thickness * oil_area)  # oil amount in cubic meters
+                oil_amounts.append(thickness * record_area)  # oil amount in cubic meters
                 shape_oil_thickness.append(thickness)
+                record_areas.append(record_area)
+                oil_thicknesses.append(thickness)
+                oil_types.append(oil_type.lower())
 
             # percentage of mass in each Shape.
             # Later this is further broken down per Polygon
@@ -1077,7 +1087,7 @@ class NESDISRelease(SpatialRelease):
                 all_oil_weights.extend(oil_poly_weights)
                 all_oil_thicknesses.extend(shape_poly_thickness)
 
-            return release_time, all_oil_polys, all_oil_weights, all_oil_thicknesses
+            return release_time, all_oil_polys, all_oil_weights, oil_thicknesses, record_areas, oil_types
 
     @classmethod
     def from_shapefile(cls,
@@ -1092,6 +1102,18 @@ class NESDISRelease(SpatialRelease):
             thicknesses=thicknesses,
             **kwargs
         )
+
+    def to_dict(self, json_=None):
+        dct = super(SpatialRelease, self).to_dict(json_=json_)
+        if json_ == 'save':
+            #stick the geojson in the file for now
+            fc = geojson.FeatureCollection(self.polygons)
+            fc.weights = self.weights
+            fc.thicknesses = self.thicknesses
+            fc.record_areas = self.record_areas
+            fc.oil_types = self.oil_types
+            dct['json_file'] = geojson.dumps(fc)
+        return dct
 
     @property
     def json_file(self):
