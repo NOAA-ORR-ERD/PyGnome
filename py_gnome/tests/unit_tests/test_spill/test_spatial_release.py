@@ -29,12 +29,16 @@ def test_load_shapefile():
     (release_time,
      all_oil_polys,
      all_oil_weights,
-     all_oil_thicknesses) = NESDISRelease.load_shapefile(sample_shapefile)
+     all_oil_thicknesses,
+     all_oil_areas,
+     all_oil_types) = NESDISRelease.load_shapefile(sample_shapefile)
 
     assert release_time == datetime.datetime.strptime('5/14/2020 15:20', '%m/%d/%Y %H:%M')
     assert len(all_oil_polys) == 8
     assert len(all_oil_weights) == 8
-    assert len(all_oil_thicknesses) == 8
+    assert len(all_oil_thicknesses) == 2
+    assert len(all_oil_areas) == 2
+    assert len(all_oil_types) == 2
 
     for poly in all_oil_polys:
         check_valid_polygon(poly)
@@ -47,8 +51,7 @@ def test_load_shapefile():
                                          0.001098505440460224, 0.8935219224748153
                                          ], rtol=1e-12)
 
-    assert np.allclose(all_oil_thicknesses, [5e-06, 5e-06, 5e-06, 5e-06,
-                                             5e-06, 5e-06, 5e-06, 0.0002
+    assert np.allclose(all_oil_thicknesses, [5e-06, 0.0002
                                              ], rtol=1e-12)
 
 def test_construct_from_shapefile():
@@ -57,7 +60,7 @@ def test_construct_from_shapefile():
     assert rel.end_release_time == datetime.datetime.strptime('5/14/2020 15:20', '%m/%d/%Y %H:%M')
     assert len(rel.polygons) == 8
     assert len(rel.weights) == 8
-    assert len(rel.thicknesses) == 8
+    assert len(rel.thicknesses) == 2
 
     for poly in rel.polygons:
         check_valid_polygon(poly)
