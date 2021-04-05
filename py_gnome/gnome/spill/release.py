@@ -494,10 +494,6 @@ class StartPositions(SequenceSchema):
     start_position = WorldPoint()
 
 class SpatialReleaseSchema(BaseReleaseSchema):
-    '''
-    Contains properties required by UpdateWindMover and CreateWindMover
-    TODO: also need a way to persist list of element_types
-    '''
     start_position = WorldPoint(
         save=False, update=False, test_equal=False
     )
@@ -559,24 +555,14 @@ class SpatialRelease(Release):
         :param num_elements: If passed as None, number of elements will be equivalent
         to number of start positions. For backward compatibility.
         """
-        # We really should clean this up!
+        # Pop these because these are derived in this class but settable by parent
+        # should find better solution
         kwargs.pop('start_position', None)
         kwargs.pop('end_position', None)
         super(SpatialRelease, self).__init__(
             **kwargs
         )
-        self.filename = None
-        if filename is not None and json_file is not None:
-            raise ValueError('May only provide filename or json_file to SpatialRelease')
-        elif filename is not None:
-            release_time, polygons, weights, thicknesses = self.__class__.load_shapefile(filename)
-            self.filename = filename
-            if release_time is not None: #because nesdis files can contain a release time
-                self.release_time = release_time
-                self.end_release_time = release_time #but not a release duration??
-        elif json_file is not None:
-            polygons, weights, thicknesses = self.__class__.load_geojson(json_file)
-
+        self.filename = filename #subclasses should handle any special loading in their init
         self.polygons = polygons
         if weights is None and self.polygons is not None:
             weights = self.gen_default_weights(self.polygons)
@@ -942,28 +928,24 @@ class NESDISRelease(SpatialRelease):
         # We really should clean this up!
         kwargs.pop('start_position', None)
         kwargs.pop('end_position', None)
-        self.filename = None
+        polygons = weights = None
         if filename is not None and json_file is not None:
             raise ValueError('May only provide filename or json_file to SpatialRelease')
         elif filename is not None:
-            self.filename = filename
             release_time, polygons, weights, thicknesses, record_areas, oil_types = self.__class__.load_shapefile(filename)
             kwargs['release_time'] = release_time
-            if release_time is not None: #because nesdis files can contain a release time
-                self.release_time = release_time
-                self.end_release_time = release_time #but not a release duration??
+            kwargs['end_release_time'] = release_time
         elif json_file is not None:
             #load_geojson needs to get fixed...
             polygons, weights, thicknesses, record_areas, oil_types = self.__class__.load_geojson(json_file)
-        if filename or json_file:
-            kwargs['polygons'] = polygons
-            kwargs['weights'] = weights
-        
-        self.filename = filename
+
         self.thicknesses = thicknesses
         self.record_areas = record_areas
         self.oil_types = oil_types
         super(NESDISRelease, self).__init__(
+            filename=filename,
+            polygons=polygons,
+            weights=weights,
             **kwargs
         )
 
