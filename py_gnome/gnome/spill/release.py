@@ -946,6 +946,7 @@ class NESDISRelease(SpatialRelease):
         if filename is not None and json_file is not None:
             raise ValueError('May only provide filename or json_file to SpatialRelease')
         elif filename is not None:
+            self.filename = filename
             release_time, polygons, weights, thicknesses, record_areas, oil_types = self.__class__.load_shapefile(filename)
             kwargs['release_time'] = release_time
             if release_time is not None: #because nesdis files can contain a release time
