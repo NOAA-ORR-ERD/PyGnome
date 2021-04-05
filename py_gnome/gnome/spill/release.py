@@ -656,6 +656,11 @@ class SpatialRelease(Release):
     def num_per_timestep(self, val):
         raise TypeError('num_per_timestep not supported on SpatialRelease')
 
+    @property
+    def json_file(self):
+        #Placeholder value for the serialization system
+        return None
+
     def LE_timestep_ratio(self, ts):
         '''
         Returns the ratio
@@ -1114,11 +1119,6 @@ class NESDISRelease(SpatialRelease):
             fc.oil_types = self.oil_types
             dct['json_file'] = geojson.dumps(fc)
         return dct
-
-    @property
-    def json_file(self):
-        #Placeholder value for the serialization system
-        return None
 
 
 class ContinuousSpatialRelease(SpatialRelease):
