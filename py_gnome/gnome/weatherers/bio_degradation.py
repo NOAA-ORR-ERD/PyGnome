@@ -192,7 +192,7 @@ class Biodegradation(Weatherer):
             return
 
         for substance, data in sc.itersubstancedata(self.array_types):
-            if len(data['mass']) is 0:
+            if len(data['mass']) == 0:
                 # data does not contain any surface_weathering LEs
                 continue
 

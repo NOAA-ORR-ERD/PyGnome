@@ -253,7 +253,7 @@ class Beaching(RemoveMass, Weatherer):
             return
 
         for substance, data in sc.itersubstancedata(self.array_types):
-            if len(data['mass']) is 0:
+            if len(data['mass']) == 0:
                 continue
             rm_mass = self._remove_mass(self._timestep, model_time, substance)
             rm_mass_frac = rm_mass / data['mass'].sum()

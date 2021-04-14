@@ -700,7 +700,7 @@ class Burn(CleanUpBase):
             return
 
         for substance, data in sc.itersubstancedata(self.array_types, fate_status='burn'):
-            if len(data['mass']) is 0:
+            if len(data['mass']) == 0:
                 return
 
             points = sc['positions']
@@ -865,7 +865,7 @@ class ChemicalDispersion(CleanUpBase):
             return
 
         for substance, data in sc.itersubstancedata(self.array_types, fate_status='disperse'):
-            if len(data['mass']) is 0:
+            if len(data['mass']) == 0:
                 continue
 
             points = sc['positions']
