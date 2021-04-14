@@ -4,8 +4,11 @@ tests for the spatial release from polygons:
 e.g. from the NESDIS MPSR reports
 """
 from __future__ import print_function
+from __future__ import division
+
 
 import os
+import datetime
 import numpy as np
 
 from gnome.spill.release import SpatialRelease
@@ -25,10 +28,10 @@ def check_valid_polygon(poly):
 
 
 def test_load_shapefile():
-    (all_oil_polys,
-     all_oil_weights,
-     all_oil_thicknesses) = SpatialRelease.load_shapefile(sample_shapefile)
+    data = SpatialRelease.load_shapefile(sample_shapefile)
+    release_time, all_oil_polys, all_oil_weights, all_oil_thicknesses = data
 
+    assert release_time == datetime.datetime(2020, 5, 14, 15, 20)
     assert len(all_oil_polys) == 8
     assert len(all_oil_weights) == 8
     assert len(all_oil_thicknesses) == 8

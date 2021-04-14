@@ -1491,7 +1491,7 @@ def map_from_rectangular_grid(mask, lon, lat, refine=1, **kwargs):
 
     map_bounds = np.array(((lon[0], lat[0]), (lon[-1], lat[0]),
                            (lon[-1], lat[-1]), (lon[0], lat[-1])),
-                          dtype=np.float)
+                          dtype=np.float64)
 
     # generating projection for raster map
     proj = RectangularGridProjection(lon, lat)

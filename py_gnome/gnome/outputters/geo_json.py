@@ -92,7 +92,7 @@ class TrajectoryGeoJsonOutput(Outputter):
             is None since data is returned in dict for webapi. For using
             write_output_post_run(), this must be set
 
-        use super to pass optional \*\*kwargs to base class __init__ method
+        use super to pass optional ``**kwargs`` to base class __init__ method
         '''
         self.round_data = round_data
         self.round_to = round_to
@@ -206,8 +206,8 @@ class TrajectoryGeoJsonOutput(Outputter):
         # else:
         #     data = data_array.astype(p_type).tolist()
 
-        # refactored to simplyuse the correct python type:
-        if issubclass(data_array.dtype.type, np.float):
+        # refactored to simply use the correct python type:
+        if issubclass(data_array.dtype.type, float):
             data = data_array.round(self.round_to).astype(float).tolist()
         elif issubclass(data_array.dtype.type, np.integer):
             data = data_array.astype(int).tolist()
