@@ -89,7 +89,8 @@ class Outputter(GnomeId):
         :type output_zero_step: boolean
 
         :param output_last_step: default is True. If True then output for
-            final step is written regardless of output_timestep
+            final step is written regardless of output_timestep. This is
+            potentially an extra output, not aligne withe the output_timestep.
         :type output_last_step: boolean
 
         :param output_start_time: default is None in which case it is set to
