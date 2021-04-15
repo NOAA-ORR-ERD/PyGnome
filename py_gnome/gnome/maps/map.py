@@ -26,6 +26,8 @@ Features:
  - land raster is only as big as the land -- if the map bounds are bigger,
    extra space is not in the land map
 """
+# debug
+import pdb
 
 import os
 import math
@@ -36,7 +38,10 @@ import numpy as np
 
 from colander import SchemaNode, String, Float, Integer, Boolean, drop
 
-from geojson import FeatureCollection, Feature, MultiPolygon
+from geojson import FeatureCollection, Feature, MultiPolygon, dump
+
+from osgeo import ogr, osr
+from shapely import geometry 
 
 import unit_conversion as uc
 
@@ -389,9 +394,133 @@ class GnomeMap(GnomeId):
         np.maximum(next_positions[:, 2], 0.0, out=next_positions[:, 2])
         return None
 
-    def to_geojson(self):
-        return FeatureCollection([])
+    def gnm_poly_2_ogr_poly(self, gnm_points):
+        ring = ogr.Geometry(ogr.wkbLinearRing)
+        for point in gnm_points:
+            ring.AddPoint(point[0], point[1])
+        if (gnm_points[0][0] != gnm_points[-1][0]) or (gnm_points[0][1] != gnm_points[-1][1]):
+            first_point = gnm_points[0]
+            ring.AddPoint(first_point[0], first_point[1])
+        ogr_poly = ogr.Geometry(ogr.wkbPolygon)
+        ogr_poly.AddGeometry(ring)
+        return ogr_poly
 
+    def to_ogr(self):
+        """
+        Implementation of GDAL/OGR geometry types.
+        Builds a Geometry Collection that includes: spillable area,
+        map bounds, and land polys. Geometry Collection can then be 
+        written to multiple output formats (e.g., GeoJSON, Shapefile, etc.)
+        by using GDAL/OGR drivers.
+        
+        .. notes: GNOME geometries are translated to simple geometries. They 
+                  cannot have properties like names, so the names are assigned
+                  during writing to specified file format. This creates an
+                  order problem. Addressed by including empty OGR geometries
+                  for when GNOME geometries are not specified.
+                  
+                  method map.to_geojson() is no longer necessary. OGR geometries
+                  have method ExportToJson() that accomplishes same thing.
+                  to_geojson() removed from GnomeMap, but still in
+                  ParamMap and MapFromBNA in case they are used elsewhere.
+        
+        Returns Geometry Collection that can be exported to various formats.
+        """
+        # create geometry collection
+        collection = ogr.Geometry(ogr.wkbGeometryCollection)
+        # get GNOME geometries and convert
+        polys = self.get_polygons()
+        # spillable area
+        gnm_spill = polys['spillable_area']
+        if gnm_spill is not None:            
+            for spill in gnm_spill:
+                ogr_spill = self.gnm_poly_2_ogr_poly(spill.points)
+                collection.AddGeometry(ogr_spill)
+        else:
+            empty_poly = ogr.Geometry(ogr.wkbPolygon)
+            collection.AddGeometry(empty_poly)
+        # map bounds
+        gnm_bounds = polys['map_bounds']
+        if gnm_bounds is not None:
+            ogr_bounds = self.gnm_poly_2_ogr_poly(gnm_bounds)
+            collection.AddGeometry(ogr_bounds)
+        else:
+            empty_poly = ogr.Geometry(ogr.wkbPolygon)
+            collection.AddGeometry(empty_poly)            
+        # land polys, note land polys converted to MultiPolygon
+        multi_polygon = ogr.Geometry(ogr.wkbMultiPolygon)
+        gnm_lands = polys['land_polys']
+        if len(gnm_lands) > 0:
+            for gnm_land in gnm_lands:
+                ogr_land = self.gnm_poly_2_ogr_poly(gnm_land.points)
+                multi_polygon.AddGeometry(ogr_land)
+        collection.AddGeometry(multi_polygon)
+        # assign spatial reference
+        lat_lon = osr.SpatialReference()
+        lat_lon.ImportFromEPSG(4326)
+        collection.AssignSpatialReference(lat_lon)
+        return collection
+
+    def write_out(self, form, out_dir):
+        """
+        writes GNOME input geometries to GeoJSON file
+        
+        :param form: output format, allowables are:
+                        'geojson', 'shapefile', 'kml'
+        :param out_dir: output directory for files
+
+        .. note: see:
+            https://pcjericks.github.io/py-gdalogr-cookbook/geometry.html#write-geometry-to-geojson
+            https://pcjericks.github.io/py-gdalogr-cookbook/vector_layers.html#create-a-new-shapefile-and-add-data
+        """        
+        ogr_geometry = self.to_ogr()
+        ogr_sr = ogr_geometry.GetSpatialReference()
+        
+        # create output Driver and output file
+        if form == 'geojson':
+            driver = ogr.GetDriverByName('GeoJSON')
+            out_file = os.path.join(out_dir, 'gnome_input.geojson')
+        elif form == 'shapefile':
+            driver = ogr.GetDriverByName('ESRI Shapefile')
+            out_file = os.path.join(out_dir, 'gnome_input.shp')
+            # write ESRI projection file
+            ogr_sr.MorphToESRI()
+            prj_file = open(os.path.join(out_dir, 'gnome_input.prj'), "w")
+            prj_file.write(ogr_sr.ExportToWkt())
+            prj_file.close()
+        elif form == 'kml':
+            driver = ogr.GetDriverByName('KML')
+            out_file = os.path.join(out_dir, 'gnome_input.kml')
+        else:
+            raise ValueError("allowable output formats: 'geojson', 'shapefile', or 'kml'")            
+        # create data source
+        data_source = driver.CreateDataSource(out_file)
+        
+        names = ['spillable area', 'map bounds', 'land polygons']
+        for i in range(0,ogr_geometry.GetGeometryCount()):
+            curr_geometry = ogr_geometry.GetGeometryRef(i)
+            if i == 0:
+                layer = data_source.CreateLayer('gnome_input_files', geom_type = curr_geometry.GetGeometryType())
+                # create id field
+                id_field = ogr.FieldDefn("id", ogr.OFTInteger)
+                layer.CreateField(id_field)
+                # create name field
+                name_field = ogr.FieldDefn("name", ogr.OFTString)
+                layer.CreateField(name_field)
+            # get output layer feature definition
+            feature_defn = layer.GetLayerDefn()
+            # create new feature
+            feature = ogr.Feature(feature_defn)
+            # set new geometry
+            feature.SetGeometry(curr_geometry)
+            feature.SetField("id", i)
+            feature.SetField("NAME", names[i])
+            # add new feature to output layer
+            layer.CreateFeature(feature)
+        # dereference the feature
+        feature = None
+        # save and close data source
+        data_source = None
 
 class ParamMap(GnomeMap):
 
@@ -1277,19 +1406,73 @@ class MapFromBNA(RasterMap):
             #should trigger base class to recreate coarser rasters
             self.raster, self.projection = self.build_raster()
 
+    # def to_shapely_polygon(self, land_water):
+    #     """
+    #     Output either the model domain (i.e., water) or "not" the model domain
+    #     (i.e., land). 
+        
+    #     When land_water = 'water' returns a single shapely polygon with donut
+    #     holes for land features (e.g., islands). When land_water = 'land' returns
+    #     a shapely MultiPolygon with each land features as a separate shapely polygon.
+
+    #     The model domain is what is needed for dealing with shoreline in 
+    #     surface concentrations with Voronoi polygons
+
+    #     Required arguments:
+
+    #     :param land_water: str either 'land' or 'water, specifying which region
+    #                        should be returned as a polygon
+
+    #     FIXME: The spillable area is used to define the model domain. spillable_area
+    #            and map_bounds are polygons defined by users. Whether the edges
+    #            of land_polys, spillable area and map_bounds line up depends on
+    #            the accuracy selected by the user. 
+    #            In order to avoid sliver polygons, the spillable area is used for
+    #            determining the model domain since that is what defines the model
+    #            domain in GNOME.
+
+    #     """
+    #     polys_gs = self.get_polygons()
+    #     spill_sh = geometry.Polygon(polys_gs['spillable_area'][0].points)
+    #     inner_poly_crds = []
+    #     edge_poly_sh = []      
+    #     for poly in polys_gs['land_polys']:       
+    #         tmp_inner_sh = geometry.Polygon(poly.points)
+    #         if spill_sh.contains(tmp_inner_sh):
+    #             inner_poly_crds.append(tmp_inner_sh.exterior.coords)
+    #         else:
+    #             edge_poly_sh.append(tmp_inner_sh)
+    #     tmp_domain_sh = geometry.Polygon(spill_sh.exterior.coords, inner_poly_crds)
+    #     for poly in edge_poly_sh:
+    #         tmp_domain_sh = tmp_domain_sh.difference(poly)
+    #         if isinstance(tmp_domain_sh, geometry.MultiPolygon):
+    #             big_ind = 0
+    #             big_area = 0
+    #             for i in range(0, len(tmp_domain_sh)):
+    #                 if tmp_domain_sh[i].area > big_area:
+    #                     big_area = tmp_domain_sh[i].area
+    #                     big_ind = i
+    #             tmp_domain_sh = tmp_domain_sh[big_ind]
+    #     model_domain = tmp_domain_sh
+    #     if land_water == 'water':
+    #         return model_domain
+    #     elif land_water == 'land':
+    #         bound_sh = geometry.Polygon(polys_gs['map_bounds'])
+    #         not_model_domain = bound_sh.difference(model_domain)
+    #         return not_model_domain
+    #     else:
+    #         raise ValueError(self.to_shapely_polygon.__name__ +
+    #                          ' requires land_water to be \'land\' or \'water\'')
+
     def to_geojson(self):
         """
         Output the vector version of the shoreline polygons.
-
         This is what gets drawn in the WebGNOME client, for example
-
         This version directly writes the polygons already stored in the map
         object -- keeping the door open to that data coming from something
         other than a bna file.
-
         FIXME: Technically, geojson recommends ccw polygons -- but putting that
                check in was pretty slow, so it's commented out.
-
         FIXME: This really should export the map_bounds and spillable_area
         as well.
         """

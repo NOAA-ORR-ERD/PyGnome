@@ -29,6 +29,7 @@ progressbar
 pyzmq
 geojson
 colander
+gdal
 
 tblib # still needed for child process exception handling.
 
