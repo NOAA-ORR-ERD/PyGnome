@@ -13,6 +13,7 @@ import collections
 import os
 import json
 import tempfile
+import geojson
 
 from colander import (SchemaNode, deferred, drop, required, Invalid, UnsupportedFields,
                       SequenceSchema, TupleSchema, MappingSchema, Mapping,
@@ -868,6 +869,28 @@ class LongLatBounds(SequenceSchema):
 
 
 Polygon = LongLatBounds
+
+class FeatureCollectionSchema(MappingSchema):
+    '''
+    geojson.FeatureCollection -> String via __geo_interface__ attribute
+    '''
+    def serialize(self, appstruct):
+        assert isinstance(appstruct, geojson.FeatureCollection)
+        return geojson.dumps(appstruct)
+    def deserialize(self, cstruct):
+        assert isinstance(cstruct, str)
+        return geojson.loads(cstruct)
+
+class FeatureSchema(MappingSchema):
+    '''
+    geojson.Feature -> String via __geo_interface__ attribute
+    '''
+    def serialize(self, appstruct):
+        assert isinstance(appstruct, geojson.Feature)
+        return geojson.dumps(appstruct)
+    def deserialize(self, cstruct):
+        assert isinstance(cstruct, str)
+        return geojson.loads(cstruct)
 
 
 class PolygonSetSchema(SequenceSchema):
