@@ -26,13 +26,13 @@ from colander import (SchemaNode, Bool, String, Float, drop)
 from gnome.gnomeobject import GnomeId
 from gnome.persist.base_schema import ObjTypeSchema, GeneralGnomeObjectSchema
 
+from gnome import _valid_units
 
-from .release import (Release,
-                      PointLineRelease,
-                      GridRelease,
-                      SpatialRelease)
-from .. import _valid_units
-from gnome.spill.release import (BaseReleaseSchema,
+from gnome.spill.release import (Release,
+                                 PointLineRelease,
+                                 GridRelease,
+                                 SpatialRelease,
+                                 BaseReleaseSchema,
                                  PointLineReleaseSchema,
                                  SpatialReleaseSchema)
 from gnome.environment.water import WaterSchema
@@ -771,8 +771,8 @@ def spatial_release_spill(start_positions,
 
     A spatial release is a spill that releases elements at known locations.
     '''
-    release = SpatialRelease(release_time=release_time,
-                             start_position=start_positions,
+    release = Release(release_time=release_time,
+                             custom_positions=start_positions,
                              name=name)
     retv = Spill(release=release,
                  water=water,
