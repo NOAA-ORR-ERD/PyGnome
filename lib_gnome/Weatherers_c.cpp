@@ -51,7 +51,7 @@ OSErr emulsify(int n, unsigned long step_len,
         //if ((age[i] >= emul_time && emul_time >= 0.) || frac_evap[i] >= emul_C && emul_C > 0.)
         // we don't have emul_C < 0 if user hasn't set it so this doesn't work right
         //if ((le_age >= emul_time && emul_time >= 0.) || (frac_evap[i] >= emul_C && emul_C > 0.))
-        if ((le_age >= emul_time && emul_time >= 0.) || ((frac_evap[i] >= emul_C && emul_C > 0.) && emul_time < 0 ))
+        if ((le_age >= emul_time && emul_time >= 0.) || ((frac_evap[i] >= emul_C && emul_C >= 0.) && emul_time < 0 ))
         {
             if (emul_time > 0.)	// user has set value
                 start = emul_time;
