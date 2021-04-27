@@ -217,11 +217,18 @@ class GnomeOil(Oil, Substance):
                     # use name to get oil from oil library
                     #from oil_library import get_oil_props
                     #oil_obj = get_oil_props(name)
-                    import adios_db
-                    from adios_db.models.oil.oil import Oil as Oil_db
-                    from adios_db.computation.gnome_oil import make_gnome_oil
-                    oil_obj = Oil_db.from_file(filename[0])
-                    oil_info = make_gnome_oil(oil_obj)
+                    if filename is not None:
+                        #print("filename,name = ",filename,name)
+                        import adios_db
+                        from adios_db.models.oil.oil import Oilake as Oil_db
+                        from adios_db.computation.gnome_oil import make_gnome_oil
+                        oil_obj = Oil_db.from_file(filename)
+                        oil_info = make_gnome_oil(oil_obj)
+                    else:
+                        #print("else filename,name = ",filename,name)
+                        from oil_library import get_oil_props
+                        oil_obj = get_oil_props(name) 
+                        oil_info = oil_obj.get_gnome_oil() 
 
                 #oil_info = oil_obj.get_gnome_oil()
 
