@@ -220,7 +220,7 @@ class GnomeOil(Oil, Substance):
                     if filename is not None:
                         #print("filename,name = ",filename,name)
                         import adios_db
-                        from adios_db.models.oil.oil import Oilake as Oil_db
+                        from adios_db.models.oil.oil import Oil as Oil_db
                         from adios_db.computation.gnome_oil import make_gnome_oil
                         oil_obj = Oil_db.from_file(filename)
                         oil_info = make_gnome_oil(oil_obj)
