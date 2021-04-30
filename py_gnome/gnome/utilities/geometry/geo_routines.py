@@ -37,7 +37,7 @@ def triangulate_poly(poly):
             pts, tris = trimesh.creation.triangulate_polygon(p, engine='earcut')
             retval = retval + [Polygon(k) for k in pts[tris]]
     else:
-        pts, tris = trimesh.creation.triangulate_polygon(p, engine='earcut')
+        pts, tris = trimesh.creation.triangulate_polygon(poly, engine='earcut')
         retval = [Polygon(k) for k in pts[tris]]
     return retval
 
@@ -70,6 +70,20 @@ def mixed_polys_to_polygon(polys):
             rv.append(p)
     return rv
 
+def check_valid_polygon(poly):
+    """
+    checks that a shapely Polygon object at least has valid values for coordinates
+    """
+    if isinstance(poly, shapely.geometry.MultiPolygon):
+        for p in poly:
+            for point in p.exterior.coords:
+                assert -360 < point[0] < 360
+                assert -90 < point[1] < 90
+    else:
+        for point in poly.exterior.coords:
+            assert -360 < point[0] < 360
+            assert -90 < point[1] < 90
+            
 #tri is a Shapely.Polygon, or 3x2 array of coords
 #returns a 2D coordinate
 def random_pt_in_tri(tri):

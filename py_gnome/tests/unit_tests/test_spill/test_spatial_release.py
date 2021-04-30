@@ -78,13 +78,25 @@ class TestSpatialRelease(object):
         assert sr == sr2
     
     def test_prepare(self):
-        with pytest.raises(ValueError):
+        with pytest.raises(AssertionError):
             #this will fail because sample_shapefile is a NESDIS file
             #and the polygons are in a webmercator projection
             #Correct execution of prepare_for_model_run is tested in the NESDISRelease tests
             #because the polygons are translated there
             sr = SpatialRelease(filename=sample_shapefile)
             sr.prepare_for_model_run(900)
+
+    def test_feature_update(self):
+        #polygons, weights, and thicknesses can be updated from the web client by passing
+        #a new FeatureCollection through the feature attribute.
+
+        sr = SpatialRelease(filename=sample_shapefile)
+        ser = sr.serialize()
+        assert sr.weights == None
+        ser['features']['features'][0]['properties']['weight'] = 0.75
+        ser['features']['features'][1]['properties']['weight'] = 0.25
+        sr.update_from_dict(ser)
+        assert all([w1 == w2 for w1, w2 in zip(sr.weights, [0.75, 0.25])])
 
 class TestNESDISRelease(object):
 
