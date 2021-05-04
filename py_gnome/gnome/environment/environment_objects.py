@@ -443,8 +443,10 @@ class GridCurrent(VelocityGrid, Environment):
     default_names = {'u': ['u', 'U', 'water_u', 'curr_ucmp', 'u_surface'],
                      'v': ['v', 'V', 'water_v', 'curr_vcmp', 'v_surface'],
                      'w': ['w', 'W']}
-    cf_names = {'u': ['eastward_sea_water_velocity'],
-                'v': ['northward_sea_water_velocity'],
+    cf_names = {'u': ['eastward_sea_water_velocity',
+                      'surface_eastward_sea_water_velocity'],
+                'v': ['northward_sea_water_velocity',
+                      'surface_northward_sea_water_velocity'],
                 'w': ['upward_sea_water_velocity']}
 
     def at(self, points, time, *args, **kwargs):
