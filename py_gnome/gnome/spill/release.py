@@ -553,6 +553,7 @@ class PointLineRelease(Release):
         data['init_mass'][sl] = self._mass_per_le
 
 class SpatialReleaseSchema(BaseReleaseSchema):
+    filename = FilenameSchema(save=False, update=False, test_equal=False, missing=drop)
     features = FeatureCollectionSchema(save=True, update=True, test_equal=True, missing=drop)
 
 
@@ -617,6 +618,7 @@ class SpatialRelease(Release):
         if filename is not None:
             file_fc = geo_routines.load_shapefile(filename)
             self.features = file_fc
+            self.filename = filename
         elif features is not None:
             self.features = features
         else: #construction via kwargs...need to check some possible conflicts
@@ -637,6 +639,14 @@ class SpatialRelease(Release):
         super(SpatialRelease, self).__init__(
             **kwargs
         )
+
+    @property
+    def filename(self):
+        return self._filename
+
+    @filename.setter
+    def filename(self, f):
+        self._filename = f
 
     @property
     def __geo_interface__(self):
@@ -853,7 +863,7 @@ class NESDISReleaseSchema(SpatialReleaseSchema):
         SchemaNode(Float())
     )
     record_areas = SequenceSchema(
-        SchemaNode(Float())
+        SchemaNode(Float(), read_only=True, update=False)
     )
     oil_types = SequenceSchema(
         SchemaNode(String())
@@ -885,9 +895,13 @@ class NESDISRelease(SpatialRelease):
 
         if filename is not None and features is not None:
             raise ValueError('Cannot pass both a filename and FeatureCollection to NESDISRelease')
+        if filename is None and features is None:
+            raise ValueError('''NESDISRelease must be provided a filename 
+                or FeatureCollection to "filename" or "features" respectively''')
         if filename is not None:
             file_fc = NESDISRelease.load_nesdis(filename)
             features = file_fc
+            self.filename = filename
         kwargs['release_time'] = datetime.fromisoformat(features[0].properties['release_time'])
 
         super(NESDISRelease, self).__init__(
@@ -955,7 +969,9 @@ class NESDISRelease(SpatialRelease):
         return dct
 
     def get_metadata(self):
-        return {'weights': self.weights, 'thicknesses': self.thicknesses}
+        w = [f.properties.get('weight',0) for f in self.features[:]]
+        t = [f.properties.get('thickness',0) for f in self.features[:]]
+        return {'weights': w, 'thicknesses': t}
 
 
 class ContinuousSpatialRelease(SpatialRelease):

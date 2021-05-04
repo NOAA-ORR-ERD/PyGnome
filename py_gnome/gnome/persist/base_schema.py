@@ -876,10 +876,13 @@ class FeatureCollectionSchema(MappingSchema):
     '''
     def serialize(self, appstruct):
         assert isinstance(appstruct, geojson.FeatureCollection)
-        return geojson.dumps(appstruct)
+        return appstruct.__geo_interface__
     def deserialize(self, cstruct):
-        assert isinstance(cstruct, str)
-        return geojson.loads(cstruct)
+        if isinstance(cstruct, str):
+            return geojson.loads(cstruct)
+        else:
+            return geojson.loads(geojson.dumps(cstruct))
+        
 
 class FeatureSchema(MappingSchema):
     '''
@@ -887,7 +890,7 @@ class FeatureSchema(MappingSchema):
     '''
     def serialize(self, appstruct):
         assert isinstance(appstruct, geojson.Feature)
-        return geojson.dumps(appstruct)
+        return appstruct.__geo_interface__
     def deserialize(self, cstruct):
         assert isinstance(cstruct, str)
         return geojson.loads(cstruct)
