@@ -440,8 +440,8 @@ class GridCurrent(VelocityGrid, Environment):
 
     _ref_as = 'current'
     _gnome_unit = 'm/s'
-    default_names = {'u': ['u', 'U', 'water_u', 'curr_ucmp'],
-                     'v': ['v', 'V', 'water_v', 'curr_vcmp'],
+    default_names = {'u': ['u', 'U', 'water_u', 'curr_ucmp', 'u_surface'],
+                     'v': ['v', 'V', 'water_v', 'curr_vcmp', 'v_surface'],
                      'w': ['w', 'W']}
     cf_names = {'u': ['eastward_sea_water_velocity'],
                 'v': ['northward_sea_water_velocity'],
