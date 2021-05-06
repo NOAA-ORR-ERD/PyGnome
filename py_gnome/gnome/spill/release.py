@@ -68,6 +68,7 @@ class BaseReleaseSchema(ObjTypeSchema):
         Float()
     )
     custom_positions = StartPositions(save=True, update=True)
+    centroid = WorldPoint(save=False, update=False, read_only=True)
 
 
 class PointLineReleaseSchema(BaseReleaseSchema):
@@ -167,6 +168,12 @@ class Release(GnomeId):
         self._mass_per_le = 0
         self._release_ts = None
         self._pos_ts = None
+
+    @property
+    def centroid(self):
+        if len(self.custom_positions):
+            mp = shapely.geometry.MultiPoint(self.custom_positions)
+            return np.array((mp.centroid.x, mp.centroid.y, 0))
 
     @property
     def release_mass(self):
@@ -460,6 +467,10 @@ class PointLineRelease(Release):
         return False
 
     @property
+    def centroid(self):
+        return self.start_position
+
+    @property
     def start_position(self):
         return self._start_position
 
@@ -649,6 +660,10 @@ class SpatialRelease(Release):
         self._filename = f
 
     @property
+    def centroid(self):
+        return np.array([self.polygons[0].centroid.x, self.polygons[0].centroid.y, 0])
+
+    @property
     def __geo_interface__(self):
         return self.features.__geo_interface__
 
@@ -798,6 +813,9 @@ class SpatialRelease(Release):
             weights = self.weights
         self._tris, self._weights = self.get_polys_as_tris(self.polygons, weights)
 
+        import pdb
+        pdb.set_trace()
+
         self._prepared = True
 
     def initialize_LEs(self, to_rel, data, current_time, time_step):
@@ -832,6 +850,21 @@ class SpatialRelease(Release):
         # thicknesses = self.thicknesses if self.thicknesses is not None else []
         return lengths, polycoords
 
+    def get_metadata(self):
+        weights = [f.properties.get('weight',0) for f in self.features[:]]
+        thicknesses = [f.properties.get('thickness',0) for f in self.features[:]]
+        rw = []
+        rt = []
+        for p, w, t in zip(self.polygons, weights, thicknesses):
+            if isinstance(p, shapely.geometry.MultiPolygon):
+                for subp in p:
+                    rw.append(w)
+                    rt.append(t)
+            else:
+                rw.append(w)
+                rt.append(t)
+
+        return {'weights': rw, 'thicknesses': rt}
 
 def GridRelease(release_time, bounds, resolution):
     """
@@ -860,13 +893,13 @@ def GridRelease(release_time, bounds, resolution):
 
 class NESDISReleaseSchema(SpatialReleaseSchema):
     thicknesses = SequenceSchema(
-        SchemaNode(Float())
+        SchemaNode(Float()), save=False
     )
     record_areas = SequenceSchema(
-        SchemaNode(Float(), read_only=True, update=False)
+        SchemaNode(Float()), save=False, read_only=True, update=False
     )
     oil_types = SequenceSchema(
-        SchemaNode(String())
+        SchemaNode(String()), save=False
     )
 
 
@@ -903,6 +936,7 @@ class NESDISRelease(SpatialRelease):
             features = file_fc
             self.filename = filename
         kwargs['release_time'] = datetime.fromisoformat(features[0].properties['release_time'])
+        kwargs['end_release_time'] = kwargs['release_time']
 
         super(NESDISRelease, self).__init__(
             features=features,
@@ -957,6 +991,11 @@ class NESDISRelease(SpatialRelease):
     def oil_types(self):
         return [feat.properties['OILTYPE'] for feat in self.features[:]]
 
+    @oil_types.setter
+    def oil_types(self, ot):
+        for o, feat in zip(ot, self.features[:]):
+            feat.properties['OILTYPE'] = o
+
     def to_dict(self, json_=None):
         dct = super(NESDISRelease, self).to_dict(json_=json_)
         if json_ == 'save':
@@ -967,11 +1006,6 @@ class NESDISRelease(SpatialRelease):
             fc.oil_types = self.oil_types
             dct['json_file'] = geojson.dumps(fc)
         return dct
-
-    def get_metadata(self):
-        w = [f.properties.get('weight',0) for f in self.features[:]]
-        t = [f.properties.get('thickness',0) for f in self.features[:]]
-        return {'weights': w, 'thicknesses': t}
 
 
 class ContinuousSpatialRelease(SpatialRelease):

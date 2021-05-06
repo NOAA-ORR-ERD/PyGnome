@@ -253,19 +253,19 @@ class Spill(BaseSpill):
 
     @property
     def start_position(self):
-        return self.release.start_position
+        return self.release.centroid if not hasattr(self.release, 'start_position') else self.release.start_position
 
     @start_position.setter
     def start_position(self, sp):
-        self.release.start_position = sp
+        raise ValueError('Setting release start_position on spill is deprecated')
 
     @property
     def end_position(self):
-        return self.release.end_position
+        return self.release.centroid if not hasattr(self.release, 'end_position') else self.release.end_position
 
     @end_position.setter
     def end_position(self, sp):
-        self.release.end_position = sp
+        raise ValueError('Setting release end_position on spill is deprecated')
 
     # fixme: We store in standard units! i.e. kilograms!
     #        so the getter should just return that value.
