@@ -646,6 +646,12 @@ class SpatialRelease(Release):
                  'weights': weights,
                  'thicknesses': thicknesses}
             )
+            
+            #attach the feature_index so webgnomeclient can associate the polygons of a Feature
+            #back to the Feature
+            for i, feature in enumerate(self.features[:]):
+                if 'feature_index' not in feature.properties:
+                    feature.properties['feature_index'] = i
 
         super(SpatialRelease, self).__init__(
             **kwargs
@@ -667,18 +673,6 @@ class SpatialRelease(Release):
     def __geo_interface__(self):
         return self.features.__geo_interface__
 
-    def parse_FeatureCollection(self, fc):
-        #decomposes a geojson.FeatureCollection for use in this SpatialRelease object
-        #returns a dict of attributes usually assigned to this object
-        rv = {'polygons': [],
-              'weights': []}
-        polygons = [shapely.geometry.shape(feat.geometry) for feat in fc.features]
-        props = [feat.properties for feat in fc.features]
-        if all(['weight' in p for p in props]):
-            weights = [p['weight'] for p in props]
-        else:
-            weights = None
-        return polygons, weights
 
     def gen_fc_from_kwargs(self, kwargs):
         fc = geojson.FeatureCollection(features=[])
@@ -812,9 +806,6 @@ class SpatialRelease(Release):
         else:
             weights = self.weights
         self._tris, self._weights = self.get_polys_as_tris(self.polygons, weights)
-
-        import pdb
-        pdb.set_trace()
 
         self._prepared = True
 
@@ -955,19 +946,22 @@ class NESDISRelease(SpatialRelease):
         '''
         fc = geo_routines.load_shapefile(filename)
 
-        for feature in fc.features:
+        if int(pyproj.__version__[0]) < 2:
+            Proj1 = Proj(init='epsg:3857')
+            Proj2 = Proj(init='epsg:4326')
+            transformer = functools.partial(
+                pyproj.transform,
+                Proj1,
+                Proj2)
+        else:
+            transformer = pyproj.Transformer.from_crs("epsg:3857", "epsg:4326", always_xy=True)
+        if hasattr(fc, 'bbox'):
+            xx, yy = transformer.transform([fc.bbox[0],fc.bbox[2]],[fc.bbox[1],fc.bbox[3]])
+            fc.bbox = [xx[0], yy[0], xx[1], yy[1]]
+        for i, feature in enumerate(fc.features):
             old_geo = shapely.geometry.shape(feature.geometry)
             #Geometries can be MultiPolygons or Polygons
             #Each needs to be converted to EPSG:4326 from EPSG:3857
-            if int(pyproj.__version__[0]) < 2:
-                Proj1 = Proj(init='epsg:3857')
-                Proj2 = Proj(init='epsg:4326')
-                transformer = functools.partial(
-                    pyproj.transform,
-                    Proj1,
-                    Proj2)
-            else:
-                transformer = pyproj.Transformer.from_crs("epsg:3857", "epsg:4326", always_xy=True)
             new_geo = ops.transform(transformer.transform, old_geo)
             feature.geometry = geojson.loads(geojson.dumps(new_geo.__geo_interface__))
             im_date = feature.properties['DATE']
@@ -977,9 +971,11 @@ class NESDISRelease(SpatialRelease):
                 release_time = datetime.strptime(im_date + ' ' + parsed_time, '%m/%d/%Y %H%M')
             except ValueError as ve:
                 warnings.warn('Could not parse shapefile time: ' + str(ve))
-            feature.properties['release_time'] = release_time.isoformat()
 
+            #append webgnomeclient or pygnome specific properties
+            feature.properties['feature_index'] = i
             feature.properties['thickness'] = 5e-6 if feature.properties['OILTYPE'].lower() == 'thin' else 200e-6
+            feature.properties['release_time'] = release_time.isoformat()
 
         return fc
 
