@@ -170,8 +170,46 @@ def test_prepare_for_model_run(model):
     else:
         assert not os.path.exists(o_put._u_filename)
 
+    print(o_put.filename)
 
-@pytest.mark.slow
+def test_variable_attributes(model):
+    """
+    Call prepare_for_model_run for netcdf_outputter
+
+    The netcdf file should have been created with core variables
+
+    This checks the status codes only for now.
+    """
+    for outputter in model.outputters:
+        if isinstance(outputter, NetCDFOutput):  # there should only be 1!
+            o_put = model.outputters[outputter.id]
+
+    model.rewind()
+    model.step()  # should call prepare_for_model_step
+
+    # just to get an error early!
+    assert os.path.exists(o_put.filename)
+
+    ds = nc.Dataset(o_put.filename)
+
+    # print(ds)
+
+    sc = ds.variables['status_codes']
+    assert sc.long_name == 'particle status code'
+    for val in sc.flag_values:
+        val = int(val)  # just making sure it's an integer
+    # print(sc.flag_values) #: [v.value for v in oil_status],
+    print(sc.flag_meanings) # : " ".join("{}:{}".format(v.name, v.value)
+                            #       for v in oil_status)
+    # parse flag meanings to make sure it's the right format
+    #flags = sc.flag_meanings.split()
+    for flag in sc.flag_meanings.split():
+        val, name = flag.split(':')
+        val = int(val)
+        print(val, name)
+
+
+# @pytest.mark.slow
 def test_write_output_standard(model):
     """
     Rewind model defined by model fixture.

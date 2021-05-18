@@ -62,7 +62,7 @@ var_attributes = {
     'status_codes': {
         'long_name': 'particle status code',
         'flag_values': [v.value for v in oil_status],
-        'flag_meanings': " ".join("{}:{}".format(v.name, v.value)
+        'flag_meanings': " ".join("{}:{}".format(v.value, v.name)
                                   for v in oil_status)
                      },
     'spill_num': {'long_name': 'spill to which the particle belongs'},
@@ -806,6 +806,7 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
         '''
         reset a few parameter and call base class rewind to reset
         internal variables.
+
         '''
         super(NetCDFOutput, self).rewind()
 
