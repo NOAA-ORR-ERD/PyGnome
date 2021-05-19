@@ -937,7 +937,7 @@ class NESDISRelease(SpatialRelease):
     @staticmethod
     def load_nesdis(filename):
         '''
-        1. load a nesdis file and translate polygons into WGS84.
+        1. load a nesdis shapefile
         2. Translates the time in the property array
         3. Add extra properties as necessary
 
@@ -945,25 +945,7 @@ class NESDISRelease(SpatialRelease):
         returns a geojson.FeatureCollection
         '''
         fc = geo_routines.load_shapefile(filename)
-
-        if int(pyproj.__version__[0]) < 2:
-            Proj1 = Proj(init='epsg:3857')
-            Proj2 = Proj(init='epsg:4326')
-            transformer = functools.partial(
-                pyproj.transform,
-                Proj1,
-                Proj2)
-        else:
-            transformer = pyproj.Transformer.from_crs("epsg:3857", "epsg:4326", always_xy=True)
-        if hasattr(fc, 'bbox'):
-            xx, yy = transformer.transform([fc.bbox[0],fc.bbox[2]],[fc.bbox[1],fc.bbox[3]])
-            fc.bbox = [xx[0], yy[0], xx[1], yy[1]]
         for i, feature in enumerate(fc.features):
-            old_geo = shapely.geometry.shape(feature.geometry)
-            #Geometries can be MultiPolygons or Polygons
-            #Each needs to be converted to EPSG:4326 from EPSG:3857
-            new_geo = ops.transform(transformer.transform, old_geo)
-            feature.geometry = geojson.loads(geojson.dumps(new_geo.__geo_interface__))
             im_date = feature.properties['DATE']
             im_time = feature.properties['TIME']
             parsed_time = ''.join([d for d in im_time if d.isdigit()])

@@ -1,3 +1,4 @@
+import functools
 import shapely
 import pyproj
 import geojson
@@ -104,29 +105,79 @@ def random_pt_in_tri(tri):
     RPP = A + R*AB + S*AC
     return RPP
 
-def load_shapefile(filename):
+def get_shapefile_args(filename):
     """
-    load up a generic shapefile into a FeatureCollection
-
-    filename is a zip file
-    returns a geojson.FeatureCollection
+    :param filename: string path of a zipped shapefile
+    :return: dict associating shapefile.Reader kwargs to names in the zip file
     """
     with zipfile.ZipFile(filename, 'r') as zsf:
         #need to hunt down the correct pair of shp/dbf. NESDIS files may
         #have a 'point' as well as a 'polygon' file...
         #Going to just go with eliminating choices that contain 'Point Source' and the like for now..
-        shpfiles = [f for f in zsf.namelist() if f.split('.')[-1] == 'shp' and 'point' not in f.lower()]
-        dbffiles = [f for f in zsf.namelist() if f.split('.')[-1] == 'dbf' and 'point' not in f.lower()]
-        if len(shpfiles) == 0:
-            raise ValueError('No .shp file found')
-        elif len(shpfiles) > 1:
-            warnings.warn('More than one .shp file found. Using {0}'.format(shpfiles[0]))
-        shpfile = zsf.open(shpfiles[0], 'r')
-        if len(dbffiles) == 0:
-            raise ValueError('No .dbf file found')
-        elif len(dbffiles) > 1:
-            warnings.warn('More than one .shp file found. Using {0}'.format(shpfiles[0]))
-        dbffile = zsf.open(dbffiles[0], 'r')
-        sf = shapefile.Reader(shp=shpfile, dbf=dbffile)
-        fc = geojson.loads(geojson.dumps(sf.__geo_interface__))
-        return fc
+        sfile_ex = ['shp','dbf','shx','prj']
+        reader_args = {}
+        for arg in sfile_ex:
+            files = [f for f in zsf.namelist() if f.split('.')[-1] == arg and 'point' not in f.lower()]
+            if len(files) == 0:
+                raise ValueError('No .{0} file found'.format(arg))
+            elif len(files) > 1:
+                warnings.warn('More than one .{0} file found. Using {1}'.format(arg, files[0]))
+            reader_args[arg] = files[0]
+        return reader_args
+
+
+def open_shapefile(filename):
+    """
+    :param filename: string path of a zipped shapefile
+    :return: shapefile.Reader
+    """
+    with zipfile.ZipFile(filename, 'r') as zsf:
+        args = get_shapefile_args(filename)
+        for k, v in args.items():
+            args[k] = zsf.open(v, 'r')
+        rv = shapefile.Reader(**args)
+        return rv
+
+def load_shapefile(filename, transform_crs=True):
+    """
+    load up a generic shapefile into a FeatureCollection
+
+    :param filename: string path of a zip file
+    :param transform_crs: attempts to read the .prj file if any and convert to EPSG:4326
+    
+    :return: geojson.FeatureCollection
+    """
+    rv = open_shapefile(filename)
+    rv = geojson.loads(geojson.dumps(rv.__geo_interface__))
+    args = get_shapefile_args(filename)
+    pf = None
+    with zipfile.ZipFile(filename, 'r') as zsf:
+        pf = pyproj.CRS.from_wkt(zsf.open(args['prj'].name, 'r').readline().decode('utf-8'))
+    if not transform_crs:
+        if pf.to_epsg() != '4326':
+            warnings.warn('shapefile is using epsg:{0} not epsg:4326!'.format(pf.to_epsg()))
+    else:
+        if pf.to_epsg() != '4326':
+            if int(pyproj.__version__[0]) < 2:
+                Proj1 = pyproj.Proj(init='epsg:3857')
+                Proj2 = pyproj.Proj(init='epsg:4326')
+                transformer = functools.partial(
+                    pyproj.transform,
+                    Proj1,
+                    Proj2)
+            else:
+                transformer = pyproj.Transformer.from_crs(
+                    "epsg:{0}".format(pf.to_epsg()),
+                    "epsg:4326",
+                    always_xy=True
+                )
+            if hasattr(rv, 'bbox'):
+                xx, yy = transformer.transform([rv.bbox[0],rv.bbox[2]],[rv.bbox[1],rv.bbox[3]])
+                rv.bbox = [xx[0], yy[0], xx[1], yy[1]]
+            for feature in rv.features:
+                old_geo = shapely.geometry.shape(feature.geometry)
+                #Geometries can be MultiPolygons or Polygons
+                #Each needs to be converted to EPSG:4326
+                new_geo = shapely.ops.transform(transformer.transform, old_geo)
+                feature.geometry = geojson.loads(geojson.dumps(new_geo.__geo_interface__))
+        return rv
