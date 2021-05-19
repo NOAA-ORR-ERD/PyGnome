@@ -152,7 +152,7 @@ def load_shapefile(filename, transform_crs=True):
     args = get_shapefile_args(filename)
     pf = None
     with zipfile.ZipFile(filename, 'r') as zsf:
-        pf = pyproj.CRS.from_wkt(zsf.open(args['prj'].name, 'r').readline().decode('utf-8'))
+        pf = pyproj.CRS.from_wkt(zsf.open(args['prj'], 'r').readline().decode('utf-8'))
     if not transform_crs:
         if pf.to_epsg() != '4326':
             warnings.warn('shapefile is using epsg:{0} not epsg:4326!'.format(pf.to_epsg()))

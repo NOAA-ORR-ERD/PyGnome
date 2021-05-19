@@ -358,7 +358,7 @@ class Release(GnomeId):
         .. note:: this releases all the elements at their initial positions at
             the release_time
         """
-        if not self.custom_positions or len(self.custom_positions) == 0:
+        if self.custom_positions is not None or len(self.custom_positions) == 0:
             raise ValueError('No positions to release particles from')
         num_locs = len(self.custom_positions)
         if to_rel < num_locs:
