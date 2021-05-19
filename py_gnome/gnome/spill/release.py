@@ -358,15 +358,15 @@ class Release(GnomeId):
         .. note:: this releases all the elements at their initial positions at
             the release_time
         """
-        if self.custom_positions is not None or len(self.custom_positions) == 0:
+        if self.custom_positions is None or len(self.custom_positions) == 0:
             raise ValueError('No positions to release particles from')
         num_locs = len(self.custom_positions)
         if to_rel < num_locs:
             warnings.warn("{0} is releasing fewer LEs than number of start positions at time: {1}".format(self, current_time))
 
         sl = slice(-to_rel, None, 1)
-        qt = num_locs // to_rel #number of times to tile self.start_positions
-        rem = num_locs % to_rel #remaining LES to distribute randomly
+        qt = to_rel // num_locs #number of times to tile self.start_positions
+        rem = to_rel % num_locs #remaining LES to distribute randomly
         qt_pos = np.tile(self.custom_positions, (qt, 1))
         rem_pos = self.custom_positions[np.random.randint(0,len(self.custom_positions), rem)]
         pos = np.vstack((qt_pos, rem_pos))
@@ -659,6 +659,8 @@ class SpatialRelease(Release):
 
     @property
     def filename(self):
+        if not hasattr(self, '_filename'):
+            self._filename=None
         return self._filename
 
     @filename.setter
@@ -856,6 +858,12 @@ class SpatialRelease(Release):
                 rt.append(t)
 
         return {'weights': rw, 'thicknesses': rt}
+
+    @classmethod
+    def new_from_dict(cls, dict_):
+        if 'filename' in dict_ and 'features' in dict_:
+            dict_.pop('filename')
+        return super(SpatialRelease, cls).new_from_dict(dict_)
 
 def GridRelease(release_time, bounds, resolution):
     """
