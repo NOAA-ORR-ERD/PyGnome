@@ -145,8 +145,8 @@ class Release(GnomeId):
         self._num_per_timestep = num_per_timestep
 
         self.num_elements = num_elements
-        self.release_time = release_time
-        self.end_release_time = end_release_time
+        self.release_time = asdatetime(release_time)
+        self.end_release_time = asdatetime(end_release_time)
         if self.release_time is None:
             self.release_time = datetime.now()
         self.release_mass = release_mass
