@@ -978,15 +978,15 @@ class NESDISRelease(SpatialRelease):
     @property
     def oil_types(self):
         return [
-            feat.properties.get('OILTYPE') for feat in self.features[:] 
-            if 'OILTYPE' in feat.properties
+            feat.properties.get('OILTYPE') if 'OILTYPE' in feat.properties
             else 'Group_{}'.format(feat.properties.get('feature_index'))
+            for feat in self.features[:] 
             ]
 
     @oil_types.setter
     def oil_types(self, ot):
         for o, feat in zip(ot, self.features[:]):
-            feat.properties.get('OILTYPE') = o
+            feat.properties['OILTYPE'] = o
 
     def to_dict(self, json_=None):
         dct = super(NESDISRelease, self).to_dict(json_=json_)
