@@ -12,7 +12,7 @@ from numbers import Number
 import numpy as np
 import pytest
 
-from gnome.spill import SpatialRelease, Spill, point_line_release_spill
+from gnome.spill import Release, Spill, point_line_release_spill
 from gnome.movers import IceMover
 from gnome.outputters import IceJsonOutput
 
@@ -45,7 +45,7 @@ def model(sample_model, output_dir):
                                              release_time=model.start_time,
                                              end_position=start_pos)
 
-    release = SpatialRelease(custom_positions=line_pos,
+    release = Release(custom_positions=line_pos,
                              release_time=model.start_time)
 
     model.spills += Spill(release)
