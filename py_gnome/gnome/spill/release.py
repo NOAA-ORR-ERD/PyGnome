@@ -953,18 +953,20 @@ class NESDISRelease(SpatialRelease):
         returns a geojson.FeatureCollection
         '''
         fc = geo_routines.load_shapefile(filename)
+        release_time = datetime.now()
         for i, feature in enumerate(fc.features):
-            im_date = feature.properties['DATE']
-            im_time = feature.properties['TIME']
-            parsed_time = ''.join([d for d in im_time if d.isdigit()])
-            try:
-                release_time = datetime.strptime(im_date + ' ' + parsed_time, '%m/%d/%Y %H%M')
-            except ValueError as ve:
-                warnings.warn('Could not parse shapefile time: ' + str(ve))
+            im_date = feature.properties.get('DATE', None)
+            im_time = feature.properties.get('TIME', None)
+            if im_date and im_time:
+                parsed_time = ''.join([d for d in im_time if d.isdigit()])
+                try:
+                    release_time = datetime.strptime(im_date + ' ' + parsed_time, '%m/%d/%Y %H%M')
+                except ValueError as ve:
+                    warnings.warn('Could not parse shapefile time: ' + str(ve))
 
             #append webgnomeclient or pygnome specific properties
             feature.properties['feature_index'] = i
-            feature.properties['thickness'] = 5e-6 if feature.properties['OILTYPE'].lower() == 'thin' else 200e-6
+            feature.properties['thickness'] = 5e-6 if feature.properties.get('OILTYPE', '').lower() == 'thin' else 200e-6
             feature.properties['release_time'] = release_time.isoformat()
 
         return fc
@@ -975,12 +977,16 @@ class NESDISRelease(SpatialRelease):
     
     @property
     def oil_types(self):
-        return [feat.properties['OILTYPE'] for feat in self.features[:]]
+        return [
+            feat.properties.get('OILTYPE') for feat in self.features[:] 
+            if 'OILTYPE' in feat.properties
+            else 'Group_{}'.format(feat.properties.get('feature_index'))
+            ]
 
     @oil_types.setter
     def oil_types(self, ot):
         for o, feat in zip(ot, self.features[:]):
-            feat.properties['OILTYPE'] = o
+            feat.properties.get('OILTYPE') = o
 
     def to_dict(self, json_=None):
         dct = super(NESDISRelease, self).to_dict(json_=json_)
