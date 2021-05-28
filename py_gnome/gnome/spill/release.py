@@ -931,9 +931,10 @@ class NESDISRelease(SpatialRelease):
             raise ValueError('''NESDISRelease must be provided a filename 
                 or FeatureCollection to "filename" or "features" respectively''')
         if filename is not None:
-            file_fc = NESDISRelease.load_nesdis(filename)
+            file_fc = NESDISRelease.load_nesdis(filename, kwargs.get('release_time', None))
             features = file_fc
             self.filename = filename
+        #ugly for now. Should disappear after merging NESDIS and Spatial release
         kwargs['release_time'] = datetime.fromisoformat(features[0].properties['release_time'])
         kwargs['end_release_time'] = kwargs['release_time']
 
@@ -943,7 +944,7 @@ class NESDISRelease(SpatialRelease):
         )
 
     @staticmethod
-    def load_nesdis(filename):
+    def load_nesdis(filename, release_time=None):
         '''
         1. load a nesdis shapefile
         2. Translates the time in the property array
@@ -953,13 +954,15 @@ class NESDISRelease(SpatialRelease):
         returns a geojson.FeatureCollection
         '''
         fc = geo_routines.load_shapefile(filename)
-        release_time = datetime.now()
+        release_time = datetime.now() if release_time is None else release_time
         for i, feature in enumerate(fc.features):
             im_date = feature.properties.get('DATE', None)
             im_time = feature.properties.get('TIME', None)
             if im_date and im_time:
                 parsed_time = ''.join([d for d in im_time if d.isdigit()])
                 try:
+                    #if time found in file, it takes precedence over supplied release_time
+                    #this is necessary for webgnome (for now?)
                     release_time = datetime.strptime(im_date + ' ' + parsed_time, '%m/%d/%Y %H%M')
                 except ValueError as ve:
                     warnings.warn('Could not parse shapefile time: ' + str(ve))
