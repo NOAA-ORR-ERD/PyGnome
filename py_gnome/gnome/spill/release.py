@@ -966,7 +966,7 @@ class NESDISRelease(SpatialRelease):
 
             #append webgnomeclient or pygnome specific properties
             feature.properties['feature_index'] = i
-            feature.properties['thickness'] = 5e-6 if feature.properties.get('OILTYPE', '').lower() == 'thin' else 200e-6
+            feature.properties['thickness'] = 200e-6 if feature.properties.get('OILTYPE', '').lower() == 'thick' else 5e-6
             feature.properties['release_time'] = release_time.isoformat()
 
         return fc
