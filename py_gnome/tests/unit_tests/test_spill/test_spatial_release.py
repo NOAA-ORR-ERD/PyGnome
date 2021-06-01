@@ -109,6 +109,9 @@ class TestNESDISRelease(object):
 
         assert nr_from_file == nr_from_features
     
+    def test_default_construction(self):
+        features = geo_routines.load_shapefile(sample_shapefile)
+
     def test_release_time(self):
         nr = NESDISRelease(filename=sample_shapefile)
 
@@ -128,6 +131,7 @@ class TestNESDISRelease(object):
         assert np.isclose(sum(sr._weights), 1.0)
         assert np.isclose(sum([geo_routines.geo_area_of_polygon(t) for t in sr._tris]),
         sum([geo_routines.geo_area_of_polygon(p) for p in sr.polygons]))
+
 '''
 def test_load_shapefile():
     (release_time,
