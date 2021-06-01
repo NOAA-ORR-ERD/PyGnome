@@ -1,10 +1,10 @@
 '''
 Test all operations for ice mover work
 '''
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import unicode_literals
+
+
+
+
 
 # FIXME: this has been disabled becasuse we are getting seeming random segmentation faults on OS-X
 # And it's not clear this mover is getting used anyway.

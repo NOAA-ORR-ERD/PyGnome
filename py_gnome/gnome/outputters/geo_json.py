@@ -2,10 +2,10 @@
 GeoJson outputter
 Does not contain a schema for persistence yet
 '''
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+
+
+
+
 
 import os
 from collections.abc import Iterable

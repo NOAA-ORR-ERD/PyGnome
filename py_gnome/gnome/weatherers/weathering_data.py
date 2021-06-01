@@ -9,10 +9,10 @@ which is defined in a gnome model if there are weatherers defined.
 For now just define a FayGravityInertial class here
 It is only used by WeatheringData to update the 'area' and related arrays
 '''
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+
+
+
+
 
 
 import numpy as np

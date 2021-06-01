@@ -3,7 +3,7 @@
 """
 Script to experiment with contouring LEs
 """
-from __future__ import unicode_literals, division, print_function
+
 
 import numpy as np
 

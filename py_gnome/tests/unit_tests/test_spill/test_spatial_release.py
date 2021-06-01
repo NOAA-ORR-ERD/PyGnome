@@ -3,8 +3,8 @@ tests for the spatial release from polygons:
 
 e.g. from the NESDIS MPSR reports
 """
-from __future__ import print_function
-from __future__ import division
+
+
 
 
 import os

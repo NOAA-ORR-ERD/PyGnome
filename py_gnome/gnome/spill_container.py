@@ -6,10 +6,10 @@ Implements a container for spills -- keeps all the data from each spill in one
 set of arrays. The spills themselves provide some of the arrays themselves
 (adding more each time LEs are released).
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+
+
+
+
 from past.types import basestring
 
 import os

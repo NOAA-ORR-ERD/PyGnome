@@ -2,10 +2,10 @@
 """
 generates a text file with the base64encoded contentes of the icons
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+
+
+
+
 import base64
 import glob
 

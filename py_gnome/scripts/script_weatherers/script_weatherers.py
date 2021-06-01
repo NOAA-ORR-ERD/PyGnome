@@ -6,10 +6,10 @@ Note: this version is using the WEatherers individually
       see script_weathering_run to see an easier way
 """
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+
+
+
+
 
 from gnome import scripting as gs
 
