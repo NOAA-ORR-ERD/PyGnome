@@ -5,10 +5,10 @@ sets the schema for an object for serialization
 NOTE: maybe it would be better to do with a metaclass
       for GNOME_ID ?
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+
+
+
+
 
 # from future import standard_library
 # standard_library.install_aliases()

@@ -11,10 +11,10 @@ This is simply making a point source with a given distribution of droplet sizes
 
 """
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+
+
+
+
 
 import os
 from datetime import datetime, timedelta

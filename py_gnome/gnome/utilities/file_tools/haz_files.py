@@ -7,10 +7,10 @@ Some of these require the point in polygon code that is in the TAP
 check_receptors extension module. I should put that in another library.
 """
 
-from __future__ import division
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import unicode_literals
+
+
+
+
 
 
 import os

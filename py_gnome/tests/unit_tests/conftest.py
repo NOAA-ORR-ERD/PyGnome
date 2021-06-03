@@ -6,10 +6,10 @@ The scope="module" on the fixtures ensures it is only invoked once per test
 module
 """
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+
+
+
+
 
 import os
 from datetime import datetime, timedelta
@@ -550,22 +550,22 @@ def wind_circ(wind_timeseries):
 
 
 @pytest.fixture(scope='module')
-def sample_spatial_release_spill():
+def sample_release_spill():
     """
-    creates an example SpatialRelease object with
+    creates an example Release object with
     start_positions: ((0., 0., 0.), (28.0, -75.0, 0.), (-15, 12, 4.0),
                    (80, -80, 100.0))
     release_time: datetime(2012, 1, 1, 1)
     :returns: a tuple containing (spill, start_positions). start_positions
         should be equal to spill.start_positions
     """
-    from gnome.spill import SpatialRelease
+    from gnome.spill import Release
     start_positions = ((0., 0., 0.),
                        (28.0, -75.0, 0.),
                        (-15, 12, 4.0),
                        (80, -80, 100.0))
 
-    rel = SpatialRelease(release_time=datetime(2012, 1, 1, 1), custom_positions=start_positions)
+    rel = Release(release_time=datetime(2012, 1, 1, 1), custom_positions=start_positions)
     sp = gnome.spill.Spill(release=rel)
 
     return (sp, start_positions)

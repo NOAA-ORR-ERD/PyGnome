@@ -6,10 +6,10 @@ Example of using gnome in "ice infested waters"
 With the ice and current data coming from a ROMS coupled ocean-ice model.
 """
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+
+
+
+
 
 # The gnome.scripting module provides most of what you need for basic scripts
 import gnome.scripting as gs

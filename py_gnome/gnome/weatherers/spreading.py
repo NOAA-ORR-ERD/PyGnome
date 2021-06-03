@@ -3,10 +3,10 @@ objects used to model the spreading of oil
 Include the Langmuir process here as well
 '''
 
-from __future__ import division
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import unicode_literals
+
+
+
+
 
 import numpy as np
 try:

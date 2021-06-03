@@ -3,10 +3,10 @@ Test some of the base class functionality independent of derived classes.
 Just simpler to do the testing here
 Tests the Process methods and the Mover's get_move
 '''
-from __future__ import division
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import unicode_literals
+
+
+
+
 from datetime import datetime, timedelta
 
 import numpy as np

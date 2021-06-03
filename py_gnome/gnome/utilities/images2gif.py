@@ -18,10 +18,10 @@ Almar Klein (June 2009)
 This code is provided as is, and is free to use for all.
 
 """
-from __future__ import division
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import unicode_literals
+
+
+
+
 
 try:
     import PIL

@@ -71,31 +71,5 @@ a GridCurrent representing circular currents around the origin.::
     vels_y = Variable(name='v_y',units='m/s',time=Time.constant_time(), grid=g, data=vy)
     vg = GridCurrent(variables = [vels_y, vels_x], time=[t], grid=g, units='m/s')
 
-Defining a new environment object
----------------------------------
-
-To create a new environment object, let us take the example of water temperature.
-
-1. It is scalar, so it would inherit from a scalar-type environment object
-2. In this example, it is gridded. So our base class is a GriddedProp.
-3. We have a number of data files where the default names could be 'water_t' or 'temp', and we want to write them in to be auto-detected.
-
-Here is the class definition: ::
-
-    class WaterTemperature(GriddedProp):
-        default_names = ['water_t', 'temp']
-
-That's it! Now, you can do the following in your scripts: ::
-
-    from gnome.environment.environment_objects import WaterTemperature
-
-    point = [50.3, 40.2]
-    fn = 'my_datafile.nc'
-    temp = WaterTemperature.from_netCDF(filename=fn)
-    first_temp_at_point = temp.at(point, temp.time.min_time)
-
-Lets do a more advanced example.
-
-
 
 

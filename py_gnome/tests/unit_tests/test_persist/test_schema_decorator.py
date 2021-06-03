@@ -6,10 +6,10 @@ only started -- needs to be fleshed out and tested.
 key missing feature: having it build a full schema from subclasses
 
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+
+
+
+
 
 from gnome.persist.schema_decorator import serializable
 

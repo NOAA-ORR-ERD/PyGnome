@@ -6,10 +6,10 @@ module to hold all the map rendering code.
 This one used the new map_canvas, which uses the gd rendering lib.
 
 """
-from __future__ import division
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import unicode_literals
+
+
+
+
 
 import os
 from os.path import basename

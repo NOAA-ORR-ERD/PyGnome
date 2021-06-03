@@ -6,10 +6,10 @@ Code to compute surface surface_concentration from particles
 Ultimatley, there may be multiple versions of this
 -- with Cython optimizationas and all that.
 """
-from __future__ import division
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import unicode_literals
+
+
+
+
 
 import numpy as np
 from scipy.stats import gaussian_kde

@@ -7,10 +7,10 @@ So far -- does not handle subclassing, which is a BIG missing feature
 NOTE: maybe it would be better to do with a metaclass
       for GNOME_ID ?
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+
+
+
+
 
 
 import colander
