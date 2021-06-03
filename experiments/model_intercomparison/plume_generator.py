@@ -97,7 +97,7 @@ class PlumeGenerator(object):
 
     @time_step_delta.setter
     def time_step_delta(self, val):
-        if type(val) not in six.integer_types + (float,) or val == 0:
+        if type(val) not in (int, float,) or val == 0:
             raise ValueError('time_step_delta needs to be a non-zero number')
         else:
             self._time_step_delta = val
