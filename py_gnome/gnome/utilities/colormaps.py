@@ -83,7 +83,7 @@ class ColorMap:
         if (low, high) == (0, 255):
             values = np.asarray(values, np.uint8)
         else:
-            values = np.asarray(values, np.float)
+            values = np.asarray(values, np.float64)
             values = (values - low) / (high - low) * 255.0
 
             # force out-of-range values into the acceptable range for map_list

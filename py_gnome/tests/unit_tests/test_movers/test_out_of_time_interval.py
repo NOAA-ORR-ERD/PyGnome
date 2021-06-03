@@ -34,9 +34,9 @@ def test_wind_mover():
     # fake data arrays:
     num = 2
 
-    pos_dt = np.dtype([('lon', np.float),
-                       ('lat', np.float),
-                       ('depth', np.float)])
+    pos_dt = np.dtype([('lon', np.float64),
+                       ('lat', np.float64),
+                       ('depth', np.float64)])
 
     sc = SC({'positions': np.zeros((num,), dtype=pos_dt),
              'status_codes': np.zeros((num,), dtype=np.int16),
