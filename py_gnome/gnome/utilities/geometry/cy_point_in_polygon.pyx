@@ -77,7 +77,7 @@ def points_in_poly(cnp.ndarray[double, ndim=2, mode="c"] pgon, points):
     a_points = np_points
 
     ## fixme -- proper way to get np.bool?
-    cdef cnp.ndarray[np.bool_, ndim = 1, mode = "c"] result = np.zeros((a_points.shape[0],), dtype=np.uint8)
+    cdef cnp.ndarray[char, ndim = 1, mode = "c"] result = np.zeros((a_points.shape[0],), dtype=np.uint8)
 
     cdef unsigned int i, nvert, npoints
 
@@ -89,8 +89,8 @@ def points_in_poly(cnp.ndarray[double, ndim=2, mode="c"] pgon, points):
     if scalar:
         return bool(result[0])  # to make it a regular python bool
     else:
-        return result.view(dtype=bool)  # make it a np.bool array
-
+        return result.view(dtype=np.bool)  # make it a np.bool array
+    
 def points_in_polys(cnp.ndarray[double,ndim=3, mode="c"] pgons, cnp.ndarray[double,ndim=2,mode="c"] points):
     """
     Determine if a list of points is inside a list of polygons, in a one-to-one fashion.
@@ -106,15 +106,15 @@ def points_in_polys(cnp.ndarray[double,ndim=3, mode="c"] pgons, cnp.ndarray[doub
     Note: this version takes a 3-d point, even though the third coord
           is ignored.
     """
-
+    
     cdef cnp.ndarray[char,ndim=1,mode="c"] result = np.zeros((points.shape[0],), dtype=np.uint8)
     cdef unsigned int i, N, M
     M = pgons.shape[1]
     N = pgons.shape[0]
-
+    
     for i in range(N):
         result[i] = c_point_in_poly1(M, &pgons[i,0,0], &points[i,0])
-    return result.view(dtype=bool)
-
-
-
+    return result.view(dtype=np.bool)
+    
+    
+    

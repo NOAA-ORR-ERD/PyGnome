@@ -329,7 +329,7 @@ class GnomeMap(GnomeId):
         status_codes = spill['status_codes']
         off_map = np.logical_not(self.on_map(next_positions))
         if len(next_positions) != 0 and np.all(off_map):
-            self.logger.warn("All particles left the map this timestep.")
+            self.logger.warning("All particles left the map this timestep.")
 
         # let model decide if we want to remove elements marked as off-map
         status_codes[off_map] = oil_status.off_maps

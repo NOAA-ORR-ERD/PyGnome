@@ -6,11 +6,6 @@
     It is modeled as a weathering process.
 '''
 
-
-
-
-
-
 from datetime import datetime
 
 import numpy as np
@@ -150,7 +145,7 @@ class Beaching(RemoveMass, Weatherer):
         else:
             msg = ('{0} are not valid volume or mass units.'
                    ' Not updated').format(value)
-            self.logger.warn(msg)
+            self.logger.warning(msg)
 
     def convert_to_internal_volume(self):
         data = self.timeseries['value']

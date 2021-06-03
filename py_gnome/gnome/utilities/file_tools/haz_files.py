@@ -7,12 +7,6 @@ Some of these require the point in polygon code that is in the TAP
 check_receptors extension module. I should put that in another library.
 """
 
-
-
-
-
-
-
 import os
 import numpy as np
 
@@ -102,7 +96,7 @@ class BNAData:
 def ReadDOGSFile(filename):
 
     # Read in the DOGS data:
-    fd = open(filename, 'rU')
+    fd = open(filename, 'r')
     Header = {}
 
     while 1:
@@ -161,7 +155,7 @@ def ReadVerdatFile(filename):
 
     ## fixme -- this doesn't keep the units if they are there in the header
     """
-    infile = open(filename, 'rU')
+    infile = open(filename, 'r')
     PointData = []
 
     while 1:
@@ -315,7 +309,7 @@ def ReadBNA(filename, polytype="list", dtype=np.float64):
     The dtype parameter specifies what numpy data type you want the points
     data in -- it defaults to float (C double)
     """
-    fd = open(filename, 'rU')
+    fd = open(filename, 'r')
 
     if polytype == 'list':
         Output = []

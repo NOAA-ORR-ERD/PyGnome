@@ -1,9 +1,4 @@
 
-
-
-
-
-
 import datetime
 import copy
 import numpy as np
@@ -130,7 +125,7 @@ class Grid_U(gridded.grids.Grid_U, GnomeId):
         #This is for the COOPS case, where their coordinates go from 0-360 starting at prime meridian
         for lon in [self.node_lon,]:
             if lon is not None and lon.max() > 180:
-                self.logger.warn('Detected longitudes > 180 in {0}. Rotating -360 degrees'.format(self.name))
+                self.logger.warning('Detected longitudes > 180 in {0}. Rotating -360 degrees'.format(self.name))
                 lon -= 360
 
     def draw_to_plot(self, ax, features=None, style=None):
@@ -200,7 +195,7 @@ class Grid_S(GnomeId, gridded.grids.Grid_S):
         #This is for the COOPS case, where their coordinates go from 0-360 starting at prime meridian
         for lon in [self.node_lon, self.center_lon, self.edge1_lon, self.edge2_lon]:
             if lon is not None and lon.max() > 180:
-                self.logger.warn('Detected longitudes > 180 in {0}. Rotating -360 degrees'.format(self.name))
+                self.logger.warning('Detected longitudes > 180 in {0}. Rotating -360 degrees'.format(self.name))
                 lon -= 360
         '''
 
@@ -432,9 +427,9 @@ class Variable(gridded.Variable, GnomeId):
                 value = uc.convert(data_units, req_units, value)
             except uc.NotSupportedUnitError:
                 if (not uc.is_supported(data_units)):
-                    warnings.warn("{0} units is not supported: {1}".format(self.name, data_units))
+                    warnings.warning("{0} units is not supported: {1}".format(self.name, data_units))
                 elif (not uc.is_supported(req_units)):
-                    warnings.warn("Requested unit is not supported: {1}".format(req_units))
+                    warnings.warning("Requested unit is not supported: {1}".format(req_units))
                 else:
                     raise
         return value

@@ -1,8 +1,4 @@
 
-
-
-
-
 from past.types import basestring
 
 from colander import Float, SchemaNode, SequenceSchema, Boolean
@@ -370,7 +366,7 @@ class NonWeatheringSubstance(Substance):
 
     @is_weatherable.setter
     def is_weatherable(self, val):
-        self.logger.warn('This substance {0} cannot be set to be weathering')
+        self.logger.warning('This substance {0} cannot be set to be weathering')
 
     def initialize_LEs(self, to_rel, arrs):
         '''

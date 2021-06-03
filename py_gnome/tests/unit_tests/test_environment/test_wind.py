@@ -638,7 +638,7 @@ edge1_lon = np.array(([1, 3, 5], [1, 3, 5], [1, 3, 5], [1, 3, 5]))
 edge1_lat = np.array(([0, 0, 0], [2, 2, 2], [4, 4, 4], [6, 6, 6]))
 center_lon = np.array(([0, 2, 4, 6], [0, 2, 4, 6], [0, 2, 4, 6], [0, 2, 4, 6]))
 center_lat = np.array(([0, 0, 0, 0], [2, 2, 2, 2], [4, 4, 4, 4], [6, 6, 6, 6]))
-center_mask = np.zeros_like(center_lat).astype(np.bool)
+center_mask = np.zeros_like(center_lat).astype(np.bool_)
 center_mask[0,0] = True
 g = Grid_S(node_lon=node_lon,
            node_lat=node_lat,

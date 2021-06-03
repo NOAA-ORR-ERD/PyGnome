@@ -2,12 +2,6 @@
 tests of various schema nodes on their own
 """
 
-                        division,
-                        print_function,
-                        unicode_literals
-                        )
-
-
 from datetime import datetime, timedelta
 from colander import DateTime, SequenceSchema, SchemaNode
 

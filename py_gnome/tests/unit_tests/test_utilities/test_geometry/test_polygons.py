@@ -55,7 +55,7 @@ class Test_Polygon:
 
     def test_index2(self):
         P = Polygon([(1, 2), (3, 4), (5, 6)])
-        assert np.array_equal(P[2], np.array((5, 6), dtype=np.float))
+        assert np.array_equal(P[2], np.array((5, 6), dtype=np.float64))
 
     def test_slice(self):
         P = Polygon([(1, 2), (3, 4), (5, 6)])
@@ -90,7 +90,7 @@ class Test_Polygon:
         P = Polygon(p1)
         print(P.bounding_box)
         assert P.bounding_box == np.array([[1., 2.], [7., 8.]],
-                                          dtype=np.float)
+                                          dtype=np.float64)
 
     def test_size_zero(self):
         P = Polygon((), )
@@ -113,7 +113,7 @@ class Test_PolygonSet:
         poly_set = PolygonSet()
         poly_set.append(p1)
         poly_set.append(p2)
-        bb = np.array(((1., 2.), (35., 40.)), dtype=np.float)
+        bb = np.array(((1., 2.), (35., 40.)), dtype=np.float64)
 
         assert np.array_equal(poly_set.bounding_box, bb)
 

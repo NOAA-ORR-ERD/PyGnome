@@ -3,11 +3,6 @@ oil removal from various cleanup options
 add these as weatherers
 '''
 
-
-
-
-
-
 from datetime import timedelta
 
 import numpy as np
@@ -296,7 +291,7 @@ class Skimmer(CleanUpBase):
         if self._validunits(value):
             self._units = value
         else:
-            self.logger.warn('{0} are not valid volume or mass units. '
+            self.logger.warning('{0} are not valid volume or mass units. '
                              'Not updated'
                              .format(value))
 
