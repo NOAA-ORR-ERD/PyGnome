@@ -120,10 +120,10 @@ def test_model_full_run_output(model, output_dir):
 
     assert csv_file[0].split(",")[0] == "Model Time"
 
-    assert csv_file[1].split(",")[0].strip() == "0:00"
-    assert csv_file[2].split(",")[0].strip() == "1:00"
+    assert csv_file[1].split(",")[0].strip() == "2012-09-15 12:00"
+    assert csv_file[2].split(",")[0].strip() == "2012-09-15 13:00"
 
-    assert csv_file[-1].split(",")[0].strip() == "24:00"
+    assert csv_file[-1].split(",")[0].strip() == "2012-09-16 12:00"
 
 
 def test_model_full_run_output_short_interval(model, output_dir):
@@ -162,11 +162,11 @@ def test_model_full_run_output_short_interval(model, output_dir):
 
     assert csv_file[0].split(",")[0] == "Model Time"
 
-    assert csv_file[1].split(",")[0].strip() == "0:00"
-    assert csv_file[2].split(",")[0].strip() == "0:30"
+    assert csv_file[1].split(",")[0].strip() == "2012-09-15 12:00"
+    assert csv_file[2].split(",")[0].strip() == "2012-09-15 12:30"
 
     print(csv_file[-1])
-    assert csv_file[-1].split(",")[0].strip() == "24:00"
+    assert csv_file[-1].split(",")[0].strip() == "2012-09-16 12:00"
 
     # # floating mass at beginning of step - though tests will only pass for
     # # nominal values
