@@ -111,10 +111,18 @@ class OilBudgetOutput(BaseMassBalanceOutputter, OutputterFilenameMixin):
         run_time = (model_time - self._model_start_time).total_seconds()
         hours = int(run_time // 3600)
         minutes = int((run_time - hours * 3600) // 60)
-        row = ["{}:{:02d}".format(hours, minutes),
-               model_time.strftime("%Y-%m-%d %H:%M")]
+        row = [model_time.strftime("%Y-%m-%d %H:%M"),
+               hours+minutes/60]
+               #"{}:{:02d}".format(hours, minutes)]
+#         row = ["{}:{:02d}".format(hours, minutes),
+#                model_time.strftime("%Y-%m-%d %H:%M")]
         for category in self.budget_categories:
-            row.append(mass_balance_data[category])
+            try:
+                row.append(mass_balance_data[category])
+            except:
+                val=''
+                row.append(val)
+            #row.append(mass_balance_data[category])
         self.csv_writer.writerow(row)
 
     def post_model_run(self):
