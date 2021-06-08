@@ -331,7 +331,7 @@ class FayGravityViscous(Weatherer):
                 K = 4 * PI * 2 * .033
 
                 #blob_area_diffusion = area[m_age].sum() + ((7 / 6) * K * (area[m_age].sum() / K) ** (1 / 7)) * time_step
-                blob_area_diffusion = ((7 / 6) * K * (area[m_age].sum() / K) ** (1 / 7)) * time_step
+                blob_area_diffusion = ((7. / 6.) * K * (area[m_age].sum() / K) ** (1. / 7.)) * time_step
 
                 #blob_area = blob_area_fgv + blob_area_diffusion
                 blob_area = area[m_age].sum() + blob_area_fgv + blob_area_diffusion
