@@ -54,12 +54,26 @@ compile_pygnome:
       - ./$CI_PIPELINE_ID
       - ./py_gnome/documentation/_build/html
 
-test_pygnome:
+test_pygnome_develop:
   stage: test
   allow_failure: true
   image: registry.orr.noaa.gov/erd/centos-conda/centos7-python3
   only:
     - develop
+    - master
+    - production
+  script:
+    - cd ./py_gnome/tests/unit_tests && pytest
+  tags:
+    - docker
+
+test_pygnome_master:
+  stage: test
+  allow_failure: false
+  image: registry.orr.noaa.gov/erd/centos-conda/centos7-python3
+  only:
+    - master
+    - production
   script:
     - cd ./py_gnome/tests/unit_tests && pytest
   tags:
