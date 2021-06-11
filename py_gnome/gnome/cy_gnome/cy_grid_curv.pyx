@@ -1,8 +1,8 @@
 import cython
 
-from grids cimport TimeGridWindCurv_c
-from cy_grid cimport dc_base_to_curv
-from cy_grid_rect cimport CyTimeGridWindRect
+from .grids cimport TimeGridWindCurv_c
+from .cy_grid cimport dc_base_to_curv
+from .cy_grid_rect cimport CyTimeGridWindRect
 
 
 @cython.final

@@ -2,10 +2,14 @@
 GeoJson outputter
 Does not contain a schema for persistence yet
 '''
-import copy
+
+
+
+
+
 import os
+from collections.abc import Iterable
 from glob import glob
-from collections import Iterable
 
 import numpy as np
 
@@ -88,7 +92,7 @@ class TrajectoryGeoJsonOutput(Outputter):
             is None since data is returned in dict for webapi. For using
             write_output_post_run(), this must be set
 
-        use super to pass optional \*\*kwargs to base class __init__ method
+        use super to pass optional ``**kwargs`` to base class __init__ method
         '''
         self.round_data = round_data
         self.round_to = round_to
@@ -128,7 +132,7 @@ class TrajectoryGeoJsonOutput(Outputter):
         c_features = []
         uc_features = []
 
-        for sc in self.cache.load_timestep(step_num).items():
+        for sc in list(self.cache.load_timestep(step_num).items()):
             position = self._dataarray_p_types(sc['positions'])
             status = self._dataarray_p_types(sc['status_codes'])
             mass = self._dataarray_p_types(sc['mass'])
@@ -177,6 +181,8 @@ class TrajectoryGeoJsonOutput(Outputter):
         filename = os.path.join(self.output_dir,
                                 file_format.format(step_num))
 
+        print("output to file")
+        print(type(json_content))
         with open(filename, 'w+') as outfile:
             dump(json_content, outfile, indent=True)
 
@@ -200,8 +206,8 @@ class TrajectoryGeoJsonOutput(Outputter):
         # else:
         #     data = data_array.astype(p_type).tolist()
 
-        # refactored to simplyuse the correct python type:
-        if issubclass(data_array.dtype.type, np.float):
+        # refactored to simply use the correct python type:
+        if issubclass(data_array.dtype.type, float):
             data = data_array.round(self.round_to).astype(float).tolist()
         elif issubclass(data_array.dtype.type, np.integer):
             data = data_array.astype(int).tolist()
@@ -216,12 +222,12 @@ class TrajectoryGeoJsonOutput(Outputter):
     #     self.clean_output_files()
 
     def clean_output_files(self):
-        print "in clean_output_files"
+        print("in clean_output_files")
         if self.output_dir:
             files = glob(os.path.join(self.output_dir, 'geojson_*.geojson'))
 
-            print "files are:"
-            print files
+            print("files are:")
+            print(files)
 
             for f in files:
                 os.remove(f)
@@ -280,9 +286,9 @@ class IceGeoJsonOutput(Outputter):
                 not isinstance(ice_movers, str)):
             self.ice_movers = ice_movers
         elif ice_movers is not None:
-            self.ice_movers = (ice_movers,)
+            self.ice_movers = [ice_movers,]
         else:
-            self.ice_movers = tuple()
+            self.ice_movers = []
 
         super(IceGeoJsonOutput, self).__init__(**kwargs)
 
@@ -296,7 +302,7 @@ class IceGeoJsonOutput(Outputter):
         if self.on is False or not self._write_step:
             return None
 
-        for sc in self.cache.load_timestep(step_num).items():
+        for sc in list(self.cache.load_timestep(step_num).items()):
             # gets the current timestep ?
             pass
 

@@ -5,6 +5,14 @@ Contains functions for adding randomness - not to
 confuse with standard python random functions
 """
 
+
+
+
+
+# from future import standard_library
+# standard_library.install_aliases()
+# from builtins import *
+
 import numpy as np
 
 from gnome.cy_gnome import cy_helpers

@@ -1,5 +1,12 @@
 #!/usr/bin/env python
 
+
+
+
+
+
+from past.types import basestring
+
 import os
 from datetime import datetime, timedelta
 import zipfile
@@ -153,7 +160,7 @@ class Model(GnomeId):
 
     def __init__(self,
                  name='Model',
-                 time_step=900,
+                 time_step=timedelta(minutes=15),
                  start_time=round_time(datetime.now(), 3600),
                  duration=timedelta(days=1),
                  weathering_substeps=1,
@@ -215,7 +222,7 @@ class Model(GnomeId):
         # contains both certain/uncertain spills
         self.spills = SpillContainerPair(uncertain)
         if len(uncertain_spills) > 0:
-            _spills = zip(spills, uncertain_spills)
+            _spills = list(zip(spills, uncertain_spills))
         else:
             _spills = spills
         self.spills.add(_spills)
@@ -299,7 +306,7 @@ class Model(GnomeId):
                                  see: ``gnome.weatherers.__init__.py`` for the full list
 
         """
-        names = weatherers_by_name.keys()
+        names = list(weatherers_by_name.keys())
         try:
             which = standard_weatherering_sets[which]
         except (TypeError, KeyError):
@@ -312,7 +319,7 @@ class Model(GnomeId):
                 raise ValueError("{} is not a valid weatherer. \n"
                                  "The options are:"
                                  " {}".format(wx_name,
-                                              weatherers_by_name.keys()))
+                                              list(weatherers_by_name.keys())))
 
 
 
@@ -363,11 +370,14 @@ class Model(GnomeId):
             refs = Refs()
             self._schema.register_refs(self._schema(), self, refs)
         updatable = self._schema().get_nodes_by_attr('update')
-        attrs = copy.copy(dict_)
+
         updated = False
-        for k in attrs.keys():
-            if k not in updatable:
-                attrs.pop(k)
+        attrs = {k: v for k, v in dict_.items() if k in updatable}
+        # all the below in one comprehension :-)
+        # attrs = copy.copy(dict_)
+        # for k in list(attrs.keys()):
+        #     if k not in updatable:
+        #         attrs.pop(k)
 
         for name in updatable:
             node = self._schema().get(name)
@@ -590,17 +600,25 @@ class Model(GnomeId):
         return all_objs
 
     def find_by_attr(self, attr, value, collection, allitems=False):
+        # fixme: shouldn't this functionality be in OrderedCollection?
+        #        better yet, have a different way to find things!
         '''
         find first object in collection where the 'attr' attribute matches
         'value'. This is primarily used to find 'wind', 'water', 'waves'
         objects in environment collection. Use the '_ref_as' attribute to
         search.
 
+        # fixme: why don't we look for wind, water or waves directly?
+
         Ignore AttributeError since all objects in collection may not contain
         the attribute over which we are searching.
 
-        :param str attr: attribute whose value must match
-        :param str value: desired value of the attribute
+        :param attr: attribute whose value must match
+        :type attr: str
+
+        :param value: desired value of the attribute
+        :type value: str
+
         :param OrderedCollection collection: the ordered collection in which
             to search
         '''
@@ -628,7 +646,7 @@ class Model(GnomeId):
         'use weatherer_sort to sort the weatherers'
         s_weatherers = sorted(self.weatherers, key=weatherer_sort)
 
-        if self.weatherers.values() != s_weatherers:
+        if list(self.weatherers.values()) != s_weatherers:
             self.weatherers.clear()
             self.weatherers += s_weatherers
 
@@ -643,18 +661,18 @@ class Model(GnomeId):
         #simply going for the first-in-line, it is defined here.
         super(Model, self)._attach_default_refs(ref_dict)
 
-        #gathering references IS OPTIONAL. If you are expecting relevant refs
-        #to have already been collected by a parent, this may be skipped.
-        #Since Model is top-level, it should gather what it can
+        # gathering references IS OPTIONAL. If you are expecting relevant refs
+        # to have already been collected by a parent, this may be skipped.
+        # Since Model is top-level, it should gather what it can
         self.gather_ref_as(self.environment, ref_dict)
         self.gather_ref_as(self.map, ref_dict)
         self.gather_ref_as(self.movers, ref_dict)
         self.gather_ref_as(self.weatherers, ref_dict)
         self.gather_ref_as(self.outputters, ref_dict)
 
-        #Provide the references to all contained objects that also use the
-        #default references system by calling _attach_default_refs on each
-        #instance
+        # Provide the references to all contained objects that also use the
+        # default references system by calling _attach_default_refs on each
+        # instance
         all_spills = [sp for sc in self.spills.items() for sp in sc.spills.values()]
         for coll in [self.environment,
                      self.weatherers,
@@ -738,7 +756,11 @@ class Model(GnomeId):
 
         '''Step 3: Compile array_types and run setup on spills'''
         array_types = dict()
-        for oc in [self.movers, self.outputters, self.environment, self.weatherers, self.spills]:
+        for oc in [self.movers,
+                   self.outputters,
+                   self.environment,
+                   self.weatherers,
+                   self.spills]:
             for item in oc:
                 if (hasattr(item, 'array_types')):
                     array_types.update(item.all_array_types)
@@ -939,7 +961,7 @@ class Model(GnomeId):
                    1 more sub-step than we requested.)
         '''
         time_step = int(self._time_step)
-        sub_step = time_step / self.weathering_substeps
+        sub_step = time_step // self.weathering_substeps
 
         indexes = [idx for idx in range(0, time_step + 1, sub_step)]
         res = [(idx, next_idx - idx)
@@ -1013,7 +1035,7 @@ class Model(GnomeId):
             sc.current_time_stamp = None
 
         if self.current_time_step == -1:
-            #starting new run so run setup
+            # starting new run so run setup
             self.setup_model_run()
 
             # let each object raise appropriate error if obj is incomplete
@@ -1023,11 +1045,11 @@ class Model(GnomeId):
                 raise RuntimeError("Setup model run complete but model "
                                    "is invalid", msgs)
 
-            #going into step 0
+            # going into step 0
             self.current_time_step += 1
-            #only release 1 second, to catch any instantaneous releases
+            # only release 1 second, to catch any instantaneous releases
             self.release_elements(0, self.model_time)
-            #step 0 output
+            # step 0 output
             output_info = self.output_step(isValid)
 
             return output_info
@@ -1041,15 +1063,14 @@ class Model(GnomeId):
             raise StopIteration("Run complete for {0}".format(self.name))
 
         else:
-            #self.setup_time_step()
-            #release half the LEs for this time interval
-            self.release_elements(self.time_step/2, self.model_time)
+            # release half the LEs for this time interval
+            self.release_elements(self.time_step / 2, self.model_time)
             self.setup_time_step()
             self.move_elements()
             self.weather_elements()
             self.step_is_done()
             self.current_time_step += 1
-            #Release the remaining half of the LEs in this time interval
+            # Release the remaining half of the LEs in this time interval
             self.release_elements(0, self.model_time)
             output_info = self.output_step(isValid)
             return output_info
@@ -1059,15 +1080,14 @@ class Model(GnomeId):
         output_info = self.write_output(isvalid)
 
         self.logger.debug('{0._pid} '
-                        'Completed step: {0.current_time_step} for {0.name}'
-                        .format(self))
+                          'Completed step: {0.current_time_step} for {0.name}'
+                          .format(self))
         return output_info
 
     def release_elements(self, time_step, model_time):
         num_released = 0
         for sc in self.spills.items():
             sc.current_time_stamp = model_time
-
             # release particles for next step - these particles will be aged
             # in the next step
             num_released = sc.release_elements(time_step, model_time)
@@ -1093,7 +1113,7 @@ class Model(GnomeId):
 
         return self
 
-    def next(self):
+    def __next__(self):
         '''
         (This method satisfies Python's iterator and generator protocols)
 
@@ -1104,6 +1124,8 @@ class Model(GnomeId):
         except StopIteration:
             self.post_model_run()
             raise
+
+    next = __next__  # for the Py2 iterator protocol
 
     def full_run(self, rewind=True):
         '''
@@ -1419,7 +1441,11 @@ class Model(GnomeId):
         '''
         check the user inputs before running the model
         raise an exception if user can't run the model
+
         todo: check if all spills start after model ends
+
+        fixme: This should probably be broken out into its
+               own module, class, something -- with each test independent.
         '''
         (msgs, isValid) = self.validate()
 
@@ -1453,7 +1479,7 @@ class Model(GnomeId):
 
                         msgs.append(self._warn_pre + msg)
 
-                #land check needs to be updated for Spatial Release
+                # land check needs to be updated for Spatial Release
                 if np.any(self.map.on_land(start_pos)):
                     msg = ('{0} has start position on land'.
                            format(spill.name))
@@ -1461,7 +1487,8 @@ class Model(GnomeId):
 
                     msgs.append(self._warn_pre + msg)
 
-                elif hasattr(spill, 'end_position') and not np.all(spill.end_position == spill.start_position):
+                elif (hasattr(spill, 'end_position')
+                      and not np.all(spill.end_position == spill.start_position)):
                     end_pos = copy.deepcopy(spill.end_position)
                     if np.any(self.map.on_land(end_pos)):
                         msg = ('{0} has start position on land'.
@@ -1531,7 +1558,7 @@ class Model(GnomeId):
         for mover in self.movers:
             bounds = mover.get_bounds()
             # check longitude is within map bounds
-            if (bounds[1][0] < map_bounding_box[0][0] or bounds[0][0] > map_bounding_box[1][0] or 
+            if (bounds[1][0] < map_bounding_box[0][0] or bounds[0][0] > map_bounding_box[1][0] or
                 bounds[1][1] < map_bounding_box[0][1] or bounds[0][1] > map_bounding_box[1][1]):
                 msg = ('One of the movers - {0} - is outside of the map bounds. '
                         .format(mover.name))
@@ -1627,7 +1654,7 @@ class Model(GnomeId):
 
         '''
 
-        return self.spills.items()[0].data_arrays.keys()
+        return list(list(self.spills.items())[0].data_arrays.keys())
 
     def get_spill_property(self, prop_name, ucert=0):
         '''
@@ -1635,7 +1662,7 @@ class Model(GnomeId):
         User can specify ucert as 'ucert' or 1
         '''
         ucert = 1 if ucert == 'ucert' else 0
-        return self.spills.items()[ucert][prop_name]
+        return list(self.spills.items())[ucert][prop_name]
 
     def get_spill_data(self, target_properties, conditions, ucert=0):
         """
@@ -1665,7 +1692,7 @@ class Model(GnomeId):
             '''
             Gets the column containing the information on one element
             '''
-            val = self.spills.items()[ucert].data_arrays[prop][index]
+            val = list(self.spills.items())[ucert].data_arrays[prop][index]
             return val
 
         def test_phrase(phrase):
@@ -1692,7 +1719,7 @@ class Model(GnomeId):
         conditions = conditions.rsplit('&&')
         conditions = [str(cond).rsplit('||') for cond in conditions]
 
-        sc = self.spills.items()[ucert]
+        sc = list(self.spills.items())[ucert]
         result = {}
 
         for t in target_properties:

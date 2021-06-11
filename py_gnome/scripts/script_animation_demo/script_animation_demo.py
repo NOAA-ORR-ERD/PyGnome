@@ -30,7 +30,7 @@ base_dir = os.path.dirname(__file__)
 
 
 def make_model(images_dir=os.path.join(base_dir, 'images')):
-    print 'initializing the model'
+    print('initializing the model')
 
     start_time = datetime(2015, 9, 24, 3, 0)
 
@@ -42,7 +42,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     mapfile = get_datafile(os.path.join(base_dir, 'Perfland.bna'))
 
-    print 'adding the map'
+    print('adding the map')
     model.map = MapFromBNA(mapfile, refloat_halflife=1, raster_size=1024*1024)  # seconds
 
     # draw_ontop can be 'uncertain' or 'forecast'
@@ -56,10 +56,10 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 #     renderer.viewport = ((-124.25, 47.5), (-122.0, 48.70))
 
 
-    print 'adding outputters'
+    print('adding outputters')
     model.outputters += renderer
 
-    print 'adding a spill'
+    print('adding a spill')
     # for now subsurface spill stays on initial layer
     # - will need diffusion and rise velocity
     # - wind doesn't act
@@ -72,14 +72,14 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     model.spills += spill1
 
-    print 'adding a RandomMover:'
+    print('adding a RandomMover:')
     model.movers += RandomMover(diffusion_coef=50000)
 
-    print 'adding a wind mover:'
+    print('adding a wind mover:')
 
     model.movers += constant_wind_mover(13, 270, units='m/s')
 
-    print 'adding a current mover:'
+    print('adding a current mover:')
 #     curr_file = get_datafile(os.path.join(base_dir, 'COOPSu_CREOFS24.nc'))
 #
 #     # uncertain_time_delay in hours
@@ -95,8 +95,8 @@ if __name__ == "__main__":
     startTime = datetime.now()
     scripting.make_images_dir()
     model = make_model()
-    print "doing full run"
-    print "Note: Images folder and animation do not create same output, for demonstration"
+    print("doing full run")
+    print("Note: Images folder and animation do not create same output, for demonstration")
     anim = model.outputters[0]
     model.map.save_as_image('raster.bmp')
     for step in model:
@@ -104,7 +104,7 @@ if __name__ == "__main__":
             anim.set_timestamp_attrib(on=False)
         if step['step_num'] == 24:
             anim.set_timestamp_attrib(on=True)
-        print "step: %.4i -- memuse: %fMB" % (step['step_num'],
-                                              utilities.get_mem_use())
-    print datetime.now() - startTime
+        print("step: %.4i -- memuse: %fMB" % (step['step_num'],
+                                              utilities.get_mem_use()))
+    print(datetime.now() - startTime)
 #    pd.print_stats(5)

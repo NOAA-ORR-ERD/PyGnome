@@ -11,53 +11,44 @@
 # conda-forge
 # NOAA-ORR-ERD
 
-python=2.7.*
-setuptools>=23.0
-gitpython
-numpy=1.16.*
-scipy>=0.18.*
-gsw=3.0.3
-psutil>=4.3
-progressbar>=2.3
-pyzmq>=16
-six>=1.10
-geojson>=1.3
-backports.functools_lru_cache>=1.5
-colander>=1.4
+python=3.8.*
 
-tblib>=1.3.*  # needed for child process exception handling.
-
-# gdal=2.* # was only used for map output to geojson -- don't need it anymore.
-#json-c=0.12.1
-libnetcdf=4.6.1
-netCDF4=1.4.1
-cftime=1.0.*
-#cftime>=1.1
-awesome-slugify>=1.6.5
-regex
-unidecode>=0.04.19
-pyshp=1.2.12
-
-#for SpatialRelease
+# for SpatialRelease
 trimesh
 shapely
 pyproj
-mapbox_earcut # from NOAA_ORR_ERD channel
+mapbox_earcut # from NOAA_ORR_ERD channel -- not working
+
+setuptools
+gitpython
+numpy
+scipy
+gsw
+psutil
+progressbar
+pyzmq
+geojson
+colander
+
+tblib # still needed for child process exception handling.
+
+netCDF4
+# awesome-slugify>=1.6.5
+# regex
+# unidecode>=0.04.19
+pyshp
+future  # while maintaining py2/3 compatibility
+
 
 # NOAA maintained packages
-gridded=0.2.5
-pynucos>=2.8.*
-cell_tree2d>=0.3.*
-py_gd=0.1.* # libgd should get brought in automatically
+gridded=0.3.0
+pynucos
+cell_tree2d
+py_gd>=1
 
-# needed for OilLibrary
-#SQLAlchemy>=1.0.13
-#zope.sqlalchemy>=1.0.0
-#zope.interface>=4.1
 
 # required for building
-# note: cython 0.26 introduced a incompatibility that we should address at some point
-cython=0.25.*
+cython
 
 # needed to run tests
 pytest
@@ -68,11 +59,11 @@ testfixtures
 # nice to have for development, not required to run
 matplotlib
 ipython
-jupyter
+notebook # this gets you Jupyter notebook without all the QT stuff
 
 # required to build docs
 sphinx
 sphinx_rtd_theme
-nbsphinx=0.3.*
+nbsphinx
 
 

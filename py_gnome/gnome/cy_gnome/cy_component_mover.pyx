@@ -4,11 +4,11 @@ cimport numpy as cnp
 import numpy as np
 from libc.string cimport memcpy
 
-from type_defs cimport *
-from utils cimport _GetHandleSize
-from cy_current_mover cimport CyCurrentMover, dc_mover_to_cmover
-from current_movers cimport ComponentMover_c, CATSMover_c
-from movers cimport Mover_c
+from .type_defs cimport *
+from .utils cimport _GetHandleSize
+from .cy_current_mover cimport CyCurrentMover, dc_mover_to_cmover
+from .current_movers cimport ComponentMover_c, CATSMover_c
+from .movers cimport Mover_c
 from gnome import basic_types
 from gnome.cy_gnome.cy_ossm_time cimport CyOSSMTime
 from gnome.cy_gnome cimport cy_mover
@@ -369,7 +369,7 @@ cdef class CyComponentMover(CyCurrentMover):
         sz = _GetHandleSize(<Handle>vel_hdl)
 
         # will this always work?
-        vels = np.empty((sz / tmp_size,), dtype=basic_types.velocity_rec)
+        vels = np.empty((sz // tmp_size,), dtype=basic_types.velocity_rec)
 
         memcpy(&vels[0], vel_hdl[0], sz)
 
@@ -389,7 +389,7 @@ cdef class CyComponentMover(CyCurrentMover):
         sz = _GetHandleSize(<Handle>pts_hdl)
 
         # will this always work?
-        pts = np.empty((sz / tmp_size,), dtype=basic_types.w_point_2d)
+        pts = np.empty((sz // tmp_size,), dtype=basic_types.w_point_2d)
 
         memcpy(&pts[0], pts_hdl[0], sz)
 
@@ -409,7 +409,7 @@ cdef class CyComponentMover(CyCurrentMover):
         sz = _GetHandleSize(<Handle>pts_hdl)
 
         # will this always work?
-        pts = np.empty((sz / tmp_size,), dtype=basic_types.w_point_2d)
+        pts = np.empty((sz // tmp_size,), dtype=basic_types.w_point_2d)
 
         memcpy(&pts[0], pts_hdl[0], sz)
 
@@ -429,7 +429,7 @@ cdef class CyComponentMover(CyCurrentMover):
         sz = _GetHandleSize(<Handle>pts_hdl)
 
         # will this always work?
-        pts = np.empty((sz / tmp_size,), dtype=basic_types.long_point)
+        pts = np.empty((sz // tmp_size,), dtype=basic_types.long_point)
 
         memcpy(&pts[0], pts_hdl[0], sz)
 
@@ -449,7 +449,7 @@ cdef class CyComponentMover(CyCurrentMover):
         sz = _GetHandleSize(<Handle>top_hdl)
 
         # will this always work?
-        top = np.empty((sz / tmp_size,), dtype=basic_types.triangle_data)
+        top = np.empty((sz // tmp_size,), dtype=basic_types.triangle_data)
 
         memcpy(&top[0], top_hdl[0], sz)
 

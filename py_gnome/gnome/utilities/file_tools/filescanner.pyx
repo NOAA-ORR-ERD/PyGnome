@@ -109,33 +109,34 @@ def scan(infile, num_to_read=None):
             break
         if j == stdio.EOF:
             break
-        if num_read > out_arr.shape[0]: # need to make the array bigger
+        if num_read > out_arr.shape[0]:  # need to make the array bigger
             # NOTE: ndarray.resize does not work in Cython
-            out_arr.resize((int(out_arr.shape[0]*1.2), ), refcheck=False)
+            out_arr.resize((int(out_arr.shape[0] * 1.2), ), refcheck=False)
             arr_view = out_arr
-            #temp = np.zeros( (num_read+<int> out_arr.shape[0]*1.5) )
-            #temp[:num_read-1] = out_arr
-            #out_arr = temp
-        arr_view[num_read-1] = value
+            # temp = np.zeros( (num_read+<int> out_arr.shape[0]*1.5) )
+            # temp[:num_read-1] = out_arr
+            # out_arr = temp
+        arr_view[num_read - 1] = value
         num_read += 1
-    num_read -= 1 # remove the extra tacked on at the end
+    num_read -= 1  # remove the extra tacked on at the end
 
     if N != UINT32_MAX and num_read < N:
-        raise ValueError("not enough values in the file -- only read %i"%num_read)
+        raise ValueError("not enough values in the file -- "
+                         "only read %i" % num_read)
 
     # advance past any whitespace left
     while True:
         c = stdio.fgetc(fp)
         if not isspace(c):
             # move back one char
-            if c >-1: # not EOF
+            if c > -1:  # not EOF
                 stdio.fseek(fp, -1, stdio.SEEK_CUR)
             break
 
     # resize to fit:
     if out_arr.shape[0] > num_read:
         # resize can work if you don't need cython to access the data later
-        out_arr.resize( (num_read, ), refcheck=False )
+        out_arr.resize((num_read, ), refcheck=False)
     return out_arr
 
 
@@ -146,9 +147,9 @@ def resize_test():
     """
     cdef cnp.ndarray[double, ndim=1, mode="c"] arr
 
-    arr = np.zeros( (1,) )
+    arr = np.zeros((1,))
     arr[0] = 3.14
-    arr.resize((4,), refcheck = False)
+    arr.resize((4,), refcheck=False)
     arr[1] = 5.6
     arr[2] = 7.1
     arr[3] = 4.3

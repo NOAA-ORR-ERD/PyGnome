@@ -9,6 +9,10 @@ CDF for Weibull distribution:
 
 """
 
+
+
+
+
 from math import exp, log
 
 def fraction_below_d(d, alpha, lambda_):

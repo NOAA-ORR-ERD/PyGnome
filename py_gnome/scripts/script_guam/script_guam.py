@@ -8,7 +8,8 @@ from datetime import datetime, timedelta
 
 import numpy as np
 
-from gnome import scripting
+from gnome import scripting as gs
+
 from gnome.basic_types import datetime_value_2d
 
 from gnome.utilities.remote_data import get_datafile
@@ -28,31 +29,31 @@ base_dir = os.path.dirname(__file__)
 
 
 def make_model(images_dir=os.path.join(base_dir, 'images')):
-    print 'initializing the model'
+    print('initializing the model')
 
     start_time = datetime(2013, 2, 13, 9, 0)
 
     # 1/2 hr in seconds
     model = Model(start_time=start_time,
                   duration=timedelta(days=2),
-                  time_step=30 * 60, # 30 minutes
+                  time_step=gs.minutes(30),  # 30 * 60,  30 minutes
                   uncertain=False)
 
-    print 'adding the map'
+    print('adding the map')
     mapfile = get_datafile(os.path.join(base_dir, 'GuamMap.bna'))
-    model.map = MapFromBNA(mapfile, refloat_halflife=6)  # hours
+    model.map = gs.MapFromBNA(mapfile, refloat_halflife=6)  # hours
 
-    print 'adding outputters'
+    print('adding outputters')
     renderer = Renderer(mapfile, images_dir, image_size=(800, 600))
     renderer.viewport = ((144.6, 13.4), (144.7, 13.5))
     model.outputters += renderer
 
     netcdf_file = os.path.join(base_dir, 'script_guam.nc')
-    scripting.remove_netcdf(netcdf_file)
+    gs.remove_netcdf(netcdf_file)
 
     model.outputters += NetCDFOutput(netcdf_file, which_data='all')
 
-    print 'adding a spill'
+    print('adding a spill')
     end_time = start_time + timedelta(hours=6)
     spill = point_line_release_spill(num_elements=1000,
                                      start_position=(144.664166,
@@ -61,10 +62,10 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                                      end_release_time=end_time)
     model.spills += spill
 
-    print 'adding a RandomMover:'
+    print('adding a RandomMover:')
     model.movers += RandomMover(diffusion_coef=50000)
 
-    print 'adding a wind mover:'
+    print('adding a wind mover:')
     series = np.zeros((4, ), dtype=datetime_value_2d)
     series[0] = (start_time, (5, 135))
     series[1] = (start_time + timedelta(hours=23), (5, 135))
@@ -72,11 +73,11 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     series[3] = (start_time + timedelta(hours=48), (5, 0))
 
     wind = Wind(timeseries=series, units='knot')
-    w_mover = WindMover(wind)
+    w_mover = gs.WindMover(wind)
     model.movers += w_mover
     model.environment += w_mover.wind
 
-    print 'adding a cats mover:'
+    print('adding a cats mover:')
     curr_file = get_datafile(os.path.join(base_dir, 'OutsideWAC.cur'))
     c_mover = CatsMover(curr_file)
 
@@ -86,7 +87,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     model.movers += c_mover
 
-    print 'adding a cats shio mover:'
+    print('adding a cats shio mover:')
     curr_file = get_datafile(os.path.join(base_dir, 'WACFloodTide.cur'))
     tide_file = get_datafile(os.path.join(base_dir, 'WACFTideShioHts.txt'))
 
@@ -108,10 +109,10 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     return model
 
 if __name__ == "__main__":
-    scripting.make_images_dir()
+    gs.make_images_dir()
 
     model = make_model()
     for step in model:
-        print step
+        print(step)
 
     model.full_run()

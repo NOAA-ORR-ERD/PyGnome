@@ -1,6 +1,10 @@
 '''
 tests for cleanup options
 '''
+
+
+
+
 from datetime import datetime, timedelta
 
 import numpy as np
@@ -22,7 +26,7 @@ from gnome.spill import point_line_release_spill
 from gnome.utilities.inf_datetime import InfDateTime
 from gnome.environment import Waves, constant_wind, Water
 
-from conftest import test_oil
+from .conftest import test_oil
 
 delay = 1.
 time_step = 900
@@ -37,7 +41,7 @@ amount = 36000.
 units = 'kg'    # leave as SI units
 
 
-class ObjForTests:
+class ObjForTests(object):
     @classmethod
     def mk_test_objs(cls, water=None):
         '''
@@ -56,8 +60,8 @@ class ObjForTests:
         weatherers = [WeatheringData(water), FayGravityViscous(water)]
         weatherers.sort(key=weatherer_sort)
         sc = SpillContainer()
-        print "******************"
-        print "Adding a spill to spill container"
+        print("******************")
+        print("Adding a spill to spill container")
         sc.spills += point_line_release_spill(10,
                                               (0, 0, 0),
                                               rel_time,
@@ -139,7 +143,7 @@ class ObjForTests:
             wd.model_step_is_done(self.sc)
 
 
-class TestCleanUpBase:
+class TestCleanUpBase(object):
     base = CleanUpBase()
 
     def test_init(self):
@@ -404,7 +408,7 @@ class TestBurn(ObjForTests):
 
         # check that active stop is being correctly set
         assert InfDateTime('inf') > burn.active_range[1]
-        print '\nCompleted steps: {0:2}'.format(step_num)
+        print('\nCompleted steps: {0:2}'.format(step_num))
 
     @mark.parametrize(("thick", "avg_frac_water", "units"), [(0.003, 0, 'm'),
                                                              (1, 0, 'm'),
@@ -427,8 +431,8 @@ class TestBurn(ObjForTests):
         it works.
         '''
         self.spill.num_elements = 500
-        print 'starting num_elements = ', self.spill.num_elements
-        print 'time_step = ', time_step
+        print('starting num_elements = ', self.spill.num_elements)
+        print('time_step = ', time_step)
 
         thick_si = uc.convert('Length', units, 'm', thick)
         area = (0.5 * self.volume) / thick_si
@@ -466,9 +470,9 @@ class TestBurn(ObjForTests):
 
         duration = ((burn.active_range[1] - burn.active_range[0])
                     .total_seconds() / 3600)
-        print ('Current Thickness: {0:.3f}, '
+        print(('Current Thickness: {0:.3f}, '
                'Duration (hrs): {1:.3f}').format(burn._oilwater_thickness,
-                                                 duration)
+                                                 duration))
 
         exp_mass_remain = (burn._oilwater_thickness * burn.area *
                            (1 - avg_frac_water) *
@@ -498,15 +502,15 @@ class TestBurn(ObjForTests):
         self._weather_elements_helper(burn2, avg_frac_water=0.3)
         self._weather_elements_helper(burn3, avg_frac_water=0.5)
 
-        print "frac_water", 1.0, "burn_duration", \
+        print("frac_water", 1.0, "burn_duration", \
             round((burn1.active_range[1] - burn1.active_range[0])
-                  .total_seconds())
-        print "frac_water", 0.3, "burn_duration", \
+                  .total_seconds()))
+        print("frac_water", 0.3, "burn_duration", \
             round((burn2.active_range[1] - burn2.active_range[0])
-                  .total_seconds())
-        print "frac_water", 0.9, "burn_duration", \
+                  .total_seconds()))
+        print("frac_water", 0.9, "burn_duration", \
             round((burn3.active_range[1] - burn3.active_range[0])
-                  .total_seconds())
+                  .total_seconds()))
         assert (burn1.active_range[1] - burn1.active_range[0] <
                 burn2.active_range[1] - burn2.active_range[0] <
                 burn3.active_range[1] - burn3.active_range[0])

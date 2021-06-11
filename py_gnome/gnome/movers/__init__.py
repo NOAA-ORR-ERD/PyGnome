@@ -2,9 +2,13 @@
     __init__.py for the gnome.movers package
 '''
 
-from movers import Mover, Process, CyMover, ProcessSchema, PyMover
-from simple_mover import SimpleMover, SimpleMoverSchema
-from wind_movers import (WindMover,
+
+
+
+
+from .movers import Mover, Process, CyMover, ProcessSchema, PyMover
+from .simple_mover import SimpleMover, SimpleMoverSchema
+from .wind_movers import (WindMover,
                          WindMoverSchema,
                          constant_wind_mover,
                          wind_mover_from_file,
@@ -13,15 +17,15 @@ from wind_movers import (WindMover,
                          IceWindMover,
                          IceWindMoverSchema)
 
-from ship_drift_mover import ShipDriftMover, ShipDriftMoverSchema
-from random_movers import (RandomMover,
+from .ship_drift_mover import ShipDriftMover, ShipDriftMoverSchema
+from .random_movers import (RandomMover,
                            RandomMoverSchema,
                            IceAwareRandomMover,
                            IceAwareRandomMoverSchema,
                            RandomMover3D,
                            RandomMover3DSchema)
 
-from current_movers import (CatsMover,
+from .current_movers import (CatsMover,
                             CatsMoverSchema,
                             ComponentMover,
                             ComponentMoverSchema,
@@ -32,12 +36,12 @@ from current_movers import (CatsMover,
                             CurrentCycleMover,
                             CurrentCycleMoverSchema)
 
-from vertical_movers import (RiseVelocityMover,
+from .vertical_movers import (RiseVelocityMover,
                              RiseVelocityMoverSchema,
                              TamocRiseVelocityMover)
 
-from py_wind_movers import PyWindMover, PyWindMoverSchema
-from py_current_movers import PyCurrentMover, PyCurrentMoverSchema
+from .py_wind_movers import PyWindMover, PyWindMoverSchema
+from .py_current_movers import PyCurrentMover, PyCurrentMoverSchema
 
 
 mover_schemas = [

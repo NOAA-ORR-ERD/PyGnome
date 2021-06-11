@@ -1,3 +1,9 @@
+
+
+
+
+
+
 import copy
 from datetime import datetime
 
@@ -434,11 +440,13 @@ class GridCurrent(VelocityGrid, Environment):
 
     _ref_as = 'current'
     _gnome_unit = 'm/s'
-    default_names = {'u': ['u', 'U', 'water_u', 'curr_ucmp'],
-                     'v': ['v', 'V', 'water_v', 'curr_vcmp'],
+    default_names = {'u': ['u', 'U', 'water_u', 'curr_ucmp', 'u_surface', 'u_sur'],
+                     'v': ['v', 'V', 'water_v', 'curr_vcmp', 'v_surface', 'v_sur'],
                      'w': ['w', 'W']}
-    cf_names = {'u': ['eastward_sea_water_velocity'],
-                'v': ['northward_sea_water_velocity'],
+    cf_names = {'u': ['eastward_sea_water_velocity',
+                      'surface_eastward_sea_water_velocity'],
+                'v': ['northward_sea_water_velocity',
+                      'surface_northward_sea_water_velocity'],
                 'w': ['upward_sea_water_velocity']}
 
     def at(self, points, time, *args, **kwargs):
@@ -518,7 +526,7 @@ class GridCurrent(VelocityGrid, Environment):
 
             if 'degree' in self.angle.units:
                 raw_ang = raw_ang * np.pi/180.
-            
+
             ctr_mask = gridded.utilities.gen_celltree_mask_from_center_mask(self.grid.center_mask, angle_padding_slice)
             ang = raw_ang.reshape(-1)
             ang = np.ma.MaskedArray(ang, mask = ctr_mask.reshape(-1))
@@ -534,6 +542,21 @@ class GridCurrent(VelocityGrid, Environment):
             return super(GridCurrent, self).get_data_vectors()
 
 class GridWind(VelocityGrid, Environment):
+    """
+    Gridded winds -- usually from netcdf files from meteorological models.
+
+    This will most often be initialized from netcdf files as so:
+
+    `wind = GridWind.from_netCDF(filename="a/path/to/a/netcdf_file.nc")
+
+    filename can be:
+
+    * An already open netCDF4 Dataset
+
+    * A single path to a netcdf file
+
+    * A list of paths to a set of netcdf files with timeseries
+    """
     _ref_as = 'wind'
     _gnome_unit = 'm/s'
     default_names = {'u': ['air_u', 'Air_U', 'air_ucmp', 'wind_u'],

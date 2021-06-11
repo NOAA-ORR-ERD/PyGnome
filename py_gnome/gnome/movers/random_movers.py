@@ -1,6 +1,11 @@
 '''
 Movers using diffusion as the forcing function
 '''
+
+
+
+
+
 import numpy as np
 
 from colander import (SchemaNode, Float, Boolean, drop)

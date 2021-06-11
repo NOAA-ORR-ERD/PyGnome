@@ -1,13 +1,12 @@
 '''
 model emulsification process
 '''
-from __future__ import division
 
-import copy
+
+
+
 
 import numpy as np
-
-import gnome
 
 from gnome.array_types import gat
 
@@ -120,8 +119,8 @@ class Emulsification(Weatherer):
             dens_oil = data['oil_density']
             visc_oil = data['oil_viscosity']
             sigma_ow = substance.oil_water_surface_tension() # does this vary in time?
-            print "sigma_ow"
-            print sigma_ow[0]
+            print("sigma_ow")
+            print(sigma_ow[0])
             v0 = substance.kvis_at_temp(water_temp)	#viscosity is calculated in weathering_data
             if wave_height > 0:
                 delta_T_emul = 1630 + 450 / wave_height ** (1.5)
@@ -205,17 +204,17 @@ class Emulsification(Weatherer):
 
             # Bill's calculation uses sigma_ow[0] in dynes/cm, visc in cSt and a fudge factor of .478834
             # so we need to convert and scale
-            print "dens_oil"
-            print dens_oil
-            print "visc_oil"
-            print visc_oil
-            print "r_oil"
-            print r_oil
+            print("dens_oil")
+            print(dens_oil)
+            print("visc_oil")
+            print(visc_oil)
+            print("r_oil")
+            print(r_oil)
             S_b = .478834 * ((dens_oil * (1000000*visc_oil)**.25 / (1000*sigma_ow[0])) * r_oil * np.exp(-2 * r_oil**2))**(1/6)
             S_b[S_b > 1] = 1.
             S_b[S_b < 0] = 0.
-            print "S_b"
-            print S_b
+            print("S_b")
+            print(S_b)
             T_week = 604800
 
 

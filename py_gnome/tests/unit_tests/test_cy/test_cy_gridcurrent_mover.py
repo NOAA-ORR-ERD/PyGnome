@@ -4,6 +4,10 @@ unit tests cython wrapper
 designed to be run with py.test
 """
 
+
+
+
+
 import os
 import datetime
 
@@ -19,7 +23,7 @@ from gnome.utilities import time_utils
 from ..conftest import testdata
 
 
-class Common:
+class Common(object):
 
     """
     test setting up and moving four particles
@@ -60,12 +64,12 @@ def test_init():
               'uncertain_along': 0.75,
               'uncertain_cross': 0.5}
     gcm = CyGridCurrentMover(**kwargs)
-    for key, val in kwargs.iteritems():
+    for key, val in kwargs.items():
         assert getattr(gcm, key) == val
 
 
 @pytest.mark.slow
-class TestGridCurrentMover:
+class TestGridCurrentMover(object):
 
     cm = Common()
     gcm = CyGridCurrentMover()
@@ -75,7 +79,7 @@ class TestGridCurrentMover:
     def move(self):
         self.gcm.prepare_for_model_run()
 
-        print "Certain move"
+        print("Certain move")
         self.gcm.prepare_for_model_step(self.cm.model_time, self.cm.time_step)
         self.gcm.get_move(
             self.cm.model_time,
@@ -95,7 +99,7 @@ class TestGridCurrentMover:
         spill_size[0] = self.cm.num_le  # for uncertainty spills
         start_pos = (-76.149368, 37.74496, 0)
 
-        print "Uncertain move"
+        print("Uncertain move")
         self.gcm.prepare_for_model_step(self.cm.model_time, self.cm.time_step,
                                         1, spill_size)
 
@@ -108,13 +112,13 @@ class TestGridCurrentMover:
 
     def check_move(self):
         self.move()
-        print self.cm.delta
+        print(self.cm.delta)
         assert np.all(self.cm.delta['lat'] != 0)
         assert np.all(self.cm.delta['long'] != 0)
 
     def check_move_uncertain(self):
         self.move_uncertain()
-        print self.cm.delta_uncertainty
+        print(self.cm.delta_uncertainty)
         assert np.all(self.cm.delta_uncertainty['lat'] != 0)
         assert np.all(self.cm.delta_uncertainty['long'] != 0)
 

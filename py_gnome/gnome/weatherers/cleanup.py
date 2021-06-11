@@ -2,6 +2,7 @@
 oil removal from various cleanup options
 add these as weatherers
 '''
+
 from datetime import timedelta
 
 import numpy as np
@@ -290,7 +291,7 @@ class Skimmer(CleanUpBase):
         if self._validunits(value):
             self._units = value
         else:
-            self.logger.warn('{0} are not valid volume or mass units. '
+            self.logger.warning('{0} are not valid volume or mass units. '
                              'Not updated'
                              .format(value))
 
@@ -694,7 +695,7 @@ class Burn(CleanUpBase):
             return
 
         for substance, data in sc.itersubstancedata(self.array_types, fate_status='burn'):
-            if len(data['mass']) is 0:
+            if len(data['mass']) == 0:
                 return
 
             points = sc['positions']
@@ -859,7 +860,7 @@ class ChemicalDispersion(CleanUpBase):
             return
 
         for substance, data in sc.itersubstancedata(self.array_types, fate_status='disperse'):
-            if len(data['mass']) is 0:
+            if len(data['mass']) == 0:
                 continue
 
             points = sc['positions']

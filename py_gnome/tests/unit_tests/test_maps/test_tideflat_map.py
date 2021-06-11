@@ -4,6 +4,10 @@
 tests for the tidal flat map
 """
 
+
+
+
+
 # a few tests that show that the delation to the underlying map works:
 
 import os
@@ -82,7 +86,6 @@ def simple_model(output_dir):
                                     #           (5.5, 53.5)),
                                     )
 
-
     return model
 
 
@@ -128,7 +131,6 @@ def test_with_gnome_map():
     assert tfm.allowable_spill_position((13, 13, 0))
 
     assert not tfm.allowable_spill_position((10.5, 10.5, 0))
-
 
 def test_TideFlatBase():
     """
@@ -176,7 +178,7 @@ def test_tideflat_map_with_both():
     assert tfm.in_water((11, 11, 0))
     assert tfm.allowable_spill_position((13, 13, 0))
 
-    # now the real stuff!
+# now the real stuff!
 
 
 def test_refloat_elements():
@@ -217,7 +219,7 @@ def test_full_model_run(simple_model):
     simple_model.duration = gs.hours(24)
     # simple_model.full_run()
     for step in simple_model:
-        print "step num:", step['step_num']
+        print("step num:", step['step_num'])
 
     status = simple_model.get_spill_property('status_codes')
 
@@ -255,8 +257,10 @@ def test_model_run_with_tideflat(simple_model):
     # to make it run faster
     model.time_step = gs.hours(2)
     for step in model:
-        print "step_num", step['step_num']
+        print("step_num", step['step_num'])
 
     status = model.get_spill_property('status_codes')
 
     assert np.all(status == oil_status.on_land)
+
+

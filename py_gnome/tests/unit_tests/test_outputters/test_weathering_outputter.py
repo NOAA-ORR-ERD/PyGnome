@@ -2,6 +2,10 @@
 tests for weathering outputter
 '''
 
+
+
+
+
 import os
 from glob import glob
 from datetime import timedelta
@@ -39,7 +43,7 @@ def model(sample_model):
     waves = Waves(wind, water)
     model.environment += waves
 
-    print "the environment:", model.environment
+    print("the environment:", model.environment)
 
     start_time = model.start_time
 
@@ -126,7 +130,7 @@ def test_model_webapi_output(model, output_dir):
             np.isclose(sum_mass,
                        step['WeatheringOutput'][key]['amount_released'])
 
-        print 'Completed step: ', step['step_num']
+        print('Completed step: ', step['step_num'])
 
     # removed last test and do the assertion here itself instead of writing to
     # file again which takes awhile!

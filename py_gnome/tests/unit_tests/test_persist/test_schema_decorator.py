@@ -7,6 +7,10 @@ key missing feature: having it build a full schema from subclasses
 
 """
 
+
+
+
+
 from gnome.persist.schema_decorator import serializable
 
 from colander import SchemaNode, String, Float, Integer, Boolean
@@ -14,7 +18,7 @@ from colander import SchemaNode, String, Float, Integer, Boolean
 
 def test_simple():
     @serializable
-    class Example():
+    class Example(object):
         x = 5 # not a schema object
         y = Float()
         z = Integer(strict=True)

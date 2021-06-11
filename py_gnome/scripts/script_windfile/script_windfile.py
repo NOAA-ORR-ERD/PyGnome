@@ -39,7 +39,7 @@ base_dir = os.path.dirname(__file__)
 def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     # create the maps:
-    print 'creating the maps'
+    print('creating the maps')
     mapfile = get_datafile(os.path.join(base_dir, './MassBayMap.bna'))
     gnome_map = MapFromBNA(mapfile,
                            refloat_halflife=1,  # hours
@@ -51,7 +51,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                         image_size=(800, 800),
                         )
 
-    print 'initializing the model'
+    print('initializing the model')
     start_time = datetime(2016, 3, 9, 15)
 
     # 1 hour in seconds
@@ -62,7 +62,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                   map=gnome_map,
                   uncertain=True)
 
-    print 'adding outputters'
+    print('adding outputters')
     model.outputters += renderer
 
     # netcdf_file = os.path.join(base_dir, 'script_boston.nc')
@@ -71,10 +71,10 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     # model.outputters += KMZOutput(os.path.join(base_dir, 'script_boston.kmz'))
 
-    print 'adding a RandomMover:'
+    print('adding a RandomMover:')
     model.movers += RandomMover(diffusion_coef=100000)
 
-    print 'adding a wind mover:'
+    print('adding a wind mover:')
 
     series = np.zeros((2, ), dtype=datetime_value_2d)
     series[0] = (start_time, (5, 180))
@@ -101,7 +101,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # # TODO: cannot add this till environment base class is created
     # model.environment += c_mover.tide
 
-    print 'adding a spill'
+    print('adding a spill')
 
     end_time = start_time + timedelta(hours=12)
     spill = point_line_release_spill(num_elements=100,
@@ -117,7 +117,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
 if __name__ == "__main__":
     scripting.make_images_dir()
-    print "setting up the model"
+    print("setting up the model")
     model = make_model()
-    print "running the model"
+    print("running the model")
     model.full_run()

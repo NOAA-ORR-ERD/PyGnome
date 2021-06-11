@@ -3,17 +3,18 @@ import numpy as np
 from gnome import basic_types
 
 # following exist in gnome.cy_gnome
-from movers cimport WindMover_c, Mover_c
+from .movers cimport WindMover_c, Mover_c
 
-from type_defs cimport (WorldPoint3D,
+from .type_defs cimport (WorldPoint3D,
                         LEWindUncertainRec,
                         VelocityRec,
                         LEStatus, LEType,
                         OSErr, Seconds)
-from cy_mover cimport CyWindMoverBase
+from .cy_mover cimport CyWindMoverBase
 
 cimport numpy as cnp
-cimport cy_mover, cy_ossm_time
+cimport gnome.cy_gnome.cy_mover as cy_mover
+cimport gnome.cy_gnome.cy_ossm_time as cy_ossm_time
 
 """
 Dynamic casts are not currently supported in Cython - define it here instead.

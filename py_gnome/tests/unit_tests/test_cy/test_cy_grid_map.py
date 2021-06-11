@@ -4,6 +4,10 @@ unit tests cython wrapper
 designed to be run with py.test
 """
 
+
+
+
+
 import os
 
 import pytest
@@ -14,7 +18,7 @@ from ..conftest import testdata
 
 
 @pytest.mark.slow
-class TestGridMap:
+class TestGridMap(object):
 
     # gcm = cy_grid_map.CyGridMap()
 

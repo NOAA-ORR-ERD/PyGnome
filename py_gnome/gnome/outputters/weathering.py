@@ -1,8 +1,14 @@
 '''
 Weathering Outputter
 '''
+
+
+
+
+
+
 import os
-import copy
+# import copy
 from glob import glob
 
 from geojson import dump
@@ -25,14 +31,14 @@ class BaseMassBalanceOutputter(Outputter):
     def gather_mass_balance_data(self, step_num):
         # return a json-compatible dict of the mass_balance data
         # only applies to forecast spill_container (Not uncertain)
-        sc = self.cache.load_timestep(step_num).items()[0]
+        sc = list(self.cache.load_timestep(step_num).items())[0]
 
         output_info = {'model_time': sc.current_time_stamp}
         output_info.update(sc.mass_balance)
 
         self.logger.debug(self._pid + 'step_num: {0}'.format(step_num))
 
-        for name, val in output_info.iteritems():
+        for name, val in list(output_info.items()):
             msg = ('\t{0}: {1}'.format(name, val))
             self.logger.debug(msg)
 

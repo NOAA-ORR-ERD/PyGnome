@@ -1,6 +1,10 @@
 '''
 tests for geojson outputter
 '''
+
+
+
+
 from datetime import datetime
 
 import numpy as np
@@ -10,7 +14,7 @@ import pytest
 from gnome.utilities import time_utils
 
 from gnome.environment import Tide
-from gnome.spill import SpatialRelease, Spill, point_line_release_spill
+from gnome.spill import Release, Spill, point_line_release_spill
 from gnome.movers import CatsMover
 from gnome.outputters.json import CurrentJsonOutput
 
@@ -47,7 +51,7 @@ def model(sample_model, output_dir):
                                              release_time=model.start_time,
                                              end_position=rel_end_pos)
 
-    release = SpatialRelease(custom_positions=line_pos,
+    release = Release(custom_positions=line_pos,
                              release_time=model.start_time)
 
     model.spills += Spill(release)
@@ -85,11 +89,11 @@ def test_current_grid_json_output(model):
         # There should be only one key, but we will iterate anyway.
         # We just want to verify here that our keys exist in the movers
         # collection.
-        for k in fcs.keys():
+        for k in list(fcs.keys()):
             assert model.movers.index(k) > 0
 
         # Check that our structure is correct.
-        for fc in fcs.values():
+        for fc in list(fcs.values()):
             assert 'direction' in fc
             assert 'magnitude' in fc
             assert len(fc['direction']) > 0

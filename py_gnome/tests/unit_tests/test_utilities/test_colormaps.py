@@ -1,6 +1,10 @@
 """
 Tests of the gd map canvas code.
 """
+
+
+
+
 import numpy as np
 
 import pytest

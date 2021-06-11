@@ -1,19 +1,20 @@
 import numpy as np
 import os
+import locale
 
 cimport numpy as cnp
 from libc.string cimport memcpy
 
 from gnome import basic_types
 
-from type_defs cimport *
-from utils cimport (ShioTimeValue_c,
+from .type_defs cimport *
+from .utils cimport (ShioTimeValue_c,
                     #EbbFloodData, EbbFloodDataH,
                     #HighLowData, HighLowDataH,
                     _NewHandle, _GetHandleSize)
-from cy_ossm_time cimport CyOSSMTime, dynamic_cast_ptr
-from cy_helpers import filename_as_bytes
-from cy_helpers cimport to_bytes
+from .cy_ossm_time cimport CyOSSMTime, dynamic_cast_ptr
+from .cy_helpers import filename_as_bytes
+from .cy_helpers cimport to_bytes
 
 
 cdef class CyShioTime(CyOSSMTime):
@@ -38,7 +39,7 @@ cdef class CyShioTime(CyOSSMTime):
             self.shio = NULL
 
     def __init__(self,
-                 basestring filename=None,
+                 unicode filename,
                  scale_factor=1,
                  daylight_savings_off=False,  # let shio figure out by default
                  yeardata=None):
@@ -47,6 +48,7 @@ cdef class CyShioTime(CyOSSMTime):
         scale_factor. The file_format is always set to 0 since shio is neither
         in 'uv', nor 'r-theta' format and Shio does not use this for data read
         """
+        print(filename)
         super(CyShioTime, self).__init__(filename, 0, scale_factor)
 
         # base class will set file_format to basic_types.ts_format.uv
@@ -55,6 +57,18 @@ cdef class CyShioTime(CyOSSMTime):
             yeardata = os.path.join(os.path.dirname(basic_types.__file__),
                                     'data/yeardata/')
         self.set_shio_yeardata_path(yeardata)
+        self._yeardata_path = yeardata
+
+    def __reduce__(self):
+        return (
+            CyShioTime,
+            (
+                self._cy_filename,
+                self.time_dep.fScaleFactor,
+                self.shio.daylight_savings_off,
+                self._yeardata_path
+            )
+        )
 
     def set_shio_yeardata_path(self, yeardata_path_):
         """
@@ -65,11 +79,13 @@ cdef class CyShioTime(CyOSSMTime):
         cdef OSErr err
         cdef bytes yeardata_path
 
+        # path separator as a bytes object
+        cdef bytes bsep = os.sep.encode("ASCII")
         yeardata_path = to_bytes(unicode(yeardata_path_))
 
         if os.path.exists(yeardata_path):
-            if yeardata_path[-1] != os.sep:
-                yeardata_path = os.path.normpath(yeardata_path) + os.sep
+            if yeardata_path[-1] != bsep:
+                yeardata_path = os.path.normpath(yeardata_path) + bsep
 
             # implicit conversion from bytes to char *
             err = self.shio.SetYearDataPath(yeardata_path)
@@ -77,7 +93,7 @@ cdef class CyShioTime(CyOSSMTime):
                 raise ValueError("Path could not be correctly be set by "
                                  "ShioTimeValue_c.SetYearDataPath(...)")
         else:
-            raise IOError("No such file: " + yeardata_path)
+            raise IOError("No such file: " + yeardata_path_)
 
     def _read_time_values(self, filename):
         '''
@@ -99,7 +115,7 @@ cdef class CyShioTime(CyOSSMTime):
     property yeardata:
         def __get__(self):
             """ get path of yeardata files """
-            return <bytes>self.shio.fYearDataPath
+            return self.shio.fYearDataPath.decode(locale.getpreferredencoding())
 
         def __set__(self, value):
             """ set path of yeardata files """
@@ -113,7 +129,7 @@ cdef class CyShioTime(CyOSSMTime):
             """
             cdef bytes sType
             sType = self.shio.fStationType
-            return sType
+            return sType.decode(locale.getpreferredencoding())
 
     def __repr__(self):
         """
@@ -168,37 +184,37 @@ cdef class CyShioTime(CyOSSMTime):
 #         """
 #         # initialize self.shio.fEbbFloodDataHdl for specified duration
 #         self.get_time_value(modelTime)
-# 
+#
 #         cdef short tmp_size = sizeof(EbbFloodData)
 #         cdef cnp.ndarray[EbbFloodData, ndim = 1] ebb_flood
-# 
+#
 #         if self.shio.fStationType == 'C':
 #             # allocate memory and copy it over
 #             sz = _GetHandleSize(<Handle>self.shio.fEbbFloodDataHdl)
-#             ebb_flood = np.empty((sz / tmp_size,),
+#             ebb_flood = np.empty((sz // tmp_size,),
 #                                  dtype=basic_types.ebb_flood_data)
 #             memcpy(&ebb_flood[0], self.shio.fEbbFloodDataHdl[0], sz)
 #             return ebb_flood
 #         else:
 #             return 0
-# 
+#
 #     def get_high_low(self, modelTime):
 #         """
 #         Return high and low tide data for specified modelTime
 #         """
 #         # initialize self.shio.fEbbFloodDataHdl for specified duration
 #         self.get_time_value(modelTime)
-# 
+#
 #         cdef short tmp_size = sizeof(HighLowData)
 #         cdef cnp.ndarray[HighLowData, ndim = 1] high_low
-# 
+#
 #         if self.shio.fStationType == 'H':
 #             # initialize self.shio.fEbbFloodDataHdl for specified duration
 #             self.get_time_value(modelTime)
-# 
+#
 #             # allocate memory and copy it over
 #             sz = _GetHandleSize(<Handle>self.shio.fHighLowDataHdl)
-#             high_low = np.empty((sz / tmp_size,),
+#             high_low = np.empty((sz // tmp_size,),
 #                                 dtype=basic_types.ebb_flood_data)
 #             memcpy(&high_low[0], self.shio.fHighLowDataHdl[0], sz)
 #             return high_low

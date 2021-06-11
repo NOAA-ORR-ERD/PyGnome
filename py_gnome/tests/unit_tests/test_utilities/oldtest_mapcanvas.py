@@ -2,6 +2,10 @@
 Tests of the gd map canvas code.
 """
 
+
+
+
+
 import os
 
 from gnome.utilities import map_canvas

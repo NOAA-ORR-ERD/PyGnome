@@ -1,7 +1,10 @@
 '''
 model dispersion process
 '''
-from __future__ import division
+
+
+
+
 
 import numpy as np
 
@@ -126,7 +129,7 @@ class NaturalDispersion(Weatherer):
                             sediment,
                             V_entrain,
                             ka)
-            except: 
+            except:
                 import pdb
                 pdb.post_mortem()
 

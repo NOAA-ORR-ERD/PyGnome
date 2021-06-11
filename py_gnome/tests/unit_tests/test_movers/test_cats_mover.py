@@ -1,6 +1,10 @@
 '''
 Test all operations for cats mover work
 '''
+
+
+
+
 import datetime
 import os
 from os.path import basename
@@ -103,9 +107,9 @@ def test_certain_uncertain():
 
     delta = test_loop()
     u_delta = test_uncertain_loop()
-    print
-    print delta
-    print u_delta
+    print()
+    print(delta)
+    print(u_delta)
     assert np.all(delta[:, :2] != u_delta[:, :2])
     assert np.all(delta[:, 2] == u_delta[:, 2])
 
@@ -134,7 +138,7 @@ def test_scale_value():
     """
 
     c_cats.scale_value = 0
-    print c_cats.scale_value
+    print(c_cats.scale_value)
     assert c_cats.scale_value == 0
 
 
@@ -162,8 +166,8 @@ def _assert_move(delta):
     helper function to test assertions
     """
 
-    print
-    print delta
+    print()
+    print(delta)
     assert np.all(delta[:, :2] != 0)
     assert np.all(delta[:, 2] == 0)
 

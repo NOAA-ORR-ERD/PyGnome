@@ -1,7 +1,7 @@
 
 from libc.stdint cimport int32_t
 
-from type_defs cimport OSErr, Seconds
+from .type_defs cimport OSErr, Seconds
 
 from gnome import basic_types
 

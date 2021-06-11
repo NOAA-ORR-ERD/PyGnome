@@ -6,14 +6,15 @@ assorted HAZMAT file formats.
 Some of these require the point in polygon code that is in the TAP
 check_receptors extension module. I should put that in another library.
 """
+
 import os
 import numpy as np
 
-try:
-    from .filescanner import scan
-    FILESCANNER = True
-except:
-    FILESCANNER = False
+# try:
+#     from .filescanner import scan
+#     FILESCANNER = True
+# except:
+FILESCANNER = False #because py3
 
 ## fixme: It would be MUCH cleaner to internally store VerDat data with
 ## Python style slicing and indexing, including storing a 0 at the beginning
@@ -95,7 +96,7 @@ class BNAData:
 def ReadDOGSFile(filename):
 
     # Read in the DOGS data:
-    fd = open(filename, 'rU')
+    fd = open(filename, 'r')
     Header = {}
 
     while 1:
@@ -109,12 +110,12 @@ def ReadDOGSFile(filename):
         # initialize arrays
 
     Npoints = int(Header['NOBJ'])
-    Coords = np.zeros((Npoints, 2), dtype=np.float)
-    Depths = np.zeros((Npoints,), dtype=np.float)
+    Coords = np.zeros((Npoints, 2), dtype=np.float64)
+    Depths = np.zeros((Npoints,), dtype=np.float64)
 
     line = line.split(',')
-    for n in xrange(Npoints):
-        lon, lat, depth = map(float, line[1:4])
+    for n in range(Npoints):
+        lon, lat, depth = list(map(float, line[1:4]))
         Coords[n, :] = (lon, lat)
         Depths[n] = depth
         line = fd.readline().strip().split(',')
@@ -138,7 +139,7 @@ def WriteDOGSFiles(filename, Coords, Depths, Units='meters'):
     fd.write("[BNDS]  %f, %f, %f, %f\n" % (high_lat, low_long,
                                            low_lat, high_long))
 
-    for i in xrange(N):
+    for i in range(N):
         fd.write("%i, %f, %f, %f, 0.0, 0.0, 0\n" % (i + 1,
                                                     Coords[i, 0],
                                                     Coords[i, 1],
@@ -154,7 +155,7 @@ def ReadVerdatFile(filename):
 
     ## fixme -- this doesn't keep the units if they are there in the header
     """
-    infile = open(filename, 'rU')
+    infile = open(filename, 'r')
     PointData = []
 
     while 1:
@@ -187,7 +188,7 @@ def WriteVerdatFile(filename, PointData, Boundaries):
     fd = open(filename, 'w')
 
     fd.write('DOGS\n')
-    for i in xrange(len(PointData)):
+    for i in range(len(PointData)):
         fd.write("%i, " % (i + 1))  # Verdat indexes from 1
         fd.write("%f, %f, %f\n" % tuple(PointData[i]))
     fd.write("  0,   0.000,   0.000,   0.000\n")
@@ -221,29 +222,26 @@ def GetNextBNAPolygon(f, dtype=np.float64):
           simply split on the commas
           (or march through the line looking for the quotes -- regex?)
     """
-    while True: # skip blank lines
+    while True:  # skip blank lines
         header = f.readline()
-        if not header: # end of file
+        if not header:  # end of file
             return None
-        if header.strip(): # found a header
+        if header.strip():  # found a header
             break
         else:
             continue
 
-    try:
-        header.decode('ascii')
-    except UnicodeDecodeError:
-        raise ValueError('File has incorrect header for BNA format')
+    # try:
+    #     header.decode('ascii')
+    # except UnicodeDecodeError:
+    #     raise ValueError('File has incorrect header for BNA format')
 
     try:
         fields = header.split('"')
         name = fields[1]
         sname = fields[3]
         num_points = int(fields[4].strip()[1:])
-        #header = header.replace('", "', '","') # some bnas have an extra space
-        #name, rest = header.strip().split('","')
     except (ValueError, IndexError):
-    #except:
         raise ValueError('File has incorrect header for BNA format: {0}'
                          .format(header))
 
@@ -259,9 +257,9 @@ def GetNextBNAPolygon(f, dtype=np.float64):
                        .format(name))
 
     if FILESCANNER:
-            points = scan(f, num_points * 2)
-            points = np.asarray(points, dtype=dtype)
-            points.shape = (-1, 2)
+        points = scan(f, num_points * 2)
+        points = np.asarray(points, dtype=dtype)
+        points.shape = (-1, 2)
     else:
         points = np.zeros((num_points, 2), dtype)
         for i in range(num_points):
@@ -295,7 +293,7 @@ def WriteBNA(filename, polyset):
             outfile.write('%.8f, %.8f \n' % (point[0], point[1]))
 
 
-def ReadBNA(filename, polytype="list", dtype=np.float):
+def ReadBNA(filename, polytype="list", dtype=np.float64):
     """
     Read a bna file.
 
@@ -309,9 +307,9 @@ def ReadBNA(filename, polytype="list", dtype=np.float):
     - "BNADataClass": A BNAData class object -- this may be broken now!
 
     The dtype parameter specifies what numpy data type you want the points
-    data in -- it defaults to np.float (C double)
+    data in -- it defaults to float (C double)
     """
-    fd = open(filename, 'rU')
+    fd = open(filename, 'r')
 
     if polytype == 'list':
         Output = []
@@ -329,7 +327,7 @@ def ReadBNA(filename, polytype="list", dtype=np.float):
             poly = GetNextBNAPolygon(fd)
             if poly is None:
                 break
-            ##fixme: should this be a dict, instead?
+            # fixme: should this be a dict, instead?
             Output.append(poly[0], poly[1:])
 
     elif polytype == 'BNADataClass':
@@ -349,10 +347,10 @@ def ReadBNA(filename, polytype="list", dtype=np.float):
             num_points = int(line)
             Types.append(Type)
             Names.append(Name)
-            polygon = np.zeros((num_points, 2), np.float)
+            polygon = np.zeros((num_points, 2), np.float64)
 
             for i in range(num_points):
-                polygon[i, :] = map(float, fd.readline().split(','))
+                polygon[i, :] = list(map(float, fd.readline().split(',')))
             polys.append(polygon)
 
         Output = BNAData(polys, Names, Types, os.path.abspath(filename))

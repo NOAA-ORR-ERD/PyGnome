@@ -84,7 +84,7 @@ def test_constant_wind():
 
     delta = run_one_timestep(sc, wm, time_step, model_time)
 
-    print delta
+    print(delta)
     # west wind
     # only the first 5 should move
     assert np.all(delta[:5, 0] > 0.0)
@@ -110,12 +110,12 @@ def test_random_mover():
 
     sc.release_elements(time_step, model_time)
 
-    print "status codes"
-    print sc['status_codes']
+    print("status codes")
+    print(sc['status_codes'])
 
     delta = run_one_timestep(sc, rand, time_step, model_time)
 
-    print "delta:", delta
+    print("delta:", delta)
 
     assert np.all(delta[:, 0] != 0.0)
     assert np.all(delta[:, 1] != 0.0)
@@ -223,13 +223,13 @@ def test_full_model_run():
     #        they should be zero on the tideflats
 
     # run one step:
-    print model.step()
+    print(model.step())
     # step zero -- should be released, but not yet moved
     positions = model.get_spill_property('positions').copy()
     assert np.all(positions == 0.0)
     prev_positions = positions
 
-    print model.step()
+    print(model.step())
     # step one -- all elements should have moved in horizontal
     positions = model.get_spill_property('positions').copy()
     assert np.all(positions[:, 0:1] != prev_positions[:, 0:1])
@@ -260,7 +260,7 @@ def test_full_model_run():
     model.get_spill_property('status_codes')[:] = oil_status.in_water
 
     # step the model again
-    print model.step()
+    print(model.step())
     positions = model.get_spill_property('positions').copy()
     delta = positions - prev_positions
     # they all should have moved again

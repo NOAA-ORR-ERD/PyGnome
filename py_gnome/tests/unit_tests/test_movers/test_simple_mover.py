@@ -8,6 +8,10 @@ test code for the simple_mover class
 designed to be run with py.test
 """
 
+
+
+
+
 import numpy as np
 
 from gnome.movers import simple_mover
@@ -24,7 +28,7 @@ def test_basic_move():
     mover = simple_mover.SimpleMover(velocity=(1.0, 10.0, 0.0))
 
     delta = mover.get_move(sp, time_step=100.0, model_time=None)
-    print delta
+    print(delta)
 
     # expected = np.zeros_like(delta)
 

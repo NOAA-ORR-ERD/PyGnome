@@ -1,11 +1,26 @@
+
+
+
+
+
+# from future import standard_library
+# standard_library.install_aliases()
+# from builtins import *
+
+
 import numpy as np
-import collections
+try:
+    from collections.abc import MutableMapping
+except ImportError:
+    from collections import MutableMapping
 import warnings
 
 from gnome.gnomeobject import AddLogger
 from gnome.array_types import default_array_types
 
-class LEData(collections.MutableMapping, AddLogger, dict):
+
+class LEData(MutableMapping, AddLogger, dict):
+    # Fixme: we need a docstring here!
     """
 
     """
@@ -49,7 +64,7 @@ class LEData(collections.MutableMapping, AddLogger, dict):
         will always be the number of elements that are contained in a
         SpillContainer.
         """
-        return 0 if len(self._arrs.values()) is 0 else len(self._arrs.values()[0])
+        return 0 if len(list(self._arrs.values())) == 0 else len(list(self._arrs.values())[0])
 
     def __getitem__(self, key):
         return self._arrs[key]
@@ -102,7 +117,7 @@ class LEData(collections.MutableMapping, AddLogger, dict):
         """
         if self._initialized:
             warnings.warn('{0} is already initialized.'.format(self))
-        for name, atype in self._array_types.items():
+        for name, atype in list(self._array_types.items()):
             if atype.shape is None:
                 shape = (self.num_oil_components, )
             else:
@@ -122,7 +137,7 @@ class LEData(collections.MutableMapping, AddLogger, dict):
         """
         if not self._initialized:
             raise ValueError("Must initialize spill data arrays before extending is possible")
-        for name, atype in self._array_types.items():
+        for name, atype in list(self._array_types.items()):
             # initialize all arrays even if 0 length
             if atype.shape is None:
                 shape = (self.num_oil_components, )

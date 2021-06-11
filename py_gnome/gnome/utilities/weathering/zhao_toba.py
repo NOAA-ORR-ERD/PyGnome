@@ -1,6 +1,5 @@
 
 from gnome.utilities.weathering import PiersonMoskowitz
-from gnome.constants import gravity as g
 
 
 class ZhaoToba(object):
@@ -17,16 +16,15 @@ class ZhaoToba(object):
             for winds less than 2.4 m/s
         '''
 
-
-        if wind_speed is 0:
+        if wind_speed == 0:
             return 0
-            
+
         if wind_speed > 2.4:
             C_D = .0008 + .000065 * wind_speed
         else:
             C_D = (.0008 + 2.4 * .000065) * wind_speed / 2.4
 
-        visc_air = 1.5 * 10**(-5) # m2/s
+        visc_air = 1.5 * 10**(-5)  # m2/s
         peak_ang_freq = PiersonMoskowitz.peak_angular_frequency(wind_speed)
         R_Bw = C_D * wind_speed**2 / (visc_air * peak_ang_freq)
         Wc = 3.88 * 10**(-5) * R_Bw**(1.09)

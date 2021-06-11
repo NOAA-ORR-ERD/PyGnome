@@ -1,16 +1,23 @@
-﻿from core import Weatherer, HalfLifeWeatherer
-from cleanup import Skimmer, Burn, ChemicalDispersion
-from manual_beaching import Beaching
-from evaporation import Evaporation
-from natural_dispersion import NaturalDispersion
-from dissolution import Dissolution
-from bio_degradation import Biodegradation
-from emulsification import Emulsification
-from weathering_data import WeatheringData
-from spreading import Langmuir, FayGravityViscous, ConstantArea
-from roc import Burn as ROC_Burn
-from roc import Disperse as ROC_Disperse
-from roc import Skim as ROC_Skim
+
+
+
+
+
+
+from .core import Weatherer, HalfLifeWeatherer
+from .cleanup import Skimmer, Burn, ChemicalDispersion
+from .manual_beaching import Beaching
+from .evaporation import Evaporation
+from .natural_dispersion import NaturalDispersion
+from .dissolution import Dissolution
+from .emulsification import Emulsification
+from .weathering_data import WeatheringData
+from .bio_degradation import Biodegradation
+from .spreading import Langmuir, FayGravityViscous, ConstantArea
+from .roc import Burn as ROC_Burn
+from .roc import Disperse as ROC_Disperse
+from .roc import Skim as ROC_Skim
+
 
 '''
     Weatherers are to be ordered as follows:

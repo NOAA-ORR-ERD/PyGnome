@@ -1,8 +1,8 @@
+
 import datetime
-import StringIO
 import copy
 import numpy as np
-import logging
+# import logging
 import warnings
 from functools import wraps
 
@@ -125,7 +125,7 @@ class Grid_U(gridded.grids.Grid_U, GnomeId):
         #This is for the COOPS case, where their coordinates go from 0-360 starting at prime meridian
         for lon in [self.node_lon,]:
             if lon is not None and lon.max() > 180:
-                self.logger.warn('Detected longitudes > 180 in {0}. Rotating -360 degrees'.format(self.name))
+                self.logger.warning('Detected longitudes > 180 in {0}. Rotating -360 degrees'.format(self.name))
                 lon -= 360
 
     def draw_to_plot(self, ax, features=None, style=None):
@@ -195,7 +195,7 @@ class Grid_S(GnomeId, gridded.grids.Grid_S):
         #This is for the COOPS case, where their coordinates go from 0-360 starting at prime meridian
         for lon in [self.node_lon, self.center_lon, self.edge1_lon, self.edge2_lon]:
             if lon is not None and lon.max() > 180:
-                self.logger.warn('Detected longitudes > 180 in {0}. Rotating -360 degrees'.format(self.name))
+                self.logger.warning('Detected longitudes > 180 in {0}. Rotating -360 degrees'.format(self.name))
                 lon -= 360
         '''
 
@@ -336,11 +336,11 @@ class Grid_R(gridded.grids.Grid_R, GnomeId):
     def get_lines(self):
 
         lon_lines = np.array([[(lon, self.node_lat[0]),
-                               (lon, self.node_lat[len(self.node_lat) / 2]),
+                               (lon, self.node_lat[len(self.node_lat) // 2]),
                                (lon, self.node_lat[-1])]
                               for lon in self.node_lon], dtype=np.float32)
         lat_lines = np.array([[(self.node_lon[0], lat),
-                               (self.node_lon[len(self.node_lon) / 2], lat),
+                               (self.node_lon[len(self.node_lon) // 2], lat),
                                (self.node_lon[-1], lat)]
                               for lat in self.node_lat], dtype=np.float32)
 
@@ -427,9 +427,9 @@ class Variable(gridded.Variable, GnomeId):
                 value = uc.convert(data_units, req_units, value)
             except uc.NotSupportedUnitError:
                 if (not uc.is_supported(data_units)):
-                    warnings.warn("{0} units is not supported: {1}".format(self.name, data_units))
+                    warnings.warning("{0} units is not supported: {1}".format(self.name, data_units))
                 elif (not uc.is_supported(req_units)):
-                    warnings.warn("Requested unit is not supported: {1}".format(req_units))
+                    warnings.warning("Requested unit is not supported: {1}".format(req_units))
                 else:
                     raise
         return value
@@ -533,6 +533,19 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
         self.extrapolation_is_allowed = extrapolation_is_allowed
 
     @classmethod
+    def from_netCDF(cls, *args, **kwargs):
+        # only here to provide a docstring
+        """
+        create a Vector Environment object
+
+        :param filename: One of:
+                        - path to a netcdf file
+                        - list of paths to a netcdf file
+                        - an open netCDF4.Dataset
+        """
+        return super().from_netCDF(*args, **kwargs)
+
+    @classmethod
     def new_from_dict(cls, dict_, **kwargs):
         if not dict_.get('variables', False):
             return super(VectorVariable, cls).new_from_dict(cls.from_netCDF(**dict_).to_dict(), **kwargs)
@@ -562,8 +575,8 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
             # must be roms-style staggered
             u_padding_slice = (np.s_[:],) + self.grid.get_padding_slices(self.grid.edge1_padding)
             v_padding_slice = (np.s_[:],) + self.grid.get_padding_slices(self.grid.edge2_padding)
-            raw_u = raw_u[u_padding_slice].filled(0)
-            raw_v = raw_v[v_padding_slice].filled(0)
+            raw_u = np.ma.filled(raw_u[u_padding_slice], 0)
+            raw_v = np.ma.filled(raw_v[v_padding_slice], 0)
             raw_u = (raw_u[:, :, 0:-1, ] + raw_u[:, :, 1:]) / 2
             raw_v = (raw_v[:, 0:-1, :] + raw_v[:, 1:, :]) / 2
         #u/v should be interpolated to centers at this point. Now apply appropriate mask
@@ -585,8 +598,8 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
             x = x.compressed().reshape(xt, -1)
             y = y.compressed().reshape(yt,-1)
         else:
-            raw_u = raw_u.filled(0).reshape(raw_u.shape[0], -1)
-            raw_v = raw_v.filled(0).reshape(raw_v.shape[0], -1)
+            raw_u = np.ma.filled(raw_u, 0).reshape(raw_u.shape[0], -1)
+            raw_v = np.ma.filled(raw_v, 0).reshape(raw_v.shape[0], -1)
             r = np.stack((raw_u, raw_v))
             return np.ascontiguousarray(r, np.float32)
 

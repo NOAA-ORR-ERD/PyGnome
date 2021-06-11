@@ -1,6 +1,11 @@
 '''
 test objects defined in wd module
 '''
+
+
+
+
+
 from datetime import datetime, timedelta
 
 import numpy as np
@@ -21,7 +26,7 @@ default_ts = 900  # default timestep for tests
 water = Water()
 
 
-class TestWeatheringData:
+class TestWeatheringData(object):
     def test_init(self):
         WeatheringData(water)
 
@@ -48,7 +53,7 @@ class TestWeatheringData:
 
         # test initialization as well
         wd.prepare_for_model_run(sc)
-        for val in sc.mass_balance.values():
+        for val in list(sc.mass_balance.values()):
             assert val == 0.0
 
         # test initialization as well
@@ -173,7 +178,8 @@ class TestWeatheringData:
 
         # create a mock_water type on which we can set the density - only for
         # this test
-        mock_water = type('mock_water',
+        # fixme: can we really not simp override the density of a Water object?
+        mock_water = type(str('mock_water'),  # str for py2-3 compatibility
                           (Water,),
                           dict(density=sc['density'][0] - 10))
 
@@ -242,7 +248,7 @@ class TestWeatheringData:
             # model would update the age
             sc1['age'] += ts
             sc2['age'] += ts
-            print 'Completed step: ', i
+            print('Completed step: ', i)
 
     def test_update_intrinsic_props(self):
         '''
@@ -278,7 +284,7 @@ class TestWeatheringData:
         for w in weatherers:
             w.prepare_for_model_run(sc)
 
-        for val in sc.mass_balance.values():
+        for val in list(sc.mass_balance.values()):
             assert val == 0.0
 
         # test initialization as well
@@ -295,7 +301,7 @@ class TestWeatheringData:
             for w in weatherers:
                 self.step(w, sc, curr_time)
 
-            for key, val in sc.mass_balance.iteritems():
+            for key, val in sc.mass_balance.items():
                 if len(sc) > 0 and key not in ('beached',
                                                'non_weathering',
                                                'off_maps'):
@@ -322,7 +328,7 @@ class TestWeatheringData:
                 assert all(sc['viscosity'] > 0)
 
             sc['age'] += ts     # model would do this operation
-            print 'Completed step: ', i
+            print('Completed step: ', i)
 
     def test_bulk_init_volume_fay_area_two_spills(self):
         '''
@@ -354,8 +360,8 @@ class TestWeatheringData:
                 w.initialize_data(sc, num)
 
         # bulk_init_volume is set in same order as b_init_vol
-        print sc['bulk_init_volume']
-        print b_init_vol
+        print(sc['bulk_init_volume'])
+        print(b_init_vol)
         mask = sc['spill_num'] == 0
         assert np.all(sc['bulk_init_volume'][mask] == b_init_vol[0])
         assert np.all(sc['bulk_init_volume'][~mask] == b_init_vol[1])
@@ -378,13 +384,16 @@ class TestWeatheringData:
         todo: should this raise a runtime error. May want to change how this
             works
         '''
-        pytest.importorskip("oil_library")
         l.uninstall()
         rel_time = datetime.now().replace(microsecond=0)
         (sc, wd) = self.sample_sc_intrinsic(100, rel_time)
         wd.water.set('temperature', 288, 'K')
         wd.water.set('salinity', 0, 'psu')
-        new_subs = GnomeOil('TEXTRACT, STAR ENTERPRISE')
+        new_subs = GnomeOil('oil_crude')
+        # reset the density
+        new_subs.densities = [1004.0]
+        new_subs.density_ref_temps = [288.15]
+
         new_subs.water = wd.water
         sc.spills[0].substance = new_subs
         ats = {}

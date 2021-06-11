@@ -2,6 +2,10 @@
 Tests of the gd map canvas code.
 """
 
+
+
+
+
 import os
 
 

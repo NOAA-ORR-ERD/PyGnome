@@ -1,13 +1,19 @@
 #!/usr/bin/env python
 """
 Script to test GNOME with all weatherers and response options
+
+Note: this version is using the WEatherers individually
+      see script_weathering_run to see an easier way
 """
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
 
+
+
+
+
+from gnome import scripting as gs
+
+from gnome.basic_types import datetime_value_2d
 import os
 
 from gnome import scripting as gs
@@ -44,6 +50,23 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                      duration=gs.days(1.75),
                      time_step=60 * 60,
                      uncertain=True)
+
+# #     mapfile = get_datafile(os.path.join(base_dir, './ak_arctic.bna'))
+# #
+# #     print 'adding the map'
+# #     model.map = gs.MapFromBNA(mapfile, refloat_halflife=1)  # seconds
+# #
+# #     # draw_ontop can be 'uncertain' or 'forecast'
+# #     # 'forecast' LEs are in black, and 'uncertain' are in red
+# #     # default is 'forecast' LEs draw on top
+# #     renderer = Renderer(mapfile, images_dir, image_size=(800, 600),
+# #                         output_timestep=timedelta(hours=2),
+# #                         draw_ontop='forecast')
+# #
+# #     print 'adding outputters'
+# #     model.outputters += renderer
+
+#     model.outputters += gs.WeatheringOutput(os.path.join(base_dir, 'output'))
 
     print('adding outputters')
 
@@ -112,11 +135,12 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                 active_range=(burn_start, gs.InfTime()),
                 efficiency=.2)
 
-#    chem_start = start_time + gs.hours(24)
-#     chem_active_range = (chem_start, chem_start + gs.hours(8))
-#     c_disp = ChemicalDispersion(0.5, efficiency=0.4,
-#                                 active_start=chem_start,
-#                                 active_stop=chem_start + gs.hours(8))
+    chem_start = start_time + gs.hours(24)
+    c_disp = ChemicalDispersion(fraction_sprayed=0.5,
+                                efficiency=0.4,
+                                active_range=(chem_start, chem_start + gs.hours(8)),
+                                waves=waves,
+                                )
 
     model.environment += water
     model.environment += wind
@@ -128,7 +152,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     model.weatherers += skimmer1
     model.weatherers += skimmer2
     model.weatherers += burn
-#     model.weatherers += c_disp
+    model.weatherers += c_disp
 
     return model
 

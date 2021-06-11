@@ -14,11 +14,20 @@ Also special constructor for a real datetime that won't allow values out of
 range for this application
 """
 
+
+
+
+
+# from future import standard_library
+# standard_library.install_aliases()
+# from builtins import *
+# from builtins import object
+
 import datetime
 
 # minimum and maximum valid datetime values
-min_datetime = datetime.datetime(1970, 01, 01)
-max_datetime = datetime.datetime(2038, 01, 19)
+min_datetime = datetime.datetime(1970, 0o1, 0o1)
+max_datetime = datetime.datetime(2038, 0o1, 19)
 
 
 class InfTime(object):
@@ -162,7 +171,7 @@ class InfDateTime(datetime.datetime):
     """
     A special datetime object:
 
-    It is either a regular datetime object, with the provisio
+    It is either a regular datetime object, with the provision
     that it can't be set outside the range given by the module
     variables:
 
@@ -224,10 +233,10 @@ class InfDateTime(datetime.datetime):
 
 if __name__ == '__main__':
     dt = InfDateTime('inf')
-    print dt, type(dt)
+    print((dt, type(dt)))
 
     dt = InfDateTime('-inf')
-    print dt, type(dt)
+    print((dt, type(dt)))
 
     dt = InfDateTime(2012, 4, 20)
-    print dt, type(dt)
+    print((dt, type(dt)))

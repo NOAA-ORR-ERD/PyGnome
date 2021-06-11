@@ -1,25 +1,27 @@
-Building / Installing GNOME with the conda / Anaconda python distribution
-=========================================================================
+
+
+Building / Installing GNOME with the conda package manager
+==========================================================
 
 `Anaconda <https://store.continuum.io/cshop/anaconda/>`__ is a Python
 distribution that has most of the difficult-to-build packages that
 ``py_gnome`` needs already built in. Thus it's a nice target for running
 GNOME on your own system. "conda" is the packaging manager used to manage the system.
 
-py_gnome CAN be used with any Python distribution, but you will need to find or build a number of packages that are not easy to manage. If you are familiar with complex python packaging, then you can probably make it work. But conda makes it much easier, and that's what we use ourselves, and support.
+py_gnome CAN be used with any Python distribution, but you will need to find or build a number of packages that are not easy to manage. If you are familiar with complex python packaging, then you can probably make it work. But conda makes it much easier, and that's what we use ourselves, and support that use.
 
 Anaconda vs miniconda:
 ----------------------
 
 `Anaconda <https://store.continuum.io/cshop/anaconda/>`__ provides a fairly complete python system for computational programming -- it is a large install, but comes with a lot of nice stuff pre-packaged that all works together.
 
-`miniconda <http://conda.pydata.org/miniconda.html>`__ is a much smaller install -- it provides only Python and the conda package mangement system. You can install miniconda, and then install only the packges you need to run ``py_gnome``.
+`miniconda <http://conda.pydata.org/miniconda.html>`__ is a much smaller install -- it provides only Python and the conda package management system. You can install miniconda, and then install only the packages you need to run ``py_gnome``.
 
 Either will work fine with ``py_gnome``.
 
 **NOTES:**
 
-Be sure to get the python2 version of Anaconda. py_gnome is currently only python 2 compatible.
+py_gnome requires Python version 3.8 or greater.
 
 Anaconda (and miniconda) can be installed in either single-user or multi-user mode:
 
@@ -30,7 +32,7 @@ We (and Anaconda) recommend single-user mode (Select an install for â€œJust Meâ€
 Windows:
 ........
 
-You want the Windows 64 bit Python 2.7 version. Installing with the
+You want the Windows 64 bit Python 3 version. Installing with the
 defaults works fine. You probably want to let it set the PATH for you --
 that's a pain to do by hand.
 
@@ -46,7 +48,7 @@ the \*nix command line.
 Linux:
 ......
 
-The Linux 64bit-python2.7 is the one to use.
+The Linux 64bit-python3.8 is the one to use.
 
 We do not support 32 bit on any platform.
 
@@ -56,11 +58,16 @@ conda
 `conda <http://conda.pydata.org/docs/intro.html>`__ is the package
 manager that Anaconda is built on. So when working with Anaconda, you
 use the conda package manager for installing conda packages. ``pip``
-can also be used with conda, but it's best to use use conda if you can.
+can also be used within conda, but it's best to use use conda for as much as you can.
 
 As a rule, if you need a new package, you should try to conda install it, and then, if there is not conda package available, you can pip install it.
 
 We have made sure that every package you need is available for conda.
+
+conda-forge
+...........
+
+Conda-Forge (https://conda-forge.org/) is a community  project that supplies a huge number of packages for the conda package manager. We have tried to assure that everything you need to run PyGNOME is available via the conda-forge channel.
 
 Setting up
 ..........
@@ -71,6 +78,7 @@ or alternatively: `Miniconda <http://conda.pydata.org/miniconda.html>`__
 
 Once you have either Anaconda or Miniconda installed, the rest of the
 instructions should be the same.
+
 
 Update your (new) system
 ........................
@@ -101,31 +109,21 @@ with Anaconda (or the conda "defaults" channel), but a few don't.
 https://conda-forge.github.io/
 
 Is a community project to build a wide variety of packages for conda --
-it supports most of what PyGNOME needs.
+it should support everything that PyGNOME needs.
 
-However, there a few NOAA-specific packages that are not (yet) on conda-forge,
-so we have set up
-`our own anaconda channel <https://anaconda.org/noaa-orr-erd>`__
-where we put various packages needed for ``py_gnome``.
 
-Adding extra channels to conda:
-...............................
+Adding another channel to conda:
+................................
 
-To make it easy for your install to find conda-forge and NOAA pacakges, they shoudl be added to your conda configuration:
+To make it easy for your install to find conda-forge packages, they should be added to your conda configuration:
 
-First add the NOAA-ORR-ERD channel::
-
-    > conda config --add channels NOAA-ORR-ERD
-
-And then add the conda-forge channel::
+Add the conda-forge channel::
 
     > conda config --add channels conda-forge
 
 When you add a channel to conda, it puts it at the top of the list.
 So now when you install a package, conda will first look in conda-forge,
-then NOAA-ORR-ERD, and then in the default channel.
-This order should work well for PyGNOME.
-Be sure to add the channels in the order we specify.
+ and then in the default channel. This order should work well for PyGNOME.
 
 You can see what channels you have with::
 
@@ -134,7 +132,6 @@ You can see what channels you have with::
 It should return something like this::
 
     --add channels 'defaults'   # lowest priority
-    --add channels 'NOAA-ORR-ERD'
     --add channels 'conda-forge'   # highest priority
 
 In that order -- the order is important
@@ -150,17 +147,17 @@ http://conda.pydata.org/docs/using/envs.html
 
 NOTE: We highly recommend that you use an environment for GNOME.
 
-If you are only going to use Python / conda for PyGNOME, then you could use the base environment. However, py_gnome needs a number of specific package versions, so it is best to keep it separate from any other work you are doing.
+If you are only going to use Python / conda for PyGNOME, then you could use the base environment. However, pyGNOME needs a number of specific package versions, so it is best to keep it separate from any other work you are doing.
 
 (NOTE: you can do these steps with the Anaconda Navigator GUI if you have that installed)
 
 Create an environment for PyGNOME::
 
-    conda create --name gnome python=2
+    conda create -n gnome --file conda_requirements.txt
 
-This will create an environment called "gnome" with Python2 and the core
-pieces you need to run conda. To use that environment, you activate it
-with::
+This will create an environment called "gnome" with Python itself and everything that it needs to run -- it will be quite a bit, so may take a while.
+
+To use that environment, you activate it with::
 
     conda activate gnome
 
@@ -235,13 +232,27 @@ Once you have the client, it's as easy as::
 This will create a PyGnome directory with all the code in it.
 
 
-Dependencies
-------------
+Setting up conda
+----------------
 
 The conda packages required by ``py_gnome`` are listed in the file
 ``conda_requirements.txt`` in the top directory of the project.
 
-To install all the packages ``py_gnome`` needs:
+Once you have the source code, you can create an environment for PyGNOME::
+
+    conda create -n gnome --file conda_requirements.txt
+
+This will create an environment called "gnome" with Python itself and everything that it needs to run -- it will be quite a bit, so may take a while.
+
+To use that environment, you activate it with::
+
+    conda activate gnome
+
+and when you are done, you can deactivate it with::
+
+    conda deactivate
+
+If you don't want to create and environment (Or already have one), you can install what ``py_gnome`` needs into an existing environment:
 
 ::
 
@@ -252,12 +263,12 @@ To install all the packages ``py_gnome`` needs:
 This should install all the packages required by ``py_gnome``.
 
 (make sure you are in the correct conda environment, and you have the
-conda-forge and NOAA-ORR-ERD channels enabled.)
+conda-forge channel enabled.)
 
 If installing conda_requirements.txt fails:
 ...........................................
 
-If you get an error about a particular package not being able to be installed, then conda will not install ANY of the packages in the file. We try hard to make sure everything is available on one of the channels we recommend. If however, a package of that particular version is missing, you can try:
+If you get an error about a particular package not being able to be installed, then conda will not install ANY of the packages in the file. We try hard to make sure everything is available on conda-forge. If however, a package of that particular version is missing, you can try:
 
 Edit the conda_requirements.txt file and comment out the offending package by putting a "#" at the start of the line::
 
@@ -284,22 +295,30 @@ If you want to use py_gnome with "real oil", rather than inert particles, you wi
 
 https://github.com/NOAA-ORR-ERD/OilLibrary
 
-This is under active development along with ``py_gnome``, so you are best off downloading the sources from gitHub and installing it from source -- similar to ``py_gnome``. Though the latest releases of each should be compatible.
+This is under active development along with ``py_gnome``, so you are best off downloading the sources from gitHub and installing it from source -- similar to ``py_gnome``.
+The latest releases (of the same branch) of each should be compatible.
 
 cloning the repository ::
 
   $ git clone https://github.com/NOAA-ORR-ERD/OilLibrary.git
 
+Installing its dependencies::
+
+  $ cd OilLibrary
+  $ conda install --file conda_requirements.txt
+
+
 Installing the package::
 
-  $ cd OilLibrary/
   $ python setup.py install
+
+(or `python setup.py develop` to get an "editable" version)
 
 (you may get a lot of INFO and WARNNG messages as the oil library database is built)
 
 Testing the oil_library install::
 
-  $ py.test
+  $ pytest --pyargs oil_library
 
 (you may need to ``conda install pytest`` to get that command)
 
@@ -343,15 +362,18 @@ install.
 Once the command line tools are installed, you should be able to build
 ``py_gnome`` as described below.
 
+
 Windows
 .......
 
-For compiling python extensions on Windows with python2.7 it is best to use the
+For compiling python extensions on Windows with python3 it is best to use the
 
-`Microsoft Visual C++ Compiler for Python
-2.7 <https://www.microsoft.com/en-us/download/details.aspx?id=44266>`__,
+Microsoft the Visual Studio 2019 Build Tools. They should be available here:
 
-which is freely downloadable.
+https://visualstudio.microsoft.com/downloads/
+
+The free "Community" version should be fine.
+
 
 Linux
 .....
@@ -371,7 +393,8 @@ Building ``py_gnome``
 At this point you should have all the necessary third-party
 tools in place.
 
-Right now, it is probably best to build ``py_gnome`` from source.
+Right now, you'll need to build ``py_gnome`` from source.
+
 And it is probably best to build a "develop" target for your ``py_gnome`` package if you plan on developing or debugging the ``py_gnome`` source code
 (or updating the source code from gitHub).
 
@@ -383,32 +406,6 @@ build with the "install" target. Just keep in mind that any updates to
 the project will need to be rebuilt and re-installed in order for
 changes to take effect.
 
-OS-X Note:
-..........
-
-Anaconda does some strange things with system libraries and linking on
-OS-X, so we have a high level script that will build and re-link the
-libs for you.
-
-So to build ``py_gnome`` on OS-X::
-
-    $ cd py_gnome
-    $ ./build_anaconda.sh develop
-
-or::
-
-    $ ./build_anaconda.sh install
-
-and to "clean out" the built libraries if the C++ source code changes::
-
-    $ ./build_anaconda.sh cleanall
-
-
-Other platforms
-...............
-
-The linking issues encountered on OS-X don't exist
-for other platforms, so you can build directly the usual way.
 There are a number of options for building:
 
 ::
@@ -450,6 +447,16 @@ slow connection, these files could take a while to download. Once the
 tests are run once, the downloaded files are cached for future test
 runs.
 
+What if some tests fail?
+........................
+
+We do our best to keep all tests passing on release versions of the package. But sometimes tests will fail due to the setup of the machine they are being run on -- package versions, etc. So the first thing to do is to make ure you have installed the dependencies as specified.
+
+But ``gnome`` is large package -- hardly anyone is going to use all of it. So while we'd like all tests to pass, a given test failure may not be an issue for any given use case. It's a bit hard to know whether a given test failure will affect your use case, but if you look at the name of the tests that fail, you might get a hint. For example, if any of the tests fail under ``test_weathering``, and you are not doing and oil weathing modeling, you don't need to worry about it.
+
+In any case, you can try to run your use case, and see what happens.
+
+
 Running scripts
 ---------------
 
@@ -477,6 +484,8 @@ Run the script::
     python script_boston.py
 
 Each of the scripts exercises different features of py_gnome -- they are hopefully well commented to see how they work.
+
+
 
 
 

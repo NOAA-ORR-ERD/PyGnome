@@ -2,6 +2,10 @@
 Test all operations for component mover work
 '''
 
+
+
+
+
 import datetime
 import os
 
@@ -66,7 +70,7 @@ def test_loop():
                                curr2_file,
                                wind=wnd,
                                scale_refpoint=(-75.262319, 39.142987, 0))
-    print component.scale_refpoint
+    print(component.scale_refpoint)
     delta = _certain_loop(pSpill, component)
 
     _assert_move(delta)
@@ -102,9 +106,9 @@ def test_certain_uncertain():
 
     delta = test_loop()
     u_delta = test_uncertain_loop()
-    print
-    print delta
-    print u_delta
+    print()
+    print(delta)
+    print(u_delta)
     assert np.all(delta[:, :2] != u_delta[:, :2])
     assert np.all(delta[:, 2] == u_delta[:, 2])
 
@@ -137,7 +141,7 @@ def test_pat1_speed():
     """
 
     c_component.pat1_speed = 5
-    print c_component.pat1_speed
+    print(c_component.pat1_speed)
     assert c_component.pat1_speed == 5
 
 
@@ -164,8 +168,8 @@ def _assert_move(delta):
     helper function to test assertions
     """
 
-    print
-    print delta
+    print()
+    print(delta)
     assert np.all(delta[:, :2] != 0)
     assert np.all(delta[:, 2] == 0)
 
