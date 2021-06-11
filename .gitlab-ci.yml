@@ -26,35 +26,12 @@ configure_env:
     paths:
       - ./$CI_PIPELINE_ID
 
-test:
-  stage: test
-  except:
-    - production
-    - master
-    - py23
-    - develop
-  image: registry.orr.noaa.gov/gnome/oillibrary:develop
-  script:
-    - yum install gcc gcc-c++ -y
-    - yum install netcdf-devel -y # needed by the C++ code -- it can't find the conda versions
-    # we're shouldn't need matplotlib for tests or deployment ...
-    - yum install libXext libSM libXrender -y  # needed by matplotlib on CentOS
-
-    # install the requirements
-    - conda install --file conda_requirements.txt
-    - pip install mapbox-earcut
-
-    - cd ./py_gnome
-    - python ./setup.py install
-    - cd tests/unit_tests && pytest
-
-  tags:
-    - docker
-
-develop_compile:
+compile_pygnome:
   stage: compile
   only:
     - develop
+    - master
+    - production
   image: registry.orr.noaa.gov/erd/centos-conda/centos7-python3
   script:
     - echo "compiling python3_compile"
@@ -77,7 +54,7 @@ develop_compile:
       - ./$CI_PIPELINE_ID
       - ./py_gnome/documentation/_build/html
 
-develop_test:
+test_pygnome:
   stage: test
   allow_failure: true
   image: registry.orr.noaa.gov/erd/centos-conda/centos7-python3
@@ -101,48 +78,6 @@ build_docs:
   tags:
     - shell
     - build
-
-test_master:
-  stage: test
-  only:
-  - master
-  image: registry.orr.noaa.gov/gnome/oillibrary:master
-  script:
-    - yum install gcc gcc-c++ -y
-    - yum install netcdf-devel -y # needed by the C++ code -- it can't find the conda versions
-    # we're shouldn't need matplotlib for tests or deployment ...
-    - yum install libXext libSM libXrender -y  # needed by matplotlib on CentOS
-
-    # install the requirements
-    - conda install --file conda_requirements.txt
-
-    - cd ./py_gnome
-    - python ./setup.py install
-    - cd tests/unit_tests && pytest
-
-  tags:
-    - docker
-
-test_production:
-  stage: test
-  only:
-  - production
-  image: registry.orr.noaa.gov/gnome/oillibrary:production
-  script:
-    - yum install gcc gcc-c++ -y
-    - yum install netcdf-devel -y # needed by the C++ code -- it can't find the conda versions
-    # we're shouldn't need matplotlib for tests or deployment ...
-    - yum install libXext libSM libXrender -y  # needed by matplotlib on CentOS
-
-    # install the requirements
-    - conda install --file conda_requirements.txt
-
-    - cd ./py_gnome
-    - python ./setup.py install
-    - cd tests/unit_tests && pytest
-
-  tags:
-    - docker
 
 develop:
   stage: build
