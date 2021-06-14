@@ -79,20 +79,6 @@ test_pygnome_master:
   tags:
     - docker
 
-build_docs:
-  stage: build
-  before_script:
-    - echo '' # manual override of before_script because we're on runner 12.3 and inherit options are only 12.9+
-  only:
-    - master
-  script:
-    - docker build -f dockerfile-docs ./py_gnome/documentation/_build/html -t registry.orr.noaa.gov/gnome/pygnome/docs
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker push registry.orr.noaa.gov/gnome/pygnome/docs
-  tags:
-    - shell
-    - build
-
 develop:
   stage: build
   before_script:
@@ -126,6 +112,20 @@ master:
   tags:
      - shell
      - build
+
+build_docs:
+  stage: build
+  before_script:
+    - echo '' # manual override of before_script because we're on runner 12.3 and inherit options are only 12.9+
+  only:
+    - master
+  script:
+    - docker build -f dockerfile-docs ./py_gnome/documentation/_build/html -t registry.orr.noaa.gov/gnome/pygnome/docs
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker push registry.orr.noaa.gov/gnome/pygnome/docs
+  tags:
+    - shell
+    - build
 
 production:
   before_script:
