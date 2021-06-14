@@ -3,10 +3,6 @@ GeoJson outputter
 Does not contain a schema for persistence yet
 '''
 
-
-
-
-
 import os
 from collections.abc import Iterable
 from glob import glob
@@ -280,7 +276,7 @@ class IceGeoJsonOutput(Outputter):
             :type ice_movers: An ice_mover object or sequence of ice_mover
                               objects.
 
-            Use super to pass optional \*\*kwargs to base class __init__ method
+            Use super to pass optional ``**kwargs`` to base class __init__ method
         '''
         if (isinstance(ice_movers, Iterable) and
                 not isinstance(ice_movers, str)):

@@ -2,10 +2,6 @@
 Movers using currents and tides as forcing functions
 '''
 
-
-
-
-
 import os
 
 import numpy as np
@@ -484,7 +480,7 @@ class GridCurrentMover(CurrentMoversBase):
                            Default Euler
                            option: Runga-Kutta 4 (RK4)
 
-        uses super, super(GridCurrentMover,self).__init__(\*\*kwargs)
+        uses super, ``super(GridCurrentMover,self).__init__(**kwargs)``
         """
         # if child is calling, the self.mover is set by child - do not reset
         if type(self) == GridCurrentMover:
@@ -742,7 +738,7 @@ class IceMover(CurrentMoversBase):
                             before and after file data
         :param time_offset: Time zone shift if data is in GMT
 
-        uses super, super(IceMover,self).__init__(\*\*kwargs)
+        uses super, ``super(IceMover,self).__init__(**kwargs)``
         """
 
         # NOTE: will need to add uncertainty parameters and other dialog fields

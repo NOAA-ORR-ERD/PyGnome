@@ -5,6 +5,8 @@ import os
 from .type_defs cimport *
 from .grids cimport GridMap_c
 from gnome.cy_gnome.cy_helpers cimport to_bytes
+from gnome.cy_gnome.cy_helpers import filename_as_bytes
+
 #cimport cy_mover
 
 cdef class CyGridMap:
@@ -60,7 +62,10 @@ cdef class CyGridMap:
         
         """
         cdef OSErr err
-        err = self.map.SaveAsNetCDF(netcdf_file)
+
+        cdef bytes netcdf_file_bytes = filename_as_bytes(netcdf_file)
+
+        err = self.map.SaveAsNetCDF(netcdf_file_bytes)
         if err != 0:
             """
             For now just raise an OSError - until the types of possible errors are defined and enumerated

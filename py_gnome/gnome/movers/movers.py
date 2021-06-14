@@ -1,8 +1,4 @@
 
-
-
-
-
 from datetime import datetime, timedelta
 
 import numpy as np
@@ -289,7 +285,7 @@ class CyMover(Mover):
     def __init__(self, **kwargs):
         """
         Base class for python wrappers around cython movers.
-        Uses super(CyMover,self).__init__(\*\*kwargs) to call Mover class
+        Uses ``super(CyMover, self).__init__(**kwargs)`` to call Mover class
         __init__ method
 
         All cython movers (CyWindMover, CyRandomMover) are instantiated by a
