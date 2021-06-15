@@ -54,7 +54,7 @@ compile_pygnome:
       - ./$CI_PIPELINE_ID
       - ./py_gnome/documentation/_build/html
 
-test_pygnome:
+test_pygnome_develop:
   stage: test
   allow_failure: true
   image: registry.orr.noaa.gov/erd/centos-conda/centos7-python3
@@ -65,19 +65,17 @@ test_pygnome:
   tags:
     - docker
 
-build_docs:
-  stage: build
-  before_script:
-    - echo '' # manual override of before_script because we're on runner 12.3 and inherit options are only 12.9+
+test_pygnome_master:
+  stage: test
+  allow_failure: false
+  image: registry.orr.noaa.gov/erd/centos-conda/centos7-python3
   only:
     - master
+    - production
   script:
-    - docker build -f dockerfile-docs ./py_gnome/documentation/_build/html -t registry.orr.noaa.gov/gnome/pygnome/docs
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker push registry.orr.noaa.gov/gnome/pygnome/docs
+    - cd ./py_gnome/tests/unit_tests && pytest
   tags:
-    - shell
-    - build
+    - docker
 
 develop:
   stage: build
@@ -98,11 +96,17 @@ develop:
 
 master:
   stage: build
+  before_script:
+    - echo ''
   script:
+    - docker build -f dockerfile-docs ./py_gnome/documentation/_build/html -t registry.orr.noaa.gov/gnome/pygnome/docs
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker push registry.orr.noaa.gov/gnome/pygnome/docs
+
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker pull registry.orr.noaa.gov/gnome/oillibrary:master
     - docker tag registry.orr.noaa.gov/gnome/oillibrary:master oillibrary
-    - docker build -f dockerfile . -t registry.orr.noaa.gov/gnome/pygnome:master
+    - docker build . -t registry.orr.noaa.gov/gnome/pygnome:master
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker push registry.orr.noaa.gov/gnome/pygnome:master
   only:
@@ -112,12 +116,18 @@ master:
      - build
 
 production:
+  before_script:
+    - echo ''
   stage: build
   script:
+    - docker build -f dockerfile-docs ./py_gnome/documentation/_build/html -t registry.orr.noaa.gov/gnome/pygnome/docs
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker push registry.orr.noaa.gov/gnome/pygnome/docs
+
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker pull registry.orr.noaa.gov/gnome/oillibrary:production
     - docker tag registry.orr.noaa.gov/gnome/oillibrary:production oillibrary
-    - docker build -f dockerfile . -t registry.orr.noaa.gov/gnome/pygnome:production
+    - docker build . -t registry.orr.noaa.gov/gnome/pygnome:production
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker push registry.orr.noaa.gov/gnome/pygnome:production
   only:
