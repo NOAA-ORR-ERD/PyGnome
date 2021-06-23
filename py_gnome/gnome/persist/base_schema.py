@@ -126,27 +126,10 @@ class ObjType(SchemaType):
         try:
             if hasattr(value, 'to_dict'):
                 dict_ = value.to_dict('webapi')
-#                 for k in dict_.keys():
-#                     if dict_[k] is None:
-#                         dict_[k] = null
             else:
                 raise TypeError('Object does not have a to_dict function')
         except Exception as e:
             raise e
-            raise Invalid(node, '{0}" does not implement GnomeObj functionality: {1}'.format(value, e))
-#         if options is not None:
-#             if not options.get('raw_paths', True):
-#                 datafiles = node.get_nodes_by_attr('isdatafile')
-#                 for d in datafiles:
-#                     if d in dict_:
-#                         if dict_[d] is None:
-#                             continue
-#                         elif isinstance(dict_[d], basestring):
-#                             dict_[d] = os.path.split(dict_[d])[1]
-#                         elif isinstance(dict_[d], collections.Iterable):
-#                             #List, tuple, etc
-#                             for i, filename in enumerate(dict_[d]):
-#                                 dict_[d][i] = os.path.split(filename)[1]
         return dict_
 
     def serialize(self, node, appstruct, options=None):
@@ -172,13 +155,14 @@ class ObjType(SchemaType):
         return self._impl(node, value, callback)
 
     def _deser(self, node, value, refs):
-
+        # value in this case would be 
 #         try:
             if value is None:
                 return None
             if isinstance(value, dict) and 'obj_type' in value:
                 id_ = value.get('id', None)
                 if id_ not in refs or id_ is None:
+                    # object does not exist in refs already
                     obj_type = class_from_objtype(value['obj_type'])
                     obj = obj_type.new_from_dict(value)
                     log.info('Created new {0} object {1}'.format(obj.obj_type, obj.name))
@@ -198,7 +182,9 @@ class ObjType(SchemaType):
             return None
 
         def callback(subnode, subcstruct):
+            #This callback implements the branching recursion in deserialization
             if subnode.typ.__class__ is ObjType:
+                #All GNOME object types
                 return subnode.deserialize(subcstruct, refs)
             else:
                 # This needs to become more flexible! It needs to detect
@@ -207,17 +193,33 @@ class ObjType(SchemaType):
                         isinstance(subnode.children[0], ObjTypeSchema)):
                     # To deal with iterable schemas that do not have
                     # a deserialize with refs function
+                    # Lists
                     scalar = (hasattr(subnode.typ, 'accept_scalar') and
                               subnode.typ.accept_scalar)
 
                     return subnode.typ._impl(subnode, subcstruct, callback,
                                              scalar)
                 elif (subnode.schema_type is Tuple):
+                    #Tuples
                     return subnode.typ._impl(subnode, subcstruct, callback)
                 else:
+                    #Strings, dates, numbers, etc
                     return subnode.deserialize(subcstruct)
 
-        result = self._impl(node, cstruct, callback)
+        if 'id' in cstruct and cstruct['id'] in refs:
+            #future appstruct already exists in refs
+            #however cstruct may hold updates that should be applied to object in refs
+            #In this case the object should be 'update_from_dict' and the result
+            #be the newly updated object
+            id_ = cstruct['id']
+            log.info(refs[id_])
+            updated = refs[id_].update_from_dict(cstruct)
+            if updated:
+                log.info('Updated object {0} from json'.format(refs[id_].name))
+            return refs[id_]
+        else:
+            #
+            result = self._impl(node, cstruct, callback)
 
         return self._deser(node, result, refs)
 
