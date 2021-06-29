@@ -250,6 +250,8 @@ class GnomeId(with_metaclass(GnomeObjMeta, AddLogger)):
 
     @name.setter
     def name(self, val):
+        if isinstance(val, basestring) and '/' in val or '\\' in val:
+            raise ValueError("Invalid slash character in object name: {0}".format(val))
         self._name = val
 
     def gather_ref_as(self, src, refs):
