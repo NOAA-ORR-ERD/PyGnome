@@ -235,7 +235,7 @@ class Model(GnomeId):
         self._duration = duration
         self.weathering_substeps = weathering_substeps
 
-        self._name = name
+        self.name = name
 
         if not map:
             map = GnomeMap()

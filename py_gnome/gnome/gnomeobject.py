@@ -151,8 +151,6 @@ class GnomeId(with_metaclass(GnomeObjMeta, AddLogger)):
         self.__class__._instance_count += 1
 
         if name:
-            if isinstance(name, str) and '/' in name or '\\' in name:
-                raise ValueError("Invalid slash character in object name: {0}".format(name))
             self.name = name
         self._appearance = _appearance
         self.array_types = dict()
