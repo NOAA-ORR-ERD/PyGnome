@@ -237,17 +237,15 @@ class GnomeId(with_metaclass(GnomeObjMeta, AddLogger)):
         define as property in base class so all objects will have a name
         by default
         '''
-        try:
-            return self._name
-        except AttributeError:
-            self._name = '{}_{}'.format(self.__class__.__name__.split('.')[-1],
+        if not hasattr(self, '_name') or self._name is None:
+            return '{}_{}'.format(self.__class__.__name__.split('.')[-1],
                                         str(self.__class__._instance_count))
-
+        else:
             return self._name
 
     @name.setter
     def name(self, val):
-        if isinstance(val, str) and '/' in val or '\\' in val:
+        if isinstance(val, str) and ('/' in val or '\\' in val):
             raise ValueError("Invalid slash character in object name: {0}".format(val))
         self._name = val
 

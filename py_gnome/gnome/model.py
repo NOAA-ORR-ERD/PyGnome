@@ -139,8 +139,6 @@ class Model(GnomeId):
                          a zip file
 
         :return: a model instance all set up from the savefile.
-
-        This is simply a utility wrapper around gnome.persist.save_load.load()
         """
         model = cls.load(filename)
 
