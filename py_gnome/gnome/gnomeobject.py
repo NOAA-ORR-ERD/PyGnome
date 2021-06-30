@@ -5,7 +5,6 @@
 
 
 from future.utils import with_metaclass
-from past.types import basestring
 
 import os
 import copy
@@ -152,7 +151,7 @@ class GnomeId(with_metaclass(GnomeObjMeta, AddLogger)):
         self.__class__._instance_count += 1
 
         if name:
-            if isinstance(name, basestring) and '/' in name or '\\' in name:
+            if isinstance(name, str) and '/' in name or '\\' in name:
                 raise ValueError("Invalid slash character in object name: {0}".format(name))
             self.name = name
         self._appearance = _appearance
@@ -250,7 +249,7 @@ class GnomeId(with_metaclass(GnomeObjMeta, AddLogger)):
 
     @name.setter
     def name(self, val):
-        if isinstance(val, basestring) and '/' in val or '\\' in val:
+        if isinstance(val, str) and '/' in val or '\\' in val:
             raise ValueError("Invalid slash character in object name: {0}".format(val))
         self._name = val
 
@@ -759,7 +758,7 @@ class GnomeId(with_metaclass(GnomeObjMeta, AddLogger)):
         if not refs:
             refs = Refs()
 
-        if isinstance(saveloc, basestring):
+        if isinstance(saveloc, str):
             if os.path.isdir(saveloc):
                 #run the savefile update system
                 if apply_update_patches:
