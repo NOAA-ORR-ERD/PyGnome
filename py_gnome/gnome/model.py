@@ -1,10 +1,6 @@
 #!/usr/bin/env python
 
 
-
-
-
-
 from past.types import basestring
 
 import os
@@ -143,8 +139,6 @@ class Model(GnomeId):
                          a zip file
 
         :return: a model instance all set up from the savefile.
-
-        This is simply a utility wrapper around gnome.persist.save_load.load()
         """
         model = cls.load(filename)
 
@@ -208,7 +202,7 @@ class Model(GnomeId):
                              decide which UI views it should present.
         '''
         # making sure basic stuff is in place before properties are set
-        super(Model, self).__init__(**kwargs)
+        super(Model, self).__init__(name=name, **kwargs)
         self.environment = OrderedCollection(dtype=Environment)
         self.movers = OrderedCollection(dtype=Mover)
         self.weatherers = OrderedCollection(dtype=Weatherer)
@@ -234,8 +228,6 @@ class Model(GnomeId):
         self.start_time = start_time
         self._duration = duration
         self.weathering_substeps = weathering_substeps
-
-        self._name = name
 
         if not map:
             map = GnomeMap()
