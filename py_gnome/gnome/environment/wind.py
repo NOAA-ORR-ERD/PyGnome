@@ -132,7 +132,7 @@ class WindSchema(base_schema.ObjTypeSchema):
     time = TimeSchema(
         #this is only for duck-typing the new-style environment objects,
         #so only provide to the client
-        save=False, update=False, save_reference=False, read_only=True
+        save=False, update=False, save_reference=False, read_only=True, test_equal=False
     )
 
 
