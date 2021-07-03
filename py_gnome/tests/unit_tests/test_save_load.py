@@ -1,6 +1,12 @@
 '''
 test functionality of the save_load module used to persist save files
 '''
+
+
+
+
+
+
 import os
 from datetime import datetime
 from zipfile import ZipFile, ZIP_DEFLATED
@@ -44,7 +50,7 @@ from gnome import spill
 # following is modified for testing only
 from gnome.persist import save_load
 
-from conftest import testdata
+from .conftest import testdata
 
 import pytest
 from testfixtures import LogCapture
@@ -138,7 +144,7 @@ base_dir = os.path.dirname(__file__)
 g_objects = (
     GridCurrent.from_netCDF(testdata['GridCurrentMover']['curr_tri']),
     Tide(testdata['CatsMover']['tide']),
-    #Wind(filename=testdata['ComponentMover']['wind']),
+    # Wind(filename=testdata['ComponentMover']['wind']),
     constant_wind(5., 270, 'knots'),
     Wind(timeseries=(sec_to_date(24 * 60 * 60),
                      (0, 0)), units='mps'),
@@ -151,13 +157,12 @@ g_objects = (
     ComponentMover(testdata['ComponentMover']['curr']),
     ComponentMover(testdata['ComponentMover']['curr'],
                    wind=constant_wind(5., 270, 'knots')),
-                   #wind=Wind(filename=testdata['ComponentMover']['wind'])),
+                   # wind=Wind(filename=testdata['ComponentMover']['wind'])),
     RandomMover3D(),
     SimpleMover(velocity=(10.0, 10.0, 0.0)),
 
     MapFromBNA(testdata['MapFromBNA']['testmap'], 6),
-    NetCDFOutput(os.path.join(base_dir, u'xtemp.nc')),
-    Renderer(testdata['Renderer']['bna_sample'],
+    NetCDFOutput(os.path.join(base_dir, 'xtemp.nc')), Renderer(testdata['Renderer']['bna_sample'],
              os.path.join(base_dir, 'output_dir')),
     WeatheringOutput(),
     spill.PointLineRelease(release_time=datetime.now(),
@@ -184,6 +189,9 @@ g_objects = (
 @pytest.mark.parametrize("obj", g_objects)
 def test_serial_deserial(saveloc_, obj):
     'test save/load functionality'
+    print("********")
+    print("Checking:", type(obj))
+    print("********")
     json_ = obj.serialize()
     obj2 = obj.__class__.deserialize(json_)
 
@@ -191,8 +199,12 @@ def test_serial_deserial(saveloc_, obj):
 
 
 @pytest.mark.parametrize("obj", g_objects)
-def test_save_load(saveloc_, obj):
+def test_save_load_fun(saveloc_, obj):
     'test save/load functionality'
+    print("********")
+    print("Checking:", type(obj))
+    print("********")
+
     _json_, zipfile_, _refs = obj.save(saveloc_)
     obj2 = obj.__class__.load(zipfile_)
 

@@ -1,6 +1,7 @@
 '''
 Movers using currents and tides as forcing functions
 '''
+
 import os
 
 import numpy as np
@@ -221,7 +222,7 @@ class CatsMover(CurrentMoversBase):
             raise ValueError('Path for Cats filename does not exist: {0}'
                              .format(filename))
 
-        f = open(filename, 'rU') 
+        f = open(filename)
         header = f.readline()
         f.close()
         header.strip()
@@ -230,7 +231,7 @@ class CatsMover(CurrentMoversBase):
             raise ValueError('File has incorrect header line for Cats format: {0}'
                              .format(header))
 
-        self._filename = filename 
+        self._filename = filename
 
         # check if this is stored with cy_cats_mover?
         self.mover = CyCatsMover()
@@ -255,7 +256,7 @@ class CatsMover(CurrentMoversBase):
         if 'scale_refpoint' in kwargs:
             self.scale_refpoint = kwargs.pop('scale_refpoint')
             #self.mover.compute_velocity_scale()
-            
+
         super(CatsMover, self).__init__(uncertain_duration=uncertain_duration,
                                         **kwargs)
 
@@ -394,7 +395,7 @@ class CatsMover(CurrentMoversBase):
         """
         velocities = self.mover._get_velocity_handle()
         self.mover.compute_velocity_scale()  # make sure ref_scale is up to date
-        ref_scale = self.ref_scale 
+        ref_scale = self.ref_scale
 
         if self._tide is not None:
             time_value, _err = self._tide.cy_obj.get_time_value(model_time)
@@ -479,7 +480,7 @@ class GridCurrentMover(CurrentMoversBase):
                            Default Euler
                            option: Runga-Kutta 4 (RK4)
 
-        uses super, super(GridCurrentMover,self).__init__(\*\*kwargs)
+        uses super, ``super(GridCurrentMover,self).__init__(**kwargs)``
         """
         # if child is calling, the self.mover is set by child - do not reset
         if type(self) == GridCurrentMover:
@@ -737,7 +738,7 @@ class IceMover(CurrentMoversBase):
                             before and after file data
         :param time_offset: Time zone shift if data is in GMT
 
-        uses super, super(IceMover,self).__init__(\*\*kwargs)
+        uses super, ``super(IceMover,self).__init__(**kwargs)``
         """
 
         # NOTE: will need to add uncertainty parameters and other dialog fields
@@ -924,7 +925,7 @@ class IceMover(CurrentMoversBase):
         :param model_time=0:
         """
         num_tri = self.mover.get_num_triangles()
-        num_cells = num_tri / 2
+        num_cells = num_tri // 2
 
         frac_coverage = np.zeros(num_cells, dtype=np.float64)
         thickness = np.zeros(num_cells, dtype=np.float64)

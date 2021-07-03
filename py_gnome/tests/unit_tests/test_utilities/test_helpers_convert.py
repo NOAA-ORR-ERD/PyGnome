@@ -1,6 +1,10 @@
 """
 Unit tests ConvertDatetimeValue methods
 """
+
+
+
+
 import numpy as np
 
 from gnome.basic_types import (ts_format,
@@ -27,16 +31,16 @@ def wind_ts(rq_wind):
       and time_value_pair objects
     """
     date_times = ([sec_to_date(zero_time())] * len(rq_wind['rq']))
-    dtv_rq = (np.array(zip(date_times, rq_wind['rq']), dtype=datetime_value_2d)
+    dtv_rq = (np.array(list(zip(date_times, rq_wind['rq'])), dtype=datetime_value_2d)
               .view(dtype=np.recarray))
 
     date_times = ([sec_to_date(zero_time())] * len(rq_wind['uv']))
-    dtv_uv = (np.array(zip(date_times, rq_wind['uv']), dtype=datetime_value_2d)
+    dtv_uv = (np.array(list(zip(date_times, rq_wind['uv'])), dtype=datetime_value_2d)
               .view(dtype=np.recarray))
 
     date_times = ([zero_time()] * len(rq_wind['uv']))
 
-    values = zip(date_times, (tuple(w) for w in rq_wind['uv']))
+    values = list(zip(date_times, (tuple(w) for w in rq_wind['uv'])))
     tv = (np.array(values, dtype=time_value_pair).view(dtype=np.recarray))
 
     # print 'Test Case - actual values:'
@@ -82,7 +86,7 @@ def test_exceptions(wind_ts, invalid_rq):
         length_of_dim1 = len(invalid_rq['rq'])
         zero_times = [zero_time()] * length_of_dim1
 
-        invalid_dtv_rq = np.array(zip(zero_times, invalid_rq['rq']),
+        invalid_dtv_rq = np.array(list(zip(zero_times, invalid_rq['rq'])),
                                   dtype=datetime_value_2d)
 
         invalid_dtv_rq['value'] = invalid_rq['rq']
@@ -119,7 +123,7 @@ def test_to_time_value_pair_from_1d():
     zero_times = [sec_to_date(zero_time())] * length_of_dim1
     rand_data = np.random.uniform(1, 10, length_of_dim1)
 
-    data = np.array(zip(zero_times, rand_data), dtype=datetime_value_1d)
+    data = np.array(list(zip(zero_times, rand_data)), dtype=datetime_value_1d)
     out_tv = to_time_value_pair(data)
 
     assert np.all(out_tv['value']['v'] == 0.0)

@@ -1,7 +1,7 @@
 import cython
 
-from grids cimport TimeGridWindRect_c
-from cy_grid cimport CyTimeGridVel, dc_base_to_rect
+from .grids cimport TimeGridWindRect_c
+from .cy_grid cimport CyTimeGridVel, dc_base_to_rect
 
 
 @cython.final

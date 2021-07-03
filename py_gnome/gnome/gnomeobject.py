@@ -1,6 +1,12 @@
 #!/usr/bin/env python
+
+
+
+
+
+from future.utils import with_metaclass
+
 import os
-import six
 import copy
 import logging
 import glob
@@ -15,6 +21,7 @@ import colander
 
 import gnome
 from gnome.utilities.orderedcollection import OrderedCollection
+from functools import reduce
 from gnome.utilities.save_updater import extract_zipfile, update_savefile
 
 log = logging.getLogger(__name__)
@@ -72,7 +79,7 @@ class AddLogger(object):
         except TypeError:
             if kwargs:  # could it fail for some other reason? maybe???
                 msg = ("{} are invalid keyword arguments for:\n"
-                       "{}".format(kwargs.keys(), self.__class__))
+                       "{}".format(list(kwargs.keys()), self.__class__))
                 raise TypeError(msg)
 
     @property
@@ -117,8 +124,7 @@ class Refs(dict):
         provides a unique name by appending length+1
         '''
         base_name = obj.obj_type.split('.')[-1]
-        num_of_same_type = filter(lambda v: v.obj_type == obj.obj_type,
-                                  self.values())
+        num_of_same_type = [v for v in list(self.values()) if v.obj_type == obj.obj_type]
 
         return base_name + num_of_same_type+1
 
@@ -131,11 +137,12 @@ class GnomeObjMeta(type):
         return super(GnomeObjMeta, cls).__new__(cls, name, parents, dct)
 
 
-class GnomeId(AddLogger):
+class GnomeId(with_metaclass(GnomeObjMeta, AddLogger)):
+# py3 way, when we get there
+# class GnomeId(AddLogger, metaclass=GnomeObjMeta):
     '''
     A class for assigning a unique ID for an object
     '''
-    __metaclass__ = GnomeObjMeta
     _id = None
     make_default_refs = True
 
@@ -144,8 +151,6 @@ class GnomeId(AddLogger):
         self.__class__._instance_count += 1
 
         if name:
-            if isinstance(name, six.string_types) and '/' in name or '\\' in name:
-                raise ValueError("Invalid slash character in object name: {0}".format(name))
             self.name = name
         self._appearance = _appearance
         self.array_types = dict()
@@ -232,16 +237,16 @@ class GnomeId(AddLogger):
         define as property in base class so all objects will have a name
         by default
         '''
-        try:
-            return self._name
-        except AttributeError:
-            self._name = '{}_{}'.format(self.__class__.__name__.split('.')[-1],
+        if not hasattr(self, '_name') or self._name is None:
+            return '{}_{}'.format(self.__class__.__name__.split('.')[-1],
                                         str(self.__class__._instance_count))
-
+        else:
             return self._name
 
     @name.setter
     def name(self, val):
+        if isinstance(val, str) and ('/' in val or '\\' in val):
+            raise ValueError("Invalid slash character in object name: {0}".format(val))
         self._name = val
 
     def gather_ref_as(self, src, refs):
@@ -403,7 +408,7 @@ class GnomeId(AddLogger):
         attrs = copy.copy(dict_)
         updated = False
 
-        for k in attrs.keys():
+        for k in list(attrs.keys()):
             if k not in updatable:
                 attrs.pop(k)
 
@@ -422,7 +427,7 @@ class GnomeId(AddLogger):
                 if attrs[name] is colander.drop:
                     del attrs[name]
 
-        for k, v in attrs.items():
+        for k, v in list(attrs.items()):
             if hasattr(self, k):
                 if not updated and self._attr_changed(getattr(self, k), v):
                     updated = True
@@ -677,10 +682,11 @@ class GnomeId(AddLogger):
             # fixme: I'm not sure it's getting deleted -- we should make sure
             #        And why not use a StringIO object instead, and keep
             #        it totally in memory?
-            zipfile_ = zipfile.ZipFile(tempfile.SpooledTemporaryFile('w+b'),
+            zipfile_ = zipfile.ZipFile(tempfile.SpooledTemporaryFile(mode='w+b'),
                                        'a',
                                        compression=zipfile.ZIP_DEFLATED,
                                        allowZip64=allowzip64)
+
         elif os.path.isdir(saveloc):
             saveloc = os.path.join(saveloc, self.name + '.gnome')
 
@@ -748,7 +754,7 @@ class GnomeId(AddLogger):
         if not refs:
             refs = Refs()
 
-        if isinstance(saveloc, six.string_types):
+        if isinstance(saveloc, str):
             if os.path.isdir(saveloc):
                 #run the savefile update system
                 if apply_update_patches:

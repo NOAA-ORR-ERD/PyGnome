@@ -11,8 +11,8 @@ from ..conftest import test_oil, sample_sc_release
 # fixtures used by test_weatherers module - import it here so py.test will find
 # when tests are run from test_weatherers/subdirectory
 from ..conftest import sample_model_fcn, sample_model_fcn2
+
 from gnome.spill.substance import GnomeOil
-import six
 
 
 def weathering_data_arrays(n_arrays,
@@ -36,10 +36,12 @@ def weathering_data_arrays(n_arrays,
     for wd in rqd_weatherers:
         arrays.update(wd.array_types)
 
-    if isinstance(substance, six.string_types):
-        substance = GnomeOil(substance)
-    if substance is None:
-        substance = GnomeOil(test_oil)
+    substance = GnomeOil(test_oil) if substance is None else GnomeOil(substance)
+    # if isinstance(str):
+    #     substance = GnomeOil(substance)
+    # if substance is None:
+    #     substance = GnomeOil(test_oil)
+
     arrays.update(substance.array_types)
 
     sc = sample_sc_release(num_elements=num_elements,

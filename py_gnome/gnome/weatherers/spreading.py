@@ -3,6 +3,11 @@ objects used to model the spreading of oil
 Include the Langmuir process here as well
 '''
 
+
+
+
+
+
 import numpy as np
 try:
     # it's built-in on py3
@@ -72,22 +77,23 @@ class FayGravityViscous(Weatherer):
         # varies over time, may want to do something different
         self._init_relative_buoyancy = None
         self.thickness_limit = thickness_limit
-        #self.is_first_step = True
+        # self.is_first_step = True
 
-    @lru_cache(4)
-    def _gravity_spreading_t0(self,
-                              water_viscosity,
+    @staticmethod
+    @lru_cache(10)
+    def _gravity_spreading_t0(water_viscosity,
                               relative_buoyancy,
-                              blob_init_vol):
+                              blob_init_vol,
+                              spreading_const):
         '''
         time for the initial transient phase of spreading to complete. This
-        depends on blob volume, but is on the order of minutes. Cache upto 4
-        inputs - don't expect 4 or more spills in one scenario.
+        depends on blob volume, but is on the order of minutes. Cache up to 10
+        inputs - don't expect 10 or more spills in one scenario.
         '''
         # time to reach a0
-        t0 = ((self.spreading_const[1] / self.spreading_const[0]) ** 4.0 *
+        t0 = ((spreading_const[1] / spreading_const[0]) ** 4.0 *
               (blob_init_vol / (water_viscosity * constants.gravity *
-                                relative_buoyancy)) ** (1. / 3)
+                                relative_buoyancy)) ** (1.0 / 3.0)
               )
         return t0
 
@@ -114,23 +120,23 @@ class FayGravityViscous(Weatherer):
         '''
         This takes scalars inputs since water_viscosity, init_volume and
         relative_buoyancy for a bunch of LEs released together will be the same
-        It
+
 
         :param water_viscosity: viscosity of water
         :type water_viscosity: float
-        :param init_volume: total initial volume of all LEs released together
-        :type init_volume: float
+        :param blob_init_volume: total initial volume of all LEs released together
+        :type blob_init_volume: float
         :param relative_buoyancy: relative buoyancy of oil wrt water:
-            (rho_water - rho_oil)/rho_water where rho defines density
+            (rho_water - rho_oil)/rho_water where rho is the density
         :type relative_buoyancy: float
 
         Equation for gravity spreading:
         ::
             A0 = PI*(k2**4/k1**2)*((V0**5*g*dbuoy)/(nu_h2o**2))**(1./6.)
         '''
-        a0 = (np.pi *
+        a0 = (PI *
               (self.spreading_const[1] ** 4 / self.spreading_const[0] ** 2) *
-              (((blob_init_vol) ** 5 * constants.gravity * relative_buoyancy) /
+              (((blob_init_vol) ** 5 * gravity * relative_buoyancy) /
                (water_viscosity ** 2)) ** (1. / 6.))
 
         # highly unlikely to reach max_area, min_thickness during
@@ -188,7 +194,7 @@ class FayGravityViscous(Weatherer):
             This is the age of each LE. The LEs with the same age belong to
             the same blob. Age is in seconds.
         :type age: numpy array of int32
-        :param at_max_area: np.bool array. If a blob reaches max_area beyond
+        :param at_max_area: bool array. If a blob reaches max_area beyond
             which it will not spread, toggle the LEs associated with that blob
             to True. Max spreading is based on min thickness based on initial
             viscosity of oil. This is used by Langmuir since the process acts
@@ -210,7 +216,8 @@ class FayGravityViscous(Weatherer):
             m_age = b_age == age
             t0 = self._gravity_spreading_t0(water_viscosity,
                                             relative_buoyancy,
-                                            blob_init_volume[m_age][0])
+                                            blob_init_volume[m_age][0],
+                                            self.spreading_const)
 
             if b_age <= t0:
                 '''
@@ -273,7 +280,7 @@ class FayGravityViscous(Weatherer):
             This is the age of each LE. The LEs with the same age belong to
             the same blob. Age is in seconds.
         :type age: numpy array of int32
-        :param at_max_area: np.bool array. If a blob reaches max_area beyond
+        :param at_max_area: bool array. If a blob reaches max_area beyond
             which it will not spread, toggle the LEs associated with that blob
             to True. Max spreading is based on min thickness based on initial
             viscosity of oil. This is used by Langmuir since the process acts
@@ -295,7 +302,8 @@ class FayGravityViscous(Weatherer):
             m_age = b_age == age
             t0 = self._gravity_spreading_t0(water_viscosity,
                                             relative_buoyancy,
-                                            blob_init_volume[m_age][0])
+                                            blob_init_volume[m_age][0],
+                                            self.spreading_const)
 
             if b_age <= t0:
                 '''

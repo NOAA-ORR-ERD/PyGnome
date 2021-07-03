@@ -3,12 +3,22 @@ image outputters
 
 These will output images for use in the Web client / OpenLayers
 
+NOTE: doesn't seem to be tested -- and may not be used anyway.
+
 """
+
+
+
+
+
+
 import os
-import copy
 import collections
 import tempfile
-# from tempfile import NamedTemporaryFile
+import base64
+
+from collections.abc import Iterable
+
 from colander import SequenceSchema
 from gnome.persist.base_schema import GeneralGnomeObjectSchema
 
@@ -53,7 +63,7 @@ class IceImageOutput(Outputter):
             :type ice_movers: An ice_mover object or sequence of ice_mover
                               objects.
 
-            Use super to pass optional \*\*kwargs to base class __init__ method
+            Use super to pass optional kwargs to base class __init__ method
         '''
         # this is a place where we store our gradient color infomration
         self.gradient_lu = {}
@@ -133,7 +143,7 @@ class IceImageOutput(Outputter):
             :param num_colors: The number of gradient colors to generate
             :type num_colors: Number
         '''
-        color_range_idx = range(len(color_range))
+        color_range_idx = list(range(len(color_range)))
         color_space = np.linspace(color_range_idx[0], color_range_idx[-1],
                                   num=num_colors)
 
@@ -167,8 +177,7 @@ class IceImageOutput(Outputter):
         scale_range = high_val - low_val
         q_step_range = scale_range / len(color_names)
 
-        idx = (np.floor(values / q_step_range)
-               .astype(int)
+        idx = ((values // q_step_range).astype(int)
                .clip(0, len(color_names) - 1))
 
         return color_names[idx]
@@ -188,7 +197,7 @@ class IceImageOutput(Outputter):
 
         # fixme -- doing all this cache stuff just to get the timestep..
         # maybe timestep should be passed in.
-        for sc in self.cache.load_timestep(step_num).items():
+        for sc in list(self.cache.load_timestep(step_num).items()):
             model_time = date_to_sec(sc.current_time_stamp)
             iso_time = sc.current_time_stamp.isoformat()
 
@@ -272,15 +281,15 @@ class IceImageOutput(Outputter):
         # formatted buffer in memory. (libgd can be made to do this, but
         # the wrapper is yet to be written)
         # So we will just write to a tempfile and then read it back.
-        # If we ever have to do this anywhere else, a context manger would be good.
+        # If we ever have to do this anywhere else, a context manager would be good.
         tempdir = tempfile.mkdtemp()
         tempfilename = os.path.join(tempdir, "gnome_temp_image_file.png")
 
         canvas.save_foreground(tempfilename)
-        thickness_image = open(tempfilename, 'rb').read().encode('base64')
+        thickness_image = base64.b64encode(open(tempfilename, 'rb').read())
 
         canvas.save_background(tempfilename)
-        coverage_image = open(tempfilename, 'rb').read().encode('base64')
+        coverage_image = base64.b64encode(open(tempfilename, 'rb').read())
 
         os.remove(tempfilename)
         os.rmdir(tempdir)

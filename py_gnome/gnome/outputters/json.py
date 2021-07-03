@@ -2,10 +2,13 @@
 JSON outputter
 Does not contain a schema for persistence yet
 '''
-import copy
-from collections import Iterable
+
+
+
+
 
 import numpy as np
+from collections.abc import Iterable
 from colander import SchemaNode, SequenceSchema, String, drop
 
 from gnome.utilities.time_utils import date_to_sec
@@ -61,7 +64,7 @@ class SpillJsonOutput(Outputter):
         :param list current_movers: A list or collection of current grid mover
                                     objects.
 
-        use super to pass optional \*\*kwargs to base class __init__ method
+        use super to pass optional kwargs to base class __init__ method
         '''
         self._additional_data =_additional_data if _additional_data else []
 
@@ -80,7 +83,7 @@ class SpillJsonOutput(Outputter):
         certain_scs = []
         uncertain_scs = []
 
-        for sc in self.cache.load_timestep(step_num).items():
+        for sc in list(self.cache.load_timestep(step_num).items()):
             position = sc['positions']
             longitude = np.around(position[:, 0], 5).tolist()
             latitude = np.around(position[:, 1], 5).tolist()
@@ -184,7 +187,7 @@ class CurrentJsonOutput(Outputter):
         :param list current_movers: A list or collection of current grid mover
                                     objects.
 
-        use super to pass optional \*\*kwargs to base class __init__ method
+        use super to pass optional kwargs to base class __init__ method
         '''
         self.current_movers = current_movers
 
@@ -197,7 +200,7 @@ class CurrentJsonOutput(Outputter):
         if self.on is False or not self._write_step:
             return None
 
-        for sc in self.cache.load_timestep(step_num).items():
+        for sc in list(self.cache.load_timestep(step_num).items()):
             model_time = date_to_sec(sc.current_time_stamp)
 
         json_ = {}
@@ -304,7 +307,7 @@ class IceJsonOutput(Outputter):
             :type ice_movers: An ice_mover object or sequence of ice_mover
                               objects.
 
-            Use super to pass optional \*\*kwargs to base class __init__ method
+            Use super to pass optional kwargs to base class __init__ method
         '''
         if (isinstance(ice_movers, Iterable) and
                 not isinstance(ice_movers, str)):
@@ -331,7 +334,7 @@ class IceJsonOutput(Outputter):
         if self.on is False or not self._write_step:
             return None
 
-        for sc in self.cache.load_timestep(step_num).items():
+        for sc in list(self.cache.load_timestep(step_num).items()):
             pass
 
         model_time = date_to_sec(sc.current_time_stamp)

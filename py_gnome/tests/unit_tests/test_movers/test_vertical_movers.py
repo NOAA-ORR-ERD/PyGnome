@@ -2,6 +2,10 @@
 Test classes in vertical_movers.py module
 '''
 
+
+
+
+
 from datetime import datetime
 
 import pytest
@@ -70,7 +74,7 @@ def test_one_move(test_sc):
     r_vel.prepare_for_model_step(test_sc, time_step, model_time)
     delta_pos = r_vel.get_move(test_sc, time_step, model_time)
     r_vel.model_step_is_done()
-    print "\ndelta_pos: "
-    print delta_pos
+    print("\ndelta_pos: ")
+    print(delta_pos)
     assert np.all(delta_pos[:, :2] == 0)
     assert np.all(delta_pos[:, 2] != 0)

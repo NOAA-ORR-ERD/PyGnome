@@ -1,3 +1,7 @@
+
+
+
+
 import os
 from datetime import datetime, timedelta
 import logging
@@ -130,7 +134,7 @@ def gen_vortex_3D(filename=None):
         ds.createVariable('lin_tdvx', 'f8', dimensions=('time', 'depth', 'nv'))
         ds.createVariable('lin_tdvy', 'f8', dimensions=('time', 'depth', 'nv'))
 
-        for k, v in {'nodes': lin_nodes,
+        for k, v in list({'nodes': lin_nodes,
                      'faces': lin_faces,
                      'lin_vx': lin_vx,
                      'lin_vy': lin_vy,
@@ -140,7 +144,7 @@ def gen_vortex_3D(filename=None):
                      'lin_dvy': lin_dvy,
                      'lin_tdvx': lin_tdvx,
                      'lin_tdvy': lin_tdvy
-                     }.items():
+                     }.items()):
             ds[k][:] = v
 
             if 'lin' in k:
@@ -264,13 +268,13 @@ def gen_sinusoid(filename=None):
     if filename is not None:
         ds = nc4.Dataset(filename, 'w', diskless=True, persist=True)
 
-        for k, v in {'eta_psi': 24,
+        for k, v in list({'eta_psi': 24,
                      'xi_psi': 4,
                      'eta_rho': 25,
-                     'xi_rho': 5}.items():
+                     'xi_rho': 5}.items()):
             ds.createDimension(k, v)
 
-        for k, v in {'lon_rho': ('xi_rho', 'eta_rho', x),
+        for k, v in list({'lon_rho': ('xi_rho', 'eta_rho', x),
                      'lat_rho': ('xi_rho', 'eta_rho', y),
                      'lon_psi': ('xi_psi', 'eta_psi', xc),
                      'lat_psi': ('xi_psi', 'eta_psi', yc),
@@ -278,16 +282,16 @@ def gen_sinusoid(filename=None):
                      'lat_u': ('xi_rho', 'eta_psi', yu),
                      'lon_v': ('xi_psi', 'eta_rho', xv),
                      'lat_v': ('xi_psi', 'eta_rho', yv),
-                     }.items():
+                     }.items()):
             ds.createVariable(k, 'f8', dimensions=v[0:2])
             ds[k][:] = v[2]
 
-        for k, v in {'u_rho': ('xi_rho', 'eta_rho', vx),
+        for k, v in list({'u_rho': ('xi_rho', 'eta_rho', vx),
                      'v_rho': ('xi_rho', 'eta_rho', vy),
                      'u_psi': ('xi_psi', 'eta_psi', vxc),
                      'v_psi': ('xi_psi', 'eta_psi', vyc),
                      'u': ('xi_rho', 'eta_psi', vxu),
-                     'v': ('xi_psi', 'eta_rho', vyv)}.items():
+                     'v': ('xi_psi', 'eta_rho', vyv)}.items()):
             ds.createVariable(k, 'f8', dimensions=v[0:2])
             ds[k][:] = v[2]
             ds[k].units = 'm/s'
@@ -353,11 +357,11 @@ def gen_ring(filename=None):
         ds.createDimension('nele', faces.shape[0])
         ds.createDimension('three', 3)
 
-        for k, v in {'node_lon': ('nv', x),
+        for k, v in list({'node_lon': ('nv', x),
                      'node_lat': ('nv', y),
                      'faces': ('nele', 'three', faces),
                      'u': ('nv', vx),
-                     'v': ('nv', vy)}.items():
+                     'v': ('nv', vy)}.items()):
             ds.createVariable(k, 'f8', dimensions=v[0:-1])
             ds[k][:] = v[-1]
             ds[k].units = 'm/s'
@@ -386,7 +390,7 @@ def gen_all(base_path=None):
         filenames = [os.path.join(base_path, fn) for fn in filenames]
 
     for fn, func in zip(filenames, (gen_sinusoid, gen_vortex_3D, gen_ring)):
-        print('generating ' + fn)
+        print(('generating ' + fn))
         func(fn)
 
 

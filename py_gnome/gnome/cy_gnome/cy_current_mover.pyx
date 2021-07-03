@@ -4,8 +4,8 @@ No CyCurrentMover object is ever defined or used; however, this is a good
 place to keep all the common properties of current movers
 '''
 
-from cy_mover cimport CyMover
-from current_movers cimport CurrentMover_c
+from .cy_mover cimport CyMover
+from .current_movers cimport CurrentMover_c
 
 cdef class CyCurrentMover(CyMover):
     '''
@@ -48,6 +48,19 @@ cdef class CyCurrentMover(CyMover):
         self.curr_mover.fDownCurUncertainty = down_cur_uncertain
         self.curr_mover.fLeftCurUncertainty = left_cur_uncertain
         self.curr_mover.fRightCurUncertainty = right_cur_uncertain
+
+    def __reduce__(self):
+        return (
+            CyCurrentMover,
+            (
+                self.curr_mover.fDuration,
+                self.curr_mover.fUncertainStartTime,
+                self.curr_mover.fUpCurUncertainty,
+                self.curr_mover.fDownCurUncertainty,
+                self.curr_mover.fLeftCurUncertainty,
+                self.curr_mover.fRightCurUncertainty,
+            )
+        )
 
     property uncertain_duration:
         def __get__(self):

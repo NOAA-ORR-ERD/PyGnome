@@ -1,6 +1,7 @@
 '''
 Ship drift mover
 '''
+
 import os
 
 import numpy as np
@@ -52,7 +53,7 @@ class ShipDriftMover(Mover):
         :param time_offset: Time zone shift if data is in GMT
 
         Pass optional arguments to base class
-        uses super: super(ShipDriftMover,self).__init__(\*\*kwargs)
+        uses super: ``super(ShipDriftMover,self).__init__(**kwargs)``
         """
         if not os.path.exists(wind_file):
             raise ValueError('Path for wind file does not exist: {0}'
@@ -179,7 +180,7 @@ class ShipDriftMover(Mover):
         try:
             self.positions = sc['positions']
             self.status_codes = sc['status_codes']
-        except KeyError, err:
+        except KeyError as err:
             raise ValueError('The spill container does not have the required'
                              'data arrays\n' + str(err))
 

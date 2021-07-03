@@ -8,9 +8,13 @@ and
 Element_types -- what the types of the elements are.
 
 """
-from datetime import timedelta, datetime
+
+
+
+
+
+from datetime import datetime
 import copy
-import numpy as np
 
 
 import unit_conversion as uc
@@ -22,17 +26,17 @@ from colander import (SchemaNode, Bool, String, Float, drop)
 from gnome.gnomeobject import GnomeId
 from gnome.persist.base_schema import ObjTypeSchema, GeneralGnomeObjectSchema
 
+from gnome import _valid_units
 
-from .release import (Release,
-                      PointLineRelease,
-                      GridRelease,
-                      SpatialRelease)
-from .. import _valid_units
-from gnome.spill.release import (BaseReleaseSchema,
+from gnome.spill.release import (Release,
+                                 PointLineRelease,
+                                 GridRelease,
+                                 SpatialRelease,
+                                 BaseReleaseSchema,
                                  PointLineReleaseSchema,
                                  SpatialReleaseSchema)
 from gnome.environment.water import WaterSchema
-#from gnome.spill.le import LEData
+# from gnome.spill.le import LEData
 from gnome.spill.substance import (SubstanceSchema,
                                    Substance,
                                    NonWeatheringSubstance,
@@ -204,7 +208,7 @@ class Spill(BaseSpill):
         try:
             self._substance = GnomeOil.get_GnomeOil(val)
         except Exception:
-            if isinstance(val, basestring):
+            if isinstance(val, str):
                 raise
 
             self.logger.info('Failed to get_oil_props for {0}. Use as is '
@@ -249,22 +253,22 @@ class Spill(BaseSpill):
 
     @property
     def start_position(self):
-        return self.release.start_position
+        return self.release.centroid if not hasattr(self.release, 'start_position') else self.release.start_position
 
     @start_position.setter
     def start_position(self, sp):
-        self.release.start_position = sp
+        raise ValueError('Setting release start_position on spill is deprecated')
 
     @property
     def end_position(self):
-        return self.release.end_position
+        return self.release.centroid if not hasattr(self.release, 'end_position') else self.release.end_position
 
     @end_position.setter
     def end_position(self, sp):
-        self.release.end_position = sp
+        raise ValueError('Setting release end_position on spill is deprecated')
 
     # fixme: We store in standard units! i.e. kilograms!
-    #        so the getter shold jsut return that value.
+    #        so the getter should just return that value.
     @property
     def amount(self):
         rel_mass = self.release.release_mass #kg
@@ -551,11 +555,11 @@ def grid_spill(bounds,
 
     :param substance=None: Type of oil spilled.
     :type substance: str or OilProps
-    
+
     :param float amount=None: mass or volume of oil spilled
 
     :param str units=None: units for amount spilled
-    
+
     :param release_time: time the LEs are released (datetime object)
     :type release_time: datetime.datetime
 
@@ -568,7 +572,7 @@ def grid_spill(bounds,
                                     randomly reset on this time scale
     :param str name='Surface Point/Line Release': a name for the spill
     '''
-    
+
     release = GridRelease(release_time,
                           bounds,
                           resolution)
@@ -767,8 +771,8 @@ def spatial_release_spill(start_positions,
 
     A spatial release is a spill that releases elements at known locations.
     '''
-    release = SpatialRelease(release_time=release_time,
-                             start_position=start_positions,
+    release = Release(release_time=release_time,
+                             custom_positions=start_positions,
                              name=name)
     retv = Spill(release=release,
                  water=water,

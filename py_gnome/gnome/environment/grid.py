@@ -1,7 +1,10 @@
 """
 grid for wind or current data
 """
-import copy
+
+
+
+
 
 from colander import (SchemaNode, drop, Float)
 

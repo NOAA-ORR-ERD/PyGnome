@@ -2,11 +2,20 @@
 module contains objects that contain weather related data. For example,
 the Wind object defines the Wind conditions for the spill
 """
+
+
+
+
+
+# from future import standard_library
+# standard_library.install_aliases()
+# from builtins import *
+
 import datetime
 import os
-import copy
-import StringIO
-import zipfile
+# import copy
+import io
+# import zipfile
 import gridded
 
 import numpy as np
@@ -17,7 +26,7 @@ from colander import (SchemaNode, drop, OneOf,
 import unit_conversion as uc
 
 from gnome.basic_types import datetime_value_2d
-from gnome.basic_types import coord_systems
+from gnome.basic_types import ts_format
 from gnome.basic_types import wind_datasources
 
 from gnome.cy_gnome.cy_ossm_time import ossm_wind_units
@@ -105,8 +114,9 @@ class WindSchema(base_schema.ObjTypeSchema):
     source_id = SchemaNode(String())
     source_type = SchemaNode(
         String(),
-        validator=OneOf(wind_datasources._attr),
-        default='undefined', missing='undefined'
+        validator=OneOf(wind_datasources.__members__.keys()),
+        default='undefined',
+        missing='undefined'
     )
     units = SchemaNode(String(), default='m/s')
     speed_uncertainty_scale = SchemaNode(Float())
@@ -122,7 +132,7 @@ class WindSchema(base_schema.ObjTypeSchema):
     time = TimeSchema(
         #this is only for duck-typing the new-style environment objects,
         #so only provide to the client
-        save=False, update=False, save_reference=False, read_only=True
+        save=False, update=False, save_reference=False, read_only=True, test_equal=False
     )
 
 
@@ -181,7 +191,7 @@ class Wind(Timeseries, Environment):
             if units is not None:
                 self.units = units
         else:
-            if kwargs.get('source_type') in wind_datasources._attr:
+            if kwargs.get('source_type') in wind_datasources.__members__.keys():
                 self.source_type = kwargs.pop('source_type')
             else:
                 self.source_type = 'undefined'
@@ -202,10 +212,10 @@ class Wind(Timeseries, Environment):
         self.time = kwargs.pop('time', None)
 
     def update_from_dict(self, dict_, refs=None):
-        if 'units' in dict_.keys():
+        if 'units' in list(dict_.keys()):
             #enforce updating of units before timeseries
             self.units = dict_.pop('units')
-        if 'timeseries' in dict_.keys():
+        if 'timeseries' in list(dict_.keys()):
             self.timeseries = WindTimeSeriesSchema().deserialize(dict_.pop('timeseries'))
         super(Wind, self).update_from_dict(dict_, refs=refs)
 
@@ -328,7 +338,7 @@ class Wind(Timeseries, Environment):
         if from_unit != to_unit:
             data[:, 0] = uc.convert('Velocity', from_unit, to_unit, data[:, 0])
 
-            if coord_sys == coord_systems.uv:
+            if coord_sys == ts_format.uv:
                 data[:, 1] = uc.convert('Velocity', from_unit, to_unit,
                                         data[:, 1])
 
@@ -358,7 +368,7 @@ class Wind(Timeseries, Environment):
         '''
         use a StringIO type of file descriptor and write directly to zipfile
         '''
-        fd = StringIO.StringIO()
+        fd = io.StringIO()
         self._write_timeseries_to_fd(fd)
         self._write_to_zip(saveloc, ts_name, fd.getvalue())
 
@@ -373,7 +383,7 @@ class Wind(Timeseries, Environment):
 
         Writes the "OSSM format" with the full header
         '''
-        if self.units in ossm_wind_units.values():
+        if self.units in list(ossm_wind_units.values()):
             data_units = self.units
         else:
             # we know C++ understands this unit

@@ -70,7 +70,7 @@ vg = GridCurrent(variables=[vels_y, vels_x], time=t, grid=g, units='m/s')
 
 
 def make_model(images_dir=os.path.join(base_dir, 'images')):
-    print 'initializing the model'
+    print('initializing the model')
 
     # set up the modeling environment
     start_time = datetime(2016, 9, 18, 1, 0)
@@ -79,7 +79,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                   time_step=30 * 60,
                   uncertain=False)
 
-    print 'adding the map'
+    print('adding the map')
     model.map = GnomeMap()  # this is a "water world -- no land anywhere"
 
     # renderere is only top-down view on 2d -- but it's something
@@ -89,7 +89,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                         )
     renderer.viewport = ((-87.295, 27.795), (-87.705, 28.205))
 
-    print 'adding outputters'
+    print('adding outputters')
     model.outputters += renderer
 
     # Also going to write the results out to a netcdf file
@@ -101,7 +101,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                                      # output most of the data associated with the elements
                                      output_timestep=timedelta(hours=2))
 
-    print "adding Horizontal and Vertical diffusion"
+    print("adding Horizontal and Vertical diffusion")
 
     # Horizontal Diffusion
     #model.movers += RandomMover(diffusion_coef=100000)
@@ -112,11 +112,11 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                                         horizontal_diffusion_coef_below_ml=100,
                                         mixed_layer_depth=10)
 
-    print 'adding Rise Velocity'
+    print('adding Rise Velocity')
     # droplets rise as a function of their density and radius
     model.movers += TamocRiseVelocityMover()
 
-    print 'adding the 3D current mover'
+    print('adding the 3D current mover')
     gc = GridCurrent.from_netCDF('HYCOM_3d.nc')
 
     model.movers += PyCurrentMover('HYCOM_3d.nc')
@@ -129,7 +129,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
 
     # Now to add in the TAMOC "spill"
-    print "Adding TAMOC spill"
+    print("Adding TAMOC spill")
 
     model.spills += tamoc_spill.TamocSpill(release_time=start_time,
                                         start_position=(-87.5, 28.0, 1000),
@@ -149,7 +149,7 @@ if __name__ == "__main__":
     model = make_model()
     model.spills[0].update_environment_conditions(model.model_time)
     model.spills[0].tamoc_parameters['nbins'] = 20
-    print "about to start running the model"
+    print("about to start running the model")
     for step in model:
         if step['step_num'] == 1:
 #             import random
@@ -162,5 +162,5 @@ if __name__ == "__main__":
 #            sp.update_environment_conditions(model.model_time)
 #            print sp.tamoc_parameters
 #            sp._run_tamoc()
-        print step
+        print(step)
         # model.

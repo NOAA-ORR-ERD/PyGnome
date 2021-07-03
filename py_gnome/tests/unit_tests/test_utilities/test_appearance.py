@@ -1,5 +1,11 @@
+
+
+
+
+
 from gnome.spill.spill import Spill
 from gnome.utilities.appearance import SpillAppearance, Colormap
+
 
 def test_spill_appearance_serialization():
     sp = Spill()
@@ -16,6 +22,7 @@ def test_spill_appearance_serialization():
     assert sp2._appearance.foo == 'bar'
     assert sp._appearance.colormap == sp2._appearance.colormap
     assert sp2._appearance.colormap.k1 == 'v1'
+
 
 def test_spill_appearance_save_load():
     sp = Spill()

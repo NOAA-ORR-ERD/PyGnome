@@ -7,6 +7,10 @@ These are properties that are spill specific like:
   'nonweathering' element_types would set use_droplet_size flag to False
   'weathering' element_types would use droplet_size, densities, mass?
 '''
+
+
+
+
 import numpy as np
 
 from colander import SchemaNode, Int, Float, Range, TupleSchema
@@ -114,7 +118,7 @@ class InitWindages(InitBaseClass):
         Since windages exists in data_arrays, so must windage_range and
         windage_persist if this initializer is used/called
         """
-        if any([k not in data_arrays for k in self.array_types.keys()]):
+        if any([k not in data_arrays for k in list(self.array_types.keys())]):
             return
 
         sl = slice(-num_new_particles, None, 1)
@@ -146,7 +150,7 @@ class InitMassFromPlume(InitBaseClass):
         self.name = 'mass'
 
     def initialize(self, num_new_particles, data_arrays, substance):
-        if any([k not in data_arrays for k in self.array_types.keys()]):
+        if any([k not in data_arrays for k in list(self.array_types.keys())]):
             return
         if substance.plume_gen is None:
             raise ValueError('plume_gen attribute of spill is None - cannot'
@@ -209,7 +213,7 @@ class InitRiseVelFromDist(DistributionBase):
         self.name = 'rise_vel'
 
     def initialize(self, num_new_particles, data_arrays, substance):
-        if any([k not in data_arrays for k in self.array_types.keys()]):
+        if any([k not in data_arrays for k in list(self.array_types.keys())]):
             return
         'Update values of "rise_vel" data array for new particles'
         self.distribution.set_values(
@@ -269,7 +273,7 @@ class InitRiseVelFromDropletSizeFromDist(DistributionBase):
         water density and water_viscosity:
         gnome.cy_gnome.cy_rise_velocity_mover.rise_velocity_from_drop_size()
         """
-        if any([k not in data_arrays for k in self.array_types.keys()]):
+        if any([k not in data_arrays for k in list(self.array_types.keys())]):
             return
         drop_size = np.zeros((num_new_particles, ), dtype=np.float64)
         le_density = np.zeros((num_new_particles, ), dtype=np.float64)

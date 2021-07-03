@@ -1,6 +1,11 @@
 """
 shapefile  outputter
 """
+
+
+
+
+
 import os
 import zipfile
 
@@ -116,7 +121,13 @@ class ShapeOutput(Outputter):
                      'UNIT["degree",0.0174532925199433]]')
 
         for sc in self.sc_pair.items():
-            w = shp.Writer(shp.POINT)
+            if sc.uncertain:
+                w = shp.Writer(self.filename + '_uncert', shapeType=shp.POINT)
+                self.w_u = w
+            else:
+                w = shp.Writer(self.filename, shapeType=shp.POINT)
+                self.w = w
+
             w.autobalance = 1
 
             w.field('Time', 'C')
@@ -126,11 +137,6 @@ class ShapeOutput(Outputter):
             w.field('Age', 'N')
             w.field('Surf_Conc', 'F', decimal=5)
             w.field('Status_Code', 'N')
-
-            if sc.uncertain:
-                self.w_u = w
-            else:
-                self.w = w
 
     def write_output(self, step_num, islast_step=False):
         """dump a timestep's data into the shape file"""
@@ -193,12 +199,9 @@ class ShapeOutput(Outputter):
     def _save_and_archive_shapefiles(self, sc):
         writer = self._get_shape_writer(sc)
 
-        if sc.uncertain:
-            filename = self.filename + '_uncert'
-        else:
-            filename = self.filename
+        writer.close()
 
-        writer.save(filename)
+        filename = self.filename + '_uncert' if sc.uncertain else self.filename
 
         prj_file = open('{}.prj'.format(filename), "w")
         prj_file.write(self.epsg)
@@ -209,7 +212,6 @@ class ShapeOutput(Outputter):
             zipf = zipfile.ZipFile(zfilename, 'w')
 
             for suf in ['shp', 'prj', 'dbf', 'shx']:
-                print "filename is:", filename
                 file_to_zip = os.path.split(filename)[-1] + '.' + suf
 
                 zipf.write(os.path.join(self.filedir, file_to_zip),

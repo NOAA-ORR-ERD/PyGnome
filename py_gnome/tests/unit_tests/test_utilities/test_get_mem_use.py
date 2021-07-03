@@ -8,6 +8,10 @@ not sure how to test for real, but at least this tells you that you can call the
 designed to be run with py.test
 """
 
+
+
+
+
 import pytest
 
 from gnome.utilities import get_mem_use
@@ -39,6 +43,6 @@ def test_increase():
     """
     import array
     start = get_mem_use()
-    l = [array.array('b', b'some bytes'*1024) for i in xrange(10000)]
+    l = [array.array('b', b'some bytes'*1024) for i in range(10000)]
 
     assert get_mem_use() > start

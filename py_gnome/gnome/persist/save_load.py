@@ -1,6 +1,11 @@
 '''
 Save/load gnome objects
 '''
+
+
+
+
+
 import os
 import shutil
 import json
@@ -34,7 +39,7 @@ class Refs(dict):
         '''
         base_name = obj.obj_type.split('.')[-1]
 
-        num_of_same_type = [v for v in self.values()
+        num_of_same_type = [v for v in list(self.values())
                             if v.obj_type == obj.obj_type]
 
         return base_name + num_of_same_type + 1
@@ -59,14 +64,14 @@ class References(object):
 
     @property
     def files(self):
-        return self._refs.keys()
+        return list(self._refs.keys())
 
     def get_reference(self, obj):
         '''
         return key if obj already exists in references list
         else return None
         '''
-        for key, item in self._refs.iteritems():
+        for key, item in list(self._refs.items()):
             if item is obj:
                 return key
 
@@ -425,10 +430,10 @@ class Savable(object):
         '''
         loads object from json_data
 
-        * load json for references from files
-        * update paths of datafiles if needed
-        * deserialize json_data
-        * and create object with new_from_dict()
+        - load json for references from files
+        - update paths of datafiles if needed
+        - deserialize json_data
+        - and create object with new_from_dict()
 
         json_data: dict containing json data. It has been parsed through the
             json.loads() command. The json will be valided here when it gets
@@ -437,9 +442,9 @@ class Savable(object):
 
         Optional parameter
 
-        :param saveloc: location of data files or \*.json files for objects
+        :param saveloc: location of data files or .json files for objects
             stored as references. If object requires no datafiles and does not
-            need to read references from a \*.json file in saveloc, then this
+            need to read references from a .json file in saveloc, then this
             can be None.
         :param references: references object - if this is called by the Model,
             it will pass a references object. It is not required.
@@ -454,7 +459,7 @@ class Savable(object):
         try:
             _to_dict = cls.deserialize(json_data)
         except colander.Invalid as e:
-            print('Class {0} failed to deserialize.'.format(cls.__name__))
+            print(('Class {0} failed to deserialize.'.format(cls.__name__)))
             raise e
 
         if ref_dict:
@@ -567,14 +572,14 @@ def is_savezip_valid(savezip):
 
             # integer division - it will floor
             if (zi.compress_size > 0 and
-                    zi.file_size / zi.compress_size > _max_compress_ratio):
+                    (zi.file_size / zi.compress_size) > _max_compress_ratio):
                 # 4) Found a file with
                 #    uncompressed_size/compressed_size > _max_compress_ratio.
                 #    Rejecting.
                 log.warning('file compression ratio is {0}. '
                             'maximum must be less than {1}. '
                             'Rejecting zipfile'
-                            .format(zi.file_size / zi.compress_size,
+                            .format((zi.file_size / zi.compress_size),
                                     _max_compress_ratio))
                 return False
 

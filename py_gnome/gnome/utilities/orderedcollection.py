@@ -1,6 +1,20 @@
 #!/usr/bin/env python
 
 
+
+
+
+
+
+# from future import standard_library
+# standard_library.install_aliases()
+# from builtins import zip
+# from builtins import str
+# from builtins import range
+# from builtins import *
+# from builtins import object
+
+
 class OrderedCollection(object):
     '''
     Generalized Container for a set of objects of a particular type which
@@ -39,10 +53,9 @@ class OrderedCollection(object):
         # is hard to reference as a key
 
         self._elems = elems[:]
-        self._d_index = \
-            {self._s_id(elem): idx for idx, elem in enumerate(self._elems)}
+        self._d_index = {self._s_id(elem): idx for idx, elem in enumerate(self._elems)}
 
-        self.callbacks = {}
+        self.callbacks = []
 
     def _s_id(self, elem):
         'return the id of the object as a string'
@@ -79,7 +92,7 @@ class OrderedCollection(object):
         if isinstance(elem, self.dtype):
             l__id = self._s_id(elem)
 
-            if l__id not in self._d_index.keys():
+            if l__id not in list(self._d_index.keys()):
                 self._d_index[l__id] = len(self._elems)
                 self._elems.append(elem)
 
@@ -170,7 +183,15 @@ class OrderedCollection(object):
         '''
         try:
             # first check if elem is the 'id'
-            idx = self._d_index[elem]
+            if (hasattr(elem, 'id')):
+                idx = self._s_id(elem)
+                try:
+                    idx = self._d_index[idx]
+                except KeyError:
+                    raise ValueError('{0} is not in OrderedCollection'
+                                    .format(elem))
+            else:
+                idx = self._d_index[elem]
         except KeyError:
             # if its not a valid ID, then check if its the object
             ident = self._s_id(elem)
@@ -183,7 +204,7 @@ class OrderedCollection(object):
         return sorted(self._d_index.values()).index(idx)
 
     def __len__(self):
-        return len(self._d_index.keys())
+        return len(list(self._d_index.keys()))
 
     def __iter__(self):
         for i in sorted(self._d_index.values()):
@@ -239,7 +260,7 @@ class OrderedCollection(object):
         for __str__, don't show the keys
         """
         # order by position in list
-        itemlist = sorted(self._d_index.items(), key=lambda x: x[1])
+        itemlist = sorted(list(self._d_index.items()), key=lambda x: x[1])
 
         # reference the value in list
         itemlist = [self._elems[v] for (k, v) in itemlist]
@@ -258,7 +279,7 @@ class OrderedCollection(object):
 
     def __repr__(self):
         # order by position in list
-        itemlist = sorted(self._d_index.items(), key=lambda x: x[1])
+        itemlist = sorted(list(self._d_index.items()), key=lambda x: x[1])
 
         # reference the value in list
         itemlist = [(k, self._elems[v]) for (k, v) in itemlist]
@@ -294,7 +315,7 @@ class OrderedCollection(object):
         '''
         if not isinstance(cstruct, list):
             raise ValueError('Must update an OrderedCollection with a list')
-        current_values = self.values()
+        current_values = list(self.values())
         new_vals = []
 
         for elem in cstruct:
@@ -358,10 +379,10 @@ class OrderedCollection(object):
                                  "('add', 'remove', 'replace'). "
                                  "{0} is not supported".format(event))
 
-        self.callbacks[callback] = events
+        self.callbacks.append((callback, events))
 
     def fire_event(self, event, obj_):
-        for (callback, reg_event) in self.callbacks.items():
+        for (callback, reg_event) in self.callbacks:
             if event in reg_event:
                 callback(obj_)  # this should be all that is required
 

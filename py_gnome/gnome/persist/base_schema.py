@@ -1,25 +1,32 @@
-import pdb
+
+
+
+
+from past.types import basestring
+
+
+# import pdb
 import datetime
 import zipfile
-import six
 import logging
 import collections
 import os
 import json
 import tempfile
-import copy
+import geojson
 
 from colander import (SchemaNode, deferred, drop, required, Invalid, UnsupportedFields,
                       SequenceSchema, TupleSchema, MappingSchema, Mapping,
                       String, Float, Int, SchemaType, Sequence, Tuple, Positional, null)
 
-from extend_colander import NumpyFixedLenSchema
+from .extend_colander import NumpyFixedLenSchema
 
 from gnome.gnomeobject import Refs, class_from_objtype
 from gnome.persist.extend_colander import OrderedCollectionType
 from gnome.utilities.geometry.polygons import PolygonSet
 
 log = logging.getLogger(__name__)
+
 
 @deferred
 def now(node, kw):
@@ -119,27 +126,10 @@ class ObjType(SchemaType):
         try:
             if hasattr(value, 'to_dict'):
                 dict_ = value.to_dict('webapi')
-#                 for k in dict_.keys():
-#                     if dict_[k] is None:
-#                         dict_[k] = null
             else:
                 raise TypeError('Object does not have a to_dict function')
         except Exception as e:
             raise e
-            raise Invalid(node, '{0}" does not implement GnomeObj functionality: {1}'.format(value, e))
-#         if options is not None:
-#             if not options.get('raw_paths', True):
-#                 datafiles = node.get_nodes_by_attr('isdatafile')
-#                 for d in datafiles:
-#                     if d in dict_:
-#                         if dict_[d] is None:
-#                             continue
-#                         elif isinstance(dict_[d], six.string_types):
-#                             dict_[d] = os.path.split(dict_[d])[1]
-#                         elif isinstance(dict_[d], collections.Iterable):
-#                             #List, tuple, etc
-#                             for i, filename in enumerate(dict_[d]):
-#                                 dict_[d][i] = os.path.split(filename)[1]
         return dict_
 
     def serialize(self, node, appstruct, options=None):
@@ -165,12 +155,14 @@ class ObjType(SchemaType):
         return self._impl(node, value, callback)
 
     def _deser(self, node, value, refs):
+        # value in this case would be 
 #         try:
             if value is None:
                 return None
-            if type(value) is dict and 'obj_type' in value:
+            if isinstance(value, dict) and 'obj_type' in value:
                 id_ = value.get('id', None)
                 if id_ not in refs or id_ is None:
+                    # object does not exist in refs already
                     obj_type = class_from_objtype(value['obj_type'])
                     obj = obj_type.new_from_dict(value)
                     log.info('Created new {0} object {1}'.format(obj.obj_type, obj.name))
@@ -190,7 +182,9 @@ class ObjType(SchemaType):
             return None
 
         def callback(subnode, subcstruct):
+            #This callback implements the branching recursion in deserialization
             if subnode.typ.__class__ is ObjType:
+                #All GNOME object types
                 return subnode.deserialize(subcstruct, refs)
             else:
                 # This needs to become more flexible! It needs to detect
@@ -199,17 +193,33 @@ class ObjType(SchemaType):
                         isinstance(subnode.children[0], ObjTypeSchema)):
                     # To deal with iterable schemas that do not have
                     # a deserialize with refs function
+                    # Lists
                     scalar = (hasattr(subnode.typ, 'accept_scalar') and
                               subnode.typ.accept_scalar)
 
                     return subnode.typ._impl(subnode, subcstruct, callback,
                                              scalar)
                 elif (subnode.schema_type is Tuple):
+                    #Tuples
                     return subnode.typ._impl(subnode, subcstruct, callback)
                 else:
+                    #Strings, dates, numbers, etc
                     return subnode.deserialize(subcstruct)
 
-        result = self._impl(node, cstruct, callback)
+        if 'id' in cstruct and cstruct['id'] in refs:
+            #future appstruct already exists in refs
+            #however cstruct may hold updates that should be applied to object in refs
+            #In this case the object should be 'update_from_dict' and the result
+            #be the newly updated object
+            id_ = cstruct['id']
+            log.info(refs[id_])
+            updated = refs[id_].update_from_dict(cstruct)
+            if updated:
+                log.info('Updated object {0} from json'.format(refs[id_].name))
+            return refs[id_]
+        else:
+            #
+            result = self._impl(node, cstruct, callback)
 
         return self._deser(node, result, refs)
 
@@ -262,7 +272,7 @@ class ObjType(SchemaType):
             #Passing the 'save' in case a class wants to do some special stuff on
             #saving specifically.
             dict_ = raw_object.to_dict('save')
-            for k in dict_.keys():
+            for k in list(dict_.keys()):
                 if dict_[k] is None:
                     dict_[k] = null
             return dict_
@@ -286,7 +296,7 @@ class ObjType(SchemaType):
         #strips out any entries that do not need saving. They're still in refs,
         #but that shouldn't do any harm.
         savable_attrs = node.get_nodes_by_attr('save')
-        for k in json_.keys():
+        for k in list(json_.keys()):
             subnode = node.get(k)
 
             # Need to exclude lists from this culling,
@@ -333,7 +343,7 @@ class ObjType(SchemaType):
         for d in datafiles:
             if json_[d] is None:
                 continue
-            elif isinstance(json_[d], six.string_types):
+            elif isinstance(json_[d], basestring):
                 json_[d] = self._process_supporting_file(json_[d], zipfile_)
             elif isinstance(json_[d], collections.Iterable):
                 # List, tuple, etc
@@ -341,7 +351,7 @@ class ObjType(SchemaType):
                     json_[d][i] = self._process_supporting_file(filename,
                                                                 zipfile_)
 
-        #Finally, write the json itself to the zipfile, and return the json
+        # Finally, write the json itself to the zipfile, and return the json
         if fname not in zipfile_.namelist():
             zipfile_.writestr(fname, json.dumps(json_, indent=True))
         return json_
@@ -488,7 +498,7 @@ class ObjType(SchemaType):
             tmpdir = tempfile.mkdtemp()
 
         for d in datafiles:
-            if isinstance(cstruct[d], six.string_types):
+            if isinstance(cstruct[d], basestring):
                 cstruct[d] = self._load_supporting_file(cstruct[d],
                                                         saveloc, tmpdir)
                 log.info('Extracted file {0}'.format(cstruct[d]))
@@ -530,7 +540,6 @@ class ObjType(SchemaType):
         else:
             return filename
 
-
     def _load_json_from_file(self, fname, saveloc):
         '''
         filename is the name of the file in the zip
@@ -540,11 +549,12 @@ class ObjType(SchemaType):
             return
         fp = None
         if isinstance(saveloc, zipfile.ZipFile):
-            fp = saveloc.open(fname, 'rU')
+            fp = saveloc.open(fname)
         else:
             fname = os.path.join(saveloc, fname)
-            fp = open(fname, 'rU')
+            fp = open(fname)
         return json.load(fp)
+
 
 class ObjTypeSchema(MappingSchema):
     schema_type = ObjType
@@ -635,7 +645,7 @@ class ObjTypeSchema(MappingSchema):
     def __init__(self, *args, **kwargs):
         super(ObjTypeSchema, self).__init__(*args, **kwargs)
         for c in self.children:
-            for k,v in self._colander_defaults.items():
+            for k,v in list(self._colander_defaults.items()):
                 if not hasattr(c, k):
                     setattr(c, k, v)
                 elif hasattr(c, k) and hasattr(c.__class__, k) and getattr(c, k) is getattr(c.__class__, k):
@@ -706,7 +716,7 @@ class ObjTypeSchema(MappingSchema):
         if attr == 'all':
             return [n.name for n in self.children]
         else:
-            names = [n.name for n in filter(lambda c: hasattr(c, attr) and getattr(c, attr), self.children)]
+            names = [n.name for n in [c for c in self.children if hasattr(c, attr) and getattr(c, attr)]]
             #sequences need to be taken into account. If present they will
             #considered to always have 'save' and 'update' as true, read as false,
             return names
@@ -861,6 +871,31 @@ class LongLatBounds(SequenceSchema):
 
 
 Polygon = LongLatBounds
+
+class FeatureCollectionSchema(MappingSchema):
+    '''
+    geojson.FeatureCollection -> String via __geo_interface__ attribute
+    '''
+    def serialize(self, appstruct):
+        assert isinstance(appstruct, geojson.FeatureCollection)
+        return appstruct.__geo_interface__
+    def deserialize(self, cstruct):
+        if isinstance(cstruct, str):
+            return geojson.loads(cstruct)
+        else:
+            return geojson.loads(geojson.dumps(cstruct))
+        
+
+class FeatureSchema(MappingSchema):
+    '''
+    geojson.Feature -> String via __geo_interface__ attribute
+    '''
+    def serialize(self, appstruct):
+        assert isinstance(appstruct, geojson.Feature)
+        return appstruct.__geo_interface__
+    def deserialize(self, cstruct):
+        assert isinstance(cstruct, str)
+        return geojson.loads(cstruct)
 
 
 class PolygonSetSchema(SequenceSchema):

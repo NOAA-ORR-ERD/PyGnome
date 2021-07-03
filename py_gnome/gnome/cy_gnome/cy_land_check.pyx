@@ -15,7 +15,7 @@ from libc.stdint cimport int16_t, int32_t, uint8_t, uint32_t
 from libc.stdlib cimport abs, div, div_t
 from libcpp cimport bool
 
-cimport type_defs
+cimport gnome.cy_gnome.type_defs as type_defs
 
 def overlap_grid(int32_t m, int32_t n, pt1, pt2):
     """
@@ -407,10 +407,10 @@ def move_particles(cnp.ndarray[cnp.float64_t, ndim=2, mode='c'] positions not No
             [x3, y3], [x4, y4] = p1, p2
             den = a1 * b2 - b1 * a2
             if (den == 0):
-                print a1
-                print a2
-                print b1
-                print b2
+                print(a1)
+                print(a2)
+                print(b1)
+                print(b2)
                 raise ValueError("den is 0")
             u = ((x4-x3)*(y1-y3) - (y4-y3)*(x1-x3))/den
             x = x1 + u * (x2-x1)

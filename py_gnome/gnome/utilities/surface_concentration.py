@@ -7,6 +7,10 @@ Ultimatley, there may be multiple versions of this
 -- with Cython optimizationas and all that.
 """
 
+
+
+
+
 import numpy as np
 from scipy.stats import gaussian_kde
 
@@ -35,7 +39,7 @@ def surface_conc_kde(sc):
 
     Kernel Density Estimator code
 
-   
+
 
     a "surface_concentration" array will be added to the spill container
 
@@ -55,7 +59,7 @@ def surface_conc_kde(sc):
         bin_length = 1*3600 #kde will be calculated on particles 0-6hrs, 6-12hrs,...
         t = age.min()
         max_age = age.max()
-        
+
         while t<=max_age:
             id = np.where((age<t+bin_length))[0] #we use all particles < t + bin_length for kernel
             lon_for_kernel = lon[id]
@@ -71,13 +75,13 @@ def surface_conc_kde(sc):
                 y = (lat_for_kernel - lat0) * 111325
                 xy = np.vstack([x, y])
                 if len(np.unique(mass_for_kernel)) > 1:
-                    kernel = gaussian_kde(xy,weights=mass_for_kernel/mass_for_kernel.sum()) 
+                    kernel = gaussian_kde(xy,weights=mass_for_kernel/mass_for_kernel.sum())
                 else:
-                    kernel = gaussian_kde(xy) 
+                    kernel = gaussian_kde(xy)
                 if mass_for_kernel.sum() > 0:
-                    c[id[id_bin]] = kernel(xy[:,id_bin]) * mass_for_kernel.sum() 
+                    c[id[id_bin]] = kernel(xy[:,id_bin]) * mass_for_kernel.sum()
                 else:
                     c[id[id_bin]] = kernel(xy[:,id_bin]) * len(mass_for_kernel)
             t = t + bin_length
-            
+
         sc['surface_concentration'][sid] = c

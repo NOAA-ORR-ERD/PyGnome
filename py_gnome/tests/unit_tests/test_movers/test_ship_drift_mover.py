@@ -1,6 +1,11 @@
 '''
 Test all operations for ship_drift mover work
 '''
+
+
+
+
+
 import datetime
 import os
 
@@ -29,18 +34,22 @@ def test_exceptions():
         ShipDriftMover(os.path.join('./', 'WindSpeedDirSubset.CUR'))
 
     with pytest.raises(TypeError):
-        ShipDriftMover(wind_file, topology_file=10)
+        """
+        note: you can pass in in int -- os.path.exists takes an integer file
+              descriptor
+        """
+        ShipDriftMover(wind_file, topology_file=10.0)
 
 
 def test_string_repr_no_errors():
     nw = ShipDriftMover(wind_file, topology_file, grid_type=2)
-    print
-    print '======================'
-    print 'repr(ShipDriftMover): '
-    print repr(nw)
-    print
-    print 'str(ShipDriftMover): '
-    print str(nw)
+    print()
+    print('======================')
+    print('repr(ShipDriftMover): ')
+    print(repr(nw))
+    print()
+    print('str(ShipDriftMover): ')
+    print(str(nw))
     assert True
 
 
@@ -97,9 +106,9 @@ def test_certain_uncertain():
 
     delta = test_loop()
     u_delta = test_uncertain_loop()
-    print
-    print delta
-    print u_delta
+    print()
+    print(delta)
+    print(u_delta)
     assert np.all(delta[:, :2] != u_delta[:, :2])
     assert np.all(delta[:, 2] == u_delta[:, 2])
 
@@ -126,8 +135,8 @@ def _assert_move(delta):
     helper function to test assertions
     """
 
-    print
-    print delta
+    print()
+    print(delta)
     assert np.all(delta[:, :2] != 0)
     assert np.all(delta[:, 2] == 0)
 

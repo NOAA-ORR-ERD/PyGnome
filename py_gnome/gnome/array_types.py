@@ -29,6 +29,10 @@ movers needs
 
 '''
 
+
+
+
+
 import sys
 
 import numpy as np
@@ -133,7 +137,7 @@ class ArrayType(AddLogger):
         if len(self.__dict__) != len(other.__dict__):
             return False
 
-        for (key, val) in self.__dict__.iteritems():
+        for (key, val) in self.__dict__.items():
             if key not in other.__dict__:
                 return False
             elif key == 'initial_value':
@@ -240,7 +244,7 @@ _default_values = {'positions': ((3,), world_point_type, 'positions',
                    'windages': ((), windage_type, 'windages', 0),
                    'windage_range': ((2,), np.float64, 'windage_range',
                                      (0., 0.)),
-                   'windage_persist': ((), np.int, 'windage_persist', 0),
+                   'windage_persist': ((), np.int32, 'windage_persist', 0),
                    'rise_vel': ((), np.float64, 'rise_vel', 0.),
                    'droplet_diameter': ((), np.float64, 'droplet_diameter',
                                         0.),
@@ -265,7 +269,7 @@ _default_values = {'positions': ((3,), world_point_type, 'positions',
                    'area': ((), np.float64, 'area', 0),
                    'frac_coverage': ((), np.float64, 'frac_coverage', 1.0),
 
-                   # decided not to use np.bool since netcdf needs a primitive
+                   # decided not to use bool since netcdf needs a primitive
                    # type. The conversion would need to happen between bool on
                    # write and read in NetCDFOutput - requires more code so
                    # decided to make it a uint8 instead

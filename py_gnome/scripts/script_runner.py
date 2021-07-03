@@ -6,12 +6,17 @@ Created on Apr 4, 2013
 Command line utility to run a gnome script
 '''
 
+
+
+
+
+
 import os
 import shutil
 import argparse
 import sys
-import imp
 
+import imp
 
 from gnome import scripting
 from gnome.persist import load
@@ -19,24 +24,17 @@ from gnome.persist import load
 
 def run(model):
 
-    # create a place for test images (cleaning out any old ones)
-    # images_dir = os.path.join( base_dir, "images")
-    # if os.path.isdir(images_dir):
-    #    shutil.rmtree(images_dir)
-    # os.mkdir(images_dir)
-    #
-
-    print 'running:'
+    print('running:')
 
     # run the model
 
     while True:
-        print 'calling step'
+        print('calling step')
         try:
             image_info = model.step()
-            print image_info
+            print(image_info)
         except StopIteration:
-            print 'Done with the model run'
+            print('Done with the model run')
             break
 
 
@@ -48,7 +46,7 @@ def save(model, saveloc):
     if os.path.isdir(saveloc):
         shutil.rmtree(saveloc)
     os.mkdir(saveloc)
-    print 'saving ..'
+    print('saving ..')
     model.save(saveloc)
 
 
@@ -107,12 +105,12 @@ def load_model(location, images_dir):
 
     # import ipdb; ipdb.set_trace()
 
-    filename = os.path.split(location)[1]
+    filename = os.path.split(location)[-1]
 
     scripting.make_images_dir(images_dir)
-    imp_script = imp.load_source(filename.rstrip('.py'), location)
-    model = imp_script.make_model(images_dir)
-    return (model, imp_script)
+    script = imp.load_source(filename.rstrip('.py'), location)
+    model = script.make_model(images_dir)
+    return (model, script)
 
 
 if __name__ == '__main__':

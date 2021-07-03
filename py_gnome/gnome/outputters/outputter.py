@@ -9,11 +9,16 @@ module to define classes for GNOME output:
   - saving to other formats ?
 
 """
+
+
+
+
+
 import os
+
 from datetime import timedelta
 
 from colander import SchemaNode, Bool, drop, String
-
 
 from gnome.persist import base_schema, extend_colander, validators
 from gnome.array_types import gat
@@ -63,8 +68,7 @@ class Outputter(GnomeId):
                  output_zero_step=True,
                  output_last_step=True,
                  output_start_time=None,
-                 # Fixme: this probably shouldnt be in the base class
-                 output_dir=None,
+                 output_dir=None,  # Fixme: this probably shouldn't be in the base class
                  surface_conc=None,
                  *args,
                  **kwargs):
@@ -85,7 +89,8 @@ class Outputter(GnomeId):
         :type output_zero_step: boolean
 
         :param output_last_step: default is True. If True then output for
-            final step is written regardless of output_timestep
+            final step is written regardless of output_timestep. This is
+            potentially an extra output, not aligne withe the output_timestep.
         :type output_last_step: boolean
 
         :param output_start_time: default is None in which case it is set to
@@ -96,22 +101,21 @@ class Outputter(GnomeId):
                                 do this.
         :type output_dir: string (path)
 
-        :param surface_conc = "": Compute surface concentration
+        :param surface_conc = None: Compute surface concentration
                                   Any non-zero string will compute (and output)
                                   the surface concentration the contents of the
                                   string determine the algorithm used. "kde" is
                                   currently the only working option.
-        :type surface_conc: string
+        :type surface_conc: string or None
         """
-
-        ## fixme -- why should this be initilaizable???
-        self._middle_of_run = kwargs.pop('_middle_of_run', False)
-
-        super(Outputter, self).__init__(*args, **kwargs)
 
         # flag to keep track of _state of the object - is True after calling
         # prepare_for_model_run
+        ## fixme -- why should this be initilaizable???
+        # self._middle_of_run = kwargs.pop('_middle_of_run', False)
+        self._middle_of_run = False
 
+        super(Outputter, self).__init__(*args, **kwargs)
 
         self.cache = cache
         self.on = on
@@ -322,9 +326,9 @@ class Outputter(GnomeId):
         # output step.
         # this updates the most recent one in the cache
 
-        if (self._write_step and
-                self.surface_conc and
-                not self._surf_conc_computed):
+        if (self._write_step
+            and self.surface_conc is not None
+            and not self._surf_conc_computed):
             # compute the surface concentration and put it in the cache
             try:
                 sc = self.cache.recent[step_num][0]  # only the certain one
@@ -414,7 +418,7 @@ class Outputter(GnomeId):
 
         for step_num in range(num_time_steps):
             if (step_num > 0 and step_num < num_time_steps - 1):
-                next_ts = (self.cache.load_timestep(step_num).items()[0].
+                next_ts = (list(self.cache.load_timestep(step_num).items())[0].
                            current_time_stamp)
                 ts = next_ts - model_time
 
@@ -425,8 +429,7 @@ class Outputter(GnomeId):
 
             self.write_output(step_num, last_step)
 
-            model_time = (self.cache.load_timestep(step_num)
-                          .items()[0]
+            model_time = (list(self.cache.load_timestep(step_num).items())[0]
                           .current_time_stamp)
 
     @property

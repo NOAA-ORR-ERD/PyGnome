@@ -1,7 +1,11 @@
 '''
 test grid objects
 '''
-import os
+
+
+
+
+
 from datetime import datetime
 
 import netCDF4 as nc
@@ -9,10 +13,11 @@ import netCDF4 as nc
 from gnome.environment import Grid
 
 from gnome.utilities.time_utils import date_to_sec
-from conftest import testdata
+from .conftest import testdata
 
 wind_file = testdata['GridWindMover']['wind_curv']
 topology_file = testdata['GridWindMover']['top_curv']
+
 
 def test_grid_wind_rect():
     '''
@@ -31,8 +36,8 @@ def test_grid_wind_rect():
     rect = Grid(file_)
     time = date_to_sec(time)
     vel = rect.get_value(time, long_lat)
-    print "\nRect grid - vel: {0}".format(vel)
-    print "Rect grid - expected_vel: {0}".format(exp_vel)
+    print("\nRect grid - vel: {0}".format(vel))
+    print("Rect grid - expected_vel: {0}".format(exp_vel))
     assert (vel.item() == exp_vel)
 
 
@@ -41,5 +46,6 @@ def test_grid_wind_curv():
     curv = Grid(wind_file, topology_file, grid_type=2)
     time = date_to_sec(datetime(2006, 3, 31, 21))
     vel = curv.get_value(time, (-122.934656, 38.27594))
-    print "Curv grid - vel: {0}\n".format(vel)
+    print("Curv grid - vel: {0}\n".format(vel))
     assert vel.item() != 0
+

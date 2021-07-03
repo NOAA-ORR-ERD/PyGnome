@@ -1,0 +1,15 @@
+# to run and get shell
+#. docker-compose run --entrypoint /bin/bash test
+
+# to restart:
+# docker exec -it pygnome_test_run_28b977337d65 /bin/bash
+
+# to find available containers
+
+version: "3"
+services:
+    test:
+        image: registry.orr.noaa.gov/erd/centos-conda/centos7-python3
+        volumes:
+            - ./:/pygnome
+        entrypoint: ['/bin/bash', '/pygnome/test_setup.sh']

@@ -1,8 +1,13 @@
 '''
 model dissolution process
 '''
-from __future__ import division
 
+
+
+
+
+
+import copy
 import contextlib
 
 import numpy as np

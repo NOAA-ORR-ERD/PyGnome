@@ -2,6 +2,10 @@
 Test dissolution module
 '''
 
+
+
+
+
 import pytest
 
 from datetime import timedelta
@@ -15,7 +19,7 @@ from gnome.weatherers import (Evaporation,
                               WeatheringData,
                               weatherer_sort)
 
-from conftest import weathering_data_arrays, build_waves_obj
+from .conftest import weathering_data_arrays, build_waves_obj
 from ..conftest import (sample_model_weathering,
                         sample_model_weathering2)
 
@@ -35,7 +39,7 @@ def test_init():
     waves = Waves(wind, Water())
     diss = Dissolution(waves)
 
-    print diss.array_types
+    print(diss.array_types)
     assert all([(at in diss.array_types)
                 for at in ('mass', 'viscosity', 'density')])
 
@@ -113,8 +117,8 @@ def test_dissolution_k_ow(oil, temp, num_elems, k_ow, on):
                                              substance=oil,
                                              num_elements=num_elems)[:2]
 
-    print 'num spills:', len(sc.spills)
-    print 'spill[0] amount:', sc.spills[0].amount
+    print('num spills:', len(sc.spills))
+    print('spill[0] amount:', sc.spills[0].amount)
 
     # we don't want to query the oil database, but get the sample oil
     #assert sc.spills[0].substance.record.id is None
@@ -159,13 +163,13 @@ def test_dissolution_droplet_size(oil, temp, num_elems, drop_size, on):
                                              water,
                                              num_elements=num_elems)[:2]
 
-    print 'num_spills:', len(sc.spills)
-    print 'spill[0] amount:', sc.spills[0].amount, sc.spills[0].units
+    print('num_spills:', len(sc.spills))
+    print('spill[0] amount:', sc.spills[0].amount, sc.spills[0].units)
 
     model_time = (sc.spills[0]
                   .release_time + timedelta(seconds=time_step))
-    print 'model_time = ', model_time
-    print 'time_step = ', time_step
+    print('model_time = ', model_time)
+    print('time_step = ', time_step)
 
     # we don't want to query the oil database, but get the sample oil
     #assert sc.spills[0].substance.record.id is None
@@ -186,7 +190,7 @@ def test_dissolution_droplet_size(oil, temp, num_elems, drop_size, on):
         disp.weather_elements(sc, time_step, model_time)
         diss.weather_elements(sc, time_step, model_time)
 
-        print 'droplet_avg_size:', sc._data_arrays['droplet_avg_size']
+        print('droplet_avg_size:', sc._data_arrays['droplet_avg_size'])
         assert np.allclose(sc._data_arrays['droplet_avg_size'], drop_size[i])
 
 
@@ -238,15 +242,15 @@ def test_dissolution_mass_balance(oil, temp, wind_speed,
                                              amount_per_element=1.0
                                              )[:2]
 
-    print 'time_step: {}'.format(time_step)
-    print 'num spills:', len(sc.spills)
-    print 'spill[0] amount: {} {}'.format(sc.spills[0].amount,
-                                          sc.spills[0].units)
-    print 'temperature = ', temp
-    print 'wind = ',
-    print '\n'.join(['\t{} {}'.format(ts[1][0], waves.wind.units)
-                     for ts in waves.wind.timeseries])
-    print
+    print('time_step: {}'.format(time_step))
+    print('num spills:', len(sc.spills))
+    print('spill[0] amount: {} {}'.format(sc.spills[0].amount,
+                                          sc.spills[0].units))
+    print('temperature = ', temp)
+    print('wind = ', end=' ')
+    print('\n'.join(['\t{} {}'.format(ts[1][0], waves.wind.units)
+                     for ts in waves.wind.timeseries]))
+    print()
 
     # we don't want to query the oil database, but get the sample oil
     #assert sc.spills[0].substance.record.id is None
@@ -270,13 +274,13 @@ def test_dissolution_mass_balance(oil, temp, wind_speed,
     diss.weather_elements(sc, time_step, model_time)
 
     if on:
-        print ('fraction dissolved: {}'
+        print(('fraction dissolved: {}'
                .format(sc.mass_balance['dissolution'] / initial_amount)
-               )
-        print ('fraction dissolved: {:.2%}'
+               ))
+        print(('fraction dissolved: {:.2%}'
                .format(sc.mass_balance['dissolution'] / initial_amount)
-               )
-        print sc.mass_balance['dissolution'], expected_mb
+               ))
+        print(sc.mass_balance['dissolution'], expected_mb)
         assert np.isclose(sc.mass_balance['dissolution'], expected_mb,
                           rtol=1e-4)
     else:
@@ -306,12 +310,12 @@ def test_full_run(sample_model_fcn2, oil, temp, expected_balance):
     model.weatherers += NaturalDispersion()
     model.weatherers += Dissolution(waves, wind)
 
-    for sc in model.spills.items():
-        print sc.__dict__.keys()
-        print sc._data_arrays
+    for sc in list(model.spills.items()):
+        print(list(sc.__dict__.keys()))
+        print(sc._data_arrays)
 
-        print 'num spills:', len(sc.spills)
-        print 'spill[0] amount:', sc.spills[0].amount
+        print('num spills:', len(sc.spills))
+        print('spill[0] amount:', sc.spills[0].amount)
         original_amount = sc.spills[0].amount
 
         # we don't want to query the oil database, but get the sample oil
@@ -324,7 +328,7 @@ def test_full_run(sample_model_fcn2, oil, temp, expected_balance):
 
     dissolved = []
     for step in model:
-        for sc in model.spills.items():
+        for sc in list(model.spills.items()):
             if step['step_num'] > 0:
                 assert (sc.mass_balance['dissolution'] > 0)
                 assert (sc.mass_balance['natural_dispersion'] > 0)
@@ -339,8 +343,8 @@ def test_full_run(sample_model_fcn2, oil, temp, expected_balance):
             # print ("Mass Components: {0}".
             #        format(sc._data_arrays['mass_components']))
 
-    print ('Fraction dissolved after full run: {}'
-           .format(dissolved[-1] / original_amount))
+    print(('Fraction dissolved after full run: {}'
+           .format(dissolved[-1] / original_amount)))
 
     assert dissolved[0] == 0.0
     assert np.isclose(dissolved[-1], expected_balance, rtol=1e-4)
@@ -367,18 +371,18 @@ def test_full_run_no_evap(sample_model_fcn2, oil, temp, expected_balance):
     model.weatherers += NaturalDispersion(low_waves, Water(temp))
     model.weatherers += Dissolution(low_waves, low_wind)
 
-    print ('Model start time: {}, Duration: {}, Time step: {}'
-           .format(model.start_time, model.duration, model.time_step))
+    print(('Model start time: {}, Duration: {}, Time step: {}'
+           .format(model.start_time, model.duration, model.time_step)))
 
-    for sc in model.spills.items():
-        print '\nSpill dict keys: ', sc.__dict__.keys()
-        print '\nSpill data arrays: ', sc._data_arrays
+    for sc in list(model.spills.items()):
+        print('\nSpill dict keys: ', list(sc.__dict__.keys()))
+        print('\nSpill data arrays: ', sc._data_arrays)
 
-        print 'num spills:', len(sc.spills)
-        print ('spill[0] amount: {} {} ({})'
+        print('num spills:', len(sc.spills))
+        print(('spill[0] amount: {} {} ({})'
                .format(sc.spills[0].amount, sc.spills[0].units,
                        sc.spills[0].substance.name)
-               )
+               ))
         original_amount = sc.spills[0].amount
 
     # set make_default_refs to True for objects contained in model after adding
@@ -388,7 +392,7 @@ def test_full_run_no_evap(sample_model_fcn2, oil, temp, expected_balance):
 
     dissolved = []
     for step_num, step in enumerate(model):
-        for sc in model.spills.items():
+        for sc in list(model.spills.items()):
             if step['step_num'] > 0:
                 assert (sc.mass_balance['dissolution'] > 0)
                 assert (sc.mass_balance['natural_dispersion'] > 0)
@@ -396,16 +400,16 @@ def test_full_run_no_evap(sample_model_fcn2, oil, temp, expected_balance):
 
             dissolved.append(sc.mass_balance['dissolution'])
 
-            print ('\n#Step: {}'.format(step_num))
-            print ("Dissolved: {0}".
-                   format(sc.mass_balance['dissolution']))
-            print ("Mass: {0}".
-                   format(sc._data_arrays['mass']))
-            print ("Mass Components: {0}".
-                   format(sc._data_arrays['mass_components']))
+            print(('\n#Step: {}'.format(step_num)))
+            print(("Dissolved: {0}".
+                   format(sc.mass_balance['dissolution'])))
+            print(("Mass: {0}".
+                   format(sc._data_arrays['mass'])))
+            print(("Mass Components: {0}".
+                   format(sc._data_arrays['mass_components'])))
 
-    print ('Fraction dissolved after full run: {}'
-           .format(dissolved[-1] / original_amount))
+    print(('Fraction dissolved after full run: {}'
+           .format(dissolved[-1] / original_amount)))
 
     assert dissolved[0] == 0.0
     assert np.isclose(dissolved[-1], expected_balance)
@@ -427,4 +431,4 @@ def test_full_run_dissolution_not_active(sample_model_fcn):
         '''
         assert 'dissolution' not in step['WeatheringOutput']
         assert ('time_stamp' in step['WeatheringOutput'])
-        print ("Completed step: {0}".format(step['step_num']))
+        print(("Completed step: {0}".format(step['step_num'])))

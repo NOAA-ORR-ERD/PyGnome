@@ -8,7 +8,11 @@ Uses the same approach as ADIOS 2
 
 (code ported from old MATLAB prototype code)
 """
-from __future__ import division
+
+
+
+
+
 
 import copy
 import numpy as np
@@ -22,7 +26,7 @@ from gnome.exceptions import ReferencedObjectNotSet
 from .environment import Environment
 from .water import WaterSchema
 
-from wind import WindSchema
+from .wind import WindSchema
 from gnome.environment.gridded_objects_base import VectorVariableSchema
 from gnome.environment.wind import Wind
 from gnome.environment.water import Water
@@ -222,7 +226,7 @@ class Waves(Environment):
         TODO: This implementation should be in a utility function.
               It should not be part of the Waves management object itself.
         '''
-        if H is 0 or U is 0:
+        if H == 0 or U == 0:
             return 0
 
         c_ub = 100
@@ -230,13 +234,12 @@ class Waves(Environment):
         c_p = PiersonMoskowitz.peak_wave_speed(U)
         w_p = PiersonMoskowitz.peak_angular_frequency(U)
 
-        z_0 = 1200 * H * ((H / (2*np.pi*c_p)) * w_p)**4.5
+        z_0 = 1200 * H * ((H / (2 * np.pi * c_p)) * w_p)**4.5
         u_a = .4 * U / np.log(10 / z_0)
         u_c = .03 * u_a
         eps = c_ub * u_c**3 / H
 
         return eps
-
 
     def prepare_for_model_run(self, _model_time):
         if self.wind is None:

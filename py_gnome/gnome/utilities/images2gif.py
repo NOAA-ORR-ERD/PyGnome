@@ -19,6 +19,10 @@ This code is provided as is, and is free to use for all.
 
 """
 
+
+
+
+
 try:
     import PIL
     from PIL import Image, ImageChops
@@ -62,7 +66,7 @@ def getheaderAnim(im):
 
 
 def getAppExt(loops=0):
-    """ Application extention. Part that secifies amount of loops. 
+    """ Application extention. Part that secifies amount of loops.
     if loops is 0, if goes on infinitely.
     """
 
@@ -182,7 +186,7 @@ def writeGif(
     dither=1,
     ):
     """ writeGif(filename, images, duration=0.1, loops=0, dither=1)
-    Write an animated gif from the specified images. 
+    Write an animated gif from the specified images.
     images should be a list of numpy arrays of PIL images.
     Numpy images of type float should have pixels between 0 and 1.
     Numpy images of other types are expected to have values between 0 and 255.
@@ -243,7 +247,7 @@ def writeGif(
 
     try:
         n = _writeGifToFile(fp, images2, durations, loops)
-        print n, 'frames written'
+        print((n, 'frames written'))
     finally:
         fp.close()
 

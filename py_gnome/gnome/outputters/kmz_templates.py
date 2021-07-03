@@ -2,6 +2,10 @@
 templates for the kmz  outputter
 """
 
+
+
+
+
 caveat = ("This trajectory was produced by GNOME "
           "(General NOAA Operational Modeling Environment), "
           "and should be used for educational and planning purposes only--"

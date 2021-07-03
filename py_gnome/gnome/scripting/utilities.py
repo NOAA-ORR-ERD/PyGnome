@@ -8,6 +8,10 @@ designed to be imported into the package __init__.py
 remember to add anyting new you want imported to "__all__"
 
 """
+
+
+
+
 import os
 import sys
 import traceback
@@ -25,10 +29,10 @@ def make_images_dir(images_dir=None):
     if images_dir is None:
         images_dir = os.path.join(os.getcwd(), 'images')
 
-    print 'images_dir is:', images_dir
+    print(('images_dir is:', images_dir))
 
     if os.path.isdir(images_dir):
-        print 'removing...', images_dir
+        print(('removing...', images_dir))
         shutil.rmtree(images_dir)
     os.mkdir(images_dir)
 
@@ -42,12 +46,12 @@ def remove_netcdf(netcdf_file):
     """
     if os.path.exists(netcdf_file):
         os.remove(netcdf_file)
-        print 'removed {0}'.format(netcdf_file)
+        print('removed {0}'.format(netcdf_file))
 
     (file_, ext) = os.path.splitext(netcdf_file)
     if os.path.exists(file_ + '_uncertain' + ext):
         os.remove(file_ + '_uncertain' + ext)
-        print 'removed {0}'.format(netcdf_file)
+        print('removed {0}'.format(netcdf_file))
 
 
 def set_verbose(log_level='info'):

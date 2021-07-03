@@ -2,6 +2,10 @@
 common fixture for output_dirs required by different outputters
 '''
 
+
+
+
+
 import os
 import pytest
 
@@ -13,7 +17,7 @@ def tmp_output_dir(tmpdir, request):
     puts it in where tmpfiles go, so good for automated testing,
     not good for looking at the results.
     '''
-    name = 'output_' + request.function.func_name.lstrip('test_')
+    name = 'output_' + request.function.__name__.lstrip('test_')
     name = tmpdir.mkdir(name).strpath
 
     return name
@@ -53,7 +57,7 @@ def output_filename(output_dir, request):
     if not os.path.exists(dirname):
         os.mkdir(dirname)
 
-    file_name = request.function.func_name
+    file_name = request.function.__name__
     extension = request.module.FILE_EXTENSION
     #  This may capture multi-processing pytests
     #  and create a new filename from the process id

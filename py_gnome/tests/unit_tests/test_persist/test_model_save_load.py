@@ -4,6 +4,10 @@ and the ability of Model to be recreated in midrun
 tests save/load to directory - original functionality and save/load to zip
 '''
 
+
+
+
+
 import os
 import shutil
 from datetime import datetime, timedelta
@@ -48,7 +52,7 @@ def make_model(uncertain=False, mode='gnome'):
                                  refloat_halflife=1),
                   mode=mode)
 
-    print 'adding a spill'
+    print('adding a spill')
     start_position = (144.664166, 13.441944, 0.0)
     end_release_time = start_time + timedelta(hours=6)
     spill_amount = 1000.0
@@ -65,10 +69,10 @@ def make_model(uncertain=False, mode='gnome'):
     # need a scenario for SimpleMover
     # model.movers += SimpleMover(velocity=(1.0, -1.0, 0.0))
 
-    print 'adding a RandomMover:'
+    print('adding a RandomMover:')
     model.movers += RandomMover(diffusion_coef=100000)
 
-    print 'adding a wind mover:'
+    print('adding a wind mover:')
 
     series = np.zeros((2, ), dtype=datetime_value_2d)
     series[0] = (start_time, (5, 180))
@@ -79,7 +83,7 @@ def make_model(uncertain=False, mode='gnome'):
     model.movers += w_mover
     model.environment += w_mover.wind
 
-    print 'adding a cats shio mover:'
+    print('adding a cats shio mover:')
 
     c_mover = CatsMover(testdata['boston_data']['cats_curr2'],
                         tide=Tide(testdata['boston_data']['cats_shio']))
@@ -91,7 +95,7 @@ def make_model(uncertain=False, mode='gnome'):
     # tide object automatically gets added by model
     model.movers += c_mover
 
-    print 'adding a cats ossm mover:'
+    print('adding a cats ossm mover:')
 
     c_mover = CatsMover(testdata['boston_data']['cats_curr2'],
                         tide=Tide(testdata['boston_data']['cats_ossm']))
@@ -100,7 +104,7 @@ def make_model(uncertain=False, mode='gnome'):
     c_mover.scale_refpoint = (-70.65, 42.58333, 0.0)
     c_mover.scale_value = 1.
 
-    print 'adding a cats mover:'
+    print('adding a cats mover:')
 
     c_mover = CatsMover(testdata['boston_data']['cats_curr3'])
     c_mover.scale = True  # but do need to scale (based on river stage)
@@ -132,7 +136,7 @@ def make_model(uncertain=False, mode='gnome'):
 
     # model.movers += comp_mover
 
-    print 'adding a Weatherer'
+    print('adding a Weatherer')
     model.environment += Water(311.15)
     skim_start = start_time + timedelta(hours=3)
     model.weatherers += [Evaporation(),
@@ -186,10 +190,10 @@ def test_save_load_model(uncertain, zipsave, saveloc_):
 
     model.zipsave = zipsave
 
-    print 'saving scenario to {}...'.format(saveloc_)
+    print('saving scenario to {}...'.format(saveloc_))
     _json_, savefile, _refs = model.save(saveloc_)
 
-    print 'loading scenario ...'
+    print('loading scenario ...')
     model2 = Model.load(savefile)
 
     assert model == model2
@@ -284,7 +288,7 @@ def test_save_load_model(uncertain, zipsave, saveloc_):
 #     assert model != model2
 
 
-class TestWebApi:
+class TestWebApi(object):
     # clean up saveloc_ if it exists
     # let Scenario.__init__() create saveloc_
     def del_saveloc(self, saveloc_):
@@ -323,7 +327,7 @@ class TestWebApi:
         for coll in ['movers', 'weatherers', 'environment', 'outputters']:
             self._dump_collection(getattr(model, coll))
 
-        for sc in model.spills.items():
+        for sc in list(model.spills.items()):
             if sc is not uncertain:
                 self._dump_collection(sc.spills)
                 # dump release object and element_type object
@@ -344,4 +348,4 @@ class TestWebApi:
 
         # update the dict so it gives a valid model to load
         assert m2 == model
-        print m2
+        print(m2)

@@ -45,7 +45,7 @@ base_dir = os.path.dirname(__file__)
 
 
 def make_model(images_dir=os.path.join(base_dir, 'images')):
-    print 'initializing the model'
+    print('initializing the model')
 
     start_time = datetime(2012, 10, 25, 0, 1)
     # start_time = datetime(2015, 12, 18, 06, 01)
@@ -58,7 +58,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     mapfile = get_datafile(os.path.join(base_dir, 'nyharbor.bna'))
 
-    print 'adding the map'
+    print('adding the map')
     '''TODO: sort out MapFromBna's map_bounds parameter...
     it does nothing right now, and the spill is out of bounds'''
     model.map = MapFromBNA(mapfile, refloat_halflife=0.0)  # seconds
@@ -70,7 +70,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 #     renderer.viewport = ((-73.5, 40.5), (-73.1, 40.75))
 #     renderer.viewport = ((-122.9, 45.6), (-122.6, 46.0))
 
-    print 'adding outputters'
+    print('adding outputters')
     model.outputters += renderer
 
     netcdf_file = os.path.join(base_dir, 'script_ny_plume.nc')
@@ -78,7 +78,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     model.outputters += NetCDFOutput(netcdf_file, which_data='all')
 
-    print 'adding two spills'
+    print('adding two spills')
     # Break the spill into two spills, first with the larger droplets
     # and second with the smaller droplets.
     # Split the total spill volume (100 m^3) to have most
@@ -124,13 +124,13 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                                      )
     model.spills += spill
 
-    print 'adding a RandomMover:'
+    print('adding a RandomMover:')
     model.movers += RandomMover(diffusion_coef=50000)
 
-    print 'adding a RiseVelocityMover:'
+    print('adding a RiseVelocityMover:')
     model.movers += RiseVelocityMover()
 
-    print 'adding a RandomMover3D:'
+    print('adding a RandomMover3D:')
 #     model.movers += RandomMover3D(vertical_diffusion_coef_above_ml=5,
 #                                         vertical_diffusion_coef_below_ml=.11,
 #                                         mixed_layer_depth=10)
@@ -154,7 +154,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     #
     # model.movers += w_mover
 
-    print 'adding a simple mover:'
+    print('adding a simple mover:')
 #     s_mover = SimpleMover(velocity=(0.0, -.3, 0.0))
 #     model.movers += s_mover
 
@@ -166,7 +166,7 @@ if __name__ == "__main__":
     startTime = datetime.now()
     scripting.make_images_dir()
     model = make_model()
-    print "doing full run"
+    print("doing full run")
     rend = model.outputters[0]
 #     field = rend.grids[0]
 #     rend.graticule.set_DMS(True)
@@ -174,8 +174,8 @@ if __name__ == "__main__":
         if step['step_num'] == 0:
             rend.set_viewport(((-74.25, 40.4), (-73.9, 40.6)))
 
-        print "step: %.4i -- memuse: %fMB" % (step['step_num'],
-                                              utilities.get_mem_use())
-    print datetime.now() - startTime
+        print("step: %.4i -- memuse: %fMB" % (step['step_num'],
+                                              utilities.get_mem_use()))
+    print(datetime.now() - startTime)
 #     pd.profiler.disable()
 #     pd.print_stats(0.2)

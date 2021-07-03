@@ -1,13 +1,14 @@
-from type_defs cimport OSErr, VelocityRec, WorldPoint3D
+from .type_defs cimport OSErr, VelocityRec, WorldPoint3D
 from libcpp cimport bool
 
 import cython
 cimport numpy as cnp
 import numpy as np
 
-from grids cimport TimeGridVel_c
+from .grids cimport TimeGridVel_c
 from gnome.basic_types import velocity_rec
 
+from .cy_helpers import filename_as_bytes
 
 @cython.final
 cdef class CyTimeGridVel(object):
@@ -28,12 +29,17 @@ cdef class CyTimeGridVel(object):
         def __set__(self, value):
             self.timegrid.fTimeShift = value
 
-    def load_data(self, datafile, topology=None):
+    def load_data(self, basestring datafile, basestring topology=None):
         cdef OSErr err
+        cdef bytes bdatafile
+
+        bdatafile = filename_as_bytes(datafile)
+
         if topology:
-            err = self.timegrid.TextRead(datafile, topology)
+            btopology = filename_as_bytes(topology)
+            err = self.timegrid.TextRead(bdatafile, btopology)
         else:
-            err = self.timegrid.TextRead(datafile, '')
+            err = self.timegrid.TextRead(bdatafile, '')
 
         if err != 0:
             raise Exception('Failed in TextRead')

@@ -9,6 +9,10 @@ can be, for testing and demonstration purposes
 It's a steady, uniform current -- one velocity and direction for everywhere
 at all time.
 """
+
+
+
+
 import copy
 
 import numpy as np
@@ -107,7 +111,7 @@ class SimpleMover(Mover):
         try:
             positions = spill['positions']
             status_codes = spill['status_codes']
-        except KeyError, err:
+        except KeyError as err:
             raise ValueError("The spill doesn't have the required "
                              "data arrays\n{}".format(err))
 

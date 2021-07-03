@@ -3,8 +3,9 @@
     we add beaching events manually.
     This class controls the manual addition of beaching events in our
     model run.
-    It is modelled as a weathering process.
+    It is modeled as a weathering process.
 '''
+
 from datetime import datetime
 
 import numpy as np
@@ -144,7 +145,7 @@ class Beaching(RemoveMass, Weatherer):
         else:
             msg = ('{0} are not valid volume or mass units.'
                    ' Not updated').format(value)
-            self.logger.warn(msg)
+            self.logger.warning(msg)
 
     def convert_to_internal_volume(self):
         data = self.timeseries['value']
@@ -247,7 +248,7 @@ class Beaching(RemoveMass, Weatherer):
             return
 
         for substance, data in sc.itersubstancedata(self.array_types):
-            if len(data['mass']) is 0:
+            if len(data['mass']) == 0:
                 continue
             rm_mass = self._remove_mass(self._timestep, model_time, substance)
             rm_mass_frac = rm_mass / data['mass'].sum()

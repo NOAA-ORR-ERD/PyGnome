@@ -2,9 +2,9 @@ cimport numpy as cnp
 import numpy as np
 
 # following exist in gnome.cy_gnome
-from type_defs cimport *
-from movers cimport Random_c, Mover_c
-cimport cy_mover
+from .type_defs cimport *
+from .movers cimport Random_c, Mover_c
+cimport gnome.cy_gnome.cy_mover as cy_mover
 
 """
 Dynamic casts are not currently supported in Cython - define it here instead.
@@ -13,6 +13,7 @@ for each mover
 """
 cdef extern from *:
     Random_c* dynamic_cast_ptr "dynamic_cast<Random_c *>" (Mover_c *) except NULL
+
 
 cdef class CyRandomMover(cy_mover.CyMover):
 
@@ -40,6 +41,9 @@ cdef class CyRandomMover(cy_mover.CyMover):
 
         self.rand.fDiffusionCoefficient = diffusion_coef
         self.rand.fUncertaintyFactor = uncertain_factor
+
+    def __reduce__(self):
+        return (CyRandomMover, (self.diffusion_coef, self.uncertain_factor))
 
     property diffusion_coef:
         def __get__(self):
@@ -95,7 +99,7 @@ cdef class CyRandomMover(cy_mover.CyMover):
         :param delta: the change in position of each particle over step_len
         :type delta: numpy array of WorldPoint3D
         :param le_status: status of each particle - movement is only on particles in water
-        :param spill_type: LEType defining whether spill is forecast or uncertain 
+        :param spill_type: LEType defining whether spill is forecast or uncertain
         :returns: none
         """
         cdef OSErr err
