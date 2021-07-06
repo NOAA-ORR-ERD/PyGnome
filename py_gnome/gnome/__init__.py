@@ -2,9 +2,6 @@
     __init__.py for the gnome package
 """
 
-
-
-
 from itertools import chain
 
 import sys
@@ -21,8 +18,7 @@ import unit_conversion as uc
 from .gnomeobject import GnomeId, AddLogger
 # from gnomeobject import init_obj_log
 
-# using a PEP 404 compliant version name
-__version__ = '0.7.0'
+__version__ = '1.0.0'
 
 
 # a few imports so that the basic stuff is there

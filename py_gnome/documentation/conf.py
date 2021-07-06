@@ -55,7 +55,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'pyGNOME'
-copyright = '2012, NOAA Emergecny Response Division'
+copyright = '2012, NOAA Emergency Response Division'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -153,7 +153,7 @@ html_static_path = ['_static']
 
 # If true, SmartyPants will be used to convert quotes and dashes to
 # typographically correct entities.
-#html_use_smartypants = True
+# html_use_smartypants = True
 
 # Custom sidebar templates, maps document names to template names.
 #html_sidebars = {}
@@ -178,7 +178,7 @@ html_static_path = ['_static']
 #html_show_sphinx = True
 
 # If true, "(C) Copyright ..." is shown in the HTML footer. Default is True.
-#html_show_copyright = True
+html_show_copyright = False
 
 # If true, an OpenSearch description file will be output, and all pages will
 # contain a <link> tag referring to it.  The value of this option must be the
@@ -209,7 +209,7 @@ latex_elements = {
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
   ('index', 'pyGNOME.tex', 'pyGNOME Documentation',
-   'NOAA Emergecny Response Division', 'manual'),
+   'NOAA Emergency Response Division', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -239,7 +239,7 @@ latex_documents = [
 # (source start file, name, description, authors, manual section).
 man_pages = [
     ('index', 'pygnome', 'pyGNOME Documentation',
-     ['NOAA Emergecny Response Division'], 1)
+     ['NOAA Emergency Response Division'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -253,7 +253,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
   ('index', 'pyGNOME', 'pyGNOME Documentation',
-   'NOAA Emergecny Response Division', 'pyGNOME', 'One line description of project.',
+   'NOAA Emergency Response Division', 'pyGNOME', 'One line description of project.',
    'Miscellaneous'),
 ]
 
