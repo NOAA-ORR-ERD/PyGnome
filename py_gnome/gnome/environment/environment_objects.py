@@ -309,14 +309,14 @@ class CurrentTS(VelocityTS, Environment):
         VelocityTS.__init__(self, name, units, time, variables)
 
     @classmethod
-    def constant_wind(cls,
-                      name='Constant Current',
-                      speed=None,
-                      direction=None,
-                      units='m/s'):
+    def constant_current(cls,
+                         name='Constant Current',
+                         speed=None,
+                         direction=None,
+                         units='m/s'):
         """
-        :param speed: speed of wind
-        :param direction: direction -- degrees True, direction wind is from
+        :param speed: speed of current
+        :param direction: direction -- degrees True, direction current is going
                           (degrees True)
         :param unit='m/s': units for speed, as a string, i.e. "knots", "m/s",
                            "cm/s", etc.

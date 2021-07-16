@@ -9,7 +9,7 @@ import numpy as np
 
 import pytest
 
-from gnome.environment.gridcur import read_file, write_gridcur
+from gnome.environment.gridcur import read_file, write_gridcur, make_dataset
 
 test_data_dir = Path(__file__).parent / "sample_data"
 
@@ -169,3 +169,21 @@ def test_read_nodes_multiple_times():
 
     assert data_u[-1][10, 20] == 0.804984
     assert data_v[-1][10, 20] == 0.402492
+
+
+def test_GridR_node():
+    # NOTE: The value-on-the-nodes version is the only one supported
+    data_type, units, times, lon, lat, data_u, data_v = read_file(
+        test_data_dir / NODE_EXAMPLE)
+
+    ds = make_dataset(data_type, units, times, lon, lat, data_u, data_v)
+
+    print(ds)
+
+    print(ds.grid)
+    print(ds.variables)
+
+    assert False
+
+
+
