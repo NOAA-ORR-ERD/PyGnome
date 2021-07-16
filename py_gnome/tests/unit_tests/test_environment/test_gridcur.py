@@ -137,8 +137,35 @@ def test_read_cells_multiple_times():
     for U, V in zip(data_u, data_v):
         U.shape == (10, 20)
         V.shape == (10, 20)
-        # assert np.array_equal(data_u[0], np.array([[0.092388]]))
-        # assert np.array_equal(data_v[0], np.array([[-.0382683]]))
+    # A few values, just to be sure, but ...
+    assert data_u[0][0, 0] == 0.5
+    assert data_v[0][0, 0] == 0.0
 
+    assert data_u[-1][9, 19] == 0.813364
+    assert data_v[-1][9, 19] == 0.385278
 
+def test_read_nodes_multiple_times():
+    data_type, units, times, lon, lat, data_u, data_v = read_file(
+        test_data_dir / NODE_EXAMPLE)
 
+    assert data_type == 'currents'
+    assert units == 'm/s'
+    assert times == [datetime(2020, 7, 14, 12, 0),
+                     datetime(2020, 7, 14, 13, 0),
+                     datetime(2020, 7, 14, 14, 0),
+                     ]
+
+    assert np.array_equal(lon, np.linspace(29.0, 30.0, 11))
+    assert np.array_equal(lat, np.linspace(-88.0, -86.0, 21))
+
+    assert len(data_u) == 3
+    assert len(data_v) == 3
+    for U, V in zip(data_u, data_v):
+        U.shape == (11, 21)
+        V.shape == (11, 21)
+    # A few values, just to be sure, but ...
+    assert data_u[0][0, 0] == 0.5
+    assert data_v[0][0, 0] == 0.0
+
+    assert data_u[-1][10, 20] == 0.804984
+    assert data_v[-1][10, 20] == 0.402492
