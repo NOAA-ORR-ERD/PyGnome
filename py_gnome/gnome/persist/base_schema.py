@@ -212,7 +212,10 @@ class ObjType(SchemaType):
             #In this case the object should be 'update_from_dict' and the result
             #be the newly updated object
             id_ = cstruct['id']
-            log.info(refs[id_])
+            try:
+                log.info(refs[id_].name)
+            except Exception as e:
+                log.warning('Could not log object name: ' + e.msg)
             updated = refs[id_].update_from_dict(cstruct)
             if updated:
                 log.info('Updated object {0} from json'.format(refs[id_].name))
