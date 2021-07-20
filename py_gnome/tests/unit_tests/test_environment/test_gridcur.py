@@ -11,11 +11,8 @@ import numpy as np
 import pytest
 
 from gnome.basic_types import oil_status  # .in_water
-from gnome.environment.gridcur import (read_file,
-                                       write_gridcur,
-                                       make_current,
-                                       GridcurCurrent,
-                                       )
+from gnome.environment.gridcur import GridcurCurrent
+
 from gnome.movers import PyCurrentMover
 from gnome.spill import grid_spill
 
@@ -23,6 +20,7 @@ import gnome.scripting as gs
 
 test_data_dir = Path(__file__).parent / "sample_data"
 test_output_dir = Path(__file__).parent / "sample_output"
+
 
 def make_gridcur(filename, location="cells"):
     """
@@ -61,7 +59,7 @@ def make_gridcur(filename, location="cells"):
         data_u.append(U)
         data_v.append(V)
 
-    write_gridcur(filename, data_type, units, times, lon, lat, data_u, data_v)
+    GridcurCurrent.write_gridcur(filename, data_type, units, times, lon, lat, data_u, data_v)
 
 
 # create a test gridcur file:
@@ -72,9 +70,8 @@ NODE_EXAMPLE = test_data_dir / "example_gridcur_on_nodes.cur"
 make_gridcur(NODE_EXAMPLE, "nodes")
 
 
-
 def test_read_single_cell_center():
-    data_type, units, times, lon, lat, data_u, data_v = read_file(
+    data_type, units, times, lon, lat, data_u, data_v = GridcurCurrent.read_file(
         test_data_dir / "grid_cur_1x1.cur")
 
     assert data_type == 'currents'
@@ -93,7 +90,7 @@ def test_read_single_cell_center():
 
 
 def test_read_single_cell_nodes():
-    data_type, units, times, lon, lat, data_u, data_v = read_file(
+    data_type, units, times, lon, lat, data_u, data_v = GridcurCurrent.read_file(
         test_data_dir / "grid_cur_2x2.cur")
     assert data_type == 'currents'
     assert units == 'm/s'
@@ -119,7 +116,7 @@ def test_read_single_cell_nodes():
 
 
 def test_read_cells_multiple_times():
-    data_type, units, times, lon, lat, data_u, data_v = read_file(
+    data_type, units, times, lon, lat, data_u, data_v = GridcurCurrent.read_file(
         test_data_dir / CELL_EXAMPLE)
 
     assert data_type == 'currents'
@@ -145,7 +142,7 @@ def test_read_cells_multiple_times():
     assert data_v[-1][19, 9] == 0.813364
 
 def test_read_nodes_multiple_times():
-    data_type, units, times, lon, lat, data_u, data_v = read_file(
+    data_type, units, times, lon, lat, data_u, data_v = GridcurCurrent.read_file(
         test_data_dir / NODE_EXAMPLE)
 
     assert data_type == 'currents'
@@ -184,11 +181,8 @@ def test_GridR_node():
     result = cur.at(points, times)
 
     print(f"{result=}")
-    assert np.allclose(result,
-                  np.array([[0.5, 0.0, 0.0],])
-                  )
 
-    # assert False
+    assert np.allclose(result, np.array([[0.5, 0.0, 0.0]]))
 
 
 def test_make_mover_from_gridcur():
@@ -233,12 +227,12 @@ def test_mover_get_move():
 
 def test_cell_not_supported():
     with pytest.raises(NotImplementedError):
-        current = make_current(test_data_dir / CELL_EXAMPLE)
+        current = GridcurCurrent(test_data_dir / CELL_EXAMPLE)
 
 
 def test_in_model():
 
-    current = make_current(test_data_dir / NODE_EXAMPLE)
+    current = GridcurCurrent(test_data_dir / NODE_EXAMPLE)
     mover = PyCurrentMover(current=current)
 
     start_time = "2020-07-14T12:00"
@@ -266,3 +260,22 @@ def test_in_model():
     model.full_run()
 
 
+def test_serialize():
+    """
+    Can we persist one of these? and remake it from the persisted
+    location?
+    """
+    current = GridcurCurrent(test_data_dir / NODE_EXAMPLE)
+
+    serial = current.serialize
+
+    print(serial)
+
+    assert False
+
+# def test_deserialize(self, sg):
+#     d_sg = Grid_S.deserialize(sg.serialize())
+
+#     pp.pprint(sg.serialize())
+#     pp.pprint(d_sg.serialize())
+#     assert sg == d_sg

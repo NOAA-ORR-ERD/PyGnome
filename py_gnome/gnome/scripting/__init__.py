@@ -80,6 +80,7 @@ from gnome.outputters import (Renderer,
 from gnome.maps.map import MapFromBNA, GnomeMap
 
 from gnome.environment import (GridCurrent,
+                               GridcurCurrent,
                                GridWind,
                                IceAwareCurrent,
                                IceAwareWind,
