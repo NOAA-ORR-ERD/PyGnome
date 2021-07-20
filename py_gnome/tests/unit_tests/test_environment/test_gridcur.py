@@ -5,11 +5,16 @@ tests for code that reads teh old gridcur format
 from pathlib import Path
 from datetime import datetime
 
+
 import numpy as np
 
 import pytest
 
-from gnome.environment.gridcur import read_file, write_gridcur, make_dataset
+from gnome.basic_types import oil_status  # .in_water
+from gnome.environment.gridcur import read_file, write_gridcur, make_current
+from gnome.movers import PyCurrentMover
+
+import gnome.scripting as gs
 
 test_data_dir = Path(__file__).parent / "sample_data"
 
@@ -32,8 +37,8 @@ def make_gridcur(filename, location="cells"):
 
     (off the coast of Alabama)
     """
-    lon = np.linspace(29.0, 30.0, 11)
-    lat = np.linspace(-88.0, -86.0, 21)
+    lat = np.linspace(29.0, 30.0, 11)
+    lon = np.linspace(-88.0, -86.0, 21)
 
     times = [datetime(2020, 7, 14, 12, 0),
              datetime(2020, 7, 14, 13, 0),
@@ -83,8 +88,8 @@ def test_read_single_cell_center():
     assert np.array_equal(lon, [12, 15])
     assert np.array_equal(lat, [44, 46])
 
-    print(data_u)
-    print(data_v)
+    # print(data_u)
+    # print(data_v)
 
     assert len(data_u) == 1
     assert len(data_v) == 1
@@ -101,8 +106,8 @@ def test_read_single_cell_nodes():
     assert np.array_equal(lon, [-70, -67])
     assert np.array_equal(lat, [45, 47])
 
-    print(data_u)
-    print(data_v)
+    # print(data_u)
+    # print(data_v)
 
     assert len(data_u) == 1
     assert len(data_v) == 1
@@ -129,20 +134,20 @@ def test_read_cells_multiple_times():
                      datetime(2020, 7, 14, 14, 0),
                      ]
 
-    assert np.array_equal(lon, np.linspace(29.0, 30.0, 11))
-    assert np.array_equal(lat, np.linspace(-88.0, -86.0, 21))
+    assert np.array_equal(lon, np.linspace(-88.0, -86.0, 21))
+    assert np.array_equal(lat, np.linspace(29.0, 30.0, 11))
 
     assert len(data_u) == 3
     assert len(data_v) == 3
     for U, V in zip(data_u, data_v):
-        U.shape == (10, 20)
-        V.shape == (10, 20)
+        U.shape == (20, 10)
+        V.shape == (20, 10)
     # A few values, just to be sure, but ...
     assert data_u[0][0, 0] == 0.5
     assert data_v[0][0, 0] == 0.0
 
-    assert data_u[-1][9, 19] == 0.813364
-    assert data_v[-1][9, 19] == 0.385278
+    assert data_u[-1][19, 9] == 0.385278
+    assert data_v[-1][19, 9] == 0.813364
 
 def test_read_nodes_multiple_times():
     data_type, units, times, lon, lat, data_u, data_v = read_file(
@@ -155,35 +160,102 @@ def test_read_nodes_multiple_times():
                      datetime(2020, 7, 14, 14, 0),
                      ]
 
-    assert np.array_equal(lon, np.linspace(29.0, 30.0, 11))
-    assert np.array_equal(lat, np.linspace(-88.0, -86.0, 21))
+    assert np.array_equal(lon, np.linspace(-88.0, -86.0, 21))
+    assert np.array_equal(lat, np.linspace(29.0, 30.0, 11))
 
     assert len(data_u) == 3
     assert len(data_v) == 3
     for U, V in zip(data_u, data_v):
-        U.shape == (11, 21)
-        V.shape == (11, 21)
+        U.shape == (21, 11)
+        V.shape == (21, 11)
     # A few values, just to be sure, but ...
     assert data_u[0][0, 0] == 0.5
     assert data_v[0][0, 0] == 0.0
 
-    assert data_u[-1][10, 20] == 0.804984
-    assert data_v[-1][10, 20] == 0.402492
+    assert data_u[-1][20, 10] == 0.402492
+    assert data_v[-1][20, 10] == 0.804984
 
 
 def test_GridR_node():
     # NOTE: The value-on-the-nodes version is the only one supported
-    data_type, units, times, lon, lat, data_u, data_v = read_file(
-        test_data_dir / NODE_EXAMPLE)
+    cur = make_current(test_data_dir / NODE_EXAMPLE)
 
-    ds = make_dataset(data_type, units, times, lon, lat, data_u, data_v)
+    print(cur.grid.nodes)
 
-    print(ds)
+    # print(cur)
+    points = np.array(((-88.0, 29.0, 0.0), ))
+    # points = np.array(((29.0, -88.0, 0.0), ))
+    times = (datetime(2020, 7, 14, 12))
+    result = cur.at(points, times)
 
-    print(ds.grid)
-    print(ds.variables)
+    print(f"{result=}")
+    assert np.allclose(result,
+                  np.array([[0.5, 0.0, 0.0],])
+                  )
+
+    # assert False
+
+
+def test_make_mover_from_gridcur():
+    """
+    make a mover from a gridcur
+    """
+    current = make_current(test_data_dir / NODE_EXAMPLE)
+
+    mover = PyCurrentMover(current=current)
+
+    assert mover.data_start == datetime(2020, 7, 14, 12)
+    assert mover.data_stop == datetime(2020, 7, 14, 14)
+
+
+def test_mover_get_move():
+    current = make_current(test_data_dir / NODE_EXAMPLE)
+    mover = PyCurrentMover(current=current)
+
+    # create a minimal spill container
+    model_time_datetime = datetime(2020, 7, 14, 12)
+    time_step = gs.minutes(30).total_seconds()
+    initial_positions = np.array([(-87.0, 29.5, 0.0),  # near middle of grid
+                                  (-89.0, 27.5, 0.0),  # outside the grid
+                                  ])
+    'status_codes'
+    sc = {'positions': initial_positions,
+          'status_codes': [oil_status.in_water,
+                           oil_status.in_water]}
+    deltas = mover.get_move(sc, time_step, model_time_datetime)
+
+    print("deltas are:", deltas)
 
     assert False
 
+def test_in_model():
+
+    current = make_current(test_data_dir / NODE_EXAMPLE)
+    mover = PyCurrentMover(current=current)
+
+    start_time = "2020-07-14T12:00"
+    model = gs.Model(time_step=gs.minutes(15),
+                     start_time=start_time,
+                     duration=gs.hours(2),
+                     uncertain=False)
+    model.movers += mover
+
+    model.movers += gs.RandomMover(diffusion_coef=100000)
+
+    spill = gs.point_line_release_spill(num_elements=2,
+                                        start_position=(-87.0, 29.5, 0.0),
+                                        release_time=start_time,
+                                        )
+
+    model.spills += spill
+
+    renderer = gs.Renderer(output_dir=test_data_dir,
+                           image_size=(800, 800),
+                           viewport=((-88.0, 29.0),
+                                      (-86.0, 30.0)),
+                           )
+    model.outputters += renderer
+
+    model.full_run()
 
 

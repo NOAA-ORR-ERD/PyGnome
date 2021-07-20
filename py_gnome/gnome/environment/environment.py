@@ -3,11 +3,6 @@ module contains objects that contain weather related data. For example,
 the Wind object defines the Wind conditions for the spill
 """
 
-
-
-
-
-
 import copy
 
 try:
@@ -54,7 +49,7 @@ class Environment(GnomeId):
 
     __metaclass__ = EnvironmentMeta
 
-    def __init__(self, make_default_refs=True,**kwargs):
+    def __init__(self, make_default_refs=True, **kwargs):
         '''
         base class for environment objects
 

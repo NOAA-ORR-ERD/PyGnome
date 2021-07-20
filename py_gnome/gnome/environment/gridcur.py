@@ -35,7 +35,12 @@ Two by two grid, values on the nodes: ::
 from datetime import datetime
 import numpy as np
 
-import gridded
+from .gridded_objects_base import (Time,
+                                   Variable,
+                                   VectorVariable,
+                                   Grid_R
+                                   )
+from .environment_objects import VelocityGrid, GridCurrent
 
 data_types = {"GRIDCURTIME": "currents",
               "GRIDWINDTIME": "winds",
@@ -164,7 +169,9 @@ def write_gridcur(filename, data_type, units, times, lon, lat, data_u, data_v):
                                   f"{U[row, col]:10.6f} {V[row, col]:10.6f}\n")
 
 
-def make_dataset(data_type, units, times, lon, lat, data_u, data_v):
+def make_current(filename):
+
+    data_type, units, times, lon, lat, data_u, data_v = read_file(filename)
 
     if ((len(lon), len(lat)) == data_u[0].shape) and (data_u[0].shape == data_v[0].shape):
         location = "node"
@@ -174,60 +181,62 @@ def make_dataset(data_type, units, times, lon, lat, data_u, data_v):
     else:
         raise ValueError("There is a mismatch in the array sizes")
 
-    grid = gridded.grids.Grid_R(node_lon=lon,
-                                node_lat=lat,
-                                )
+    grid = Grid_R(node_lon=lon, node_lat=lat)
 
-    time = gridded.Time(data=times)
+    time = Time(data=times)
 
-    U = gridded.Variable(name=f"eastward surface velocity",
-                         units=units,
-                         time=time,
-                         data=data_u,
-                         grid=grid,
-                         # data_file=None,
-                         #        grid_file=None,
-                         # dataset=None,
-                         varname='u',
-                         # fill_value=0,
-                         location=location,
-                         attributes=None,
-                         )
+    U = Variable(
+        name=f"eastward surface velocity",
+        units=units,
+        time=time,
+        data=data_u,
+        grid=grid,
+        # data_file=None,
+        #        grid_file=None,
+        # dataset=None,
+        varname='u',
+        # fill_value=0,
+        location=location,
+        attributes=None,
+    )
 
-    V = gridded.Variable(name=f"northward surface velocity",
-                         units=units,
-                         time=time,
-                         data=data_v,
-                         grid=grid,
-                         # data_file=None,
-                         #        grid_file=None,
-                         # dataset=None,
-                         varname='v',
-                         # fill_value=0,
-                         location=location,
-                         attributes=None,
-                         )
-    velocity = gridded.VectorVariable(name=f"gridcur {data_type}",
-                              units=units,
-                              time=time,
-                              variables=(U, V),
-                              # grid=None,
-                              # depth=None,
-                              # grid_file=None,
-                              # data_file=None,
-                              # dataset=None,
-                              varnames=('u', 'v'),
-                              )
+    V = Variable(
+        name=f"northward surface velocity",
+        units=units,
+        time=time,
+        data=data_v,
+        grid=grid,
+        # data_file=None,
+        #        grid_file=None,
+        # dataset=None,
+        varname='v',
+        # fill_value=0,
+        location=location,
+        attributes=None,
+    )
 
-    ds = gridded.Dataset(ncfile=None,
-                         grid=grid,
-                         variables=velocity,
-                         grid_topology=None,
-                         attributes=None)
+    # velocity = VectorVariable(
+    # velocity = VelocityGrid(
+    velocity = GridCurrent(
+        name=f"gridcur {data_type}",
+        units=units,
+        time=time,
+        variables=[U, V],
+        # grid=None,
+        # depth=None,
+        # grid_file=None,
+        # data_file=None,
+        # dataset=None,
+        varnames=('u', 'v'),
+    )
 
-    return ds
+    # ds = gridded.Dataset(ncfile=None,
+    #                      grid=grid,
+    #                      variables={'surface_velocity': velocity,
+    #                      grid_topology=None,
+    #                      attributes=None)
 
-
+    return velocity
 
 
 

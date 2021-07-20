@@ -5,8 +5,6 @@ Tests the Process methods and the Mover's get_move
 '''
 
 
-
-
 from datetime import datetime, timedelta
 
 import numpy as np

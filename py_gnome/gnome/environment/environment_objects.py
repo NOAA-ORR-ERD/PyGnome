@@ -135,11 +135,9 @@ class S_Depth_T1(object):
 
         for ulev in range(0, num_levels):
             ulev_depths = ldgb(depths, ulev)
-            # print ulev_depths[0]
 
             within_layer = np.where(np.logical_and(ulev_depths < pts[:, 2],
                                                    und_ind == -1))[0]
-            # print within_layer
 
             und_ind[within_layer] = ulev
 

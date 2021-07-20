@@ -8,10 +8,6 @@ test code for the simple_mover class
 designed to be run with py.test
 """
 
-
-
-
-
 import numpy as np
 
 from gnome.movers import simple_mover

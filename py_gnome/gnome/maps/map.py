@@ -1,7 +1,5 @@
 
 
-
-
 # NOTES:
 #  - Should we just use non-projected coordinates for the raster map?
 #    It makes for a little less computation at every step.
