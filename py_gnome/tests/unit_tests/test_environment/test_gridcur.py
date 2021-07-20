@@ -11,23 +11,18 @@ import numpy as np
 import pytest
 
 from gnome.basic_types import oil_status  # .in_water
-from gnome.environment.gridcur import read_file, write_gridcur, make_current
+from gnome.environment.gridcur import (read_file,
+                                       write_gridcur,
+                                       make_current,
+                                       GridcurCurrent,
+                                       )
 from gnome.movers import PyCurrentMover
+from gnome.spill import grid_spill
 
 import gnome.scripting as gs
 
 test_data_dir = Path(__file__).parent / "sample_data"
-
-def make_gridcur_on_nodes(filename):
-    """
-    This makes a gridcur file, with a quarter circle of currents
-
-    Data on the nodes
-
-    (off the coast of Alabama)
-
-    """
-
+test_output_dir = Path(__file__).parent / "sample_output"
 
 def make_gridcur(filename, location="cells"):
     """
@@ -41,8 +36,8 @@ def make_gridcur(filename, location="cells"):
     lon = np.linspace(-88.0, -86.0, 21)
 
     times = [datetime(2020, 7, 14, 12, 0),
-             datetime(2020, 7, 14, 13, 0),
-             datetime(2020, 7, 14, 14, 0),
+             datetime(2020, 7, 14, 18, 0),
+             datetime(2020, 7, 15, 0, 0),
              ]
     vel = 0.5
     units = "m/s"
@@ -130,8 +125,8 @@ def test_read_cells_multiple_times():
     assert data_type == 'currents'
     assert units == 'm/s'
     assert times == [datetime(2020, 7, 14, 12, 0),
-                     datetime(2020, 7, 14, 13, 0),
-                     datetime(2020, 7, 14, 14, 0),
+                     datetime(2020, 7, 14, 18, 0),
+                     datetime(2020, 7, 15, 0, 0),
                      ]
 
     assert np.array_equal(lon, np.linspace(-88.0, -86.0, 21))
@@ -156,8 +151,8 @@ def test_read_nodes_multiple_times():
     assert data_type == 'currents'
     assert units == 'm/s'
     assert times == [datetime(2020, 7, 14, 12, 0),
-                     datetime(2020, 7, 14, 13, 0),
-                     datetime(2020, 7, 14, 14, 0),
+                     datetime(2020, 7, 14, 18, 0),
+                     datetime(2020, 7, 15, 0, 0),
                      ]
 
     assert np.array_equal(lon, np.linspace(-88.0, -86.0, 21))
@@ -178,7 +173,7 @@ def test_read_nodes_multiple_times():
 
 def test_GridR_node():
     # NOTE: The value-on-the-nodes version is the only one supported
-    cur = make_current(test_data_dir / NODE_EXAMPLE)
+    cur = GridcurCurrent(test_data_dir / NODE_EXAMPLE)
 
     print(cur.grid.nodes)
 
@@ -200,33 +195,46 @@ def test_make_mover_from_gridcur():
     """
     make a mover from a gridcur
     """
-    current = make_current(test_data_dir / NODE_EXAMPLE)
+    current = GridcurCurrent(test_data_dir / NODE_EXAMPLE)
 
     mover = PyCurrentMover(current=current)
 
     assert mover.data_start == datetime(2020, 7, 14, 12)
-    assert mover.data_stop == datetime(2020, 7, 14, 14)
+    assert mover.data_stop == datetime(2020, 7, 15, 0)
 
 
 def test_mover_get_move():
-    current = make_current(test_data_dir / NODE_EXAMPLE)
+    current = GridcurCurrent(test_data_dir / NODE_EXAMPLE)
     mover = PyCurrentMover(current=current)
 
     # create a minimal spill container
     model_time_datetime = datetime(2020, 7, 14, 12)
     time_step = gs.minutes(30).total_seconds()
-    initial_positions = np.array([(-87.0, 29.5, 0.0),  # near middle of grid
+    initial_positions = np.array([(-88.0, 29.0, 0.0),
+                                  (-87.0, 29.5, 0.0),  # near middle of grid
                                   (-89.0, 27.5, 0.0),  # outside the grid
                                   ])
-    'status_codes'
+    status_codes = np.array([oil_status.in_water,
+                             oil_status.in_water,
+                             oil_status.in_water])
     sc = {'positions': initial_positions,
-          'status_codes': [oil_status.in_water,
-                           oil_status.in_water]}
+          'status_codes': status_codes}
     deltas = mover.get_move(sc, time_step, model_time_datetime)
 
     print("deltas are:", deltas)
 
-    assert False
+    # not much of test, but at least its doing something
+    assert not np.array_equal(deltas[0], [0.0, 0.0, 0.0])
+    assert not np.array_equal(deltas[1], [0.0, 0.0, 0.0])
+
+    # the last one should be zeros -- out of bounds
+    assert np.array_equal(deltas[2], [0.0, 0.0, 0.0])
+
+
+def test_cell_not_supported():
+    with pytest.raises(NotImplementedError):
+        current = make_current(test_data_dir / CELL_EXAMPLE)
+
 
 def test_in_model():
 
@@ -234,25 +242,24 @@ def test_in_model():
     mover = PyCurrentMover(current=current)
 
     start_time = "2020-07-14T12:00"
-    model = gs.Model(time_step=gs.minutes(15),
+    model = gs.Model(time_step=gs.hours(1),
                      start_time=start_time,
-                     duration=gs.hours(2),
+                     duration=gs.hours(12),
                      uncertain=False)
     model.movers += mover
 
-    model.movers += gs.RandomMover(diffusion_coef=100000)
-
-    spill = gs.point_line_release_spill(num_elements=2,
-                                        start_position=(-87.0, 29.5, 0.0),
-                                        release_time=start_time,
-                                        )
-
+    spill = grid_spill(bounds=((-88.0, 29.0),
+                               (-86.0, 30.0),
+                               ),
+                       resolution=20,
+                       release_time=start_time,
+                       )
     model.spills += spill
-
-    renderer = gs.Renderer(output_dir=test_data_dir,
-                           image_size=(800, 800),
+    renderer = gs.Renderer(output_dir=test_output_dir,
+                           image_size=(800, 600),
                            viewport=((-88.0, 29.0),
-                                      (-86.0, 30.0)),
+                                     (-86.0, 30.0),
+                                     ),
                            )
     model.outputters += renderer
 

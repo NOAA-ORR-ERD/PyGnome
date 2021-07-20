@@ -35,6 +35,10 @@ Two by two grid, values on the nodes: ::
 from datetime import datetime
 import numpy as np
 
+from gnome.persist import base_schema
+from gnome.persist.extend_colander import FilenameSchema
+from colander import (SchemaNode, Boolean)
+
 from .gridded_objects_base import (Time,
                                    Variable,
                                    VectorVariable,
@@ -100,7 +104,7 @@ def read_file(filename):
 
 def make_grid_arrays(grid_info):
     """
-    build the arrays for the grid and data
+    Build the arrays for the grid and data
 
     :param grid_info: a dict of the grid information from the header
     """
@@ -175,7 +179,7 @@ def make_current(filename):
 
     if ((len(lon), len(lat)) == data_u[0].shape) and (data_u[0].shape == data_v[0].shape):
         location = "node"
-    elif (len(lon) + 1, len(lat) + 1) == (data_u[0].shape, data_v[0].shape):
+    elif (len(lon) - 1, len(lat) - 1) == (data_u[0].shape) and (data_u[0].shape == data_v[0].shape):
         location = "face"
         raise NotImplementedError("Data on Faces not currently implemented")
     else:
@@ -238,5 +242,140 @@ def make_current(filename):
 
     return velocity
 
+
+
+class GridcurCurrentSchema(base_schema.ObjTypeSchema):
+    filename = FilenameSchema(
+        isdatafile=True, test_equal=False, update=False
+    )
+    extrapolation_is_allowed = SchemaNode(Boolean())
+
+
+class GridcurCurrent(GridCurrent):
+    """
+    A grid current built from a GridCur file
+
+    gridcur is an ASCII format used for GNOME 1
+
+    All this does is override the GridCurrent __init__ and make custom persistence
+    """
+    _schema = GridcurCurrentSchema
+
+    def __init__(self, filename, extrapolation_is_allowed=False):
+        """
+        :param filename: name (full path) of the gridcur file to load
+
+
+        :param extrapolation_is_allowed=False:
+
+        """
+        self.filename = filename
+        self.extrapolation_is_allowed = extrapolation_is_allowed
+
+        # Read the file:
+        data_type, units, times, lon, lat, data_u, data_v = self.read_file(filename)
+
+        if (((len(lon), len(lat)) == data_u[0].shape)
+            and (data_u[0].shape == data_v[0].shape)):
+            location = "node"
+        elif ((len(lon) - 1, len(lat) - 1) == (data_u[0].shape)
+              and (data_u[0].shape == data_v[0].shape)):
+            location = "face"
+            raise NotImplementedError("Data on Faces not currently implemented")
+        else:
+            raise ValueError("There is a mismatch in the array sizes")
+
+        grid = Grid_R(node_lon=lon, node_lat=lat)
+
+        time = Time(data=times)
+
+        U = Variable(
+            name=f"eastward surface velocity",
+            units=units,
+            time=time,
+            data=data_u,
+            grid=grid,
+            varname='u',
+            location=location,
+            attributes=None,
+        )
+
+        V = Variable(
+            name=f"northward surface velocity",
+            units=units,
+            time=time,
+            data=data_v,
+            grid=grid,
+            varname='v',
+            location=location,
+            attributes=None,
+        )
+
+        velocity = GridCurrent(
+            name=f"gridcur {data_type}",
+            units=units,
+            time=time,
+            variables=[U, V],
+            varnames=('u', 'v'),
+        )
+
+        super().__init__(name=f"gridcur {data_type}",
+                         units=units,
+                         time=time,
+                         variables=[U, V],
+                         varnames=('u', 'v'),
+                         extrapolation_is_allowed=extrapolation_is_allowed
+                         )
+
+    @staticmethod
+    def read_file(filename):
+        times = []
+        data_u = []
+        data_v = []
+        grid_info = {}
+        with open(filename, encoding='utf-8') as infile:
+            # read the header
+            for line in infile:
+                # ignore lines before the header
+                key = line.split()[0].strip("[]")
+                if key in data_types:
+                    data_type = data_types[key]
+                    units = line.split()[1].strip()
+                    break
+            else:
+                raise ValueError("No [GRIDCURTIME] or [GRIDWINDTIME] header in the file")
+            # read the grid info
+            for line in infile:
+                if line.strip().startswith("[TIME]"):
+                    break
+                data = line.split()
+                grid_info[data[0].strip()] = float(data[1])
+
+            # read the data - one timestep at a time
+            while True:
+                if line.strip().startswith("[TIME]"):
+                    time = [int(num) for num in line.split()[1:]]
+                    times.append(datetime(time[2], time[1], time[0], time[3], time[4]))
+                    lon, lat, U, V = make_grid_arrays(grid_info)
+                    data_u.append(U)
+                    data_v.append(V)
+                    line = infile.readline()
+                    continue
+                elif not line:
+                    break
+                data = line.split()
+                row = int(data[0]) - 1
+                col = int(data[1]) - 1
+                u = float(data[2])
+                v = float(data[3])
+                U[row, col] = u
+                V[row, col] = v
+                line = infile.readline()
+
+            # put the velocities together in a single array
+            data_u = np.array(data_u)
+            data_v = np.array(data_v)
+
+            return data_type, units, times, lon, lat, data_u, data_v
 
 

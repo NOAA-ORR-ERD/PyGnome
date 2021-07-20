@@ -273,6 +273,7 @@ class PyCurrentMover(movers.PyMover):
         """
         positions = sc['positions']
 
+
         if self.active and len(positions) > 0:
             status = sc['status_codes'] != oil_status.in_water
             pos = positions[:]
