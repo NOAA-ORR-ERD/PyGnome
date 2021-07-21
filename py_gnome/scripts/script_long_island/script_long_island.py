@@ -5,85 +5,79 @@ Script to test GNOME with long island sound data
 
 import os
 import shutil
-from datetime import datetime, timedelta
+from pathlib import Path
 
 import numpy as np
 
-from gnome import scripting
+import gnome.scripting as gs
 from gnome.basic_types import datetime_value_2d
-from gnome.utilities.remote_data import get_datafile
 
-from gnome.model import Model
-
-from gnome.maps import MapFromBNA
-from gnome.environment import Wind, Tide
-from gnome.spill import point_line_release_spill
-from gnome.movers import RandomMover, WindMover, CatsMover
-
-from gnome.outputters import Renderer
-from gnome.outputters import NetCDFOutput
 
 # define base directory
-base_dir = os.path.dirname(__file__)
+base_dir = Path(__file__).parent
 
 
-def make_model(images_dir=os.path.join(base_dir, 'images')):
+def make_model(images_dir=base_dir /'images'):
     print('initializing the model')
 
-    start_time = datetime(2012, 9, 15, 12, 0)
-    mapfile = get_datafile(os.path.join(base_dir, 'LongIslandSoundMap.BNA'))
+    start_time = "2012-09-15 12:00"
+    mapfile = gs.get_datafile(base_dir / 'LongIslandSoundMap.BNA')
 
-    gnome_map = MapFromBNA(mapfile, refloat_halflife=6)  # hours
+    gnome_map = gs.MapFromBNA(mapfile, refloat_halflife=6)  # hours
 
     # # the image output renderer
     # global renderer
 
     # one hour timestep
-    model = Model(start_time=start_time,
-                  duration=timedelta(hours=48), time_step=3600,
-                  map=gnome_map, uncertain=True, cache_enabled=True)
+    model = gs.Model(start_time=start_time,
+                     duration=gs.hours(48),
+                     time_step=3600,
+                     map=gnome_map,
+                     uncertain=True,
+                     cache_enabled=True)
 
     print('adding outputters')
-    model.outputters += Renderer(mapfile, images_dir, image_size=(800, 600))
+    model.outputters += gs.Renderer(mapfile, images_dir, image_size=(800, 600))
 
-    netcdf_file = os.path.join(base_dir, 'script_long_island.nc')
-    scripting.remove_netcdf(netcdf_file)
+    netcdf_file = base_dir / 'script_long_island.nc'
+    gs.remove_netcdf(netcdf_file)
 
-    model.outputters += NetCDFOutput(netcdf_file, which_data='all')
+    model.outputters += gs.NetCDFOutput(netcdf_file, which_data='all')
 
     print('adding a spill')
-    spill = point_line_release_spill(num_elements=1000,
-                                     start_position=(-72.419992,
-                                                     41.202120, 0.0),
-                                     release_time=start_time)
+    spill = gs.point_line_release_spill(num_elements=1000,
+                                        start_position=(-72.419992,
+                                                        41.202120, 0.0),
+                                        release_time=start_time)
     model.spills += spill
 
     print('adding a RandomMover:')
-    model.movers += RandomMover(diffusion_coef=500000, uncertain_factor=2)
+    model.movers += gs.RandomMover(diffusion_coef=500000, uncertain_factor=2)
 
     print('adding a wind mover:')
     series = np.zeros((5, ), dtype=datetime_value_2d)
+    start_time = gs.asdatetime(start_time)
     series[0] = (start_time, (10, 45))
-    series[1] = (start_time + timedelta(hours=18), (10, 90))
-    series[2] = (start_time + timedelta(hours=30), (10, 135))
-    series[3] = (start_time + timedelta(hours=42), (10, 180))
-    series[4] = (start_time + timedelta(hours=54), (10, 225))
+    series[1] = (start_time + gs.hours(18), (10, 90))
+    series[2] = (start_time + gs.hours(30), (10, 135))
+    series[3] = (start_time + gs.hours(42), (10, 180))
+    series[4] = (start_time + gs.hours(54), (10, 225))
 
-    wind = Wind(timeseries=series, units='m/s')
-    model.movers += WindMover(wind)
+    wind = gs.Wind(timeseries=series, units='m/s')
+    model.movers += gs.WindMover(wind)
 
     print('adding a cats mover:')
-    curr_file = get_datafile(os.path.join(base_dir, 'LI_tidesWAC.CUR'))
-    tide_file = get_datafile(os.path.join(base_dir, 'CLISShio.txt'))
+    curr_file = gs.get_datafile(base_dir / 'LI_tidesWAC.CUR')
+    tide_file = gs.get_datafile(base_dir / 'CLISShio.txt')
 
-    c_mover = CatsMover(curr_file, tide=Tide(tide_file))
+    c_mover = gs.CatsMover(str(curr_file), tide=gs.Tide(str(tide_file)))
 
     model.movers += c_mover
     model.environment += c_mover.tide
 
     print('viewport is:', [o.viewport
                            for o in model.outputters
-                           if isinstance(o, Renderer)])
+                           if isinstance(o, gs.Renderer)])
 
     return model
 
@@ -91,15 +85,15 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 def post_run(model):
 
     # create a place for test images (cleaning out any old ones)
-    images_dir = os.path.join(base_dir, 'images_2')
+    images_dir = base_dir / 'images_2'
 
-    if os.path.isdir(images_dir):
+    if images_dir.is_dir():
         shutil.rmtree(images_dir)
 
     os.mkdir(images_dir)
 
     renderers = [o for o in model.outputters
-                 if isinstance(o, Renderer)]
+                 if isinstance(o, gs.Renderer)]
 
     print('re-rendering images')
     if renderers:
@@ -121,7 +115,7 @@ def post_run(model):
 
 
 if __name__ == '__main__':
-    scripting.make_images_dir()
+    gs.make_images_dir()
 
     model = make_model()
 
