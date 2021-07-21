@@ -2,10 +2,8 @@
 tests for ROC
 '''
 
-
-
-
 from datetime import datetime, timedelta
+from pathlib import Path
 
 import numpy as np
 
@@ -23,6 +21,7 @@ from ..conftest import (test_oil, sample_model_weathering2)
 
 import pprint as pp
 
+output_dir = Path(__file__).parent / "output"
 
 delay = 1.
 time_step = 900
@@ -599,7 +598,7 @@ class TestRocSkim(ROCTests):
         self.sc, self.model = ROCTests.mk_objs(sample_model_fcn2)
 
         self.model.weatherers.append(s)
-        self.model.save('.')
+        self.model.save(output_dir)
 
     def test_model_load(self):
         _m = load('Model.zip')
