@@ -427,6 +427,21 @@ class GnomeId(with_metaclass(GnomeObjMeta, AddLogger)):
                 if attrs[name] is colander.drop:
                     del attrs[name]
 
+        #attrs may be out of order. However, we want to process the data in schema order (held in 'updatable')
+        for k in updatable:
+            if hasattr(self, k) and k in attrs:
+                if not updated and self._attr_changed(getattr(self, k), attrs[k]):
+                    updated = True
+
+                try:
+                    setattr(self, k, attrs[k])
+                except AttributeError:
+                    self.logger.error('Failed to set {} on {} to {}'
+                                         .format(k, self, v))
+                    raise
+                attrs.pop(k)
+
+        #process all remaining items in any order...can't wait to see where problems pop up in here
         for k, v in list(attrs.items()):
             if hasattr(self, k):
                 if not updated and self._attr_changed(getattr(self, k), v):
