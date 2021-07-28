@@ -245,8 +245,6 @@ class GnomeId(with_metaclass(GnomeObjMeta, AddLogger)):
 
     @name.setter
     def name(self, val):
-        if isinstance(val, str) and ('/' in val or '\\' in val):
-            raise ValueError("Invalid slash character in object name: {0}".format(val))
         self._name = val
 
     def gather_ref_as(self, src, refs):
@@ -703,7 +701,8 @@ class GnomeId(with_metaclass(GnomeObjMeta, AddLogger)):
                                        allowZip64=allowzip64)
 
         elif os.path.isdir(saveloc):
-            saveloc = os.path.join(saveloc, self.name + '.gnome')
+            n = gnome.persist.base_schema.sanitize_string(self.name)
+            saveloc = os.path.join(saveloc, n + '.gnome')
 
             if os.path.exists(saveloc):
                 if not overwrite:
