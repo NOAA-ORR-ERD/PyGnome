@@ -69,7 +69,7 @@ class GridcurCurrent(GridCurrent):
     """
     _schema = GridcurCurrentSchema
 
-    def __init__(self, filename, extrapolation_is_allowed=False):
+    def __init__(self, filename, angle=None, extrapolation_is_allowed=False):
         """
         :param filename: name (full path) of the gridcur file to load
 
@@ -119,21 +119,28 @@ class GridcurCurrent(GridCurrent):
             attributes=None,
         )
 
-        velocity = GridCurrent(
-            name=f"gridcur {data_type}",
-            units=units,
-            time=time,
-            variables=[U, V],
-            varnames=('u', 'v'),
-        )
+        # velocity = GridCurrent(
+        #     name=f"gridcur {data_type}",
+        #     units=units,
+        #     time=time,
+        #     angle=angle,
+        #     variables=[U, V],
+        #     varnames=('u', 'v'),
+        # )
 
         super().__init__(name=f"gridcur {data_type}",
                          units=units,
                          time=time,
                          variables=[U, V],
+                         angle=angle,
                          varnames=('u', 'v'),
                          extrapolation_is_allowed=extrapolation_is_allowed
                          )
+
+    @classmethod
+    def new_from_dict(cls, serial_dict):
+        return cls(filename=serial_dict["filename"],
+                   extrapolation_is_allowed=serial_dict["extrapolation_is_allowed"])
 
     @staticmethod
     def read_file(filename):

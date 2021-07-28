@@ -267,11 +267,15 @@ def test_serialize():
     """
     current = GridcurCurrent(test_data_dir / NODE_EXAMPLE)
 
-    serial = current.serialize
+    current.extrapolation_is_allowed = True
+    serial = current.serialize()
 
-    print(serial)
+    current2 = GridcurCurrent.deserialize(serial)
 
-    assert False
+
+    # really should test this better, but at least it didn't barf
+    assert current2.extrapolation_is_allowed
+
 
 # def test_deserialize(self, sg):
 #     d_sg = Grid_S.deserialize(sg.serialize())
