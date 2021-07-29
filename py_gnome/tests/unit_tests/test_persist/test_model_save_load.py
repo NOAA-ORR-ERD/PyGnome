@@ -198,19 +198,19 @@ def test_save_load_model(uncertain, zipsave, saveloc_):
 
     assert model == model2
 
-def test_filename_sanitize():
-    m1 = make_model()
-    m1.name = 'te$t?'
-    m1.map.name = 's/ashnam#'
-    sd = m1.save()
-    assert '$' not in sd[1]
-    assert '.\\te_t_.gnome' == sd[1]
-    assert 'te_t_.json' in sd[2].values()
-    assert 's_ashnam#.json' in sd[2].values()
-    m2 = Model.load(sd[1])
-    assert m1.name == m2.name
-    assert m1.map.name == m2.map.name
-    os.remove(sd[1])
+# def test_filename_sanitize():
+    # m1 = make_model()
+    # m1.name = 'te$t?'
+    # m1.map.name = 's/ashnam#'
+    # sd = m1.save()
+    # assert '$' not in sd[1]
+    # assert '.\\te_t_.gnome' == sd[1]
+    # assert 'te_t_.json' in sd[2].values()
+    # assert 's_ashnam#.json' in sd[2].values()
+    # m2 = Model.load(sd[1])
+    # assert m1.name == m2.name
+    # assert m1.map.name == m2.map.name
+    # os.remove(sd[1])
     
 # @pytest.mark.slow
 # @pytest.mark.parametrize(('uncertain', 'zipsave'),
