@@ -14,6 +14,7 @@ import os
 import json
 import tempfile
 import geojson
+import re
 
 from colander import (SchemaNode, deferred, drop, required, Invalid, UnsupportedFields,
                       SequenceSchema, TupleSchema, MappingSchema, Mapping,
@@ -954,9 +955,16 @@ def get_file_name_ext(filename_in):
     file_name, extension = os.path.splitext(base_name)
 
     return file_name, extension
+
+def sanitize_string(s):
+    #basic HTML string sanitization
+    return re.sub(r'[/\\<>:"|?*$]', '_', s)
+
 def gen_unique_filename(filename_in, zipfile_):
     # add uuid to the file name in case the user accidentally uploads
     # multiple files with the same name for different objects.
+    # also sanitizes out illegal characters
+    filename_in = sanitize_string(filename_in)
     existing_files = zipfile_.namelist()
     file_name, extension = get_file_name_ext(filename_in)
     fmtstring = file_name + '{0}' + extension
