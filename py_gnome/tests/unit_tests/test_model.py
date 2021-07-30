@@ -88,15 +88,15 @@ def test_init():
 
     assert True
 
-def test_init_invalid_name():
-    """
-    you should not be able to create a name with a slash in it
-    """
-    with pytest.raises(ValueError):
-        model = Model("this/that")
+# def test_init_invalid_name():
+    # """
+    # you should not be able to create a name with a slash in it
+    # """
+    # with pytest.raises(ValueError):
+        # model = Model("this/that")
 
-    with pytest.raises(ValueError):
-        model = Model("this\\that")
+    # with pytest.raises(ValueError):
+        # model = Model("this\\that")
 
 
 
