@@ -52,22 +52,22 @@ class SpillSchema(ObjTypeSchema):
                             SpatialReleaseSchema],
         save=True, update=True, save_reference=True
     )
-    amount = SchemaNode(
-        Float(), missing=0, save=True, update=True
-    )
-    units = SchemaNode(
-        String(), missing=drop, save=True, update=True
-    )
-    amount_uncertainty_scale = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
-    water = WaterSchema(
-        missing=drop, save=True, update=True, save_reference=True
-    )
     substance = GeneralGnomeObjectSchema(
         acceptable_schemas=[GnomeOilSchema,
                             NonWeatheringSubstanceSchema],
         save=True, update=True, save_reference=True
+    )
+    water = WaterSchema(
+        missing=drop, save=True, update=True, save_reference=True
+    )
+    units = SchemaNode(
+        String(), missing=drop, save=True, update=True
+    )
+    amount = SchemaNode(
+        Float(), missing=0, save=True, update=True
+    )
+    amount_uncertainty_scale = SchemaNode(
+        Float(), missing=drop, save=True, update=True
     )
     _appearance = SpillAppearanceSchema(
         save=True, update=True, missing=drop,

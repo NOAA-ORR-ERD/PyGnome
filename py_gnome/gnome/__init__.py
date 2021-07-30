@@ -18,7 +18,7 @@ import unit_conversion as uc
 from .gnomeobject import GnomeId, AddLogger
 # from gnomeobject import init_obj_log
 
-__version__ = '1.0.0'
+__version__ = '1.0.1'
 
 
 # a few imports so that the basic stuff is there
@@ -34,7 +34,6 @@ def check_dependency_versions():
     a warning is displayed
     """
     libs = [('gridded', '0.3.0'),
-            ('oil_library', '1.1.3'),
             ('unit_conversion', '2.10'),
             ('py_gd', '0.1.7'),
             ]
