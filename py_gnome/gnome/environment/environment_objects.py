@@ -624,7 +624,7 @@ class GridWind(VelocityGrid, Environment):
                 if _auto_align:
                     value = (gridded.utilities
                              ._align_results_to_spatial_data(value, points))
-                return value
+                return self.transform_result(value, coord_sys)
 
         if value is None:
             extrapolate = self.extrapolation_is_allowed
@@ -649,21 +649,6 @@ class GridWind(VelocityGrid, Environment):
                 value[:, 0] = x
                 value[:, 1] = y
 
-        if coord_sys == 'u':
-            value = value[:, 0]
-        elif coord_sys == 'v':
-            value = value[:, 1]
-        elif coord_sys in ('r-theta', 'r', 'theta'):
-            _mag = np.sqrt(value[:, 0] ** 2 + value[:, 1] ** 2)
-            _dir = np.arctan2(value[:, 1], value[:, 0]) * 180. / np.pi
-
-            if coord_sys == 'r':
-                value = _mag
-            elif coord_sys == 'theta':
-                value = _dir
-            else:
-                value = np.column_stack((_mag, _dir))
-
         if _auto_align:
             value = gridded.utilities._align_results_to_spatial_data(value,
                                                                      points)
@@ -672,7 +657,28 @@ class GridWind(VelocityGrid, Environment):
             self._memoize_result(pts, time, value, self._result_memo,
                                  _hash=_hash)
 
-        return value
+        return self.transform_result(value, coord_sys)
+
+    def transform_result(self, value, coord_sys):
+        #internally all results are computed and memoized in 'uv'
+        #this function transforms those to the alternates before returning
+        rv = value
+        if coord_sys == 'u':
+            rv = value[:, 0]
+        elif coord_sys == 'v':
+            rv = value[:, 1]
+        elif coord_sys in ('r-theta', 'r', 'theta'):
+            _mag = np.sqrt(value[:, 0] ** 2 + value[:, 1] ** 2)
+            _dir = np.arctan2(value[:, 1], value[:, 0]) * 180. / np.pi
+
+            if coord_sys == 'r':
+                rv = _mag
+            elif coord_sys == 'theta':
+                rv = _dir
+            else:
+                rv = np.column_stack((_mag, _dir))
+        return rv
+
 
     def get_start_time(self):
         return self.time.min_time
