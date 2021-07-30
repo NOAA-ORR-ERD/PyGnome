@@ -9,10 +9,6 @@ Element_types -- what the types of the elements are.
 
 """
 
-
-
-
-
 from datetime import datetime
 import copy
 
@@ -37,11 +33,9 @@ from gnome.spill.release import (Release,
                                  SpatialReleaseSchema)
 from gnome.environment.water import WaterSchema
 # from gnome.spill.le import LEData
-from gnome.spill.substance import (SubstanceSchema,
-                                   Substance,
-                                   NonWeatheringSubstance,
-                                   GnomeOil, GnomeOilSchema,
-    NonWeatheringSubstanceSchema)
+from gnome.spill.substance import (SubstanceSchema, Substance,
+                                   NonWeatheringSubstance, GnomeOil,
+                                   GnomeOilSchema, NonWeatheringSubstanceSchema)
 from gnome.spill.initializers import plume_initializers
 
 
@@ -84,6 +78,8 @@ class SpillSchema(ObjTypeSchema):
 class BaseSpill(GnomeId):
     """
     A base class for spill, with only what we really need
+
+    Note: this should have all the methods that the model needs, to define the interface.
     """
 
 class Spill(BaseSpill):

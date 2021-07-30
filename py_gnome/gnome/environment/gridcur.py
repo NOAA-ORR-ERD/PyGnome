@@ -35,15 +35,8 @@ Two by two grid, values on the nodes: ::
 from datetime import datetime
 import numpy as np
 
-from gnome.persist import base_schema
-from gnome.persist.extend_colander import FilenameSchema
-from colander import (SchemaNode, Boolean)
 
-from .gridded_objects_base import (Time,
-                                   Variable,
-                                   VectorVariable,
-                                   Grid_R
-                                   )
+from .gridded_objects_base import (Time, Variable, VectorVariable, Grid_R)
 from .environment_objects import VelocityGrid, GridCurrent
 
 data_types = {"GRIDCURTIME": "currents",
@@ -52,27 +45,19 @@ data_types = {"GRIDCURTIME": "currents",
 data_type_tags = {val: key for key, val in data_types.items()}
 
 
-class GridcurCurrentSchema(base_schema.ObjTypeSchema):
-    filename = FilenameSchema(
-        isdatafile=True, test_equal=False, update=False
-    )
-    extrapolation_is_allowed = SchemaNode(Boolean())
-
-
 class GridcurCurrent(GridCurrent):
     """
     A grid current built from a GridCur file
 
     gridcur is an ASCII format used for GNOME 1
 
-    All this does is override the GridCurrent __init__ and make custom persistence
+    All this does is override the GridCurrent __init__ so it can
+    build one from a gridcur file
     """
-    _schema = GridcurCurrentSchema
 
-    def __init__(self, filename, angle=None, extrapolation_is_allowed=False):
+    def __init__(self, filename, extrapolation_is_allowed=False):
         """
         :param filename: name (full path) of the gridcur file to load
-
 
         :param extrapolation_is_allowed=False:
 
@@ -81,7 +66,7 @@ class GridcurCurrent(GridCurrent):
         self.extrapolation_is_allowed = extrapolation_is_allowed
 
         # Read the file:
-        data_type, units, times, lon, lat, data_u, data_v = self.read_file(filename)
+        data_type, units, times, lon, lat, data_u, data_v = GridcurCurrent.read_file(filename)
 
         if (((len(lon), len(lat)) == data_u[0].shape)
             and (data_u[0].shape == data_v[0].shape)):
@@ -119,28 +104,13 @@ class GridcurCurrent(GridCurrent):
             attributes=None,
         )
 
-        # velocity = GridCurrent(
-        #     name=f"gridcur {data_type}",
-        #     units=units,
-        #     time=time,
-        #     angle=angle,
-        #     variables=[U, V],
-        #     varnames=('u', 'v'),
-        # )
-
-        super().__init__(name=f"gridcur {data_type}",
-                         units=units,
-                         time=time,
-                         variables=[U, V],
-                         angle=angle,
-                         varnames=('u', 'v'),
-                         extrapolation_is_allowed=extrapolation_is_allowed
-                         )
-
-    @classmethod
-    def new_from_dict(cls, serial_dict):
-        return cls(filename=serial_dict["filename"],
-                   extrapolation_is_allowed=serial_dict["extrapolation_is_allowed"])
+        GridCurrent.__init__(self,
+                             name=f"gridcur {data_type}",
+                             units=units,
+                             time=time,
+                             variables=[U, V],
+                             varnames=('u', 'v'),
+                             extrapolation_is_allowed=extrapolation_is_allowed)
 
     @staticmethod
     def read_file(filename):
@@ -259,8 +229,8 @@ class GridcurCurrent(GridCurrent):
                 lon = np.linspace(min_lon, min_lon + (dlon * (num_rows - 1)), num_rows)
         except KeyError:
             raise ValueError("File does not have full grid specification")
-        U = np.zeros((num_rows, num_cols), dtype = np.float64)
-        V = np.zeros((num_rows, num_cols), dtype = np.float64)
+        U = np.zeros((num_rows, num_cols), dtype=np.float64)
+        V = np.zeros((num_rows, num_cols), dtype=np.float64)
 
         return lon, lat, U, V
 

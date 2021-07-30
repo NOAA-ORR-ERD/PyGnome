@@ -23,7 +23,7 @@ def make_model(images_dir=base_dir / "images"):
                      duration=gs.hours(12),
                      uncertain=False)
 
-    current = gs.GridcurCurrent(base_dir / "example_gridcur_on_nodes.cur")
+    current = gs.FileGriddedCurrent(base_dir / "example_gridcur_on_nodes.cur")
 
     mover = gs.PyCurrentMover(current=current)
 

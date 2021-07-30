@@ -207,6 +207,7 @@ class VelocityGrid(VectorVariable):
             :param angle: scalar field of cell rotation angles
                           (for rotated/distorted grids)
         """
+
         if 'variables' in kwargs:
             variables = kwargs['variables']
             if len(variables) == 2:
@@ -430,6 +431,10 @@ class Bathymetry(Variable):
 
 
 class GridCurrent(VelocityGrid, Environment):
+    """
+    GridCurrent is VelocityGrid that adds specific loading code for netcdf files
+    for gridded currents, and an interpolation (`.at`), function that provides caching
+    """
 
     _ref_as = 'current'
     _gnome_unit = 'm/s'

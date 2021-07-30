@@ -259,27 +259,3 @@ def test_in_model():
 
     model.full_run()
 
-
-def test_serialize():
-    """
-    Can we persist one of these? and remake it from the persisted
-    location?
-    """
-    current = GridcurCurrent(test_data_dir / NODE_EXAMPLE)
-
-    current.extrapolation_is_allowed = True
-    serial = current.serialize()
-
-    current2 = GridcurCurrent.deserialize(serial)
-
-
-    # really should test this better, but at least it didn't barf
-    assert current2.extrapolation_is_allowed
-
-
-# def test_deserialize(self, sg):
-#     d_sg = Grid_S.deserialize(sg.serialize())
-
-#     pp.pprint(sg.serialize())
-#     pp.pprint(d_sg.serialize())
-#     assert sg == d_sg

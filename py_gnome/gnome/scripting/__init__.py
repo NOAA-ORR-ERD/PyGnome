@@ -79,7 +79,8 @@ from gnome.outputters import (Renderer,
 
 from gnome.maps.map import MapFromBNA, GnomeMap
 
-from gnome.environment import (GridCurrent,
+from gnome.environment import (FileGriddedCurrent,
+                               GridCurrent,
                                GridcurCurrent,
                                GridWind,
                                IceAwareCurrent,

@@ -17,7 +17,8 @@ from .environment_objects import (WindTS,
                                  IceAwareWind,
                                  TemperatureTS
                                  )
-from.gridcur import GridcurCurrent
+from .gridded_objects import FileGriddedCurrent
+from .gridcur import GridcurCurrent
 from .water import Water, WaterSchema
 from .waves import Waves, WavesSchema
 from .tide import Tide, TideSchema
