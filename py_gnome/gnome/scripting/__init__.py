@@ -1,39 +1,33 @@
-# """
-# Scripting package for GNOME with assorted utilities that make it easier to
-# write scripts.
 
-# The ultimate goal is to be able to run py_gnome for the "common" use cases
-# with only functions available in this module
+"""
+Scripting package for GNOME with assorted utilities that make it easier to
+write scripts.
 
-# Classes and helper functions are imported from various py_gnome modules
-# (spill, environment, movers etc).
+The ultimate goal is to be able to run py_gnome for the "common" use cases
+with only functionality available in this module
 
-# we recommend that this module be used like so::
+Classes and helper functions are imported from various py_gnome modules
+(spill, environment, movers etc).
 
-#   import gnome.scripting import gs
+we recommend that this module be used like so::
 
-# Then you will have easy access to most of the stuff you need to write
-# py_gnome scripts with, e.g.::
+  import gnome.scripting as gs
 
-#     model = gs.Model(start_time="2018-04-12T12:30",
-#                      duration=gs.days(2),
-#                      time_step=gs.minutes(15))
+Then you will have easy access to most of the stuff you need to write
+py_gnome scripts with, e.g.::
 
-#     model.map = gs.MapFromBNA('coast.bna', refloat_halflife=0.0)  # seconds
+    model = gs.Model(start_time="2018-04-12T12:30",
+                     duration=gs.days(2),
+                     time_step=gs.minutes(15))
 
-#     model.spills += gs.point_line_release_spill(num_elements=1000,
-#                                                 start_position=(-163.75,
-#                                                                 69.75,
-#                                                                 0.0),
-#                                                 release_time="2018-04-12T12:30")
-# """
+    model.map = gs.MapFromBNA('coast.bna', refloat_halflife=0.0)
 
-
-
-
-
-
-# import gnome
+    model.spills += gs.point_line_release_spill(num_elements=1000,
+                                                start_position=(-163.75,
+                                                                69.75,
+                                                                0.0),
+                                                release_time="2018-04-12T12:30")
+"""
 
 from gnome.model import Model
 
@@ -79,9 +73,8 @@ from gnome.outputters import (Renderer,
 
 from gnome.maps.map import MapFromBNA, GnomeMap
 
-from gnome.environment import (FileGriddedCurrent,
+from gnome.environment import (FileGridCurrent,
                                GridCurrent,
-                               GridcurCurrent,
                                GridWind,
                                IceAwareCurrent,
                                IceAwareWind,

@@ -5,13 +5,12 @@ tests for code that reads teh old gridcur format
 from pathlib import Path
 from datetime import datetime
 
-
 import numpy as np
 
 import pytest
 
 from gnome.basic_types import oil_status  # .in_water
-from gnome.environment.gridcur import GridcurCurrent
+from gnome.environment import gridcur
 
 from gnome.movers import PyCurrentMover
 from gnome.spill import grid_spill
@@ -22,6 +21,8 @@ test_data_dir = Path(__file__).parent / "sample_data"
 test_output_dir = Path(__file__).parent / "sample_output"
 
 
+# NOTE: results are stored in git
+#       this couuld be used to update example files
 def make_gridcur(filename, location="cells"):
     """
     this makes a gridcur file, with a quarter circle of currents
@@ -59,19 +60,19 @@ def make_gridcur(filename, location="cells"):
         data_u.append(U)
         data_v.append(V)
 
-    GridcurCurrent.write_gridcur(filename, data_type, units, times, lon, lat, data_u, data_v)
+    gridcur.write_gridcur(filename, data_type, units, times, lon, lat, data_u, data_v)
 
 
 # create a test gridcur file:
 CELL_EXAMPLE = test_data_dir / "example_gridcur_on_cells.cur"
-make_gridcur(CELL_EXAMPLE)
+# make_gridcur(CELL_EXAMPLE)
 
 NODE_EXAMPLE = test_data_dir / "example_gridcur_on_nodes.cur"
-make_gridcur(NODE_EXAMPLE, "nodes")
+# make_gridcur(NODE_EXAMPLE, "nodes")
 
 
 def test_read_single_cell_center():
-    data_type, units, times, lon, lat, data_u, data_v = GridcurCurrent.read_file(
+    data_type, units, times, lon, lat, data_u, data_v = gridcur.read_file(
         test_data_dir / "grid_cur_1x1.cur")
 
     assert data_type == 'currents'
@@ -90,7 +91,7 @@ def test_read_single_cell_center():
 
 
 def test_read_single_cell_nodes():
-    data_type, units, times, lon, lat, data_u, data_v = GridcurCurrent.read_file(
+    data_type, units, times, lon, lat, data_u, data_v = gridcur.read_file(
         test_data_dir / "grid_cur_2x2.cur")
     assert data_type == 'currents'
     assert units == 'm/s'
@@ -116,7 +117,7 @@ def test_read_single_cell_nodes():
 
 
 def test_read_cells_multiple_times():
-    data_type, units, times, lon, lat, data_u, data_v = GridcurCurrent.read_file(
+    data_type, units, times, lon, lat, data_u, data_v = gridcur.read_file(
         test_data_dir / CELL_EXAMPLE)
 
     assert data_type == 'currents'
@@ -142,7 +143,7 @@ def test_read_cells_multiple_times():
     assert data_v[-1][19, 9] == 0.813364
 
 def test_read_nodes_multiple_times():
-    data_type, units, times, lon, lat, data_u, data_v = GridcurCurrent.read_file(
+    data_type, units, times, lon, lat, data_u, data_v = gridcur.read_file(
         test_data_dir / NODE_EXAMPLE)
 
     assert data_type == 'currents'
@@ -170,7 +171,7 @@ def test_read_nodes_multiple_times():
 
 def test_GridR_node():
     # NOTE: The value-on-the-nodes version is the only one supported
-    cur = GridcurCurrent(test_data_dir / NODE_EXAMPLE)
+    cur = gridcur.from_gridcur(filename=test_data_dir / NODE_EXAMPLE)
 
     print(cur.grid.nodes)
 
@@ -189,7 +190,7 @@ def test_make_mover_from_gridcur():
     """
     make a mover from a gridcur
     """
-    current = GridcurCurrent(test_data_dir / NODE_EXAMPLE)
+    current = gridcur.from_gridcur(filename=test_data_dir / NODE_EXAMPLE)
 
     mover = PyCurrentMover(current=current)
 
@@ -198,7 +199,7 @@ def test_make_mover_from_gridcur():
 
 
 def test_mover_get_move():
-    current = GridcurCurrent(test_data_dir / NODE_EXAMPLE)
+    current = gridcur.from_gridcur(filename=test_data_dir / NODE_EXAMPLE)
     mover = PyCurrentMover(current=current)
 
     # create a minimal spill container
@@ -227,12 +228,12 @@ def test_mover_get_move():
 
 def test_cell_not_supported():
     with pytest.raises(NotImplementedError):
-        current = GridcurCurrent(test_data_dir / CELL_EXAMPLE)
+        current = gridcur.from_gridcur(filename=test_data_dir / CELL_EXAMPLE)
 
 
 def test_in_model():
 
-    current = GridcurCurrent(test_data_dir / NODE_EXAMPLE)
+    current = gridcur.from_gridcur(filename=test_data_dir / NODE_EXAMPLE)
     mover = PyCurrentMover(current=current)
 
     start_time = "2020-07-14T12:00"

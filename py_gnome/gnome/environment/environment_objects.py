@@ -6,19 +6,27 @@ import netCDF4 as nc4
 import numpy as np
 
 from colander import drop
+from gnome.persist import (Boolean,
+                           SchemaNode,
+                           ObjTypeSchema,
+                           FilenameSchema,
+                           )
+
 
 import gridded
 import unit_conversion as uc
 
-from gnome.environment import Environment
-from gnome.environment.timeseries_objects_base import TimeseriesData, TimeseriesVector
+from .environment import Environment
+from .timeseries_objects_base import TimeseriesData, TimeseriesVector
 
-from gnome.environment.gridded_objects_base import (Time,
-                                                    Variable,
-                                                    VectorVariable,
-                                                    VariableSchema,
-                                                    VectorVariableSchema,
-                                                    )
+from .gridded_objects_base import (Time,
+                                   Variable,
+                                   VectorVariable,
+                                   VariableSchema,
+                                   VectorVariableSchema,
+                                   )
+
+from .gridcur import init_from_gridcur
 
 
 class S_Depth_T1(object):
@@ -432,7 +440,15 @@ class Bathymetry(Variable):
 
 class GridCurrent(VelocityGrid, Environment):
     """
-    GridCurrent is VelocityGrid that adds specific loading code for netcdf files
+    GridCurrent is VelocityGrid that adds specific stuff for currents:
+
+    - Information about how to find currents in netCDF file
+    - Ability to apply an angle adjustment of grid-aligned currents
+    - overloading the memorization to memoize the angle-adjusted current.
+    - add a get_data_vectors() provides  magnitude, direction -- used to
+      draw the currents in a GUI
+
+    loading code for netcdf files
     for gridded currents, and an interpolation (`.at`), function that provides caching
     """
 
@@ -538,6 +554,7 @@ class GridCurrent(VelocityGrid, Environment):
 
         else:
             return super(GridCurrent, self).get_data_vectors()
+
 
 class GridWind(VelocityGrid, Environment):
     """
@@ -901,3 +918,56 @@ class IceAwareWind(GridWind):
             return vels
         else:
             return wind_v
+
+
+
+class FileGridCurrentSchema(ObjTypeSchema):
+    filename = FilenameSchema(
+        isdatafile=True, test_equal=False, update=False
+    )
+    extrapolation_is_allowed = SchemaNode(Boolean())
+
+
+class FileGridCurrent(GridCurrent):
+    """
+    class that presents an interface for GridCurrent loaded from
+    files of various formats
+
+    Done as a class to provide a Schema for the persistence system
+
+    And to provide a simple interface to making a current from a file.
+    """
+    _schema = FileGridCurrentSchema
+
+    def __init__(self, filename=None, extrapolation_is_allowed=False, **kwargs):
+        # determine what file format this is
+        if filename is None:
+            raise TypeError("FileGriddedCurrent requires a filename")
+        filename = str(filename)  # just in case it's a Path object
+        if filename.endswith(".nc"):  # should be a netCDF file
+            try:
+                GridCurrent.init_from_netCDF(self,
+                                             filename=filename,
+                                             extrapolation_is_allowed=extrapolation_is_allowed,
+                                             **kwargs)
+            except Exception as ex:
+                raise
+                # raise ValueError(f"{filename} is not a valid netcdf file") from ex
+
+
+        else:  # maybe it's a gridcur file -- that's the only other option
+            try:
+                init_from_gridcur(self,
+                                  filename,
+                                  extrapolation_is_allowed,
+                                  **kwargs)
+            except Exception as ex:
+               raise ValueError(f"{filename} is not a valid gridcur file") from ex
+        self.filename = filename
+
+    @classmethod
+    def new_from_dict(cls, serial_dict):
+        return cls(filename=serial_dict["filename"],
+                   extrapolation_is_allowed=serial_dict["extrapolation_is_allowed"])
+
+

@@ -9,9 +9,9 @@ import numpy as np
 
 import pytest
 
-from gnome.environment.environment_objects import GridCurrent
-from gnome.environment.gridded_objects import FileGriddedCurrent
-from gnome.environment.gridcur import GridcurCurrent
+from gnome.environment.environment_objects import (GridCurrent,
+                                                   FileGridCurrent,
+                                                   )
 
 import gnome.scripting as gs
 
@@ -61,15 +61,15 @@ def make_gridcur(filename, location="cells"):
 
 # create a test gridcur file:
 CELL_EXAMPLE = test_data_dir / "example_gridcur_on_cells.cur"
-make_gridcur(CELL_EXAMPLE)
+# make_gridcur(CELL_EXAMPLE)
 
 NODE_EXAMPLE = test_data_dir / "example_gridcur_on_nodes.cur"
-make_gridcur(NODE_EXAMPLE, "nodes")
+# make_gridcur(NODE_EXAMPLE, "nodes")
 
 
-def test_grid_cur_in_model():
+def test_gridcur_in_model():
 
-    current = FileGriddedCurrent(test_data_dir / NODE_EXAMPLE)
+    current = FileGridCurrent(test_data_dir / NODE_EXAMPLE)
     mover = gs.PyCurrentMover(current=current)
 
     start_time = "2020-07-14T12:00"
@@ -102,14 +102,13 @@ def test_gridcur_serialize():
     Can we persist one of these? and remake it from the persisted
     location?
     """
-    current = FileGriddedCurrent(str(test_data_dir / NODE_EXAMPLE),
+    current = FileGridCurrent(str(test_data_dir / NODE_EXAMPLE),
                                  extrapolation_is_allowed=True,
                                  )
 
     serial = current.serialize()
 
-    current2 = FileGriddedCurrent.deserialize(serial)
-
+    current2 = FileGridCurrent.deserialize(serial)
 
     # really should test this better, but at least it didn't barf
     assert current2.extrapolation_is_allowed
@@ -120,11 +119,11 @@ def test_netcdf_file():
     testfile = str(test_data_dir / 'tri_ring.nc')
 
     # create a GridCurrent
-    current = FileGriddedCurrent(testfile,
+    current = FileGridCurrent(filename=testfile,
                                  extrapolation_is_allowed=True,
                                  )
 
-    assert type(current) == FileGriddedCurrent
+    assert type(current) == FileGridCurrent
     assert isinstance(current, GridCurrent)
 
     # really should test more, but what?
@@ -143,7 +142,7 @@ def test_netcdf_in_model():
     correct? who knows, but it's running!
     """
     # Single timestep, so time doesn't matter.
-    current = FileGriddedCurrent(str(test_data_dir / 'tri_ring.nc'))
+    current = FileGridCurrent(str(test_data_dir / 'tri_ring.nc'))
     mover = gs.PyCurrentMover(current=current)
 
     start_time = "2020-07-14T12:00"

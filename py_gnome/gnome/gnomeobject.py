@@ -1,9 +1,5 @@
 #!/usr/bin/env python
 
-
-
-
-
 from future.utils import with_metaclass
 
 import os
@@ -145,6 +141,7 @@ class GnomeId(with_metaclass(GnomeObjMeta, AddLogger)):
     '''
     _id = None
     make_default_refs = True
+    _name = None  # so that it will always exist
 
     def __init__(self, name=None, _appearance=None, *args, **kwargs):
         super(GnomeId, self).__init__(*args, **kwargs)
