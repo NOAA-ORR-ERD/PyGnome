@@ -102,16 +102,19 @@ def test_gridcur_serialize():
     Can we persist one of these? and remake it from the persisted
     location?
     """
-    current = FileGridCurrent(str(test_data_dir / NODE_EXAMPLE),
-                                 extrapolation_is_allowed=True,
-                                 )
+    filename = str(test_data_dir / NODE_EXAMPLE)
+    current = FileGridCurrent(filename,
+                              extrapolation_is_allowed=True,
+                              )
 
     serial = current.serialize()
 
+    print(serial)
     current2 = FileGridCurrent.deserialize(serial)
 
     # really should test this better, but at least it didn't barf
     assert current2.extrapolation_is_allowed
+    assert current2.filename == filename
 
 
 def test_netcdf_file():

@@ -967,7 +967,9 @@ class FileGridCurrent(GridCurrent):
 
     @classmethod
     def new_from_dict(cls, serial_dict):
-        return cls(filename=serial_dict["filename"],
-                   extrapolation_is_allowed=serial_dict["extrapolation_is_allowed"])
+        return cls(**serial_dict)
+
+        # filename=serial_dict["filename"],
+        #            extrapolation_is_allowed=serial_dict["extrapolation_is_allowed"])
 
 

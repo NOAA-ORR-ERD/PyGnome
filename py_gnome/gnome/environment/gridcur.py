@@ -67,6 +67,7 @@ def from_gridcur(filename,
 def init_from_gridcur(gc,
                       filename,
                       extrapolation_is_allowed=False,
+                      name=None,
                       **kwargs):
     """
     utility function to initialize a GridCurrent
@@ -119,6 +120,8 @@ def init_from_gridcur(gc,
         location=location,
         attributes=None,
     )
+    name = f"gridcur {data_type}" if name is None else name
+
     super(gc.__class__, gc).__init__(name=f"gridcur {data_type}",
                                      units=units,
                                      time=time,
