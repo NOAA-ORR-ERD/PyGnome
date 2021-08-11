@@ -96,3 +96,18 @@ from gnome.movers import (RandomMover,
                           )
 
 from gnome.utilities.remote_data import get_datafile
+
+
+def load_model(filename):
+    """
+    load a model from an existing savefile
+
+    :param filename: filename (path) of the save file to load.
+
+    :returns: A configured Model object.
+
+    :note: This is simply a handy wrapper around the Model.load_savefile
+           classmethod
+    """
+    return Model.load_savefile(filename)
+
