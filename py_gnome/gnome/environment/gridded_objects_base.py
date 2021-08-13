@@ -7,7 +7,7 @@ import warnings
 from functools import wraps
 
 from colander import (SchemaNode, SequenceSchema,
-                      Sequence, String, Boolean, DateTime,
+                      String, Boolean, DateTime,
                       drop)
 
 import gridded
@@ -491,8 +491,8 @@ class Variable(gridded.Variable, GnomeId):
         Time = self._default_component_types['time']
         Depth = self._default_component_types['depth']
         if filename is not None:
-            data_file = filename
-            grid_file = filename
+            data_file = str(filename)
+            grid_file = str(filename)
 
         ds = None
         dg = None
@@ -749,8 +749,8 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
         Variable = self._default_component_types['variable']
         Depth = self._default_component_types['depth']
         if filename is not None:
-            data_file = filename
-            grid_file = filename
+            data_file = str(filename)
+            grid_file = str(filename)
 
         ds = None
         dg = None
