@@ -292,7 +292,7 @@ class ObjType(SchemaType):
         # strips out any entries that do not need saving. They're still in refs,
         # but that shouldn't do any harm.
         savable_attrs = node.get_nodes_by_attr('save')
-        for k in json_.keys():
+        for k in list(json_.keys()):
             subnode = node.get(k)
 
             # Need to exclude lists from this culling,
