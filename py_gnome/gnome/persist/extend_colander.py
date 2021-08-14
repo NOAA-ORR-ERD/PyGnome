@@ -192,28 +192,9 @@ class TimeDelta(Float):
         else:
             return sec
 
-#
-# class Filename(Sequence):
-#     def __init__(self, *args, **kwargs):
-#         if 'accept_scalar' not in kwargs:
-#             kwargs['accept_scalar'] = True
-#         super(Filename, self).__init__(*args, **kwargs)
-#
-#     def serialize(self, node, appstruct):
-#         rv = super(Filename, self).serialize(node, appstruct)
-#         if rv and len(rv) == 1:
-#             rv = rv[0]
-#         return rv
-#
-#     def deserialize(self, node, cstruct):
-#         if isinstance(cstruct, basestring):
-#             return cstruct
-#         else:
-#             return super(Filename, self).deserialize(node, cstruct)
-
 
 class OrderedCollectionType(Sequence):
-    #identical to SequenceSchema except it can tolerate a 'get'
+    # identical to SequenceSchema except it can tolerate a 'get'
     def _validate(self, node, value, accept_scalar):
         if (hasattr(value, '__iter__') and
             not isinstance(value, str)):

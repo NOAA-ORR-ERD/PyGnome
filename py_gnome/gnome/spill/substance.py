@@ -1,6 +1,4 @@
 
-from past.types import basestring
-
 from colander import Float, SchemaNode, SequenceSchema, Boolean
 import numpy as np
 from gnome.basic_types import fate, oil_status
@@ -199,7 +197,7 @@ class GnomeOil(Oil, Substance):
         oil_info = name
         if name in _sample_oils:
             oil_info = _sample_oils[name]
-        elif isinstance(name, basestring):
+        elif isinstance(name, str):
             # check if it's json from save file or from client
             if kwargs.get('component_density', False):
                 oil_info = kwargs

@@ -7,10 +7,7 @@ set of arrays. The spills themselves provide some of the arrays themselves
 (adding more each time LEs are released).
 """
 
-from past.types import basestring
-
 import os
-# from collections import namedtuple
 
 import numpy as np
 
@@ -574,7 +571,7 @@ class SpillContainer(AddLogger, SpillContainerData):
         in which case, it is the name of the array so return it. If its not
         a string, then return the at.name attribute.
         '''
-        if isinstance(at, basestring):
+        if isinstance(at, str):
             return at
         else:
             return at.name

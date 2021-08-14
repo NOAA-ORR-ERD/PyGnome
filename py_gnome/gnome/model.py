@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-from past.types import basestring
-
 import os
 from datetime import datetime, timedelta
 import zipfile

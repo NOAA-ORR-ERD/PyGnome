@@ -1,7 +1,3 @@
-
-from past.types import basestring
-
-# import pdb
 import datetime
 import zipfile
 import logging
@@ -343,7 +339,7 @@ class ObjType(SchemaType):
         for d in datafiles:
             if json_[d] is None:
                 continue
-            elif isinstance(json_[d], basestring):
+            elif isinstance(json_[d], str):
                 json_[d] = self._process_supporting_file(json_[d], zipfile_)
             elif isinstance(json_[d], collections.Iterable):
                 # List, tuple, etc
@@ -498,7 +494,7 @@ class ObjType(SchemaType):
             tmpdir = tempfile.mkdtemp()
 
         for d in datafiles:
-            if isinstance(cstruct[d], basestring):
+            if isinstance(cstruct[d], str):
                 cstruct[d] = self._load_supporting_file(cstruct[d],
                                                         saveloc, tmpdir)
                 log.info('Extracted file {0}'.format(cstruct[d]))
