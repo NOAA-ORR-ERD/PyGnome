@@ -61,7 +61,7 @@ test_pygnome_develop:
   only:
     - develop
   script:
-    - cd ./py_gnome/tests/unit_tests && pytest
+    - cd ./py_gnome/tests/unit_tests && pytest --runslow
   tags:
     - docker
 
@@ -73,7 +73,7 @@ test_pygnome_master:
     - master
     - production
   script:
-    - cd ./py_gnome/tests/unit_tests && pytest
+    - cd ./py_gnome/tests/unit_tests && pytest --runslow
   tags:
     - docker
 
