@@ -115,7 +115,7 @@ def ReadDOGSFile(filename):
 
     line = line.split(',')
     for n in range(Npoints):
-        lon, lat, depth = list(map(float, line[1:4]))
+        lon, lat, depth = (float(val) for val in line[1:4])
         Coords[n, :] = (lon, lat)
         Depths[n] = depth
         line = fd.readline().strip().split(',')
@@ -350,7 +350,7 @@ def ReadBNA(filename, polytype="list", dtype=np.float64):
             polygon = np.zeros((num_points, 2), np.float64)
 
             for i in range(num_points):
-                polygon[i, :] = list(map(float, fd.readline().split(',')))
+                polygon[i, :] = (float(val) for val in fd.readline().split(','))
             polys.append(polygon)
 
         Output = BNAData(polys, Names, Types, os.path.abspath(filename))

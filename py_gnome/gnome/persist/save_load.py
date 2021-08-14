@@ -2,10 +2,6 @@
 Save/load gnome objects
 '''
 
-
-
-
-
 import os
 import shutil
 import json
@@ -39,7 +35,7 @@ class Refs(dict):
         '''
         base_name = obj.obj_type.split('.')[-1]
 
-        num_of_same_type = [v for v in list(self.values())
+        num_of_same_type = [v for v in self.values()
                             if v.obj_type == obj.obj_type]
 
         return base_name + num_of_same_type + 1
@@ -71,7 +67,7 @@ class References(object):
         return key if obj already exists in references list
         else return None
         '''
-        for key, item in list(self._refs.items()):
+        for key, item in self._refs.items():
             if item is obj:
                 return key
 

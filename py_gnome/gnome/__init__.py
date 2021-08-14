@@ -104,10 +104,12 @@ def initialize_console_log(level='debug'):
 
 
 def _valid_units(unit_name):
+    # fixme: I think there is something built in to nucos for this
+    #        or there should be
     'convenience function to get all valid units accepted by unit_conversion'
     _valid_units = list(uc.GetUnitNames(unit_name))
     _valid_units.extend(chain(*[val[1] for val in
-                                list(uc.ConvertDataUnits[unit_name].values())]))
+                                uc.ConvertDataUnits[unit_name].values()]))
     return tuple(_valid_units)
 
 

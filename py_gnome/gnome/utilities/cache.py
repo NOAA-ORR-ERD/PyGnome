@@ -6,15 +6,6 @@ accessing again for output, etc.
 
 """
 
-
-
-
-
-# from future import standard_library
-# standard_library.install_aliases()
-# from builtins import *
-# from builtins import object
-
 import os
 import warnings
 import tempfile
@@ -136,7 +127,7 @@ class ElementCache(object):
         :param step_num: the step number of the data
         :param spill_container: the spill container at this step
         """
-        for sc in list(spill_container_pair.items()):
+        for sc in spill_container_pair.items():
             data = copy.deepcopy(sc.data_arrays)
 
             self._set_weathering_data(sc, data)

@@ -3,11 +3,6 @@ Extend colander's basic types for serialization/deserialization
 of gnome specific types
 '''
 
-
-
-
-from past.types import basestring
-
 import datetime
 import os
 
@@ -135,6 +130,8 @@ class DatetimeValue2dArray(Sequence):
             return null
 
         # getting serialized by PyGnome so data should be correct
+        # is the list() call required? Can we pass a iterable
+        # into serialize?
         series = list(zip(appstruct['time'].astype(object),
                      appstruct['value'].tolist()))
 
@@ -219,7 +216,7 @@ class OrderedCollectionType(Sequence):
     #identical to SequenceSchema except it can tolerate a 'get'
     def _validate(self, node, value, accept_scalar):
         if (hasattr(value, '__iter__') and
-            not isinstance(value, basestring)):
+            not isinstance(value, str)):
             return list(value)
         if accept_scalar:
             return [value]

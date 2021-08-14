@@ -1,9 +1,4 @@
 
-
-
-
-
-
 from .core import Weatherer, HalfLifeWeatherer
 from .cleanup import Skimmer, Burn, ChemicalDispersion
 from .manual_beaching import Beaching
@@ -66,11 +61,12 @@ sort_order = [ChemicalDispersion,
               Langmuir,
               ]
 
-weatherer_schemas = set()
-for cls in sort_order:
-    if hasattr(cls, '_schema'):
-        weatherer_schemas.add(cls._schema)
-weatherer_schemas = list(weatherer_schemas)
+# weatherer_schemas = set()
+# for cls in sort_order:
+#     if hasattr(cls, '_schema'):
+#         weatherer_schemas.add(cls._schema)
+
+weatherer_schemas = list({cls._schema for cls in sort_order if hasattr(cls, '_schema')})
 
 weatherers_idx = dict([(v, i) for i, v in enumerate(sort_order)])
 

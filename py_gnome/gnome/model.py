@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-
 from past.types import basestring
 
 import os
@@ -298,7 +297,7 @@ class Model(GnomeId):
                                  see: ``gnome.weatherers.__init__.py`` for the full list
 
         """
-        names = list(weatherers_by_name.keys())
+        # names = list(weatherers_by_name.keys())
         try:
             which = standard_weatherering_sets[which]
         except (TypeError, KeyError):
@@ -617,7 +616,7 @@ class Model(GnomeId):
         items = []
         for item in collection:
             try:
-                if not isinstance(getattr(item, attr), basestring):
+                if not isinstance(getattr(item, attr), str):
                     if any([value == v for v in getattr(item, attr)]):
                         if allitems:
                             items.append(item)
@@ -1642,11 +1641,11 @@ class Model(GnomeId):
     def list_spill_properties(self):
         '''
         Convenience method to list properties of a spill that
-        can be retrived using get_spill_property
+        can be retrieved using get_spill_property
 
         '''
 
-        return list(list(self.spills.items())[0].data_arrays.keys())
+        return list(self.spills.items())[0].data_arrays.keys()
 
     def get_spill_property(self, prop_name, ucert=0):
         '''

@@ -120,9 +120,9 @@ class Refs(dict):
         provides a unique name by appending length+1
         '''
         base_name = obj.obj_type.split('.')[-1]
-        num_of_same_type = [v for v in list(self.values()) if v.obj_type == obj.obj_type]
+        num_of_same_type = [v for v in self.values() if v.obj_type == obj.obj_type]
 
-        return base_name + num_of_same_type+1
+        return base_name + num_of_same_type + 1
 
 
 class GnomeObjMeta(type):
@@ -403,7 +403,7 @@ class GnomeId(with_metaclass(GnomeObjMeta, AddLogger)):
         attrs = copy.copy(dict_)
         updated = False
 
-        for k in list(attrs.keys()):
+        for k in list(attrs):
             if k not in updatable:
                 attrs.pop(k)
 
@@ -422,7 +422,7 @@ class GnomeId(with_metaclass(GnomeObjMeta, AddLogger)):
                 if attrs[name] is colander.drop:
                     del attrs[name]
 
-        #attrs may be out of order. However, we want to process the data in schema order (held in 'updatable')
+        # attrs may be out of order. However, we want to process the data in schema order (held in 'updatable')
         for k in updatable:
             if hasattr(self, k) and k in attrs:
                 if not updated and self._attr_changed(getattr(self, k), attrs[k]):
@@ -436,8 +436,8 @@ class GnomeId(with_metaclass(GnomeObjMeta, AddLogger)):
                     raise
                 attrs.pop(k)
 
-        #process all remaining items in any order...can't wait to see where problems pop up in here
-        for k, v in list(attrs.items()):
+        # process all remaining items in any order...can't wait to see where problems pop up in here
+        for k, v in attrs.items():
             if hasattr(self, k):
                 if not updated and self._attr_changed(getattr(self, k), v):
                     updated = True

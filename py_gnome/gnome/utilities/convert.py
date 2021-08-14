@@ -3,20 +3,12 @@ Helper classes to do common tasks in pyGnome like;
 - convert_formats to convert datetime_value to time_value_pair
 """
 
-
-
-
-
-# from future import standard_library
-# standard_library.install_aliases()
-# from builtins import *
-
 from gnome.utilities import time_utils, transforms
 from gnome import basic_types
 import numpy as np
 
 
-# fixme: in_ts_format sholdnot be optional!
+# fixme: in_ts_format should not be optional!
 def to_time_value_pair(datetime_value, in_ts_format=None):
     """
     converts a numpy array containing basic_types.datetime_value_2d in

@@ -5,10 +5,6 @@ time_utils
 assorted utilities for working with time and datetime
 """
 
-
-
-
-
 from datetime import datetime, timedelta, tzinfo
 import cftime
 from dateutil.parser import parse as parsetime
@@ -162,6 +158,8 @@ def sec_to_timestruct(seconds):
     FIXME: left over code from previous attempt
            mirrors Cython/C++ code, but breaks for the spring DST transition
 
+           Only used for testing the Cython code.
+
     :param seconds: time in seconds
 
     This doesn't operate on a numpy array. This was separated as a way to
@@ -173,13 +171,14 @@ def sec_to_timestruct(seconds):
     Returns a time.struct_time
     """
     SECS_IN_HOUR = 3600
-    timetuple = list(time.localtime(seconds))
+    timetuple = time.localtime(seconds)
 
     if timetuple[-1] == 1:
         # roll clock back by an hour for daylight savings correction
         # and then unset the daylight savings flag
         # FIXME: this breaks for the spring transition!
         # i.e.: datetime(2016, 3, 13, 2, 30))
+        # a list so it can be mutated
         timetuple = list(time.localtime(seconds - SECS_IN_HOUR))
         timetuple[-1] = 0
 

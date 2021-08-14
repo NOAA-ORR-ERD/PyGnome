@@ -1,8 +1,4 @@
 
-
-
-
-
 from .outputter import Outputter, BaseOutputterSchema
 from .netcdf import NetCDFOutput, NetCDFOutputSchema
 from .renderer import Renderer, RendererSchema
@@ -34,9 +30,6 @@ outputters = [Outputter,
               IceImageOutput,
               ShapeOutput]
 
-schemas = set()
-for cls in outputters:
-    if hasattr(cls, '_schema'):
-        schemas.add(cls._schema)
-schemas = list(schemas)
+# any reason for this to be a list rather than a set?
+schemas = {cls._schema for cls in outputters if hasattr(cls, '_schema')}
 
