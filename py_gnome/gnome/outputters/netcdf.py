@@ -1,11 +1,6 @@
 '''
 NetCDF outputter - write the nc_particles netcdf file format
 '''
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import os
 from datetime import datetime
 import zipfile
@@ -62,7 +57,7 @@ var_attributes = {
     'status_codes': {
         'long_name': 'particle status code',
         'flag_values': [v.value for v in oil_status],
-        'flag_meanings': " ".join("{}:{}".format(v.name, v.value)
+        'flag_meanings': " ".join("{}:{}".format(v.value, v.name)
                                   for v in oil_status)
                      },
     'spill_num': {'long_name': 'spill to which the particle belongs'},
@@ -569,7 +564,7 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
 
         self._update_var_attributes(spills)
 
-        for sc in list(self.sc_pair.items()):
+        for sc in self.sc_pair.items():
             if sc.uncertain:
                 file_ = self._u_filename
             else:
@@ -584,7 +579,7 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
                 # create a dict with dims {2: 'two', 3: 'three' ...}
                 # use this to define the NC variable's shape in code below
                 d_dims = {len(dim): name
-                          for name, dim in list(rootgrp.dimensions.items())
+                          for name, dim in rootgrp.dimensions.items()
                           if len(dim) > 0}
 
                 # create the time/particle_count variables
@@ -712,7 +707,7 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
         if self.on is False or not self._write_step:
             return None
 
-        for sc in list(self.cache.load_timestep(step_num).items()):
+        for sc in self.cache.load_timestep(step_num).items():
             if sc.uncertain and self._u_filename is not None:
                 file_ = self._u_filename
             else:
@@ -747,7 +742,7 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
                 # write mass_balance data
                 if sc.mass_balance:
                     grp = rootgrp.groups['mass_balance']
-                    for key, val in list(sc.mass_balance.items()):
+                    for key, val in sc.mass_balance.items():
                         if key not in grp.variables:
                             self._create_nc_var(grp,
                                                 key, 'float', ('time', ),
@@ -806,6 +801,7 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
         '''
         reset a few parameter and call base class rewind to reset
         internal variables.
+
         '''
         super(NetCDFOutput, self).rewind()
 
@@ -968,7 +964,7 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
             if 'mass_balance' in data.groups:
                 mb = data.groups['mass_balance']
 
-                for key, val in list(mb.variables.items()):
+                for key, val in mb.variables.items():
                     # assume SI units
                     weathering_data[key] = val[index]
 

@@ -3,10 +3,10 @@
 """
 tests for the tidal flat map
 """
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import unicode_literals
+
+
+
+
 
 # a few tests that show that the delation to the underlying map works:
 

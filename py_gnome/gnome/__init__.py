@@ -1,10 +1,7 @@
 """
     __init__.py for the gnome package
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+
 from itertools import chain
 
 import sys
@@ -21,8 +18,7 @@ import unit_conversion as uc
 from .gnomeobject import GnomeId, AddLogger
 # from gnomeobject import init_obj_log
 
-# using a PEP 404 compliant version name
-__version__ = '0.7.0'
+__version__ = '1.0.1'
 
 
 # a few imports so that the basic stuff is there
@@ -38,7 +34,6 @@ def check_dependency_versions():
     a warning is displayed
     """
     libs = [('gridded', '0.3.0'),
-            ('oil_library', '1.1.3'),
             ('unit_conversion', '2.10'),
             ('py_gd', '0.1.7'),
             ]
@@ -109,10 +104,12 @@ def initialize_console_log(level='debug'):
 
 
 def _valid_units(unit_name):
+    # fixme: I think there is something built in to nucos for this
+    #        or there should be
     'convenience function to get all valid units accepted by unit_conversion'
     _valid_units = list(uc.GetUnitNames(unit_name))
     _valid_units.extend(chain(*[val[1] for val in
-                                list(uc.ConvertDataUnits[unit_name].values())]))
+                                uc.ConvertDataUnits[unit_name].values()]))
     return tuple(_valid_units)
 
 

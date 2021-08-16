@@ -1,12 +1,5 @@
 #!/usr/bin/env python
 
-from __future__ import division
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import unicode_literals
-
-from past.types import basestring
-
 import os
 from datetime import datetime, timedelta
 import zipfile
@@ -143,8 +136,6 @@ class Model(GnomeId):
                          a zip file
 
         :return: a model instance all set up from the savefile.
-
-        This is simply a utility wrapper around gnome.persist.save_load.load()
         """
         model = cls.load(filename)
 
@@ -208,7 +199,7 @@ class Model(GnomeId):
                              decide which UI views it should present.
         '''
         # making sure basic stuff is in place before properties are set
-        super(Model, self).__init__(**kwargs)
+        super(Model, self).__init__(name=name, **kwargs)
         self.environment = OrderedCollection(dtype=Environment)
         self.movers = OrderedCollection(dtype=Mover)
         self.weatherers = OrderedCollection(dtype=Weatherer)
@@ -234,8 +225,6 @@ class Model(GnomeId):
         self.start_time = start_time
         self._duration = duration
         self.weathering_substeps = weathering_substeps
-
-        self._name = name
 
         if not map:
             map = GnomeMap()
@@ -306,7 +295,7 @@ class Model(GnomeId):
                                  see: ``gnome.weatherers.__init__.py`` for the full list
 
         """
-        names = list(weatherers_by_name.keys())
+        # names = list(weatherers_by_name.keys())
         try:
             which = standard_weatherering_sets[which]
         except (TypeError, KeyError):
@@ -625,7 +614,7 @@ class Model(GnomeId):
         items = []
         for item in collection:
             try:
-                if not isinstance(getattr(item, attr), basestring):
+                if not isinstance(getattr(item, attr), str):
                     if any([value == v for v in getattr(item, attr)]):
                         if allitems:
                             items.append(item)
@@ -1650,11 +1639,11 @@ class Model(GnomeId):
     def list_spill_properties(self):
         '''
         Convenience method to list properties of a spill that
-        can be retrived using get_spill_property
+        can be retrieved using get_spill_property
 
         '''
 
-        return list(list(self.spills.items())[0].data_arrays.keys())
+        return list(self.spills.items())[0].data_arrays.keys()
 
     def get_spill_property(self, prop_name, ucert=0):
         '''

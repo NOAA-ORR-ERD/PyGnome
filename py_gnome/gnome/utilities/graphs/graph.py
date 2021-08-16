@@ -20,7 +20,6 @@ from cache, as well as serialize and deserialize them.
 This is meant to be a usable base class that behaves in a general manner.
 But it is also intended to be easily customizable through sub-classing.
 """
-import copy
 
 import numpy
 from gnome.gnomeobject import GnomeId
@@ -133,7 +132,7 @@ class Graph(GnomeId):
 
     def _plot_points(self):
         x = self.points[0]
-        for p, i in zip(self.points, list(range(len(self.points))))[1:]:
+        for p, i in enumerate(self.points[1:]):
             static_args = [x, p]
 
             if self.formats and len(self.formats) > i:

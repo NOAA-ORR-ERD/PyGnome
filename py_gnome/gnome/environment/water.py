@@ -2,18 +2,11 @@
     The Water environment object.
     The Water object defines the Water conditions for the spill
 '''
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
 
+from functools import lru_cache  # it's built-in on py3
 
-try:
-    from functools import lru_cache  # it's built-in on py3
-except ImportError:
-    from backports.functools_lru_cache import lru_cache  # needs backports for py2
-
-from colander import SchemaNode, MappingSchema, Float, String, drop, OneOf, required
+from colander import (SchemaNode, MappingSchema, Float, String, drop, OneOf,
+                      required)
 
 import gsw
 
@@ -27,7 +20,6 @@ from gnome.persist import base_schema
 from .environment import Environment
 
 from .. import _valid_units
-
 
 # define valid units at module scope because the Schema and Object both use it
 _valid_temp_units = _valid_units('Temperature')
@@ -90,27 +82,28 @@ class Water(Environment):
     these properties through the client
     '''
     _ref_as = 'water'
-    _field_descr = {'units': ('update', 'save'),
-                    'temperature:': ('update', 'save'),
-                    'salinity': ('update', 'save'),
-                    'sediment': ('update', 'save'),
-                    'fetch': ('update', 'save'),
-                    'wave_height': ('update', 'save'),
-                    'density': ('update', 'save'),
-                    'kinematic_viscosity': ('update', 'save')}
+    _field_descr = {
+        'units': ('update', 'save'),
+        'temperature:': ('update', 'save'),
+        'salinity': ('update', 'save'),
+        'sediment': ('update', 'save'),
+        'fetch': ('update', 'save'),
+        'wave_height': ('update', 'save'),
+        'density': ('update', 'save'),
+        'kinematic_viscosity': ('update', 'save')
+    }
 
     _schema = WaterSchema
 
-    _units_type = {'temperature': ('temperature', _valid_temp_units),
-                   'salinity': ('salinity', _valid_salinity_units),
-                   'sediment': ('concentration in water',
-                                _valid_sediment_units),
-                   'wave_height': ('length', _valid_dist_units),
-                   'fetch': ('length', _valid_dist_units),
-                   'kinematic_viscosity': ('kinematic viscosity',
-                                           _valid_kvis_units),
-                   'density': ('density', _valid_density_units),
-                   }
+    _units_type = {
+        'temperature': ('temperature', _valid_temp_units),
+        'salinity': ('salinity', _valid_salinity_units),
+        'sediment': ('concentration in water', _valid_sediment_units),
+        'wave_height': ('length', _valid_dist_units),
+        'fetch': ('length', _valid_dist_units),
+        'kinematic_viscosity': ('kinematic viscosity', _valid_kvis_units),
+        'density': ('density', _valid_density_units),
+    }
 
     # Fixme: SI units are defined by an outside boy (that is, SI :-) )
     #        we should not be redefining it locally
@@ -119,24 +112,28 @@ class Water(Environment):
     # keep track of valid SI units for properties - these are used for
     # conversion since internal code uses SI units. Don't expect to change
     # these so make it a class level attribute
-    _si_units = {'temperature': 'K',
-                 'salinity': 'psu',
-                 'sediment': 'kg/m^3',
-                 'wave_height': 'm',
-                 'fetch': 'm',
-                 'density': 'kg/m^3',
-                 'kinematic_viscosity': 'm^2/s'}
+    _si_units = {
+        'temperature': 'K',
+        'salinity': 'psu',
+        'sediment': 'kg/m^3',
+        'wave_height': 'm',
+        'fetch': 'm',
+        'density': 'kg/m^3',
+        'kinematic_viscosity': 'm^2/s'
+    }
+
     # Fixme: we need a simple way for (scripting) users to use the units they want to create
     #        a water object.
-    def __init__(self,
-                 temperature=300.0,
-                 salinity=35.0,
-                 sediment=.005,  # kg/m^3 oceanic default
-                 wave_height=None,
-                 fetch=None,
-                 units=None,
-                 name='Water',
-                 **kwargs):
+    def __init__(
+            self,
+            temperature=300.0,
+            salinity=35.0,
+            sediment=.005,  # kg/m^3 oceanic default
+            wave_height=None,
+            fetch=None,
+            units=None,
+            name='Water',
+            **kwargs):
         '''
         Assume units are SI for all properties. 'units' attribute assumes SI
         by default. This can be changed, but initialization takes SI.
@@ -203,8 +200,8 @@ class Water(Environment):
                 unit = self._si_units[attr]
 
         if unit in self._units_type[attr][1]:
-            return uc.convert(self._units_type[attr][0], self.units[attr],
-                              unit, val)
+            return uc.convert(self._units_type[attr][0], self.units[attr], unit,
+                              val)
         else:
             # log to file if we have logger
             ex = uc.InvalidUnitError((unit, self._units_type[attr][0]))
@@ -230,11 +227,12 @@ class Water(Environment):
         '''
         use lru cache so we don't recompute if temp is not changing
         '''
-        temp_c = uc.convert('Temperature',
-                            temp_units,
-                            # self.units['temperature'],
-                            'C',
-                            temp)
+        temp_c = uc.convert(
+            'Temperature',
+            temp_units,
+            # self.units['temperature'],
+            'C',
+            temp)
         # sea level pressure in decibar - don't expect atmos_pressure to change
         # also expect constants to have SI units
         rho = gsw.rho(salinity, temp_c, constants.atmos_pressure * 0.0001)
@@ -249,8 +247,7 @@ class Water(Environment):
         units - for our purposes, this is sufficient. Using gsw.rho()
         internally which expects salinity in absolute units.
         '''
-        return self._get_density(self.salinity,
-                                 self.temperature,
+        return self._get_density(self.salinity, self.temperature,
                                  self.units['temperature'])
 
     @property
@@ -265,11 +262,11 @@ class Water(Environment):
         if not hasattr(self, '_units'):
             self._units = {}
 
-        for prop, unit in list(u_dict.items()):
+        for prop, unit in u_dict.items():
             if prop in self._units_type:
                 if unit not in self._units_type[prop][1]:
-                    msg = ("{0} are invalid units for {1}.  Ignore it."
-                           .format(unit, prop))
+                    msg = ("{0} are invalid units for {1}.  Ignore it.".format(
+                        unit, prop))
                     self.logger.error(msg)
                     # should we raise error?
                     raise uc.InvalidUnitError(msg)

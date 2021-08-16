@@ -1,22 +1,16 @@
 """
 kmz  outputter
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-import copy
+
 import os
 from datetime import timedelta, datetime
 import zipfile
 import base64
 
-from colander import SchemaNode, String, drop
-
 from gnome.basic_types import oil_status
 
 from .outputter import Outputter, OutputterFilenameMixin, BaseOutputterSchema
-from gnome.persist.extend_colander import FilenameSchema
+from gnome.persist import drop, FilenameSchema
 
 from . import kmz_templates
 
@@ -47,7 +41,7 @@ class KMZOutput(OutputterFilenameMixin, Outputter):
         '''
         :param str output_dir=None: output directory for kmz files.
 
-        uses super to pass optional \*\*kwargs to base class __init__ method
+        uses super to pass optional ``**kwargs`` to base class ``__init__`` method
         '''
         # a little check:
         self._check_filename(filename)
@@ -128,7 +122,7 @@ class KMZOutput(OutputterFilenameMixin, Outputter):
             return None
 
         # add to the kml list:
-        for sc in list(self.cache.load_timestep(step_num).items()):
+        for sc in self.cache.load_timestep(step_num).items():
             # loop through uncertain and certain LEs
             # extract the data
             start_time = sc.current_time_stamp

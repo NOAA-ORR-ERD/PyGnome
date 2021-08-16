@@ -6,10 +6,6 @@ module to hold all the map rendering code.
 This one used the new map_canvas, which uses the gd rendering lib.
 
 """
-from __future__ import division
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import unicode_literals
 
 import os
 from os.path import basename
@@ -596,7 +592,7 @@ class Renderer(Outputter, MapCanvas):
             self.copy_back_to_fore()
 
         # draw prop for self.draw_ontop second so it draws on top
-        scp = list(self.cache.load_timestep(step_num).items())
+        scp = self.cache.load_timestep(step_num).items()
         if len(scp) == 1:
             self.draw_elements(scp[0])
         else:
@@ -639,7 +635,7 @@ class Renderer(Outputter, MapCanvas):
         """
 
         # draw prop for self.draw_ontop second so it draws on top
-        scp = list(self.cache.load_timestep(step_num).items())
+        scp = self.cache.load_timestep(step_num).items()
         if len(scp) == 1:
             self.draw_elements(scp[0])
         else:

@@ -1,10 +1,6 @@
 '''
 Ship drift mover
 '''
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
 
 import os
 
@@ -57,7 +53,7 @@ class ShipDriftMover(Mover):
         :param time_offset: Time zone shift if data is in GMT
 
         Pass optional arguments to base class
-        uses super: super(ShipDriftMover,self).__init__(\*\*kwargs)
+        uses super: ``super(ShipDriftMover,self).__init__(**kwargs)``
         """
         if not os.path.exists(wind_file):
             raise ValueError('Path for wind file does not exist: {0}'

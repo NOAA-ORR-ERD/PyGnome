@@ -2,10 +2,10 @@
 model evaporation process
 '''
 
-from __future__ import division
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import unicode_literals
+
+
+
+
 
 import copy
 
@@ -190,7 +190,7 @@ class Evaporation(Weatherer):
             return
 
         for substance, data in sc.itersubstancedata(self.array_types):
-            if len(data['mass']) is 0:
+            if len(data['mass']) == 0:
                 continue
 
             points = data['positions']

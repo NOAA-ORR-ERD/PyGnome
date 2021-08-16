@@ -5,11 +5,6 @@
     model run.
     It is modeled as a weathering process.
 '''
-from __future__ import division
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import unicode_literals
-
 
 from datetime import datetime
 
@@ -150,7 +145,7 @@ class Beaching(RemoveMass, Weatherer):
         else:
             msg = ('{0} are not valid volume or mass units.'
                    ' Not updated').format(value)
-            self.logger.warn(msg)
+            self.logger.warning(msg)
 
     def convert_to_internal_volume(self):
         data = self.timeseries['value']
@@ -253,7 +248,7 @@ class Beaching(RemoveMass, Weatherer):
             return
 
         for substance, data in sc.itersubstancedata(self.array_types):
-            if len(data['mass']) is 0:
+            if len(data['mass']) == 0:
                 continue
             rm_mass = self._remove_mass(self._timestep, model_time, substance)
             rm_mass_frac = rm_mass / data['mass'].sum()

@@ -1,11 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-from past.types import basestring
-
-
-# import pdb
 import datetime
 import zipfile
 import logging
@@ -13,6 +5,8 @@ import collections
 import os
 import json
 import tempfile
+import geojson
+import re
 
 from colander import (SchemaNode, deferred, drop, required, Invalid, UnsupportedFields,
                       SequenceSchema, TupleSchema, MappingSchema, Mapping,
@@ -125,27 +119,10 @@ class ObjType(SchemaType):
         try:
             if hasattr(value, 'to_dict'):
                 dict_ = value.to_dict('webapi')
-#                 for k in dict_.keys():
-#                     if dict_[k] is None:
-#                         dict_[k] = null
             else:
                 raise TypeError('Object does not have a to_dict function')
         except Exception as e:
             raise e
-            raise Invalid(node, '{0}" does not implement GnomeObj functionality: {1}'.format(value, e))
-#         if options is not None:
-#             if not options.get('raw_paths', True):
-#                 datafiles = node.get_nodes_by_attr('isdatafile')
-#                 for d in datafiles:
-#                     if d in dict_:
-#                         if dict_[d] is None:
-#                             continue
-#                         elif isinstance(dict_[d], basestring):
-#                             dict_[d] = os.path.split(dict_[d])[1]
-#                         elif isinstance(dict_[d], collections.Iterable):
-#                             #List, tuple, etc
-#                             for i, filename in enumerate(dict_[d]):
-#                                 dict_[d][i] = os.path.split(filename)[1]
         return dict_
 
     def serialize(self, node, appstruct, options=None):
@@ -171,13 +148,14 @@ class ObjType(SchemaType):
         return self._impl(node, value, callback)
 
     def _deser(self, node, value, refs):
-
+        # value in this case would be 
 #         try:
             if value is None:
                 return None
             if isinstance(value, dict) and 'obj_type' in value:
                 id_ = value.get('id', None)
                 if id_ not in refs or id_ is None:
+                    # object does not exist in refs already
                     obj_type = class_from_objtype(value['obj_type'])
                     obj = obj_type.new_from_dict(value)
                     log.info('Created new {0} object {1}'.format(obj.obj_type, obj.name))
@@ -197,7 +175,9 @@ class ObjType(SchemaType):
             return None
 
         def callback(subnode, subcstruct):
+            #This callback implements the branching recursion in deserialization
             if subnode.typ.__class__ is ObjType:
+                #All GNOME object types
                 return subnode.deserialize(subcstruct, refs)
             else:
                 # This needs to become more flexible! It needs to detect
@@ -206,17 +186,36 @@ class ObjType(SchemaType):
                         isinstance(subnode.children[0], ObjTypeSchema)):
                     # To deal with iterable schemas that do not have
                     # a deserialize with refs function
+                    # Lists
                     scalar = (hasattr(subnode.typ, 'accept_scalar') and
                               subnode.typ.accept_scalar)
 
                     return subnode.typ._impl(subnode, subcstruct, callback,
                                              scalar)
                 elif (subnode.schema_type is Tuple):
+                    #Tuples
                     return subnode.typ._impl(subnode, subcstruct, callback)
                 else:
+                    #Strings, dates, numbers, etc
                     return subnode.deserialize(subcstruct)
 
-        result = self._impl(node, cstruct, callback)
+        if 'id' in cstruct and cstruct['id'] in refs:
+            #future appstruct already exists in refs
+            #however cstruct may hold updates that should be applied to object in refs
+            #In this case the object should be 'update_from_dict' and the result
+            #be the newly updated object
+            id_ = cstruct['id']
+            try:
+                log.info(refs[id_].name)
+            except Exception as e:
+                log.warning('Could not log object name: ' + e.msg)
+            updated = refs[id_].update_from_dict(cstruct)
+            if updated:
+                log.info('Updated object {0} from json'.format(refs[id_].name))
+            return refs[id_]
+        else:
+            #
+            result = self._impl(node, cstruct, callback)
 
         return self._deser(node, result, refs)
 
@@ -266,10 +265,10 @@ class ObjType(SchemaType):
         #Gets the json for the object, as if this were being serialized
         obj_json = None
         if hasattr(raw_object, 'to_dict'):
-            #Passing the 'save' in case a class wants to do some special stuff on
-            #saving specifically.
+            # Passing the 'save' in case a class wants to do some special stuff on
+            # saving specifically.
             dict_ = raw_object.to_dict('save')
-            for k in list(dict_.keys()):
+            for k in dict_.keys():
                 if dict_[k] is None:
                     dict_[k] = null
             return dict_
@@ -290,8 +289,8 @@ class ObjType(SchemaType):
             fname = gen_unique_filename(fname, zipfile_)
 
             refs[json_['id']] = fname
-        #strips out any entries that do not need saving. They're still in refs,
-        #but that shouldn't do any harm.
+        # strips out any entries that do not need saving. They're still in refs,
+        # but that shouldn't do any harm.
         savable_attrs = node.get_nodes_by_attr('save')
         for k in list(json_.keys()):
             subnode = node.get(k)
@@ -340,7 +339,7 @@ class ObjType(SchemaType):
         for d in datafiles:
             if json_[d] is None:
                 continue
-            elif isinstance(json_[d], basestring):
+            elif isinstance(json_[d], str):
                 json_[d] = self._process_supporting_file(json_[d], zipfile_)
             elif isinstance(json_[d], collections.Iterable):
                 # List, tuple, etc
@@ -495,7 +494,7 @@ class ObjType(SchemaType):
             tmpdir = tempfile.mkdtemp()
 
         for d in datafiles:
-            if isinstance(cstruct[d], basestring):
+            if isinstance(cstruct[d], str):
                 cstruct[d] = self._load_supporting_file(cstruct[d],
                                                         saveloc, tmpdir)
                 log.info('Extracted file {0}'.format(cstruct[d]))
@@ -642,7 +641,7 @@ class ObjTypeSchema(MappingSchema):
     def __init__(self, *args, **kwargs):
         super(ObjTypeSchema, self).__init__(*args, **kwargs)
         for c in self.children:
-            for k,v in list(self._colander_defaults.items()):
+            for k, v in self._colander_defaults.items():
                 if not hasattr(c, k):
                     setattr(c, k, v)
                 elif hasattr(c, k) and hasattr(c.__class__, k) and getattr(c, k) is getattr(c.__class__, k):
@@ -869,6 +868,31 @@ class LongLatBounds(SequenceSchema):
 
 Polygon = LongLatBounds
 
+class FeatureCollectionSchema(MappingSchema):
+    '''
+    geojson.FeatureCollection -> String via __geo_interface__ attribute
+    '''
+    def serialize(self, appstruct):
+        assert isinstance(appstruct, geojson.FeatureCollection)
+        return appstruct.__geo_interface__
+    def deserialize(self, cstruct):
+        if isinstance(cstruct, str):
+            return geojson.loads(cstruct)
+        else:
+            return geojson.loads(geojson.dumps(cstruct))
+        
+
+class FeatureSchema(MappingSchema):
+    '''
+    geojson.Feature -> String via __geo_interface__ attribute
+    '''
+    def serialize(self, appstruct):
+        assert isinstance(appstruct, geojson.Feature)
+        return appstruct.__geo_interface__
+    def deserialize(self, cstruct):
+        assert isinstance(cstruct, str)
+        return geojson.loads(cstruct)
+
 
 class PolygonSetSchema(SequenceSchema):
     polygonset = Polygon()
@@ -923,9 +947,16 @@ def get_file_name_ext(filename_in):
     file_name, extension = os.path.splitext(base_name)
 
     return file_name, extension
+
+def sanitize_string(s):
+    #basic HTML string sanitization
+    return re.sub(r'[/\\<>:"|?*$]', '_', s)
+
 def gen_unique_filename(filename_in, zipfile_):
     # add uuid to the file name in case the user accidentally uploads
     # multiple files with the same name for different objects.
+    # also sanitizes out illegal characters
+    filename_in = sanitize_string(filename_in)
     existing_files = zipfile_.namelist()
     file_name, extension = get_file_name_ext(filename_in)
     fmtstring = file_name + '{0}' + extension

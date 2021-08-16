@@ -7,13 +7,7 @@ NOTE: doesn't seem to be tested -- and may not be used anyway.
 
 """
 
-from __future__ import division
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import os
-import collections
 import tempfile
 import base64
 
@@ -90,8 +84,8 @@ class IceImageOutput(Outputter):
 
         super(IceImageOutput, self).__init__(**kwargs)
 
-        if (isinstance(ice_movers, collections.Iterable) and
-                not isinstance(ice_movers, str)):
+        if (isinstance(ice_movers, Iterable)
+            and not isinstance(ice_movers, str)):
             self.ice_movers = ice_movers
         elif ice_movers is not None:
             self.ice_movers = (ice_movers,)
@@ -197,7 +191,7 @@ class IceImageOutput(Outputter):
 
         # fixme -- doing all this cache stuff just to get the timestep..
         # maybe timestep should be passed in.
-        for sc in list(self.cache.load_timestep(step_num).items()):
+        for sc in self.cache.load_timestep(step_num).items():
             model_time = date_to_sec(sc.current_time_stamp)
             iso_time = sc.current_time_stamp.isoformat()
 

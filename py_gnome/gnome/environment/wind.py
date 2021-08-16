@@ -2,14 +2,6 @@
 module contains objects that contain weather related data. For example,
 the Wind object defines the Wind conditions for the spill
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
-# from future import standard_library
-# standard_library.install_aliases()
-# from builtins import *
 
 import datetime
 import os
@@ -132,7 +124,7 @@ class WindSchema(base_schema.ObjTypeSchema):
     time = TimeSchema(
         #this is only for duck-typing the new-style environment objects,
         #so only provide to the client
-        save=False, update=False, save_reference=False, read_only=True
+        save=False, update=False, save_reference=False, read_only=True,
     )
 
 
@@ -209,13 +201,12 @@ class Wind(Timeseries, Environment):
                 self.new_set_timeseries(timeseries, coord_sys)
 
         self.extrapolation_is_allowed = extrapolation_is_allowed
-        self.time = kwargs.pop('time', None)
 
     def update_from_dict(self, dict_, refs=None):
-        if 'units' in list(dict_.keys()):
-            #enforce updating of units before timeseries
+        if 'units' in dict_:
+            # enforce updating of units before timeseries
             self.units = dict_.pop('units')
-        if 'timeseries' in list(dict_.keys()):
+        if 'timeseries' in dict_:
             self.timeseries = WindTimeSeriesSchema().deserialize(dict_.pop('timeseries'))
         super(Wind, self).update_from_dict(dict_, refs=refs)
 
@@ -240,6 +231,10 @@ class Wind(Timeseries, Environment):
     @property
     def time(self):
         #This duck-types the API of the timeseries_objecs_base.TimeseriesVector object
+        if not hasattr(self, '_time') and hasattr(self, '_timeseries') and self._timeseries is not None:
+            self._time = Time()
+            self._time.data = self._timeseries['time'].astype(datetime.datetime)
+
         return self._time
 
     @time.setter
@@ -383,7 +378,7 @@ class Wind(Timeseries, Environment):
 
         Writes the "OSSM format" with the full header
         '''
-        if self.units in list(ossm_wind_units.values()):
+        if self.units in ossm_wind_units.values():
             data_units = self.units
         else:
             # we know C++ understands this unit

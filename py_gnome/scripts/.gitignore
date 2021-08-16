@@ -24,7 +24,6 @@ script_passamaquoddy/PQBayCur.nc4
 script_passamaquoddy/PassamaquoddyMap.bna
 script_passamaquoddy/PassamaquoddyTOP.dat
 script_passamaquoddy/script_passamaquoddy.nc
-script_regular_grid/
 script_san_juan/script_san_juan.nc
 script_sf_wind/WindSpeedDirSubset.nc
 script_sf_wind/WindSpeedDirSubsetTop.dat

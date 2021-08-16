@@ -1,7 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
 
 import warnings
 import copy
@@ -9,12 +5,10 @@ from numbers import Number
 import collections
 
 import numpy as np
-
-from colander import SchemaNode, String, Float, drop, SequenceSchema, Sequence
+from gnome.persist import (ObjTypeSchema, SchemaNode, String, drop,
+                           SequenceSchema,)
 
 import unit_conversion as uc
-
-from gnome.persist import base_schema
 
 from gnome.environment.gridded_objects_base import Time, TimeSchema
 from gnome.gnomeobject import GnomeId
@@ -23,7 +17,7 @@ from gnome.persist.extend_colander import NumpyArraySchema
 from gridded.utilities import _align_results_to_spatial_data, _reorganize_spatial_data
 
 
-class TimeseriesDataSchema(base_schema.ObjTypeSchema):
+class TimeseriesDataSchema(ObjTypeSchema):
     units = SchemaNode(
         String(), missing=drop, save=True, update=True
     )
@@ -107,7 +101,7 @@ class TimeseriesData(GnomeId):
 
         :rtype: list of (datetime, double) tuples
         '''
-        return list(map(lambda x, y: (x, y), self.time.data, self.data))
+        return [(x, y) for x, y in zip(self.time.data, self.data)]
 
     @property
     def data(self):
@@ -228,7 +222,7 @@ class TimeseriesData(GnomeId):
 
 TimeSeriesProp = TimeseriesData
 
-class TimeseriesVectorSchema(base_schema.ObjTypeSchema):
+class TimeseriesVectorSchema(ObjTypeSchema):
     units = SchemaNode(
         String(), missing=drop, save=True, update=True
     )

@@ -9,40 +9,42 @@ module to define classes for GNOME output:
   - saving to other formats ?
 
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import os
 
 from datetime import timedelta
 
-from colander import SchemaNode, Bool, drop, String
-
-from gnome.persist import base_schema, extend_colander, validators
+from gnome.persist import (
+    SchemaNode,
+    Boolean,
+    drop,
+    String,
+    ObjTypeSchema,
+    validators,
+    TimeDelta,
+    LocalDateTime,
+)
 from gnome.array_types import gat
 
 from gnome.utilities.surface_concentration import compute_surface_concentration
 from gnome.gnomeobject import GnomeId
 
 
-class BaseOutputterSchema(base_schema.ObjTypeSchema):
+class BaseOutputterSchema(ObjTypeSchema):
     'Base schema for all outputters - they all contain the following'
     on = SchemaNode(
-        Bool(), missing=drop, save=True, update=True
+        Boolean(), missing=drop, save=True, update=True
     )
     output_zero_step = SchemaNode(
-        Bool(), save=True, update=True
+        Boolean(), save=True, update=True
     )
     output_last_step = SchemaNode(
-        Bool(), save=True, update=True
+        Boolean(), save=True, update=True
     )
     output_timestep = SchemaNode(
-        extend_colander.TimeDelta(), missing=drop, save=True, update=True
+        TimeDelta(), missing=drop, save=True, update=True
     )
     output_start_time = SchemaNode(
-        extend_colander.LocalDateTime(),
+        LocalDateTime(),
         validator=validators.convertible_to_seconds,
         missing=drop, save=True, update=True
     )
@@ -89,7 +91,8 @@ class Outputter(GnomeId):
         :type output_zero_step: boolean
 
         :param output_last_step: default is True. If True then output for
-            final step is written regardless of output_timestep
+            final step is written regardless of output_timestep. This is
+            potentially an extra output, not aligne withe the output_timestep.
         :type output_last_step: boolean
 
         :param output_start_time: default is None in which case it is set to
@@ -417,7 +420,7 @@ class Outputter(GnomeId):
 
         for step_num in range(num_time_steps):
             if (step_num > 0 and step_num < num_time_steps - 1):
-                next_ts = (list(self.cache.load_timestep(step_num).items())[0].
+                next_ts = (self.cache.load_timestep(step_num).items()[0].
                            current_time_stamp)
                 ts = next_ts - model_time
 
@@ -428,7 +431,7 @@ class Outputter(GnomeId):
 
             self.write_output(step_num, last_step)
 
-            model_time = (list(self.cache.load_timestep(step_num).items())[0]
+            model_time = (self.cache.load_timestep(step_num).items()[0]
                           .current_time_stamp)
 
     @property

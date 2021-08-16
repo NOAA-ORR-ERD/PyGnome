@@ -1,11 +1,6 @@
 #!/usr/bin/env python
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
 
 from future.utils import with_metaclass
-from past.types import basestring
 
 import os
 import copy
@@ -125,9 +120,9 @@ class Refs(dict):
         provides a unique name by appending length+1
         '''
         base_name = obj.obj_type.split('.')[-1]
-        num_of_same_type = [v for v in list(self.values()) if v.obj_type == obj.obj_type]
+        num_of_same_type = [v for v in self.values() if v.obj_type == obj.obj_type]
 
-        return base_name + num_of_same_type+1
+        return base_name + num_of_same_type + 1
 
 
 class GnomeObjMeta(type):
@@ -146,14 +141,13 @@ class GnomeId(with_metaclass(GnomeObjMeta, AddLogger)):
     '''
     _id = None
     make_default_refs = True
+    _name = None  # so that it will always exist
 
     def __init__(self, name=None, _appearance=None, *args, **kwargs):
         super(GnomeId, self).__init__(*args, **kwargs)
         self.__class__._instance_count += 1
 
         if name:
-            if isinstance(name, basestring) and '/' in name or '\\' in name:
-                raise ValueError("Invalid slash character in object name: {0}".format(name))
             self.name = name
         self._appearance = _appearance
         self.array_types = dict()
@@ -240,12 +234,10 @@ class GnomeId(with_metaclass(GnomeObjMeta, AddLogger)):
         define as property in base class so all objects will have a name
         by default
         '''
-        try:
-            return self._name
-        except AttributeError:
-            self._name = '{}_{}'.format(self.__class__.__name__.split('.')[-1],
+        if not hasattr(self, '_name') or self._name is None:
+            return '{}_{}'.format(self.__class__.__name__.split('.')[-1],
                                         str(self.__class__._instance_count))
-
+        else:
             return self._name
 
     @name.setter
@@ -411,7 +403,7 @@ class GnomeId(with_metaclass(GnomeObjMeta, AddLogger)):
         attrs = copy.copy(dict_)
         updated = False
 
-        for k in list(attrs.keys()):
+        for k in list(attrs):
             if k not in updatable:
                 attrs.pop(k)
 
@@ -430,7 +422,22 @@ class GnomeId(with_metaclass(GnomeObjMeta, AddLogger)):
                 if attrs[name] is colander.drop:
                     del attrs[name]
 
-        for k, v in list(attrs.items()):
+        # attrs may be out of order. However, we want to process the data in schema order (held in 'updatable')
+        for k in updatable:
+            if hasattr(self, k) and k in attrs:
+                if not updated and self._attr_changed(getattr(self, k), attrs[k]):
+                    updated = True
+
+                try:
+                    setattr(self, k, attrs[k])
+                except AttributeError:
+                    self.logger.error('Failed to set {} on {} to {}'
+                                         .format(k, self, v))
+                    raise
+                attrs.pop(k)
+
+        # process all remaining items in any order...can't wait to see where problems pop up in here
+        for k, v in attrs.items():
             if hasattr(self, k):
                 if not updated and self._attr_changed(getattr(self, k), v):
                     updated = True
@@ -691,7 +698,8 @@ class GnomeId(with_metaclass(GnomeObjMeta, AddLogger)):
                                        allowZip64=allowzip64)
 
         elif os.path.isdir(saveloc):
-            saveloc = os.path.join(saveloc, self.name + '.gnome')
+            n = gnome.persist.base_schema.sanitize_string(self.name)
+            saveloc = os.path.join(saveloc, n + '.gnome')
 
             if os.path.exists(saveloc):
                 if not overwrite:
@@ -757,7 +765,7 @@ class GnomeId(with_metaclass(GnomeObjMeta, AddLogger)):
         if not refs:
             refs = Refs()
 
-        if isinstance(saveloc, basestring):
+        if isinstance(saveloc, str):
             if os.path.isdir(saveloc):
                 #run the savefile update system
                 if apply_update_patches:

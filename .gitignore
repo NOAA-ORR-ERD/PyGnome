@@ -3,6 +3,9 @@ node_modules
 *.swp
 *.so
 *.pyc
+*.pyd
+*.gnome
+*.zip
 cy_*.c
 *filescanner.c
 *~

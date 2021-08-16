@@ -3,11 +3,6 @@
 test code for the model class
 '''
 
-from __future__ import division
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import os
 import shutil
 from datetime import datetime, timedelta
@@ -28,7 +23,6 @@ from gnome.environment import Wind, Tide, constant_wind, Water, Waves
 from gnome.model import Model
 
 from gnome.spill import (Spill,
-                         SpatialRelease,
                          point_line_release_spill,
                          Release)
 
@@ -77,7 +71,7 @@ def model(sample_model_fcn, tmpdir):
 
     # print start_points
 
-    release = SpatialRelease(custom_positions=line_pos,
+    release = Release(custom_positions=line_pos,
                              release_time=model.start_time)
 
     model.spills += Spill(release, substance=test_oil)
@@ -93,6 +87,17 @@ def test_init():
     model = Model()
 
     assert True
+
+# def test_init_invalid_name():
+    # """
+    # you should not be able to create a name with a slash in it
+    # """
+    # with pytest.raises(ValueError):
+        # model = Model("this/that")
+
+    # with pytest.raises(ValueError):
+        # model = Model("this\\that")
+
 
 
 def test_update_model():
@@ -373,7 +378,7 @@ def test_simple_run_with_image_output(tmpdir):
     start_points[:, 1] = np.linspace(47.93, 48.1, N)
     # print start_points
 
-    spill = Spill(release=SpatialRelease(custom_positions=start_points,
+    spill = Spill(release=Release(custom_positions=start_points,
                                  release_time=start_time))
 
     model.spills += spill
@@ -430,7 +435,7 @@ def test_simple_run_with_image_output_uncertainty(tmpdir):
     start_points[:, 1] = np.linspace(47.93, 48.1, N)
     # print start_points
 
-    release = SpatialRelease(custom_positions=start_points,
+    release = Release(custom_positions=start_points,
                              release_time=start_time)
 
     model.spills += Spill(release)

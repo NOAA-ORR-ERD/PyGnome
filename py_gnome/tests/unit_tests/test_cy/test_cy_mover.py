@@ -8,10 +8,10 @@ it works.
 
 The functions being tested do not produce any results.
 '''
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+
+
+
+
 from pytest import raises
 
 from gnome.cy_gnome import cy_mover

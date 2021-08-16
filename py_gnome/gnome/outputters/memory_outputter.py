@@ -1,14 +1,10 @@
 """
 An outputter that stores in memory
 
-This could be handy for tests, etc.
+This can be handy for tests, etc.
 
 NOTE: not complete!
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
 
 from gnome.outputters.outputter import Outputter
 
@@ -45,9 +41,10 @@ class MemoryOutputter(Outputter):
         if self.on is False or not self._write_step:
             return None
 
-        for sc in list(self.cache.load_timestep(step_num).items()):
+        for sc in self.cache.load_timestep(step_num).items():
             if sc.uncertain:
-                raise NotImplementedError("MemoryOutputter Doesn't handle uncertainty yet.")
+                raise NotImplementedError("MemoryOutputter Doesn't handle "
+                                          "uncertainty yet.")
             # if sc.uncertain and self._u_filename is not None:
             #     file_ = self._u_filename
             # else:

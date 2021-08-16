@@ -26,7 +26,7 @@ And then you can use most of the common objects needed for the model as so::
 Working with dates and times
 ............................
 
-INternally, gnome uses the python standard library``datetime`` and ``timedelta`` functions. IN most cases, you can pass objects of these types inot GNOME. But for scripting convience, most places that take a datetime object will also accept a ISO 8601 string, such as: "2015-01-01T12:15:00"
+Internally, gnome uses the python standard library``datetime`` and ``timedelta`` functions. IN most cases, you can pass objects of these types inot GNOME. But for scripting convience, most places that take a datetime object will also accept a ISO 8601 string, such as: "2015-01-01T12:15:00"
 
 gnome.scripting also provides a number of shortcuts for creating ``timedelta`` objects: ``seconds, minutes, hours, days``. You can use them ike so::
 
@@ -148,7 +148,26 @@ The renderer that we added generates png images every 6 hours.
 Since we did not specify an output directory for these images, they will have been saved in the same directory that the script was executed from.
 The sequence of images should show a cloud of particles moving east and spreading.
 
+GNOME "save files"
+==================
 
+The pyGNOME system supports "save files" -- these are a way to save a complete GNOME configuration in a single file. The files themselves are actually zip files that contain the configuration as JSON files and any needed data files all in one archive. They are usually given the ``.gnome`` file extension, but they are, in fact, regular zip files.
+
+SAve files are designed primarily for use by the WebGNOME system, so that users can save and reload a configuration that they have created via the interactive GUI interface. For the most part, when you are driving GNOME via Python scripts, you don't need to use save files, as your script can rebuild the model when it runs. However, there are us cases, particularly if you want to work on teh same model via scripting and Web GNOME.
+
+A Model can be created from a save file via the ``scripting.load_model()`` function:
+
+.. code-block:: python
+
+  import gnome.scripting as gs
+
+  model = gs.load_model("the_savefile.gnome")
+
+You can save out a configured model with the ``Model.save()`` method:
+
+.. code-block:: python
+
+  Model.save("the_savefile.gnome")
 
 
 

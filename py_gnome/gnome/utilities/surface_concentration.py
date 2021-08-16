@@ -6,11 +6,12 @@ Code to compute surface surface_concentration from particles
 Ultimatley, there may be multiple versions of this
 -- with Cython optimizationas and all that.
 """
-from __future__ import division
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import unicode_literals
 
+
+
+
+
+import warnings
 import numpy as np
 from scipy.stats import gaussian_kde
 
@@ -69,19 +70,22 @@ def surface_conc_kde(sc):
             id_bin = np.where(age_for_kernel>=t)[0] #we only calculate pdf for particles in bin
 
             if len(np.unique(lat_for_kernel))>2 and len(np.unique(lon_for_kernel))>2: # can't compute a kde for less than 3 unique points!
-                lon0, lat0 = min(lon_for_kernel), min(lat_for_kernel)
-                # FIXME: should use projection code to get this right.
-                x = (lon_for_kernel - lon0) * 111325 * np.cos(lat0 * np.pi / 180)
-                y = (lat_for_kernel - lat0) * 111325
-                xy = np.vstack([x, y])
-                if len(np.unique(mass_for_kernel)) > 1:
-                    kernel = gaussian_kde(xy,weights=mass_for_kernel/mass_for_kernel.sum())
-                else:
-                    kernel = gaussian_kde(xy)
-                if mass_for_kernel.sum() > 0:
-                    c[id[id_bin]] = kernel(xy[:,id_bin]) * mass_for_kernel.sum()
-                else:
-                    c[id[id_bin]] = kernel(xy[:,id_bin]) * len(mass_for_kernel)
+                try:
+                    lon0, lat0 = min(lon_for_kernel), min(lat_for_kernel)
+                    # FIXME: should use projection code to get this right.
+                    x = (lon_for_kernel - lon0) * 111325 * np.cos(lat0 * np.pi / 180)
+                    y = (lat_for_kernel - lat0) * 111325
+                    xy = np.vstack([x, y])
+                    if len(np.unique(mass_for_kernel)) > 1:
+                        kernel = gaussian_kde(xy,weights=mass_for_kernel/mass_for_kernel.sum())
+                    else:
+                        kernel = gaussian_kde(xy)
+                    if mass_for_kernel.sum() > 0:
+                        c[id[id_bin]] = kernel(xy[:,id_bin]) * mass_for_kernel.sum()
+                    else:
+                        c[id[id_bin]] = kernel(xy[:,id_bin]) * len(mass_for_kernel)
+                except np.linalg.LinAlgError:
+                    warnings.warn("LinAlg error occurred in surface concentration calculations.")
             t = t + bin_length
 
         sc['surface_concentration'][sid] = c

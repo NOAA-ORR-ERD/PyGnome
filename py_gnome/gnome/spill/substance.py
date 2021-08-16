@@ -1,9 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
-from past.types import basestring
 
 from colander import Float, SchemaNode, SequenceSchema, Boolean
 import numpy as np
@@ -203,7 +197,7 @@ class GnomeOil(Oil, Substance):
         oil_info = name
         if name in _sample_oils:
             oil_info = _sample_oils[name]
-        elif isinstance(name, basestring):
+        elif isinstance(name, str):
             # check if it's json from save file or from client
             if kwargs.get('component_density', False):
                 oil_info = kwargs
@@ -385,7 +379,7 @@ class NonWeatheringSubstance(Substance):
 
     @is_weatherable.setter
     def is_weatherable(self, val):
-        self.logger.warn('This substance {0} cannot be set to be weathering')
+        self.logger.warning('This substance {0} cannot be set to be weathering')
 
     def initialize_LEs(self, to_rel, arrs):
         '''

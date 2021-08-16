@@ -1,10 +1,10 @@
 """
 templates for the kmz  outputter
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+
+
+
+
 
 caveat = ("This trajectory was produced by GNOME "
           "(General NOAA Operational Modeling Environment), "

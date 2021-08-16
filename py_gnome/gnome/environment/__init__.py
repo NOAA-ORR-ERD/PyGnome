@@ -1,22 +1,20 @@
 '''
 environment module
 '''
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
 
 from .environment import Environment, env_from_netCDF, ice_env_from_netCDF
 from .environment_objects import (WindTS,
-                                 GridCurrent,
-                                 GridWind,
-                                 IceVelocity,
-                                 IceConcentration,
-                                 GridTemperature,
-                                 IceAwareCurrent,
-                                 IceAwareWind,
-                                 TemperatureTS
-                                 )
+                                  GridCurrent,
+                                  GridWind,
+                                  IceVelocity,
+                                  IceConcentration,
+                                  GridTemperature,
+                                  IceAwareCurrent,
+                                  IceAwareWind,
+                                  TemperatureTS,
+                                  FileGridCurrent,
+                                  )
+from .gridcur import from_gridcur
 from .water import Water, WaterSchema
 from .waves import Waves, WavesSchema
 from .tide import Tide, TideSchema

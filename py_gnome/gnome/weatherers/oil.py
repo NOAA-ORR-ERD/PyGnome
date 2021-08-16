@@ -4,10 +4,10 @@ gnome oil object
 This provides an Oil object that can be used in the GNOME weathering algorithms.
 
 """
-from __future__ import division
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import unicode_literals
+
+
+
+
 
 from backports.functools_lru_cache import lru_cache
 

@@ -1,18 +1,6 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
-# from future import standard_library
-# standard_library.install_aliases()
-# from builtins import *
-
 
 import numpy as np
-try:
-    from collections.abc import MutableMapping
-except ImportError:
-    from collections import MutableMapping
+from collections.abc import MutableMapping
 import warnings
 
 from gnome.gnomeobject import AddLogger
@@ -21,9 +9,7 @@ from gnome.array_types import default_array_types
 
 class LEData(MutableMapping, AddLogger, dict):
     # Fixme: we need a docstring here!
-    """
 
-    """
     def __init__(self, name=None, *args, **kwargs):
         super(LEData, self).__init__(*args, **kwargs)
         self.mass_balance = {}
@@ -64,16 +50,17 @@ class LEData(MutableMapping, AddLogger, dict):
         will always be the number of elements that are contained in a
         SpillContainer.
         """
-        return 0 if len(list(self._arrs.values())) == 0 else len(list(self._arrs.values())[0])
+        return 0 if len(self._arrs) == 0 else len(next(iter(self._arrs.values())))
 
     def __getitem__(self, key):
         return self._arrs[key]
 
     def __setitem__(self, key, value):
         if key in self._arrs:
-            warnings.warn('Replacing existing LEData array references directly'\
-            'is dangerous! If this *really* is what you want to do, please use'\
-            'the _set_existing_LEData(key, value) function instead')
+            warnings.warn('Replacing existing LEData array references directly'
+                          'is dangerous! If this *really* is what you want to do, '
+                          'please use the _set_existing_LEData(key, value) '
+                          'function instead')
         self._arrs[key] = value
 
     def _set_existing_LEData(self, key, value):
@@ -117,7 +104,7 @@ class LEData(MutableMapping, AddLogger, dict):
         """
         if self._initialized:
             warnings.warn('{0} is already initialized.'.format(self))
-        for name, atype in list(self._array_types.items()):
+        for name, atype in self._array_types.items():
             if atype.shape is None:
                 shape = (self.num_oil_components, )
             else:
@@ -137,7 +124,7 @@ class LEData(MutableMapping, AddLogger, dict):
         """
         if not self._initialized:
             raise ValueError("Must initialize spill data arrays before extending is possible")
-        for name, atype in list(self._array_types.items()):
+        for name, atype in self._array_types.items():
             # initialize all arrays even if 0 length
             if atype.shape is None:
                 shape = (self.num_oil_components, )

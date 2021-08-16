@@ -447,6 +447,16 @@ slow connection, these files could take a while to download. Once the
 tests are run once, the downloaded files are cached for future test
 runs.
 
+What if some tests fail?
+........................
+
+We do our best to keep all tests passing on release versions of the package. But sometimes tests will fail due to the setup of the machine they are being run on -- package versions, etc. So the first thing to do is to make ure you have installed the dependencies as specified.
+
+But ``gnome`` is large package -- hardly anyone is going to use all of it. So while we'd like all tests to pass, a given test failure may not be an issue for any given use case. It's a bit hard to know whether a given test failure will affect your use case, but if you look at the name of the tests that fail, you might get a hint. For example, if any of the tests fail under ``test_weathering``, and you are not doing and oil weathing modeling, you don't need to worry about it.
+
+In any case, you can try to run your use case, and see what happens.
+
+
 Running scripts
 ---------------
 

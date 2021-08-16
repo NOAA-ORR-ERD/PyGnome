@@ -1,12 +1,6 @@
 """
 tests of various schema nodes on their own
 """
-from __future__ import (absolute_import,
-                        division,
-                        print_function,
-                        unicode_literals
-                        )
-
 
 from datetime import datetime, timedelta
 from colander import DateTime, SequenceSchema, SchemaNode

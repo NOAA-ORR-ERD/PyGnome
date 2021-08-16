@@ -1,10 +1,6 @@
 '''
 Movers using wind as the forcing function
 '''
-from __future__ import division
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import unicode_literals
 
 import os
 
@@ -352,7 +348,7 @@ class GridWindMover(WindMoversBase):
         :param time_offset: Time zone shift if data is in GMT
 
         Pass optional arguments to base class
-        uses super: super(GridWindMover,self).__init__(\*\*kwargs)
+        uses super: ``super(GridWindMover,self).__init__(**kwargs)``
         """
         if not os.path.exists(filename):
             raise ValueError('Path for wind file does not exist: {0}'
@@ -531,7 +527,7 @@ class IceWindMover(WindMoversBase):
                             before and after file data
         :param time_offset: Time zone shift if data is in GMT
 
-        uses super, super(IceWindMover,self).__init__(\*\*kwargs)
+        uses super, ``super(IceWindMover,self).__init__(**kwargs)``
         """
 
         # NOTE: will need to add uncertainty parameters and other dialog fields

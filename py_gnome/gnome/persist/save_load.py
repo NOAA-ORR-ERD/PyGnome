@@ -1,10 +1,6 @@
 '''
 Save/load gnome objects
 '''
-from __future__ import division
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import unicode_literals
 
 import os
 import shutil
@@ -39,7 +35,7 @@ class Refs(dict):
         '''
         base_name = obj.obj_type.split('.')[-1]
 
-        num_of_same_type = [v for v in list(self.values())
+        num_of_same_type = [v for v in self.values()
                             if v.obj_type == obj.obj_type]
 
         return base_name + num_of_same_type + 1
@@ -71,7 +67,7 @@ class References(object):
         return key if obj already exists in references list
         else return None
         '''
-        for key, item in list(self._refs.items()):
+        for key, item in self._refs.items():
             if item is obj:
                 return key
 
@@ -430,10 +426,10 @@ class Savable(object):
         '''
         loads object from json_data
 
-        * load json for references from files
-        * update paths of datafiles if needed
-        * deserialize json_data
-        * and create object with new_from_dict()
+        - load json for references from files
+        - update paths of datafiles if needed
+        - deserialize json_data
+        - and create object with new_from_dict()
 
         json_data: dict containing json data. It has been parsed through the
             json.loads() command. The json will be valided here when it gets
@@ -442,9 +438,9 @@ class Savable(object):
 
         Optional parameter
 
-        :param saveloc: location of data files or \*.json files for objects
+        :param saveloc: location of data files or .json files for objects
             stored as references. If object requires no datafiles and does not
-            need to read references from a \*.json file in saveloc, then this
+            need to read references from a .json file in saveloc, then this
             can be None.
         :param references: references object - if this is called by the Model,
             it will pass a references object. It is not required.

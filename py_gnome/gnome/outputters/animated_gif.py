@@ -1,13 +1,9 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+
 import os
 
 import py_gd
 
 from . import Renderer
-
 
 class Animation(Renderer):
     def __init__(self, *args, **kwargs):
@@ -134,7 +130,7 @@ class Animation(Renderer):
             self.copy_back_to_fore()
 
         # draw data for self.draw_ontop second so it draws on top
-        scp = list(self.cache.load_timestep(step_num).items())
+        scp = self.cache.load_timestep(step_num).items()
         if len(scp) == 1:
             self.draw_elements(scp[0])
         else:

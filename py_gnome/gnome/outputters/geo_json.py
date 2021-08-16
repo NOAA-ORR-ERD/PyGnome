@@ -2,10 +2,6 @@
 GeoJson outputter
 Does not contain a schema for persistence yet
 '''
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
 
 import os
 from collections.abc import Iterable
@@ -15,12 +11,10 @@ import numpy as np
 
 from geojson import (Feature, FeatureCollection, dump,
                      Point, MultiPolygon)
-
-from colander import SchemaNode, String, drop, Int, Bool, SequenceSchema
+from gnome.persist import (SchemaNode, String, drop, Int, Boolean,
+                           SequenceSchema, GeneralGnomeObjectSchema)
 
 from gnome.utilities.time_utils import date_to_sec
-
-from gnome.persist.base_schema import GeneralGnomeObjectSchema
 
 from .outputter import Outputter, BaseOutputterSchema
 from gnome.movers.current_movers import IceMoverSchema
@@ -31,7 +25,7 @@ class TrajectoryGeoJsonSchema(BaseOutputterSchema):
     Nothing is required for initialization
     '''
     round_data = SchemaNode(
-        Bool(), missing=drop, save=True, update=True
+        Boolean(), missing=drop, save=True, update=True
     )
     round_to = SchemaNode(
         Int(), missing=drop, save=True, update=True
@@ -92,7 +86,7 @@ class TrajectoryGeoJsonOutput(Outputter):
             is None since data is returned in dict for webapi. For using
             write_output_post_run(), this must be set
 
-        use super to pass optional \*\*kwargs to base class __init__ method
+        use super to pass optional ``**kwargs`` to base class __init__ method
         '''
         self.round_data = round_data
         self.round_to = round_to
@@ -132,7 +126,7 @@ class TrajectoryGeoJsonOutput(Outputter):
         c_features = []
         uc_features = []
 
-        for sc in list(self.cache.load_timestep(step_num).items()):
+        for sc in self.cache.load_timestep(step_num).items():
             position = self._dataarray_p_types(sc['positions'])
             status = self._dataarray_p_types(sc['status_codes'])
             mass = self._dataarray_p_types(sc['mass'])
@@ -206,8 +200,8 @@ class TrajectoryGeoJsonOutput(Outputter):
         # else:
         #     data = data_array.astype(p_type).tolist()
 
-        # refactored to simplyuse the correct python type:
-        if issubclass(data_array.dtype.type, np.float):
+        # refactored to simply use the correct python type:
+        if issubclass(data_array.dtype.type, float):
             data = data_array.round(self.round_to).astype(float).tolist()
         elif issubclass(data_array.dtype.type, np.integer):
             data = data_array.astype(int).tolist()
@@ -280,7 +274,7 @@ class IceGeoJsonOutput(Outputter):
             :type ice_movers: An ice_mover object or sequence of ice_mover
                               objects.
 
-            Use super to pass optional \*\*kwargs to base class __init__ method
+            Use super to pass optional ``**kwargs`` to base class __init__ method
         '''
         if (isinstance(ice_movers, Iterable) and
                 not isinstance(ice_movers, str)):
@@ -302,10 +296,9 @@ class IceGeoJsonOutput(Outputter):
         if self.on is False or not self._write_step:
             return None
 
-        for sc in list(self.cache.load_timestep(step_num).items()):
-            # gets the current timestep ?
-            pass
-
+        # just so we can get the timestamp
+        # this really should be refactored
+        sc = self.cache.load_timestep(step_num).items()[-1]
         model_time = date_to_sec(sc.current_time_stamp)
 
         geojson = {}

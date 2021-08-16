@@ -1,8 +1,3 @@
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import unicode_literals
-
 
 import copy
 from datetime import datetime
@@ -11,19 +6,27 @@ import netCDF4 as nc4
 import numpy as np
 
 from colander import drop
+from gnome.persist import (Boolean,
+                           SchemaNode,
+                           ObjTypeSchema,
+                           FilenameSchema,
+                           )
+
 
 import gridded
 import unit_conversion as uc
 
-from gnome.environment import Environment
-from gnome.environment.timeseries_objects_base import TimeseriesData, TimeseriesVector
+from .environment import Environment
+from .timeseries_objects_base import TimeseriesData, TimeseriesVector
 
-from gnome.environment.gridded_objects_base import (Time,
-                                                    Variable,
-                                                    VectorVariable,
-                                                    VariableSchema,
-                                                    VectorVariableSchema,
-                                                    )
+from .gridded_objects_base import (Time,
+                                   Variable,
+                                   VectorVariable,
+                                   VariableSchema,
+                                   VectorVariableSchema,
+                                   )
+
+from .gridcur import init_from_gridcur
 
 
 class S_Depth_T1(object):
@@ -140,11 +143,9 @@ class S_Depth_T1(object):
 
         for ulev in range(0, num_levels):
             ulev_depths = ldgb(depths, ulev)
-            # print ulev_depths[0]
 
             within_layer = np.where(np.logical_and(ulev_depths < pts[:, 2],
                                                    und_ind == -1))[0]
-            # print within_layer
 
             und_ind[within_layer] = ulev
 
@@ -214,6 +215,7 @@ class VelocityGrid(VectorVariable):
             :param angle: scalar field of cell rotation angles
                           (for rotated/distorted grids)
         """
+
         if 'variables' in kwargs:
             variables = kwargs['variables']
             if len(variables) == 2:
@@ -314,14 +316,14 @@ class CurrentTS(VelocityTS, Environment):
         VelocityTS.__init__(self, name, units, time, variables)
 
     @classmethod
-    def constant_wind(cls,
-                      name='Constant Current',
-                      speed=None,
-                      direction=None,
-                      units='m/s'):
+    def constant_current(cls,
+                         name='Constant Current',
+                         speed=None,
+                         direction=None,
+                         units='m/s'):
         """
-        :param speed: speed of wind
-        :param direction: direction -- degrees True, direction wind is from
+        :param speed: speed of current
+        :param direction: direction -- degrees True, direction current is going
                           (degrees True)
         :param unit='m/s': units for speed, as a string, i.e. "knots", "m/s",
                            "cm/s", etc.
@@ -437,14 +439,28 @@ class Bathymetry(Variable):
 
 
 class GridCurrent(VelocityGrid, Environment):
+    """
+    GridCurrent is VelocityGrid that adds specific stuff for currents:
+
+    - Information about how to find currents in netCDF file
+    - Ability to apply an angle adjustment of grid-aligned currents
+    - overloading the memorization to memoize the angle-adjusted current.
+    - add a get_data_vectors() provides  magnitude, direction -- used to
+      draw the currents in a GUI
+
+    loading code for netcdf files
+    for gridded currents, and an interpolation (`.at`), function that provides caching
+    """
 
     _ref_as = 'current'
     _gnome_unit = 'm/s'
-    default_names = {'u': ['u', 'U', 'water_u', 'curr_ucmp'],
-                     'v': ['v', 'V', 'water_v', 'curr_vcmp'],
+    default_names = {'u': ['u', 'U', 'water_u', 'curr_ucmp', 'u_surface', 'u_sur'],
+                     'v': ['v', 'V', 'water_v', 'curr_vcmp', 'v_surface', 'v_sur'],
                      'w': ['w', 'W']}
-    cf_names = {'u': ['eastward_sea_water_velocity'],
-                'v': ['northward_sea_water_velocity'],
+    cf_names = {'u': ['eastward_sea_water_velocity',
+                      'surface_eastward_sea_water_velocity'],
+                'v': ['northward_sea_water_velocity',
+                      'surface_northward_sea_water_velocity'],
                 'w': ['upward_sea_water_velocity']}
 
     def at(self, points, time, *args, **kwargs):
@@ -539,6 +555,7 @@ class GridCurrent(VelocityGrid, Environment):
         else:
             return super(GridCurrent, self).get_data_vectors()
 
+
 class GridWind(VelocityGrid, Environment):
     """
     Gridded winds -- usually from netcdf files from meteorological models.
@@ -622,7 +639,7 @@ class GridWind(VelocityGrid, Environment):
                 if _auto_align:
                     value = (gridded.utilities
                              ._align_results_to_spatial_data(value, points))
-                return value
+                return self.transform_result(value, coord_sys)
 
         if value is None:
             extrapolate = self.extrapolation_is_allowed
@@ -647,21 +664,6 @@ class GridWind(VelocityGrid, Environment):
                 value[:, 0] = x
                 value[:, 1] = y
 
-        if coord_sys == 'u':
-            value = value[:, 0]
-        elif coord_sys == 'v':
-            value = value[:, 1]
-        elif coord_sys in ('r-theta', 'r', 'theta'):
-            _mag = np.sqrt(value[:, 0] ** 2 + value[:, 1] ** 2)
-            _dir = np.arctan2(value[:, 1], value[:, 0]) * 180. / np.pi
-
-            if coord_sys == 'r':
-                value = _mag
-            elif coord_sys == 'theta':
-                value = _dir
-            else:
-                value = np.column_stack((_mag, _dir))
-
         if _auto_align:
             value = gridded.utilities._align_results_to_spatial_data(value,
                                                                      points)
@@ -670,7 +672,28 @@ class GridWind(VelocityGrid, Environment):
             self._memoize_result(pts, time, value, self._result_memo,
                                  _hash=_hash)
 
-        return value
+        return self.transform_result(value, coord_sys)
+
+    def transform_result(self, value, coord_sys):
+        #internally all results are computed and memoized in 'uv'
+        #this function transforms those to the alternates before returning
+        rv = value
+        if coord_sys == 'u':
+            rv = value[:, 0]
+        elif coord_sys == 'v':
+            rv = value[:, 1]
+        elif coord_sys in ('r-theta', 'r', 'theta'):
+            _mag = np.sqrt(value[:, 0] ** 2 + value[:, 1] ** 2)
+            _dir = np.arctan2(value[:, 1], value[:, 0]) * 180. / np.pi
+
+            if coord_sys == 'r':
+                rv = _mag
+            elif coord_sys == 'theta':
+                rv = _dir
+            else:
+                rv = np.column_stack((_mag, _dir))
+        return rv
+
 
     def get_start_time(self):
         return self.time.min_time
@@ -895,3 +918,58 @@ class IceAwareWind(GridWind):
             return vels
         else:
             return wind_v
+
+
+
+class FileGridCurrentSchema(ObjTypeSchema):
+    filename = FilenameSchema(
+        isdatafile=True, test_equal=False, update=False
+    )
+    extrapolation_is_allowed = SchemaNode(Boolean())
+
+
+class FileGridCurrent(GridCurrent):
+    """
+    class that presents an interface for GridCurrent loaded from
+    files of various formats
+
+    Done as a class to provide a Schema for the persistence system
+
+    And to provide a simple interface to making a current from a file.
+    """
+    _schema = FileGridCurrentSchema
+
+    def __init__(self, filename=None, extrapolation_is_allowed=False, **kwargs):
+        # determine what file format this is
+        if filename is None:
+            raise TypeError("FileGriddedCurrent requires a filename")
+        filename = str(filename)  # just in case it's a Path object
+        if filename.endswith(".nc"):  # should be a netCDF file
+            try:
+                GridCurrent.init_from_netCDF(self,
+                                             filename=filename,
+                                             extrapolation_is_allowed=extrapolation_is_allowed,
+                                             **kwargs)
+            except Exception as ex:
+                raise
+                # raise ValueError(f"{filename} is not a valid netcdf file") from ex
+
+
+        else:  # maybe it's a gridcur file -- that's the only other option
+            try:
+                init_from_gridcur(self,
+                                  filename,
+                                  extrapolation_is_allowed,
+                                  **kwargs)
+            except Exception as ex:
+               raise ValueError(f"{filename} is not a valid gridcur file") from ex
+        self.filename = filename
+
+    @classmethod
+    def new_from_dict(cls, serial_dict):
+        return cls(**serial_dict)
+
+        # filename=serial_dict["filename"],
+        #            extrapolation_is_allowed=serial_dict["extrapolation_is_allowed"])
+
+

@@ -1,7 +1,3 @@
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import unicode_literals
 
 from datetime import datetime, timedelta
 
@@ -289,7 +285,7 @@ class CyMover(Mover):
     def __init__(self, **kwargs):
         """
         Base class for python wrappers around cython movers.
-        Uses super(CyMover,self).__init__(\*\*kwargs) to call Mover class
+        Uses ``super(CyMover, self).__init__(**kwargs)`` to call Mover class
         __init__ method
 
         All cython movers (CyWindMover, CyRandomMover) are instantiated by a
