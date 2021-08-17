@@ -30,12 +30,14 @@ def check_dependency_versions():
         oillibrary
         unit_conversion
         py_gd
+        adios_db
     If the version is not at least as current as what's defined here
     a warning is displayed
     """
     libs = [('gridded', '0.3.0'),
             ('unit_conversion', '2.10'),
             ('py_gd', '0.1.7'),
+            ('adios_db', '0.6.0')
             ]
 
     for name, version in libs:
