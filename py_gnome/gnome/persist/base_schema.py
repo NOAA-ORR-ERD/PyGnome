@@ -733,6 +733,10 @@ class ObjTypeSchema(MappingSchema):
 
     @staticmethod
     def process_subnode(subnode, appstruct, subappstruct, subname, cstruct, subcstruct, refs):
+        '''
+        The recursive function that a schema uses to process it's child attributes.
+        returns the value of what subappstruct should become, based on the incoming subcstruct
+        '''
         if subnode.schema_type is ObjType:
             if subcstruct is None:
                 return None
@@ -753,12 +757,10 @@ class ObjTypeSchema(MappingSchema):
                 return r
         elif (subnode.schema_type is Sequence and
               isinstance(subnode.children[0], ObjTypeSchema)):
+            #subnode is a list of Gnome objects
             if subappstruct is None:
                 subappstruct = []
             else:
-                # Why are we doing this?  The GC works.
-                # Is it for performance?
-                # Is it to zero out the passed-in arg?
                 del subappstruct[:]
 
             for subitem in subcstruct:
@@ -770,7 +772,7 @@ class ObjTypeSchema(MappingSchema):
                 subappstruct.clear()
             else:
                 raise ValueError('process_subnode(): '
-                                 'why is subappstruct None????')
+                                 'why is orderedcollection subappstruct None????')
 
             for subitem in subcstruct:
                 subappstruct.add(ObjTypeSchema.process_subnode(subnode.children[0],appstruct, subappstruct, subname, cstruct, subitem, refs))

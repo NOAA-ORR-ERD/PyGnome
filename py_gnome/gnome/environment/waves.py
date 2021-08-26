@@ -15,6 +15,7 @@ Uses the same approach as ADIOS 2
 
 
 import copy
+from colander import Schema, SchemaNode, Boolean
 import numpy as np
 
 from gnome import constants
@@ -44,6 +45,8 @@ class WavesSchema(base_schema.ObjTypeSchema):
             acceptable_schemas=[WindSchema, VectorVariableSchema],
             save_reference=True
     )
+    #make default refs required here to exempt object from validation checks (webgnomeclient req...)
+    make_default_refs = SchemaNode(Boolean(), save=False, update=True, test_equal=False)
 
 
 class Waves(Environment):
@@ -84,6 +87,11 @@ class Waves(Environment):
                 kwargs.pop('make_default_refs', False)
 
         super(Waves, self).__init__(**kwargs)
+
+    def validate(self):
+        #Waves object may be present in the model with no refs attached. Requirement by the web client...
+        breakpoint()
+        return ([], True)
 
     @property
     def data_start(self):
@@ -240,12 +248,3 @@ class Waves(Environment):
         eps = c_ub * u_c**3 / H
 
         return eps
-
-    def prepare_for_model_run(self, _model_time):
-        if self.wind is None:
-            raise ReferencedObjectNotSet("wind object not defined for {}"
-                                         .format(self.__class__.__name__))
-
-        if self.water is None:
-            raise ReferencedObjectNotSet("water object not defined for {}"
-                                         .format(self.__class__.__name__))
