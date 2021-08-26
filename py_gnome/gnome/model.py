@@ -86,6 +86,10 @@ class ModelSchema(ObjTypeSchema):
                             MapFromUGridSchema),
         save_reference=True
     )
+    environment = OrderedCollectionSchema(
+        GeneralGnomeObjectSchema(acceptable_schemas=env_schemas),
+        save_reference=True
+    )
     spills = OrderedCollectionSchema(
         GeneralGnomeObjectSchema(acceptable_schemas=[SpillSchema]),
         save_reference=True, test_equal=False
@@ -102,10 +106,6 @@ class ModelSchema(ObjTypeSchema):
         GeneralGnomeObjectSchema(acceptable_schemas=weatherer_schemas),
         save_reference=True
     )
-    environment = OrderedCollectionSchema(
-        GeneralGnomeObjectSchema(acceptable_schemas=env_schemas),
-        save_reference=True
-    )
     outputters = OrderedCollectionSchema(
         GeneralGnomeObjectSchema(acceptable_schemas=out_schemas),
         save_reference=True
@@ -113,6 +113,7 @@ class ModelSchema(ObjTypeSchema):
 
     #UI Configuration properties for web client:
     manual_weathering = SchemaNode(Bool(), save=False, update=True, test_equal=False, missing=drop)
+    weathering_activated = SchemaNode(Bool(), save=True, update=True, test_equal=False, missing=drop)
 
 
 class Model(GnomeId):
@@ -168,6 +169,7 @@ class Model(GnomeId):
                  spills=[],
                  uncertain_spills=[],
                  manual_weathering=False,
+                 weathering_activated=False,
                  **kwargs):
         '''
         Initializes a model.
@@ -257,6 +259,7 @@ class Model(GnomeId):
         self.location = location
         self._register_callbacks()
         self.manual_weathering = manual_weathering
+        self.weathering_activated = weathering_activated
         self.array_types.update({'age': gat('age')})
 
     def _register_callbacks(self):
@@ -402,11 +405,33 @@ class Model(GnomeId):
 
                     attrs.pop(name)
 
-        for k, v in attrs.items():
+        #attrs may be out of order. However, we want to process the data in schema order (held in 'updatable')
+        for k in updatable:
+            if hasattr(self, k) and k in attrs:
+                if not updated and self._attr_changed(getattr(self, k), attrs[k]):
+                    updated = True
+
+                try:
+                    setattr(self, k, attrs[k])
+                except AttributeError:
+                    self.logger.error('Failed to set {} on {} to {}'
+                                         .format(k, self, v))
+                    raise
+                attrs.pop(k)
+
+        #process all remaining items in any order...can't wait to see where problems pop up in here
+        for k, v in list(attrs.items()):
             if hasattr(self, k):
                 if not updated and self._attr_changed(getattr(self, k), v):
                     updated = True
-                setattr(self, k, v)
+
+                try:
+                    setattr(self, k, v)
+                except AttributeError:
+                    self.logger.error('Failed to set {} on {} to {}'
+                                         .format(k, self, v))
+                    raise
+
         return updated
 
     @property
@@ -1590,6 +1615,8 @@ class Model(GnomeId):
 
         # ensure that required objects are present in environment collection
         if len(env_req) > 0:
+            if 'waves' in env_req:
+                breakpoint()
             (ref_msgs, ref_isvalid) = \
                 self._validate_env_coll(env_req)
             if not ref_isvalid:
@@ -1622,6 +1649,7 @@ class Model(GnomeId):
                 else:
                     self.logger.warning(msg)
                     msgs.append(self._warn_pre + msg)
+                    breakpoint()
                     isvalid = False
 
         return (msgs, isvalid)
