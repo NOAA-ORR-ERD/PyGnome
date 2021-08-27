@@ -233,16 +233,6 @@ def read_file(filename):
                 V[row, col] = v
                 line = infile.readline()
                 continue
-            elif not line:
-                break
-            data = line.split()
-            row = int(data[0]) - 1
-            col = int(data[1]) - 1
-            u = float(data[2])
-            v = float(data[3])
-            U[row, col] = u
-            V[row, col] = v
-            line = infile.readline()
 
         # put the velocities together in a single array
         data_u = np.array(data_u)
