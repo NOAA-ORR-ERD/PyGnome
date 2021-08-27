@@ -90,7 +90,6 @@ class Waves(Environment):
 
     def validate(self):
         #Waves object may be present in the model with no refs attached. Requirement by the web client...
-        breakpoint()
         return ([], True)
 
     @property

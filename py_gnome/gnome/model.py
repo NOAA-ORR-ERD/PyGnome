@@ -1615,8 +1615,6 @@ class Model(GnomeId):
 
         # ensure that required objects are present in environment collection
         if len(env_req) > 0:
-            if 'waves' in env_req:
-                breakpoint()
             (ref_msgs, ref_isvalid) = \
                 self._validate_env_coll(env_req)
             if not ref_isvalid:
@@ -1649,7 +1647,6 @@ class Model(GnomeId):
                 else:
                     self.logger.warning(msg)
                     msgs.append(self._warn_pre + msg)
-                    breakpoint()
                     isvalid = False
 
         return (msgs, isvalid)

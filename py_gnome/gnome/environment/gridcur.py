@@ -71,14 +71,21 @@ def init_from_gridcur(gc,
                       **kwargs):
     """
     utility function to initialize a GridCurrent
+    """
 
-    :param gc=None: the GridCur object to be initialized
-                    if None, then a new one will be created.
-
-    :param filename: name (full path) of the gridcur file to load
-
-    :param extrapolation_is_allowed=False:
-
+    def __init__(self,
+                 filename=None,
+                 extrapolation_is_allowed=False,
+                 **kwargs):
+        '''
+        :param filename: name (full path) of the gridcur file to load
+        :param extrapolation_is_allowed=False:
+        '''
+        if filename is None:
+            raise ValueError('Filename must be defined')
+        self.filename = filename
+        self.extrapolation_is_allowed = extrapolation_is_allowed
+    """
     passes other keyword arguments on to GridCurrent initilizer
     """
 
@@ -146,22 +153,84 @@ def read_file(filename):
                 units = line.split()[1].strip()
                 break
         else:
-            raise ValueError("No [GRIDCURTIME] or [GRIDWINDTIME] header in the file")
-        # read the grid info
-        for line in infile:
-            if line.strip().startswith("[TIME]"):
-                break
-            data = line.split()
-            grid_info[data[0].strip()] = float(data[1])
+            raise ValueError("There is a mismatch in the array sizes")
 
-        # read the data - one timestep at a time
-        while True:
-            if line.strip().startswith("[TIME]"):
-                time = [int(num) for num in line.split()[1:]]
-                times.append(datetime(time[2], time[1], time[0], time[3], time[4]))
-                lon, lat, U, V = make_grid_arrays(grid_info)
-                data_u.append(U)
-                data_v.append(V)
+        grid = Grid_R(node_lon=lon, node_lat=lat)
+
+        time = Time(data=times)
+
+        U = Variable(
+            name=f"eastward surface velocity",
+            units=units,
+            time=time,
+            data=data_u,
+            grid=grid,
+            varname='u',
+            location=location,
+            attributes=None,
+        )
+
+        V = Variable(
+            name=f"northward surface velocity",
+            units=units,
+            time=time,
+            data=data_v,
+            grid=grid,
+            varname='v',
+            location=location,
+            attributes=None,
+        )
+
+        super(GridcurCurrent, self).__init__(name=f"gridcur {data_type}",
+                                             units=units,
+                                             time=time,
+                                             variables=[U, V],
+                                             varnames=('u', 'v'),
+                                             extrapolation_is_allowed=extrapolation_is_allowed)
+
+    @staticmethod
+    def read_file(filename):
+        times = []
+        data_u = []
+        data_v = []
+        grid_info = {}
+        with open(filename, encoding='utf-8') as infile:
+            # read the header
+            for line in infile:
+                # ignore lines before the header
+                key = line.split()[0].strip("[]")
+                if key in data_types:
+                    data_type = data_types[key]
+                    units = line.split()[1].strip()
+                    break
+            else:
+                raise ValueError("No [GRIDCURTIME] or [GRIDWINDTIME] header in the file")
+            # read the grid info
+            for line in infile:
+                if line.strip().startswith("[TIME]"):
+                    break
+                data = line.split()
+                grid_info[data[0].strip()] = float(data[1])
+
+            # read the data - one timestep at a time
+            while True:
+                if line.strip().startswith("[TIME]"):
+                    time = [int(num) for num in line.split()[1:]]
+                    times.append(datetime(time[2], time[1], time[0], time[3], time[4]))
+                    lon, lat, U, V = GridcurCurrent.make_grid_arrays(grid_info)
+                    data_u.append(U)
+                    data_v.append(V)
+                    line = infile.readline()
+                    continue
+                elif not line:
+                    break
+                data = line.split()
+                row = int(data[0]) - 1
+                col = int(data[1]) - 1
+                u = float(data[2])
+                v = float(data[3])
+                U[row, col] = u
+                V[row, col] = v
                 line = infile.readline()
                 continue
             elif not line:
