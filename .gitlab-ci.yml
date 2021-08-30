@@ -39,7 +39,7 @@ compile_pygnome:
 #    - yum install netcdf-devel -y
     - yum install libXext libSM libXrender -y
     - conda install --file conda_requirements.txt
-    - pip install git+gitlab-ci-token:${CI_JOB_TOKEN}@https://gitlab.orr.noaa.gov/gnome/oil_database/oil_database.git@production#subdirectory=adios_db
+    - pip install git+https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.orr.noaa.gov/gnome/oil_database/oil_database.git@production#subdirectory=adios_db
     - cd ./py_gnome
     - python setup.py install
 #    - python -m pip install ./  # not set up for a pip build :-(
