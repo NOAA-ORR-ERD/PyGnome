@@ -56,20 +56,6 @@ def test_init():
     assert type(w) == Waves
 
 
-def test_exception():
-    w = Waves()
-
-    # wind object undefined
-    with pytest.raises(ReferencedObjectNotSet):
-        w.prepare_for_model_run(start_time)
-
-    w.wind = test_wind_0
-
-    # water object undefined
-    with pytest.raises(ReferencedObjectNotSet):
-        w.prepare_for_model_run(start_time)
-
-
 def test_compute_H():
     """can it compute a wave height at all?
 
