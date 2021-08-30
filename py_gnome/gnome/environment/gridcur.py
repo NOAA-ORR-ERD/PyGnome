@@ -137,57 +137,6 @@ def init_from_gridcur(gc,
                                      extrapolation_is_allowed=extrapolation_is_allowed,
                                      **kwargs)
 
-
-def read_file(filename):
-    times = []
-    data_u = []
-    data_v = []
-    grid_info = {}
-    with open(filename, encoding='utf-8') as infile:
-        # read the header
-        for line in infile:
-            # ignore lines before the header
-            key = line.split()[0].strip("[]")
-            if key in data_types:
-                data_type = data_types[key]
-                units = line.split()[1].strip()
-                break
-        else:
-            raise ValueError("There is a mismatch in the array sizes")
-
-        grid = Grid_R(node_lon=lon, node_lat=lat)
-
-        time = Time(data=times)
-
-        U = Variable(
-            name=f"eastward surface velocity",
-            units=units,
-            time=time,
-            data=data_u,
-            grid=grid,
-            varname='u',
-            location=location,
-            attributes=None,
-        )
-
-        V = Variable(
-            name=f"northward surface velocity",
-            units=units,
-            time=time,
-            data=data_v,
-            grid=grid,
-            varname='v',
-            location=location,
-            attributes=None,
-        )
-
-        super(GridcurCurrent, self).__init__(name=f"gridcur {data_type}",
-                                             units=units,
-                                             time=time,
-                                             variables=[U, V],
-                                             varnames=('u', 'v'),
-                                             extrapolation_is_allowed=extrapolation_is_allowed)
-
     @staticmethod
     def read_file(filename):
         times = []
