@@ -8,6 +8,6 @@ COPY ./ /pygnome/
 
 RUN cd pygnome && conda install --file conda_requirements.txt
 RUN cd pygnome/py_gnome && python setup.py install
-RUN cd oil_database/adios_db && python setup.py install
+RUN cd pygnome/oil_database/adios_db && python setup.py install
 
 RUN cd pygnome/py_gnome/documentation && make html
