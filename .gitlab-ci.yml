@@ -1,6 +1,6 @@
 stages:
-  - compile
-  - test
+  # - compile
+  # - test
   - build
 
 cache:
