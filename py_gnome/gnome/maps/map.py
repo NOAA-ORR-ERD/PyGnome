@@ -7,6 +7,7 @@
 
 from gnome.gnomeobject import GnomeId
 from gnome.environment.gridded_objects_base import PyGrid
+import warnings
 
 
 """
@@ -1142,7 +1143,6 @@ class MapFromBNA(RasterMap):
 
         # fixme: do some file type checking here.
         polygons = haz_files.ReadBNA(filename, 'PolygonSet')
-        map_bounds = None
 
         if kwargs.get('name', False):
             self.name = os.path.split(filename)[1]
@@ -1166,7 +1166,10 @@ class MapFromBNA(RasterMap):
                 spillable_area_bna.append(p)
 
             elif p.metadata[1].lower().replace(' ', '') == 'mapbounds':
-                map_bounds = p
+                if map_bounds is not None:
+                    warnings.warn('Provided map bounds superscede map bounds found in file. Please double check.')
+                else:
+                    map_bounds = p
             else:
                 #  Fixme: we could do something with the polylines....
                 if len(p) > 2:

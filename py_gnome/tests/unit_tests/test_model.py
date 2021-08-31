@@ -1499,25 +1499,6 @@ class TestValidateModel():
             assert isvalid
             assert len(msgs) == 0
 
-    def test_validate_model_obj_invalid(self):
-        '''
-        test object level validation fails if an object contained in a model's
-        collection is missing a reference and the object's make_default_refs
-        is False.
-        '''
-        (model, waves) = self.make_model_incomplete_waves()
-        waves.make_default_refs = False
-
-        model.environment += [Water(), constant_wind(5, 0)]
-        (msgs, isvalid) = model.validate()
-
-        assert not isvalid
-
-        # wave is missing references. Since waves object's make_default_refs is
-        # False, validation messages contain warning for only Waves
-        for msg in msgs:
-            assert msg.startswith('warning: Waves:')
-
     def test_model_weatherer_off(self):
         model = Model(start_time=self.start_time)
         model.weatherers += Evaporation(on=False)
