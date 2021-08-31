@@ -7,7 +7,7 @@ RUN yum install -y wget gcc make bzip2 gcc-c++ ca-certificates \
 COPY ./ /pygnome/
 
 RUN cd pygnome && conda install --file conda_requirements.txt
-RUN cd pygnome && pip install git+https://gitlab.orr.noaa.gov/gnome/oil_database/oil_database.git@production#subdirectory=adios_db
 RUN cd pygnome/py_gnome && python setup.py install
+RUN cd oil_database/adios_db && python setup.py install
 
 RUN cd pygnome/py_gnome/documentation && make html
