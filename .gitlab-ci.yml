@@ -14,7 +14,7 @@ before_script:
 
 configure_env:
   stage: .pre
-  image: registry.orr.noaa.gov/erd/centos-conda/centos7-python3
+  image: registry.orr.noaa.gov/erd/centos-conda/centos7-python3.8
   before_script:
     - echo '' # manual override of before_script because we're on runner 12.3 and inherit options are only 12.9+
   script:
@@ -32,7 +32,7 @@ compile_pygnome:
     - develop
     - master
     - production
-  image: registry.orr.noaa.gov/erd/centos-conda/centos7-python3
+  image: registry.orr.noaa.gov/erd/centos-conda/centos7-python3.8
   script:
     - echo "compiling python3_compile"
     - yum install gcc gcc-c++ make -y
@@ -58,7 +58,7 @@ compile_pygnome:
 test_pygnome_develop:
   stage: test
   allow_failure: true
-  image: registry.orr.noaa.gov/erd/centos-conda/centos7-python3
+  image: registry.orr.noaa.gov/erd/centos-conda/centos7-python3.8
   only:
     - develop
   script:
@@ -69,7 +69,7 @@ test_pygnome_develop:
 test_pygnome_master:
   stage: test
   allow_failure: false
-  image: registry.orr.noaa.gov/erd/centos-conda/centos7-python3
+  image: registry.orr.noaa.gov/erd/centos-conda/centos7-python3.8
   only:
     - master
     - production
