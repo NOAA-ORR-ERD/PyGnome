@@ -9,7 +9,7 @@ To make it easier to write simple scripts, we have set it up so that you can imp
 
     import gnome.scripting as gs
 
-You can now access the names in the scripting module with, e.g. ``gs.Model``
+(``gs`` for Gnome Scripting) You can now access the names in the scripting module with, e.g. ``gs.Model``
 
 Examples in this document will use the ``import as gs`` approach
 

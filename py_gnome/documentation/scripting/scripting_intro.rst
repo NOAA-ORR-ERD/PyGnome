@@ -151,11 +151,12 @@ The sequence of images should show a cloud of particles moving east and spreadin
 GNOME "save files"
 ==================
 
-The pyGNOME system supports "save files" -- these are a way to save a complete GNOME configuration in a single file. The files themselves are actually zip files that contain the configuration as JSON files and any needed data files all in one archive. They are usually given the ``.gnome`` file extension, but they are, in fact, regular zip files.
+The pyGNOME system supports "save files" -- these are a way to save a complete GNOME configuration in a single file. The files themselves are zip files that contain the configuration as JSON files and any needed data files all in one archive. They are usually given the ``.gnome`` file extension, but they are, in fact, regular zip files.
 
-SAve files are designed primarily for use by the WebGNOME system, so that users can save and reload a configuration that they have created via the interactive GUI interface. For the most part, when you are driving GNOME via Python scripts, you don't need to use save files, as your script can rebuild the model when it runs. However, there are us cases, particularly if you want to work on teh same model via scripting and Web GNOME.
+Save files are designed primarily for use by the WebGNOME system, so that users can save and reload a configuration that they have created via the interactive GUI interface. For the most part, when you are driving GNOME via Python scripts, you don't need to use save files, as your script can rebuild the model when it runs. However, there are use cases, particularly if you want to work on the same model via scripting and WebGNOME.
 
-A Model can be created from a save file via the ``scripting.load_model()`` function:
+A Model can be created from a save file via the
+``scripting.load_model()`` function:
 
 .. code-block:: python
 
