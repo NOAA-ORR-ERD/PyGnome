@@ -1,19 +1,23 @@
-
-
-
-
-# from future import standard_library
-# standard_library.install_aliases()
-# from builtins import *
+from pathlib import Path
 
 from gnome.spill.substance import (Substance,
                                    GnomeOil,
                                    NonWeatheringSubstance)
+
 from gnome.spill.initializers import InitWindages
-# from oil_library.models import Oil
+
+try:
+    import adios_db
+    ADIOS_IS_THERE = True
+except ImportError:
+    ADIOS_IS_THERE = False
+
+import pytest
+
+DATA_DIR = Path(__file__).parent / "data_for_tests"
 
 
-class TestSubstance(object):
+class TestSubstance:
     '''Test for base class'''
 
     def test_init(self):
@@ -64,6 +68,13 @@ class TestGnomeOil(object):
         initw = oil1.initializers[0]
         assert all([atype in oil1.array_types for atype in initw.array_types])
 
+    @pytest.mark.skipif(not ADIOS_IS_THERE, reason="requires the adios_db package")
+    def test_oil_from_adios_db_json(self):
+
+        gnomeoil = GnomeOil(name="dummy name", filename=str(DATA_DIR / "ANS_EC02713.json"))
+
+        assert False
+
     def test_eq(self):
         sub1 = GnomeOil('oil_ans_mp')
         sub2 = GnomeOil('oil_ans_mp')
@@ -77,6 +88,10 @@ class TestGnomeOil(object):
 
         This only tests that the SAME oil object is hashable and recoverable,
         but that's OK for caching.
+
+        NOTE: This doesn't test at all whether the hash "works"
+              e.g. that two different GnomeOils don't hash the same
+              That may be OK -- as equality works, yes?
         """
         oil1 = GnomeOil('oil_ans_mp')
 

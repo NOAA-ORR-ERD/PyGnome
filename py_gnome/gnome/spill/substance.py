@@ -194,9 +194,32 @@ class GnomeOil(Oil, Substance):
     _req_refs = ['water']
 
     def __init__(self, name=None, filename=None, water=None, **kwargs):
+        """
+        Initialize a GnomeOil:
+
+        A Gnome Oil can be created a number of different ways:
+
+        From an oil name:
+            This is only fully supported for the "standard oils" built in to py_gnome
+            (see ``gnome.spill.standard_oils``)
+
+        From a file: ``GnomeOil(filename="an_oil.json")``
+            The oil will be initialized from a NOAA ADIOS JSON file
+            such as produced by the adios_db package or downloaded from
+            adios.orr.noaa.gov
+
+        From json serialization of a GNOME oil:
+            in that case, pass in the name, and the dict in as kwargs
+
+        From an ADIOS oil ID (deprecated):
+           If the name is an ADIOS ID, and filename is None, then the ID
+           will be looked up in the OilLibrary
+        """
+
         oil_info = name
         if name in _sample_oils:
             oil_info = _sample_oils[name]
+
         elif isinstance(name, str):
             # check if it's json from save file or from client
             if kwargs.get('component_density', False):
@@ -208,12 +231,11 @@ class GnomeOil(Oil, Substance):
                     oil_obj = get_oil_props(kwargs)
                     oil_info = oil_obj.get_gnome_oil()
                 else:
-                    # use name to get oil from oil library
-                    #from oil_library import get_oil_props
-                    #oil_obj = get_oil_props(name)
                     if filename is not None:
-                        #print("filename,name = ",filename,name)
-                        import adios_db
+                        try:
+                            import adios_db
+                        except ImportError as err:
+                            raise ImportError("the adios_db package must be installed to use its json format") from err
                         from adios_db.models.oil.oil import Oil as Oil_db
                         from adios_db.computation.gnome_oil import make_gnome_oil
                         oil_obj = Oil_db.from_file(filename)
@@ -275,6 +297,8 @@ class GnomeOil(Oil, Substance):
     @classmethod
     def get_GnomeOil(self, oil_info, max_cuts=None):
         '''
+        #fixme: what is oil_info ???
+
         Use this instead of get_oil_props
         '''
         return GnomeOil(oil_info)
