@@ -33,6 +33,9 @@ class ProcessSchema(ObjTypeSchema):
     '''
     on = SchemaNode(Bool(), missing=drop, save=True, update=True)
     active_range = TimeRangeSchema()
+    
+    #flag for client weatherer management system
+    _automanaged = SchemaNode(Bool(), missing=drop, save=True, update=True)
 
 
 class Process(GnomeId):
@@ -49,6 +52,7 @@ class Process(GnomeId):
                  on=True,
                  make_default_refs=True,
                  active_range=(InfDateTime('-inf'), InfDateTime('inf')),
+                 _automanaged=True,
                  **kwargs):  # default min + max values for timespan
         """
         Initialize default Mover/Weatherer parameters
@@ -68,6 +72,7 @@ class Process(GnomeId):
         self._check_active_startstop(*active_range)
 
         self._active_range = active_range
+        self._automanaged = _automanaged
 
         # empty dict since no array_types required for all movers at present
         self.make_default_refs = make_default_refs
