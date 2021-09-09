@@ -73,7 +73,6 @@ class TestGnomeOil(object):
 
         gnomeoil = GnomeOil(name="dummy name", filename=str(DATA_DIR / "ANS_EC02713.json"))
 
-        assert False
 
     def test_eq(self):
         sub1 = GnomeOil('oil_ans_mp')

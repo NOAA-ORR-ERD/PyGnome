@@ -90,7 +90,7 @@ def init_from_gridcur(gc,
     """
 
     # Read the file:
-    data_type, units, times, lon, lat, data_u, data_v = read_file(filename)
+    data_type, units, times, lon, lat, data_u, data_v = self.read_file(filename)
 
     if (((len(lon), len(lat)) == data_u[0].shape)
         and (data_u[0].shape == data_v[0].shape)):
