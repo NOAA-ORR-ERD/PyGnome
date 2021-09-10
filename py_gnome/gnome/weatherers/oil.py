@@ -5,13 +5,8 @@ This provides an Oil object that can be used in the GNOME weathering algorithms.
 
 """
 
+from functools import lru_cache
 
-
-
-
-from backports.functools_lru_cache import lru_cache
-
-import json
 import numpy as np
 
 from colander import (SchemaNode, Int, String, Float, drop)

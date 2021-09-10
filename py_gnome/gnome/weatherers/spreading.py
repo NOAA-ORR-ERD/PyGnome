@@ -3,18 +3,9 @@ objects used to model the spreading of oil
 Include the Langmuir process here as well
 '''
 
-
-
-
-
-
 import numpy as np
-try:
-    # it's built-in on py3
-    from functools import lru_cache
-except ImportError:
-    # needs backports for py2
-    from backports.functools_lru_cache import lru_cache
+
+from functools import lru_cache
 
 from colander import SchemaNode, Float, drop
 

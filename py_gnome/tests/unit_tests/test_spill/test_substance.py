@@ -9,6 +9,7 @@ from gnome.spill.initializers import InitWindages
 try:
     import adios_db
     ADIOS_IS_THERE = True
+    del adios_db
 except ImportError:
     ADIOS_IS_THERE = False
 
@@ -71,7 +72,14 @@ class TestGnomeOil(object):
     @pytest.mark.skipif(not ADIOS_IS_THERE, reason="requires the adios_db package")
     def test_oil_from_adios_db_json(self):
 
-        gnomeoil = GnomeOil(name="dummy name", filename=str(DATA_DIR / "ANS_EC02713.json"))
+        go = GnomeOil(name="dummy name",
+                            filename=str(DATA_DIR / "ANS_EC02713.json"))
+
+        print(go.name)
+
+        ## fixme: this is NOT the name it should get!
+        assert go.name == "dummy name"
+
 
 
     def test_eq(self):

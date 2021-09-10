@@ -11,16 +11,9 @@ It is only used by WeatheringData to update the 'area' and related arrays
 '''
 
 
-
-
-
-
 import numpy as np
 
-try:
-    from functools import lru_cache  # it's built-in on py3
-except ImportError:
-    from backports.functools_lru_cache import lru_cache  # needs backports for py2
+from functools import lru_cache
 
 from gnome.basic_types import oil_status, fate
 from gnome.array_types import gat
