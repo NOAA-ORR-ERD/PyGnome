@@ -67,6 +67,16 @@ NODE_EXAMPLE = test_data_dir / "example_gridcur_on_nodes.cur"
 # make_gridcur(NODE_EXAMPLE, "nodes")
 
 
+def test_nonexistant_filename():
+    with pytest.raises(ValueError):
+        current = FileGridCurrent("non_existant_filename.cur")
+
+
+def test_nonexistant_filename_nc():
+    with pytest.raises(ValueError):
+        current = FileGridCurrent("non_existant_filename.nc")
+
+
 def test_gridcur_in_model():
 
     current = FileGridCurrent(test_data_dir / NODE_EXAMPLE)
@@ -109,7 +119,6 @@ def test_gridcur_serialize():
 
     serial = current.serialize()
 
-    print(serial)
     current2 = FileGridCurrent.deserialize(serial)
 
     # really should test this better, but at least it didn't barf
@@ -123,8 +132,8 @@ def test_netcdf_file():
 
     # create a GridCurrent
     current = FileGridCurrent(filename=testfile,
-                                 extrapolation_is_allowed=True,
-                                 )
+                              extrapolation_is_allowed=True,
+                              )
 
     assert type(current) == FileGridCurrent
     assert isinstance(current, GridCurrent)
