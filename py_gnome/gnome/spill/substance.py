@@ -200,7 +200,7 @@ class GnomeOil(Oil, Substance):
         A Gnome Oil can be created a number of different ways:
 
         From an oil name:
-            This is only fully supported for the "standard oils" built in to py_gnome
+            This is only supported for the "standard oils" built in to py_gnome
             (see ``gnome.spill.standard_oils``)
 
         From a file: ``GnomeOil(filename="an_oil.json")``
@@ -208,24 +208,33 @@ class GnomeOil(Oil, Substance):
             such as produced by the adios_db package or downloaded from
             adios.orr.noaa.gov
 
-        From json serialization of a GNOME oil:
-            in that case, pass in the name, and the dict in as kwargs
+        From json/dict serialization of a GNOME oil:
+            in that case, pass the dict in as the first argument (or name)
 
-        From an ADIOS oil ID (deprecated):
-           If the name is an ADIOS ID, and filename is None, then the ID
-           will be looked up in the OilLibrary
+        From an "old style" oil_props dict -- deprecated.
+
         """
+
+        # Fixme: we really should have a cleaner API!
 
         oil_info = name
         if name in _sample_oils:
             oil_info = _sample_oils[name]
 
-        elif isinstance(name, str):
+        # note: "name" could have been pulled from the **kwargs
+        #       if not otherwise specified
+        elif isinstance(name, str) or name is None:
             # check if it's json from save file or from client
+            # is this supposed to be `if 'component_density' in kwargs?`
+            # or do we want to filter out False values as well?
             if kwargs.get('component_density', False):
                 oil_info = kwargs
             else:
+                # adios_oil_id is an attribute of oil_info
+                # so if it's not there, then this is oil_info, and we can
+                # directly move on
                 if kwargs.get('adios_oil_id', False):
+
                     from oil_library import get_oil_props
                     # init the oilprops from dictionary, old form
                     oil_obj = get_oil_props(kwargs)
@@ -239,16 +248,17 @@ class GnomeOil(Oil, Substance):
                         from adios_db.models.oil.oil import Oil as Oil_db
                         from adios_db.computation.gnome_oil import make_gnome_oil
                         oil_obj = Oil_db.from_file(filename)
+                        name = oil_obj.metadata.name
                         oil_info = make_gnome_oil(oil_obj)
                     else:
-                        #print("else filename,name = ",filename,name)
+                        # print("else filename,name = ",filename,name)
                         from oil_library import get_oil_props
-                        oil_obj = get_oil_props(name) 
-                        oil_info = oil_obj.get_gnome_oil() 
+                        oil_obj = get_oil_props(name)
+                        oil_info = oil_obj.get_gnome_oil()
 
-                #oil_info = oil_obj.get_gnome_oil()
+                # oil_info = oil_obj.get_gnome_oil()
 
-            kwargs['name'] = name #this is important; it passes name up to GnomeId to be handled there!
+            kwargs['name'] = name  # this is important; it passes name up to GnomeId to be handled there!
         else:
             raise ValueError('Must provide an oil name or OilLibrary.Oil '
                              'to GnomeOil init')

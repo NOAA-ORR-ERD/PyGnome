@@ -37,7 +37,6 @@ netCDF4
 # regex
 # unidecode>=0.04.19
 pyshp
-# future  # while maintaining py2/3 compatibility
 
 
 # NOAA maintained packages

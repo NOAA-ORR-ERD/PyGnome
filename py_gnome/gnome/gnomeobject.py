@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-from future.utils import with_metaclass
-
 import os
 import copy
 import logging
