@@ -33,10 +33,7 @@ class EnvironmentMeta(GnomeObjMeta):
 
 class Environment(GnomeId):
     """
-    A base class for all classes in environment module
-
-    This is primarily to define a dtype such that the OrderedCollection
-    defined in the Model object requires it.
+    A base class for all classes in environment module. This is primarily to define a dtype such that the OrderedCollection defined in the Model object requires it.
     """
     _subclasses = []
 

@@ -821,15 +821,15 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
         this class because the NetCDF functionality for PyGnome data with CF
         standard is captured here.
 
-        :param netcdf_file: Name of the NetCDF file from which to read
-                                the data
+        :param netcdf_file: Name of the NetCDF file from which to read the data
 
-        :param time: timestamp at which the data is desired. Looks in
-                              the netcdf data's 'time' array and finds the
-                              closest time to this and outputs this data.
-                              If both 'time' and 'index' are None, return data
-                              if file only contains one 'time' else raise an
-                              error
+        :param time: 
+                timestamp at which the data is desired. Looks in
+                the netcdf data's 'time' array and finds the
+                closest time to this and outputs this data.
+                If both 'time' and 'index' are None, return data
+                if file only contains one 'time' else raise an
+                error
 
         :param int index: Index of the 'time' variable (or time_step). This is
                           only used if 'time' is None.
@@ -839,11 +839,12 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
         :param which_data='standard': Which data arrays are desired.
                                       Options are:
                                       ('standard', 'most', 'all',
-                                       [list_of_array_names])
+                                      [list_of_array_names])
         :type which_data: string or sequence of strings.
 
         :return: A dict containing standard data closest to the indicated
                 'time'.
+        
 
         Standard data is defined as follows:
 

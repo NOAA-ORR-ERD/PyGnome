@@ -67,12 +67,12 @@ class Waves(Environment):
 
         :param wind: A wind object to get the wind speed.
                      This should be a moving average wind object.
-        :type wind: a Wind type, or equivelent
+        :type wind: A Wind type, or equivelent
 
         :param water: water properties, specifically fetch and wave height
         :type water: environment.Water object.
 
-        .. note:: must take **kwargs since base class supports more inputs like
+        .. note:: must take ``**kwargs`` since base class supports more inputs like
             'name'. The new_from_dict() alternate constructor will invoke
             __init__ will arguments that supported by baseclass
         """

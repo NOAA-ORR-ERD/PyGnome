@@ -14,7 +14,6 @@ Contents
   installing
   structure
   scripting/index
-  env_obj/index
   customizing
   logging
   serialization

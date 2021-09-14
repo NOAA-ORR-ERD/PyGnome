@@ -245,14 +245,12 @@ class GnomeId(with_metaclass(GnomeObjMeta, AddLogger)):
         self._name = val
 
     def gather_ref_as(self, src, refs):
-        '''
+        """
         Gathers refs from single or collection of GnomeId objects.
         :param src: GnomeId object or collection of GnomeId
         :param refs: dictionary of str->list of GnomeId
-        :returns {'ref1': [list of GnomeId],
-                  'ref2 : [list of GnomeId],
-                  ...}
-        '''
+        :returns {'ref1': [list of GnomeId], 'ref2 : [list of GnomeId], ...}
+        """
         if isinstance(src, GnomeId):
             src = [src,]
         for ob in src:

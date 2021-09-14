@@ -570,13 +570,13 @@ class SpatialReleaseSchema(BaseReleaseSchema):
 
 class SpatialRelease(Release):
     """
-    A release of elements into a set of provided polygons
+    A release of elements into a set of provided polygons.
 
     When X particles are determined to be released, they are into the polygons 
     randomly. For each LE, pick a polygon, weighted by it's proportional area 
     and place the LE randomly within it. By default the SpatialRelease uses 
     simple area for polygon weighting. Other classes (NESDISRelease for example) 
-    may use other weighting functions
+    may use other weighting functions.
     """
     _schema = SpatialReleaseSchema
 
@@ -599,12 +599,9 @@ class SpatialRelease(Release):
         Optional arguments:
 
         :param filename: (optional) shapefile
-        :type filename: string name of a zip file. Polygons loaded are concatenated
-        after polygons from kwarg
+        :type filename: string name of a zip file. Polygons loaded are concatenated after polygons from kwarg
 
-        :param weights: (optional) LE placement probability weighting for each 
-        polygon. Must be the same length as the polygons kwarg, and must sum to 1.
-        If None, weights are generated at runtime based on area proportion.
+        :param weights: (optional) LE placement probability weighting for each polygon. Must be the same length as the polygons kwarg, and must sum to 1. If None, weights are generated at runtime based on area proportion.
 
         :param num_elements: total number of elements to be released
         :type num_elements: integer default 1000
@@ -612,17 +609,11 @@ class SpatialRelease(Release):
         :param num_per_timestep: fixed number of LEs released at each timestep
         :type num_elements: integer
 
-        :param end_release_time=None: optional -- for a time varying release,
-            the end release time. If None, then release is instantaneous
+        :param end_release_time=None: optional -- for a time varying release, the end release time. If None, then release is instantaneous
         :type end_release_time: datetime.datetime
         
         :param release_mass=0: optional. This is the mass released in kilograms.
         :type release_mass: integer
-        """
-        """
-
-        :param num_elements: If passed as None, number of elements will be equivalent
-        to number of start positions. For backward compatibility.
         """
         if filename is not None and features is not None:
             raise ValueError('Cannot pass both a filename and FeatureCollection to SpatialRelease')
