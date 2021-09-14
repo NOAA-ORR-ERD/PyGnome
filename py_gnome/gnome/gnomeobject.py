@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-from future.utils import with_metaclass
-
 import os
 import copy
 import logging
@@ -133,9 +131,7 @@ class GnomeObjMeta(type):
         return super(GnomeObjMeta, cls).__new__(cls, name, parents, dct)
 
 
-class GnomeId(with_metaclass(GnomeObjMeta, AddLogger)):
-# py3 way, when we get there
-# class GnomeId(AddLogger, metaclass=GnomeObjMeta):
+class GnomeId(AddLogger, metaclass=GnomeObjMeta):
     '''
     A class for assigning a unique ID for an object
     '''

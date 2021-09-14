@@ -44,6 +44,14 @@ data_types = {"GRIDCURTIME": "currents",
               }
 data_type_tags = {val: key for key, val in data_types.items()}
 
+class GridCurReadError(Exception):
+    """
+    custom class so that we canknow the error was in reading GridCur
+    file
+    """
+    pass
+
+
 
 def from_gridcur(filename,
                  extrapolation_is_allowed=False,
@@ -67,25 +75,17 @@ def from_gridcur(filename,
 def init_from_gridcur(gc,
                       filename,
                       extrapolation_is_allowed=False,
-                      name=None,
                       **kwargs):
     """
     utility function to initialize a GridCurrent
-    """
 
-    def __init__(self,
-                 filename=None,
-                 extrapolation_is_allowed=False,
-                 **kwargs):
-        '''
-        :param filename: name (full path) of the gridcur file to load
-        :param extrapolation_is_allowed=False:
-        '''
-        if filename is None:
-            raise ValueError('Filename must be defined')
-        self.filename = filename
-        self.extrapolation_is_allowed = extrapolation_is_allowed
-    """
+    :param gc=None: the GridCur object to be initialized
+                    if None, then a new one will be created.
+
+    :param filename: name (full path) of the gridcur file to load
+
+    :param extrapolation_is_allowed=False:
+
     passes other keyword arguments on to GridCurrent initilizer
     """
 
@@ -127,9 +127,9 @@ def init_from_gridcur(gc,
         location=location,
         attributes=None,
     )
-    name = f"gridcur {data_type}" if name is None else name
-
-    super(gc.__class__, gc).__init__(name=f"gridcur {data_type}",
+    # total kludge, but when deserializing the name may already be there
+    name = kwargs.pop('name', f"gridcur {data_type}")
+    super(gc.__class__, gc).__init__(name=name,
                                      units=units,
                                      time=time,
                                      variables=[U, V],
@@ -137,12 +137,12 @@ def init_from_gridcur(gc,
                                      extrapolation_is_allowed=extrapolation_is_allowed,
                                      **kwargs)
 
-    @staticmethod
-    def read_file(filename):
-        times = []
-        data_u = []
-        data_v = []
-        grid_info = {}
+def read_file(filename):
+    times = []
+    data_u = []
+    data_v = []
+    grid_info = {}
+    try:
         with open(filename, encoding='utf-8') as infile:
             # read the header
             for line in infile:
@@ -166,7 +166,7 @@ def init_from_gridcur(gc,
                 if line.strip().startswith("[TIME]"):
                     time = [int(num) for num in line.split()[1:]]
                     times.append(datetime(time[2], time[1], time[0], time[3], time[4]))
-                    lon, lat, U, V = GridcurCurrent.make_grid_arrays(grid_info)
+                    lon, lat, U, V = make_grid_arrays(grid_info)
                     data_u.append(U)
                     data_v.append(V)
                     line = infile.readline()
@@ -181,13 +181,15 @@ def init_from_gridcur(gc,
                 U[row, col] = u
                 V[row, col] = v
                 line = infile.readline()
-                continue
 
-        # put the velocities together in a single array
-        data_u = np.array(data_u)
-        data_v = np.array(data_v)
+            # put the velocities together in a single array
+            data_u = np.array(data_u)
+            data_v = np.array(data_v)
+    # so that we will get the same error type regardless
+    except Exception as ex:
+        raise GridCurReadError from ex
 
-        return data_type, units, times, lon, lat, data_u, data_v
+    return data_type, units, times, lon, lat, data_u, data_v
 
 
 def write_gridcur(filename, data_type, units, times, lon, lat, data_u, data_v):

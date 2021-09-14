@@ -26,7 +26,7 @@ from .gridded_objects_base import (Time,
                                    VectorVariableSchema,
                                    )
 
-from .gridcur import init_from_gridcur
+from .gridcur import init_from_gridcur, GridCurReadError
 
 
 class S_Depth_T1(object):
@@ -941,8 +941,9 @@ class FileGridCurrent(GridCurrent):
     def __init__(self, filename=None, extrapolation_is_allowed=False, **kwargs):
         # determine what file format this is
         if filename is None:
-            raise TypeError("FileGriddedCurrent requires a filename")
+            raise TypeError("FileGridCurrent requires a filename")
         filename = str(filename)  # just in case it's a Path object
+
         if filename.endswith(".nc"):  # should be a netCDF file
             try:
                 GridCurrent.init_from_netCDF(self,
@@ -950,8 +951,7 @@ class FileGridCurrent(GridCurrent):
                                              extrapolation_is_allowed=extrapolation_is_allowed,
                                              **kwargs)
             except Exception as ex:
-                raise
-                # raise ValueError(f"{filename} is not a valid netcdf file") from ex
+                raise ValueError(f"Could not read: {filename}") from ex
 
 
         else:  # maybe it's a gridcur file -- that's the only other option
@@ -960,7 +960,7 @@ class FileGridCurrent(GridCurrent):
                                   filename,
                                   extrapolation_is_allowed,
                                   **kwargs)
-            except Exception as ex:
+            except GridCurReadError as ex:
                raise ValueError(f"{filename} is not a valid gridcur file") from ex
         self.filename = filename
 

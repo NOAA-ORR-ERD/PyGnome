@@ -5,10 +5,6 @@ See: https://gitlab.orr.noaa.gov/gnome/pygnome/-/issues/75
 
 """
 
-
-
-
-
 import pytest
 from datetime import datetime
 
@@ -43,7 +39,6 @@ def empty_model():
         weatherers=[],
         spills=[],
         uncertain_spills=[],
-        manual_weathering=False,
         )
 
     model.outputters += MemoryOutputter()

@@ -33,11 +33,10 @@ colander
 tblib # still needed for child process exception handling.
 
 netCDF4
-# awesome-slugify>=1.6.5
+# awesome-slugify>=1.6.5 # required for adios_db
 # regex
 # unidecode>=0.04.19
 pyshp
-future  # while maintaining py2/3 compatibility
 
 
 # NOAA maintained packages
