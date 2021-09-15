@@ -224,14 +224,14 @@ class Waves(Environment):
         for non-Law-of-the-Wall results (Umlauf and Burchard, 2003)
 
         u_c = water friction velocity (m/s)
-               sqrt(rho_air / rho_w) * u_a ~ .03 * u_a
+        sqrt(rho_air / rho_w) * u_a ~ .03 * u_a
         u_a = air friction velocity (m/s)
         z_0 = surface roughness (m) (Taylor and Yelland)
         c_p = peak wave speed for Pierson-Moskowitz spectrum
         w_p = peak angular frequency for Pierson-Moskowitz spectrum (1/s)
 
         TODO: This implementation should be in a utility function.
-              It should not be part of the Waves management object itself.
+        It should not be part of the Waves management object itself.
         '''
         if H == 0 or U == 0:
             return 0
