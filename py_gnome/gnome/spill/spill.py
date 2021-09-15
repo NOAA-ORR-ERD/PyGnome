@@ -542,7 +542,7 @@ def grid_spill(bounds,
 
     :param bounds: bounding box of region you want the elements in:
                    ((min_lon, min_lat),
-                    (max_lon, max_lat))
+                   (max_lon, max_lat))
     :type bounds: 2x2 numpy array or equivalent
 
     :param resolution: resolution of grid -- it will be a resoluiton X

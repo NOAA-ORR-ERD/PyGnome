@@ -214,6 +214,7 @@ class CatsMover(CurrentMoversBase):
         :param uncertain_eddy_diffusion: Diffusion coefficient for
                                          eddy diffusion. Default is 0.
         :param uncertain_eddy_v0: Default is .1 (Check that this is still used)
+        
         Remaining kwargs are passed onto Mover's __init__ using super.
         See Mover documentation for remaining valid kwargs.
         """

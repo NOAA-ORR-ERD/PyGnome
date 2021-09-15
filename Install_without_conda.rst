@@ -27,7 +27,7 @@ py_gd: https://github.com/NOAA-ORR-ERD/py_gd
 
 
 Building everything by hand / with pip
--------------------------------------
+--------------------------------------
 
 Since this is development work, it might be good to create and run this
 in a virtual environment of some sort: virtualenv, pipenv, etc.

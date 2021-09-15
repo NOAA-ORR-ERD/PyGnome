@@ -212,8 +212,7 @@ class VelocityGrid(VectorVariable):
 
     def __init__(self, angle=None, **kwargs):
         """
-            :param angle: scalar field of cell rotation angles
-                          (for rotated/distorted grids)
+            :param angle: scalar field of cell rotation angles (for rotated/distorted grids)
         """
 
         if 'variables' in kwargs:
@@ -560,9 +559,9 @@ class GridWind(VelocityGrid, Environment):
     """
     Gridded winds -- usually from netcdf files from meteorological models.
 
-    This will most often be initialized from netcdf files as so:
+    This will most often be initialized from netcdf files as:
 
-    `wind = GridWind.from_netCDF(filename="a/path/to/a/netcdf_file.nc")
+    wind = GridWind.from_netCDF(filename="a/path/to/a/netcdf_file.nc")
 
     filename can be:
 

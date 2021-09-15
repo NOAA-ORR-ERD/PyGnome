@@ -123,7 +123,7 @@ Add the conda-forge channel::
 
 When you add a channel to conda, it puts it at the top of the list.
 So now when you install a package, conda will first look in conda-forge,
- and then in the default channel. This order should work well for PyGNOME.
+and then in the default channel. This order should work well for PyGNOME.
 
 You can see what channels you have with::
 
