@@ -12,6 +12,5 @@ The pygnome scripting interface allows users to customize the model setup.
    movers
    weatherers
    outputters
-   scripting_examples
 
 
