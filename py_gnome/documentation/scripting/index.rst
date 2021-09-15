@@ -7,7 +7,6 @@ The pygnome scripting interface allows users to customize the model setup.
    :maxdepth: 2
 
    scripting_intro
-   utilities
    maps
    spills
    movers
