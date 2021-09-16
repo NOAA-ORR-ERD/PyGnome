@@ -15,28 +15,34 @@ substance, i.e. it will not represent oil which has changing properties over tim
 The scripting module
 --------------------
 
-The ``gnome`` package contains a large hierarchy subpackages and modules that provide contain all of objects and functions that support the full functionality of the model. But unless you want to customize the algorithms, most of the functionality required is in the "scripting" module. We recommend that you import it like so::
+The ``gnome`` package contains a large hierarchy of subpackages and modules that contain all of objects and functions that support the full functionality of the model.
+Therefore, creating objects and adding them to the model can involve importing classes from many different modules. To make this easier, all of the typically required objects and helper functions can be made accessible via the "scripting" module. We recommend that you import it like so::
 
     import gnome.scripting as gs
 
 And then you can use most of the common objects needed for the model as so::
 
-    gs.Model
+    model = gs.Model()
+    
+This is equivalent to::
+    
+    import gnome
+    model = gnome.model.Model()
 
-Working with dates and times
-............................
+.. admonition:: Working with dates and times
 
-Internally, gnome uses the python standard library``datetime`` and ``timedelta`` functions. IN most cases, you can pass objects of these types inot GNOME. But for scripting convience, most places that take a datetime object will also accept a ISO 8601 string, such as: "2015-01-01T12:15:00"
+    Internally, gnome uses the python standard library``datetime`` and ``timedelta`` functions. IN most cases, you can pass objects of these types into GNOME. But for scripting convience, most places that take a datetime object will also accept a ISO 8601 string, such as: "2015-01-01T12:15:00"
 
-gnome.scripting also provides a number of shortcuts for creating ``timedelta`` objects: ``seconds, minutes, hours, days``. You can use them ike so::
+The gnome.scripting module also provides a number of shortcuts for creating ``timedelta`` objects: ``seconds, minutes, hours, days``. You can use them like so::
 
     gs.hours(3)  # for 3 hours
     gs.days(2)  # for two days
 
+Examples in this section will use the scripting module. In the following detailed sections about specific object types, we may sometimes also show the full import path for clarity.
 
 Initialize the Model
 --------------------
-We initialize the model to begin on New Years Day 2015 and run for 3 days::
+We initialize the model to begin on New Years Day 2015 and run for 3 days with a model time step of 3 minutes::
 
     import gnome.scripting as gs
     start_time = "2015-01-01"
@@ -48,23 +54,21 @@ We initialize the model to begin on New Years Day 2015 and run for 3 days::
 
 Create and Add a Map
 --------------------
-Create a very simple map: all water with a polygon of latitude/longitude
+Create a very simple map whis is all water with a polygon of latitude/longitude
 points to specify the map bounds::
-
 
     model.map = gs.GnomeMap(map_bounds=((-145,48), (-145,49),
                                         (-143,49), (-143,48))
                                         )
 
-
 Create and Add a Mover
 ----------------------
 Now we will create some simple movers and add them to the model.
-We use the SimpleMover class to specify a 0.5 m/s eastward current and
+We use the SimpleMover class to specify a 0.2 m/s eastward current and
 also the RandomMover class to simulate spreading due to turbulent motions::
 
 
-    velocity = (.5, 0, 0) #(u, v, w) in m/s
+    velocity = (.2, 0, 0) #(u, v, w) in m/s
     uniform_vel_mover = gs.SimpleMover(velocity)
     #  random walk diffusion -- diffusion_coef in units of cm^2/s
     random_mover = gs.RandomMover(diffusion_coef=2e4)
@@ -99,7 +103,7 @@ Here we use the Renderer class to save an image every 6 hours. We specify the bo
 be the same as those specified when we created the map object. The default is to save files into the working directory::
 
 
-    renderer = gs.Renderer(output_timestep=timedelta(hours=6),
+    renderer = gs.Renderer(output_timestep=gs.hours(6),
                            map_BB=((-145,48), (-145,49),
                                    (-143,49), (-143,48)))
 
