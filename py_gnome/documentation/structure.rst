@@ -1,17 +1,17 @@
-GNOME Structure
-===============
+PyGNOME Structure
+=================
 
-GNOME is fundamentally a Lagrangian element (particle tracking) mode. The oil (or
+PyGNOME is fundamentally a Lagrangian element (particle tracking) mode. The oil (or
 other tracer) is represented as Lagrangian elements (LEs), or particles with their 
 movement and properties tracked over time. Particles move under the influence of 
 ocean currents and/or direct wind forcing. Particles also may undergo physical changes
 over time (e.g. oil weathering).
 
-Setting up a simulation in GNOME involves inputting or loading data to instantiate 
-various objects wich create, move, or and/or modify the particles.
+Setting up a simulation in PyGNOME involves inputting or loading data to instantiate 
+various objects in the ``gnome`` package wich create, move, or and/or modify the particles.
 
-Primary Base Classes in PyGNOME
--------------------------------
+Primary Base Classes in ``gnome``
+---------------------------------
 
 **The Model Object** :mod:`gnome.model.Model`
     The Model Object is used to initialize a scenario and run the simulation. It contains various parameters

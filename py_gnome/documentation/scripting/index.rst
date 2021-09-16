@@ -1,7 +1,7 @@
-Scripting pyGNOME
+Scripting PyGNOME
 =================
 
-The pygnome scripting interface allows users to customize the model setup.
+The ``gnome`` scripting interface allows users to customize the model setup.
 
 .. toctree::
    :maxdepth: 2
@@ -9,6 +9,7 @@ The pygnome scripting interface allows users to customize the model setup.
    scripting_intro
    maps
    spills
+   environment
    movers
    weatherers
    outputters

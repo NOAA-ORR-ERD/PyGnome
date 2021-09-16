@@ -51,8 +51,7 @@ from .time_utils import (seconds,
 from gnome.utilities.inf_datetime import MinusInfTime, InfTime
 
 
-from gnome.spill.spill import (point_line_release_spill,
-                               surface_point_line_spill,
+from gnome.spill.spill import (surface_point_line_spill,
                                subsurface_plume_spill,
                                grid_spill,
                                spatial_release_spill,

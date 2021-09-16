@@ -1,12 +1,58 @@
+.. include:: ../links.rst
+
 Spills
 ======
+
+The Spill Class
+---------------
+
+Setting up the Spill object can be tricky because it requires both a Release object and a Substance Object. Some
+helper functions are described in the next section that simplify this task. But first, we'll 
+show some detail on creating a spill to help understand the components.
+ 
+The :class:`gnome.spill.release.Release` Object specifies the details of the release (e.g. where, when, how many elements). 
+Some of the subclasses of this include:
+
+* :class:`gnome.spill.release.PointLineRelease` - a release of particles at a point or along a line, either instantaneously or over a time interval
+* :class:`gnome.spill.release.SpatialRelease` - an instantaneous release of particles distributed randomly in a specified polygon 
+
+The :class:`gnome.spill.substance.Substance` Object provides information on the type of substance spilled. It presently has two 
+subclasses:
+
+* :class:`gnome.spill.substance.GnomeOil` - used for creating a spill that will include oil weathering processes
+* :class:`gnome.spill.substance.NonWeatheringSubstance` - used for running transport simulations with conservative particles (i.e. the particle properties do not change over time).
+
+Here's an example setting up a non-weathering spill. This is the default Substance for a spill so we do not need to create or pass in a Substance object::
+
+    import gnome.scripting as gs
+    from gnome.spill import PointLineRelease, Spill
+    from datetime import datetime, timedelta
+    start_time = datetime(2015, 1, 1, 0, 0)
+    model = gs.Model(start_time=start_time,
+                  duration=timedelta(days=3),
+                  time_step=60 * 15, #seconds
+                  )
+    release = PointLineRelease(release_time=start_time,start_position=(-144,48.5,0),num_elements=1000)
+    spill = Spill(release=release)
+    model.spills += spill
+    
+To specify the spill to represent a specific oil from the ADIOS oil database (adios.orr.noaa.gov) and specify the amount spilled, we could instantiate the Spill oject like this::
+    
+    from gnome.spill import GnomeOil    
+    substance=GnomeOil('AD01584'))
+    spill = Spill(release=release,substance=substance,amount=5000,units='bbls')
+    model.spills += spill
+ 
+
+.. admonition:: A note on "Windage"
+
+    Floating objects experience a drift due to the wind. The default for substances is to have windage values set in the range 1-4% with a persistence of 15 minutes. More detail on the wind drift parameterization can be found in the |gnome_tech_manual|. 
 
 Using helper functions
 ----------------------
 
-Setting up the spill class can be tricky because it requires both a release object and an element_type. More
-details on setting up the Spill object can be found below, but for a lot of typical use cases helper functions in 
-the scripting package can be utilized. Examples include:
+Rather than deal with the complexities of the Spill class directly, helper functions in the scripting package 
+can be utilized for a lot of typical use cases. Some examples are include below.
 
 Surface spill 
 ~~~~~~~~~~~~~
@@ -17,8 +63,7 @@ of 5000 barrels. Here we change the default windage range to be 1-2% with an inf
 the same windage value for all time).
 ::
 
-    from gnome.model import Model
-    from gnome.scripting import surface_point_line_spill
+    from gnome.scripting import Model, surface_point_line_spill
     from datetime import datetime, timedelta
     start_time = datetime(2015, 1, 1, 0, 0)
     model = Model(start_time=start_time,
@@ -31,7 +76,7 @@ the same windage value for all time).
                                  end_position=(-144,48.6, 0.0),
                                  end_release_time= start_time + timedelta(days=1),
                                  amount=5000,
-                                 substance='ALASKA NORTH SLOPE (MIDDLE PIPELINE)',
+                                 substance='AD01584',
                                  units='bbl',
                                  windage_range=(0.01,0.02),
                                  windage_persist=-1,
@@ -47,7 +92,8 @@ the same windage value for all time).
 Subsurface plume
 ~~~~~~~~~~~~~~~~
 
-For initialization of a subsurface plume, we can use the subsurface_plume_spill helper function.
+For initialization of a subsurface plume, we can use the :func:`gnome.scripting.subsurface_plume_spill` 
+helper function.
 Required parameters in this case also include a specification of the droplet size distribution 
 or of the rise velocities. The :mod:`gnome.utilities.distributions` module includes methods for 
 specifying different types of distributions. In this case we specify a uniform distribution of
@@ -63,48 +109,12 @@ droplets ranging from 10-300 microns::
                                    distribution_type='droplet_size',
                                    end_release_time= start_time + timedelta(days=1),
                                    amount=5000,
-                                   substance='ALASKA NORTH SLOPE (MIDDLE PIPELINE)',
+                                   substance='AD01584',
                                    units='bbl',
                                    windage_range=(0.01,0.02),
                                    windage_persist=-1,
                                    name='My spill')
                                    
     
-The Spill Class
----------------
 
-Spills in GNOME contain a release object which specifies the details of the release 
-(e.g. where, when, how many elements). They also contain an element_type object which
-provides information on the type of substance spilled (e.g. floating oil, subsurface plume etc). 
-If element_type is not specified then the default is a conservative floating substance. The 
-default for floating substances is to have windage values set in the range 1-4% with a persistence of
-15 minutes.
-
-For example, in the scripting :doc:`scripting_intro` we showed how to setup a spill for a conservative substance using
-the PointLineRelease class::
-
-    from gnome.model import Model
-    from gnome.spill import PointLineRelease, Spill
-    from datetime import datetime, timedelta
-    start_time = datetime(2015, 1, 1, 0, 0)
-    model = Model(start_time=start_time,
-                  duration=timedelta(days=3),
-                  time_step=60 * 15, #seconds
-                  )
-    release = PointLineRelease(release_time=start_time,start_position=(-144,48.5,0),num_elements=1000)
-    spill = Spill(release)
-    model.spills += spill
-    
-To specify the spill to represent a specific oil from the ADIOS database and specify the amount spilled, we could instantiate the Spill oject like this::
-    
-    from gnome.spill.elements import ElementType
-    element_type=ElementType(substance='ALASKA NORTH SLOPE (MIDDLE PIPELINE)')
-    spill = Spill(release,element_type=element_type,amount=5000,units='bbls')
-    model.spills += spill
-    
-Or even simpler::
-
-    spill = Spill(release,substance='ALASKA NORTH SLOPE (MIDDLE PIPELINE)',amount=5000,units='bbls')
-
-In this last case, the Spill class instantiates the element_type based on the specified substance.
     

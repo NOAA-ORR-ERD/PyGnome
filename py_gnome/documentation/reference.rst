@@ -56,7 +56,12 @@ model run and in subsequent steps the model moves and weathers elements.
 --------------------------------------
 
 .. automodule:: gnome.map
+.. autoclass:: GnomeMap
     :members:
+    :inherited-members:
+.. autoclass:: MapFromBNA
+    :members:
+    :inherited-members:
 
 ``gnome.spill`` -- classes in the spill module
 -----------------------------------------------
@@ -137,7 +142,7 @@ model run and in subsequent steps the model moves and weathers elements.
 ``gnome.environment.environment_objects`` -- PyGnome implemented environment objects
 ------------------------------------------------------------------------------------
 
-.. .. automodule:: gnome.environment.environment_objects
+.. automodule:: gnome.environment.environment_objects
 
 .. autoclass:: GridCurrent
     :members: from_netCDF, at

@@ -13,38 +13,6 @@ current status).
 Some examples and common use cases are shown here. For complete documentation see :mod:`gnome.weatherers` and
 :mod:`gnome.environment`
 
-The Environment Class
----------------------
-
-As weathering processes depend on a variety of environmental conditions (e.g. wind, waves, and water properties),
-GNOME requires initialization of various environment objects before weathering processes can be added to
-the model.
-
-For example, to create a simple Wind object (for a constant in time wind)::
-
-    from gnome.environment import Wind
-    import numpy as np
-    from datetime import datetime
-    from gnome.basic_types import datetime_value_2d
-    series = np.zeros((1, ),dtype=datetime_value_2d) #Make a wind time series (one value for wind constant in time)
-    series[0] = (datetime(2015,1,1,0), (10, 0))
-    wind = Wind(timeseries=series,units='knots')
-
-More simply, we can use the helper function in :mod: `gnome.scripting` for creating a constant wind::
-
-    from gnome.environment.wind import constant_wind
-    wind = constant_wind(10,0,'knots')
-
-Once environment objects are created, they can be explicitly passed to weatherers or added to the model.environment::
-
-    from gnome.model import Model
-    model = Model()
-    model.environment += wind
-
-If a weatherer is added to the model without explicity specifying the required environment objects, then the first object
-of the correct type in the environment collection will be used for that weathering process. For example,
-if multiple wind time series are created and added to model.environment then the first one added will be used
-for weathering processes unless explicitly specified.
 
 Evaporation
 -----------
