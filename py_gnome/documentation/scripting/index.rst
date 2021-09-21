@@ -1,8 +1,6 @@
 Scripting PyGNOME
 =================
 
-The ``gnome`` scripting interface allows users to customize the model setup.
-
 .. toctree::
    :maxdepth: 2
 

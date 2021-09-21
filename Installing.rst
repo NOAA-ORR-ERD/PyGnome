@@ -1,6 +1,6 @@
 
 
-Building / Installing GNOME with the conda package manager
+Building / Installing PyGNOME with the conda package manager
 ==========================================================
 
 `Anaconda <https://store.continuum.io/cshop/anaconda/>`__ is a Python

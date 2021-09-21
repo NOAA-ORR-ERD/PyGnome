@@ -8,7 +8,7 @@ Note that current PyGNOME is Python 3 (>= 3.8) -- some of these notes are for Py
 Overview:
 ---------
 
-pyGNOME has a lot of dependencies -- you can find the full list by looking at the conda_requirements.txt file.
+PyGNOME has a lot of dependencies -- you can find the full list by looking at the conda_requirements.txt file.
 
 Most of them are well maintained 3rd party packages, that can be installed via pip, or by following the package author's instructions.
 

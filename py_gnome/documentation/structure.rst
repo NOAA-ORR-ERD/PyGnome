@@ -18,16 +18,16 @@ Primary Base Classes in ``gnome``
     including model start time, duration, and time step. All other objects are added to the Model.
 
 **The Map Object** :mod:`gnome.map.GnomeMap`
-    The Map Object in GNOME defines the domain of the model and handles all collision-related 
+    The Map Object defines the domain of the model and handles all collision-related 
     effects such as particle beaching. It can consist of domain boundaries,
     shoreline data (to define where land and water are), and properties of the
     shoreline. For 3-d modeling, it can also define the bathymetry.
 
 **Environment Objects** :mod:`gnome.environment.Environment`
-    GNOME tracks the environmental conditions the particles interact with using
+    The environmental conditions the particles interact with are determined using
     Environment Objects. These objects are designed to represent data flexibly from a 
     large variety of sources and file formats. Simple scalars, time series data, or full 4D
-    environment data in netCDF format are some examples of what GNOME can use to create 
+    environment data in netCDF format are some examples of what can be used to create 
     environment objects.
 
 **Movers** :mod:`gnome.movers.Mover`
@@ -42,7 +42,7 @@ Primary Base Classes in ``gnome``
     burning oil). Weatherers utilize oil chemistry data along with environment objects.
 
 **Spill Objects** :mod:`gnome.spill.Spill`
-    A Spill in GNOME is a composition of two objects:
+    A Spill Object is a composition of two objects:
     
     * A Release Object contains information on where and when particles are released
     * A Substance Object contains information about what was spilled. If the simulation includes weathering processes the Substance must be a GnomeOil. Otherwise, the default substance is NonWeatheringSubstance (a passive tracer).
