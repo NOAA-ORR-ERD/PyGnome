@@ -54,8 +54,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = 'pyGNOME'
-copyright = '2012, NOAA Emergency Response Division'
+project = 'PyGNOME'
+copyright = '2021, NOAA Emergency Response Division'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -68,7 +68,7 @@ copyright = '2012, NOAA Emergency Response Division'
 # Pulling from gnome package
 import gnome
 # The short X.Y version.
-version = gnome.__version__
+version = ".".join(gnome.__version__.split(".")[:2])
 # The full version, including alpha/beta/rc tags.
 release = gnome.__version__
 
@@ -189,7 +189,7 @@ html_show_copyright = False
 #html_file_suffix = None
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'pyGNOMEdoc'
+htmlhelp_basename = 'PyGNOME_doc'
 
 
 # -- Options for LaTeX output --------------------------------------------------
@@ -208,7 +208,7 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'pyGNOME.tex', 'pyGNOME Documentation',
+  ('index', 'PyGNOME.tex', 'PyGNOME Documentation',
    'NOAA Emergency Response Division', 'manual'),
 ]
 
@@ -238,7 +238,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'pygnome', 'pyGNOME Documentation',
+    ('index', 'py_gnome', 'PyGNOME Documentation',
      ['NOAA Emergency Response Division'], 1)
 ]
 
@@ -252,8 +252,10 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'pyGNOME', 'pyGNOME Documentation',
-   'NOAA Emergency Response Division', 'pyGNOME', 'One line description of project.',
+  ('index', 'PyGNOME', 'PyGNOME Documentation',
+   'NOAA Emergency Response Division', 'PyGNOME',
+   'General NOAA Operational Modeling Environment: '
+   'particle tracing framework with features to support oils spill modeling',
    'Miscellaneous'),
 ]
 
