@@ -375,14 +375,7 @@ class Model(GnomeId):
             node = self._schema().get(name)
             if name in attrs:
                 if name != 'spills':
-                    attrs[name] = self._schema.process_subnode(node,
-                                                               self,
-                                                               getattr(self,
-                                                                       name),
-                                                               name,
-                                                               attrs,
-                                                               attrs[name],
-                                                               refs)
+                    attrs[name] = self._schema.process_subnode(node,self,getattr(self,name),name,attrs,attrs[name],refs)
                     if attrs[name] is drop:
                         del attrs[name]
                 else:
@@ -1173,24 +1166,31 @@ class Model(GnomeId):
         if an environment object exists in obj_added, but not in the Model's
         environment collection, then add it automatically.
         todo: maybe we don't want to do this - revisit this requirement
+        JAH 9/22/2021: We sort of need this now because a lot of script behavior expects
+        it. A lamentable state of affairs indeed.
         '''
         if hasattr(obj_added, 'wind') and obj_added.wind is not None:
-            if obj_added.wind.id not in self.environment:
+            if obj_added.wind not in self.environment:
+                self.logger.info(f'adding wind {obj_added.wind.name}, id:{obj_added.wind.id}')
                 self.environment += obj_added.wind
 
         if hasattr(obj_added, 'tide') and obj_added.tide is not None:
-            if obj_added.tide.id not in self.environment:
+            if obj_added.tide not in self.environment:
+                self.logger.info(f'adding tide {obj_added.tide.name}, id:{obj_added.tide.id}')
                 self.environment += obj_added.tide
 
         if hasattr(obj_added, 'waves') and obj_added.waves is not None:
-            if obj_added.waves.id not in self.environment:
+            if obj_added.waves not in self.environment:
+                self.logger.info(f'adding waves {obj_added.waves.name}, id:{obj_added.waves.id}')
                 self.environment += obj_added.waves
 
         if hasattr(obj_added, 'water') and obj_added.water is not None:
-            if obj_added.water.id not in self.environment:
+            if obj_added.water not in self.environment:
+                self.logger.info(f'adding water {obj_added.water.name}, id:{obj_added.water.id}')
                 self.environment += obj_added.water
         if hasattr(obj_added, 'current') and obj_added.current is not None:
-            if obj_added.current.id not in self.environment:
+            if obj_added.current not in self.environment:
+                self.logger.info(f'adding current {obj_added.current.name}, id:{obj_added.current.id}')
                 self.environment += obj_added.current
 
     def _callback_add_mover(self, obj_added):

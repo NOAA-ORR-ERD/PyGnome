@@ -539,7 +539,7 @@ class Langmuir(Weatherer):
     '''
     Easiest to define this as a weathering process that updates 'area' array
     '''
-    _schema = WeathererSchema
+    _schema = LangmuirSchema
     _ref_as = 'langmuir'
     _req_refs = ['water', 'wind']
 
@@ -550,6 +550,11 @@ class Langmuir(Weatherer):
         '''
         initialize wind to (0, 0) if it is None
         '''
+        self.wind = wind
+
+        # need water object to find relative buoyancy
+        self.water = water
+
         super(Langmuir, self).__init__(**kwargs)
         self.array_types.update({'fay_area': gat('fay_area'),
                                  'area': gat('area'),
@@ -560,10 +565,6 @@ class Langmuir(Weatherer):
                                  'frac_coverage': gat('frac_coverage'),
                                  'density': gat('density')})
 
-        self.wind = wind
-
-        # need water object to find relative buoyancy
-        self.water = water
 
     def _get_frac_coverage(self, points, model_time, rel_buoy, thickness):
         '''
