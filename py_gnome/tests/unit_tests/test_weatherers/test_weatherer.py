@@ -4,10 +4,6 @@
 Unit tests for the Weatherer classes
 '''
 
-
-
-
-
 from datetime import datetime
 
 import numpy as np
@@ -15,7 +11,7 @@ import numpy as np
 from gnome.utilities.inf_datetime import InfDateTime
 
 from gnome.environment import Water
-from gnome.spill.substance import GnomeOil
+from gnome.spill.gnome_oil import GnomeOil
 
 from .conftest import weathering_data_arrays, test_oil
 

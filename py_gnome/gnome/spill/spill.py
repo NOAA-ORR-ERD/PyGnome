@@ -24,19 +24,24 @@ from gnome.persist.base_schema import ObjTypeSchema, GeneralGnomeObjectSchema
 
 from gnome import _valid_units
 
-from gnome.spill.release import (Release,
-                                 PointLineRelease,
-                                 GridRelease,
-                                 SpatialRelease,
-                                 BaseReleaseSchema,
-                                 PointLineReleaseSchema,
-                                 SpatialReleaseSchema)
 from gnome.environment.water import WaterSchema
-# from gnome.spill.le import LEData
-from gnome.spill.substance import (SubstanceSchema, Substance,
-                                   NonWeatheringSubstance, GnomeOil,
-                                   GnomeOilSchema, NonWeatheringSubstanceSchema)
-from gnome.spill.initializers import plume_initializers
+
+from .release import (Release,
+                      PointLineRelease,
+                      GridRelease,
+                      SpatialRelease,
+                      BaseReleaseSchema,
+                      PointLineReleaseSchema,
+                      SpatialReleaseSchema)
+
+from .substance import (Substance,
+                        SubstanceSchema,
+                        NonWeatheringSubstance,
+                        NonWeatheringSubstanceSchema
+                        )
+from .gnome_oil import (GnomeOil, GnomeOilSchema)
+
+from .initializers import plume_initializers
 
 
 class SpillSchema(ObjTypeSchema):

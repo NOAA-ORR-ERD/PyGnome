@@ -6,10 +6,6 @@ run the simulation in a seemless integration with GNOME.
 
 """
 
-
-
-
-
 from datetime import datetime, timedelta
 
 import unit_conversion as uc
@@ -18,12 +14,14 @@ from gnome.utilities.time_utils import asdatetime
 
 from gnome.spill.release import Release
 from gnome.spill.spill import SpillSchema, Spill
-from gnome.spill.substance import Substance, GnomeOil
+from gnome.spill.substance import Substance
+from gnome.spill.gnome_oil import GnomeOil
 from gnome.utilities.time_utils import asdatetime
 from gnome.gnomeobject import GnomeId
 from gnome import _valid_units
 
 import numpy as np
+
 
 class TamocSpill(Spill):
     """

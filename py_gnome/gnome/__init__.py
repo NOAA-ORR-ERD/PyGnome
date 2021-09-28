@@ -37,7 +37,7 @@ def check_dependency_versions():
     libs = [('gridded', '0.3.0'),
             ('unit_conversion', '2.10'),
             ('py_gd', '0.1.7'),
-            ('adios_db', '0.6.0')
+            ('adios_db', '0.7.1')
             ]
 
     for name, version in libs:

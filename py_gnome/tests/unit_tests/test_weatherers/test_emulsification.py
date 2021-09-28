@@ -17,7 +17,7 @@ from .conftest import weathering_data_arrays
 from ..conftest import (sample_model_weathering,
                         sample_model_weathering2,
                         test_oil)
-from gnome.spill.substance import GnomeOil
+from gnome.spill.gnome_oil import GnomeOil
 
 
 water = Water()
@@ -50,7 +50,8 @@ def test_emulsification(oil, temp, num_elems, on):
 
     emul.prepare_for_model_run(sc)
 
-    # also want a test for a user set value for bulltime or bullwinkle
+    # also want a test for a user set value for
+    # bullwinkle_time or bullwinkle_fraction
     if oil == s_oils[0]:
         sc['frac_evap'][:] = .31
 
@@ -131,25 +132,28 @@ def test_full_run_emul_not_active(sample_model_fcn):
 def test_bulltime():
     '''
     user set time to start emulsification
+    This should be in the GnomeOil tests
     '''
     oil = GnomeOil(test_oil)
-    assert oil.bulltime == -999
-    oil.bulltime = 3600
-    assert oil.bulltime == 3600
+    assert oil.bullwinkle_time == -999
+    oil.bullwinkle_time = 3600
+    assert oil.bullwinkle_time == 3600
 
 
 def test_bullwinkle():
     '''
     user set emulsion constant
+    This should be in the GnomeOil tests ...
     '''
 
     oil = GnomeOil(test_oil)
 
-    # our test_oil is the sample oile
-    assert np.isclose(oil.bullwinkle, 0.1937235)
+    # our test_oil is the sample oils
+    assert np.isclose(oil.bullwinkle_fraction, 0.1937235)
 
-    oil.bullwinkle = .4
-    assert oil.bullwinkle == .4
+    oil.bullwinkle_fraction = .4
+    assert oil.bullwinkle_fraction == .4
+
 
 @pytest.mark.skipif(reason="serialization for weatherers overall needs review")
 def test_serialize_deseriailize():

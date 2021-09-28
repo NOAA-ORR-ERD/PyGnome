@@ -1,10 +1,6 @@
 '''
-test objects defined in wd module
+test objects defined in weathering_data module
 '''
-
-
-
-
 
 from datetime import datetime, timedelta
 
@@ -15,9 +11,8 @@ from testfixtures import log_capture
 from gnome.environment import Water
 from gnome.weatherers import WeatheringData, FayGravityViscous
 from gnome.spill import point_line_release_spill
-from gnome.spill.substance import GnomeOil
+from gnome.spill.gnome_oil import GnomeOil
 from gnome.spill_container import SpillContainer
-from gnome.basic_types import oil_status, fate as bt_fate
 
 from ..conftest import test_oil
 
@@ -416,7 +411,7 @@ class TestWeatheringData(object):
                "Set density to water density".format(new_subs.name,
                                                      288.0,
                                                      'K'))
-        l.check_present(('gnome.spill.substance.GnomeOil',
+        l.check_present(('gnome.spill.gnome_oil.GnomeOil',
                  'ERROR',
                  msg))
 

@@ -1,14 +1,9 @@
-###############
-Testing Scripts
-###############
+###########################
+PyGNOME scripting examples
+###########################
 
 This directory holds a collection of scripts.
 
-Some are examples for setting up and running a model. For example:
+``testing_scripts`` is a collection of scripts primarily for testing and exercising specific features
 
-* simple_script.py
-
-Some are utilities for working with PyGNOME output. 
-
-* build.gif.py
-* oil_budget_from_savefile.py
+``example_scripts`` is a collection of example scripts that use various input formats or perform common functionality.

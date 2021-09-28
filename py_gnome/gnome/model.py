@@ -1531,18 +1531,17 @@ class Model(GnomeId):
                     isValid = False
 
                 if spill.substance.is_weatherable:
-                    # min_k1 = spill.substance.get('pour_point_min_k')
-                    pour_point = spill.substance.pour_point()
+                    pour_point = spill.substance.pour_point
 
                     if spill.substance.water is not None:
                         water_temp = spill.substance.water.get('temperature')
 
-                        if water_temp < pour_point[0]:
+                        if water_temp < pour_point:
                             msg = ('The water temperature, {0} K, '
                                    'is less than the minimum pour point '
                                    'of the selected oil, {1} K.  '
                                    'The results may be unreliable.'
-                                   .format(water_temp, pour_point[0]))
+                                   .format(water_temp, pour_point))
 
                             self.logger.warning(msg)
                             msgs.append(self._warn_pre + msg)
