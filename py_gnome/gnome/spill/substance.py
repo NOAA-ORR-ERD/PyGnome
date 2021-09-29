@@ -21,6 +21,7 @@ from gnome.spill.initializers import (floating_initializers,
                                       InitWindagesSchema,
                                       DistributionBaseSchema)
 
+
 class SubstanceSchema(ObjTypeSchema):
     initializers = SequenceSchema(
         GeneralGnomeObjectSchema(
@@ -216,3 +217,9 @@ class NonWeatheringSubstance(Substance):
             For non-weathering substance, we just return the standard density.
         '''
         return self.standard_density
+
+# so old save files will work
+# this should be removed eventually ...
+from .gnome_oil import GnomeOil
+
+
