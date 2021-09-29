@@ -1,7 +1,7 @@
 Movers
 ======
 
-Processes that change the position of the LEs are termed "movers" in GNOME. These can include advection of the LEs due to winds and currents, 
+Processes that change the position of the LEs are termed "movers" in PyGNOME. These can include advection of the LEs due to winds and currents, 
 diffusive movement of LEs due to unresolved turbulent flow fields, and prescribed behavior of the LEs (e.g. rise velocity of oil droplets 
 or larval swimming.)
 
@@ -37,7 +37,7 @@ create a wind mover from a single point time series in a text file::
     w_mover = wind_mover_from_file('mywind.txt')
     model.movers += w_mover
     
-The format of the text file is described in the GNOME file formats document available `here 
+The format of the text file is described in the file formats document available `here 
 <http://response.restoration.noaa.gov/sites/default/files/GNOME_DataFormats.pdf>`_.
 Briefly, it has 3 header lines, followed by comma seperated data. Alternatively, the An example is given here with
 annotations in brackets at the end of the lines:

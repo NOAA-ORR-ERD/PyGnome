@@ -314,10 +314,18 @@ def get_array_type(name):
     does not exist
     """
     params = _default_values[name]
-    return ArrayType(shape=params[0],
-                     dtype=params[1],
-                     name=params[2],
-                     initial_value=params[3])
+    # special case for IdArrayType and ArrayTypeDivideOnSplit
+    if len(params)>4:
+        return params[4](shape=params[0],
+                         dtype=params[1],
+                         name=params[2],
+                         initial_value=params[3])
+
+    else:
+        return ArrayType(shape=params[0],
+                         dtype=params[1],
+                         name=params[2],
+                         initial_value=params[3])
 
 gat = get_array_type
 

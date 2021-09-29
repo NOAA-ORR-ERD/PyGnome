@@ -5,14 +5,6 @@ Contains functions for adding randomness - not to
 confuse with standard python random functions
 """
 
-
-
-
-
-# from future import standard_library
-# standard_library.install_aliases()
-# from builtins import *
-
 import numpy as np
 
 from gnome.cy_gnome import cy_helpers
@@ -78,8 +70,8 @@ def random_with_persistance(
         raise ValueError(len_msg)
 
     if np.any(high < low):
-        raise ValueError('The lower bound for random_with_persistance must be'
-                '  less than or equal to upper bound for all array elements')
+        raise ValueError('The lower bound for random_with_persistance must be '
+                         'less than or equal to upper bound for all array elements')
 
     if np.all(low == high):
         array[:] = low[:]

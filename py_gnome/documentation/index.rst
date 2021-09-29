@@ -1,7 +1,7 @@
-.. pyGNOME documentation master file
+.. PyGNOME documentation master file
 
 ###################################
-Welcome to pyGNOME's documentation!
+Welcome to PyGNOME's documentation!
 ###################################
 
 Contents
@@ -14,7 +14,6 @@ Contents
   installing
   structure
   scripting/index
-  env_obj/index
   customizing
   logging
   serialization

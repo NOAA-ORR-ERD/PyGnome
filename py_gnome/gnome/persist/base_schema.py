@@ -1,11 +1,3 @@
-
-
-
-
-from past.types import basestring
-
-
-# import pdb
 import datetime
 import zipfile
 import logging
@@ -273,10 +265,10 @@ class ObjType(SchemaType):
         #Gets the json for the object, as if this were being serialized
         obj_json = None
         if hasattr(raw_object, 'to_dict'):
-            #Passing the 'save' in case a class wants to do some special stuff on
-            #saving specifically.
+            # Passing the 'save' in case a class wants to do some special stuff on
+            # saving specifically.
             dict_ = raw_object.to_dict('save')
-            for k in list(dict_.keys()):
+            for k in dict_.keys():
                 if dict_[k] is None:
                     dict_[k] = null
             return dict_
@@ -297,8 +289,8 @@ class ObjType(SchemaType):
             fname = gen_unique_filename(fname, zipfile_)
 
             refs[json_['id']] = fname
-        #strips out any entries that do not need saving. They're still in refs,
-        #but that shouldn't do any harm.
+        # strips out any entries that do not need saving. They're still in refs,
+        # but that shouldn't do any harm.
         savable_attrs = node.get_nodes_by_attr('save')
         for k in list(json_.keys()):
             subnode = node.get(k)
@@ -347,7 +339,7 @@ class ObjType(SchemaType):
         for d in datafiles:
             if json_[d] is None:
                 continue
-            elif isinstance(json_[d], basestring):
+            elif isinstance(json_[d], str):
                 json_[d] = self._process_supporting_file(json_[d], zipfile_)
             elif isinstance(json_[d], collections.Iterable):
                 # List, tuple, etc
@@ -502,7 +494,7 @@ class ObjType(SchemaType):
             tmpdir = tempfile.mkdtemp()
 
         for d in datafiles:
-            if isinstance(cstruct[d], basestring):
+            if isinstance(cstruct[d], str):
                 cstruct[d] = self._load_supporting_file(cstruct[d],
                                                         saveloc, tmpdir)
                 log.info('Extracted file {0}'.format(cstruct[d]))
@@ -649,7 +641,7 @@ class ObjTypeSchema(MappingSchema):
     def __init__(self, *args, **kwargs):
         super(ObjTypeSchema, self).__init__(*args, **kwargs)
         for c in self.children:
-            for k,v in list(self._colander_defaults.items()):
+            for k, v in self._colander_defaults.items():
                 if not hasattr(c, k):
                     setattr(c, k, v)
                 elif hasattr(c, k) and hasattr(c.__class__, k) and getattr(c, k) is getattr(c.__class__, k):
@@ -741,6 +733,10 @@ class ObjTypeSchema(MappingSchema):
 
     @staticmethod
     def process_subnode(subnode, appstruct, subappstruct, subname, cstruct, subcstruct, refs):
+        '''
+        The recursive function that a schema uses to process it's child attributes.
+        returns the value of what subappstruct should become, based on the incoming subcstruct
+        '''
         if subnode.schema_type is ObjType:
             if subcstruct is None:
                 return None
@@ -761,12 +757,10 @@ class ObjTypeSchema(MappingSchema):
                 return r
         elif (subnode.schema_type is Sequence and
               isinstance(subnode.children[0], ObjTypeSchema)):
+            #subnode is a list of Gnome objects
             if subappstruct is None:
                 subappstruct = []
             else:
-                # Why are we doing this?  The GC works.
-                # Is it for performance?
-                # Is it to zero out the passed-in arg?
                 del subappstruct[:]
 
             for subitem in subcstruct:
@@ -778,7 +772,7 @@ class ObjTypeSchema(MappingSchema):
                 subappstruct.clear()
             else:
                 raise ValueError('process_subnode(): '
-                                 'why is subappstruct None????')
+                                 'why is orderedcollection subappstruct None????')
 
             for subitem in subcstruct:
                 subappstruct.add(ObjTypeSchema.process_subnode(subnode.children[0],appstruct, subappstruct, subname, cstruct, subitem, refs))

@@ -1,5 +1,5 @@
 """
-utilities for scripting  gnome
+utilities for scripting gnome
 
 assorted utilities that make it easier to write scripts to automate gnome
 

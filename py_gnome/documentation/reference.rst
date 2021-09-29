@@ -14,7 +14,7 @@ you aren't doing a full-on oil spill model. The model contains:
 * collection of environment objects
 * collection of movers
 * collection of weatherers
-* a spills
+* spills
 * its own attributes
 
 In pseudocode, the model loop is defined below. In the first step, it sets up the
@@ -56,7 +56,12 @@ model run and in subsequent steps the model moves and weathers elements.
 --------------------------------------
 
 .. automodule:: gnome.map
+.. autoclass:: GnomeMap
     :members:
+    :inherited-members:
+.. autoclass:: MapFromBNA
+    :members:
+    :inherited-members:
 
 ``gnome.spill`` -- classes in the spill module
 -----------------------------------------------
@@ -78,15 +83,6 @@ model run and in subsequent steps the model moves and weathers elements.
     :members:
     :inherited-members:
 
-``gnome.spill.elements`` -- classes in the elements module
------------------------------------------------------------
-
-.. automodule:: gnome.spill.elements.element_type
-.. autoclass:: ElementType
-    :members:
-    :inherited-members:
-.. autofunction:: floating
-.. autofunction:: plume
 
 ``gnome.movers`` -- PyGnome mover classes
 ---------------------------------------------------
@@ -146,7 +142,7 @@ model run and in subsequent steps the model moves and weathers elements.
 ``gnome.environment.environment_objects`` -- PyGnome implemented environment objects
 ------------------------------------------------------------------------------------
 
-.. .. automodule:: gnome.environment.environment_objects
+.. automodule:: gnome.environment.environment_objects
 
 .. autoclass:: GridCurrent
     :members: from_netCDF, at

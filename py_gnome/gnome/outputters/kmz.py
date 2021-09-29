@@ -2,18 +2,15 @@
 kmz  outputter
 """
 
-import copy
 import os
 from datetime import timedelta, datetime
 import zipfile
 import base64
 
-from colander import SchemaNode, String, drop
-
 from gnome.basic_types import oil_status
 
 from .outputter import Outputter, OutputterFilenameMixin, BaseOutputterSchema
-from gnome.persist.extend_colander import FilenameSchema
+from gnome.persist import drop, FilenameSchema
 
 from . import kmz_templates
 
@@ -125,7 +122,7 @@ class KMZOutput(OutputterFilenameMixin, Outputter):
             return None
 
         # add to the kml list:
-        for sc in list(self.cache.load_timestep(step_num).items()):
+        for sc in self.cache.load_timestep(step_num).items():
             # loop through uncertain and certain LEs
             # extract the data
             start_time = sc.current_time_stamp

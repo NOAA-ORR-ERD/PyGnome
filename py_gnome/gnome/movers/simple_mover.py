@@ -97,10 +97,8 @@ class SimpleMover(Mover):
         :param spill: spill is an instance of the gnome.spill.Spill class
         :param time_step: time_step in seconds
         :param model_time: current model time as a datetime object
-        In this case, it uses the:
-            positions
-            status_code
-        data arrays.
+        
+        In this case, it uses the positions and status_code data arrays.
 
         :returns delta: Nx3 numpy array of movement
                         -- in (long, lat, meters) units

@@ -1,7 +1,7 @@
-Customizing pygnome
+Customizing PyGNOME
 ===================
 
-The pygnome Mover and Weatherer APIs are defined so that you can write your own movers and/or weatherers.
+The PyGNOME Mover and Weatherer APIs are defined so that you can write your own movers and/or weatherers.
 
 Writing a custom mover
 ----------------------

@@ -8,11 +8,6 @@ NOTE: maybe it would be better to do with a metaclass
       for GNOME_ID ?
 """
 
-
-
-
-
-
 import colander
 from gnome.persist import base_schema
 
@@ -29,7 +24,7 @@ def serializable(cls):
     print(cls.__dict__)
     print(type(cls.__dict__))
     # find all class attributes that are colander "nodes"
-    nodes = {name: node for name, node in list(cls.__dict__.items()) if
+    nodes = {name: node for name, node in cls.__dict__.items() if
              isinstance(node, colander.SchemaType)
              }
 

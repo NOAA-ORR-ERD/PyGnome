@@ -205,23 +205,19 @@ class RandomMover3D(CyMover):
         Uses super to invoke base class __init__ method.
 
         Optional parameters (kwargs)
-        :param vertical_diffusion_coef_above_ml: Vertical diffusion coefficient
-            for random diffusion above the mixed layer. Default is 5 cm2/s
-        :param vertical_diffusion_coef_below_ml: Vertical diffusion coefficient
-            for random diffusion below the mixed layer. Default is .11 cm2/s
-        :param mixed_layer_depth: Mixed layer depth. Default is 10 meters.
-        :param horizontal_diffusion_coef_above_ml: Horizontal diffusion
-                                                   coefficient for random
-                                                   diffusion above the mixed
-                                                   layer. Default is
-                                                   100000 cm2/s.
-        :param horizontal_diffusion_coef_below_ml: Horizontal diffusion
-                                                   coefficient for random
-                                                   diffusion below the mixed
-                                                   layer. Default is 126 cm2/s.
+        
+        :param vertical_diffusion_coef_above_ml: Vertical diffusion coefficient for random diffusion 
+                                                 above the mixed layer. Default is 5 cm2/s
+        :param vertical_diffusion_coef_below_ml: Vertical diffusion coefficient for random diffusion 
+                                                 below the mixed layer. Default is .11 cm2/s
+        :param mixed_layer_depth: Mixed layer depth. Default is 10 meters
+        :param horizontal_diffusion_coef_above_ml: Horizontal diffusion coefficient for random diffusion 
+                                                   above the mixed layer. Default is 100000 cm2/s
+        :param horizontal_diffusion_coef_below_ml: Horizontal diffusion coefficient for random diffusion 
+                                                   below the mixed layer. Default is 126 cm2/s
+        :param surface_is_allowed: Vertical diffusion will ignore surface particles if this is True. Default 
+                                   is False.
 
-        :param surface_is_allowed: Vertical diffusion will ignore surface
-            particles if this is True. Default is False.
         Remaining kwargs are passed onto Mover's __init__ using super.
         See Mover documentation for remaining valid kwargs.
         """

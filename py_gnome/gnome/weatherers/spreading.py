@@ -3,18 +3,9 @@ objects used to model the spreading of oil
 Include the Langmuir process here as well
 '''
 
-
-
-
-
-
 import numpy as np
-try:
-    # it's built-in on py3
-    from functools import lru_cache
-except ImportError:
-    # needs backports for py2
-    from backports.functools_lru_cache import lru_cache
+
+from functools import lru_cache
 
 from colander import SchemaNode, Float, drop
 
@@ -331,7 +322,7 @@ class FayGravityViscous(Weatherer):
                 K = 4 * PI * 2 * .033
 
                 #blob_area_diffusion = area[m_age].sum() + ((7 / 6) * K * (area[m_age].sum() / K) ** (1 / 7)) * time_step
-                blob_area_diffusion = ((7 / 6) * K * (area[m_age].sum() / K) ** (1 / 7)) * time_step
+                blob_area_diffusion = ((7. / 6.) * K * (area[m_age].sum() / K) ** (1. / 7.)) * time_step
 
                 #blob_area = blob_area_fgv + blob_area_diffusion
                 blob_area = area[m_age].sum() + blob_area_fgv + blob_area_diffusion
@@ -548,7 +539,7 @@ class Langmuir(Weatherer):
     '''
     Easiest to define this as a weathering process that updates 'area' array
     '''
-    _schema = WeathererSchema
+    _schema = LangmuirSchema
     _ref_as = 'langmuir'
     _req_refs = ['water', 'wind']
 
@@ -559,6 +550,11 @@ class Langmuir(Weatherer):
         '''
         initialize wind to (0, 0) if it is None
         '''
+        self.wind = wind
+
+        # need water object to find relative buoyancy
+        self.water = water
+
         super(Langmuir, self).__init__(**kwargs)
         self.array_types.update({'fay_area': gat('fay_area'),
                                  'area': gat('area'),
@@ -569,10 +565,6 @@ class Langmuir(Weatherer):
                                  'frac_coverage': gat('frac_coverage'),
                                  'density': gat('density')})
 
-        self.wind = wind
-
-        # need water object to find relative buoyancy
-        self.water = water
 
     def _get_frac_coverage(self, points, model_time, rel_buoy, thickness):
         '''

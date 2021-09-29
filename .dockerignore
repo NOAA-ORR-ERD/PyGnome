@@ -1,4 +1,8 @@
 # ignore following files
+
+.git
+oil_database/.git
+
 node_modules
 *.swp
 *.so
@@ -55,7 +59,7 @@ py_gnome/junk_tiny.txt
 py_gnome/tests/unit_tests/test_utilities/test_file_tools/test.bna
 py_gnome/tests/unit_tests/test_utilities/test_file_tools/test_bad.bna
 
-# ignore gnerated and sample data for tests
+# ignore generated and sample data for tests
 
 py_gnome/tests/junk.txt
 py_gnome/tests/junk_large.txt

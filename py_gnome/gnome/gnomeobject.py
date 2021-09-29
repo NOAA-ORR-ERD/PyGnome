@@ -1,11 +1,5 @@
 #!/usr/bin/env python
 
-
-
-
-
-from future.utils import with_metaclass
-
 import os
 import copy
 import logging
@@ -124,9 +118,9 @@ class Refs(dict):
         provides a unique name by appending length+1
         '''
         base_name = obj.obj_type.split('.')[-1]
-        num_of_same_type = [v for v in list(self.values()) if v.obj_type == obj.obj_type]
+        num_of_same_type = [v for v in self.values() if v.obj_type == obj.obj_type]
 
-        return base_name + num_of_same_type+1
+        return base_name + num_of_same_type + 1
 
 
 class GnomeObjMeta(type):
@@ -137,14 +131,13 @@ class GnomeObjMeta(type):
         return super(GnomeObjMeta, cls).__new__(cls, name, parents, dct)
 
 
-class GnomeId(with_metaclass(GnomeObjMeta, AddLogger)):
-# py3 way, when we get there
-# class GnomeId(AddLogger, metaclass=GnomeObjMeta):
+class GnomeId(AddLogger, metaclass=GnomeObjMeta):
     '''
     A class for assigning a unique ID for an object
     '''
     _id = None
     make_default_refs = True
+    _name = None  # so that it will always exist
 
     def __init__(self, name=None, _appearance=None, *args, **kwargs):
         super(GnomeId, self).__init__(*args, **kwargs)
@@ -248,14 +241,12 @@ class GnomeId(with_metaclass(GnomeObjMeta, AddLogger)):
         self._name = val
 
     def gather_ref_as(self, src, refs):
-        '''
+        """
         Gathers refs from single or collection of GnomeId objects.
         :param src: GnomeId object or collection of GnomeId
         :param refs: dictionary of str->list of GnomeId
-        :returns {'ref1': [list of GnomeId],
-                  'ref2 : [list of GnomeId],
-                  ...}
-        '''
+        :returns {'ref1': [list of GnomeId], 'ref2 : [list of GnomeId], ...}
+        """
         if isinstance(src, GnomeId):
             src = [src,]
         for ob in src:
@@ -406,7 +397,7 @@ class GnomeId(with_metaclass(GnomeObjMeta, AddLogger)):
         attrs = copy.copy(dict_)
         updated = False
 
-        for k in list(attrs.keys()):
+        for k in list(attrs):
             if k not in updatable:
                 attrs.pop(k)
 
@@ -425,7 +416,7 @@ class GnomeId(with_metaclass(GnomeObjMeta, AddLogger)):
                 if attrs[name] is colander.drop:
                     del attrs[name]
 
-        #attrs may be out of order. However, we want to process the data in schema order (held in 'updatable')
+        # attrs may be out of order. However, we want to process the data in schema order (held in 'updatable')
         for k in updatable:
             if hasattr(self, k) and k in attrs:
                 if not updated and self._attr_changed(getattr(self, k), attrs[k]):
@@ -439,8 +430,8 @@ class GnomeId(with_metaclass(GnomeObjMeta, AddLogger)):
                     raise
                 attrs.pop(k)
 
-        #process all remaining items in any order...can't wait to see where problems pop up in here
-        for k, v in list(attrs.items()):
+        # process all remaining items in any order...can't wait to see where problems pop up in here
+        for k, v in attrs.items():
             if hasattr(self, k):
                 if not updated and self._attr_changed(getattr(self, k), v):
                     updated = True

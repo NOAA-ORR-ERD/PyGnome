@@ -3,14 +3,6 @@ module contains objects that contain weather related data. For example,
 the Wind object defines the Wind conditions for the spill
 """
 
-
-
-
-
-# from future import standard_library
-# standard_library.install_aliases()
-# from builtins import *
-
 import datetime
 import os
 # import copy
@@ -211,10 +203,10 @@ class Wind(Timeseries, Environment):
         self.extrapolation_is_allowed = extrapolation_is_allowed
 
     def update_from_dict(self, dict_, refs=None):
-        if 'units' in list(dict_.keys()):
-            #enforce updating of units before timeseries
+        if 'units' in dict_:
+            # enforce updating of units before timeseries
             self.units = dict_.pop('units')
-        if 'timeseries' in list(dict_.keys()):
+        if 'timeseries' in dict_:
             self.timeseries = WindTimeSeriesSchema().deserialize(dict_.pop('timeseries'))
         super(Wind, self).update_from_dict(dict_, refs=refs)
 
@@ -386,7 +378,7 @@ class Wind(Timeseries, Environment):
 
         Writes the "OSSM format" with the full header
         '''
-        if self.units in list(ossm_wind_units.values()):
+        if self.units in ossm_wind_units.values():
             data_units = self.units
         else:
             # we know C++ understands this unit

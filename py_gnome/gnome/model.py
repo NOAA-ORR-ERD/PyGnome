@@ -1,8 +1,5 @@
 #!/usr/bin/env python
 
-
-from past.types import basestring
-
 import os
 from datetime import datetime, timedelta
 import zipfile
@@ -89,6 +86,10 @@ class ModelSchema(ObjTypeSchema):
                             MapFromUGridSchema),
         save_reference=True
     )
+    environment = OrderedCollectionSchema(
+        GeneralGnomeObjectSchema(acceptable_schemas=env_schemas),
+        save_reference=True
+    )
     spills = OrderedCollectionSchema(
         GeneralGnomeObjectSchema(acceptable_schemas=[SpillSchema]),
         save_reference=True, test_equal=False
@@ -105,17 +106,14 @@ class ModelSchema(ObjTypeSchema):
         GeneralGnomeObjectSchema(acceptable_schemas=weatherer_schemas),
         save_reference=True
     )
-    environment = OrderedCollectionSchema(
-        GeneralGnomeObjectSchema(acceptable_schemas=env_schemas),
-        save_reference=True
-    )
     outputters = OrderedCollectionSchema(
         GeneralGnomeObjectSchema(acceptable_schemas=out_schemas),
         save_reference=True
     )
 
     #UI Configuration properties for web client:
-    manual_weathering = SchemaNode(Bool(), save=False, update=True, test_equal=False, missing=drop)
+    #manual_weathering = SchemaNode(Bool(), save=False, update=True, test_equal=False, missing=drop)
+    weathering_activated = SchemaNode(Bool(), save=True, update=True, test_equal=False, missing=drop)
 
 
 class Model(GnomeId):
@@ -170,7 +168,8 @@ class Model(GnomeId):
                  weatherers=[],
                  spills=[],
                  uncertain_spills=[],
-                 manual_weathering=False,
+                 #manual_weathering=False,
+                 weathering_activated=False,
                  **kwargs):
         '''
         Initializes a model.
@@ -259,7 +258,8 @@ class Model(GnomeId):
 
         self.location = location
         self._register_callbacks()
-        self.manual_weathering = manual_weathering
+        #self.manual_weathering = manual_weathering
+        self.weathering_activated = weathering_activated
         self.array_types.update({'age': gat('age')})
 
     def _register_callbacks(self):
@@ -298,7 +298,7 @@ class Model(GnomeId):
                                  see: ``gnome.weatherers.__init__.py`` for the full list
 
         """
-        names = list(weatherers_by_name.keys())
+        # names = list(weatherers_by_name.keys())
         try:
             which = standard_weatherering_sets[which]
         except (TypeError, KeyError):
@@ -375,14 +375,7 @@ class Model(GnomeId):
             node = self._schema().get(name)
             if name in attrs:
                 if name != 'spills':
-                    attrs[name] = self._schema.process_subnode(node,
-                                                               self,
-                                                               getattr(self,
-                                                                       name),
-                                                               name,
-                                                               attrs,
-                                                               attrs[name],
-                                                               refs)
+                    attrs[name] = self._schema.process_subnode(node,self,getattr(self,name),name,attrs,attrs[name],refs)
                     if attrs[name] is drop:
                         del attrs[name]
                 else:
@@ -405,11 +398,33 @@ class Model(GnomeId):
 
                     attrs.pop(name)
 
-        for k, v in attrs.items():
+        #attrs may be out of order. However, we want to process the data in schema order (held in 'updatable')
+        for k in updatable:
+            if hasattr(self, k) and k in attrs:
+                if not updated and self._attr_changed(getattr(self, k), attrs[k]):
+                    updated = True
+
+                try:
+                    setattr(self, k, attrs[k])
+                except AttributeError:
+                    self.logger.error('Failed to set {} on {} to {}'
+                                         .format(k, self, v))
+                    raise
+                attrs.pop(k)
+
+        #process all remaining items in any order...can't wait to see where problems pop up in here
+        for k, v in list(attrs.items()):
             if hasattr(self, k):
                 if not updated and self._attr_changed(getattr(self, k), v):
                     updated = True
-                setattr(self, k, v)
+
+                try:
+                    setattr(self, k, v)
+                except AttributeError:
+                    self.logger.error('Failed to set {} on {} to {}'
+                                         .format(k, self, v))
+                    raise
+
         return updated
 
     @property
@@ -617,7 +632,7 @@ class Model(GnomeId):
         items = []
         for item in collection:
             try:
-                if not isinstance(getattr(item, attr), basestring):
+                if not isinstance(getattr(item, attr), str):
                     if any([value == v for v in getattr(item, attr)]):
                         if allitems:
                             items.append(item)
@@ -757,7 +772,7 @@ class Model(GnomeId):
                 if (hasattr(item, 'array_types')):
                     array_types.update(item.all_array_types)
 
-        self.logger.debug(array_types)
+        #self.logger.debug(array_types)
 
         for sc in self.spills.items():
             sc.prepare_for_model_run(array_types, self.time_step)
@@ -1151,24 +1166,31 @@ class Model(GnomeId):
         if an environment object exists in obj_added, but not in the Model's
         environment collection, then add it automatically.
         todo: maybe we don't want to do this - revisit this requirement
+        JAH 9/22/2021: We sort of need this now because a lot of script behavior expects
+        it. A lamentable state of affairs indeed.
         '''
         if hasattr(obj_added, 'wind') and obj_added.wind is not None:
-            if obj_added.wind.id not in self.environment:
+            if obj_added.wind not in self.environment:
+                self.logger.info(f'adding wind {obj_added.wind.name}, id:{obj_added.wind.id}')
                 self.environment += obj_added.wind
 
         if hasattr(obj_added, 'tide') and obj_added.tide is not None:
-            if obj_added.tide.id not in self.environment:
+            if obj_added.tide not in self.environment:
+                self.logger.info(f'adding tide {obj_added.tide.name}, id:{obj_added.tide.id}')
                 self.environment += obj_added.tide
 
         if hasattr(obj_added, 'waves') and obj_added.waves is not None:
-            if obj_added.waves.id not in self.environment:
+            if obj_added.waves not in self.environment:
+                self.logger.info(f'adding waves {obj_added.waves.name}, id:{obj_added.waves.id}')
                 self.environment += obj_added.waves
 
         if hasattr(obj_added, 'water') and obj_added.water is not None:
-            if obj_added.water.id not in self.environment:
+            if obj_added.water not in self.environment:
+                self.logger.info(f'adding water {obj_added.water.name}, id:{obj_added.water.id}')
                 self.environment += obj_added.water
         if hasattr(obj_added, 'current') and obj_added.current is not None:
-            if obj_added.current.id not in self.environment:
+            if obj_added.current not in self.environment:
+                self.logger.info(f'adding current {obj_added.current.name}, id:{obj_added.current.id}')
                 self.environment += obj_added.current
 
     def _callback_add_mover(self, obj_added):
@@ -1642,11 +1664,11 @@ class Model(GnomeId):
     def list_spill_properties(self):
         '''
         Convenience method to list properties of a spill that
-        can be retrived using get_spill_property
+        can be retrieved using get_spill_property
 
         '''
 
-        return list(list(self.spills.items())[0].data_arrays.keys())
+        return list(self.spills.items())[0].data_arrays.keys()
 
     def get_spill_property(self, prop_name, ucert=0):
         '''

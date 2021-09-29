@@ -3,20 +3,15 @@ module contains objects that contain weather related data. For example,
 the Wind object defines the Wind conditions for the spill
 """
 
-
-
-
-
 import string
 import os
 import glob
 from datetime import datetime
 
-from colander import SchemaNode, String, Float, drop, Boolean
+from colander import SchemaNode, Float, drop, Boolean
 
 import gnome
 from gnome.utilities.time_utils import sec_to_datetime
-from gnome.utilities.inf_datetime import InfDateTime
 from gnome.persist.validators import convertible_to_seconds
 from gnome.persist.extend_colander import LocalDateTime
 
@@ -157,8 +152,7 @@ class Tide(Environment):
         open file, read a few lines to determine if it is an ossm file
         or a shio file
         """
-        # mode 'U' means universal newline support
-        fh = open(filename, 'rU')
+        fh = open(filename, encoding='utf-8')
 
         lines = [fh.readline() for i in range(4)]
 

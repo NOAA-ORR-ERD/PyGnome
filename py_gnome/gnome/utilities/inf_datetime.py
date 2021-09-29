@@ -14,15 +14,6 @@ Also special constructor for a real datetime that won't allow values out of
 range for this application
 """
 
-
-
-
-
-# from future import standard_library
-# standard_library.install_aliases()
-# from builtins import *
-# from builtins import object
-
 import datetime
 
 # minimum and maximum valid datetime values

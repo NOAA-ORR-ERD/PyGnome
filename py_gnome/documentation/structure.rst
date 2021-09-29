@@ -1,117 +1,62 @@
-GNOME Structure
-=====================
+PyGNOME Structure
+=================
 
-A setup of the GNOME model consists of fairly simple structure: It is
-fundamentally a Lagrangian element (particle tracking) model -- the oil or
-other substance is represented as Lagrangian elements (LEs), or particles, in
-the model, with their movement and properties tracked over time. The elements
-are acted on by a number of "movers", each representing a different physical
-process. For the most part, each mover moves the particles one way or another,
-but a mover can also act to change the nature of a particle, rather than moving
-it.
+PyGNOME is fundamentally a Lagrangian element (particle tracking) mode. The oil (or
+other tracer) is represented as Lagrangian elements (LEs), or particles with their 
+movement and properties tracked over time. Particles move under the influence of 
+ocean currents and/or direct wind forcing. Particles also may undergo physical changes
+over time (e.g. oil weathering).
 
-A GNOME setup consists of:
+Setting up a simulation in PyGNOME involves inputting or loading data to instantiate 
+various objects in the ``gnome`` package wich create, move, or and/or modify the particles.
 
- * A Map
- * One or more Spills
- * One or more movers
- * Outputters
- 
-The Map
----------------
- 
-The Map in GNOME defines the domain of the model. It can consist of bounds,
-shoreline (to define where land and water are), and properties of the
-shoreline. For 3-d modeling, it can also define the bathymetry.
- 
-  
-Spills
--------------
- 
-Spills in GNOME are a source of elements -- they define where and when the
-elements are released into the model. 
+Primary Base Classes in ``gnome``
+---------------------------------
 
-Each spill is a composition of the type of substance spilled (ElementType) and
-how elements are released (instantaneous, continuous, etc). Each spill is
-initialized with an element type -- the element types define what properties
-the elements have. The elements may represent something spilled such as an oil
-spill, or could be any other object, objects or substances that you want to
-track -- chemicals, floating debris, fish larvae, etc.
+**The Model Object** :mod:`gnome.model.Model`
+    The Model Object is used to initialize a scenario and run the simulation. It contains various parameters
+    including model start time, duration, and time step. All other objects are added to the Model.
 
-The ElementType itself contains 'substance' which defines the properties of
-the substance spilled and a list of initializers. These are used to define
-data arrays associated with the type of spill, ie floating, floating with
-mass, floating weathering particles etc. There are helper functions
-to define the element_type without delving into initializers; however,
-user can optionally manipulate list of initializers. The helper functions are:
+**The Map Object** :mod:`gnome.map.GnomeMap`
+    The Map Object defines the domain of the model and handles all collision-related 
+    effects such as particle beaching. It can consist of domain boundaries,
+    shoreline data (to define where land and water are), and properties of the
+    shoreline. For 3-d modeling, it can also define the bathymetry.
 
-#. :func:`~gnome.spill.elements.element_type.floating` -
-   to model floating elements with windages
+**Environment Objects** :mod:`gnome.environment.Environment`
+    The environmental conditions the particles interact with are determined using
+    Environment Objects. These objects are designed to represent data flexibly from a 
+    large variety of sources and file formats. Simple scalars, time series data, or full 4D
+    environment data in netCDF format are some examples of what can be used to create 
+    environment objects.
 
-#. :func:`~gnome.spill.elements.element_type.floating_mass` -
-   to model floating elements with windages. This assumes the Spill contains a
-   valid values for 'amount' and 'units' and it evenly distributes the total
-   mass of oil spilled to each element.
+**Movers** :mod:`gnome.movers.Mover`
+    Movers repsesent physical processes that move the particles. They may utilize environment objects for 
+    determining conditions at a particle location or may be simpler parameterizations (e.g. spatially 
+    constant diffusion). 
 
-#. :func:`~gnome.spill.elements.element_type.floating_weathering` -
-   a helper function for defining floating weathering elements. This
-   initializes an array of 'mass_components' for each element. The
-   'mass_components' array represents the fraction of mass contained in each
-   psuedocomponent used to model the oil/substance, since it is a mixture of
-   multiple compounds. This is used for modeling weathering processes.
+**Weatherers** :mod:`gnome.weatherers.Weatherer`
+    Weatherers represent processes that change the mass of the floating oil or of oil droplets
+    within the water column. These include processes that are traditionally described as
+    "weathering" (e.g. evaporation, dispersion) and response options (e.g. skimming, 
+    burning oil). Weatherers utilize oil chemistry data along with environment objects.
 
-Currently, if weatherers are added to the model, then user **needs** to define
-element_type as floating_weathering().
+**Spill Objects** :mod:`gnome.spill.Spill`
+    A Spill Object is a composition of two objects:
+    
+    * A Release Object contains information on where and when particles are released
+    * A Substance Object contains information about what was spilled. If the simulation includes weathering processes the Substance must be a GnomeOil. Otherwise, the default substance is NonWeatheringSubstance (a passive tracer).
 
-This maybe simplified so floating_weathering() helper is not needed -
-basically, if there are any weatherers defined, then a 'mass_components' data
-array will automatically be added. If you are not doing any
-weathering, the Spill object uses a default helper function based on
-whether a spill amount is defined or not. This should suffice for most cases.
+**Outputters** :mod:`gnome.outputters.Outputter`
+    Outputter Objects handle all aspects of exporting data from the
+    model.
 
-Multiple spills can share the same substance; which can be accessed by Spill's
-:meth:`~gnome.spill.Spill.get` method. Multiple spill's can also share the
-same :class:`~~gnome.spill.elements.element_type.ElementType` with the
-caveat that they share the same list of initializers. For example, if
-two spills have different 'windages' then the two spills cannot share the
-ElementType; however, they can still share the 'substance'. Currently, the
-code doesn't account for spills with different substances in the same model so
-it is preferred to either share the same substance or the two substances are
-equal.
+    The Renderer outputter renders a base map, and a set of transparent pngs that plot the
+    positions of the elements, etc. These can be composited to make a movie of the
+    simulation
 
- 
-Movers
--------------
- 
-Movers are any physical process that moves the particles. These can
-be ocean currents, winds, and/or turbulent diffusion. Each mover is 
-initialized with the the data it needs to compute the movement or
-with links to appropriate files in the case of gridded model output.
-
-The Mover API is defined so that you can write your own movers -- for instance
-to model fish swimming behavior, etc. See the reference docs for the the API.
-
-
-Weatherers
---------------
-
-Weatherers are processes that change the mass of the floating oil or of oil droplets
-within the water column. These include processes that are traditionally described as
-"weathering" (e.g. evaporation, dispersion) and response options (e.g. skimming, 
-burning oil).
-
-Outputters
-------------
-
-Outputters are classes use to output results. Other formats can be written, but
-the currently available ones are the `Renderer` and `NetCDFOutput`
-
-The Renderer renders a base map, and a set of transparent pngs that plot the
-positions of the elements, etc. These can be composited to make a movie of the
-simulation
-
-The NetCDFOutput class outputs the element information into the netcdf file
-format.
+    Various formats containing the element information can also be outputted -- at 
+    present these include NetCDF, KMZ, and ESRI shapefiles.
  
 
  

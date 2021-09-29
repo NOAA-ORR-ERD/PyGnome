@@ -10,7 +10,7 @@ import numpy as np
 from gnome.basic_types import world_point_type, oil_status, \
     status_code_type
 
-from gnome.array_types import ArrayType
+from gnome.array_types import ArrayType, IdArrayType, ArrayTypeDivideOnSplit
 from gnome.array_types import gat, reset_to_defaults
 from pytest import mark, raises
 
@@ -30,6 +30,17 @@ def test_reset_to_defaults():
     age.initial_value = 100
     reset_to_defaults(age)
     assert age.initial_value == ival
+
+
+def test_get_array_type():
+    '''
+    will reset the object that found in array_types._default_values and
+    ignore the one not found in this dict.
+    '''
+    id = gat('id')
+    assert isinstance(id, IdArrayType)
+    assert isinstance(age, ArrayType)
+    assert isinstance(mass, ArrayTypeDivideOnSplit)
 
 
 class TestArrayType_eq(object):

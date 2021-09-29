@@ -3,9 +3,6 @@ Binary Outputter
 For use in Gnome Analyst
 '''
 
-
-
-
 import os
 import copy
 from glob import glob
@@ -144,7 +141,7 @@ class BinaryOutput(OutputterFilenameMixin,Outputter):
         if not self._write_step:
             return None
 
-        for sc in list(self.cache.load_timestep(step_num).items()):
+        for sc in self.cache.load_timestep(step_num).items():
             # loop through uncertain and certain LEs
             # extract the data
             if sc.uncertain:

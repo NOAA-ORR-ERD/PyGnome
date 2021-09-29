@@ -2,29 +2,13 @@
 model bio degradation process
 '''
 
-
-
-
-
-
-
-# from math import exp, pi
 import numpy as np
-
-# import gnome  # required by deserialize
-# from gnome.utilities.serializable import Serializable, Field
 
 from gnome.weatherers import Weatherer
 from gnome.array_types import gat
 
 from .core import WeathererSchema
 from gnome.environment.waves import WavesSchema
-
-
-# from gnome.array_types import (mass,
-#                                density,
-#                                mass_components,
-#                                droplet_avg_size)
 
 
 # FIXME: this shouldn't need waves -- though we may want to
@@ -116,18 +100,17 @@ class Biodegradation(Weatherer):
         if not self.on:
             return
 
-        pass
+    # if this isn't doing anything, no need to define it
+    # def prepare_for_model_step(self, sc, time_step, model_time):
+    #     '''
+    #         Set/update arrays used by bio degradation module for this timestep
+    #     '''
+    #     super(Biodegradation, self).prepare_for_model_step(sc,
+    #                                                        time_step,
+    #                                                        model_time)
 
-    def prepare_for_model_step(self, sc, time_step, model_time):
-        '''
-            Set/update arrays used by bio degradation module for this timestep
-        '''
-        super(Biodegradation, self).prepare_for_model_step(sc,
-                                                           time_step,
-                                                           model_time)
-
-        if not self.active:
-            return
+    #     if not self.active:
+    #         return
 
     def bio_degradate_oil(self, K, data, yield_factor):
         '''
@@ -141,8 +124,8 @@ class Biodegradation(Weatherer):
               data['mass_components'] - mass of pseudocomponents
          '''
 
-        mass_biodegradated = (data['mass_components'] *
-                              np.exp(np.outer(self.prev_yield_factor - yield_factor,
+        mass_biodegradated = (data['mass_components']
+                              * np.exp(np.outer(self.prev_yield_factor - yield_factor,
                               6.0 * K)))
 
         return mass_biodegradated
@@ -214,10 +197,12 @@ class Biodegradation(Weatherer):
 
             # (!) bio degradation rate coefficients are coming per day
             # so we need recalculate ones for the time step interval
+            # Fixme: we should probably have the rates in more "Normal"
+            #        units -- i.e. per second
             K_comp_rates = K_comp_rates / (60 * 60 * 24) * time_step
 
             self.previous_yield_factor = data['yield_factor']
-            # calculate yield factor (specific surace)
+            # calculate yield factor (specific surface)
             if np.any(data['droplet_avg_size']):
                 data['yield_factor'] = 1.0 / (data['droplet_avg_size'] * data['density'])
             else:
@@ -226,8 +211,6 @@ class Biodegradation(Weatherer):
             # calculate the mass over time step
             bio_deg = self.bio_degradate_oil(K_comp_rates, data, data['yield_factor'])
 
-            # update yield factor for the next time step
-            #self.prev_yield_factor = yield_factor
 
             # calculate mass balance for bio degradation process - mass loss
             sc.mass_balance['bio_degradation'] += data['mass'].sum() - bio_deg.sum()

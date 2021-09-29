@@ -2,9 +2,6 @@
 Test emulsification module
 '''
 
-
-
-
 from datetime import timedelta
 
 import pytest

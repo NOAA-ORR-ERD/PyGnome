@@ -11,12 +11,10 @@ import numpy as np
 
 from geojson import (Feature, FeatureCollection, dump,
                      Point, MultiPolygon)
-
-from colander import SchemaNode, String, drop, Int, Bool, SequenceSchema
+from gnome.persist import (SchemaNode, String, drop, Int, Boolean,
+                           SequenceSchema, GeneralGnomeObjectSchema)
 
 from gnome.utilities.time_utils import date_to_sec
-
-from gnome.persist.base_schema import GeneralGnomeObjectSchema
 
 from .outputter import Outputter, BaseOutputterSchema
 from gnome.movers.current_movers import IceMoverSchema
@@ -27,7 +25,7 @@ class TrajectoryGeoJsonSchema(BaseOutputterSchema):
     Nothing is required for initialization
     '''
     round_data = SchemaNode(
-        Bool(), missing=drop, save=True, update=True
+        Boolean(), missing=drop, save=True, update=True
     )
     round_to = SchemaNode(
         Int(), missing=drop, save=True, update=True
@@ -128,7 +126,7 @@ class TrajectoryGeoJsonOutput(Outputter):
         c_features = []
         uc_features = []
 
-        for sc in list(self.cache.load_timestep(step_num).items()):
+        for sc in self.cache.load_timestep(step_num).items():
             position = self._dataarray_p_types(sc['positions'])
             status = self._dataarray_p_types(sc['status_codes'])
             mass = self._dataarray_p_types(sc['mass'])
@@ -298,10 +296,9 @@ class IceGeoJsonOutput(Outputter):
         if self.on is False or not self._write_step:
             return None
 
-        for sc in list(self.cache.load_timestep(step_num).items()):
-            # gets the current timestep ?
-            pass
-
+        # just so we can get the timestamp
+        # this really should be refactored
+        sc = self.cache.load_timestep(step_num).items()[-1]
         model_time = date_to_sec(sc.current_time_stamp)
 
         geojson = {}
