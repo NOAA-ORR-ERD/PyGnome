@@ -1356,6 +1356,13 @@ class Model(GnomeId):
         :param refs: A dictionary of id -> object instances that will be used
                      to complete references, if available.
         '''
+        try:
+            saveloc = os.fspath(saveloc)
+            filename = os.fspath(filename)
+        except TypeError:
+            # it's not a path, could be an open zip file, or ...
+            pass
+
         new_model = super(Model, cls).load(saveloc=saveloc,
                                            filename=filename,
                                            refs=refs)
