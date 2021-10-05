@@ -93,7 +93,7 @@ class GnomeOilSchema(SubstanceSchema):
     water = WaterSchema(save_reference=True, test_equal=False)
 
     filename = SchemaNode(
-        String(), isdatafile=True, test_equal=False)
+        String(), missing=drop, isdatafile=False, save=False, test_equal=False)
     oil_name = SchemaNode(
         String(), missing=drop, save=True, update=True
     )
