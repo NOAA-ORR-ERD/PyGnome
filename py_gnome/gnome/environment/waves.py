@@ -47,7 +47,7 @@ class WavesSchema(base_schema.ObjTypeSchema):
             save_reference=True
     )
     #make default refs required here to exempt object from validation checks (webgnomeclient req...)
-    make_default_refs = SchemaNode(Boolean(), save=False, update=True, test_equal=False)
+    make_default_refs = SchemaNode(Boolean(), save=True, update=True, test_equal=False)
 
 
 class Waves(Environment):
