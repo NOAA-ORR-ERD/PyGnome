@@ -1,5 +1,5 @@
 
-.. image:: graphics/new_gnome_icon/GNOME_logo_450px-wide.png)
+.. image:: graphics/new_gnome_icon/GNOME_logo_450px-wide.png
    :alt: GNOME Logo
    :align: center
 
