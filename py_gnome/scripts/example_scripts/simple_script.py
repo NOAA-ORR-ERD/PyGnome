@@ -21,7 +21,7 @@ model.map = gs.GnomeMap(map_bounds=((-145, 48), (-145, 49),
                         )
 
 
-# The very simiplest mover: a steady uniform current
+# The very simplest mover: a steady uniform current
 velocity = (.2, 0, 0) #(u, v, w) in m/s
 uniform_vel_mover = gs.SimpleMover(velocity)
 

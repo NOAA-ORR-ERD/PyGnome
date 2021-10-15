@@ -1,8 +1,8 @@
 Movers
 ======
 
-Processes that change the position of the LEs are termed "movers" in PyGNOME. These can include advection of the LEs due to winds and currents, 
-diffusive movement of LEs due to unresolved turbulent flow fields, and prescribed behavior of the LEs (e.g. rise velocity of oil droplets 
+Processes that change the position of the particles are termed "movers" in PyGNOME. These can include advection of the particles due to winds and currents, 
+diffusive movement of particles due to unresolved turbulent flow fields, and prescribed behavior of the particles (e.g. rise velocity of oil droplets 
 or larval swimming.)
 
 Some examples and common use cases are shown here. For complete documentation see :mod:`gnome.movers`
@@ -10,36 +10,31 @@ Some examples and common use cases are shown here. For complete documentation se
 Wind movers
 -----------
 
-Wind movers are tied to a wind object in the Environment class which is described
-more fully in :doc:`weatherers`.
-For example to create a wind mover based on manually entered time series::
+Wind movers are tied to a Wind Object in the Environment class which are described
+more fully in :doc:`environment`.
 
-    from gnome.model import Model
-    from gnome.environment import Wind
-    from gnome.movers import WindMover
-    from gnome.basic_types import datetime_value_2d
-    import numpy as np
-    from datetime import datetime, timedelta
-    start_time = datetime(2004, 12, 31, 13, 0)
-    series = np.zeros((2, ), dtype=datetime_value_2d)
-    series[0] = (start_time, (5, 180))
-    series[1] = (start_time + timedelta(hours=18), (5, 180))
+For example,in that section, we saw how to create a simple constant Wind Object using a helper function in the gnome scripting module::
+
+    import gnome.scripting as gs
+    model = gs.Model(start_time="2015-01-01",
+                 duration=gs.days(3),
+                 time_step=gs.minutes(15)
+                 )
+    wind = gs.constant_wind(10,0,'knots')
     
-    model = Model()
-    wind = Wind(timeseries=series,units='m/s')
-    w_mover = WindMover(wind)
+Now we create a WindMover Object by passing the Wind Object to the Mover Class and adding it to the model::
+
+    w_mover = gs.WindMover(wind)
     model.movers += w_mover
     
-Some helper functions are available in :mod:`gnome.scripting` for creating wind movers. For example, to 
-create a wind mover from a single point time series in a text file::
+Some helper functions are available in :mod:`gnome.scripting` for creating wind movers. Many of these helper functions automatically create and add Environment Objects to the model. For example, to create a wind mover from a single point time series in a text file::
 
-    from gnome.scripting import wind_mover_from_file
-    w_mover = wind_mover_from_file('mywind.txt')
+    w_mover = gs.wind_mover_from_file('my_wind_file.txt')
     model.movers += w_mover
     
 The format of the text file is described in the file formats document available `here 
 <http://response.restoration.noaa.gov/sites/default/files/GNOME_DataFormats.pdf>`_.
-Briefly, it has 3 header lines, followed by comma seperated data. Alternatively, the An example is given here with
+Briefly, it has 3 header lines, followed by comma seperated data. An example is given here with
 annotations in brackets at the end of the lines:
 
 |   23NM W Cape Mohican AK *(Location name, can be blank)*
