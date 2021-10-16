@@ -15,7 +15,7 @@ substance, i.e. it will not represent oil which has changing properties over tim
 The scripting module
 --------------------
 
-The ``gnome`` package contains a large hierarchy of subpackages and modules that contain all of objects and functions that support the full functionality of the model. Therefore, creating objects and adding them to the model can involve importing classes from many different modules. To make this easier, all of the typically required objects and helper functions can be made accessible via the "scripting" module. We recommend that you import it like so::
+The ``gnome`` package contains a large hierarchy of subpackages and modules that contain all of objects and functions that support the full functionality of the model. Therefore, creating objects and adding them to the model can involve importing classes from many different modules. To make this easier, all of the typically required classes and helper functions are made accessible via the "scripting" module. We recommend that you import it like so::
 
     import gnome.scripting as gs
 
@@ -102,7 +102,8 @@ Here we use the :class:`gnome.outputters.Renderer` class to save an image every 
 be the same as those specified when we created the map object. The default is to save files into the working directory::
 
 
-    renderer = gs.Renderer(output_timestep=gs.hours(6),
+    renderer = gs.Renderer(output_dir='./output',
+                           output_timestep=gs.hours(6),
                            map_BB=((-145,48), (-145,49),
                                    (-143,49), (-143,48)))
 
