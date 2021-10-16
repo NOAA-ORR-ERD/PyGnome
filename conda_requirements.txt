@@ -64,5 +64,6 @@ notebook # this gets you Jupyter notebook without all the QT stuff
 sphinx
 sphinx_rtd_theme
 nbsphinx
+sphinx-autoapi
 
 

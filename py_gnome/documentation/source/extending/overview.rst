@@ -1,7 +1,24 @@
-Customizing PyGNOME
-===================
+Extending / Customizing PyGNOME
+===============================
 
-The PyGNOME Mover and Weatherer APIs are defined so that you can write your own movers and/or weatherers.
+PyGNOME is a system build of standardized components. The Model's job is to coordinate each of the components into a fully working model, but the details are all determined at run time accoding to what components the model has be configured to use.
+
+As a result you can write a new component, and plug it in to the rest of the model, without having to alter any of the model or other code.
+
+The multiple PyGNOME APIs
+-------------------------
+
+The gnome package is designed to work when driven by scripts, as well as the engine behind the WebGNOME system. This means that there are a couple of related APIs for each GnomeObject:
+
+The scripting API
+    This how an object is created / adjusted in python scripts. When making new objects, you can use whatever you like, but it's probably a good idea to make the API similar to other existing objects.
+
+The model API
+    These are the methods and attributes teh object needs to have in order to work with the gnome model system. For teh most part, the core methods will be defined in a Base class (e.g. the ``gnome.movers.mover.Mover`` class), so if you subclass from that, you only need to implement the ones you need.
+
+The Web / Save file API
+    WebGNOME use a JSON API to configure the PyGNOME system. A very similar JSON format is used to save model configurations in "save files", which are zip files with the model configuration and data required to reproduce a model configuration. Yuo can develop and test your new component without using this system, but if you want your component to be usable with WebGNOME or save files, then This API must be defined. This is done by defining a ``Schema`` that specifies what attributed need to be saved and can be updated for a given object.
+
 
 Writing a custom mover
 ----------------------

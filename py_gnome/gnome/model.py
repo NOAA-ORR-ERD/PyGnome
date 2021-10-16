@@ -1,5 +1,39 @@
 #!/usr/bin/env python
 
+"""
+module with the core Model class, and various supporting classes
+
+
+This is the main class that contains objects used to model trajectory and
+weathering processes. It runs the loop through time, etc.
+The code comes with a full-featured version -- you may want a simpler one if
+you aren't doing a full-on oil spill model. The model contains:
+
+* map
+* collection of environment objects
+* collection of movers
+* collection of weatherers
+* spills
+* its own attributes
+
+In pseudo code, the model loop is defined below. In the first step, it sets up the
+model run and in subsequent steps the model moves and weathers elements.
+
+.. code-block:: python
+
+    for each_timestep():
+        if initial_timestep:
+            setup_model_run()
+        setup_time_step()
+        move_the_elements()
+        beach_refloat_the_elements()
+        weather_the_elements()
+        write_output()
+        step_is_done()
+        step_num += 1
+
+"""
+
 import os
 from datetime import datetime, timedelta
 import zipfile
@@ -7,7 +41,6 @@ from pprint import pformat
 import copy
 
 import numpy as np
-
 
 from colander import (SchemaNode,
                       String, Float, Int, Bool, List,
@@ -285,7 +318,7 @@ class Model(GnomeId):
 
         :param which='standard': which weatheres to add. Default is 'standard',
                                  which will add all the standard weathering algorithms
-                                 if you don't want them all, you can speicfy a list:
+                                 if you don't want them all, you can specify a list:
                                  ['evaporation', 'dispersion'].
 
                                  Options are:

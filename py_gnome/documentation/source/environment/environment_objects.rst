@@ -79,13 +79,13 @@ With memoization, the equation is as follows::
 Considering locate_points and interpolation_alphas are much more computationally expensive than multiply&sum and hash, this is
 a dramatic performance gain for even N=2
 
-Examples in a Jupyter Notebook:
-...............................
+.. Examples in a Jupyter Notebook:
+.. ...............................
 
-.. toctree::
-  :maxdepth: 2
+.. .. toctree::
+..   :maxdepth: 2
 
-  examples.ipynb
+..   examples.ipynb
 
 
 

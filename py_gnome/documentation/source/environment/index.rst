@@ -1,3 +1,7 @@
+.. marked as orphan so we don't get warned about it not being a toctree
+
+:orphan:
+
 Using your data
 ===============
 
@@ -8,7 +12,7 @@ Using your data
    glossary
    environment_objects
    env_obj_examples
-   examples.ipynb
+..   examples.ipynb
 
 
 Age old problem

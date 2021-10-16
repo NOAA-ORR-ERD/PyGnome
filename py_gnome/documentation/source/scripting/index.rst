@@ -11,5 +11,7 @@ Scripting PyGNOME
    movers
    weatherers
    outputters
+   scripting_examples
+
 
 

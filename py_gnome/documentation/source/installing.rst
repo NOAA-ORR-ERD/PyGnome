@@ -11,10 +11,10 @@ PyGNOME depends on a number of third party packages -- the complete list can be 
 There are many dependencies that can be hard to build, so the easiest way is to use the conda package manager, but you can do it by hand as well -- see below.
 
 
-.. include:: ../../Installing.rst
+.. include:: ../../../Installing.rst
 
 
-.. include:: ../../Install_without_conda.rst
+.. include:: ../../../Install_without_conda.rst
 
 
 
