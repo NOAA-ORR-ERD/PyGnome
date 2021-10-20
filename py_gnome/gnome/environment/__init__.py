@@ -61,11 +61,12 @@ env_objs = [Water,
             IceAwareCurrent,
             IceAwareWind]
 
-schemas = set()
-for cls in env_objs:
-    if hasattr(cls, '_schema'):
-        schemas.add(cls._schema)
-schemas = list(schemas)
+# schemas = set()
+# for cls in env_objs:
+#     if hasattr(cls, '_schema'):
+#         schemas.add(cls._schema)
+# schemas = list(schemas)
+schemas = list({cls._schema for cls in env_objs if hasattr(cls, '_schema')})
 
 #This hack is for backwards compat on save files...should probably
 #remove at some point

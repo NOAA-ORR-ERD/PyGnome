@@ -3,9 +3,6 @@ running average time series for a given wind, tide, or
 generic time series
 """
 
-
-
-
 import datetime
 import copy
 
@@ -87,15 +84,17 @@ class RunningAverage(Environment):
         Initializes a running average object from a wind and past hours
         to average
 
-        If no wind is given, timeseries gets initialized as:
+        If no wind is given, timeseries gets initialized as::
 
-            timeseries = np.zeros((1,), dtype=basic_types.datetime_value_2d)
-            units = 'mps'
+          timeseries = np.zeros((1,), dtype=basic_types.datetime_value_2d)
+
         (note: probably should be an error)
 
         All other keywords are optional. Optional parameters (kwargs):
 
-        :param past_hours_to_average: default is 3
+        :param past_hours_to_average=3: duration of time average window
+
+        Units are always 'mps'
 
         """
         self.units = 'mps'

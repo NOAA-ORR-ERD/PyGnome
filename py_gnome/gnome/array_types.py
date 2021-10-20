@@ -363,17 +363,20 @@ def reset_to_defaults(at):
             pass
 
 # The array types that will always be used in the model.
-default_array_types = {'positions': gat('positions'),
-                       'next_positions': gat('next_positions'),
-                       'last_water_positions': gat('last_water_positions'),
-                       'status_codes': gat('status_codes'),
-                       'mass': gat('mass'),
-                       'init_mass': gat('init_mass'),
-                       'age': gat('age'),
-                       'density': gat('density'),
-                       'viscosity': gat('viscosity'),
-                       'surface_concentration': gat('surface_concentration'),
-                       'spill_num': gat('spill_num'),
-                       'id': gat('id')
-                       }
 
+# fixme: why are viscosity and surface_concentration here? even density?
+DEFAULT_ARRAY_TYPES = ['positions',
+                       'next_positions',
+                       'last_water_positions',
+                       'status_codes',
+                       'mass',
+                       'init_mass',
+                       'age',
+                       'density',
+                       'viscosity',
+                       'surface_concentration',
+                       'spill_num',
+                       'id',
+                       ]
+
+default_array_types = {at: gat(at) for at in DEFAULT_ARRAY_TYPES}
