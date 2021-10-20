@@ -1,5 +1,5 @@
 
-from backports.functools_lru_cache import lru_cache
+from functools import lru_cache
 
 import numpy as np
 import os
@@ -10,26 +10,16 @@ from .sample_oils import _sample_oils
 from .substance import Substance, SubstanceSchema
 
 
-from gnome.persist import (ObjTypeSchema,
-                           ObjType,
-                           GeneralGnomeObjectSchema,
-                           NumpyArraySchema,
+from gnome.persist import (NumpyArraySchema,
                            Int,
-                           Schema,
                            String,
                            Float,
                            SchemaNode,
                            SequenceSchema,
-                           Boolean,
                            drop,
                            )
 
-from gnome.gnomeobject import GnomeId
 from gnome.environment.water import Water, WaterSchema
-from gnome.spill.sample_oils import _sample_oils
-from gnome.spill.initializers import (floating_initializers,
-                                      InitWindagesSchema,
-                                      DistributionBaseSchema)
 
 
 class Density(object):
@@ -205,6 +195,7 @@ class GnomeOil(Substance):
         self.oil_name = oil_name
         self.water = water
 
+        self.standard_density = self.density_at_temp(temperature=288.15)
         # add the array types that this substance DIRECTLY initializes
         self.array_types.update({'density': gat('density'),
                                  'viscosity': gat('viscosity'),
@@ -518,15 +509,17 @@ class GnomeOil(Substance):
         else:
             return rho_t
 
-    @property
-    def standard_density(self):
-        # fixme: this should simply be a set value
-        #        computed on __init__
-        '''
-        Standard density is simply the density at 15C, which is the
-        default temperature for density_at_temp()
-        '''
-        return self.density_at_temp(temperature=288.15)
+    # @property
+    # def standard_density(self):
+    #     # fixme: this should simply be a set value
+    #     #        computed on __init__
+    #     '''
+    #     Standard density is simply the density at 15C, which is the
+    #     default temperature for density_at_temp()
+    #     '''
+    #     if self.standard_density is None:
+    #         self.standard_density = self.density_at_temp(temperature=288.15)
+    #     return self.standard_density
 
     def _get_reference_densities(self, densities, temperature):
         '''

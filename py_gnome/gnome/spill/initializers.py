@@ -1,12 +1,12 @@
 #!/usr/bin/env python
-'''
-Types of elements that a spill can expect
-These are properties that are spill specific like:
-  'floating' element_types would contain windage_range, windage_persist
-  'subsurface_dist' element_types would contain rise velocity distribution info
-  'nonweathering' element_types would set use_droplet_size flag to False
-  'weathering' element_types would use droplet_size, densities, mass?
-'''
+
+"""
+Utilities for initializing data arrays associated with the elements
+
+This code is kept separately here to make it easier to mix and match
+for various release and substance types.
+
+"""
 
 import numpy as np
 
@@ -24,16 +24,14 @@ from gnome.utilities.distributions import (NormalDistributionSchema,
                                            WeibullDistributionSchema,
                                            LogNormalDistributionSchema,
                                            UniformDistributionSchema)
-"""
-Initializers for various element types
-"""
 
 class InitBaseClass(GnomeId):
     """
     All Init* classes will define the _state attribute, so just do so in a
     base class.
 
-    It also documents that all initializers must implement an initialize method
+    It also documents that all initializers must implement an initialize
+    method
 
     """
 
@@ -45,28 +43,33 @@ class InitBaseClass(GnomeId):
         # knows about these array_types and can include them.
         # Make it a set since ElementType does a membership check in
         # set_newparticle_values()
-        super(InitBaseClass, self).__init__(*args,**kwargs)
+        super(InitBaseClass, self).__init__(*args, **kwargs)
 
     def initialize(self, num_new_particles, spill, data_arrays, substance):
         """
-        all classes that derive from Base class must implement initialize
-        method
+        all classes that derive from Base class must implement an
+        method.
+
+        This method should initialize the appropriate data in
+        the data arrays dict.
+
+        See subclasses for examples.
         """
         pass
 
 
-class WindageSchema(TupleSchema):
+class WindageRangeSchema(TupleSchema):
     min_windage = SchemaNode(Float(), validator=Range(0, 1.0),
                              default=0.01)
     max_windage = SchemaNode(Float(), validator=Range(0, 1.0),
                              default=0.04)
 
 
-class InitWindagesSchema(base_schema.ObjTypeSchema):
+class WindagesSchema(base_schema.ObjTypeSchema):
     """
     windages initializer values
     """
-    windage_range = WindageSchema(
+    windage_range = WindageRangeSchema(
         save=True, update=True,
     )
     windage_persist = SchemaNode(
@@ -75,7 +78,7 @@ class InitWindagesSchema(base_schema.ObjTypeSchema):
 
 
 class InitWindages(InitBaseClass):
-    _schema = InitWindagesSchema
+    _schema = WindagesSchema
 
     def __init__(self, windage_range=(0.01, 0.04), windage_persist=900, *args, **kwargs):
         """
@@ -298,20 +301,23 @@ class InitRiseVelFromDropletSizeFromDist(DistributionBase):
                                 le_density, drop_size,
                                 self.water_viscosity, self.water_density)
 
-def floating_initializers(windage_range=(.01, .04),
-                          windage_persist=900,):
-    """
-    Helper function returns a dict of initializers for floating LEs
 
-    1. InitWindages(): for initializing 'windages' with user specified
-    windage_range and windage_persist.
+# def floating_initializers(windage_range=(.01, .04),
+#                           windage_persist=900,):
+#     """
+#     Helper function returns a list of initializers for floating LEs
 
-    :param substance='oil_conservative': Type of oil spilled. Passed onto
-        ElementType constructor
-    :type substance: str or OilProps
-    """
-    return [InitWindages(windage_range=windage_range,
-                         windage_persist=windage_persist)]
+#     1. InitWindages(): for initializing 'windages' with user specified
+#     windage_range and windage_persist.
+
+#     :param substance='oil_conservative': Type of oil spilled. Passed onto
+#         ElementType constructor
+#     :type substance: str or OilProps
+
+#     fixme: maybe just have this be a windage initializer??
+#     """
+#     return [InitWindages(windage_range=windage_range,
+#                          windage_persist=windage_persist)]
 
 
 def plume_initializers(distribution_type='droplet_size',

@@ -8,6 +8,9 @@ import pytest
 
 DATA_DIR = Path(__file__).parent / "data_for_tests"
 
+# fixme: There should be tests of the substance "model" API here
+# what does a Substance do? is that working?
+
 
 class TestSubstance:
     '''Test for base class'''
@@ -15,13 +18,9 @@ class TestSubstance:
     def test_init(self):
         # check default state
         sub1 = Substance()
-        assert len(sub1.initializers) == 1
-        assert isinstance(sub1.initializers[0], InitWindages)
-        initw = sub1.initializers[0]
-        # substance should expose the array types of it's initializers
-        assert all([atype in sub1.array_types for atype in initw.array_types])
-        # in this case, there should only be InitWindages
-        assert list(sub1.array_types.keys()) == list(initw.array_types.keys())
+        assert isinstance(sub1._windage_init, InitWindages)
+        expected_arrays = {'windages', 'windage_range', 'windage_persist', 'density', 'fate_status'}
+        assert sub1.array_types.keys() == expected_arrays
 
     def test_eq(self):
         sub1 = Substance()
