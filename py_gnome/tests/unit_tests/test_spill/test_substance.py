@@ -1,6 +1,7 @@
 from pathlib import Path
 from gnome.spill.substance import (Substance,
-                                   NonWeatheringSubstance)
+                                   NonWeatheringSubstance,
+                                   SubsurfaceSubstance)
 
 from gnome.spill.initializers import InitWindages
 
@@ -84,3 +85,39 @@ class TestNonWeatheringSubstance(object):
         json_, savefile, refs = test_obj.save(saveloc_)
         test_obj2 = test_obj.__class__.load(savefile)
         assert test_obj == test_obj2
+
+
+class Test_SubsurfaceSubstance:
+    """
+    Tests of Substance that support rise velocity
+
+    Needed for vertical movers :-)
+
+    Fixme: this should test the initilization!
+    """
+
+    @pytest.mark.parametrize('distribution', ['UniformDistribution',
+                                              'NormalDistribution',
+                                              'LogNormalDistribution',
+                                              'WeibullDistribution',
+                                              ])
+    def test_init_with_distribution(self, distribution):
+        """
+        NOTE: this only tests whether the init fails,
+        not whether it does the right thing
+        """
+        subs = SubsurfaceSubstance(distribution=distribution)
+
+        print(subs.array_types.keys())
+        expected_arrays = {'rise_vel',
+                           'droplet_diameter',
+                           'windages',
+                           'windage_range',
+                           'windage_persist',
+                           'density',
+                           'fate_status'}
+
+        assert subs.all_array_types.keys() == expected_arrays
+
+
+

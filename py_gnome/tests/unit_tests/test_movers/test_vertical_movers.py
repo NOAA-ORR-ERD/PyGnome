@@ -2,21 +2,17 @@
 Test classes in vertical_movers.py module
 '''
 
-
-
-
-
 from datetime import datetime
 
 import pytest
 import numpy as np
 
 from gnome.movers import RiseVelocityMover
-from gnome.spill.initializers import InitRiseVelFromDist
-from gnome.utilities.distributions import UniformDistribution
+# from gnome.spill.initializers import InitRiseVelFromDist
+# from gnome.utilities.distributions import UniformDistribution
 
 from ..conftest import sample_sc_release
-from gnome.spill.substance import NonWeatheringSubstance
+from gnome.spill.substance import SubsurfaceSubstance
 from gnome.array_types import gat
 
 
@@ -45,18 +41,20 @@ def test_props():
 
 time_step = 15 * 60  # seconds
 rel_time = datetime(2012, 8, 20, 13)  # yyyy/month/day/hr/min/sec
-initializers = [InitRiseVelFromDist(distribution=UniformDistribution())]
+
+# initializers = [InitRiseVelFromDist(distribution=UniformDistribution())]
 sc = sample_sc_release(5, (3., 6., 0.),
                        rel_time,
                        uncertain=False,
                        arr_types={'rise_vel': gat('rise_vel')},
-                       substance=NonWeatheringSubstance(initializers=initializers))
-initializers = [InitRiseVelFromDist(distribution=UniformDistribution())]
+                       substance=SubsurfaceSubstance(distribution='UniformDistribution'))
+
+# initializers = [InitRiseVelFromDist(distribution=UniformDistribution())]
 u_sc = sample_sc_release(5, (3., 6., 0.),
                          rel_time,
                          uncertain=True,
                          arr_types={'rise_vel': gat('rise_vel')},
-                       substance=NonWeatheringSubstance(initializers=initializers))
+                         substance=SubsurfaceSubstance(distribution='UniformDistribution'))
 model_time = rel_time
 
 

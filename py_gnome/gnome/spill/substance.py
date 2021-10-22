@@ -25,7 +25,9 @@ from gnome.persist import (Float, Int, SchemaNode, SequenceSchema,
 
 from gnome.gnomeobject import GnomeId
 from gnome.spill.initializers import (DistributionBaseSchema,
-                                      InitWindages)
+                                      InitWindages,
+                                      InitRiseVelFromDropletSizeFromDist,
+                                      )
 
 
 class WindageRangeSchema(TupleSchema):
@@ -176,6 +178,9 @@ class Substance(GnomeId):
         :param to_rel - number of new LEs to initialize
         :param arrs - dict-like of data arrays representing LEs
         '''
+        sl = slice(-to_rel, None, 1)
+        arrs['density'][sl] = self.standard_density
+
         for init in self.initializers:
             init.initialize(to_rel, arrs, self)
 
@@ -236,10 +241,41 @@ class NonWeatheringSubstance(Substance):
         super(NonWeatheringSubstance, self).initialize_LEs(to_rel, arrs)
 
     def density_at_temp(self, temp=273.15):
+        # should this exist ??
         '''
             For non-weathering substance, we just return the standard density.
         '''
         return self.standard_density
+
+
+class SubsurfaceSubstance(NonWeatheringSubstance):
+    """
+    Substance that can be used subsurface
+
+    key feature is that it initializes rise velocity from a distribution
+
+    Note: this should probably be a mixin .. or not even part of the substance.
+    """
+    def __init__(self,
+                 distribution='uniform',
+                 *args,
+                 **kwargs
+                 ):
+        """
+
+        :param distribution='UniformDistribution': which distribution to use
+        :type distribution: str
+
+        Options for distribution are: 'UniformDistribution', 'NormalDistribution',
+        'LogNormalDistribution', 'WeibullDistribution'
+        """
+        super().__init__(*args, **kwargs)
+
+        init = InitRiseVelFromDropletSizeFromDist(distribution=distribution)
+        self.initializers.append(init)
+        self.array_types.update(init.array_types)
+
+
 
 # so old save files will work
 # this should be removed eventually ...
