@@ -86,7 +86,11 @@ class Substance(GnomeId):
             self.windage_range = windage_range
         if windage_persist != 900:
             self.windage_persist = windage_persist
-        self.standard_density = standard_density
+        try:
+            self.standard_density = standard_density
+        except AttributeError:
+            # this has been overridden in a subclass
+            pass
 
         self.array_types.update({
             'density': gat('density'),
@@ -254,20 +258,20 @@ class SubsurfaceSubstance(NonWeatheringSubstance):
 
     key feature is that it initializes rise velocity from a distribution
 
-    Note: this should probably be a mixin .. or not even part of the substance.
+    Note: this should probably be part of a Release Object, not a Substance.
     """
     def __init__(self,
-                 distribution='uniform',
+                 distribution,
                  *args,
                  **kwargs
                  ):
         """
-
         :param distribution='UniformDistribution': which distribution to use
-        :type distribution: str
+        :type distribution: Distribution Object
 
-        Options for distribution are: 'UniformDistribution', 'NormalDistribution',
-        'LogNormalDistribution', 'WeibullDistribution'
+        Note: distribution should return values in m/s
+
+        See gnome.utilities.distributions for details
         """
         super().__init__(*args, **kwargs)
 

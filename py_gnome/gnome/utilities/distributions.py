@@ -14,6 +14,9 @@ from gnome.utilities.compute_fraction import fraction_below_d
 def get_distribution_by_name(dist_name):
     """
     Return a distribution object corresponding to its name
+
+    note: this isn't really helpful until / unless we
+    standardize the initialization interface.
     """
     try:
         return ALL_DISTS[dist_name]
@@ -27,7 +30,17 @@ class DistributionBase(GnomeId):
     what is a distribution class
 
     At them moment, all they need is a set_values method
+
+    NOTE: if possible, it would be good to have the same
+    interface to all distributions. For example, see: the
+    distributions in numpy.random. for example:
+
+    `random.normal(loc=0.0, scale=1.0, size=None)`
+
+    all distribution have a location and a scale,
+    which have different meanings depending on the distribution.
     """
+
     def set_values(self, np_array):
         raise NotImplementedError
 
@@ -95,6 +108,7 @@ class UniformDistribution(DistributionBase):
     _schema = UniformDistributionSchema
 
     'Uniform Probability Distribution'
+
     def __init__(self, low=0., high=0.1, **kwargs):
         '''
         :param low: For the Uniform distribution, it is lower bound.
@@ -256,14 +270,8 @@ class RayleighDistribution():
         return (sigma * np.sqrt((-1.0 * np.log((1.0 - f) ** 2.0)) + 0j)).real
 
 
-print(type(UniformDistribution))
-
 ALL_DISTS = {name: obj for name, obj in vars().items()
              if isinstance(obj, type) and issubclass(obj, DistributionBase)}
-
-print(f"{ALL_DISTS=}")
-
-raise Exception("stopping")
 
 
 if __name__ == '__main__':

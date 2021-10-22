@@ -20,7 +20,8 @@ from gnome.cy_gnome.cy_rise_velocity_mover import rise_velocity_from_drop_size
 from gnome.persist import base_schema
 from gnome.gnomeobject import GnomeId
 from gnome.persist.base_schema import GeneralGnomeObjectSchema
-from gnome.utilities.distributions import (NormalDistributionSchema,
+from gnome.utilities.distributions import (DistributionBase,
+                                           NormalDistributionSchema,
                                            WeibullDistributionSchema,
                                            LogNormalDistributionSchema,
                                            UniformDistributionSchema)
@@ -163,11 +164,12 @@ class InitMassFromPlume(InitBaseClass):
 class DistributionBaseSchema(base_schema.ObjTypeSchema):
     'Add schema to base class since all derived classes use same schema'
 
+    # Fixme: IF we give all distributions he same API, this will be easier.
     distribution = GeneralGnomeObjectSchema(
         acceptable_schemas=[UniformDistributionSchema,
-                          NormalDistributionSchema,
-                          WeibullDistributionSchema,
-                          LogNormalDistributionSchema],
+                            NormalDistributionSchema,
+                            WeibullDistributionSchema,
+                            LogNormalDistributionSchema],
         save=True, update=True
     )
 
@@ -187,23 +189,27 @@ class InitRiseVelFromDist(DistributionBase):
         """
         Set the rise velocity parameters to be sampled from a distribution.
 
-        :param distribution: An object capable of generating a probability
-                             distribution.
-        :type distribution:
-            Right now, we have:
-             * UniformDistribution
-             * NormalDistribution
-             * LogNormalDistribution
-             * WeibullDistribution
-            New distribution classes could be made.  The only
-            requirement is they need to have a set_values()
-            method which accepts a NumPy array.
-            (presumably, this function will also modify
-             the array in some way)
+        :param distribution: An initialized distribution object.
+                             It should return values in m/s
+        :type distribution: DistributionBase
+
+        See gnome.utilities.distribution for details
+
+        Right now, we have:
+          * UniformDistribution
+          * NormalDistribution
+          * LogNormalDistribution
+          * WeibullDistribution
+
+        New distribution classes could be made.  The only
+        requirement is they need to have a set_values()
+        method which accepts a NumPy array.
+        (presumably, this function will also modify
+         the array in some way)
         """
         super(InitRiseVelFromDist, self).__init__(**kwargs)
 
-        if distribution:
+        if distribution and isinstance(distribution, ):
             self.distribution = distribution
         else:
             raise TypeError('InitRiseVelFromDist requires a distribution for '
@@ -221,8 +227,9 @@ class InitRiseVelFromDist(DistributionBase):
 
 
 class InitRiseVelFromDropletSizeFromDist(DistributionBase):
-
-    def __init__(self, distribution=None,
+    #fixme: this does not seem to be tested.
+    def __init__(self,
+                 distribution=None,
                  water_density=1020.0, water_viscosity=1.0e-6,
                  **kwargs):
         """
@@ -255,7 +262,7 @@ class InitRiseVelFromDropletSizeFromDist(DistributionBase):
         if distribution:
             self.distribution = distribution
         else:
-            raise TypeError('InitRiseVelFromDropletSizeFromDist requires a '
+            raise TypeError('InitRiseVelFromDropletSizeFromDist requires a'
                             'distribution for droplet sizes')
 
         self.water_viscosity = water_viscosity
