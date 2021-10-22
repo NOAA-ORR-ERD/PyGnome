@@ -105,13 +105,16 @@ class S_Depth_T1(object):
 
     def interpolation_alphas(self, points, data_shape, _hash=None):
         '''
-            Returns a pair of values.
-            - The 1st value is an array of the depth indices of all the
-              particles.
-            - The 2nd value is an array of the interpolation alphas for the
-              particles between their depth index and depth_index + 1.
-            - If both values are None, then all particles are on the
-              surface layer.
+        Returns a pair of values.
+
+        - The 1st value is an array of the depth indices of all the
+          particles.
+
+        - The 2nd value is an array of the interpolation alphas for the
+          particles between their depth index and depth_index + 1.
+
+        - If both values are None, then all particles are on the
+          surface layer.
         '''
         underwater = points[:, 2] > 0.0
 

@@ -42,7 +42,7 @@ with open('../../gnome/__init__.py') as init_file:
 extensions = [#'nbsphinx',
 #              'sphinx.ext.autodoc',
               #'sphinx.ext.napoleon',
-              #'sphinx.ext.todo',
+              'sphinx.ext.todo',
               #'sphinx.ext.coverage',
               #'sphinx.ext.mathjax',
               # 'sphinx.ext.viewcode',

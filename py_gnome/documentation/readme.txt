@@ -1,20 +1,31 @@
-Documentation on GNOME and webGNOME
+Documentation on PyGNOME
 
-The Sphinx system is used for the Python-oriented docs, and the C++ API docs.
+The Sphinx system is used for the Python-oriented docs.
 
 To build the Sphinx docs , you need the Sphinx system (a python package):
 
 http://sphinx.pocoo.org/
 
-Once installed, you can build the HTML docs with:
+And also a couple other dependencies::
 
-sphinx-build -b html ./  HTML_DOCS 
+    sphinx
+    sphinx_rtd_theme
+    nbsphinx
+    sphinx-autoapi
 
-or:
 
-make html
+Once installed, you can build the HTML docs with::
 
-Run in the sphinx_docs directory. The first option will put HTML docs in a HTML_DOCS subfolder within sphinx_docs.
-The second option will put them in _build/html
+  make html
+
+Run in this directory.
+
+The built docs will be in the build/html dir.
+
+To edit the docs, edit the files in the source dir. They pretty much match the structure of the rendered docs.
+
+The API documentation itself is automatically build by the "apidoc" system, by extracting all  the docstrings from the gnome package.
+
+
 
 
