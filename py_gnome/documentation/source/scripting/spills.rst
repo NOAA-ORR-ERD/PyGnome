@@ -16,8 +16,7 @@ Some of the subclasses of this include:
 * :class:`gnome.spill.release.PointLineRelease` - a release of particles at a point or along a line, either instantaneously or over a time interval
 * :class:`gnome.spill.release.SpatialRelease` - an instantaneous release of particles distributed randomly in a specified polygon 
 
-The :class:`gnome.spill.substance.Substance` Object provides information on the type of substance spilled. It presently has two 
-subclasses:
+The :class:`gnome.spill.substance.Substance` Object provides information on the type of substance spilled. Although, its possible to add multiple spills to the model, they must all use the same substance object. There are two subclasses that can be used to instantiate substances:
 
 * :class:`gnome.spill.substance.GnomeOil` - used for creating a spill that will include oil weathering processes
 * :class:`gnome.spill.substance.NonWeatheringSubstance` - used for running transport simulations with conservative particles (i.e. the particle properties do not change over time).
@@ -25,22 +24,28 @@ subclasses:
 Here's an example setting up a non-weathering spill. This is the default Substance for a spill so we do not need to create or pass in a Substance object::
 
     import gnome.scripting as gs
-    from gnome.spill import PointLineRelease, Spill
     from datetime import datetime, timedelta
     start_time = datetime(2015, 1, 1, 0, 0)
     model = gs.Model(start_time=start_time,
                   duration=timedelta(days=3),
                   time_step=60 * 15, #seconds
                   )
-    release = PointLineRelease(release_time=start_time,start_position=(-144,48.5,0),num_elements=1000)
-    spill = Spill(release=release)
+    release = gs.PointLineRelease(release_time=start_time,start_position=(-144,48.5,0),num_elements=1000)
+    spill = gs.Spill(release=release)
     model.spills += spill
     
 To specify the spill to represent a specific oil from the ADIOS oil database (adios.orr.noaa.gov) and specify the amount spilled, we could instantiate the Spill oject like this::
     
-    from gnome.spill import GnomeOil    
-    substance=GnomeOil('AD01584'))
-    spill = Spill(release=release,substance=substance,amount=5000,units='bbls')
+    import gnome.scripting as gs
+    from datetime import datetime, timedelta
+    start_time = datetime(2015, 1, 1, 0, 0)
+    model = gs.Model(start_time=start_time,
+                  duration=timedelta(days=3),
+                  time_step=60 * 15, #seconds
+                  )
+    release = gs.PointLineRelease(release_time=start_time,start_position=(-144,48.5,0),num_elements=1000)  
+    substance=gs.GnomeOil(filename='adios_oil.json')
+    spill = gs.Spill(release=release,substance=substance,amount=5000,units='bbls')
     model.spills += spill
  
 
