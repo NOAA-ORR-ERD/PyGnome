@@ -28,10 +28,6 @@ from gnome.gnomeobject import GnomeId
 from gnome.environment.water import Water, WaterSchema
 from gnome.spill.sample_oils import _sample_oils
 
-# from gnome.spill.initializers import (floating_initializers,
-#                                       InitWindagesSchema,
-#                                       DistributionBaseSchema)
-
 
 class Density(object):
 
@@ -83,9 +79,6 @@ def kvis_at_temp(ref_kvis, ref_temp_k, temp_k, k_v2=2100):
               multi-KVis oils in our oil library suggest that a value of
               2100 would be a good default value for k_v2.
     '''
-    print("kvis_at_temp called")
-    print(ref_kvis, ref_temp_k, temp_k, k_v2)
-    print("A:", ref_kvis * np.exp(-k_v2 / ref_temp_k))
     return ref_kvis * np.exp((k_v2 / temp_k) - (k_v2 / ref_temp_k))
 
 
@@ -321,6 +314,12 @@ class GnomeOil(Substance):
         '''
         :param to_rel - number of new LEs to initialize
         :param arrs - dict-like of data arrays representing LEs
+
+        fixme: this shouldn't use water temp -- it should use
+               standard density and STP temp -- and let
+               weathering_data set it correctly
+               NOTE: weathering data is currently broken
+                     fir initial setting
         '''
         sl = slice(-to_rel, None, 1)
         water = self.water
@@ -358,7 +357,6 @@ class GnomeOil(Substance):
         # initialize mass_components
         arrs['mass_components'][sl] = (np.asarray(self.mass_fraction, dtype=np.float64) * (arrs['mass'][sl].reshape(len(arrs['mass'][sl]), -1)))
         super(GnomeOil, self).initialize_LEs(to_rel, arrs)
-
 
     def _set_pc_values(self, prop, values):
         """

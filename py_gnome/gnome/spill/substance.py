@@ -182,9 +182,6 @@ class Substance(GnomeId):
         :param to_rel - number of new LEs to initialize
         :param arrs - dict-like of data arrays representing LEs
         '''
-        sl = slice(-to_rel, None, 1)
-        arrs['density'][sl] = self.standard_density
-
         for init in self.initializers:
             init.initialize(to_rel, arrs, self)
 

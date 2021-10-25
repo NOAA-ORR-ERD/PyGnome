@@ -19,6 +19,7 @@ from ..conftest import test_oil
 
 default_ts = 900  # default timestep for tests
 water = Water()
+# water = Water(283.16)  # 10C -- not the default
 
 
 class TestWeatheringData(object):
@@ -30,7 +31,8 @@ class TestWeatheringData(object):
         initialize Sample SC and WeatheringData object
         objects are constructed and prepare_for_model_run() is invoked on all
         '''
-        wd = WeatheringData(Water())
+        # wd = WeatheringData(Water())
+        wd = WeatheringData(water)
         end_time = rel_time + timedelta(hours=1)
         spills = [point_line_release_spill(num_elements,
                                            (0, 0, 0),

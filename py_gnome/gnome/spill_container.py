@@ -663,7 +663,7 @@ class SpillContainer(AddLogger, SpillContainerData):
         if self.substance is None:
             return []
         else:
-            #data = self.data_arrays
+            # data = self.data_arrays
             data = self._fate_data_view.get_data(self, array_types, fate_status)
             return [(self.substance, data)]
 
