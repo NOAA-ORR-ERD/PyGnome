@@ -20,6 +20,7 @@ import numpy as np
 
 from gnome import constants
 from gnome.utilities.weathering import Adios2, LehrSimecek, PiersonMoskowitz
+from gnome.utilities.inf_datetime import InfTime, MinusInfTime
 
 from gnome.persist import base_schema
 from gnome.exceptions import ReferencedObjectNotSet
@@ -46,7 +47,7 @@ class WavesSchema(base_schema.ObjTypeSchema):
             save_reference=True
     )
     #make default refs required here to exempt object from validation checks (webgnomeclient req...)
-    make_default_refs = SchemaNode(Boolean(), save=False, update=True, test_equal=False)
+    make_default_refs = SchemaNode(Boolean(), save=True, update=True, test_equal=False)
 
 
 class Waves(Environment):
@@ -101,11 +102,17 @@ class Waves(Environment):
             either, but the Wind will.
             So its data range will be that of the Wind it is associated with.
         '''
-        return self.wind.data_start
+        if self.wind:
+            return self.wind.data_start
+        else:
+            return MinusInfTime()
 
     @property
     def data_stop(self):
-        return self.wind.data_stop
+        if self.wind:
+            return self.wind.data_stop
+        else:
+            return InfTime()
 
     def get_value(self, points, time):
         """

@@ -910,6 +910,7 @@ class NESDISRelease(SpatialRelease):
 
         :param feature: FeatureCollection representation of a NESDIS shapefile
         :type feature: geojson.FeatureCollection
+
         """
         
         for kw in ('thicknesses', 'weights', 'polygons'):
@@ -925,9 +926,10 @@ class NESDISRelease(SpatialRelease):
             file_fc = NESDISRelease.load_nesdis(filename, kwargs.get('release_time', None))
             features = file_fc
             self.filename = filename
-        #ugly for now. Should disappear after merging NESDIS and Spatial release
-        kwargs['release_time'] = datetime.fromisoformat(features[0].properties['release_time'])
-        kwargs['end_release_time'] = kwargs['release_time']
+            kwargs['release_time'] = datetime.fromisoformat(features[0].properties['release_time'])
+            kwargs['end_release_time'] = kwargs['release_time']
+        if features and 'release_time' not in kwargs:
+            kwargs['release_time'] = datetime.fromisoformat(features[0].properties['release_time'])
 
         super(NESDISRelease, self).__init__(
             features=features,

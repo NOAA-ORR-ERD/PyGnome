@@ -27,20 +27,13 @@ py_gnome/build/**/*
 py_gnome/gnome.utilities.egg-info/*
 py_gnome/pyGnome.egg-info/*
 py_gnome/gnome/pyGnome.egg-info/*
-py_gnome/documentation/_build/
 
 # ignore sphinx built docs
-py_gnome/documentation/_build/
-
-# ignore built documention in WebGNOME
-web/gnome/webgnome/doc/_build/*
+py_gnome/documentation/build/
 
 # ignore ipython notebook checkpoint areas
 .ipynb_checkpoints
 
-# ignore generated model data in WebGNOME
-web/gnome/webgnome/webgnome/static/models/*
-web/gnome/webgnome/webgnome/static/test_models/*
 .projectile
 .coverage
 .coverage

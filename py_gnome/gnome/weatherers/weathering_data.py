@@ -1,5 +1,5 @@
 '''
-This module was originally intended to hold classes that initialize weathering
+This module was originally intended to hold classes that ze_dze weathering
 data arrays that are not set by any weathering process. It was also meant to
 update the intrinsic properties of the LEs, hence the name 'intrinsic.py'
 However, it sets and updates weathering data arrays including intrinsic data
@@ -49,7 +49,7 @@ class WeatheringData(Weatherer):
                  water=None,
                  **kwargs):
         '''
-        initialize object.
+        initialize WeatheringData object.
 
         :param water: requires a water object
         :type water: gnome.environment.Water
@@ -79,25 +79,48 @@ class WeatheringData(Weatherer):
         self.visc_f_ref = 0.84
 
     def prepare_for_model_run(self, sc):
-        '''
-        1. initialize standard keys:
-           avg_density, floating, amount_released, avg_viscosity to 0.0
-        2. set init_density for all ElementType objects in each Spill
-        3. set spreading thickness limit based on viscosity of oil at
-           water temperature which is constant for now.
-        '''
-        # nothing released yet - set everything to 0.0
+        """
+        Initialize mass balance:
+           avg_density, floating, amount_released, avg_viscosity to 0.0        '''
+        """
         for key in ('avg_density', 'floating', 'amount_released', 'non_weathering',
                     'avg_viscosity'):
             sc.mass_balance[key] = 0.0
 
     def initialize_data(self, sc, num_released):
         '''
-        If on is False, then arrays should not be included - don't initialize
+        If on is False, then arrays should not be included
+        - don't initialize
 
         1. initialize all weathering data arrays
+          - density
+          - viscosity
+          - others??
+
         2. update aggregated data in sc.mass_balance dict
         '''
+        substance = sc.substance
+        if substance.is_weatherable:
+            water = self.water
+
+            # Only the new elements need to be initialized
+            sl = slice(-num_released, None, 1)
+            water_temp = water.get('temperature', 'K')
+            density = substance.density_at_temp(water_temp)
+            if density > water.get('density'):
+                msg = ("{0} will sink at given water temperature: {1} {2}. "
+                       "Setting density to water density"
+                       .format(self.name,
+                               water.get('temperature',
+                                         self.water.units['temperature']),
+                               water.units['temperature']))
+                self.logger.error(msg)
+
+                sc['density'][sl] = water.get('density')
+            else:
+                sc['density'][sl] = density
+
+            sc['viscosity'][sl] = substance.kvis_at_temp(water_temp)
         self._aggregated_data(sc, num_released)
 
     def weather_elements(self, sc, time_step, model_time):

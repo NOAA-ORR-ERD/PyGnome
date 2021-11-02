@@ -1,10 +1,6 @@
 '''
-test objects defined in wd module
+test objects defined in weathering_data module
 '''
-
-
-
-
 
 from datetime import datetime, timedelta
 
@@ -15,15 +11,15 @@ from testfixtures import log_capture
 from gnome.environment import Water
 from gnome.weatherers import WeatheringData, FayGravityViscous
 from gnome.spill import point_line_release_spill
-from gnome.spill.substance import GnomeOil
+from gnome.spill.gnome_oil import GnomeOil
 from gnome.spill_container import SpillContainer
-from gnome.basic_types import oil_status, fate as bt_fate
 
 from ..conftest import test_oil
 
 
 default_ts = 900  # default timestep for tests
 water = Water()
+water = Water(283.16)  # 10C, not the default!
 
 
 class TestWeatheringData(object):
@@ -35,7 +31,7 @@ class TestWeatheringData(object):
         initialize Sample SC and WeatheringData object
         objects are constructed and prepare_for_model_run() is invoked on all
         '''
-        wd = WeatheringData(Water())
+        wd = WeatheringData(water)
         end_time = rel_time + timedelta(hours=1)
         spills = [point_line_release_spill(num_elements,
                                            (0, 0, 0),
@@ -178,7 +174,7 @@ class TestWeatheringData(object):
 
         # create a mock_water type on which we can set the density - only for
         # this test
-        # fixme: can we really not simp override the density of a Water object?
+        # fixme: can we really not simply override the density of a Water object?
         mock_water = type(str('mock_water'),  # str for py2-3 compatibility
                           (Water,),
                           dict(density=sc['density'][0] - 10))
@@ -340,6 +336,7 @@ class TestWeatheringData(object):
         rel_time = datetime.now().replace(microsecond=0)
         (sc, wd, spread) = self.sample_sc_wd_spreading(100, rel_time)
         sc.spills[0].end_release_time = None
+        # add another spill to compare with
         sc.spills += point_line_release_spill(100, (0, 0, 0),
                                               rel_time,
                                               amount=10,
@@ -350,21 +347,23 @@ class TestWeatheringData(object):
         b_init_vol = [spill.get_mass() / rho for spill in sc.spills]
 
         sc.prepare_for_model_run(wd.array_types)
-        for w in (wd, spread):
-            w.prepare_for_model_run(sc)
+        wd.prepare_for_model_run(sc)
+        spread.prepare_for_model_run(sc)
 
+        print("step 1:", sc['density'])
         # release elements
         num = sc.release_elements(default_ts, rel_time)
+        print("step 2:", sc['density'])
         if num > 0:
             for w in (wd, spread):
                 w.initialize_data(sc, num)
+        print("step 3:", sc['density'])
+        print("expected density", rho)
 
         # bulk_init_volume is set in same order as b_init_vol
-        print(sc['bulk_init_volume'])
-        print(b_init_vol)
         mask = sc['spill_num'] == 0
-        assert np.all(sc['bulk_init_volume'][mask] == b_init_vol[0])
-        assert np.all(sc['bulk_init_volume'][~mask] == b_init_vol[1])
+        assert np.allclose(sc['bulk_init_volume'][mask], b_init_vol[0])
+        assert np.allclose(sc['bulk_init_volume'][~mask], b_init_vol[1])
         assert np.all(sc['fay_area'][mask] != sc['fay_area'][~mask])
         i_area = sc['fay_area'].copy()
 
@@ -416,7 +415,7 @@ class TestWeatheringData(object):
                "Set density to water density".format(new_subs.name,
                                                      288.0,
                                                      'K'))
-        l.check_present(('gnome.spill.substance.GnomeOil',
+        l.check_present(('gnome.spill.gnome_oil.GnomeOil',
                  'ERROR',
                  msg))
 

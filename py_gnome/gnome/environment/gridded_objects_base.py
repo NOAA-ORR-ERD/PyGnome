@@ -596,9 +596,9 @@ class Variable(gridded.Variable, GnomeId):
                 value = uc.convert(data_units, req_units, value)
             except uc.NotSupportedUnitError:
                 if (not uc.is_supported(data_units)):
-                    warnings.warning("{0} units is not supported: {1}".format(self.name, data_units))
+                    warnings.warn("{0} units is not supported: {1}".format(self.name, data_units))
                 elif (not uc.is_supported(req_units)):
-                    warnings.warning("Requested unit is not supported: {1}".format(req_units))
+                    warnings.warn("Requested unit is not supported: {1}".format(req_units))
                 else:
                     raise
         return value

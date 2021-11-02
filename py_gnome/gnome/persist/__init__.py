@@ -14,9 +14,9 @@ monkey_patch_colander.apply()
 del monkey_patch_colander
 
 # import everything, so it can all be in one place
-from colander import (Int, Float, DateTime, Sequence, Tuple, List, TupleSchema,
-                      SequenceSchema, null, SchemaNode, String, Invalid,
-                      Boolean, drop)
+from colander import (Schema, Int, Float, DateTime, Sequence, Tuple, List,
+                      TupleSchema, SequenceSchema, null, SchemaNode, String,
+                      Invalid, Boolean, drop)
 
 from .extend_colander import (TupleSchema, SequenceSchema, SchemaNode,
                               NumpyFixedLenSchema, FilenameSchema,
@@ -28,6 +28,6 @@ from .extend_colander import (TupleSchema, SequenceSchema, SchemaNode,
 from .validators import (convertible_to_seconds, ascending_datetime,
                          no_duplicate_datetime, positive)
 
-from .base_schema import (ObjTypeSchema, GeneralGnomeObjectSchema, LongLatBounds, PolygonSetSchema,
-                         WorldPoint, ImageSize, now)
+from .base_schema import (ObjType, ObjTypeSchema, GeneralGnomeObjectSchema, LongLatBounds, PolygonSetSchema,
+                          WorldPoint, ImageSize, now)
 
