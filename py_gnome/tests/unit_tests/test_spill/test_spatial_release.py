@@ -118,6 +118,22 @@ class TestNESDISRelease(object):
         assert nr.release_time == datetime.datetime.strptime('5/14/2020 15:20', '%m/%d/%Y %H:%M')
         assert nr.end_release_time == datetime.datetime.strptime('5/14/2020 15:20', '%m/%d/%Y %H:%M')
 
+    def test_alter_release_time_and_save_load(self):
+        nr = NESDISRelease(filename=sample_shapefile)
+
+        assert nr.release_time == datetime.datetime.strptime('5/14/2020 15:20', '%m/%d/%Y %H:%M')
+        assert nr.end_release_time == datetime.datetime.strptime('5/14/2020 15:20', '%m/%d/%Y %H:%M')
+        nr.end_release_time += datetime.timedelta(minutes=40)
+        nr.release_time += datetime.timedelta(minutes=40)
+        assert nr.release_time == datetime.datetime.strptime('5/14/2020 16:00', '%m/%d/%Y %H:%M')
+        assert nr.end_release_time == datetime.datetime.strptime('5/14/2020 16:00', '%m/%d/%Y %H:%M')
+        sv = nr.save(None) #.save(None)[0] gets the serialized form of this object as it would appear in a save file
+        sv[1].close()
+        nr2 = NESDISRelease.deserialize(sv[0])
+        assert nr.release_time == nr2.release_time
+        assert nr == nr2
+
+
     def test_coord_reprojection(self):
         nr = NESDISRelease(filename=sample_shapefile)
 

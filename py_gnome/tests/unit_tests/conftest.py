@@ -6,11 +6,6 @@ The scope="module" on the fixtures ensures it is only invoked once per test
 module
 """
 
-
-
-
-
-
 import os
 from datetime import datetime, timedelta
 import copy
@@ -35,6 +30,7 @@ from gnome.utilities.remote_data import get_datafile
 from gnome.array_types import gat
 from gnome.gnomeobject import class_from_objtype, GnomeId
 from gnome.spill.substance import NonWeatheringSubstance
+from gnome.spill.gnome_oil import GnomeOil
 from gnome.spill_container import SpillContainer
 
 
@@ -784,7 +780,7 @@ def sample_model_weathering(sample_model_fcn,
     model.uncertain = False     # fixme: with uncertainty, copying spill fails!
     model.duration = timedelta(hours=4)
 
-    sub = gnome.spill.substance.GnomeOil(oil)
+    sub = GnomeOil(oil)
     start_time = model.start_time + timedelta(hours=1)
     end_time = start_time + timedelta(seconds=model.time_step * 3)
     spill = gnome.spill.point_line_release_spill(num_les,
@@ -810,7 +806,7 @@ def sample_model_weathering2(sample_model_fcn2, oil, temp=311.16):
     model.uncertain = False     # fixme: with uncertainty, copying spill fails!
     model.duration = timedelta(hours=24)
 
-    sub = gnome.spill.substance.GnomeOil(oil)
+    sub = GnomeOil(oil)
     start_time = model.start_time
     end_time = start_time
     spill = gnome.spill.point_line_release_spill(100,

@@ -263,7 +263,6 @@ class ObjType(SchemaType):
 
     def _prepare_save(self, node, raw_object, saveloc, refs):
         #Gets the json for the object, as if this were being serialized
-        obj_json = None
         if hasattr(raw_object, 'to_dict'):
             # Passing the 'save' in case a class wants to do some special stuff on
             # saving specifically.
@@ -274,12 +273,6 @@ class ObjType(SchemaType):
             return dict_
         else:
             raise TypeError('Object does not have a to_dict function')
-        #also adds the object to refs by id
-        refs[raw_object.id] = raw_object
-
-        #note you cannot immediately strip out attributes that wont get saved here
-        #because they are still needed by _impl
-        return obj_json
 
     def _save(self, node, json_, zipfile_, refs):
         if json_['id'] in refs:

@@ -26,6 +26,9 @@ __version__ = '1.1.0'
 def check_dependency_versions():
     """
     Checks the versions of the following libraries:
+
+    These are checked, as they are maintained by NOAA ERD, so may be installed
+    from source, rather than managed by conda, etc.
         gridded
         oillibrary
         unit_conversion
@@ -34,25 +37,27 @@ def check_dependency_versions():
     If the version is not at least as current as what's defined here
     a warning is displayed
     """
-    libs = [('gridded', '0.3.0'),
-            ('unit_conversion', '2.10'),
-            ('py_gd', '0.1.7'),
-            ('adios_db', '0.6.0')
+    libs = [('gridded', '0.3.0', ''),
+            ('unit_conversion', '2.10', ''),
+            ('py_gd', '0.1.7', ''),
+            ('adios_db', '0.7.1', 'Only required to use the ADIOS Database '
+                                  'JSON format for oil data.')
             ]
 
-    for name, version in libs:
+    for name, version, note in libs:
         # import the lib:
         try:
             module = importlib.import_module(name)
         except ImportError:
             msg = ("ERROR: The {} package, version >= {} "
-                   "needs to be installed".format(name, version))
+                   "needs to be installed: {}".format(name, version, note))
             warnings.warn(msg)
         else:
             if module.__version__ < version:
                 msg = ('Version {0} of {1} package is required, '
-                       'but actual version in module is {2}'
-                       .format(version, name, module.__version__))
+                       'but actual version in module is {2}:'
+                       '{3}'
+                       .format(version, name, module.__version__, note))
                 warnings.warn(msg)
 
 
