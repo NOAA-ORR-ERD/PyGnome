@@ -154,7 +154,13 @@ class GnomeOil(Substance):
             in gnome.spill.sample_oils
 
 
-        GnomeOil("sample_oil_name")        ---works for tests oils from sample_oils only
+        2) From a file name : ``GnomeOil(filename="adios_oil.json")`` usually oils from the
+            ADIOS oil database
+
+        3) From the json : ``GnomeOil(**json_)`` for loading save files
+
+
+        GnomeOil("sample_oil_name")        ---works for test oils from sample_oils only
         GnomeOil(oil_name="sample_oil_name")
         GnomeOil("oil.json")               ---load from file using OilDB, parse as **json_
         GnomeOil(filename="oil.json")
