@@ -176,8 +176,8 @@ class GnomeOil(Substance):
         GnomeOil("any_name", "valid.json") ---TypeError (no name + filename)
         """
 
-        if oil_name and filename:
-            raise TypeError('Cannot provide both name and filename')
+        #if oil_name and filename:
+            #raise TypeError('Cannot provide both name and filename')
 
         if oil_name in _sample_oils:
             # load from sample oil
