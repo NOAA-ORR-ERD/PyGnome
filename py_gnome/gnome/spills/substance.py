@@ -7,7 +7,6 @@ import os
 
 from gnome.basic_types import fate, oil_status
 from gnome.array_types import gat
-from gnome.spill.sample_oils import _sample_oils
 
 from gnome.persist.base_schema import (ObjTypeSchema,
                                        ObjType,
@@ -16,11 +15,11 @@ from gnome.persist.base_schema import (ObjTypeSchema,
 from gnome.persist.extend_colander import NumpyArraySchema
 from gnome.gnomeobject import GnomeId
 from gnome.environment.water import Water, WaterSchema
-from gnome.spill.sample_oils import _sample_oils
-from gnome.spill.initializers import (floating_initializers,
+
+from .sample_oils import _sample_oils
+from .initializers import (floating_initializers,
                                       InitWindagesSchema,
                                       DistributionBaseSchema)
-
 
 class SubstanceSchema(ObjTypeSchema):
     initializers = SequenceSchema(

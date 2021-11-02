@@ -26,10 +26,10 @@ from gnome.persist import (ObjTypeSchema,
 
 from gnome.gnomeobject import GnomeId
 from gnome.environment.water import Water, WaterSchema
-from gnome.spill.sample_oils import _sample_oils
-from gnome.spill.initializers import (floating_initializers,
-                                      InitWindagesSchema,
-                                      DistributionBaseSchema)
+from .sample_oils import _sample_oils
+from .initializers import (floating_initializers,
+                           InitWindagesSchema,
+                           DistributionBaseSchema)
 
 
 class Density(object):

@@ -13,41 +13,23 @@ import numpy as np
 
 from gnome.basic_types import fate as bt_fate
 from gnome.basic_types import oil_status
-from gnome.array_types import (gat,
-                               ArrayType,
-                               default_array_types)
+from gnome.array_types import (default_array_types)
 
 from gnome.utilities.orderedcollection import OrderedCollection
-import gnome.spill
 from gnome import AddLogger
-from gnome.exceptions import GnomeRuntimeError
-from gnome.spill.substance import NonWeatheringSubstance
-
-
-# Organize information about spills per substance
-# 1. substances: list of substances
-# 2. s_id: int ID to label the substance. If more than one type of substance
-#    then 'substance' data_array is labeled using this unique index
-# 3. spills: list of lists spills. Each element are list of spills
-#    corresponding w/ substance
-#
-# if more than one type of substance in multiple spills, then label the
-# substances as index into 'substances' list.
-## no longer needed -- one substance per SpillContainer!
-
-# substances_spills = namedtuple('substances_spills',
-#                                ['substances',
-#                                 's_id',
-#                                 'spills'])
+from gnome.spills.substance import NonWeatheringSubstance
 
 
 class FateDataView(AddLogger):
+    """
+    need a docstring -- what is this for?
+    """
+
     _dicts_ = ('surface_weather', 'subsurf_weather', 'skim', 'burn',
                'disperse', 'non_weather', 'all')
 
     def __init__(self):
         self.reset()
-        # self.substance_id = substance_id
 
     def reset(self):
         for fate_type in self._dicts_:
