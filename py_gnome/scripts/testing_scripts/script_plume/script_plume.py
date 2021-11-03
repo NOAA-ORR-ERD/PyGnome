@@ -93,7 +93,7 @@ def make_model():
                              lambda_=.00456,
                              max_=.0002)  # 200 micron max
 
-    spill = gs.point_line_release_spill(num_elements=50,
+    spill = gs.surface_point_line_spill(num_elements=50,
                                         units='m^3',
                                         start_position=(-76.126872,
                                                         37.680952,
