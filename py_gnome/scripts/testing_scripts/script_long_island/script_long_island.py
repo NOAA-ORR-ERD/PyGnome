@@ -45,7 +45,7 @@ def make_model(images_dir=base_dir /'images'):
     model.outputters += gs.NetCDFOutput(netcdf_file, which_data='all')
 
     print('adding a spill')
-    spill = gs.point_line_release_spill(num_elements=1000,
+    spill = gs.surface_point_line_spill(num_elements=1000,
                                         start_position=(-72.419992,
                                                         41.202120, 0.0),
                                         release_time=start_time)

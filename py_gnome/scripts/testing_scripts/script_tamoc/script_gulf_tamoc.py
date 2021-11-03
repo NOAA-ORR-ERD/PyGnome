@@ -30,7 +30,7 @@ from gnome.environment import Wind
 
 from gnome.model import Model
 from gnome.map import GnomeMap
-from gnome.spill import point_line_release_spill
+from gnome.spill import surface_point_line_spill
 from gnome.scripting import subsurface_plume_spill
 from gnome.movers import (RandomMover,
                           TamocRiseVelocityMover,

@@ -86,7 +86,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # - wind doesn't act
     # - start_position = (-76.126872, 37.680952, 5.0),
     end_time = start_time + gs.hours(24)
-    spill = gs.point_line_release_spill(num_elements=100,
+    spill = gs.surface_point_line_spill(num_elements=100,
                                         start_position=(-164.791878561,
                                                         69.6252597267, 0.0),
                                         release_time=start_time,
