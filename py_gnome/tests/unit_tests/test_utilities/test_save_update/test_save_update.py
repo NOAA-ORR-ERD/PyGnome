@@ -1,8 +1,4 @@
 
-
-
-
-
 import os
 import sys
 import pytest
@@ -14,6 +10,7 @@ from gnome.utilities.save_updater import (extract_zipfile,
                                           update_savefile,
                                           remember_cwd,
                                           v0tov1,
+                                          v1tov2,
                                           )
 
 '''
@@ -96,3 +93,26 @@ def test_v0_to_v1():
             lambda js: 'gnome.spill.substance.GnomeOil' in js['obj_type'] and
                 js.get('name', None) == "*GENERIC DIESEL"
         )
+
+
+def test_v1_to_v2():
+    """
+    fixme: this is only checking 'gnome.spills.substance.GnomeOil'
+    not any others, including: gnome.spills.spill.Spill
+
+    check_files should probably be updated to do more than one check
+    """
+    with setup_workspace('v0_diesel_mac.zip'):
+        errs = []
+        msgs = []
+        # fixme: we should probably have some v1 data to use for tests!
+        # have to run v0tov1 first for this old data
+        v0tov1(msgs, errs)
+        v1tov2(msgs, errs)
+        assert len(errs) == 0
+
+        def checker(js):
+            return ('gnome.spills.substance.GnomeOil' in js['obj_type']
+                    and js.get('name', None) == "*GENERIC DIESEL")
+
+        assert check_files(checker)

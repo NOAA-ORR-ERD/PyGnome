@@ -17,6 +17,7 @@ from gnome.array_types import (default_array_types)
 
 from gnome.utilities.orderedcollection import OrderedCollection
 from gnome import AddLogger
+import gnome.spills.spill
 from gnome.spills.substance import NonWeatheringSubstance
 
 
@@ -366,7 +367,7 @@ class SpillContainer(AddLogger, SpillContainerData):
     """
     def __init__(self, uncertain=False):
         super(SpillContainer, self).__init__(uncertain=uncertain)
-        self.spills = OrderedCollection(dtype=gnome.spill.spill.Spill)
+        self.spills = OrderedCollection(dtype=gnome.spills.spill.Spill)
         self.spills.register_callback(self._spills_changed,
                                       ('add', 'replace', 'remove'))
         self.rewind()

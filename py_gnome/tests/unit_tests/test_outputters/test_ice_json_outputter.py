@@ -3,16 +3,13 @@ tests for geojson outputter
 '''
 
 
-
-
 import time
 from datetime import datetime
-from numbers import Number
 
 import numpy as np
 import pytest
 
-from gnome.spill import Release, Spill, point_line_release_spill
+from gnome.spills import Release, Spill, point_line_release_spill
 from gnome.movers import IceMover
 from gnome.outputters import IceJsonOutput
 

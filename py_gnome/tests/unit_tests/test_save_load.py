@@ -40,7 +40,13 @@ from gnome.outputters import (Renderer,
                               TrajectoryGeoJsonOutput)
 
 from gnome.maps import MapFromBNA
-from gnome import spill
+from gnome.spills.spill import (point_line_release_spill,
+                                PointLineRelease,
+                                )
+
+from gnome.spills.substance import Substance, NonWeatheringSubstance
+from gnome.spills.gnome_oil import GnomeOil
+
 
 # following is modified for testing only
 from gnome.persist import save_load
@@ -160,13 +166,13 @@ g_objects = (
     NetCDFOutput(os.path.join(base_dir, 'xtemp.nc')), Renderer(testdata['Renderer']['bna_sample'],
              os.path.join(base_dir, 'output_dir')),
     WeatheringOutput(),
-    spill.PointLineRelease(release_time=datetime.now(),
+    PointLineRelease(release_time=datetime.now(),
                            num_elements=10,
                            start_position=(0, 0, 0)),
-    spill.point_line_release_spill(10, (0, 0, 0), datetime.now()),
-    spill.substance.Substance(windage_range=(0.05, 0.07)),
-    spill.gnome_oil.GnomeOil(test_oil, windage_range=(0.05, 0.07)),
-    spill.substance.NonWeatheringSubstance(windage_range=(0.05, 0.07)),
+    point_line_release_spill(10, (0, 0, 0), datetime.now()),
+    Substance(windage_range=(0.05, 0.07)),
+    GnomeOil(test_oil, windage_range=(0.05, 0.07)),
+    NonWeatheringSubstance(windage_range=(0.05, 0.07)),
     Skimmer(amount=100, efficiency=0.3, active_range=(datetime(2014, 1, 1, 0, 0), datetime(2014, 1, 1, 4, 0)), units='kg'),
     Burn(area=100, thickness=1, active_range=(datetime(2014, 1, 1, 0, 0), datetime(2014, 1, 1, 4, 0)),
                     efficiency=.9),

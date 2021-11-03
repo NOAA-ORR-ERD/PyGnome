@@ -10,8 +10,8 @@ from testfixtures import log_capture
 
 from gnome.environment import Water
 from gnome.weatherers import WeatheringData, FayGravityViscous
-from gnome.spill import point_line_release_spill
-from gnome.spill.gnome_oil import GnomeOil
+from gnome.spills import point_line_release_spill
+from gnome.spills.gnome_oil import GnomeOil
 from gnome.spill_container import SpillContainer
 
 from ..conftest import test_oil
@@ -415,7 +415,7 @@ class TestWeatheringData(object):
                "Set density to water density".format(new_subs.name,
                                                      288.0,
                                                      'K'))
-        l.check_present(('gnome.spill.gnome_oil.GnomeOil',
+        l.check_present(('gnome.spills.gnome_oil.GnomeOil',
                  'ERROR',
                  msg))
 

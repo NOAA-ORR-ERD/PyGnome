@@ -21,9 +21,9 @@ from gnome.utilities import convert
 
 from gnome.environment import Wind
 
-from gnome.spill import point_line_release_spill
+from gnome.spills import point_line_release_spill
 from gnome.spill_container import SpillContainer
-from gnome.spill.substance import NonWeatheringSubstance
+from gnome.spills.substance import NonWeatheringSubstance
 
 from gnome.movers import (WindMover,
                           constant_wind_mover,

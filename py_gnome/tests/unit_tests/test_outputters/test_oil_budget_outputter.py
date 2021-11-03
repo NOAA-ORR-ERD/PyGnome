@@ -2,10 +2,6 @@
 tests for oil budget outputter
 '''
 
-
-
-
-
 import os
 from glob import glob
 from datetime import timedelta
@@ -25,7 +21,7 @@ from gnome.weatherers import (Evaporation,
                               Skimmer,
                               Burn,
                               )
-from gnome.spill import point_line_release_spill
+from gnome.spills import point_line_release_spill
 
 from gnome.outputters import OilBudgetOutput
 

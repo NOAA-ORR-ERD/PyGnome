@@ -19,7 +19,7 @@ from gnome.model import Model
 from gnome.maps import MapFromBNA
 from gnome.environment import Wind, Water, Waves, Tide
 
-from gnome.spill import point_line_release_spill
+from gnome.spills import point_line_release_spill
 
 from gnome.movers import RandomMover, WindMover, CatsMover
 from gnome.weatherers import Evaporation, ChemicalDispersion, Burn, Skimmer

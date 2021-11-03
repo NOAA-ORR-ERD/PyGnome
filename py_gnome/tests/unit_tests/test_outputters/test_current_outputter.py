@@ -2,9 +2,6 @@
 tests for geojson outputter
 '''
 
-
-
-
 from datetime import datetime
 
 import numpy as np
@@ -14,7 +11,7 @@ import pytest
 from gnome.utilities import time_utils
 
 from gnome.environment import Tide
-from gnome.spill import Release, Spill, point_line_release_spill
+from gnome.spills import Release, Spill, point_line_release_spill
 from gnome.movers import CatsMover
 from gnome.outputters.json import CurrentJsonOutput
 

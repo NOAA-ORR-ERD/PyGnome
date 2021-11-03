@@ -1,8 +1,4 @@
 
-
-
-
-
 # tests for shapefile outputter
 
 import os
@@ -13,7 +9,7 @@ from pytest import raises
 
 from gnome.outputters import ShapeOutput
 
-from gnome.spill import point_line_release_spill
+from gnome.spills import point_line_release_spill
 from gnome.spill_container import SpillContainerPair
 
 

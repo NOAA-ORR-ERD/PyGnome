@@ -2,10 +2,6 @@
 tests for weathering outputter
 '''
 
-
-
-
-
 import os
 from glob import glob
 from datetime import timedelta
@@ -18,7 +14,7 @@ from gnome.scripting import hours
 
 from gnome.environment import constant_wind, Water, Waves
 from gnome.weatherers import Evaporation, ChemicalDispersion, Skimmer, Burn
-from gnome.spill import point_line_release_spill
+from gnome.spills import point_line_release_spill
 
 from gnome.outputters import WeatheringOutput
 

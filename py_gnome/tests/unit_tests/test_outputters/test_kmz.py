@@ -2,10 +2,6 @@
 tests for kmz outputter
 '''
 
-
-
-
-
 import os
 from glob import glob
 from datetime import datetime, timedelta
@@ -18,7 +14,7 @@ from gnome.outputters import KMZOutput
 from gnome.outputters import kmz_templates
 
 
-from gnome.spill import SpatialRelease, Spill, point_line_release_spill
+from gnome.spills import SpatialRelease, Spill, point_line_release_spill
 from gnome.spill_container import SpillContainerPair
 from gnome.movers import RandomMover, constant_wind_mover
 from gnome.model import Model

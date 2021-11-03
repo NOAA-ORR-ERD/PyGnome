@@ -1,18 +1,12 @@
 # -*- coding: utf-8 -*-
 
 """
-
 Tests of the cython land-check code used in the map code.
 
 Designed to be run with py.test
 
-
 @author: Chris.Barker
-
 """
-
-
-
 
 
 import pytest
@@ -288,7 +282,7 @@ def test_off_to_off(pt1, pt2):
 #         # one right to left
 #         # diagonal that doesn't hit
 #         # diagonal that does hit
-#         spill = gnome.spill.Spill(num_LEs=4)
+#         spill = gnome.spills.Spill(num_LEs=4)
 #         spill['positions']= np.array(((30.0, 5.0, 0.0), # outside from right
 #                                      (-5.0, 5.0, 0.0), # outside from left
 #                                      (5.0, -5.0, 0.0), # outside from top

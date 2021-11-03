@@ -12,7 +12,7 @@ import pytest
 import numpy as np
 
 from gnome.model import Model
-from gnome.spill import point_line_release_spill
+from gnome.spills import point_line_release_spill
 from gnome.environment import constant_wind, Water, Wind
 from gnome.weatherers import Evaporation
 from gnome.outputters import WeatheringOutput

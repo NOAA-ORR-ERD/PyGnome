@@ -11,8 +11,9 @@ from gnome.gnomeobject import GnomeId
 from gnome import (environment,
                    movers,
                    outputters,
-                   spill)
-from gnome.spill.release import Release
+                   )
+from gnome.spills.spill import Spill
+from gnome.spills.release import Release
 from gnome.model import Model
 from gnome.environment import Waves, Wind, Water
 from gnome.weatherers import Evaporation, NaturalDispersion
@@ -47,7 +48,7 @@ base_class = [(environment.Environment, ()),
               (movers.Mover, ()),
               (outputters.Outputter, ()),
               (Release, ()),
-              (spill.Spill, (Release(),))
+              (Spill, (Release(),))
               ]
 
 

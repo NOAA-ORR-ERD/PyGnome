@@ -13,7 +13,7 @@ from gnome.basic_types import oil_status  # .in_water
 from gnome.environment import gridcur
 
 from gnome.movers import PyCurrentMover
-from gnome.spill import grid_spill
+from gnome.spills import grid_spill
 
 import gnome.scripting as gs
 

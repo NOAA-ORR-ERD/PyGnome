@@ -6,11 +6,6 @@ object here - more comprehensive tests of release objects within a Spill are
 in test_spill.py
 """
 
-
-
-
-
-
 import os
 from datetime import datetime, timedelta
 
@@ -18,13 +13,13 @@ import pytest
 
 import numpy as np
 
-from gnome.spill import (Release,
+from gnome.spills import (Release,
                          PointLineRelease,
                          SpatialRelease,
                          #GridRelease,
                          )
-from gnome.spill.release import release_from_splot_data
-from gnome.spill.le import LEData
+from gnome.spills.release import release_from_splot_data
+from gnome.spills.le import LEData
 
 
 def test_init():

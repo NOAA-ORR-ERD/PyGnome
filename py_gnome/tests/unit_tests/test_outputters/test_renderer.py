@@ -11,9 +11,6 @@ NOTE: some of these only really test if the code crashes
 
 """
 
-
-
-
 import os
 from os.path import basename
 

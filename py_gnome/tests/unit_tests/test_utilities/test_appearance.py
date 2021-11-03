@@ -1,9 +1,5 @@
 
-
-
-
-
-from gnome.spill.spill import Spill
+from gnome.spills.spill import Spill
 from gnome.utilities.appearance import SpillAppearance, Colormap
 
 

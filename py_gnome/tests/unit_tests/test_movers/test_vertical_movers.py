@@ -12,11 +12,11 @@ import pytest
 import numpy as np
 
 from gnome.movers import RiseVelocityMover
-from gnome.spill.initializers import InitRiseVelFromDist
+from gnome.spills.initializers import InitRiseVelFromDist
 from gnome.utilities.distributions import UniformDistribution
 
 from ..conftest import sample_sc_release
-from gnome.spill.substance import NonWeatheringSubstance
+from gnome.spills.substance import NonWeatheringSubstance
 from gnome.array_types import gat
 
 

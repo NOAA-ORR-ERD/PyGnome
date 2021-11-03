@@ -24,7 +24,7 @@ from gnome.utilities.inf_datetime import InfDateTime
 from gnome.maps import MapFromBNA
 from gnome.environment import Wind, Tide, Water
 from gnome.model import Model
-from gnome.spill import point_line_release_spill
+from gnome.spills import point_line_release_spill
 from gnome.movers import RandomMover, WindMover, CatsMover, IceMover
 from gnome.weatherers import Evaporation, Skimmer, Burn
 from gnome.outputters import CurrentJsonOutput, IceJsonOutput

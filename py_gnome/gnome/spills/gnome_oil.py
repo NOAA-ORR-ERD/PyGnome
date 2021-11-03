@@ -157,7 +157,7 @@ class GnomeOil(Substance):
         GnomeOil can be initialized in three ways:
 
         1) From a sample oil name : ``GnomeOil("sample_oil_name")`` the oils are available
-            in gnome.spill.sample_oils
+            in gnome.spills.sample_oils
 
 
         2) From a file name : ``GnomeOil(filename="adios_oil.json")`` usually oils from the

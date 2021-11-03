@@ -12,7 +12,6 @@ Element_types -- what the types of the elements are.
 from datetime import datetime
 import copy
 
-
 import unit_conversion as uc
 from gnome.utilities.time_utils import asdatetime
 from gnome.utilities.appearance import SpillAppearanceSchema
@@ -118,11 +117,11 @@ class Spill(BaseSpill):
         to non-default values (non-zero).
 
         :param release: an object defining how elements are to be released
-        :type release: derived from :class:`~gnome.spill.Release`
+        :type release: derived from :class:`~gnome.spills.release.Release`
 
         :param substance: an object defining the substance of this spill 
-        Defaults to :class:`~gnome.spill.substance.NonWeatheringSubstance
-        :type substance: derived from :class:`~gnome.spill.substance.Substance`
+        Defaults to :class:`~gnome.spills.substance.NonWeatheringSubstance
+        :type substance: derived from :class:`~gnome.spills.substance.Substance`
 
         **Optional parameters (kwargs):**
 
