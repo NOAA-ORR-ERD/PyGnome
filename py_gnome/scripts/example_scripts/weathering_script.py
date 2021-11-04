@@ -5,18 +5,13 @@ Script to show how to run py_gnome with weathering
 This is a "just weathering" run -- no land, currents, etc.
 """
 
-
-
-
-
 import os
 from gnome import scripting as gs
 
-print("I am running!")
 
 # define base directory
 base_dir = os.path.dirname(__file__)
-save_loc = os.path.join(base_dir, 'WeatheringRun.gnome')
+save_dir = os.path.join(base_dir, 'output')
 
 def make_model():
 
@@ -25,16 +20,17 @@ def make_model():
 
 
     print('adding outputters')
-    budget_file = os.path.join(base_dir, 'GNOME_oil_budget.csv')
+    budget_file = os.path.join(save_dir, 'GNOME_oil_budget.csv')
     model.outputters += gs.OilBudgetOutput(budget_file)
 
     print('adding a spill')
     # We need a spill at the very least
-    spill = gs.point_line_release_spill(num_elements=10,  # no need for a lot of elements for a instantaneous release
+    oil_file = os.path.join('example_files','alaska-north-slope_AD00020.json')
+    spill = gs.surface_point_line_spill(num_elements=10,  # no need for a lot of elements for a instantaneous release
                                         start_position=(0.0, 0.0, 0.0),
                                         release_time=model.start_time,
                                         amount=1000,
-                                        substance='ALASKA NORTH SLOPE (MIDDLE PIPELINE, 1997)',
+                                        substance=gs.GnomeOil(filename=oil_file),
                                         units='bbl')
 
     model.spills += spill
@@ -62,4 +58,4 @@ if __name__ == "__main__":
     model = make_model()
     print("running the model")
     model.full_run()
-    model.save(saveloc=save_loc)
+    model.save(saveloc=os.path.join(save_dir,'WeatheringRun.gnome'))

@@ -86,13 +86,17 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # - wind doesn't act
     # - start_position = (-76.126872, 37.680952, 5.0),
     end_time = start_time + gs.hours(24)
-    spill = gs.point_line_release_spill(num_elements=100,
+    oil_file = os.path.join(base_dir, 'alaska-north-slope.json')
+    substance = gs.GnomeOil(filename=oil_file)
+    spill = gs.surface_point_line_spill(num_elements=100,
                                         start_position=(-164.791878561,
                                                         69.6252597267, 0.0),
                                         release_time=start_time,
                                         end_release_time=end_time,
                                         amount=1000,
-                                        substance='ALASKA NORTH SLOPE (MIDDLE PIPELINE, 1997)',
+                                        #substance='ALASKA NORTH SLOPE (MIDDLE PIPELINE, 1997)',
+                                        #substance='oil_ans_mp',
+                                        substance=substance,
                                         units='bbl')
 
     # set bullwinkle to .303 to cause mass goes to zero bug at 24 hours (when continuous release ends)

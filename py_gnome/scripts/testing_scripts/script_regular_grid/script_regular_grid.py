@@ -31,7 +31,7 @@ def make_model(images_dir=base_dir / 'images'):
     # adding a wind to make it more interesting
     model.movers += gs.constant_wind_mover(15, 270, "m/s")
 
-    model.spills += gs.point_line_release_spill(
+    model.spills += gs.surface_point_line_spill(
         num_elements=10,
         amount=1.0,  # kg
         start_position=(
