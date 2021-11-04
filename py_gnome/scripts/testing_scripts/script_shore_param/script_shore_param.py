@@ -81,7 +81,7 @@ def make_model(img_dir=os.path.join(base_dir, 'images')):
     # #
 
     print('adding four spill')
-    model.spills += gs.point_line_release_spill(num_elements=NUM_ELEMENTS // 4,
+    model.spills += gs.surface_point_line_spill(num_elements=NUM_ELEMENTS // 4,
                                                 start_position=(0.0,
                                                                 0.0,
                                                                 0.0),

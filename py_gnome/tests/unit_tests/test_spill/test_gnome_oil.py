@@ -30,11 +30,6 @@ class TestGnomeOil:
 
         assert go.pour_point == 310.9278
 
-    def test_pass_both(self):
-        with pytest.raises(TypeError):
-            oil = GnomeOil(oil_name = 'oil_ans_mp',
-                           filename=str(DATA_DIR / "ANS_EC02713.json"))
-
     @pytest.mark.skipif(not ADIOS_IS_THERE, reason="requires the adios_db package")
     def test_oil_from_adios_db_json(self):
 
