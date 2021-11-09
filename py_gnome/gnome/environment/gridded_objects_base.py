@@ -1,4 +1,5 @@
 
+import os
 import datetime
 import copy
 import numpy as np
@@ -749,9 +750,11 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
         Variable = self._default_component_types['variable']
         Depth = self._default_component_types['depth']
         if filename is not None:
-            data_file = str(filename)
-            grid_file = str(filename)
-
+            try:
+                filename = os.fspath(filename)
+            except TypeError:
+                pass
+            data_file = grid_file = filename
         ds = None
         dg = None
         if dataset is None:
