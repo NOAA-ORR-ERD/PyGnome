@@ -492,9 +492,11 @@ class Variable(gridded.Variable, GnomeId):
         Time = self._default_component_types['time']
         Depth = self._default_component_types['depth']
         if filename is not None:
-            data_file = str(filename)
-            grid_file = str(filename)
-
+            try:
+                filename = os.fspath(filename)
+            except TypeError:
+                pass
+            data_file = grid_file = filename
         ds = None
         dg = None
         if dataset is None:
@@ -597,7 +599,9 @@ class Variable(gridded.Variable, GnomeId):
                 value = uc.convert(data_units, req_units, value)
             except uc.NotSupportedUnitError:
                 if (not uc.is_supported(data_units)):
-                    warnings.warn("{0} units is not supported: {1}".format(self.name, data_units))
+                    warnings.warn("{0} units is not supported: {1}"
+                                  "Using them unconverted as {2}"
+                                  .format(self.name, data_units, req_units))
                 elif (not uc.is_supported(req_units)):
                     warnings.warn("Requested unit is not supported: {1}".format(req_units))
                 else:
