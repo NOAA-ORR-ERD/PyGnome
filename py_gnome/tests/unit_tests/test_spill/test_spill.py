@@ -1,8 +1,4 @@
 
-
-
-
-
 from datetime import datetime, timedelta
 
 from gnome.spill.spill import (Spill)
@@ -69,7 +65,7 @@ def cont_point_spill_le_per_ts():
                  amount=5000)
 
 
-class TestSpill(object):
+class TestSpill:
     rel_time = datetime(2014, 1, 1, 0, 0)
     pos = (0, 1, 2)
 
@@ -122,16 +118,20 @@ class TestSpill(object):
         with pytest.raises(ValueError):
             sp.units = 'inches'
 
-
     # These are for when SpillContainer is removed
     # NOTE: you can not parametrize on fixtures like this
-    @pytest.mark.xfail()
-    @pytest.mark.parametrize('spill', [inst_point_spill,
-                                       inst_point_line_spill,
-                                       cont_point_spill,
-                                       cont_point_line_spill,
-                                       cont_point_spill_le_per_ts])
-    def test_spill_behavior(self, spill):
+    # how to parametrize on fixtures:
+    # https://miguendes.me/how-to-use-fixtures-as-arguments-in-pytestmarkparametrize
+    # klunky, but it seems to work
+    # it uses: request.getfixturevalue
+    @pytest.mark.xfail()  ## these tests need some refactoring ...
+    @pytest.mark.parametrize('spill', ["inst_point_spill",
+                                       # "inst_point_line_spill",
+                                       # "cont_point_spill",
+                                       # "cont_point_line_spill",
+                                       # "cont_point_spill_le_per_ts",
+                                       ])
+    def test_spill_behavior(self, spill, request):
         '''
         Validates spill behavior for a number of example spills.
 
@@ -149,6 +149,15 @@ class TestSpill(object):
             d. LEs are initialized to expected mass and position values
             e. maximum mass error does not exceed 1 LE at any time.
         '''
+        spill = request.getfixturevalue(spill)
+        print(f"{type(spill)=}, {spill=}")
+
+        sc = SpillContainer()
+        sc.array_types.update(spill.all_array_types)
+        print(f"{sc.array_types=}")
+
+        sc.spills += spill
+
         ts = 900
         tsd = timedelta(seconds=ts)
         model_time = spill.release_time - tsd
@@ -156,10 +165,10 @@ class TestSpill(object):
         spill.prepare_for_model_run(900)
         le_per_ts = spill.release.LE_timestep_ratio(900)
         mass_per_le = spill.release._mass_per_le
-        for ix in range(0,20):
-            new_rel = spill.release_elements(model_time, ts)
+        for ix in range(0, 20):
+            new_rel = spill.release_elements(sc, model_time, ts)
             if ix == 0:
-                assert spill.num_released == 0
+                assert spill._num_released == 0
             elif model_time < spill.end_release_time:
                 assert spill.num_released == le_per_ts * ix
                 assert sum(spill.data['mass']) == le_per_ts * mass_per_le * ix
