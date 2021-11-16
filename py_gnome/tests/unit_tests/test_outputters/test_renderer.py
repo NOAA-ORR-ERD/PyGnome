@@ -12,8 +12,6 @@ NOTE: some of these only really test if the code crashes
 """
 
 
-
-
 import os
 from os.path import basename
 
@@ -371,6 +369,22 @@ def test_serialize_deserialize(output_dir):
     r2 = Renderer.deserialize(toserial)
 
     assert r == r2
+
+def test_animation(output_dir):
+    """
+    tests the animated gif support
+    """
+    odir = os.path.join(output_dir, "animation")
+
+    rend = Renderer(output_dir=odir,
+                    viewport=(((0, 0),(1, 1))),
+                    formats=['gif']
+                    )
+    stime = datetime(2021,1,1,0)
+    rend.prepare_for_model_run(model_start_time=stime)
+    rend.prepare_for_model_step(self, 3600, stime)
+
+    assert False
 
 
 # # if __name__ == '__main__':
