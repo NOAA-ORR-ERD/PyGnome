@@ -7,10 +7,11 @@ import warnings
 from functools import wraps
 
 from colander import (SchemaNode, SequenceSchema,
-                      Sequence, String, Boolean, DateTime,
+                      String, Boolean, DateTime,
                       drop)
 
 import gridded
+from gridded.utilities import get_dataset
 import unit_conversion as uc
 
 from gnome.persist import base_schema
@@ -408,9 +409,177 @@ class Variable(gridded.Variable, GnomeId):
 
     _gnome_unit = None #Default assumption for unit type
 
+    # fixme: shouldn't extrapolation_is_allowed be
+    #        in Environment only?
     def __init__(self, extrapolation_is_allowed=False, *args, **kwargs):
         super(Variable, self).__init__(*args, **kwargs)
         self.extrapolation_is_allowed = extrapolation_is_allowed
+
+    def init_from_netCDF(self,
+                         filename=None,
+                         varname=None,
+                         grid_topology=None,
+                         name=None,
+                         units=None,
+                         time=None,
+                         time_origin=None,
+                         grid=None,
+                         depth=None,
+                         dataset=None,
+                         data_file=None,
+                         grid_file=None,
+                         location=None,
+                         load_all=False,
+                         fill_value=0,
+                         **kwargs
+                         ):
+        '''
+        Initialize a Variable from a netcdf file.
+
+        This is use in subclasses, to it can be done after object creation
+
+        :param filename: Default data source. Has lowest priority.
+                         If dataset, grid_file, or data_file are provided,
+                         this function uses them first
+        :type filename: string
+
+        :param varname: Explicit name of the data in the data source file.
+                        Equivalent to the key used to look the item up
+                        directly eg 'ds["lon_u"]' for a netCDF4 Dataset.
+        :type varname: string
+
+        :param grid_topology: Description of the relationship between grid
+                              attributes and variable names that hold the grid.
+        :type grid_topology: {string : string, ...}
+
+        :param name: Name of this object (GNome Object name)
+        :type name: string
+
+        :param units: string such as 'm/s'
+        :type units: string
+
+        :param time: Time axis of the data. May be a constructed ``gridded.Time``
+                     object, or collection of datetime.datetime objects
+        :type time: [] of datetime.datetime, netCDF4 Variable, or Time object
+
+        :param data: Underlying data object. May be any array-like,
+                     including netCDF4 Variable, etc
+        :type data: netCDF4.Variable or numpy.array
+
+        :param grid: Grid that the data corresponds to
+        :type grid: pysgrid or pyugrid
+
+        :param location: The feature where the data aligns with the grid.
+                         e.g. "node", "face"
+        :type location: string
+
+        :param depth: Depth axis object from ``gridded.depth``
+        :type depth: Depth, S_Depth or L_Depth
+
+        :param dataset: Instance of open netCDF4.Dataset
+        :type dataset: netCDF4.Dataset
+
+        :param data_file: Name of data source file, if data and grid files are separate
+        :type data_file: string
+
+        :param grid_file: Name of grid source file, if data and grid files are separate
+        :type grid_file: string
+
+        :param extrapolation_is_allowed:
+        '''
+        Grid = self._default_component_types['grid']
+        Time = self._default_component_types['time']
+        Depth = self._default_component_types['depth']
+        if filename is not None:
+            data_file = str(filename)
+            grid_file = str(filename)
+
+        ds = None
+        dg = None
+        if dataset is None:
+            if grid_file == data_file:
+                ds = dg = get_dataset(grid_file)
+            else:
+                ds = get_dataset(data_file)
+                dg = get_dataset(grid_file)
+        else:
+            if grid_file is not None:
+                dg = get_dataset(grid_file)
+            else:
+                dg = dataset
+            ds = dataset
+        if data_file is None:
+            data_file = os.path.split(ds.filepath())[-1]
+
+        if grid is None:
+            grid = Grid.from_netCDF(grid_file,
+                                    dataset=dg,
+                                    grid_topology=grid_topology)
+        if varname is None:
+            varname = self._gen_varname(data_file,
+                                       dataset=ds)
+            if varname is None:
+                raise NameError('Default current names are not in the data file, '
+                                'must supply variable name')
+        data = ds[varname]
+        if name is None:
+            name = self.__class__.__name__ + str(self._def_count)
+            self._def_count += 1
+        if units is None:
+            try:
+                units = data.units
+            except AttributeError:
+                units = None
+        if time is None:
+            time = Time.from_netCDF(filename=data_file,
+                                    dataset=ds,
+                                    datavar=data)
+            if time_origin is not None:
+                time = Time(data=time.data,
+                            filename=time.filename,
+                            varname=time.varname,
+                            origin=time_origin)
+        if depth is None:
+            if (isinstance(grid, (Grid_S, Grid_R)) and len(data.shape) == 4 or
+                    isinstance(grid, Grid_U) and len(data.shape) == 3):
+                depth = Depth.from_netCDF(grid_file,
+                                          dataset=dg,
+                                          )
+        if location is None:
+            if hasattr(data, 'location'):
+                location = data.location
+#             if len(data.shape) == 4 or (len(data.shape) == 3 and time is None):
+#                 from gnome.environment.environment_objects import S_Depth
+#                 depth = S_Depth.from_netCDF(grid=grid,
+#                                             depth=1,
+#                                             data_file=data_file,
+#                                             grid_file=grid_file,
+#                                             **kwargs)
+        if load_all:
+            data = data[:]
+        self.__init__(name=name,
+                      units=units,
+                      time=time,
+                      data=data,
+                      grid=grid,
+                      depth=depth,
+                      grid_file=grid_file,
+                      data_file=data_file,
+                      fill_value=fill_value,
+                      location=location,
+                      varname=varname,
+                      **kwargs)
+
+    @classmethod
+    def from_netCDF(cls, *args, **kwargs):
+        """
+        create a new variable object from a netcdf file
+
+        See init_from_netcdf for signature
+        """
+        var = cls.__new__(cls)
+        var.init_from_netCDF(*args, **kwargs)
+        return var
 
     def at(self, points, time, units=None, *args, **kwargs):
         if ('extrapolate' not in kwargs):
@@ -427,9 +596,9 @@ class Variable(gridded.Variable, GnomeId):
                 value = uc.convert(data_units, req_units, value)
             except uc.NotSupportedUnitError:
                 if (not uc.is_supported(data_units)):
-                    warnings.warning("{0} units is not supported: {1}".format(self.name, data_units))
+                    warnings.warn("{0} units is not supported: {1}".format(self.name, data_units))
                 elif (not uc.is_supported(req_units)):
-                    warnings.warning("Requested unit is not supported: {1}".format(req_units))
+                    warnings.warn("Requested unit is not supported: {1}".format(req_units))
                 else:
                     raise
         return value
@@ -532,18 +701,157 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
         super(VectorVariable, self).__init__(*args, **kwargs)
         self.extrapolation_is_allowed = extrapolation_is_allowed
 
+    def init_from_netCDF(self,
+                         filename=None,
+                         varnames=None,
+                         grid_topology=None,
+                         name=None,
+                         units=None,
+                         time=None,
+                         time_origin=None,
+                         grid=None,
+                         depth=None,
+                         data_file=None,
+                         grid_file=None,
+                         dataset=None,
+                         load_all=False,
+                         variables=None,
+                         **kwargs
+                         ):
+        '''
+        Allows one-function initialization of a VectorVariable from a file.
+
+        :param filename: Default data source. Parameters below take precedence
+        :param varnames: Names of the variables in the data source file
+        :param grid_topology: Description of the relationship between grid attributes and variable names.
+        :param name: Name of property
+        :param units: Units
+        :param time: Time axis of the data
+        :param data: Underlying data source
+        :param grid: Grid that the data corresponds with
+        :param dataset: Instance of open Dataset
+        :param data_file: Name of data source file
+        :param grid_file: Name of grid source file
+        :type filename: string
+        :type varnames: [] of string
+        :type grid_topology: {string : string, ...}
+        :type name: string
+        :type units: string
+        :type time: [] of datetime.datetime, netCDF4 Variable, or Time object
+        :type data: netCDF4.Variable or numpy.array
+        :type grid: pysgrid or pyugrid
+        :type dataset: netCDF4.Dataset
+        :type data_file: string
+        :type grid_file: string
+        '''
+        Grid = self._default_component_types['grid']
+        Time = self._default_component_types['time']
+        Variable = self._default_component_types['variable']
+        Depth = self._default_component_types['depth']
+        if filename is not None:
+            data_file = str(filename)
+            grid_file = str(filename)
+
+        ds = None
+        dg = None
+        if dataset is None:
+            if grid_file == data_file:
+                ds = dg = get_dataset(grid_file)
+            else:
+                ds = get_dataset(data_file)
+                dg = get_dataset(grid_file)
+        else:
+            if grid_file is not None:
+                dg = get_dataset(grid_file)
+            else:
+                dg = dataset
+            ds = dataset
+
+        if grid is None:
+            grid = Grid.from_netCDF(grid_file,
+                                    dataset=dg,
+                                    grid_topology=grid_topology)
+        if varnames is None:
+            varnames = self._gen_varnames(data_file,
+                                         dataset=ds)
+            if all([v is None for v in varnames]):
+                raise ValueError('No compatible variable names found!')
+        if name is None:
+            name = self.__class__.__name__ + str(self._def_count)
+            self._def_count += 1
+        data = ds[varnames[0]]
+        if time is None:
+            time = Time.from_netCDF(filename=data_file,
+                                    dataset=ds,
+                                    datavar=data)
+            if time_origin is not None:
+                time = Time(data=time.data, filename=data_file, varname=time.varname, origin=time_origin)
+        if depth is None:
+            if (isinstance(grid, (Grid_S, Grid_R)) and len(data.shape) == 4 or
+                    isinstance(grid, Grid_U) and len(data.shape) == 3):
+                depth = Depth.from_netCDF(grid_file,
+                                          dataset=dg,
+                                          )
+
+#         if depth is None:
+#             if (isinstance(grid, Grid_S) and len(data.shape) == 4 or
+#                         (len(data.shape) == 3 and time is None) or
+#                     (isinstance(grid, Grid_U) and len(data.shape) == 3 or
+#                         (len(data.shape) == 2 and time is None))):
+#                 from gnome.environment.environment_objects import S_Depth
+#                 depth = S_Depth.from_netCDF(grid=grid,
+#                                             depth=1,
+#                                             data_file=data_file,
+#                                             grid_file=grid_file,
+#                                             **kwargs)
+        if variables is None:
+            variables = []
+            for vn in varnames:
+                if vn is not None:
+                    # Fixme: We're calling from_netCDF from itself ?!?!?
+                    variables.append(Variable.from_netCDF(filename=filename,
+                                                          varname=vn,
+                                                          grid_topology=grid_topology,
+                                                          units=units,
+                                                          time=time,
+                                                          grid=grid,
+                                                          depth=depth,
+                                                          data_file=data_file,
+                                                          grid_file=grid_file,
+                                                          dataset=ds,
+                                                          load_all=load_all,
+                                                          location=None,
+                                                          **kwargs))
+        if units is None:
+            units = [v.units for v in variables]
+            if all(u == units[0] for u in units):
+                units = units[0]
+
+        super(self.__class__, self).__init__(name=name,
+                                             filename=filename,
+                                             varnames=varnames,
+                                             grid_topology=grid_topology,
+                                             units=units,
+                                             time=time,
+                                             grid=grid,
+                                             depth=depth,
+                                             variables=variables,
+                                             data_file=data_file,
+                                             grid_file=grid_file,
+                                             dataset=ds,
+                                             load_all=load_all,
+                                             **kwargs)
+
     @classmethod
     def from_netCDF(cls, *args, **kwargs):
-        # only here to provide a docstring
         """
-        create a Vector Environment object
+        create a new VectorVariable object from a netcdf file
 
-        :param filename: One of:
-                        - path to a netcdf file
-                        - list of paths to a netcdf file
-                        - an open netCDF4.Dataset
+        See init_from_netcdf for signature
         """
-        return super().from_netCDF(*args, **kwargs)
+        var = cls.__new__(cls)
+        var.init_from_netCDF(*args, **kwargs)
+        return var
 
     @classmethod
     def new_from_dict(cls, dict_, **kwargs):

@@ -2,10 +2,6 @@
 grid for wind or current data
 """
 
-
-
-
-
 from colander import (SchemaNode, drop, Float)
 
 from gnome.utilities.time_utils import date_to_sec

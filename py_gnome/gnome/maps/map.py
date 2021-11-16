@@ -1,7 +1,5 @@
 
 
-
-
 # NOTES:
 #  - Should we just use non-projected coordinates for the raster map?
 #    It makes for a little less computation at every step.
@@ -9,9 +7,7 @@
 
 from gnome.gnomeobject import GnomeId
 from gnome.environment.gridded_objects_base import PyGrid
-
-# why was this ever here???
-# from __builtin__ import property
+import warnings
 
 
 """
@@ -169,10 +165,17 @@ class GnomeMap(GnomeId):
             x.append(p)
         return x
 
-    def _attr_array_to_dict(self, np_array):
-        '''convert np_array to list of tuples, used for map_bounds,
-        spillable_area'''
-        return list(map(tuple, np_array.tolist()))
+    # does not seem to be used anywhere
+    # def _attr_array_to_dict(self, np_array):
+    #     '''
+    #     convert np_array to list of tuples, used for map_bounds,
+    #     spillable_area
+
+    #     Fixme: why is this needed? numpy arrays are already a
+    #            sequence of sequences.
+    #            And why is this called _to_dict ???
+    #     '''
+    #     return list(map(tuple, np_array.tolist()))
 
     def _attr_from_list_to_array(self, l_):
         '''
@@ -639,10 +642,10 @@ class ParamMap(GnomeMap):
             spill_container['status_codes'][r_idx] = oil_status.in_water
 
     def update_from_dict(self, data):
-        if ('center' in list(data.keys()) or
-                'distance' in list(data.keys()) or
-                'bearing' in list(data.keys()) or
-                'units' in list(data.keys())):
+        if ('center' in data or
+            'distance' in data or
+            'bearing' in data or
+            'units' in data):
             self.build(
                 data.pop('center', self.center),
                 data.pop('distance', self.distance),
@@ -888,24 +891,24 @@ class RasterMap(GnomeMap):
         """
         return self._on_land_pixel(self.projection.to_pixel(coord,
                                                             asint=True)[0])
+    # does not appear to be used anymore
+    # def _on_land_pixel_array(self, coords):
+    #     """
+    #     determines which LEs are on land
 
-    def _on_land_pixel_array(self, coords):
-        """
-        determines which LEs are on land
+    #     :param coords:  pixel coords matching the raster
+    #     :type coords:  Nx2 numpy int array
 
-        :param coords:  pixel coords matching the raster
-        :type coords:  Nx2 numpy int array
+    #     returns: a (N,) array of bools - true for particles that are on land
+    #     """
+    #     mask = list(map(point_in_poly, [self.map_bounds] * len(coords), coords))
+    #     racpy = np.copy(coords)[mask]
+    #     mskgph = self.raster[racpy[:, 0], racpy[:, 1]]
 
-        returns: a (N,) array of bools - true for particles that are on land
-        """
-        mask = list(map(point_in_poly, [self.map_bounds] * len(coords), coords))
-        racpy = np.copy(coords)[mask]
-        mskgph = self.raster[racpy[:, 0], racpy[:, 1]]
+    #     chrmgph = np.array([0] * len(coords))
+    #     chrmgph[np.array(mask)] = mskgph
 
-        chrmgph = np.array([0] * len(coords))
-        chrmgph[np.array(mask)] = mskgph
-
-        return chrmgph
+    #     return chrmgph
 
     def _in_water_pixel(self, coord):
         # if  off the raster, so must be in water,
@@ -1140,7 +1143,6 @@ class MapFromBNA(RasterMap):
 
         # fixme: do some file type checking here.
         polygons = haz_files.ReadBNA(filename, 'PolygonSet')
-        map_bounds = None
 
         if kwargs.get('name', False):
             self.name = os.path.split(filename)[1]
@@ -1164,7 +1166,10 @@ class MapFromBNA(RasterMap):
                 spillable_area_bna.append(p)
 
             elif p.metadata[1].lower().replace(' ', '') == 'mapbounds':
-                map_bounds = p
+                if map_bounds is not None:
+                    warnings.warn('Provided map bounds superscede map bounds found in file. Please double check.')
+                else:
+                    map_bounds = p
             else:
                 #  Fixme: we could do something with the polylines....
                 if len(p) > 2:

@@ -15,10 +15,12 @@ Uses the same approach as ADIOS 2
 
 
 import copy
+from colander import Schema, SchemaNode, Boolean
 import numpy as np
 
 from gnome import constants
 from gnome.utilities.weathering import Adios2, LehrSimecek, PiersonMoskowitz
+from gnome.utilities.inf_datetime import InfTime, MinusInfTime
 
 from gnome.persist import base_schema
 from gnome.exceptions import ReferencedObjectNotSet
@@ -44,6 +46,8 @@ class WavesSchema(base_schema.ObjTypeSchema):
             acceptable_schemas=[WindSchema, VectorVariableSchema],
             save_reference=True
     )
+    #make default refs required here to exempt object from validation checks (webgnomeclient req...)
+    make_default_refs = SchemaNode(Boolean(), save=True, update=True, test_equal=False)
 
 
 class Waves(Environment):
@@ -64,12 +68,12 @@ class Waves(Environment):
 
         :param wind: A wind object to get the wind speed.
                      This should be a moving average wind object.
-        :type wind: a Wind type, or equivelent
+        :type wind: A Wind type, or equivelent
 
         :param water: water properties, specifically fetch and wave height
         :type water: environment.Water object.
 
-        .. note:: must take **kwargs since base class supports more inputs like
+        .. note:: must take ``**kwargs`` since base class supports more inputs like
             'name'. The new_from_dict() alternate constructor will invoke
             __init__ will arguments that supported by baseclass
         """
@@ -85,6 +89,10 @@ class Waves(Environment):
 
         super(Waves, self).__init__(**kwargs)
 
+    def validate(self):
+        #Waves object may be present in the model with no refs attached. Requirement by the web client...
+        return ([], True)
+
     @property
     def data_start(self):
         '''
@@ -94,11 +102,17 @@ class Waves(Environment):
             either, but the Wind will.
             So its data range will be that of the Wind it is associated with.
         '''
-        return self.wind.data_start
+        if self.wind:
+            return self.wind.data_start
+        else:
+            return MinusInfTime()
 
     @property
     def data_stop(self):
-        return self.wind.data_stop
+        if self.wind:
+            return self.wind.data_stop
+        else:
+            return InfTime()
 
     def get_value(self, points, time):
         """
@@ -217,14 +231,14 @@ class Waves(Environment):
         for non-Law-of-the-Wall results (Umlauf and Burchard, 2003)
 
         u_c = water friction velocity (m/s)
-               sqrt(rho_air / rho_w) * u_a ~ .03 * u_a
+        sqrt(rho_air / rho_w) * u_a ~ .03 * u_a
         u_a = air friction velocity (m/s)
         z_0 = surface roughness (m) (Taylor and Yelland)
         c_p = peak wave speed for Pierson-Moskowitz spectrum
         w_p = peak angular frequency for Pierson-Moskowitz spectrum (1/s)
 
         TODO: This implementation should be in a utility function.
-              It should not be part of the Waves management object itself.
+        It should not be part of the Waves management object itself.
         '''
         if H == 0 or U == 0:
             return 0
@@ -240,12 +254,3 @@ class Waves(Environment):
         eps = c_ub * u_c**3 / H
 
         return eps
-
-    def prepare_for_model_run(self, _model_time):
-        if self.wind is None:
-            raise ReferencedObjectNotSet("wind object not defined for {}"
-                                         .format(self.__class__.__name__))
-
-        if self.water is None:
-            raise ReferencedObjectNotSet("water object not defined for {}"
-                                         .format(self.__class__.__name__))

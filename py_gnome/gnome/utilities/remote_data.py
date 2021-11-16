@@ -2,28 +2,11 @@
 Download data from remote server
 '''
 
-
-
-
-
-# from future import standard_library
-# standard_library.install_aliases()
-# from builtins import *
-
 import os
 
-try:  # the py3 way
-    from urllib.parse import urljoin
-    from urllib.request import urlopen
-    from urllib.error import HTTPError
-except ImportError:  # the py2 way
-    from urlparse import urljoin
-    from urllib2 import urlopen, HTTPError
-
-
-# import urllib.request, urllib.error, urllib.parse
-
-# from urllib.parse import urljoin
+from urllib.parse import urljoin
+from urllib.request import urlopen
+from urllib.error import HTTPError
 
 from progressbar import (ProgressBar, Percentage, FileTransferSpeed,
                          ETA, Bar)
@@ -38,17 +21,18 @@ def get_datafile(filename):
     then it simply returns the 'filename' back as a string.
 
     If 'filename' does not exist in the local filesystem, then it tries to
-    download it from the gnome server (http://gnome.orr.noaa.gov/py_gnome_testdata).
+    download it from the gnome server
+    (http://gnome.orr.noaa.gov/py_gnome_testdata).
     If it successfully downloads the file, it puts it in the user specified
     path given in filename and returns the 'filename' string.
 
     If file is not found or server is down, it re-throws the HTTPError raised
-    by urllib2.urlopen
+    by urllib
 
     :param filename: path to the file including filename
     :type filename: string
 
-    :exception: raises urllib2.HTTPError if server is down or file not found
+    :exception: raises HTTPError if server is down or file not found
                 on server
 
     :returns: returns the string 'filename' once it has been downloaded to

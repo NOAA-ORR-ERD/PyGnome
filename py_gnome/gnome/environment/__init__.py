@@ -2,21 +2,19 @@
 environment module
 '''
 
-
-
-
-
 from .environment import Environment, env_from_netCDF, ice_env_from_netCDF
 from .environment_objects import (WindTS,
-                                 GridCurrent,
-                                 GridWind,
-                                 IceVelocity,
-                                 IceConcentration,
-                                 GridTemperature,
-                                 IceAwareCurrent,
-                                 IceAwareWind,
-                                 TemperatureTS
-                                 )
+                                  GridCurrent,
+                                  GridWind,
+                                  IceVelocity,
+                                  IceConcentration,
+                                  GridTemperature,
+                                  IceAwareCurrent,
+                                  IceAwareWind,
+                                  TemperatureTS,
+                                  FileGridCurrent,
+                                  )
+from .gridcur import from_gridcur
 from .water import Water, WaterSchema
 from .waves import Waves, WavesSchema
 from .tide import Tide, TideSchema
@@ -63,11 +61,12 @@ env_objs = [Water,
             IceAwareCurrent,
             IceAwareWind]
 
-schemas = set()
-for cls in env_objs:
-    if hasattr(cls, '_schema'):
-        schemas.add(cls._schema)
-schemas = list(schemas)
+# schemas = set()
+# for cls in env_objs:
+#     if hasattr(cls, '_schema'):
+#         schemas.add(cls._schema)
+# schemas = list(schemas)
+schemas = list({cls._schema for cls in env_objs if hasattr(cls, '_schema')})
 
 #This hack is for backwards compat on save files...should probably
 #remove at some point

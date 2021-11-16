@@ -1,9 +1,4 @@
 
-
-
-
-from future.utils import reraise
-
 import sys
 import os
 import psutil
@@ -338,7 +333,7 @@ class ModelBroadcaster(GnomeId):
                 isinstance(response[1], Exception) and
                 isinstance(response[2], traceback.types.TracebackType)):
             self.stop()
-            reraise(*response)
+            raise response[0](str(response[1])).with_traceback()
 
     def stop(self):
         if hasattr(self, 'tasks') and len(self.tasks) > 0:

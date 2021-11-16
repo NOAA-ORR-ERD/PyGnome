@@ -9,10 +9,6 @@ Element_types -- what the types of the elements are.
 
 """
 
-
-
-
-
 from datetime import datetime
 import copy
 
@@ -28,21 +24,24 @@ from gnome.persist.base_schema import ObjTypeSchema, GeneralGnomeObjectSchema
 
 from gnome import _valid_units
 
-from gnome.spill.release import (Release,
-                                 PointLineRelease,
-                                 GridRelease,
-                                 SpatialRelease,
-                                 BaseReleaseSchema,
-                                 PointLineReleaseSchema,
-                                 SpatialReleaseSchema)
 from gnome.environment.water import WaterSchema
-# from gnome.spill.le import LEData
-from gnome.spill.substance import (SubstanceSchema,
-                                   Substance,
-                                   NonWeatheringSubstance,
-                                   GnomeOil, GnomeOilSchema,
-    NonWeatheringSubstanceSchema)
-from gnome.spill.initializers import plume_initializers
+
+from .release import (Release,
+                      PointLineRelease,
+                      GridRelease,
+                      SpatialRelease,
+                      BaseReleaseSchema,
+                      PointLineReleaseSchema,
+                      SpatialReleaseSchema)
+
+from .substance import (Substance,
+                        SubstanceSchema,
+                        NonWeatheringSubstance,
+                        NonWeatheringSubstanceSchema
+                        )
+from .gnome_oil import (GnomeOil, GnomeOilSchema)
+
+from .initializers import plume_initializers
 
 
 class SpillSchema(ObjTypeSchema):
@@ -84,6 +83,8 @@ class SpillSchema(ObjTypeSchema):
 class BaseSpill(GnomeId):
     """
     A base class for spill, with only what we really need
+
+    Note: this should have all the methods that the model needs, to define the interface.
     """
 
 class Spill(BaseSpill):
@@ -119,34 +120,34 @@ class Spill(BaseSpill):
         :param release: an object defining how elements are to be released
         :type release: derived from :class:`~gnome.spill.Release`
 
+        :param substance: an object defining the substance of this spill 
+        Defaults to :class:`~gnome.spill.substance.NonWeatheringSubstance
+        :type substance: derived from :class:`~gnome.spill.substance.Substance`
+
         **Optional parameters (kwargs):**
 
-        :param element_type: ElementType object defining the type
-            of elements that are released. These are spill specific properties
-            of the elements.
-        :type element_type:
-            :class:`~gnome.spill.elements.element_type.ElementType`
+        :param name: Human-usable Name of this spill
+        :type name: str
 
-        :param bool on=True: Toggles the spill on/off.
+        :param on=True: Toggles the spill on/off.
+        :type on: bool
 
-        :param float amount=None: mass or volume of oil spilled.
+        :param amount=None: mass or volume of oil spilled.
+        :type amount: double (volume or mass)
 
-        :param str units=None: must provide units for amount spilled.
+        :param units=None: must provide units for amount spilled.
+        :type units: str
 
-        :param float amount_uncertainty_scale=0.0: scale value in range 0-1
-                                                   that adds uncertainty to the
-                                                   spill amount.
-                                                   Maximum uncertainty scale
-                                                   is (2/3) * spill_amount.
-
-        :param str name='Spill': a name for the spill.
+        :param amount_uncertainty_scale=0.0: scale value in range 0-1
+                                             that adds uncertainty to the
+                                             spill amount.
+                                             Maximum uncertainty scale
+                                             is (2/3) * spill_amount.
+        :type amount_uncertainty_scale: float
 
         .. note::
             Define either volume or mass in 'amount' attribute and provide
-            appropriate 'units'. Defines default element_type as floating
-            elements with mass if the Spill's 'amount' property is not None.
-            If amount property is None, then just floating elements
-            (ie. 'windages')
+            appropriate 'units'.
         """
         super(Spill, self).__init__(**kwargs)
         self.on = on
@@ -546,7 +547,7 @@ def grid_spill(bounds,
 
     :param bounds: bounding box of region you want the elements in:
                    ((min_lon, min_lat),
-                    (max_lon, max_lat))
+                   (max_lon, max_lat))
     :type bounds: 2x2 numpy array or equivalent
 
     :param resolution: resolution of grid -- it will be a resoluiton X

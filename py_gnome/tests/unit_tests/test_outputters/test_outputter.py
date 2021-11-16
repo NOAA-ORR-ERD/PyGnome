@@ -3,24 +3,9 @@
 test code for the Outputter classes
 """
 
-
-
-
-
-# from builtins import round
-# from builtins import int
-# from future import standard_library
-# standard_library.install_aliases()
-
-# from builtins import *
-
-
 from datetime import timedelta
 
-import math
-
 import pytest
-
 
 from gnome.spill import point_line_release_spill
 from gnome.outputters import Outputter
@@ -36,11 +21,12 @@ def model(sample_model):
 
     model.cache_enabled = True
 
-    model.spills += point_line_release_spill(num_elements=10,
-                        start_position=sample_model['release_start_pos'],
-                        release_time=model.start_time,
-                        end_release_time=model.start_time + model.duration,
-                        windage_persist=-1)
+    model.spills += point_line_release_spill(
+        num_elements=10,
+        start_position=sample_model['release_start_pos'],
+        release_time=model.start_time,
+        end_release_time=model.start_time + model.duration,
+        windage_persist=-1)
 
     return model
 

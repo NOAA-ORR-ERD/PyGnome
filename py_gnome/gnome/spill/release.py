@@ -3,11 +3,6 @@ release objects that define how elements are released. A Spill() objects
 is composed of a release object and an ElementType
 '''
 
-
-
-
-
-
 import copy
 import functools
 import math
@@ -108,8 +103,8 @@ class Release(GnomeId):
         """
         Required Arguments:
 
-        :param release_time: time the LEs are released (datetime object)
-        :type release_time: datetime.datetime
+        :param release_time: time the LEs are released
+        :type release_time: datetime.datetime or iso string.
 
         :param custom_positions: initial location(s) the elements are released
         :type custom_positions: iterable of (lon, lat, z)
@@ -570,13 +565,13 @@ class SpatialReleaseSchema(BaseReleaseSchema):
 
 class SpatialRelease(Release):
     """
-    A release of elements into a set of provided polygons
+    A release of elements into a set of provided polygons.
 
     When X particles are determined to be released, they are into the polygons 
     randomly. For each LE, pick a polygon, weighted by it's proportional area 
     and place the LE randomly within it. By default the SpatialRelease uses 
     simple area for polygon weighting. Other classes (NESDISRelease for example) 
-    may use other weighting functions
+    may use other weighting functions.
     """
     _schema = SpatialReleaseSchema
 
@@ -599,12 +594,9 @@ class SpatialRelease(Release):
         Optional arguments:
 
         :param filename: (optional) shapefile
-        :type filename: string name of a zip file. Polygons loaded are concatenated
-        after polygons from kwarg
+        :type filename: string name of a zip file. Polygons loaded are concatenated after polygons from kwarg
 
-        :param weights: (optional) LE placement probability weighting for each 
-        polygon. Must be the same length as the polygons kwarg, and must sum to 1.
-        If None, weights are generated at runtime based on area proportion.
+        :param weights: (optional) LE placement probability weighting for each polygon. Must be the same length as the polygons kwarg, and must sum to 1. If None, weights are generated at runtime based on area proportion.
 
         :param num_elements: total number of elements to be released
         :type num_elements: integer default 1000
@@ -612,17 +604,11 @@ class SpatialRelease(Release):
         :param num_per_timestep: fixed number of LEs released at each timestep
         :type num_elements: integer
 
-        :param end_release_time=None: optional -- for a time varying release,
-            the end release time. If None, then release is instantaneous
+        :param end_release_time=None: optional -- for a time varying release, the end release time. If None, then release is instantaneous
         :type end_release_time: datetime.datetime
         
         :param release_mass=0: optional. This is the mass released in kilograms.
         :type release_mass: integer
-        """
-        """
-
-        :param num_elements: If passed as None, number of elements will be equivalent
-        to number of start positions. For backward compatibility.
         """
         if filename is not None and features is not None:
             raise ValueError('Cannot pass both a filename and FeatureCollection to SpatialRelease')
@@ -865,6 +851,8 @@ class SpatialRelease(Release):
             dict_.pop('filename')
         return super(SpatialRelease, cls).new_from_dict(dict_)
 
+PolygonRelease = SpatialRelease
+
 def GridRelease(release_time, bounds, resolution):
     """
     Utility function that creates a SpatialRelease with a grid of elements.
@@ -919,6 +907,7 @@ class NESDISRelease(SpatialRelease):
 
         :param feature: FeatureCollection representation of a NESDIS shapefile
         :type feature: geojson.FeatureCollection
+
         """
         
         for kw in ('thicknesses', 'weights', 'polygons'):
@@ -934,9 +923,10 @@ class NESDISRelease(SpatialRelease):
             file_fc = NESDISRelease.load_nesdis(filename, kwargs.get('release_time', None))
             features = file_fc
             self.filename = filename
-        #ugly for now. Should disappear after merging NESDIS and Spatial release
-        kwargs['release_time'] = datetime.fromisoformat(features[0].properties['release_time'])
-        kwargs['end_release_time'] = kwargs['release_time']
+            kwargs['release_time'] = datetime.fromisoformat(features[0].properties['release_time'])
+            kwargs['end_release_time'] = kwargs['release_time']
+        if features and 'release_time' not in kwargs:
+            kwargs['release_time'] = datetime.fromisoformat(features[0].properties['release_time'])
 
         super(NESDISRelease, self).__init__(
             features=features,
@@ -1280,4 +1270,4 @@ def release_from_splot_data(release_time, filename):
     start_positions = np.repeat(pos, num_per_pos, axis=0)
 
     return Release(release_time=release_time,
-                          custom_positions=start_positions)
+                   custom_positions=start_positions)

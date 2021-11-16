@@ -108,5 +108,6 @@ def test_make_default_refs():
     model.step()
     assert waves.wind is wind
     assert waves.water is water
-    with pytest.raises(ReferencedObjectNotSet):
-        model1.step()
+
+    assert waves1.wind is None
+    assert waves1.water is None

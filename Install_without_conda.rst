@@ -8,7 +8,7 @@ Note that current PyGNOME is Python 3 (>= 3.8) -- some of these notes are for Py
 Overview:
 ---------
 
-pyGNOME has a lot of dependencies -- you can find the full list by looking at the conda_requirements.txt file.
+PyGNOME has a lot of dependencies -- you can find the full list by looking at the conda_requirements.txt file.
 
 Most of them are well maintained 3rd party packages, that can be installed via pip, or by following the package author's instructions.
 
@@ -27,7 +27,7 @@ py_gd: https://github.com/NOAA-ORR-ERD/py_gd
 
 
 Building everything by hand / with pip
--------------------------------------
+--------------------------------------
 
 Since this is development work, it might be good to create and run this
 in a virtual environment of some sort: virtualenv, pipenv, etc.

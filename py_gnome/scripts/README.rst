@@ -1,10 +1,9 @@
-###############
-Testing Scripts
-###############
+###########################
+PyGNOME scripting examples
+###########################
 
-This directory holds a collection of scripts primarily used for testing particular features of pyGNOME.
+This directory holds a collection of scripts.
 
-Each one exercises particular use cases.
+``testing_scripts`` is a collection of scripts primarily for testing and exercising specific features
 
-They can be used as examples, but be aware that they sometimes use a lower level interface than might be available for your scripting use.
-
+``example_scripts`` is a collection of example scripts that use various input formats or perform common functionality.

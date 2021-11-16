@@ -89,7 +89,7 @@ def points_in_poly(cnp.ndarray[double, ndim=2, mode="c"] pgon, points):
     if scalar:
         return bool(result[0])  # to make it a regular python bool
     else:
-        return result.view(dtype=np.bool)  # make it a np.bool array
+        return result.view(dtype=np.bool_)  # make it a np.bool array
     
 def points_in_polys(cnp.ndarray[double,ndim=3, mode="c"] pgons, cnp.ndarray[double,ndim=2,mode="c"] points):
     """
@@ -114,7 +114,7 @@ def points_in_polys(cnp.ndarray[double,ndim=3, mode="c"] pgons, cnp.ndarray[doub
     
     for i in range(N):
         result[i] = c_point_in_poly1(M, &pgons[i,0,0], &points[i,0])
-    return result.view(dtype=np.bool)
+    return result.view(dtype=np.bool_)
     
     
     

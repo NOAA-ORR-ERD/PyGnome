@@ -1,9 +1,5 @@
-
-
-
-
-
 from . import movers
+
 import numpy as np
 
 from colander import (SchemaNode, Bool, Float, drop)
@@ -276,6 +272,7 @@ class PyCurrentMover(movers.PyMover):
         All movers must implement get_move() since that's what the model calls
         """
         positions = sc['positions']
+
 
         if self.active and len(positions) > 0:
             status = sc['status_codes'] != oil_status.in_water

@@ -3,17 +3,9 @@ module contains objects that contain weather related data. For example,
 the Wind object defines the Wind conditions for the spill
 """
 
-
-
-
-
-
 import copy
 
-try:
-    from functools import lru_cache  # it's built-in on py3
-except ImportError:
-    from backports.functools_lru_cache import lru_cache  # needs backports for py2
+from functools import lru_cache
 
 from colander import SchemaNode, MappingSchema, Float, String, drop, OneOf
 
@@ -38,10 +30,7 @@ class EnvironmentMeta(GnomeObjMeta):
 
 class Environment(GnomeId):
     """
-    A base class for all classes in environment module
-
-    This is primarily to define a dtype such that the OrderedCollection
-    defined in the Model object requires it.
+    A base class for all classes in environment module. This is primarily to define a dtype such that the OrderedCollection defined in the Model object requires it.
     """
     _subclasses = []
 
@@ -54,7 +43,7 @@ class Environment(GnomeId):
 
     __metaclass__ = EnvironmentMeta
 
-    def __init__(self, make_default_refs=True,**kwargs):
+    def __init__(self, make_default_refs=True, **kwargs):
         '''
         base class for environment objects
 

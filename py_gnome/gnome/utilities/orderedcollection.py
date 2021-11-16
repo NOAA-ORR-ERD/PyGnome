@@ -1,20 +1,5 @@
 #!/usr/bin/env python
 
-
-
-
-
-
-
-# from future import standard_library
-# standard_library.install_aliases()
-# from builtins import zip
-# from builtins import str
-# from builtins import range
-# from builtins import *
-# from builtins import object
-
-
 class OrderedCollection(object):
     '''
     Generalized Container for a set of objects of a particular type which
@@ -92,7 +77,7 @@ class OrderedCollection(object):
         if isinstance(elem, self.dtype):
             l__id = self._s_id(elem)
 
-            if l__id not in list(self._d_index.keys()):
+            if l__id not in self._d_index.keys():
                 self._d_index[l__id] = len(self._elems)
                 self._elems.append(elem)
 
@@ -315,7 +300,6 @@ class OrderedCollection(object):
         '''
         if not isinstance(cstruct, list):
             raise ValueError('Must update an OrderedCollection with a list')
-        current_values = list(self.values())
         new_vals = []
 
         for elem in cstruct:

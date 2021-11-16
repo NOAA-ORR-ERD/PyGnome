@@ -2,10 +2,6 @@
 model emulsification process
 '''
 
-
-
-
-
 import numpy as np
 
 from gnome.array_types import gat
@@ -143,9 +139,7 @@ class Emulsification(Weatherer):
             k_emul2 = 1. / delta_T_emul
             k_emul = self._water_uptake_coeff(model_time, substance)
 
-            # bulltime is not in database, but could be set by user
-            #emul_time = substance.get_bulltime()
-            emul_time = substance.bulltime
+            emul_time = substance.bullwinkle_time
 
             resin_mask = substance._sara['type'] == 'Resins'
             asphaltene_mask = substance._sara['type'] == 'Asphaltenes'
@@ -262,21 +256,16 @@ class Emulsification(Weatherer):
 
         for substance, data in sc.itersubstancedata(self.array_types):
 
+            # what is this check for? why age?
             if len(data['age']) == 0:
-            #if len(data['frac_water']) == 0:
-                # substance does not contain any surface_weathering LEs
                 return
 
             points = data['positions']
             k_emul = self._water_uptake_coeff(points, model_time, substance)
 
-            # bulltime is not in database, but could be set by user
-            #emul_time = substance.get_bulltime()
-            emul_time = substance.bulltime
+            emul_time = substance.bullwinkle_time
 
-            # get from database bullwinkle (could be overridden by user)
-            #emul_constant = substance.get('bullwinkle_fraction')
-            emul_constant = substance.bullwinkle
+            emul_constant = substance.bullwinkle_fraction
 
             # max water content fraction - get from database
             Y_max = substance.get('emulsion_water_fraction_max')

@@ -1,12 +1,5 @@
 # Updates a save loaded using pygnome.Model to the latest version
 
-
-
-
-
-
-from past.types import basestring
-
 import json
 import logging
 import glob
@@ -36,7 +29,7 @@ def remember_cwd(new_wd):
 
 
 def update_savefile(save_directory):
-    if not isinstance(save_directory, basestring) or not os.path.isdir(save_directory):
+    if not isinstance(save_directory, str) or not os.path.isdir(save_directory):
         raise ValueError('Must unzip save to directory in order to upgrade it to '
                          'the latest version')
 
@@ -208,7 +201,7 @@ def extract_zipfile(zip_file, to_folder='.'):
                 replaced = False
                 with open(jsonfile, 'r') as jf:
                     contents = jf.read()
-                    for k, v in list(fn_edits.items()):
+                    for k, v in fn_edits.items():
                         if k in contents:
                             contents = contents.replace(k, v)
                             replaced = True
