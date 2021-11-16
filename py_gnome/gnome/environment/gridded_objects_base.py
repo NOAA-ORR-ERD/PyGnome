@@ -834,20 +834,20 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
             if all(u == units[0] for u in units):
                 units = units[0]
 
-        super(self.__class__, self).__init__(name=name,
-                                             filename=filename,
-                                             varnames=varnames,
-                                             grid_topology=grid_topology,
-                                             units=units,
-                                             time=time,
-                                             grid=grid,
-                                             depth=depth,
-                                             variables=variables,
-                                             data_file=data_file,
-                                             grid_file=grid_file,
-                                             dataset=ds,
-                                             load_all=load_all,
-                                             **kwargs)
+        self.__init__(name=name,
+                    filename=filename,
+                    varnames=varnames,
+                    grid_topology=grid_topology,
+                    units=units,
+                    time=time,
+                    grid=grid,
+                    depth=depth,
+                    variables=variables,
+                    data_file=data_file,
+                    grid_file=grid_file,
+                    dataset=ds,
+                    load_all=load_all,
+                    **kwargs)
 
     @classmethod
     def from_netCDF(cls, *args, **kwargs):
