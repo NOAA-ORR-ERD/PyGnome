@@ -456,7 +456,7 @@ class SpillContainer(AddLogger, SpillContainerData):
             if substance is False:  #can't use None, as that means non-weathering
                 substance = spill.substance
             else:
-                if spill.substance != substance:
+                if spill.substance is not substance:
                     subs = [spill.substance for spill in self.spills if spill.on]
                     raise ValueError("A spill container can only hold one substance at a time\n"
                                      "These are the substances in the on spills:\n"
