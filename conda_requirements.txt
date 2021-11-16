@@ -11,7 +11,7 @@
 # conda-forge
 # NOAA-ORR-ERD
 
-python=3.8.*
+python>=3.8,<3.10
 
 # for SpatialRelease
 trimesh
