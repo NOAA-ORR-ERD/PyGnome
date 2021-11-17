@@ -490,28 +490,48 @@ def surface_point_line_spill(num_elements,
 
     :param num_elements: total number of elements to be released
     :type num_elements: integer
+
     :param start_position: initial location the elements are released
-    :type start_position: 3-tuple of floats (long, lat, z)
+    :type start_position: 2-tuple of floats (long, lat)
+
     :param release_time: time the LEs are released (datetime object)
     :type release_time: datetime.datetime
+
     :param end_position=None: Optional. For moving source, the end position
                               If None, then release is from a point source
-    :type end_position: 3-tuple of floats (long, lat, z)
+    :type end_position: 2-tuple of floats (long, lat)
+
     :param end_release_time=None: optional -- for a time varying release,
         the end release time. If None, then release is instantaneous
     :type end_release_time: datetime.datetime
+
     :param substance=None: Type of oil spilled.
-    :type substance: str or OilProps
-    :param float amount=None: mass or volume of oil spilled
-    :param str units=None: units for amount spilled
+    :type substance: Substance object
+
+    :param amount=None: mass or volume of oil spilled
+    :type amount: float
+
+    :param units=None: units for amount spilled
+    :type units: str
+
     :param tuple windage_range=(.01, .04): Percentage range for windage.
                                            Active only for surface particles
                                            when a mind mover is added
-    :param int windage_persist=900: Persistence for windage values in seconds.
+    :type windage_range: tuple
+
+    :param windage_persist=900: Persistence for windage values in seconds.
                                     Use -1 for inifinite, otherwise it is
                                     randomly reset on this time scale
-    :param str name='Surface Point/Line Release': a name for the spill
+    :type windage_persist: int
+
+    :param name='Surface Point/Line Spill': a name for the spill
+    :type name: str
     '''
+    # make positions 3d if they are not already
+    start_position = *start_position[:2], 0
+
+    end_position = (*end_position[:2], 0) if end_position is not None else end_position
+
     release = PointLineRelease(release_time=release_time,
                                start_position=start_position,
                                num_elements=num_elements,
