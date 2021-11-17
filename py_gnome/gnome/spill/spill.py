@@ -743,40 +743,6 @@ def subsurface_plume_spill(num_elements,
 #     return retv
 
 
-def point_line_release_spill(num_elements,
-                             start_position,
-                             release_time,
-                             end_position=None,
-                             end_release_time=None,
-                             water=None,
-                             substance=None,
-                             on=True,
-                             amount=0,
-                             units='kg',
-                             windage_range=(.01, .04),
-                             windage_persist=900,
-                             name='Point or Line Release'):
-    '''
-    Helper function returns a Spill object containing a point or line release
-    '''
-    release = PointLineRelease(release_time=release_time,
-                               start_position=start_position,
-                               num_elements=num_elements,
-                               end_position=end_position,
-                               end_release_time=end_release_time)
-    retv = Spill(release=release,
-                 water=water,
-                 substance=substance,
-                 amount=amount,
-                 units=units,
-                 name=name,
-                 on=on)
-    if substance is None:
-        retv.substance.windage_range = windage_range
-        retv.substance.windage_persist = windage_persist
-    return retv
-
-
 def spatial_release_spill(start_positions,
                           release_time,
                           substance=None,

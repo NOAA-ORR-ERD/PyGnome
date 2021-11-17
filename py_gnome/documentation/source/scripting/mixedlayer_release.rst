@@ -23,7 +23,7 @@ with and without a rise velocity.
     
     from gnome.model import Model
     from gnome.map import GnomeMap
-    from gnome.spill import point_line_release_spill
+    from gnome.spill import surface_point_line_spill
     from gnome.movers import (
                               RiseVelocityMover,
                               RandomMover3D,
@@ -42,7 +42,7 @@ with and without a rise velocity.
         print 'adding spill'
         # I use a uniform distribution with the same high/low values to get one size of droplets (50 microns)
         ud = UniformDistribution(low=50e-6,high=50e-6)
-        spill = point_line_release_spill(num_elements=1000,
+        spill = surface_point_line_spill(num_elements=1000,
                                          amount=90,  # default volume_units=m^3
                                          units='m^3',
                                          start_position=(0, 0,

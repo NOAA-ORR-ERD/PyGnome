@@ -54,7 +54,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # For a subsurfce spill, you would need to add vertical movers:
     # - gs.RiseVelocityMover
     # - gs.RandomMover3D
-    spill1 = gs.point_line_release_spill(num_elements=1000,
+    spill1 = gs.surface_point_line_spill(num_elements=1000,
                                          start_position=(-163.75,
                                                          69.75,
                                                          0.0),
@@ -66,10 +66,12 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     print('adding the ice movers')
     print('getting the datafiles')
-    fn = [gs.get_datafile('arctic_avg2_0001_gnome.nc'),
-          gs.get_datafile('arctic_avg2_0002_gnome.nc'),
-          ]
-
+#     fn = [gs.get_datafile((os.path.join(base_dir,'arctic_avg2_0001_gnome.nc'))),
+#           gs.get_datafile((os.path.join(base_dir,'arctic_avg2_0002_gnome.nc'))),
+#           ]
+#
+    # filelist is not working
+    fn = gs.get_datafile((os.path.join(base_dir,'arctic_avg2_0001_gnome.nc')))
     gt = {'node_lon': 'lon',
           'node_lat': 'lat'}
 
@@ -77,7 +79,6 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                                                     grid_topology=gt)
     ice_aware_wind = gs.IceAwareWind.from_netCDF(filename=fn,
                                                  grid=ice_aware_curr.grid,)
-
     i_c_mover = gs.PyCurrentMover(current=ice_aware_curr)
     i_w_mover = gs.PyWindMover(wind=ice_aware_wind)
 

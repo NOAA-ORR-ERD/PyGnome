@@ -18,7 +18,7 @@ from gnome.model import Model
 
 from gnome.maps import MapFromBNA
 from gnome.environment import Wind
-from gnome.spill import point_line_release_spill
+from gnome.spill import surface_point_line_spill
 from gnome.movers import RandomMover, WindMover, GridCurrentMover
 
 from gnome.outputters import Renderer
@@ -70,7 +70,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # - will need diffusion and rise velocity
     # - wind doesn't act
     # - start_position = (-76.126872, 37.680952, 5.0),
-    spill = point_line_release_spill(num_elements=1000,
+    spill = surface_point_line_spill(num_elements=1000,
                                      start_position=(-76.126872,
                                                      37.680952,
                                                      0.0),

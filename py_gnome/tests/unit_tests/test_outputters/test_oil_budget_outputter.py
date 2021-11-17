@@ -25,7 +25,7 @@ from gnome.weatherers import (Evaporation,
                               Skimmer,
                               Burn,
                               )
-from gnome.spill import point_line_release_spill
+from gnome.spill import surface_point_line_spill
 
 from gnome.outputters import OilBudgetOutput
 
@@ -57,7 +57,7 @@ def model(sample_model):
     model.duration = gs.days(1)
     end_time = start_time + gs.hours(1)
 
-    spill = point_line_release_spill(100,
+    spill = surface_point_line_spill(100,
                                      start_position=rel_start_pos,
                                      release_time=start_time,
                                      end_release_time=start_time + gs.hours(1),
