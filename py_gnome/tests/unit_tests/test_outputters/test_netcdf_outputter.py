@@ -18,7 +18,7 @@ import numpy as np
 
 import netCDF4 as nc
 
-from gnome.spill import point_line_release_spill, Spill, Release
+from gnome.spill import surface_point_line_spill, Spill, Release
 from gnome.spill_container import SpillContainerPair
 from gnome.weatherers import Evaporation
 from gnome.environment import Water
@@ -42,7 +42,7 @@ def model(sample_model_fcn, output_filename):
 
     model.cache_enabled = True
     model.spills += \
-        point_line_release_spill(num_elements=5,
+        surface_point_line_spill(num_elements=5,
                                  start_position=sample_model_fcn['release_start_pos'],
                                  release_time=model.start_time,
                                  end_release_time=model.start_time + model.duration,
@@ -624,7 +624,7 @@ def test_serialize_deserialize(output_filename):
     '''
     s_time = datetime(2014, 1, 1, 1, 1, 1)
     model = Model(start_time=s_time)
-    model.spills += point_line_release_spill(num_elements=5,
+    model.spills += surface_point_line_spill(num_elements=5,
                                              start_position=(0, 0, 0),
                                              release_time=model.start_time)
 

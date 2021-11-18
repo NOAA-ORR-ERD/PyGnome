@@ -163,7 +163,7 @@ g_objects = (
     spill.PointLineRelease(release_time=datetime.now(),
                            num_elements=10,
                            start_position=(0, 0, 0)),
-    spill.point_line_release_spill(10, (0, 0, 0), datetime.now()),
+    spill.surface_point_line_spill(10, (0, 0, 0), datetime.now()),
     spill.substance.Substance(windage_range=(0.05, 0.07)),
     spill.gnome_oil.GnomeOil(test_oil, windage_range=(0.05, 0.07)),
     spill.substance.NonWeatheringSubstance(windage_range=(0.05, 0.07)),
