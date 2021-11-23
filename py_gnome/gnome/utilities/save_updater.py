@@ -17,6 +17,28 @@ errortypes = [
     'Failed to remove old file: {0} Error: {1}',
 ]
 
+NON_WEATHERING_DICT = {
+ "obj_type": "gnome.spill.substance.NonWeatheringSubstance",
+ "id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+ "name": "NonWeatheringSubstance_99",
+ "initializers": [
+  "InitWindages_99.json"
+ ],
+ "is_weatherable": False,
+ "standard_density": 1000.0
+}
+
+
+# WINDAGE_INIT_DICT = {
+#  "windage_range": [
+#   0.01,
+#   0.04
+#  ],
+#  "windage_persist": 900,
+#  "obj_type": "gnome.spill.initializers.InitWindages",
+#  "id": "1d05bcd6-fa73-11e9-a559-0242ac120006",
+#  "name": "InitWindages_99"
+# }
 
 @contextlib.contextmanager
 def remember_cwd(new_wd):
@@ -167,6 +189,66 @@ def v0tov1(messages, errors):
     return messages, errors
 
 
+def v1tov2(messages, errors):
+    '''
+    Takes a zipfile containing no version.txt and up-converts it
+    to 'version 2'.
+
+    This function's purpose is to upgrade save files to maintain compatibility
+    after the grand renaming:
+    [link to commit here]
+    '''
+    jsonfiles = glob.glob('*.json')
+
+    log.debug('updating save file from v1 to v2 (Renaming)')
+
+    # GnomeOil update
+    oils = []
+    for fname in jsonfiles:
+        with open(fname, 'r') as fn:
+            json_ = json.load(fn)
+            if 'obj_type' in json_:
+                if json_['obj_type'] == "gnome.spill.substance.GnomeOil":
+                    print(f"{fname} is a GnomeOil")
+                    oils.append(fname)
+                    # See if it can be used with the current GnomeOil
+                    try:
+                        GnomeOil(**json_)
+                    except Exception:
+                        log.info(f"Oil: {json_['name']} is not longer valid\n"
+                                 "You will need re-load an oil, which can be obtained from"
+                                 "The ADIOS Oil Database:\n https://adios.orr.noaa.gov/")
+                        print("can't use as a modern GnomeOil")
+                        print("replacing with a NonWeatheringSubstance")
+                        nws = NON_WEATHERING_DICT
+                        nws['id'] = json_['id']  # not sure if this is neccesary
+                        nws['initializers'] = json_['initializers']
+                        # write out the new file
+                        with open(fname, 'w') as fn:
+                            json.dump(nws, fn)
+
+    # # updating the name of spills
+    # spills = []  # things with a "gnome.spill" in the path
+    # for fname in jsonfiles:
+    #     with open(fname, 'r') as fn:
+    #         json_ = json.load(fn)
+    #         if 'obj_type' in json_:
+    #             if 'gnome.spill.' in json_['obj_type']:
+    #                 spills.append((fname, json_))
+
+    # for fn, sp in spills:
+    #     # changed the name of gnome.spill to gnome.spills
+    #     sp['obj_type'] = sp['obj_type'].replace('gnome.spill.', 'gnome.spills.')
+    #     with open(fn, 'w') as fp:
+    #         json.dump(sp, fp, indent=True)
+
+    with open('version.txt', 'w') as vers_file:
+        vers_file.write('2')
+
+    messages.append('**Update from v1 to v2 successful**')
+    return messages, errors
+
+
 def extract_zipfile(zip_file, to_folder='.'):
     def work(zf):
         folders = [name for name in zf.namelist()
@@ -224,8 +306,9 @@ def sanitize_filename(fname):
     else:
         return re.sub(r'[/]', "", fname)
 
+# note these should be indexed by version number
+all_update_steps = [v0tov1, v1tov2]
 
-all_update_steps = [v0tov1]
 
 
 

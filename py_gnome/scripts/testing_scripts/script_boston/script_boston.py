@@ -14,11 +14,6 @@ This one uses:
 and netcdf and kml output
 """
 
-
-
-
-
-
 import os
 
 import gnome.scripting as gs
