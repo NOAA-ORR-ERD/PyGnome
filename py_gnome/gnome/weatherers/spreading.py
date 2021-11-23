@@ -50,7 +50,7 @@ class FayGravityViscous(Weatherer):
         initialize object - invoke super, add required data_arrays.
         '''
         super(FayGravityViscous, self).__init__(**kwargs)
-        self.spreading_const = (1.53, 1.21)
+        self.spreading_const = (1.53, 1.21, 1.45)
 
         # need water temp to get initial viscosity of oil so thickness_limit
         # can be set
@@ -97,7 +97,9 @@ class FayGravityViscous(Weatherer):
         All inputs are scalars
         '''
         max_area = blob_init_vol / self.thickness_limit
-        time = (max_area / (PI * self.spreading_const[1] ** 2) *
+# correct k_nu, Spreading Law coefficient -- Eq.(6.14), 11/23/2021           
+#       time = (max_area / (PI * self.spreading_const[1] ** 2) *
+        time = (max_area / (PI * self.spreading_const[2] ** 2) *
                 (np.sqrt(water_viscosity) /
                  (blob_init_vol ** 2 * constants.gravity * rel_buoy)) ** (1. / 3)
                 ) ** 2
@@ -144,7 +146,9 @@ class FayGravityViscous(Weatherer):
     def _update_blob_area(self, water_viscosity, relative_buoyancy,
                           blob_init_volume, age):
         area = (PI *
-                self.spreading_const[1] ** 2 *
+# correct k_nu, Spreading Law coefficient -- Eq.(6.14), 11/23/2021               
+#               self.spreading_const[1] ** 2 *
+                self.spreading_const[2] ** 2 * 
                 (blob_init_volume ** 2 *
                  constants.gravity *
                  relative_buoyancy /
@@ -310,7 +314,9 @@ class FayGravityViscous(Weatherer):
             if area[m_age].sum() < max_area:
 
                 C = (PI *
-                    self.spreading_const[1] ** 2 *
+# correct k_nu, Spreading Law coefficient -- Eq.(6.14), 11/23/2021                
+#                    self.spreading_const[1] ** 2 *
+                     self.spreading_const[2] ** 2 *
                     (blob_init_volume[m_age][0] ** 2 *
                     constants.gravity *
                     relative_buoyancy /
