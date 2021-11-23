@@ -813,7 +813,6 @@ class IceAwareCurrent(GridCurrent):
                     ice_concentration=None,
                     ice_velocity=None,
                     **kwargs):
-        breakpoint()
         temp_fn = None
         if ice_file is not None:
             temp_fn = kwargs['filename']
