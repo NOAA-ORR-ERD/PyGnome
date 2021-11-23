@@ -12,4 +12,3 @@ script_tamoc/script_arctic_tamoc.py
 script_tamoc/script_gulf_tamoc.py
 script_TAP/script_old_TAP.py
 script_TAP/script_new_TAP.py
-script_ice/script_ice.py
