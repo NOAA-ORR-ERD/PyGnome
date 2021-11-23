@@ -620,8 +620,8 @@ setup(name='pyGnome',
                    "might follow in or on a body of water, such as in an "
                    "oil spill.  "
                    "It can also be used as a customizable general particle "
-                   "tracking code.\n"
-                   "Branch: {}\n"
+                   "tracking code. "
+                   "Branch: {} "
                    "LastUpdate: {}"
                    .format(branch_name, last_update)),
       license="Public Domain",

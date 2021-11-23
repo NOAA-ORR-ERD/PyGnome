@@ -14,7 +14,7 @@ from gnome.utilities.time_utils import asdatetime
 
 from gnome.spill.release import Release
 from gnome.spill.spill import SpillSchema, Spill
-from gnome.spill.substance import Substance
+from gnome.spill.substance import Substance, NonWeatheringSubstance
 from gnome.spill.gnome_oil import GnomeOil
 from gnome.utilities.time_utils import asdatetime
 from gnome.gnomeobject import GnomeId
@@ -274,7 +274,7 @@ class TamocSpill(Spill):
 
 #     Notes
 #     -----
-#     This function is based on the gnome.spill.spill.point_line_release_spill
+#     This function is based on the gnome.spill.spill.surface_point_line_spill
 #     function in the py_gnome package.
 
 #     """

@@ -30,8 +30,6 @@ from gnome.environment import IceAwareCurrent, IceConcentration, IceVelocity
 
 from gnome.model import Model
 from gnome.maps.map import GnomeMap
-from gnome.spill import point_line_release_spill
-from gnome.scripting import subsurface_plume_spill
 from gnome.movers import (RandomMover,
                           TamocRiseVelocityMover,
                           RandomMover3D,
@@ -117,7 +115,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                                         #TAMOC_interval=None,  # how often to re-run TAMOC
                                         )
 
-    model.spills[0].data_sources['currents'] = ic
+    #model.spills[0].data_sources['currents'] = ic
 
     return model
 

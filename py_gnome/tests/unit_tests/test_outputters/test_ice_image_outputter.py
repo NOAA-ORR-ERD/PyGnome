@@ -16,7 +16,7 @@ from gnome.model import Model
 from gnome.utilities import time_utils
 from gnome.utilities.projections import FlatEarthProjection, GeoProjection
 
-from gnome.spill import SpatialRelease, Spill, point_line_release_spill
+from gnome.spill import SpatialRelease, Spill, surface_point_line_spill
 from gnome.movers import IceMover
 from gnome.outputters import IceImageOutput
 
@@ -48,7 +48,7 @@ def make_model():
     # line_pos[:, 1] = np.linspace(rel_start_pos[1], rel_end_pos[1], N)
 
     # start_pos = (-164.01696, 72.921024, 0)
-    # model.spills += point_line_release_spill(1,
+    # model.spills += surface_point_line_spill(1,
     #                                          start_position=start_pos,
     #                                          release_time=model.start_time,
     #                                          end_position=start_pos)

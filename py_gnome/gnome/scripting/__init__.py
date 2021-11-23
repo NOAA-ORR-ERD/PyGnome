@@ -22,7 +22,7 @@ py_gnome scripts with, e.g.::
 
     model.map = gs.MapFromBNA('coast.bna', refloat_halflife=0.0)
 
-    model.spills += gs.point_line_release_spill(num_elements=1000,
+    model.spills += gs.surface_point_line_spill(num_elements=1000,
                                                 start_position=(-163.75,
                                                                 69.75,
                                                                 0.0),
