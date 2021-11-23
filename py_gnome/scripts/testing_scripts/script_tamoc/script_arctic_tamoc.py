@@ -23,14 +23,14 @@ from pysgrid import SGrid
 from datetime import datetime, timedelta
 
 from gnome import scripting
-from gnome.spill.elements import plume
+from gnome.spills.elements import plume
 from gnome.utilities.distributions import WeibullDistribution
 from gnome.environment.gridded_objects_base import Variable, Grid_S
 from gnome.environment import IceAwareCurrent, IceConcentration, IceVelocity
 
 from gnome.model import Model
 from gnome.map import GnomeMap
-from gnome.spill import surface_point_line_spill
+from gnome.spills import surface_point_line_spill
 from gnome.scripting import subsurface_plume_spill
 from gnome.movers import (RandomMover,
                           TamocRiseVelocityMover,

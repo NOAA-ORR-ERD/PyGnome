@@ -90,7 +90,7 @@ def test_v0_to_v1():
         v0tov1(msgs, errs)
         assert len(errs) == 0
         assert check_files(
-            lambda js: 'gnome.spill.substance.GnomeOil' in js['obj_type'] and
+            lambda js: 'gnome.spills.substance.GnomeOil' in js['obj_type'] and
                 js.get('name', None) == "*GENERIC DIESEL"
         )
 

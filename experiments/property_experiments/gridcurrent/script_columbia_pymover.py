@@ -18,7 +18,7 @@ from gnome.model import Model
 
 from gnome.maps import MapFromBNA
 from gnome.environment import Wind
-from gnome.spill import point_line_release_spill, continuous_release_spill
+from gnome.spills import point_line_release_spill, continuous_release_spill
 from gnome.movers import RandomMover, constant_wind_mover, GridCurrentMover
 
 from gnome.movers.py_wind_movers import PyWindMover

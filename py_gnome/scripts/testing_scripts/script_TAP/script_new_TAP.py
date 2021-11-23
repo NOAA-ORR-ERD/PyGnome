@@ -16,7 +16,7 @@ from gnome.model import Model
 
 from gnome.maps import MapFromBNA
 from gnome.environment import Environment
-from gnome.spill import surface_point_line_spill
+from gnome.spills import surface_point_line_spill
 from gnome.movers import RandomMover, constant_wind_mover, GridCurrentMover, IceAwareRandomMover
 
 from gnome.environment import IceAwareCurrent, IceAwareWind, GridCurrent

@@ -82,7 +82,7 @@ def v0tov1(messages, errors):
             the load process will use it later to establish references between objects
             '''
             substance = {
-                "obj_type": "gnome.spill.substance.NonWeatheringSubstance",
+                "obj_type": "gnome.spills.substance.NonWeatheringSubstance",
                 "name": "NonWeatheringSubstance",
                 "standard_density": 1000.0,
                 "initializers": inits,
@@ -91,7 +91,7 @@ def v0tov1(messages, errors):
             }
         else:
             substance = {
-                "obj_type": "gnome.spill.substance.GnomeOil",
+                "obj_type": "gnome.spills.substance.GnomeOil",
                 "name": et_json.get('substance', 'Unknown Oil'),
                 "initializers": et_json.get('initializers', []),
                 "is_weatherable": True,
@@ -122,7 +122,7 @@ def v0tov1(messages, errors):
                     and element_type_json is None):
                     element_type_json = (fname, json_)
 
-                if 'gnome.spill.spill.Spill' in json_['obj_type']:
+                if 'gnome.spills.spill.Spill' in json_['obj_type']:
                     spills.append((fname, json_))
 
                 if 'initializers' in json_['obj_type']:
@@ -179,18 +179,18 @@ def v1tov2(messages, errors):
     jsonfiles = glob.glob('*.json')
 
     log.debug('updating save file from v1 to v2 (Renaming)')
-    spills = []  # things with a "gnome.spill" in the path
+    spills = []  # things with a "gnome.spills" in the path
     init_windages = []
     for fname in jsonfiles:
         with open(fname, 'r') as fn:
             json_ = json.load(fn)
             if 'obj_type' in json_:
-                if 'gnome.spill.' in json_['obj_type']:
+                if 'gnome.spills.' in json_['obj_type']:
                     spills.append((fname, json_))
 
     for fn, sp in spills:
-        # changed the name of gnome.spill to gnome.spills
-        sp['obj_type'] = sp['obj_type'].replace('gnome.spill.', 'gnome.spills.')
+        # changed the name of gnome.spills to gnome.spills
+        sp['obj_type'] = sp['obj_type'].replace('gnome.spills.', 'gnome.spills.')
         with open(fn, 'w') as fp:
             json.dump(sp, fp, indent=True)
     with open('version.txt', 'w') as vers_file:
