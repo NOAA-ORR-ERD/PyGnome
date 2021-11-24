@@ -272,7 +272,7 @@ class TamocSpill(Spill):
 
 #     Notes
 #     -----
-#     This function is based on the gnome.spills.spill.point_line_release_spill
+#     This function is based on the gnome.spills.spill.surface_point_line_spill
 #     function in the py_gnome package.
 
 #     """

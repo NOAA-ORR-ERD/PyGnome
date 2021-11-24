@@ -813,6 +813,7 @@ class IceAwareCurrent(GridCurrent):
                     ice_concentration=None,
                     ice_velocity=None,
                     **kwargs):
+        breakpoint()
         temp_fn = None
         if ice_file is not None:
             temp_fn = kwargs['filename']
@@ -855,7 +856,7 @@ class IceAwareCurrent(GridCurrent):
             ice_v = self.ice_velocity.at(points, time, extrapolate=extrapolate, *args, **kwargs).copy()
 
             #deals with the >0.8 concentration case
-            vels[:] = vels[:] + (ice_v - water_v) * ice_vel_factor
+            vels[:] = vels[:] + (ice_v - water_v) * ice_vel_factor[:,None]
 
             return vels
         else:
@@ -915,7 +916,7 @@ class IceAwareWind(GridWind):
 
             # scale winds from 100-0% depending on ice coverage
             # 100% wind up to 0.2 coverage, 0% wind at >0.8 coverage
-            vels[:] = vels[:] * (1 - ice_vel_factor)
+            vels[:] = vels[:] * (1 - ice_vel_factor[:,None])
 
             return vels
         else:

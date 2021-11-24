@@ -74,9 +74,15 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     print('adding a current mover:')
 
-    fn = ['arctic_avg2_0001_gnome.nc',
-          'arctic_avg2_0002_gnome.nc']
+#     fn = ['arctic_avg2_0001_gnome.nc',
+#           'arctic_avg2_0002_gnome.nc']
 
+    fn = [get_datafile(os.path.join(base_dir, 'arctic_avg2_0001_gnome.nc')),
+          get_datafile(os.path.join(base_dir, 'arctic_avg2_0002_gnome.nc')),
+          ]
+
+    # filelist is not working
+    fn = get_datafile(os.path.join(base_dir, 'arctic_avg2_0001_gnome.nc'))
 #     fn = ['C:\\Users\\jay.hennen\\Documents\\Code\\pygnome\\py_gnome\\scripts\\script_TAP\\arctic_avg2_0001_gnome.nc',
 #           'C:\\Users\\jay.hennen\\Documents\\Code\\pygnome\\py_gnome\\scripts\\script_TAP\\arctic_avg2_0002_gnome.nc']
 

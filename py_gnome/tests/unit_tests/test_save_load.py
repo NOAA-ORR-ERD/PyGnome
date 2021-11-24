@@ -40,7 +40,7 @@ from gnome.outputters import (Renderer,
                               TrajectoryGeoJsonOutput)
 
 from gnome.maps import MapFromBNA
-from gnome.spills.spill import (point_line_release_spill,
+from gnome.spills.spill import (surface_point_line_spill,
                                 PointLineRelease,
                                 )
 
@@ -169,7 +169,7 @@ g_objects = (
     PointLineRelease(release_time=datetime.now(),
                            num_elements=10,
                            start_position=(0, 0, 0)),
-    point_line_release_spill(10, (0, 0, 0), datetime.now()),
+    surface_point_line_spill(10, (0, 0, 0), datetime.now()),
     Substance(windage_range=(0.05, 0.07)),
     GnomeOil(test_oil, windage_range=(0.05, 0.07)),
     NonWeatheringSubstance(windage_range=(0.05, 0.07)),

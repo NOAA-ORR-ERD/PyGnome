@@ -107,7 +107,9 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 #                              lambda_=.00456,
 #                              max_=.0002)  # 200 micron max
 
-    oil_name = 'ALASKA NORTH SLOPE (MIDDLE PIPELINE, 1997)'
+   # oil_name = 'ALASKA NORTH SLOPE (MIDDLE PIPELINE, 1997)'
+   # use sample oil or download file from adios database
+    oil_name = 'oil_ans_mp'
     
     wd = UniformDistribution(low=.0002,
                              high=.0002)
