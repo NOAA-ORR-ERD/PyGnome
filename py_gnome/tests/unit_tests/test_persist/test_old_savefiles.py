@@ -18,8 +18,6 @@ SAMPLE_DATA_DIR = Path(__file__).parent /"sample_data"
 
 save_files = SAMPLE_DATA_DIR.glob("*.gnome")
 
-save_files = ["/Users/chris.barker/Hazmat/GitLab/pygnome/py_gnome/tests/unit_tests/test_persist/sample_data/WeatheringOnly_v1.gnome"]
-
 @pytest.mark.parametrize('savefilename', save_files)
 def test_old_save_files(savefilename):
     print("Trying to load:", savefilename)

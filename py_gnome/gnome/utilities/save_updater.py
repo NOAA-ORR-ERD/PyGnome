@@ -19,7 +19,7 @@ errortypes = [
 
 NON_WEATHERING_DICT = {
  "obj_type": "gnome.spill.substance.NonWeatheringSubstance",
- "id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+ "id": "dummy-id-from-save_updater",
  "name": "NonWeatheringSubstance_99",
  "initializers": [
   "InitWindages_99.json"
@@ -28,7 +28,7 @@ NON_WEATHERING_DICT = {
  "standard_density": 1000.0
 }
 
-
+# if needed:
 # WINDAGE_INIT_DICT = {
 #  "windage_range": [
 #   0.01,
@@ -103,14 +103,8 @@ def v0tov1(messages, errors):
             Note the id of the new cstructs. The ID IS required at this stage, because
             the load process will use it later to establish references between objects
             '''
-            substance = {
-                "obj_type": "gnome.spill.substance.NonWeatheringSubstance",
-                "name": "NonWeatheringSubstance",
-                "standard_density": 1000.0,
-                "initializers": inits,
-                "is_weatherable": False,
-                "id": "v0-v1-update-id-0"
-            }
+            substance = NON_WEATHERING_DICT
+            substance["initializers"] = inits
         else:
             substance = {
                 "obj_type": "gnome.spill.substance.GnomeOil",
@@ -209,23 +203,22 @@ def v1tov2(messages, errors):
             json_ = json.load(fn)
             if 'obj_type' in json_:
                 if json_['obj_type'] == "gnome.spill.substance.GnomeOil":
-                    print(f"{fname} is a GnomeOil")
                     oils.append(fname)
                     # See if it can be used with the current GnomeOil
                     try:
                         GnomeOil(**json_)
                     except Exception:
+                        # can't be used with GnomeOIl: replace with NonWeathering
                         log.info(f"Oil: {json_['name']} is not longer valid\n"
                                  "You will need re-load an oil, which can be obtained from"
                                  "The ADIOS Oil Database:\n https://adios.orr.noaa.gov/")
-                        print("can't use as a modern GnomeOil")
-                        print("replacing with a NonWeatheringSubstance")
                         nws = NON_WEATHERING_DICT
-                        nws['id'] = json_['id']  # not sure if this is neccesary
+                        # this will catch the windages info
                         nws['initializers'] = json_['initializers']
                         # write out the new file
                         with open(fname, 'w') as fn:
                             json.dump(nws, fn)
+
 
     # # updating the name of spills
     # spills = []  # things with a "gnome.spill" in the path
