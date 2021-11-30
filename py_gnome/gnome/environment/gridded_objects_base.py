@@ -100,6 +100,11 @@ class VectorVariableSchema(VariableSchemaBase):
 class Time(gridded.time.Time, GnomeId):
 
     _schema = TimeSchema
+    def __repr__(self):
+        try:
+            return super().__repr__()
+        except ValueError:
+            return object.__repr__(self)
 
     @classmethod
     def from_file(cls, filename=None, **kwargs):
@@ -416,6 +421,12 @@ class Variable(gridded.Variable, GnomeId):
         super(Variable, self).__init__(*args, **kwargs)
         self.extrapolation_is_allowed = extrapolation_is_allowed
 
+    def __repr__(self):
+        try:
+            return super().__repr__()
+        except ValueError:
+            return object.__repr__(self)
+
     def init_from_netCDF(self,
                          filename=None,
                          varname=None,
@@ -705,6 +716,12 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
                  **kwargs):
         super(VectorVariable, self).__init__(*args, **kwargs)
         self.extrapolation_is_allowed = extrapolation_is_allowed
+        
+    def __repr__(self):
+        try:
+            return super().__repr__()
+        except ValueError:
+            return object.__repr__(self)
 
     def init_from_netCDF(self,
                          filename=None,
