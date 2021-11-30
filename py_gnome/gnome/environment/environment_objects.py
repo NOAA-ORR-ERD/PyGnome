@@ -789,6 +789,14 @@ class IceAwareCurrentSchema(IceAwarePropSchema):
 
 
 class IceAwareCurrent(GridCurrent):
+    """
+    IceAwareCurrent is a GridCurrent that modulates the usual water velocity field
+    using ice velocity and concentration information.
+
+    While under 20% ice coverage, queries will return water velocity.
+    Between 20% and 80% coverage, queries will interpolate linearly between water and ice velocity
+    Above 80% coverage, queries will return the ice velocity.
+    """
 
     _ref_as = ['current', 'ice_aware']
     _req_refs = {'ice_concentration': IceConcentration,
@@ -801,6 +809,12 @@ class IceAwareCurrent(GridCurrent):
                  ice_concentration=None,
                  *args,
                  **kwargs):
+        """
+        :param ice_velocity: VelocityGrid representing surface ice velocity
+        :type ice_velocity: VelocityGrid or compatible object
+        :param ice_concentration: Variable representing surface ice concentration
+        :type ice_concentration: Variable or compatible object
+        """
         self.ice_velocity = ice_velocity
         self.ice_concentration = ice_concentration
 
