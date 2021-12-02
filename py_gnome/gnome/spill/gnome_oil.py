@@ -10,26 +10,16 @@ from .sample_oils import _sample_oils
 from .substance import Substance, SubstanceSchema
 
 
-from gnome.persist import (ObjTypeSchema,
-                           ObjType,
-                           GeneralGnomeObjectSchema,
-                           NumpyArraySchema,
+from gnome.persist import (NumpyArraySchema,
                            Int,
-                           Schema,
                            String,
                            Float,
                            SchemaNode,
                            SequenceSchema,
-                           Boolean,
-                           drop,
-                           )
+                           drop)
 
-from gnome.gnomeobject import GnomeId
 from gnome.environment.water import Water, WaterSchema
 from gnome.spill.sample_oils import _sample_oils
-from gnome.spill.initializers import (floating_initializers,
-                                      InitWindagesSchema,
-                                      DistributionBaseSchema)
 
 
 class Density(object):
@@ -731,21 +721,3 @@ class GnomeOil(Substance):
                 pass
 
         return val
-
-
-    # # only here 'cause we use "bullwinkle" in some contexts
-    # # and "bullwinkle_fraction" in others
-    # # that should get cleaned up someday
-    # @property
-    # def bullwinkle(self):
-    #     """
-    #     return bullwinkle (emulsion constant)
-    #     """
-    #     return self.bullwinkle_fraction
-
-    # @bullwinkle.setter
-    # def bullwinkle(self, value):
-    #     """
-    #     set the emulsion constant
-    #     """
-    #     self.bullwinkle_fraction = value
