@@ -9,7 +9,7 @@ from gnome.persist.base_schema import (ObjTypeSchema,
                                        GeneralGnomeObjectSchema)
 
 from gnome.gnomeobject import GnomeId
-from gnome.spill.initializers import (floating_initializers,
+from gnome.spills.initializers import (floating_initializers,
                                       InitWindagesSchema,
                                       DistributionBaseSchema)
 

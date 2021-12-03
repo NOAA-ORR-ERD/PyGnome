@@ -1,5 +1,5 @@
 
-from .spill import (Spill,
+from .spills import (Spill,
                     SpillSchema,
                     surface_point_line_spill,
                     grid_spill)
