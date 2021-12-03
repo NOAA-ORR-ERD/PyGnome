@@ -21,7 +21,7 @@ import gnome.tamoc.tamoc_spill as ts
 
 from gnome.environment import (Water, Waves)
 from gnome.weatherers import (Evaporation, Dissolution)
-from gnome.spill.substance import GnomeOil
+from gnome.spills.substance import GnomeOil
 
 import os
 import numpy as np

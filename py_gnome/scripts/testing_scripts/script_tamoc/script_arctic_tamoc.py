@@ -23,7 +23,7 @@ import numpy as np
 from datetime import datetime, timedelta
 
 from gnome import scripting
-#from gnome.spill.elements import plume
+#from gnome.spills.elements import plume
 from gnome.utilities.distributions import WeibullDistribution
 from gnome.environment.gridded_objects_base import Variable, Grid_S
 from gnome.environment import IceAwareCurrent, IceConcentration, IceVelocity
