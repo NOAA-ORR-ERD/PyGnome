@@ -15,8 +15,6 @@ from gnome.environment.environment_objects import (GridCurrent,
 
 import gnome.scripting as gs
 
-pytestmark = pytest.mark.skipif(True, reason="aargh")
-
 test_data_dir = Path(__file__).parent / "sample_data"
 test_output_dir = Path(__file__).parent / "sample_output"
 
