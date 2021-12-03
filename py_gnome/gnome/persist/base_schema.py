@@ -933,9 +933,10 @@ class ImageSize(TupleSchema):
     width = SchemaNode(Int())
     height = SchemaNode(Int())
 
-'''
-The following two functions have analogues in the webgnomeAPI
-'''
+
+# The following two functions have analogues in the webgnomeAPI
+# fixme: the webgnomeAPI has access to py_gnome -- shouldn't we
+#        use the same implementation in both?
 def get_file_name_ext(filename_in):
     # in case a path was passed as the name
     base_name = os.path.basename(filename_in)
@@ -943,14 +944,18 @@ def get_file_name_ext(filename_in):
 
     return file_name, extension
 
+
 def sanitize_string(s):
-    #basic HTML string sanitization
+    # basic HTML string sanitization
     return re.sub(r'[/\\<>:"|?*$]', '_', s)
 
+
 def gen_unique_filename(filename_in, zipfile_):
-    # add uuid to the file name in case the user accidentally uploads
-    # multiple files with the same name for different objects.
-    # also sanitizes out illegal characters
+    """
+    add a trailing number to the file name in case the user accidentally
+    uploads multiple files with the same name for different objects.
+    also sanitizes out illegal characters
+    """
     filename_in = sanitize_string(filename_in)
     existing_files = zipfile_.namelist()
     file_name, extension = get_file_name_ext(filename_in)

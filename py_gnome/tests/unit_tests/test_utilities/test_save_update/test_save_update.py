@@ -61,17 +61,16 @@ def check_files(func):
 
 
 def test_extract_zipfile():
+    # note test changed -- we shouldn't have filenames
+    # that are illegal on Windows anywhere -- it could be a zip file
+    # that gets moved between platforms.
     #Ensure the *GENERIC DIESEL.json gets renamed as a file and as a reference
     with setup_workspace('v1_double_diesel.gnome'):
         files = glob.glob('*.json')
-        if sys.platform != "win32":
-            assert "*GENERIC DIESEL.json" in files
-        else:
-            assert "GENERIC DIESEL.json" in files
+        assert "GENERIC DIESEL.json" in files
         assert check_files(
-            lambda js:'spill.Spill' in js['obj_type'] and
-                (sys.platform == "win32" and js.get('substance', None) == "GENERIC DIESEL.json") or
-                (sys.platform != "win32" and js.get('substance', None) == "*GENERIC DIESEL.json")
+            lambda js: 'spill.Spill' in js['obj_type']
+                       and js.get('substance', None) == "GENERIC DIESEL.json"
         )
 
     # Ensure that the __MACOSX folder is ignored

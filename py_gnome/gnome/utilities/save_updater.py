@@ -309,11 +309,11 @@ def extract_zipfile(zip_file, to_folder='.'):
 
 def sanitize_filename(fname):
     '''
+    make filename legal on all systems (windows is pickier)
     '''
-    if sys.platform == "win32":
-        return re.sub(r'[\\\\/*?:"<>|]', "", fname)
-    else:
-        return re.sub(r'[/]', "", fname)
+    return re.sub(r'[\\\\/*?:"<>|]', "", fname)
+
+
 
 # note these should be indexed by version number
 all_update_steps = [v0tov1, v1tov2]
