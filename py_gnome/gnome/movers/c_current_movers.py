@@ -41,7 +41,7 @@ class CurrentMoversBaseSchema(ProcessSchema):
 
 
 class CurrentMoversBase(CyMover):
-    _ref_as = 'current_movers'
+    _ref_as = 'c_current_movers'
 
     def __init__(self,
                  uncertain_duration=24,

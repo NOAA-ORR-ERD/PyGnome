@@ -13,7 +13,7 @@ from gnome.movers import PyMover
 
 from .outputter import Outputter, BaseOutputterSchema
 from gnome.persist.base_schema import GeneralGnomeObjectSchema
-from gnome.movers.current_movers import CatsMoverSchema,\
+from gnome.movers.c_current_movers import CatsMoverSchema,\
     ComponentMoverSchema, GridCurrentMoverSchema, CurrentCycleMoverSchema,\
     IceMoverSchema
 from gnome.movers.wind_movers import WindMoverSchema

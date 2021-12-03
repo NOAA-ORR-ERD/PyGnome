@@ -151,7 +151,7 @@ def make_model(uncertain=False, mode='gnome'):
                               efficiency=0.9)]
 
     model.outputters += \
-        CurrentJsonOutput(model.find_by_attr('_ref_as', 'current_movers',
+        CurrentJsonOutput(model.find_by_attr('_ref_as', 'c_current_movers',
                                              model.movers, allitems=True))
 
     return model

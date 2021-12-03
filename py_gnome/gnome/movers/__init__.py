@@ -25,7 +25,7 @@ from .random_movers import (RandomMover,
                            RandomMover3D,
                            RandomMover3DSchema)
 
-from .current_movers import (CatsMover,
+from .c_current_movers import (CatsMover,
                             CatsMoverSchema,
                             ComponentMover,
                             ComponentMoverSchema,
