@@ -15,7 +15,7 @@ import sys
 
 import pytest
 
-from gnome.movers import CatsMover, GridCurrentMover, GridWindMover
+from gnome.movers import CatsMover, c_GridCurrentMover, GridWindMover
 from gnome.environment import Wind, Tide
 from gnome.utilities.remote_data import get_datafile
 
@@ -79,10 +79,10 @@ def test_ucode_char_in_filename(test_case):
     print('{0}({1}) passed the test'.format(test_case[0], test_case[1]))
     assert True
 
-gridmover_ = [(GridCurrentMover, os.path.join(r'currents', r'ny_cg.nc'
+gridmover_ = [(c_GridCurrentMover, os.path.join(r'currents', r'ny_cg.nc'
               ), None), (GridWindMover, os.path.join(r'winds',
               r'WindSpeedDirSubset.nc'), os.path.join(r'winds',
-              r'WindSpeedDirSubsetTop.dat')), (GridCurrentMover,
+              r'WindSpeedDirSubsetTop.dat')), (c_GridCurrentMover,
               os.path.join(r'currents', r'ny_cg.nc'),
               os.path.join(r'currents', r'NYTopology.dat'))]
 

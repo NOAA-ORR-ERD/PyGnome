@@ -29,6 +29,7 @@ def remember_cwd(new_wd):
 
 
 def update_savefile(save_directory):
+
     if not isinstance(save_directory, str) or not os.path.isdir(save_directory):
         raise ValueError('Must unzip save to directory in order to upgrade it to '
                          'the latest version')
@@ -176,23 +177,39 @@ def v1tov2(messages, errors):
     after the grand renaming:
     [link to commit here]
     '''
+    
+    print('v1tov2!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
     jsonfiles = glob.glob('*.json')
 
     log.debug('updating save file from v1 to v2 (Renaming)')
-    spills = []  # things with a "gnome.spills" in the path
-    init_windages = []
+    # changed the name of gnome.spill to gnome.spills
+    # changes GridCurrentMover to c_GridCurrentMover
+    
+    spills = []  # gnome.spill 
     for fname in jsonfiles:
         with open(fname, 'r') as fn:
             json_ = json.load(fn)
             if 'obj_type' in json_:
-                if 'gnome.spills.' in json_['obj_type']:
-                    spills.append((fname, json_))
-
-    for fn, sp in spills:
-        # changed the name of gnome.spills to gnome.spills
-        sp['obj_type'] = sp['obj_type'].replace('gnome.spills.', 'gnome.spills.')
+                if 'gnome.spill.' in json_['obj_type']:
+                    spills.append((fname, json_))   
+    for fn, sp in spills:        
+        sp['obj_type'] = sp['obj_type'].replace('gnome.spill.', 'gnome.spills.')
         with open(fn, 'w') as fp:
             json.dump(sp, fp, indent=True)
+            
+    movers = []  # current_movers, GridCurrentMover
+    for fname in jsonfiles:
+        with open(fname, 'r') as fn:
+            json_ = json.load(fn)
+            if 'obj_type' in json_:
+                if 'gnome.movers.current_movers.' in json_['obj_type']:
+                    movers.append((fname, json_))   
+    for fn, mv in movers:        
+        mv['obj_type'] = mv['obj_type'].replace('current_movers.', 'c_current_movers.')
+        mv['obj_type'] = mv['obj_type'].replace('GridCurrentMover', 'c_GridCurrentMover')
+        with open(fn, 'w') as fp:
+            json.dump(mv, fp, indent=True)
+            
     with open('version.txt', 'w') as vers_file:
         vers_file.write('2')
 

@@ -16,7 +16,7 @@ from gnome.model import Model
 
 from gnome.maps import MapFromBNA
 from gnome.spills import surface_point_line_spill
-from gnome.movers import RandomMover, constant_wind_mover, GridCurrentMover
+from gnome.movers import RandomMover, constant_wind_mover, c_GridCurrentMover
 
 from gnome.outputters import (Renderer,
                               # NetCDFOutput
@@ -71,7 +71,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     # # this is HYCOM currents
     curr_file = get_datafile(os.path.join(base_dir, 'HYCOM.nc'))
-    model.movers += GridCurrentMover(curr_file,
+    model.movers += c_GridCurrentMover(curr_file,
                                      num_method='Euler');
 
     # #

@@ -17,7 +17,7 @@ from gnome.model import Model
 from gnome.maps import MapFromBNA
 from gnome.environment import Environment
 from gnome.spills import surface_point_line_spill
-from gnome.movers import RandomMover, constant_wind_mover, GridCurrentMover, IceAwareRandomMover
+from gnome.movers import RandomMover, constant_wind_mover, c_GridCurrentMover, IceAwareRandomMover
 
 from gnome.environment import IceAwareCurrent, IceAwareWind, GridCurrent
 from gnome.movers.py_wind_movers import PyWindMover
@@ -151,7 +151,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
 
     # curr_file = get_datafile(os.path.join(base_dir, 'COOPSu_CREOFS24.nc'))
-    # c_mover = GridCurrentMover(curr_file)
+    # c_mover = c_GridCurrentMover(curr_file)
     # model.movers += c_mover
 #     model.environment.add(WindTS.constant(10, 300))
 #     print('Saving')

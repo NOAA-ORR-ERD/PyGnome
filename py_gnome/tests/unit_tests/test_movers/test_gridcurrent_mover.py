@@ -12,13 +12,13 @@ import os
 import numpy as np
 import pytest
 
-from gnome.movers import GridCurrentMover
+from gnome.movers import c_GridCurrentMover
 from gnome.utilities import time_utils
 
 from ..conftest import sample_sc_release, testdata
 
-curr_file = testdata['GridCurrentMover']['curr_tri']
-topology_file = testdata['GridCurrentMover']['top_tri']
+curr_file = testdata['c_GridCurrentMover']['curr_tri']
+topology_file = testdata['c_GridCurrentMover']['top_tri']
 
 
 num_le = 4
@@ -34,13 +34,13 @@ def test_exceptions():
     """
     with pytest.raises(ValueError):
         # file does not exist
-        GridCurrentMover(os.path.join('./', 'ChesBay.CUR'))
+        c_GridCurrentMover(os.path.join('./', 'ChesBay.CUR'))
 
     with pytest.raises(OSError):
-        GridCurrentMover(testdata['CurrentCycleMover']['curr_bad_file'])
+        c_GridCurrentMover(testdata['CurrentCycleMover']['curr_bad_file'])
 
     with pytest.raises(TypeError):
-        GridCurrentMover(curr_file, topology_file=10)
+        c_GridCurrentMover(curr_file, topology_file=10)
 
 
 def test_loop():
@@ -50,7 +50,7 @@ def test_loop():
     also checks the motion is same for all LEs
     """
     pSpill = sample_sc_release(num_le, start_pos, rel_time)
-    curr = GridCurrentMover(curr_file, topology_file)
+    curr = c_GridCurrentMover(curr_file, topology_file)
     delta = _certain_loop(pSpill, curr)
 
     _assert_move(delta)
@@ -70,7 +70,7 @@ def test_uncertain_loop(uncertain_time_delay=0):
 
     pSpill = sample_sc_release(num_le, start_pos, rel_time,
                                uncertain=True)
-    curr = GridCurrentMover(curr_file, topology_file)
+    curr = c_GridCurrentMover(curr_file, topology_file)
     curr.uncertain_time_delay = uncertain_time_delay
     u_delta = _uncertain_loop(pSpill, curr)
 
@@ -97,7 +97,7 @@ def test_certain_uncertain():
     assert np.all(delta[:, :2] == u_delta[:, :2])
 
 
-c_grid = GridCurrentMover(curr_file, topology_file)
+c_grid = c_GridCurrentMover(curr_file, topology_file)
 
 
 def test_default_props():
@@ -190,8 +190,8 @@ def test_serialize_deserialize():
     create a new grid_current object and make sure it has same properties
     """
 
-    c_grid = GridCurrentMover(curr_file, topology_file)
+    c_grid = c_GridCurrentMover(curr_file, topology_file)
     serial = c_grid.serialize()
-    c2 = GridCurrentMover.deserialize(serial)
+    c2 = c_GridCurrentMover.deserialize(serial)
     assert c_grid == c2
 

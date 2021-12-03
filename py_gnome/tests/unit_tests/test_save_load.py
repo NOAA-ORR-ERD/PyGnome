@@ -26,7 +26,7 @@ from gnome.movers import (constant_wind_mover,
                           CatsMover,
                           ComponentMover,
                           CurrentCycleMover,
-                          GridCurrentMover,
+                          c_GridCurrentMover,
                           GridWindMover)
 
 from gnome.weatherers import (Evaporation,
@@ -143,7 +143,7 @@ base_dir = os.path.dirname(__file__)
 
 # For WindMover test_save_load in test_wind_mover
 g_objects = (
-    GridCurrent.from_netCDF(testdata['GridCurrentMover']['curr_tri']),
+    GridCurrent.from_netCDF(testdata['c_GridCurrentMover']['curr_tri']),
     Tide(testdata['CatsMover']['tide']),
     # Wind(filename=testdata['ComponentMover']['wind']),
     constant_wind(5., 270, 'knots'),
@@ -253,8 +253,8 @@ l_movers2 = (CurrentCycleMover(testdata['CurrentCycleMover']['curr'],
                                tide=Tide(testdata['CurrentCycleMover']['tide'])),
              CurrentCycleMover(testdata['CurrentCycleMover']['curr'],
                                topology_file=testdata['CurrentCycleMover']['top']),
-             GridCurrentMover(testdata['GridCurrentMover']['curr_tri'],
-                              testdata['GridCurrentMover']['top_tri']),
+             c_GridCurrentMover(testdata['c_GridCurrentMover']['curr_tri'],
+                              testdata['c_GridCurrentMover']['top_tri']),
              GridWindMover(testdata['GridWindMover']['wind_curv'],
                            testdata['GridWindMover']['top_curv']),
              )

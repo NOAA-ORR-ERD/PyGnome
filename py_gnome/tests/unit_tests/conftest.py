@@ -290,7 +290,7 @@ def get_testdata():
          'tide': get_datafile(os.path.join(tide_dir, 'EstesHead.txt')),
          'curr_bad_file': get_datafile(os.path.join(curr_dir,
                                                     'BigCombinedwMapBad.cur'))}
-    data['GridCurrentMover'] = \
+    data['c_GridCurrentMover'] = \
         {'curr_tri': get_datafile(os.path.join(curr_dir, 'ChesBay.nc')),
          'top_tri': get_datafile(os.path.join(curr_dir, 'ChesBay.dat')),
          'curr_reg': get_datafile(os.path.join(curr_dir, 'test.cdf')),

@@ -48,7 +48,7 @@ class TestGridMap(object):
         # triangle grid
 
         gcm2 = CyGridMap()
-        grid_map_file = testdata['GridCurrentMover']['curr_tri']
+        grid_map_file = testdata['c_GridCurrentMover']['curr_tri']
         gcm2.text_read(grid_map_file)
 
         # topology_file = os.path.join( cur_dir, 'chesbay_top.dat')

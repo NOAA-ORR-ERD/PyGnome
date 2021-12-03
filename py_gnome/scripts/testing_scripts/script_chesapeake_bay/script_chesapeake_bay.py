@@ -13,7 +13,7 @@ from gnome import scripting as gs
 
 from gnome.basic_types import datetime_value_2d
 
-from gnome.movers import GridCurrentMover
+from gnome.movers import c_GridCurrentMover
 
 
 # define base directory
@@ -91,7 +91,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     topology_file = gs.get_datafile(os.path.join(base_dir, 'ChesapeakeBay.dat'))
 
     # uncertain_time_delay in hours
-    c_mover = GridCurrentMover(curr_file, topology_file,
+    c_mover = c_GridCurrentMover(curr_file, topology_file,
                                uncertain_time_delay=3)
     c_mover.uncertain_along = 0  # default is .5
     # c_mover.uncertain_cross = 0  # default is .25
