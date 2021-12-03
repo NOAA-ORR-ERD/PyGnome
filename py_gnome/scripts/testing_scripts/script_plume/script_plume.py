@@ -22,8 +22,8 @@ from datetime import datetime, timedelta
 import gnome.scripting as gs
 from gnome.utilities.distributions import WeibullDistribution
 
-from gnome.spill.substance import NonWeatheringSubstance
-from gnome.spill.initializers import plume_initializers
+from gnome.spills.substance import NonWeatheringSubstance
+from gnome.spills.initializers import plume_initializers
 
 # define base directory
 base_dir = os.path.dirname(__file__)

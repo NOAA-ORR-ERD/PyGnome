@@ -32,7 +32,7 @@ from gnome.movers import (RandomMover,
                           TamocRiseVelocityMover,
                           RandomMover3D,
                           SimpleMover,
-                          GridCurrentMover,
+                          c_GridCurrentMover,
                           PyCurrentMover,
                           constant_wind_mover,
                           WindMover)

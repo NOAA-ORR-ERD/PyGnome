@@ -12,7 +12,7 @@ from ..conftest import test_oil, sample_sc_release
 # when tests are run from test_weatherers/subdirectory
 from ..conftest import sample_model_fcn, sample_model_fcn2
 
-from gnome.spill.gnome_oil import GnomeOil
+from gnome.spills.gnome_oil import GnomeOil
 
 
 def weathering_data_arrays(n_arrays,

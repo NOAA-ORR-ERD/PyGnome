@@ -13,7 +13,7 @@ import pytest
 import numpy as np
 
 from gnome.environment import constant_wind, Water, Waves
-# from gnome.spill.elements import floating
+# from gnome.spills.elements import floating
 
 from gnome.weatherers import (Evaporation,
                               NaturalDispersion,

@@ -21,14 +21,14 @@ from gnome.basic_types import datetime_value_2d, numerical_methods
 
 from gnome.utilities.remote_data import get_datafile
 
-#from gnome.spill.elements import plume
-from gnome.spill.substance import GnomeOil
-from gnome.spill.initializers import plume_initializers
+#from gnome.spills.elements import plume
+from gnome.spills.substance import GnomeOil
+from gnome.spills.initializers import plume_initializers
 from gnome.utilities.distributions import WeibullDistribution, UniformDistribution
 from gnome.maps import MapFromBNA
 from gnome.model import Model
 from gnome.environment import GridCurrent
-from gnome.spill import surface_point_line_spill
+from gnome.spills import surface_point_line_spill
 from gnome.scripting import subsurface_plume_spill
 from gnome.movers import (RandomMover,
                           RiseVelocityMover,

@@ -153,7 +153,7 @@ class TestGridCurrentMover(object):
         time = datetime.datetime(1999, 11, 29, 21)
         self.cm.model_time = time_utils.date_to_sec(time)
 
-        time_grid_file = testdata['GridCurrentMover']['curr_reg']
+        time_grid_file = testdata['c_GridCurrentMover']['curr_reg']
 
         self.gcm.text_read(time_grid_file)
         self.cm.ref[:]['long'] = 3.104588  # for simple example
@@ -190,8 +190,8 @@ class TestGridCurrentMover(object):
         time = datetime.datetime(2008, 1, 29, 17)
         self.cm.model_time = time_utils.date_to_sec(time)
 
-        time_grid_file = testdata['GridCurrentMover']['curr_curv']
-        topology_file = testdata['GridCurrentMover']['top_curv']
+        time_grid_file = testdata['c_GridCurrentMover']['curr_curv']
+        topology_file = testdata['c_GridCurrentMover']['top_curv']
 
         self.gcm.text_read(time_grid_file, topology_file)
 
@@ -225,7 +225,7 @@ class TestGridCurrentMover(object):
         time = datetime.datetime(2008, 1, 29, 17)
         self.cm.model_time = time_utils.date_to_sec(time)
 
-        time_grid_file = testdata['GridCurrentMover']['curr_curv']
+        time_grid_file = testdata['c_GridCurrentMover']['curr_curv']
         self.gcm.text_read(time_grid_file, topology_file=None)
 
         topology_file2 = os.path.join(os.path.split(time_grid_file)[0],
@@ -264,8 +264,8 @@ class TestGridCurrentMover(object):
         time = datetime.datetime(2009, 8, 9, 0)  # second file
         self.cm.model_time = time_utils.date_to_sec(time)
 
-        time_grid_file = testdata['GridCurrentMover']['series_curv']
-        topology_file = testdata['GridCurrentMover']['series_top']
+        time_grid_file = testdata['c_GridCurrentMover']['series_curv']
+        topology_file = testdata['c_GridCurrentMover']['series_top']
 
         self.gcm.text_read(time_grid_file, topology_file)
         #self.gcm.text_read(time_grid_file)
@@ -302,8 +302,8 @@ class TestGridCurrentMover(object):
         self.cm.model_time = time_utils.date_to_sec(time)
         self.cm.uncertain = True
 
-        time_grid_file = testdata['GridCurrentMover']['curr_tri']
-        topology_file = testdata['GridCurrentMover']['top_tri']
+        time_grid_file = testdata['c_GridCurrentMover']['curr_tri']
+        topology_file = testdata['c_GridCurrentMover']['top_tri']
 
         self.gcm.text_read(time_grid_file, topology_file)
         self.cm.ref[:]['long'] = -76.149368  # for ChesBay
@@ -345,7 +345,7 @@ class TestGridCurrentMover(object):
         time = datetime.datetime(2000, 2, 14, 10)
         self.cm.model_time = time_utils.date_to_sec(time)
 
-        time_grid_file = testdata['GridCurrentMover']['ptCur']
+        time_grid_file = testdata['c_GridCurrentMover']['ptCur']
 
         self.gcm.text_read(time_grid_file)
         self.cm.ref[:]['long'] = -124.686928  # for ptCur test
@@ -377,7 +377,7 @@ class TestGridCurrentMover(object):
         time = datetime.datetime(2000, 2, 14, 8)
         self.cm.model_time = time_utils.date_to_sec(time)
 
-        time_grid_file = testdata['GridCurrentMover']['ptCur']
+        time_grid_file = testdata['c_GridCurrentMover']['ptCur']
 
         self.gcm.text_read(time_grid_file)
 
@@ -412,7 +412,7 @@ class TestGridCurrentMover(object):
         time = datetime.datetime(2002, 1, 30, 1)
         self.cm.model_time = time_utils.date_to_sec(time)
 
-        time_grid_file = testdata['GridCurrentMover']['grid_ts']
+        time_grid_file = testdata['c_GridCurrentMover']['grid_ts']
 
         # for gridCur test
         self.gcm.text_read(time_grid_file)
@@ -450,7 +450,7 @@ class TestGridCurrentMover(object):
         time = datetime.datetime(2002, 1, 30, 1)
         self.cm.model_time = time_utils.date_to_sec(time)
 
-        time_grid_file = testdata['GridCurrentMover']['series_gridCur']
+        time_grid_file = testdata['c_GridCurrentMover']['series_gridCur']
         topology_file = r""
 
         self.gcm.text_read(time_grid_file, topology_file)

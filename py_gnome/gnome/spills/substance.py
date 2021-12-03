@@ -1,26 +1,17 @@
 
-from backports.functools_lru_cache import lru_cache
-
-from colander import Int, Schema, String, Float, SchemaNode, SequenceSchema, Boolean, drop
+from colander import Float, SchemaNode, SequenceSchema, Boolean, drop
 import numpy as np
-import os
 
-from gnome.basic_types import fate, oil_status
+from gnome.basic_types import fate
 from gnome.array_types import gat
-from gnome.spill.sample_oils import _sample_oils
 
 from gnome.persist.base_schema import (ObjTypeSchema,
-                                       ObjType,
                                        GeneralGnomeObjectSchema)
 
-from gnome.persist.extend_colander import NumpyArraySchema
 from gnome.gnomeobject import GnomeId
-from gnome.environment.water import Water, WaterSchema
-from gnome.spill.sample_oils import _sample_oils
-from gnome.spill.initializers import (floating_initializers,
+from gnome.spills.initializers import (floating_initializers,
                                       InitWindagesSchema,
                                       DistributionBaseSchema)
-
 
 class SubstanceSchema(ObjTypeSchema):
     initializers = SequenceSchema(

@@ -4,8 +4,8 @@ tests for sample oils
 All this does at this point is make sure you can make a GnomeOil out of them
 """
 
-from gnome.spill.gnome_oil import GnomeOil
-from gnome.spill import sample_oils
+from gnome.spills.gnome_oil import GnomeOil
+from gnome.spills import sample_oils
 
 import pytest
 

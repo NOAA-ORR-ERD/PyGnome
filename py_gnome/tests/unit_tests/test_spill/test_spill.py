@@ -1,9 +1,9 @@
 
 from datetime import datetime, timedelta
 
-from gnome.spill.spill import (Spill)
-from gnome.spill.substance import NonWeatheringSubstance
-from gnome.spill.release import PointLineRelease
+from gnome.spills.spill import Spill
+from gnome.spills.substance import NonWeatheringSubstance
+from gnome.spills.release import PointLineRelease
 from gnome.spill_container import SpillContainer
 
 import pytest

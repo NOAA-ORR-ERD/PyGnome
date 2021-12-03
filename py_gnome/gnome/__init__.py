@@ -127,7 +127,7 @@ check_dependency_versions()
 from . import (environment,
                model,
                # multi_model_broadcast,
-               spill,
+               spills,
                movers,
                outputters)
 

@@ -51,6 +51,7 @@ def remember_cwd(new_wd):
 
 
 def update_savefile(save_directory):
+
     if not isinstance(save_directory, str) or not os.path.isdir(save_directory):
         raise ValueError('Must unzip save to directory in order to upgrade it to '
                          'the latest version')
@@ -107,7 +108,7 @@ def v0tov1(messages, errors):
             substance["initializers"] = inits
         else:
             substance = {
-                "obj_type": "gnome.spill.substance.GnomeOil",
+                "obj_type": "gnome.spills.substance.GnomeOil",
                 "name": et_json.get('substance', 'Unknown Oil'),
                 "initializers": et_json.get('initializers', []),
                 "is_weatherable": True,
@@ -130,15 +131,15 @@ def v0tov1(messages, errors):
             json_ = json.load(fn)
             if 'obj_type' in json_:
                 if ('Water' in json_['obj_type']
-                    and 'environment' in json_['obj_type']
-                    and water_json is None):
+                        and 'environment' in json_['obj_type']
+                        and water_json is None):
                     water_json = (fname, json_)
 
                 if ('element_type.ElementType' in json_['obj_type']
-                    and element_type_json is None):
+                        and element_type_json is None):
                     element_type_json = (fname, json_)
 
-                if 'gnome.spill.spill.Spill' in json_['obj_type']:
+                if 'gnome.spills.spill.Spill' in json_['obj_type']:
                     spills.append((fname, json_))
 
                 if 'initializers' in json_['obj_type']:
@@ -150,7 +151,8 @@ def v0tov1(messages, errors):
 
     substance = None
     if element_type_json is not None:
-        substance = Substance_from_ElementType(element_type_json[1], water_json[1])
+        substance = Substance_from_ElementType(element_type_json[1],
+                                               water_json[1])
         substance_fn = sanitize_filename(substance['name'] + '.json')
         # Delete .json for deprecated objects (element_type)
         fn = element_type_json[0]
@@ -192,9 +194,9 @@ def v1tov2(messages, errors):
     after the grand renaming:
     [link to commit here]
     '''
-    jsonfiles = glob.glob('*.json')
-
     log.debug('updating save file from v1 to v2 (Renaming)')
+
+    jsonfiles = glob.glob('*.json')
 
     # GnomeOil update
     oils = []
@@ -210,8 +212,9 @@ def v1tov2(messages, errors):
                     except Exception:
                         # can't be used with GnomeOIl: replace with NonWeathering
                         log.info(f"Oil: {json_['name']} is not longer valid\n"
-                                 "You will need re-load an oil, which can be obtained from"
-                                 "The ADIOS Oil Database:\n https://adios.orr.noaa.gov/")
+                                 "You will need re-load an oil, which can be "
+                                 "obtained from The ADIOS Oil Database:\n"
+                                 "https://adios.orr.noaa.gov/")
                         nws = NON_WEATHERING_DICT
                         # this will catch the windages info
                         nws['initializers'] = json_['initializers']
@@ -220,20 +223,33 @@ def v1tov2(messages, errors):
                             json.dump(nws, fn)
 
 
-    # # updating the name of spills
-    # spills = []  # things with a "gnome.spill" in the path
-    # for fname in jsonfiles:
-    #     with open(fname, 'r') as fn:
-    #         json_ = json.load(fn)
-    #         if 'obj_type' in json_:
-    #             if 'gnome.spill.' in json_['obj_type']:
-    #                 spills.append((fname, json_))
+    # updating the name of spills
+    spills = []  # things with a "gnome.spill" in the path
+    for fname in jsonfiles:
+        with open(fname, 'r') as fn:
+            json_ = json.load(fn)
+            if 'obj_type' in json_:
+                if 'gnome.spill.' in json_['obj_type']:
+                    spills.append((fname, json_))
+    for fn, sp in spills:
+        sp['obj_type'] = sp['obj_type'].replace('gnome.spill.', 'gnome.spills.')
+        with open(fn, 'w') as fp:
+            json.dump(sp, fp, indent=True)
 
-    # for fn, sp in spills:
-    #     # changed the name of gnome.spill to gnome.spills
-    #     sp['obj_type'] = sp['obj_type'].replace('gnome.spill.', 'gnome.spills.')
-    #     with open(fn, 'w') as fp:
-    #         json.dump(sp, fp, indent=True)
+    movers = []  # current_movers, GridCurrentMover
+    for fname in jsonfiles:
+        with open(fname, 'r') as fn:
+            json_ = json.load(fn)
+            if 'obj_type' in json_:
+                if 'gnome.movers.current_movers.' in json_['obj_type']:
+                    movers.append((fname, json_))
+    for fn, mv in movers:
+        mv['obj_type'] = mv['obj_type'].replace('current_movers.',
+                                                'c_current_movers.')
+        mv['obj_type'] = mv['obj_type'].replace('GridCurrentMover',
+                                                'c_GridCurrentMover')
+        with open(fn, 'w') as fp:
+            json.dump(mv, fp, indent=True)
 
     with open('version.txt', 'w') as vers_file:
         vers_file.write('2')
@@ -301,7 +317,3 @@ def sanitize_filename(fname):
 
 # note these should be indexed by version number
 all_update_steps = [v0tov1, v1tov2]
-
-
-
-

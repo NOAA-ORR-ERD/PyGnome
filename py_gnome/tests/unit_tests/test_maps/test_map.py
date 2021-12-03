@@ -795,7 +795,7 @@ class Test_full_move:
         # one right to left
         # diagonal that doesn't hit
         # diagonal that does hit
-        # spill = gnome.spill.Spill(num_LEs=4)
+        # spill = gnome.spills.Spill(num_LEs=4)
         spill = sample_sc_release(4)
         spill['positions'] = np.array(((30.0, 5.0, 0.), (-5.0, 5.0, 0.),
                                        (5.0, -5.0, 0.), (-5.0, -5.0, 0.)),

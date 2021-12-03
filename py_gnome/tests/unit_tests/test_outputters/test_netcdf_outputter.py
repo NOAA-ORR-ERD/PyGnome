@@ -3,10 +3,6 @@
 Tests for netcdf_outputter
 '''
 
-
-
-
-
 import os
 from datetime import datetime, timedelta
 from math import ceil
@@ -18,7 +14,7 @@ import numpy as np
 
 import netCDF4 as nc
 
-from gnome.spill import surface_point_line_spill, Spill, Release
+from gnome.spills import surface_point_line_spill, Spill, Release
 from gnome.spill_container import SpillContainerPair
 from gnome.weatherers import Evaporation
 from gnome.environment import Water

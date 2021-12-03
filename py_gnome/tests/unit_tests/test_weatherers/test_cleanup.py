@@ -22,7 +22,7 @@ from gnome.weatherers import (WeatheringData,
                               ChemicalDispersion,
                               weatherer_sort)
 from gnome.spill_container import SpillContainer
-from gnome.spill import surface_point_line_spill
+from gnome.spills import surface_point_line_spill
 from gnome.utilities.inf_datetime import InfDateTime
 from gnome.environment import Waves, constant_wind, Water
 

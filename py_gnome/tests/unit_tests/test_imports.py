@@ -20,7 +20,7 @@ def test_import_model():
 
 
 def test_import_spill():
-    import gnome.spill
+    import gnome.spills
 
 
 ## import the cython extensions:

@@ -2,9 +2,6 @@
 tests for ice image outputter
 '''
 
-
-
-
 import time
 from datetime import datetime, timedelta
 
@@ -16,7 +13,7 @@ from gnome.model import Model
 from gnome.utilities import time_utils
 from gnome.utilities.projections import FlatEarthProjection, GeoProjection
 
-from gnome.spill import SpatialRelease, Spill, surface_point_line_spill
+from gnome.spills import SpatialRelease, Spill, surface_point_line_spill
 from gnome.movers import IceMover
 from gnome.outputters import IceImageOutput
 

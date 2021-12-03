@@ -13,8 +13,8 @@ from gnome.movers import PyMover
 
 from .outputter import Outputter, BaseOutputterSchema
 from gnome.persist.base_schema import GeneralGnomeObjectSchema
-from gnome.movers.current_movers import CatsMoverSchema,\
-    ComponentMoverSchema, GridCurrentMoverSchema, CurrentCycleMoverSchema,\
+from gnome.movers.c_current_movers import CatsMoverSchema,\
+    ComponentMoverSchema, c_GridCurrentMoverSchema, CurrentCycleMoverSchema,\
     IceMoverSchema
 from gnome.movers.wind_movers import WindMoverSchema
 
@@ -136,7 +136,7 @@ class CurrentJsonSchema(BaseOutputterSchema):
         GeneralGnomeObjectSchema(
             acceptable_schemas=[CatsMoverSchema,
                                 ComponentMoverSchema,
-                                GridCurrentMoverSchema,
+                                c_GridCurrentMoverSchema,
                                 CurrentCycleMoverSchema,
                                 WindMoverSchema]
         ),
