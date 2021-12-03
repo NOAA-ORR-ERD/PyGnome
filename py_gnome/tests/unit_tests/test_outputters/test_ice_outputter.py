@@ -2,9 +2,6 @@
 tests for geojson outputter
 '''
 
-
-
-
 import time
 from datetime import datetime
 
@@ -14,7 +11,7 @@ import pytest
 # from gnome.basic_types import oil_status
 from gnome.utilities import time_utils
 
-from gnome.spill import Release, Spill, surface_point_line_spill
+from gnome.spills import Release, Spill, surface_point_line_spill
 from gnome.movers import IceMover
 from gnome.outputters import IceGeoJsonOutput, IceJsonOutput
 

@@ -6,10 +6,6 @@ tests for teh json outputter
 VERY incomplete!
 """
 
-
-
-
-
 import pytest
 
 from gnome.outputters.json import SpillJsonOutput

@@ -10,9 +10,6 @@ It's a steady, uniform current -- one velocity and direction for everywhere
 at all time.
 """
 
-
-
-
 import copy
 
 import numpy as np
@@ -94,7 +91,7 @@ class SimpleMover(Mover):
         """
         moves the particles defined in the spill object
 
-        :param spill: spill is an instance of the gnome.spill.Spill class
+        :param spill: spill is an instance of the gnome.spills.Spill class
         :param time_step: time_step in seconds
         :param model_time: current model time as a datetime object
         

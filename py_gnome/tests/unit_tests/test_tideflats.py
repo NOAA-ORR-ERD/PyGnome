@@ -25,7 +25,7 @@ from gnome.movers import (GridWindMover,
                           constant_wind_mover,
                           wind_mover_from_file)
 
-from gnome.spill import surface_point_line_spill
+from gnome.spills import surface_point_line_spill
 
 from .conftest import sample_sc_release, testdata
 

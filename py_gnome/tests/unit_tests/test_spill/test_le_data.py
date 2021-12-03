@@ -11,7 +11,7 @@ from pytest import raises
 import numpy as np
 import pdb
 from gnome.array_types import default_array_types, gat
-from gnome.spill.le import LEData
+from gnome.spills.le import LEData
 
 
 '''

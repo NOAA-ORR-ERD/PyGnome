@@ -22,7 +22,7 @@ from gnome.maps import GnomeMap, MapFromBNA
 from gnome.environment import Wind, Tide, constant_wind, Water, Waves
 from gnome.model import Model
 
-from gnome.spill import (Spill,
+from gnome.spills import (Spill,
                          surface_point_line_spill,
                          Release)
 
@@ -38,7 +38,7 @@ from gnome.weatherers import (HalfLifeWeatherer,
 from gnome.outputters import Renderer, TrajectoryGeoJsonOutput
 
 from .conftest import sample_model_weathering, testdata, test_oil
-from gnome.spill.substance import NonWeatheringSubstance
+from gnome.spills.substance import NonWeatheringSubstance
 
 from gnome.exceptions import ReferencedObjectNotSet
 

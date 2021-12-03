@@ -29,6 +29,7 @@ def remember_cwd(new_wd):
 
 
 def update_savefile(save_directory):
+
     if not isinstance(save_directory, str) or not os.path.isdir(save_directory):
         raise ValueError('Must unzip save to directory in order to upgrade it to '
                          'the latest version')
@@ -82,7 +83,7 @@ def v0tov1(messages, errors):
             the load process will use it later to establish references between objects
             '''
             substance = {
-                "obj_type": "gnome.spill.substance.NonWeatheringSubstance",
+                "obj_type": "gnome.spills.substance.NonWeatheringSubstance",
                 "name": "NonWeatheringSubstance",
                 "standard_density": 1000.0,
                 "initializers": inits,
@@ -91,7 +92,7 @@ def v0tov1(messages, errors):
             }
         else:
             substance = {
-                "obj_type": "gnome.spill.substance.GnomeOil",
+                "obj_type": "gnome.spills.substance.GnomeOil",
                 "name": et_json.get('substance', 'Unknown Oil'),
                 "initializers": et_json.get('initializers', []),
                 "is_weatherable": True,
@@ -122,7 +123,7 @@ def v0tov1(messages, errors):
                     and element_type_json is None):
                     element_type_json = (fname, json_)
 
-                if 'gnome.spill.spill.Spill' in json_['obj_type']:
+                if 'gnome.spills.spill.Spill' in json_['obj_type']:
                     spills.append((fname, json_))
 
                 if 'initializers' in json_['obj_type']:
@@ -164,6 +165,55 @@ def v0tov1(messages, errors):
         vers_file.write('1')
 
     messages.append('**Update from v0 to v1 successful**')
+    return messages, errors
+
+
+def v1tov2(messages, errors):
+    '''
+    Takes a zipfile containing no version.txt and up-converts it
+    to 'version 2'.
+
+    This function's purpose is to upgrade save files to maintain compatibility
+    after the grand renaming:
+    [link to commit here]
+    '''
+    
+    print('v1tov2!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+    jsonfiles = glob.glob('*.json')
+
+    log.debug('updating save file from v1 to v2 (Renaming)')
+    # changed the name of gnome.spill to gnome.spills
+    # changes GridCurrentMover to c_GridCurrentMover
+    
+    spills = []  # gnome.spill 
+    for fname in jsonfiles:
+        with open(fname, 'r') as fn:
+            json_ = json.load(fn)
+            if 'obj_type' in json_:
+                if 'gnome.spill.' in json_['obj_type']:
+                    spills.append((fname, json_))   
+    for fn, sp in spills:        
+        sp['obj_type'] = sp['obj_type'].replace('gnome.spill.', 'gnome.spills.')
+        with open(fn, 'w') as fp:
+            json.dump(sp, fp, indent=True)
+            
+    movers = []  # current_movers, GridCurrentMover
+    for fname in jsonfiles:
+        with open(fname, 'r') as fn:
+            json_ = json.load(fn)
+            if 'obj_type' in json_:
+                if 'gnome.movers.current_movers.' in json_['obj_type']:
+                    movers.append((fname, json_))   
+    for fn, mv in movers:        
+        mv['obj_type'] = mv['obj_type'].replace('current_movers.', 'c_current_movers.')
+        mv['obj_type'] = mv['obj_type'].replace('GridCurrentMover', 'c_GridCurrentMover')
+        with open(fn, 'w') as fp:
+            json.dump(mv, fp, indent=True)
+            
+    with open('version.txt', 'w') as vers_file:
+        vers_file.write('2')
+
+    messages.append('**Update from v1 to v2 successful**')
     return messages, errors
 
 
@@ -225,7 +275,8 @@ def sanitize_filename(fname):
         return re.sub(r'[/]', "", fname)
 
 
-all_update_steps = [v0tov1]
+all_update_steps = [v0tov1, v1tov2]
+
 
 
 

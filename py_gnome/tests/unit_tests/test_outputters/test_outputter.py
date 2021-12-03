@@ -7,7 +7,7 @@ from datetime import timedelta
 
 import pytest
 
-from gnome.spill import surface_point_line_spill
+from gnome.spills import surface_point_line_spill
 from gnome.outputters import Outputter
 
 

@@ -23,7 +23,7 @@ from gnome.environment import Wind
 from gnome.maps import MapFromBNA
 
 from gnome.model import Model
-from gnome.spill import surface_point_line_spill
+from gnome.spills import surface_point_line_spill
 from gnome.movers import RandomMover, WindMover
 # from gnome.movers import CatsMover, ComponentMover
 

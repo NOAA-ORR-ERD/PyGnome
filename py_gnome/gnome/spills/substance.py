@@ -13,7 +13,6 @@ from gnome.spill.initializers import (floating_initializers,
                                       InitWindagesSchema,
                                       DistributionBaseSchema)
 
-
 class SubstanceSchema(ObjTypeSchema):
     initializers = SequenceSchema(
         GeneralGnomeObjectSchema(

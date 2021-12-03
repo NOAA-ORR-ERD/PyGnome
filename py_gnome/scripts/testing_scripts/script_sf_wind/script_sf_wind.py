@@ -8,14 +8,14 @@ import os
 from datetime import datetime, timedelta
 
 from gnome import scripting
-from gnome.spill.substance import NonWeatheringSubstance
-#from gnome.spill.elements import floating
+from gnome.spills.substance import NonWeatheringSubstance
+#from gnome.spills.elements import floating
 
 from gnome.utilities.remote_data import get_datafile
 
 from gnome.model import Model
 from gnome.maps import MapFromBNA
-from gnome.spill import surface_point_line_spill
+from gnome.spills import surface_point_line_spill
 from gnome.movers import GridWindMover
 
 from gnome.outputters import Renderer

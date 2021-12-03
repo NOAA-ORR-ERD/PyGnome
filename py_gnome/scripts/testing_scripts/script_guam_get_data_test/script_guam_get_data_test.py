@@ -17,7 +17,7 @@ from gnome.model import Model
 
 from gnome.maps import MapFromBNA
 from gnome.environment import Wind, Tide
-from gnome.spill import surface_point_line_spill
+from gnome.spills import surface_point_line_spill
 from gnome.movers import RandomMover, WindMover, CatsMover
 
 from gnome.outputters import Renderer

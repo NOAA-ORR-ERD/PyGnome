@@ -16,8 +16,8 @@ from gnome.utilities.projections import GeoProjection
 from gnome.model import Model
 from gnome.environment import Wind
 from gnome.movers import RandomMover, WindMover
-from gnome.spill import Spill
-from gnome.spill.release import release_from_splot_data
+from gnome.spills import Spill
+from gnome.spills.release import release_from_splot_data
 from gnome.maps import MapFromBNA    # will be used once we have BNA map
 
 from gnome.outputters import Renderer

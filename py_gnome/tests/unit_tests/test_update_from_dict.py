@@ -3,18 +3,13 @@ update_from_dict has been giving problems on spills so just add a couple of
 simple tests for spills, and movers orderedcollection
 '''
 
-
-
-
-
-
 import copy
 from datetime import datetime
 
 import pytest
 
 from gnome.model import Model
-from gnome.spill import surface_point_line_spill
+from gnome.spills import surface_point_line_spill
 from gnome.movers import SimpleMover
 from gnome.movers import RandomMover
 

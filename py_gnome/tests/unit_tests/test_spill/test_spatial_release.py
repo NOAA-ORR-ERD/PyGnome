@@ -18,7 +18,7 @@ import shapefile
 
 from gnome.utilities.geometry import geo_routines
 
-from gnome.spill.release import (SpatialRelease, NESDISRelease)
+from gnome.spills.release import (SpatialRelease, NESDISRelease)
 
 data_dir = os.path.join(os.path.split(__file__)[0], "data_for_tests")
 

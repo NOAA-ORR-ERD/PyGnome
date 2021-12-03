@@ -22,7 +22,7 @@ import os
 
 import numpy as np
 
-from gnome.movers import IceMover, GridCurrentMover
+from gnome.movers import IceMover, c_GridCurrentMover
 from gnome.utilities import time_utils
 
 from ..conftest import sample_sc_release, testdata
@@ -82,7 +82,7 @@ def test_loop_gridcurrent():
     """
 
     pSpill = sample_sc_release(num_le, start_pos, rel_time)
-    curr = GridCurrentMover(ice_file, topology_file)
+    curr = c_GridCurrentMover(ice_file, topology_file)
     delta = _certain_loop(pSpill, curr)
 
     _assert_move(delta)

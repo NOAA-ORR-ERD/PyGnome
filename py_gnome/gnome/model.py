@@ -82,10 +82,10 @@ from gnome.persist.base_schema import (ObjTypeSchema,
                                        CollectionItemsList,
                                        GeneralGnomeObjectSchema)
 from gnome.exceptions import ReferencedObjectNotSet, GnomeRuntimeError
-from gnome.spill.spill import SpillSchema
+from gnome.spills.spill import SpillSchema
 from gnome.gnomeobject import GnomeId, allowzip64, Refs
 from gnome.persist.extend_colander import OrderedCollectionSchema
-from gnome.spill.substance import NonWeatheringSubstance
+from gnome.spills.substance import NonWeatheringSubstance
 
 
 class ModelSchema(ObjTypeSchema):

@@ -41,7 +41,7 @@ class CurrentMoversBaseSchema(ProcessSchema):
 
 
 class CurrentMoversBase(CyMover):
-    _ref_as = 'current_movers'
+    _ref_as = 'c_current_movers'
 
     def __init__(self,
                  uncertain_duration=24,
@@ -410,7 +410,7 @@ class CatsMover(CurrentMoversBase):
         return velocities
 
 
-class GridCurrentMoverSchema(CurrentMoversBaseSchema):
+class c_GridCurrentMoverSchema(CurrentMoversBaseSchema):
     filename = FilenameSchema(
         missing=drop, save=True, update=False, isdatafile=True, test_equal=False
     )
@@ -441,9 +441,9 @@ class GridCurrentMoverSchema(CurrentMoversBaseSchema):
                            validator=convertible_to_seconds)
 
 
-class GridCurrentMover(CurrentMoversBase):
+class c_GridCurrentMover(CurrentMoversBase):
 
-    _schema = GridCurrentMoverSchema
+    _schema = c_GridCurrentMoverSchema
 
     def __init__(self, filename,
                  topology_file=None,
@@ -456,12 +456,12 @@ class GridCurrentMover(CurrentMoversBase):
                  num_method='Euler',
                  **kwargs):
         """
-        Initialize a GridCurrentMover
+        Initialize a c_GridCurrentMover
 
         :param filename: absolute or relative path to the data file:
                          could be netcdf or filelist
         :param topology_file=None: absolute or relative path to topology file.
-                                   If not given, the GridCurrentMover will
+                                   If not given, the c_GridCurrentMover will
                                    compute the topology from the data file.
 
         :param active_range: Range of datetimes for when the mover should be
@@ -481,10 +481,10 @@ class GridCurrentMover(CurrentMoversBase):
                            Default Euler
                            option: Runga-Kutta 4 (RK4)
 
-        uses super, ``super(GridCurrentMover,self).__init__(**kwargs)``
+        uses super, ``super(c_GridCurrentMover,self).__init__(**kwargs)``
         """
         # if child is calling, the self.mover is set by child - do not reset
-        if type(self) == GridCurrentMover:
+        if type(self) == c_GridCurrentMover:
             self.mover = CyGridCurrentMover()
 
         if not os.path.exists(filename):
@@ -496,7 +496,7 @@ class GridCurrentMover(CurrentMoversBase):
                 raise ValueError('Path for Topology file does not exist: {0}'
                                  .format(topology_file))
 
-        super(GridCurrentMover, self).__init__(**kwargs)
+        super(c_GridCurrentMover, self).__init__(**kwargs)
 
         # check if this is stored with cy_gridcurrent_mover?
         self.filename = filename
@@ -525,7 +525,7 @@ class GridCurrentMover(CurrentMoversBase):
                 self.topology_file = temp_topology_file
 
     def __repr__(self):
-        return ('GridCurrentMover('
+        return ('c_GridCurrentMover('
                 'uncertain_duration={0.uncertain_duration},'
                 'uncertain_time_delay={0.uncertain_time_delay}, '
                 'uncertain_cross={0.uncertain_cross}, '
@@ -535,7 +535,7 @@ class GridCurrentMover(CurrentMoversBase):
                 .format(self.mover, self))
 
     def __str__(self):
-        return ('GridCurrentMover - current _state.\n'
+        return ('c_GridCurrentMover - current _state.\n'
                 '  uncertain_duration={0.uncertain_duration}\n'
                 '  uncertain_time_delay={0.uncertain_time_delay}\n'
                 '  uncertain_cross={0.uncertain_cross}\n'
@@ -969,7 +969,7 @@ class IceMover(CurrentMoversBase):
         return (self.mover.get_offset_time()) / 3600.
 
 
-class CurrentCycleMoverSchema(GridCurrentMoverSchema):
+class CurrentCycleMoverSchema(c_GridCurrentMoverSchema):
     tide = TideSchema(
         missing=drop, save=True, update=True, save_reference=True
     )
@@ -979,7 +979,7 @@ class CurrentCycleMoverSchema(GridCurrentMoverSchema):
                            validator=convertible_to_seconds)
 
 
-class CurrentCycleMover(GridCurrentMover):
+class CurrentCycleMover(c_GridCurrentMover):
     _schema = CurrentCycleMoverSchema
 
     _ref_as = 'current_cycle_mover'
@@ -997,7 +997,7 @@ class CurrentCycleMover(GridCurrentMover):
         :param filename: Absolute or relative path to the data file:
                          could be netcdf or filelist
         :param topology_file=None: Absolute or relative path to topology file.
-                                   If not given, the GridCurrentMover will
+                                   If not given, the c_GridCurrentMover will
                                    compute the topology from the data file.
         :param tide: A gnome.environment.Tide object to be attached to
                      CatsMover
