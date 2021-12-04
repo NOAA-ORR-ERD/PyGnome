@@ -957,15 +957,17 @@ def gen_unique_filename(filename_in, zipfile_):
     also sanitizes out illegal characters
     """
     filename_in = sanitize_string(filename_in)
-    existing_files = zipfile_.namelist()
+    existing_files = set(zipfile_.namelist())
     file_name, extension = get_file_name_ext(filename_in)
     fmtstring = file_name + '{0}' + extension
     new_fn = fmtstring.format('')
-    i = 1;
-    while i < 255:
+
+    for i in range(255):
         if new_fn not in existing_files:
             return new_fn
         else:
-            new_fn = fmtstring.format(' ('+ str(i) + ')')
-            i+=1
-    raise ValueError('File saved too many times')
+            new_fn = fmtstring.format(' (' + str(i) + ')')
+
+    raise ValueError('Same file name used too many times')
+
+
