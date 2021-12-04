@@ -129,13 +129,14 @@ def init_from_gridcur(gc,
     )
     # total kludge, but when deserializing the name may already be there
     name = kwargs.pop('name', f"gridcur {data_type}")
-    super(gc.__class__, gc).__init__(name=name,
-                                     units=units,
-                                     time=time,
-                                     variables=[U, V],
-                                     varnames=('u', 'v'),
-                                     extrapolation_is_allowed=extrapolation_is_allowed,
-                                     **kwargs)
+    gc.__init__(name=name,
+                filename=filename,
+                units=units,
+                time=time,
+                variables=[U, V],
+                varnames=('u', 'v'),
+                extrapolation_is_allowed=extrapolation_is_allowed,
+                **kwargs)
 
 def read_file(filename):
     times = []

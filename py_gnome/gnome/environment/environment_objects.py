@@ -24,7 +24,9 @@ from .gridded_objects_base import (Time,
                                    VectorVariable,
                                    VariableSchema,
                                    VectorVariableSchema,
+                                   LocalDateTime,
                                    )
+from gnome.persist.validators import convertible_to_seconds
 
 from .gridcur import init_from_gridcur, GridCurReadError
 
@@ -810,23 +812,32 @@ class IceAwareCurrent(GridCurrent):
                  *args,
                  **kwargs):
         """
-        :param ice_velocity: VelocityGrid representing surface ice velocity
-        :type ice_velocity: VelocityGrid or compatible object
+        :param ice_velocity: VectorVariable representing surface ice velocity
+        :type ice_velocity: VectorVariable or compatible object
         :param ice_concentration: Variable representing surface ice concentration
         :type ice_concentration: Variable or compatible object
         """
+
         self.ice_velocity = ice_velocity
         self.ice_concentration = ice_concentration
 
         super(IceAwareCurrent, self).__init__(*args, **kwargs)
 
     @classmethod
-    @GridCurrent._get_shared_vars()
     def from_netCDF(cls,
-                    ice_file=None,
-                    ice_concentration=None,
-                    ice_velocity=None,
+                    *args,
                     **kwargs):
+        var = cls.__new__(cls)
+        var.init_from_netCDF(*args, **kwargs)
+        return var
+
+    @GridCurrent._get_shared_vars()
+    def init_from_netCDF(self,
+                         ice_file=None,
+                         ice_concentration=None,
+                         ice_velocity=None,
+                         *args,
+                         **kwargs):
         temp_fn = None
         if ice_file is not None:
             temp_fn = kwargs['filename']
@@ -840,9 +851,11 @@ class IceAwareCurrent(GridCurrent):
         if temp_fn is not None:
             kwargs['filename'] = temp_fn
 
-        return (super(IceAwareCurrent, cls).from_netCDF(ice_concentration=ice_concentration,
-                             ice_velocity=ice_velocity,
-                             **kwargs))
+        super(IceAwareCurrent, self).init_from_netCDF(
+            ice_concentration=ice_concentration,
+            ice_velocity=ice_velocity,
+            **kwargs
+        )
 
     def at(self, points, time, *args, **kwargs):
         extrapolate = self.extrapolation_is_allowed
@@ -943,6 +956,12 @@ class FileGridCurrentSchema(ObjTypeSchema):
     )
     extrapolation_is_allowed = SchemaNode(Boolean())
 
+    data_start = SchemaNode(LocalDateTime(), read_only=True,
+                            validator=convertible_to_seconds)
+    data_stop = SchemaNode(LocalDateTime(), read_only=True,
+                           validator=convertible_to_seconds)
+
+
 
 class FileGridCurrent(GridCurrent):
     """
@@ -955,37 +974,55 @@ class FileGridCurrent(GridCurrent):
     """
     _schema = FileGridCurrentSchema
 
-    def __init__(self, filename=None, extrapolation_is_allowed=False, **kwargs):
-        # determine what file format this is
-        if filename is None:
-            raise TypeError("FileGridCurrent requires a filename")
-        filename = str(filename)  # just in case it's a Path object
+    def __init__(self, filename=None, extrapolation_is_allowed=False, *args, **kwargs):
 
-        if filename.endswith(".nc"):  # should be a netCDF file
-            try:
-                GridCurrent.init_from_netCDF(self,
-                                             filename=filename,
-                                             extrapolation_is_allowed=extrapolation_is_allowed,
-                                             **kwargs)
-            except Exception as ex:
-                raise ValueError(f"Could not read: {filename}") from ex
+        #FileGridCurrent('filename.nc')
+        #FileGridCurrent('filename.nc', extrapolation_is_allowed=true)
+        #FileGridCurrent(filename='filename.nc', extrapolation_is_allowed=true)
+
+        if len(args) == 0 and len(kwargs) == 0:
+
+            # determine what file format this is
+            if filename is None:
+                raise TypeError("FileGridCurrent requires a filename")
+            filename = str(filename)  # just in case it's a Path object
+
+            if filename.endswith(".nc"):  # should be a netCDF file
+                try:
+                    GridCurrent.init_from_netCDF(self,
+                                                 filename=filename,
+                                                 extrapolation_is_allowed=extrapolation_is_allowed,
+                                                 **kwargs)
+                except Exception as ex:
+                    raise ValueError(f"Could not read: {filename}") from ex
 
 
-        else:  # maybe it's a gridcur file -- that's the only other option
-            try:
-                init_from_gridcur(self,
-                                  filename,
-                                  extrapolation_is_allowed,
-                                  **kwargs)
-            except GridCurReadError as ex:
-               raise ValueError(f"{filename} is not a valid gridcur file") from ex
-        self.filename = filename
+            else:  # maybe it's a gridcur file -- that's the only other option
+                FileGridCurrent.init_from_gridcur(self,
+                                                  filename,
+                                                  extrapolation_is_allowed,
+                                                  **kwargs)
+        else:
+            super(FileGridCurrent, self).__init__(
+                extrapolation_is_allowed=extrapolation_is_allowed,
+                *args,
+                **kwargs
+            )
+            self.filename = filename
+
+    def init_from_gridcur(self, filename, extrapolation_is_allowed, **kwargs):
+        '''
+        Wrapper for external initalize function
+        '''
+        try:
+            init_from_gridcur(self, filename, extrapolation_is_allowed, **kwargs)
+        except GridCurReadError as ex:
+            raise ValueError(f"{filename} is not a valid gridcur file") from ex
 
     @classmethod
     def new_from_dict(cls, serial_dict):
-        return cls(**serial_dict)
-
-        # filename=serial_dict["filename"],
-        #            extrapolation_is_allowed=serial_dict["extrapolation_is_allowed"])
+        return cls(filename=serial_dict.get('filename'),
+                   extrapolation_is_allowed=serial_dict.get('extrapolation_is_allowed')  # noqa
+                   )
 
 

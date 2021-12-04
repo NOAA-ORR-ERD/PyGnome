@@ -716,7 +716,7 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
                  **kwargs):
         super(VectorVariable, self).__init__(*args, **kwargs)
         self.extrapolation_is_allowed = extrapolation_is_allowed
-        
+
     def __repr__(self):
         try:
             return super().__repr__()

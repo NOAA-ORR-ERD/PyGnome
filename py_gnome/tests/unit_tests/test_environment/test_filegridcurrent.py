@@ -119,7 +119,11 @@ def test_gridcur_serialize():
                               extrapolation_is_allowed=True,
                               )
 
+    print("About to serialze")
+    print(f"{current.filename}")
     serial = current.serialize()
+
+    print(f"{serial}")
 
     current2 = FileGridCurrent.deserialize(serial)
 
