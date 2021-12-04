@@ -1,7 +1,7 @@
 import datetime
 import zipfile
 import logging
-import collections
+from collections import abc
 import os
 import json
 import tempfile
@@ -334,7 +334,7 @@ class ObjType(SchemaType):
                 continue
             elif isinstance(json_[d], str):
                 json_[d] = self._process_supporting_file(json_[d], zipfile_)
-            elif isinstance(json_[d], collections.Iterable):
+            elif isinstance(json_[d], abc.Iterable):
                 # List, tuple, etc
                 for i, filename in enumerate(json_[d]):
                     json_[d][i] = self._process_supporting_file(filename,
@@ -491,7 +491,7 @@ class ObjType(SchemaType):
                 cstruct[d] = self._load_supporting_file(cstruct[d],
                                                         saveloc, tmpdir)
                 log.info('Extracted file {0}'.format(cstruct[d]))
-            elif isinstance(cstruct[d], collections.Iterable):
+            elif isinstance(cstruct[d], abc.Iterable):
                 # List, tuple, etc
                 for i, filename in enumerate(cstruct[d]):
                     cstruct[d][i] = self._load_supporting_file(filename,

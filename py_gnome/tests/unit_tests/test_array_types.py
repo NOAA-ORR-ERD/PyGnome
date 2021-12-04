@@ -60,7 +60,7 @@ class TestArrayType_eq(object):
         """ dtype is different for two ArrayType objects """
 
         positions = ArrayType((3, ), world_point_type, 'positions')
-        positions2 = ArrayType((3, ), np.int, 'positions')
+        positions2 = ArrayType((3, ), np.int32, 'positions')
         assert positions != positions2  # wrong dtype
 
     def test_eq_wrong_init_value(self):
