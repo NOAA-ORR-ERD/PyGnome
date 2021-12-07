@@ -182,10 +182,20 @@ class Substance(GnomeId):
         :param to_rel - number of new LEs to initialize
         :param arrs - dict-like of data arrays representing LEs
         '''
+        sl = slice(-to_rel, None, 1)
+        arrs['density'][sl] = self.standard_density
+
         for init in self.initializers:
             init.initialize(to_rel, arrs, self)
 
+    def density_at_temp(self, temp=273.15):
+        '''
+        For non-weathering substance, we just return the standard density.
+        '''
+        return self.standard_density
+
     def _attach_default_refs(self, ref_dict):
+        # fixme: is the necessary?
         for i in self.initializers:
             i._attach_default_refs(ref_dict)
         return GnomeId._attach_default_refs(self, ref_dict)
@@ -236,17 +246,10 @@ class NonWeatheringSubstance(Substance):
         :param arrs - dict-like of data arrays representing LEs
         '''
         sl = slice(-to_rel, None, 1)
-        arrs['density'][sl] = self.standard_density
         if ('fate_status' in arrs):
             arrs['fate_status'][sl] = fate.non_weather
         super(NonWeatheringSubstance, self).initialize_LEs(to_rel, arrs)
 
-    def density_at_temp(self, temp=273.15):
-        # should this exist ??
-        '''
-            For non-weathering substance, we just return the standard density.
-        '''
-        return self.standard_density
 
 
 class SubsurfaceSubstance(NonWeatheringSubstance):
