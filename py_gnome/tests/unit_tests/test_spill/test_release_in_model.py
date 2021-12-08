@@ -9,7 +9,7 @@ import pytest
 from datetime import datetime
 
 from gnome.model import Model
-from gnome.spill.spill import surface_point_line_spill
+from gnome.spills.spill import surface_point_line_spill
 from gnome.outputters.memory_outputter import MemoryOutputter
 
 import gnome.scripting as gs

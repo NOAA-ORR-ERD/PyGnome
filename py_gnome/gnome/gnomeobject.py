@@ -22,6 +22,8 @@ log = logging.getLogger(__name__)
 
 allowzip64 = False
 
+SAVEFILE_VERSION = '2'
+
 
 def class_from_objtype(obj_type):
     '''
@@ -724,7 +726,7 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
 
         obj_json = self._schema()._save(self, zipfile_=zipfile_, refs=refs)
 
-        zipfile_.writestr('version.txt', '1')
+        zipfile_.writestr('version.txt', SAVEFILE_VERSION)
 
         if saveloc is None:
             log.info('Returning open zipfile in memory')

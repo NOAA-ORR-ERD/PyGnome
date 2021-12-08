@@ -2,7 +2,7 @@
 import warnings
 import copy
 from numbers import Number
-import collections
+from collections import abc
 
 import numpy as np
 from gnome.persist import (ObjTypeSchema, SchemaNode, String, drop,
@@ -126,7 +126,7 @@ class TimeseriesData(GnomeId):
 
         if isinstance(t, Time):
             self._time = t
-        elif isinstance(t, collections.Iterable):
+        elif isinstance(t, abc.Iterable):
             self._time = Time(t)
         else:
             raise ValueError('Object being assigned must be an iterable '

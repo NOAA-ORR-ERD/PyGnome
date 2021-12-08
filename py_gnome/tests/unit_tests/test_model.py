@@ -22,8 +22,8 @@ from gnome.maps import GnomeMap, MapFromBNA
 from gnome.environment import Wind, Tide, constant_wind, Water, Waves
 from gnome.model import Model
 
-from gnome.spill import (Spill,
-                         point_line_release_spill,
+from gnome.spills import (Spill,
+                         surface_point_line_spill,
                          Release)
 
 from gnome.movers import SimpleMover, RandomMover, WindMover, CatsMover
@@ -38,7 +38,7 @@ from gnome.weatherers import (HalfLifeWeatherer,
 from gnome.outputters import Renderer, TrajectoryGeoJsonOutput
 
 from .conftest import sample_model_weathering, testdata, test_oil
-from gnome.spill.substance import NonWeatheringSubstance
+from gnome.spills.substance import NonWeatheringSubstance
 
 from gnome.exceptions import ReferencedObjectNotSet
 
@@ -205,7 +205,7 @@ def test_release_end_of_step(duration):
                   duration=timedelta(hours=duration))
 
     end_release_time = model.start_time + model.duration
-    model.spills += point_line_release_spill(10, (0.0, 0.0, 0.0),
+    model.spills += surface_point_line_spill(10, (0.0, 0.0, 0.0),
                                              model.start_time,
                                              end_release_time=end_release_time)
 
@@ -273,7 +273,7 @@ def test_simple_run_rewind():
     model.movers += a_mover
     assert len(model.movers) == 1
 
-    spill = point_line_release_spill(num_elements=10,
+    spill = surface_point_line_spill(num_elements=10,
                                      start_position=(0., 0., 0.),
                                      release_time=start_time)
 
@@ -319,7 +319,7 @@ def test_simple_run_with_map():
     model.movers += a_mover
     assert len(model.movers) == 1
 
-    spill = point_line_release_spill(num_elements=10,
+    spill = surface_point_line_spill(num_elements=10,
                                      start_position=(0., 0., 0.),
                                      release_time=start_time)
 
@@ -551,7 +551,7 @@ def test_all_movers(start_time, release_delay, duration):
 
     release_time = (start_time +
                     timedelta(seconds=model.time_step * release_delay))
-    model.spills += point_line_release_spill(num_elements=10,
+    model.spills += surface_point_line_spill(num_elements=10,
                                              start_position=start_loc,
                                              release_time=release_time)
 
@@ -636,7 +636,7 @@ def test_linearity_of_wind_movers(wind_persist):
     model1.duration = timedelta(hours=1)
     model1.time_step = timedelta(hours=1)
     model1.start_time = start_time
-    sp = point_line_release_spill(num_elements=num_LEs,
+    sp = surface_point_line_spill(num_elements=num_LEs,
                                  start_position=(1., 2., 0.),
                                  release_time=start_time,
                                  substance=NonWeatheringSubstance(windage_persist=wind_persist))
@@ -650,7 +650,7 @@ def test_linearity_of_wind_movers(wind_persist):
     model2.duration = timedelta(hours=10)
     model2.time_step = timedelta(hours=1)
     model2.start_time = start_time
-    model2.spills += point_line_release_spill(num_elements=num_LEs,
+    model2.spills += surface_point_line_spill(num_elements=num_LEs,
                                               start_position=(1., 2., 0.),
                                               release_time=start_time,
                                               substance=NonWeatheringSubstance(windage_persist=wind_persist))
@@ -708,13 +708,13 @@ def test_model_release_after_start():
 
     # add a spill that starts after the run begins.
     release_time = start_time + timedelta(hours=1)
-    model.spills += point_line_release_spill(num_elements=5,
+    model.spills += surface_point_line_spill(num_elements=5,
                                              start_position=(0, 0, 0),
                                              release_time=release_time)
 
     # and another that starts later..
 
-    model.spills += point_line_release_spill(num_elements=4,
+    model.spills += surface_point_line_spill(num_elements=4,
                                              start_position=(0, 0, 0),
                                              release_time=(start_time +
                                                            timedelta(hours=2))
@@ -756,7 +756,7 @@ def test_release_at_right_time():
 
     # add a spill that starts right when the run begins
 
-    model.spills += point_line_release_spill(num_elements=12,
+    model.spills += surface_point_line_spill(num_elements=12,
                                              start_position=(0, 0, 0),
                                              release_time=start_time,
                                              end_release_time=start_time + gs.hours(6),
@@ -977,7 +977,7 @@ def test_contains_object(sample_model_fcn):
     water, wind = Water(), constant_wind(1., 0)
     model.environment += [water, wind]
 
-    sp = point_line_release_spill(500, (0, 0, 0),
+    sp = surface_point_line_spill(500, (0, 0, 0),
                                   rel_time + timedelta(hours=1),
                                   substance=model.spills[0].substance,
                                   amount=100,
@@ -1075,7 +1075,7 @@ def test_staggered_spills_weathering(sample_model_fcn, delay):
     model.cache = True
     model.outputters += gnome.outputters.WeatheringOutput()
 
-    cs = point_line_release_spill(500, (0, 0, 0),
+    cs = surface_point_line_spill(500, (0, 0, 0),
                                   rel_time + delay,
                                   end_release_time=(rel_time + delay +
                                                     timedelta(hours=1)),
@@ -1153,7 +1153,7 @@ def test_two_substance_same(sample_model_fcn, s0=test_oil, s1=test_oil):
     rel_time = model.spills[0].release_time
     model.duration = timedelta(days=1)
 
-    cs = point_line_release_spill(500, (0, 0, 0),
+    cs = surface_point_line_spill(500, (0, 0, 0),
                                   rel_time,
                                   end_release_time=(rel_time +
                                                     timedelta(hours=1)),
@@ -1214,7 +1214,7 @@ def test_two_substance_same(sample_model_fcn, s0=test_oil, s1=test_oil):
     assert np.isclose(exp_total_mass, sc.mass_balance['amount_released'])
 
 
-def test_two_substance_different(sample_model_fcn, s0=test_oil, s1="ARABIAN MEDIUM, EXXON"):
+def test_two_substance_different(sample_model_fcn, s0=test_oil, s1="oil_crude"):
     '''
     The model (SpillContainer) does not allow two different substances.
 
@@ -1234,10 +1234,11 @@ def test_two_substance_different(sample_model_fcn, s0=test_oil, s1="ARABIAN MEDI
     rel_time = model.spills[0].release_time
     model.duration = timedelta(days=1)
 
-    cs = point_line_release_spill(500, (0, 0, 0),
+    cs = surface_point_line_spill(500, (0, 0, 0),
                                   rel_time,
                                   end_release_time=(rel_time +
                                                     timedelta(hours=1)),
+                                  substance=s1,
                                   amount=1,
                                   units='tonnes')
 
@@ -1253,8 +1254,8 @@ def test_weathering_data_attr():
     s1_rel = datetime.now().replace(microsecond=0)
     s2_rel = s1_rel + timedelta(seconds=ts)
 
-    s = [point_line_release_spill(10, (0, 0, 0), s1_rel),
-         point_line_release_spill(10, (0, 0, 0), s2_rel)]
+    s = [surface_point_line_spill(10, (0, 0, 0), s1_rel),
+         surface_point_line_spill(10, (0, 0, 0), s2_rel)]
 
     model = Model(time_step=ts, start_time=s1_rel)
     model.spills += s
@@ -1344,7 +1345,7 @@ class TestMergeModels:
         m.environment += [Water(), constant_wind(1., 0.)]
         m.weatherers += Evaporation(m.environment[0], m.environment[-1])
         # has to have the same substance as the sample model
-        m.spills += point_line_release_spill(10, (0, 0, 0),
+        m.spills += surface_point_line_spill(10, (0, 0, 0),
                                              datetime(2014, 1, 1, 12, 0),
                                              substance=test_oil)
 

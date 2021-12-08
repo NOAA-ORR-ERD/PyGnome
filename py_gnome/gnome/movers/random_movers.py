@@ -163,7 +163,7 @@ class IceAwareRandomMover(RandomMover):
             deltas = (super(IceAwareRandomMover, self)
                       .get_move(sc, time_step, model_time_datetime))
 
-            deltas *= ice_vel_factor
+            deltas *= ice_vel_factor[:,None]
             deltas[status] = (0,0,0)
 
             return deltas

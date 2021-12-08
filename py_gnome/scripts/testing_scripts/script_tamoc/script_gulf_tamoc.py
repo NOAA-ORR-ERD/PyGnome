@@ -6,7 +6,7 @@ TAMOC - Texas A&M Oilspill Calculator
 
 https://github.com/socolofs/tamoc
 
-This is a very simpile environment:
+This is a very simple environment:
 
 Simple map (no land) and simple current mover (steady uniform current)
 
@@ -22,21 +22,17 @@ import numpy as np
 from datetime import datetime, timedelta
 
 from gnome import scripting
-from gnome.spill.elements import plume
-from gnome.utilities.distributions import WeibullDistribution
 from gnome.environment.gridded_objects_base import Variable, Time, Grid_S
 from gnome.environment import GridCurrent
 from gnome.environment import Wind
 
 from gnome.model import Model
-from gnome.map import GnomeMap
-from gnome.spill import point_line_release_spill
-from gnome.scripting import subsurface_plume_spill
+from gnome.maps.map import GnomeMap
 from gnome.movers import (RandomMover,
                           TamocRiseVelocityMover,
                           RandomMover3D,
                           SimpleMover,
-                          GridCurrentMover,
+                          c_GridCurrentMover,
                           PyCurrentMover,
                           constant_wind_mover,
                           WindMover)
@@ -116,10 +112,14 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # droplets rise as a function of their density and radius
     model.movers += TamocRiseVelocityMover()
 
-    print('adding the 3D current mover')
-    gc = GridCurrent.from_netCDF('HYCOM_3d.nc')
+    hycom_file = os.path.join(base_dir, 'HYCOM_3d.nc')
 
-    model.movers += PyCurrentMover('HYCOM_3d.nc')
+    print('adding the 3D current mover')
+    #gc = GridCurrent.from_netCDF('HYCOM_3d.nc')
+    gc = GridCurrent.from_netCDF(hycom_file)
+
+    #model.movers += PyCurrentMover('HYCOM_3d.nc')
+    model.movers += PyCurrentMover(hycom_file)
 #    model.movers += SimpleMover(velocity=(0., 0, 0.))
     model.movers += constant_wind_mover(10, 315, units='knots')
 
@@ -134,12 +134,13 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     model.spills += tamoc_spill.TamocSpill(release_time=start_time,
                                         start_position=(-87.5, 28.0, 1000),
                                         num_elements=1000,
-                                        end_release_time=start_time + timedelta(days=2),
+                                        release_duration=timedelta(days=2),
+                                        #end_release_time=start_time + timedelta(days=2),
                                         name='TAMOC plume',
-                                        TAMOC_interval=None,  # how often to re-run TAMOC
+                                        #TAMOC_interval=None,  # how often to re-run TAMOC
                                         )
 
-    model.spills[0].data_sources['currents'] = gc
+    #model.spills[0].data_sources['currents'] = gc
 
     return model
 
@@ -147,15 +148,15 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 if __name__ == "__main__":
     scripting.make_images_dir()
     model = make_model()
-    model.spills[0].update_environment_conditions(model.model_time)
-    model.spills[0].tamoc_parameters['nbins'] = 20
+    #model.spills[0].update_environment_conditions(model.model_time)
+    #model.spills[0].tamoc_parameters['nbins'] = 20
     print("about to start running the model")
     for step in model:
-        if step['step_num'] == 1:
+        #if step['step_num'] == 1:
 #             import random
-             for d in model.spills[0].droplets:
+#             for d in model.spills[0].droplets:
 #                 d.density= random.randint(800,850)
-                  d.density = 850.
+#                  d.density = 850.
 #            print 'running tamoc again'
 #            sp = model.spills[0]
 #            print sp.tamoc_parameters

@@ -10,5 +10,10 @@
    
 .. |webgnome| raw:: html
 
-   <a href="gnome.orr.noaa.gov" target="_blank">
+   <a href="https://gnome.orr.noaa.gov" target="_blank">
    WebGNOME</a>
+   
+.. |adios_db| raw:: html
+
+   <a href="https://adios.orr.noaa.gov" target="_blank">
+   ADIOS Oil Database</a>

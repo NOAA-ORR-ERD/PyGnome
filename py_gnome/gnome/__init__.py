@@ -18,7 +18,7 @@ import unit_conversion as uc
 from .gnomeobject import GnomeId, AddLogger
 # from gnomeobject import init_obj_log
 
-__version__ = '1.1.0'
+__version__ = '1.1.1'
 
 
 # a few imports so that the basic stuff is there
@@ -127,7 +127,7 @@ check_dependency_versions()
 from . import (environment,
                model,
                # multi_model_broadcast,
-               spill,
+               spills,
                movers,
                outputters)
 

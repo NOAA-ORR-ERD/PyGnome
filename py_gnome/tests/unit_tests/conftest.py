@@ -29,8 +29,8 @@ from gnome.environment import constant_wind, Water, Waves
 from gnome.utilities.remote_data import get_datafile
 from gnome.array_types import gat
 from gnome.gnomeobject import class_from_objtype, GnomeId
-from gnome.spill.substance import NonWeatheringSubstance
-from gnome.spill.gnome_oil import GnomeOil
+from gnome.spills.substance import NonWeatheringSubstance
+from gnome.spills.gnome_oil import GnomeOil
 from gnome.spill_container import SpillContainer
 
 
@@ -222,7 +222,7 @@ def sample_sc_release(num_elements=10,
         current_time = release_time
 
     if spill is None:
-        spill = gnome.spill.point_line_release_spill(num_elements,
+        spill = gnome.spills.surface_point_line_spill(num_elements,
                                                      start_pos,
                                                      release_time,
                                                      amount=0)
@@ -290,7 +290,7 @@ def get_testdata():
          'tide': get_datafile(os.path.join(tide_dir, 'EstesHead.txt')),
          'curr_bad_file': get_datafile(os.path.join(curr_dir,
                                                     'BigCombinedwMapBad.cur'))}
-    data['GridCurrentMover'] = \
+    data['c_GridCurrentMover'] = \
         {'curr_tri': get_datafile(os.path.join(curr_dir, 'ChesBay.nc')),
          'top_tri': get_datafile(os.path.join(curr_dir, 'ChesBay.dat')),
          'curr_reg': get_datafile(os.path.join(curr_dir, 'test.cdf')),
@@ -555,14 +555,14 @@ def sample_release_spill():
     :returns: a tuple containing (spill, start_positions). start_positions
         should be equal to spill.start_positions
     """
-    from gnome.spill import Release
+    from gnome.spills import Release
     start_positions = ((0., 0., 0.),
                        (28.0, -75.0, 0.),
                        (-15, 12, 4.0),
                        (80, -80, 100.0))
 
     rel = Release(release_time=datetime(2012, 1, 1, 1), custom_positions=start_positions)
-    sp = gnome.spill.Spill(release=rel)
+    sp = gnome.spills.Spill(release=rel)
 
     return (sp, start_positions)
 
@@ -572,7 +572,7 @@ def sample_vertical_plume_spill():
     '''
     creates an example VerticalPlumeSource object
     '''
-    from gnome.spill import VerticalPlumeRelease, Spill
+    from gnome.spills import VerticalPlumeRelease, Spill
     from gnome.utilities.plume import get_plume_data
 
     release_time = datetime.now()
@@ -591,7 +591,7 @@ def sample_vertical_plume_spill():
 @pytest.fixture(scope='function')
 def sample_sc_no_uncertainty():
     """
-    Sample spill container with 2 point_line_release_spill spills:
+    Sample spill container with 2 surface_point_line_spill spills:
 
     - release_time for 2nd spill is 1 hour delayed
     - 2nd spill takes 4 hours to release and end_position is different so it
@@ -613,12 +613,12 @@ def sample_sc_no_uncertainty():
     end_position = (24.0, -79.5, 1.0)
     end_release_time = datetime(2012, 1, 1, 12) + timedelta(hours=4)
 
-    spills = [gnome.spill.point_line_release_spill(num_elements,
+    spills = [gnome.spills.surface_point_line_spill(num_elements,
                                                    start_position,
                                                    release_time,
                                                    amount=10, units='l',
                                                    water=water),
-              gnome.spill.point_line_release_spill(num_elements,
+              gnome.spills.surface_point_line_spill(num_elements,
                                                    start_position,
                                                    release_time_2,
                                                    end_position,
@@ -783,7 +783,7 @@ def sample_model_weathering(sample_model_fcn,
     sub = GnomeOil(oil)
     start_time = model.start_time + timedelta(hours=1)
     end_time = start_time + timedelta(seconds=model.time_step * 3)
-    spill = gnome.spill.point_line_release_spill(num_les,
+    spill = gnome.spills.surface_point_line_spill(num_les,
                                                  rel_pos,
                                                  start_time,
                                                  end_release_time=end_time,
@@ -809,7 +809,7 @@ def sample_model_weathering2(sample_model_fcn2, oil, temp=311.16):
     sub = GnomeOil(oil)
     start_time = model.start_time
     end_time = start_time
-    spill = gnome.spill.point_line_release_spill(100,
+    spill = gnome.spills.surface_point_line_spill(100,
                                                  rel_pos,
                                                  start_time,
                                                  end_release_time=end_time,

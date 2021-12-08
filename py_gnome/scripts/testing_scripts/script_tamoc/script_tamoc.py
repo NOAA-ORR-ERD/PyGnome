@@ -21,6 +21,7 @@ import gnome.tamoc.tamoc_spill as ts
 
 from gnome.environment import (Water, Waves)
 from gnome.weatherers import (Evaporation, Dissolution)
+from gnome.spills.substance import GnomeOil
 
 import os
 import numpy as np
@@ -148,6 +149,8 @@ def make_model():
                                   which_data='all',
                                   output_timestep=gs.hours(2))
     model.outputters += file_writer
+    oil_file = os.path.join(base_dir, 'light-louisianna-sweet-bp_AD01554.json')
+    subs = GnomeOil(filename=oil_file)
 
     # Add a spill object
     print('\n-- Adding a Point Spill           --')
@@ -156,7 +159,7 @@ def make_model():
                                  start_position=(0.0, 0.0, 1000.),
                                  release_duration=gs.hours(24),
                                  release_time=start_time,
-                                 substance='AD01554',
+                                 substance=subs,
                                  release_rate=20000.,
                                  units='bbl/day',
                                  gor=500.,

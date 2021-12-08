@@ -1,9 +1,9 @@
 from pathlib import Path
-from gnome.spill.substance import (Substance,
-                                   NonWeatheringSubstance,
-                                   SubsurfaceSubstance)
+from gnome.spills.substance import (Substance,
+                                    NonWeatheringSubstance,
+                                    SubsurfaceSubstance)
 
-from gnome.spill.initializers import InitWindages
+from gnome.spills.initializers import InitWindages
 
 import pytest
 

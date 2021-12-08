@@ -19,8 +19,8 @@ from gnome.model import Model
 from gnome.maps import MapFromBNA
 from gnome.environment import Wind, Water, Tide
 
-from gnome.spill import point_line_release_spill
-from gnome.spill.elements import floating_weathering
+from gnome.spills import point_line_release_spill
+from gnome.spills.elements import floating_weathering
 
 from gnome.movers import RandomMover, WindMover, CatsMover
 from gnome.weatherers import Evaporation, Dispersion, Skimmer, Burn

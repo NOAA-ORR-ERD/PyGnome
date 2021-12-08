@@ -3,16 +3,13 @@ tests for geojson outputter
 '''
 
 
-
-
 import time
 from datetime import datetime
-from numbers import Number
 
 import numpy as np
 import pytest
 
-from gnome.spill import Release, Spill, point_line_release_spill
+from gnome.spills import Release, Spill, surface_point_line_spill
 from gnome.movers import IceMover
 from gnome.outputters import IceJsonOutput
 
@@ -40,7 +37,7 @@ def model(sample_model, output_dir):
     line_pos[:, 1] = np.linspace(rel_start_pos[1], rel_end_pos[1], N)
 
     start_pos = (-164.01696, 72.921024, 0)
-    model.spills += point_line_release_spill(1,
+    model.spills += surface_point_line_spill(1,
                                              start_position=start_pos,
                                              release_time=model.start_time,
                                              end_position=start_pos)

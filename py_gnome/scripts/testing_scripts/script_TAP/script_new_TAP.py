@@ -16,8 +16,8 @@ from gnome.model import Model
 
 from gnome.maps import MapFromBNA
 from gnome.environment import Environment
-from gnome.spill import point_line_release_spill
-from gnome.movers import RandomMover, constant_wind_mover, GridCurrentMover, IceAwareRandomMover
+from gnome.spills import surface_point_line_spill
+from gnome.movers import RandomMover, constant_wind_mover, c_GridCurrentMover, IceAwareRandomMover
 
 from gnome.environment import IceAwareCurrent, IceAwareWind, GridCurrent
 from gnome.movers.py_wind_movers import PyWindMover
@@ -53,13 +53,13 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # - will need diffusion and rise velocity
     # - wind doesn't act
     # - start_position = (-76.126872, 37.680952, 5.0),
-#     spill1 = point_line_release_spill(num_elements=10000,
+#     spill1 = surface_point_line_spill(num_elements=10000,
 #                                       start_position=(-163.75,
 #                                                       69.75,
 #                                                       0.0),
 #                                       release_time=start_time)
 #
-    spill1 = point_line_release_spill(num_elements=50000,
+    spill1 = surface_point_line_spill(num_elements=50000,
                                       start_position=(196.25,
                                                       69.75,
                                                       0.0),
@@ -74,9 +74,15 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     print('adding a current mover:')
 
-    fn = ['arctic_avg2_0001_gnome.nc',
-          'arctic_avg2_0002_gnome.nc']
+#     fn = ['arctic_avg2_0001_gnome.nc',
+#           'arctic_avg2_0002_gnome.nc']
 
+    fn = [get_datafile(os.path.join(base_dir, 'arctic_avg2_0001_gnome.nc')),
+          get_datafile(os.path.join(base_dir, 'arctic_avg2_0002_gnome.nc')),
+          ]
+
+    # filelist is not working
+    fn = get_datafile(os.path.join(base_dir, 'arctic_avg2_0001_gnome.nc'))
 #     fn = ['C:\\Users\\jay.hennen\\Documents\\Code\\pygnome\\py_gnome\\scripts\\script_TAP\\arctic_avg2_0001_gnome.nc',
 #           'C:\\Users\\jay.hennen\\Documents\\Code\\pygnome\\py_gnome\\scripts\\script_TAP\\arctic_avg2_0002_gnome.nc']
 
@@ -145,7 +151,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
 
     # curr_file = get_datafile(os.path.join(base_dir, 'COOPSu_CREOFS24.nc'))
-    # c_mover = GridCurrentMover(curr_file)
+    # c_mover = c_GridCurrentMover(curr_file)
     # model.movers += c_mover
 #     model.environment.add(WindTS.constant(10, 300))
 #     print('Saving')

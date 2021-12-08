@@ -10,8 +10,8 @@ from testfixtures import log_capture
 
 from gnome.environment import Water
 from gnome.weatherers import WeatheringData, FayGravityViscous
-from gnome.spill import point_line_release_spill
-from gnome.spill.gnome_oil import GnomeOil
+from gnome.spills import surface_point_line_spill
+from gnome.spills.gnome_oil import GnomeOil
 from gnome.spill_container import SpillContainer
 
 from ..conftest import test_oil
@@ -33,7 +33,7 @@ class TestWeatheringData(object):
         '''
         wd = WeatheringData(water)
         end_time = rel_time + timedelta(hours=1)
-        spills = [point_line_release_spill(num_elements,
+        spills = [surface_point_line_spill(num_elements,
                                            (0, 0, 0),
                                            rel_time,
                                            end_release_time=end_time,
@@ -254,14 +254,14 @@ class TestWeatheringData(object):
 
         rel_time = datetime.now().replace(microsecond=0)
         end_time = rel_time + timedelta(hours=1)
-        spills = [point_line_release_spill(100,
+        spills = [surface_point_line_spill(100,
                                            (0, 0, 0),
                                            rel_time,
                                            end_release_time=end_time,
                                            amount=100,
                                            units='kg',
                                            substance=test_oil),
-                  point_line_release_spill(50,
+                  surface_point_line_spill(50,
                                            (0, 0, 0),
                                            rel_time + timedelta(hours=.25),
                                            substance=test_oil,
@@ -337,7 +337,7 @@ class TestWeatheringData(object):
         (sc, wd, spread) = self.sample_sc_wd_spreading(100, rel_time)
         sc.spills[0].end_release_time = None
         # add another spill to compare with
-        sc.spills += point_line_release_spill(100, (0, 0, 0),
+        sc.spills += surface_point_line_spill(100, (0, 0, 0),
                                               rel_time,
                                               amount=10,
                                               units='kg',
@@ -415,7 +415,7 @@ class TestWeatheringData(object):
                "Set density to water density".format(new_subs.name,
                                                      288.0,
                                                      'K'))
-        l.check_present(('gnome.spill.gnome_oil.GnomeOil',
+        l.check_present(('gnome.spills.gnome_oil.GnomeOil',
                  'ERROR',
                  msg))
 

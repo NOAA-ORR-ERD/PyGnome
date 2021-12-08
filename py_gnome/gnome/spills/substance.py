@@ -16,18 +16,17 @@ The role of a substance is to:
 
 import numpy as np
 
-from gnome.basic_types import fate
+from gnome.gnomeobject import GnomeId
 from gnome.array_types import gat
+from gnome.basic_types import fate, oil_status
 
-from gnome.persist import (Float, Int, SchemaNode, SequenceSchema,
+from gnome.persist import (Float, Int, SchemaNode,
                            Boolean, ObjTypeSchema, GeneralGnomeObjectSchema,
                            TupleSchema, Range)
 
-from gnome.gnomeobject import GnomeId
-from gnome.spill.initializers import (DistributionBaseSchema,
-                                      InitWindages,
-                                      InitRiseVelFromDropletSizeFromDist,
-                                      )
+from gnome.spills.initializers import (InitWindages,
+                                       InitRiseVelFromDropletSizeFromDist,
+                                       )
 
 
 class WindageRangeSchema(TupleSchema):

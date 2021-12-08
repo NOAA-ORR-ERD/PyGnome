@@ -21,14 +21,14 @@ from gnome.basic_types import datetime_value_2d, numerical_methods
 
 from gnome.utilities.remote_data import get_datafile
 
-#from gnome.spill.elements import plume
-from gnome.spill.substance import GnomeOil
-from gnome.spill.initializers import plume_initializers
+#from gnome.spills.elements import plume
+from gnome.spills.substance import GnomeOil
+from gnome.spills.initializers import plume_initializers
 from gnome.utilities.distributions import WeibullDistribution, UniformDistribution
 from gnome.maps import MapFromBNA
 from gnome.model import Model
 from gnome.environment import GridCurrent
-from gnome.spill import point_line_release_spill
+from gnome.spills import surface_point_line_spill
 from gnome.scripting import subsurface_plume_spill
 from gnome.movers import (RandomMover,
                           RiseVelocityMover,
@@ -107,12 +107,14 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 #                              lambda_=.00456,
 #                              max_=.0002)  # 200 micron max
 
-    oil_name = 'ALASKA NORTH SLOPE (MIDDLE PIPELINE, 1997)'
+   # oil_name = 'ALASKA NORTH SLOPE (MIDDLE PIPELINE, 1997)'
+   # use sample oil or download file from adios database
+    oil_name = 'oil_ans_mp'
     
     wd = UniformDistribution(low=.0002,
                              high=.0002)
 
-    spill = point_line_release_spill(num_elements=10, amount=90,
+    spill = surface_point_line_spill(num_elements=10, amount=90,
                                      units='m^3',
                                      start_position=(-74.15,
                                                      40.5,

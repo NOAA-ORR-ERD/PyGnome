@@ -1,0 +1,14 @@
+# This is a list of scripts that are known to fail
+# Due to currently unresolved issues in py_gnome
+
+# The run_all script will not try to run these
+# but you are free to give them a try !
+
+# NOTE: this list should be revisited and updated regularly!
+
+script_tamoc/script_tamoc.py
+script_tamoc/script_tamoc_old.py
+script_tamoc/script_arctic_tamoc.py
+script_tamoc/script_gulf_tamoc.py
+script_TAP/script_old_TAP.py
+script_TAP/script_new_TAP.py

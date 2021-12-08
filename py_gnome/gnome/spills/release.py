@@ -3,11 +3,6 @@ release objects that define how elements are released. A Spill() objects
 is composed of a release object and an ElementType
 '''
 
-
-
-
-
-
 import copy
 import functools
 import math
@@ -108,8 +103,8 @@ class Release(GnomeId):
         """
         Required Arguments:
 
-        :param release_time: time the LEs are released (datetime object)
-        :type release_time: datetime.datetime
+        :param release_time: time the LEs are released
+        :type release_time: datetime.datetime or iso string.
 
         :param custom_positions: initial location(s) the elements are released
         :type custom_positions: iterable of (lon, lat, z)
@@ -856,6 +851,8 @@ class SpatialRelease(Release):
             dict_.pop('filename')
         return super(SpatialRelease, cls).new_from_dict(dict_)
 
+PolygonRelease = SpatialRelease
+
 def GridRelease(release_time, bounds, resolution):
     """
     Utility function that creates a SpatialRelease with a grid of elements.
@@ -1273,4 +1270,4 @@ def release_from_splot_data(release_time, filename):
     start_positions = np.repeat(pos, num_per_pos, axis=0)
 
     return Release(release_time=release_time,
-                          custom_positions=start_positions)
+                   custom_positions=start_positions)

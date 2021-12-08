@@ -66,7 +66,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # - will need diffusion and rise velocity
     # - wind doesn't act
     # - start_position = (-76.126872, 37.680952, 5.0),
-    spill1 = gs.point_line_release_spill(num_elements=1000,
+    spill1 = gs.surface_point_line_spill(num_elements=1000,
                                       start_position=(-74.15,
                                                       40.5,
                                                       0.0),

@@ -10,11 +10,12 @@ import pytest
 import numpy as np
 
 from gnome.movers import RiseVelocityMover
-# from gnome.spill.initializers import InitRiseVelFromDist
+
 from gnome.utilities.distributions import UniformDistribution
 
 from ..conftest import sample_sc_release
-from gnome.spill.substance import SubsurfaceSubstance
+from gnome.spills.substance import SubsurfaceSubstance
+
 from gnome.array_types import gat
 
 
@@ -23,8 +24,8 @@ def test_init():
     test initializes correctly
     """
     r = RiseVelocityMover()
-    #assert r.water_density == 1020
-    #assert r.water_viscosity == 1.e-6
+    # assert r.water_density == 1020
+    # assert r.water_viscosity == 1.e-6
 
 
 def test_props():

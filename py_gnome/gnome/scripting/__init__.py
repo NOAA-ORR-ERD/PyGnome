@@ -22,7 +22,7 @@ py_gnome scripts with, e.g.::
 
     model.map = gs.MapFromBNA('coast.bna', refloat_halflife=0.0)
 
-    model.spills += gs.point_line_release_spill(num_elements=1000,
+    model.spills += gs.surface_point_line_spill(num_elements=1000,
                                                 start_position=(-163.75,
                                                                 69.75,
                                                                 0.0),
@@ -50,17 +50,17 @@ from .time_utils import (seconds,
                          )
 from gnome.utilities.inf_datetime import MinusInfTime, InfTime
 
-from gnome.spill.spill import Spill                         
-from gnome.spill.release import PointLineRelease                         
+from gnome.spills.spill import Spill
+from gnome.spills.release import PointLineRelease, PolygonRelease
 
-from gnome.spill.spill import (surface_point_line_spill,
-                               subsurface_plume_spill,
-                               grid_spill,
-                               spatial_release_spill,
-                               )
+from gnome.spills.spill import (surface_point_line_spill,
+                                subsurface_plume_spill,
+                                grid_spill,
+                                spatial_release_spill,
+                                )
 
-from gnome.spill.substance import NonWeatheringSubstance
-from gnome.spill.gnome_oil import GnomeOil
+from gnome.spills.substance import NonWeatheringSubstance
+from gnome.spills.gnome_oil import GnomeOil
 
 from gnome.environment.wind import Wind, constant_wind
 from gnome.movers.wind_movers import (constant_wind_mover,

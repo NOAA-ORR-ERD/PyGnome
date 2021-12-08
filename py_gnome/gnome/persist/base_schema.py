@@ -1,7 +1,7 @@
 import datetime
 import zipfile
 import logging
-import collections
+from collections import abc
 import os
 import json
 import tempfile
@@ -334,7 +334,7 @@ class ObjType(SchemaType):
                 continue
             elif isinstance(json_[d], str):
                 json_[d] = self._process_supporting_file(json_[d], zipfile_)
-            elif isinstance(json_[d], collections.Iterable):
+            elif isinstance(json_[d], abc.Iterable):
                 # List, tuple, etc
                 for i, filename in enumerate(json_[d]):
                     json_[d][i] = self._process_supporting_file(filename,
@@ -491,7 +491,7 @@ class ObjType(SchemaType):
                 cstruct[d] = self._load_supporting_file(cstruct[d],
                                                         saveloc, tmpdir)
                 log.info('Extracted file {0}'.format(cstruct[d]))
-            elif isinstance(cstruct[d], collections.Iterable):
+            elif isinstance(cstruct[d], abc.Iterable):
                 # List, tuple, etc
                 for i, filename in enumerate(cstruct[d]):
                     cstruct[d][i] = self._load_supporting_file(filename,
@@ -933,9 +933,10 @@ class ImageSize(TupleSchema):
     width = SchemaNode(Int())
     height = SchemaNode(Int())
 
-'''
-The following two functions have analogues in the webgnomeAPI
-'''
+
+# The following two functions have analogues in the webgnomeAPI
+# fixme: the webgnomeAPI has access to py_gnome -- shouldn't we
+#        use the same implementation in both?
 def get_file_name_ext(filename_in):
     # in case a path was passed as the name
     base_name = os.path.basename(filename_in)
@@ -943,24 +944,30 @@ def get_file_name_ext(filename_in):
 
     return file_name, extension
 
+
 def sanitize_string(s):
-    #basic HTML string sanitization
+    # basic HTML string sanitization
     return re.sub(r'[/\\<>:"|?*$]', '_', s)
 
+
 def gen_unique_filename(filename_in, zipfile_):
-    # add uuid to the file name in case the user accidentally uploads
-    # multiple files with the same name for different objects.
-    # also sanitizes out illegal characters
+    """
+    add a trailing number to the file name in case the user accidentally
+    uploads multiple files with the same name for different objects.
+    also sanitizes out illegal characters
+    """
     filename_in = sanitize_string(filename_in)
-    existing_files = zipfile_.namelist()
+    existing_files = set(zipfile_.namelist())
     file_name, extension = get_file_name_ext(filename_in)
     fmtstring = file_name + '{0}' + extension
     new_fn = fmtstring.format('')
-    i = 1;
-    while i < 255:
+
+    for i in range(255):
         if new_fn not in existing_files:
             return new_fn
         else:
-            new_fn = fmtstring.format(' ('+ str(i) + ')')
-            i+=1
-    raise ValueError('File saved too many times')
+            new_fn = fmtstring.format(' (' + str(i) + ')')
+
+    raise ValueError('Same file name used too many times')
+
+

@@ -1,9 +1,9 @@
 Extending / Customizing PyGNOME
 ===============================
 
-PyGNOME is a system build of standardized components. The Model's job is to coordinate each of the components into a fully working model, but the details are all determined at run time accoding to what components the model has be configured to use.
+PyGNOME is a system build of standardized components. The Model's job is to coordinate each of the components into a fully working model, but the details are all determined at run time according to what components the model has been configured to use.
 
-As a result you can write a new component, and plug it in to the rest of the model, without having to alter any of the model or other code.
+As a result you can write a new component and plug it in to the rest of the model without having to alter any of the model or other code.
 
 The multiple PyGNOME APIs
 -------------------------
@@ -14,14 +14,56 @@ The scripting API
     This how an object is created / adjusted in python scripts. When making new objects, you can use whatever you like, but it's probably a good idea to make the API similar to other existing objects.
 
 The model API
-    These are the methods and attributes teh object needs to have in order to work with the gnome model system. For teh most part, the core methods will be defined in a Base class (e.g. the ``gnome.movers.mover.Mover`` class), so if you subclass from that, you only need to implement the ones you need.
+    These are the methods and attributes the object needs to have in order to work with the gnome model system. For the most part, the core methods will be defined in a Base Class (e.g. the ``gnome.movers.mover.Mover`` class), so if you subclass from that, you only need to implement the ones you need.
 
 The Web / Save file API
-    WebGNOME use a JSON API to configure the PyGNOME system. A very similar JSON format is used to save model configurations in "save files", which are zip files with the model configuration and data required to reproduce a model configuration. Yuo can develop and test your new component without using this system, but if you want your component to be usable with WebGNOME or save files, then This API must be defined. This is done by defining a ``Schema`` that specifies what attributed need to be saved and can be updated for a given object.
+    WebGNOME use a JSON API to configure the PyGNOME system. A very similar JSON format is used to save model configurations in "save files", which are zip files with the model configuration and data required to reproduce a model configuration. You can develop and test your new component without using this system, but if you want your component to be usable with WebGNOME or save files, then This API must be defined. This is done by defining a ``Schema`` that specifies what attributes need to be saved and can be updated for a given object. See: :ref:`serialization_overview` for the details.
+
+
+Movers
+------
+
+A mover is component that "moves" the elements in the model. PyGNOME supports having multiple movers that are all combined via linear superposition. There are some details, but the key method a Mover needs to provide is ``get_move()``:
+
+.. code-block:: python
+
+    def get_move(self, sc, time_step, model_time_datetime):
+        """
+        Compute the move in (long, lat, z) space. It returns the delta move
+        for each element of the spill as a numpy array of size
+        (number_elements X 3) and dtype = gnome.basic_types.world_point_type
+
+        Base class returns an array of numpy.nan for delta to indicate the
+        get_move is not implemented yet.
+
+        Each class derived from Mover object must implement it's own get_move
+
+        :param sc: an instance of gnome.spill_container.SpillContainer class
+        :param time_step: time step in seconds
+        :param model_time_datetime: current model time as datetime object
+
+        All movers must implement get_move().
+        """
+        positions = sc['positions']
+
+        delta = np.zeros_like(positions)
+        delta[:] = np.nan
+
+        return delta
+
+Note that `get_move()` doesn't alter the positions of the elements. rather it returns a "delta" -- of the amount that of movement in (longitude., latitude, vertical meters) units) for the provided time step. This is so that the model can apply the "delta" from each mover and the result won't change with the order in which they are applied. Essentially, the delta values from all the movers are added together, and then added to the positions array.
+
+``sc`` is a spill_container, it contains all the arrays of data associated with the elements. For the most part, for a mover, the "positions" array is the important one, but if movement is affected by other properties of the elements, that data will be stored in the spill_container.
+
+the ``get_move()`` method will also have access to the time step length (in seconds), and the model time at the beginning of this time step.
+
 
 
 Writing a custom mover
-----------------------
+......................
+
+[To be filled in]
+
 Here's how to do this.
 
 And here's some example code doing this::
@@ -32,17 +74,39 @@ And here's some example code doing this::
 That doesn't do much. You can find out more in :mod:`gnome.movers`
 
 
-Writing a custom weatherer
---------------------------
+Weatherers
+----------
+
+Weatherers are objects that alter the elements. The name comes from the oil weathering code shipped with PyGNOME, but they can be used for any process that changes the properties of the elements.
+
+The Base class for weatherers is :class:`gnome.weatherers.core.Weatherer`
+
+The core method each weatherer needs is:
+
+.. code-block: python
+
+    def weather_elements(self, sc, time_step, model_time):
+
+weatherers update the data arrays in the spill container, ``sc``.
+
+NOTE: this is different than movers -- as each weatherer updates the actual data associated with the elements, the result will be different depending on what order they are run. THis order is controlled by ``sort_order`` in ``gnome/weatherers/__init__.py``
+
+
+Making your own weatherer
+.........................
 
 And here's how to do this...
 
-Writing a custom Map
----------------------
 
-The Model has to have a Map at all times. After moving and weathering the elements, the map determines whether elements have impacted the shoreline, or gone off the map, and also refloats any elements that should be refloated.
+Map
+---
+
+The Model has to have a Map at all times. After moving and weathering the elements, the map is responsible for the interaction between the elements and the shoreline, as well as the bottom and water surface. (bottom and water surface are only relevant for 3-d simulations).
+
+It will determine whether elements have impacted the shoreline, or gone off the map, and can also refloat any elements that were previously beached.
 
 The base map object: :class gnome.GnomeMap: represents a "water world" -- no land anywhere, and unlimited map bounds. But it also provides a base class with the full API. To create another map object, you derive from GnomeMap, an override the methods that you want to implement in a different way. In addition, it should have a few attributes used by the model:
+
 
 Key Attributes
 ..............
@@ -62,7 +126,7 @@ The key methods to override include:
 
 ``__init__``: Whatever you need to initialize your map object
 
-::
+.. code-block: python
 
     beach_elements(spill):
 

@@ -7,7 +7,7 @@ from datetime import timedelta
 
 import pytest
 
-from gnome.spill import point_line_release_spill
+from gnome.spills import surface_point_line_spill
 from gnome.outputters import Outputter
 
 
@@ -21,7 +21,7 @@ def model(sample_model):
 
     model.cache_enabled = True
 
-    model.spills += point_line_release_spill(
+    model.spills += surface_point_line_spill(
         num_elements=10,
         start_position=sample_model['release_start_pos'],
         release_time=model.start_time,

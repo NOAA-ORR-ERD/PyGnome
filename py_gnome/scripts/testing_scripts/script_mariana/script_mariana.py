@@ -15,8 +15,8 @@ from gnome.utilities.remote_data import get_datafile
 from gnome.model import Model
 
 from gnome.maps import MapFromBNA
-from gnome.spill import point_line_release_spill
-from gnome.movers import RandomMover, constant_wind_mover, GridCurrentMover
+from gnome.spills import surface_point_line_spill
+from gnome.movers import RandomMover, constant_wind_mover, c_GridCurrentMover
 
 from gnome.outputters import (Renderer,
                               # NetCDFOutput
@@ -71,7 +71,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     # # this is HYCOM currents
     curr_file = get_datafile(os.path.join(base_dir, 'HYCOM.nc'))
-    model.movers += GridCurrentMover(curr_file,
+    model.movers += c_GridCurrentMover(curr_file,
                                      num_method='Euler');
 
     # #
@@ -79,19 +79,19 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # #
 
     print('adding four spill')
-    model.spills += point_line_release_spill(num_elements=NUM_ELEMENTS // 4,
+    model.spills += surface_point_line_spill(num_elements=NUM_ELEMENTS // 4,
                                              start_position=(145.25, 15.0,
                                                              0.0),
                                              release_time=start_time)
-    model.spills += point_line_release_spill(num_elements=NUM_ELEMENTS // 4,
+    model.spills += surface_point_line_spill(num_elements=NUM_ELEMENTS // 4,
                                              start_position=(146.25, 15.0,
                                                              0.0),
                                              release_time=start_time)
-    model.spills += point_line_release_spill(num_elements=NUM_ELEMENTS // 4,
+    model.spills += surface_point_line_spill(num_elements=NUM_ELEMENTS // 4,
                                              start_position=(145.75, 15.25,
                                                              0.0),
                                              release_time=start_time)
-    model.spills += point_line_release_spill(num_elements=NUM_ELEMENTS // 4,
+    model.spills += surface_point_line_spill(num_elements=NUM_ELEMENTS // 4,
                                              start_position=(145.75, 14.75,
                                                              0.0),
                                              release_time=start_time)

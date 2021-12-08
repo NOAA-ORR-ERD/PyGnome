@@ -22,8 +22,8 @@ from datetime import datetime, timedelta
 import gnome.scripting as gs
 from gnome.utilities.distributions import WeibullDistribution
 
-from gnome.spill.substance import NonWeatheringSubstance
-from gnome.spill.initializers import plume_initializers
+from gnome.spills.substance import NonWeatheringSubstance
+from gnome.spills.initializers import plume_initializers
 
 # define base directory
 base_dir = os.path.dirname(__file__)
@@ -93,7 +93,7 @@ def make_model():
                              lambda_=.00456,
                              max_=.0002)  # 200 micron max
 
-    spill = gs.point_line_release_spill(num_elements=50,
+    spill = gs.surface_point_line_spill(num_elements=50,
                                         units='m^3',
                                         start_position=(-76.126872,
                                                         37.680952,

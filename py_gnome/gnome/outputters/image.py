@@ -23,7 +23,7 @@ from gnome.utilities.time_utils import date_to_sec
 from gnome.utilities.map_canvas import MapCanvas
 
 from . import Outputter, BaseOutputterSchema
-from gnome.movers.current_movers import IceMoverSchema
+from gnome.movers.c_current_movers import IceMoverSchema
 
 
 class IceImageSchema(BaseOutputterSchema):

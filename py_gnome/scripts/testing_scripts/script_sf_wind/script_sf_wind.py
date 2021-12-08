@@ -8,14 +8,14 @@ import os
 from datetime import datetime, timedelta
 
 from gnome import scripting
-from gnome.spill.substance import NonWeatheringSubstance
-#from gnome.spill.elements import floating
+from gnome.spills.substance import NonWeatheringSubstance
+#from gnome.spills.elements import floating
 
 from gnome.utilities.remote_data import get_datafile
 
 from gnome.model import Model
 from gnome.maps import MapFromBNA
-from gnome.spill import point_line_release_spill
+from gnome.spills import surface_point_line_spill
 from gnome.movers import GridWindMover
 
 from gnome.outputters import Renderer
@@ -48,7 +48,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     model.outputters += NetCDFOutput(netcdf_file, which_data='all')
 
     print('adding a spill')
-    spill = point_line_release_spill(num_elements=1000,
+    spill = surface_point_line_spill(num_elements=1000,
                                      start_position=(-123.57152, 37.369436,
                                                      0.0),
                                      release_time=start_time,

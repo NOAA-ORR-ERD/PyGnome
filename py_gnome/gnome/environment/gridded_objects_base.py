@@ -1,4 +1,5 @@
 
+import os
 import datetime
 import copy
 import numpy as np
@@ -99,6 +100,11 @@ class VectorVariableSchema(VariableSchemaBase):
 class Time(gridded.time.Time, GnomeId):
 
     _schema = TimeSchema
+    def __repr__(self):
+        try:
+            return super().__repr__()
+        except ValueError:
+            return object.__repr__(self)
 
     @classmethod
     def from_file(cls, filename=None, **kwargs):
@@ -415,6 +421,12 @@ class Variable(gridded.Variable, GnomeId):
         super(Variable, self).__init__(*args, **kwargs)
         self.extrapolation_is_allowed = extrapolation_is_allowed
 
+    def __repr__(self):
+        try:
+            return super().__repr__()
+        except ValueError:
+            return object.__repr__(self)
+
     def init_from_netCDF(self,
                          filename=None,
                          varname=None,
@@ -491,9 +503,11 @@ class Variable(gridded.Variable, GnomeId):
         Time = self._default_component_types['time']
         Depth = self._default_component_types['depth']
         if filename is not None:
-            data_file = str(filename)
-            grid_file = str(filename)
-
+            try:
+                filename = os.fspath(filename)
+            except TypeError:
+                pass
+            data_file = grid_file = filename
         ds = None
         dg = None
         if dataset is None:
@@ -596,7 +610,9 @@ class Variable(gridded.Variable, GnomeId):
                 value = uc.convert(data_units, req_units, value)
             except uc.NotSupportedUnitError:
                 if (not uc.is_supported(data_units)):
-                    warnings.warn("{0} units is not supported: {1}".format(self.name, data_units))
+                    warnings.warn("{0} units is not supported: {1}"
+                                  "Using them unconverted as {2}"
+                                  .format(self.name, data_units, req_units))
                 elif (not uc.is_supported(req_units)):
                     warnings.warn("Requested unit is not supported: {1}".format(req_units))
                 else:
@@ -701,6 +717,12 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
         super(VectorVariable, self).__init__(*args, **kwargs)
         self.extrapolation_is_allowed = extrapolation_is_allowed
 
+    def __repr__(self):
+        try:
+            return super().__repr__()
+        except ValueError:
+            return object.__repr__(self)
+
     def init_from_netCDF(self,
                          filename=None,
                          varnames=None,
@@ -749,9 +771,11 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
         Variable = self._default_component_types['variable']
         Depth = self._default_component_types['depth']
         if filename is not None:
-            data_file = str(filename)
-            grid_file = str(filename)
-
+            try:
+                filename = os.fspath(filename)
+            except TypeError:
+                pass
+            data_file = grid_file = filename
         ds = None
         dg = None
         if dataset is None:
@@ -827,20 +851,20 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
             if all(u == units[0] for u in units):
                 units = units[0]
 
-        super(self.__class__, self).__init__(name=name,
-                                             filename=filename,
-                                             varnames=varnames,
-                                             grid_topology=grid_topology,
-                                             units=units,
-                                             time=time,
-                                             grid=grid,
-                                             depth=depth,
-                                             variables=variables,
-                                             data_file=data_file,
-                                             grid_file=grid_file,
-                                             dataset=ds,
-                                             load_all=load_all,
-                                             **kwargs)
+        self.__init__(name=name,
+                    filename=filename,
+                    varnames=varnames,
+                    grid_topology=grid_topology,
+                    units=units,
+                    time=time,
+                    grid=grid,
+                    depth=depth,
+                    variables=variables,
+                    data_file=data_file,
+                    grid_file=grid_file,
+                    dataset=ds,
+                    load_all=load_all,
+                    **kwargs)
 
     @classmethod
     def from_netCDF(cls, *args, **kwargs):

@@ -6,7 +6,7 @@ Examples
    
    sample_scripts
    cats
-   mixedlayer_release
+   .. mixedlayer_release
 
 
 

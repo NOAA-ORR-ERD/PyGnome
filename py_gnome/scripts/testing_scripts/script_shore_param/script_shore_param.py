@@ -73,7 +73,7 @@ def make_model(img_dir=os.path.join(base_dir, 'images')):
 
 #     # # this is HYCOM currents
 #     curr_file = get_datafile(os.path.join(base_dir, 'HYCOM.nc'))
-#     model.movers += GridCurrentMover(curr_file,
+#     model.movers += c_GridCurrentMover(curr_file,
 #                                      num_method=numerical_methods.euler);
 
     # #
@@ -81,7 +81,7 @@ def make_model(img_dir=os.path.join(base_dir, 'images')):
     # #
 
     print('adding four spill')
-    model.spills += gs.point_line_release_spill(num_elements=NUM_ELEMENTS // 4,
+    model.spills += gs.surface_point_line_spill(num_elements=NUM_ELEMENTS // 4,
                                                 start_position=(0.0,
                                                                 0.0,
                                                                 0.0),

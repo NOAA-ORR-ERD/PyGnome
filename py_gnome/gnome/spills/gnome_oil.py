@@ -10,23 +10,17 @@ from .sample_oils import _sample_oils
 from .substance import Substance, SubstanceSchema
 
 
-from gnome.persist import (ObjTypeSchema,
-                           ObjType,
-                           GeneralGnomeObjectSchema,
-                           NumpyArraySchema,
+from gnome.persist import (NumpyArraySchema,
                            Int,
-                           Schema,
                            String,
                            Float,
                            SchemaNode,
                            SequenceSchema,
-                           Boolean,
-                           drop,
-                           )
+                           drop)
 
-from gnome.gnomeobject import GnomeId
 from gnome.environment.water import Water, WaterSchema
-from gnome.spill.sample_oils import _sample_oils
+
+from gnome.spills.sample_oils import _sample_oils
 
 
 class Density(object):
@@ -151,7 +145,7 @@ class GnomeOil(Substance):
         GnomeOil can be initialized in three ways:
 
         1) From a sample oil name : ``GnomeOil("sample_oil_name")`` the oils are available
-            in gnome.spill.sample_oils
+            in gnome.spills.sample_oils
 
 
         2) From a file name : ``GnomeOil(filename="adios_oil.json")`` usually oils from the
@@ -170,8 +164,8 @@ class GnomeOil(Substance):
         GnomeOil("any_name", "valid.json") ---TypeError (no name + filename)
         """
 
-        if oil_name and filename:
-            raise TypeError('Cannot provide both name and filename')
+        #if oil_name and filename:
+            #raise TypeError('Cannot provide both name and filename')
 
         if oil_name in _sample_oils:
             # load from sample oil
@@ -730,21 +724,3 @@ class GnomeOil(Substance):
                 pass
 
         return val
-
-
-    # # only here 'cause we use "bullwinkle" in some contexts
-    # # and "bullwinkle_fraction" in others
-    # # that should get cleaned up someday
-    # @property
-    # def bullwinkle(self):
-    #     """
-    #     return bullwinkle (emulsion constant)
-    #     """
-    #     return self.bullwinkle_fraction
-
-    # @bullwinkle.setter
-    # def bullwinkle(self, value):
-    #     """
-    #     set the emulsion constant
-    #     """
-    #     self.bullwinkle_fraction = value

@@ -1,9 +1,9 @@
 
 from datetime import datetime, timedelta
 
-from gnome.spill.spill import (Spill)
-from gnome.spill.substance import NonWeatheringSubstance
-from gnome.spill.release import PointLineRelease
+from gnome.spills.spill import Spill
+from gnome.spills.substance import NonWeatheringSubstance
+from gnome.spills.release import PointLineRelease
 from gnome.spill_container import SpillContainer
 
 import pytest
@@ -60,8 +60,7 @@ def cont_point_spill_le_per_ts():
                  amount=5000)
 
 
-
-class TestSpill(object):
+class TestSpill:
     rel_time = datetime(2014, 1, 1, 0, 0)
     pos = (0, 1, 2)
 
@@ -113,7 +112,6 @@ class TestSpill(object):
         assert sp.units == 'gal'
         with pytest.raises(ValueError):
             sp.units = 'inches'
-
 
     # NOTE: these have only partially been refactored to match the
     #       new structure -- are they needed?
@@ -195,5 +193,3 @@ class TestSpill(object):
     #                 assert spill._num_released == spill.release.num_per_timestep * spill.release.get_num_release_time_steps(900)
     #             assert sum(spill.data['mass']) == spill.release.release_mass
     #         model_time += tsd
-
-

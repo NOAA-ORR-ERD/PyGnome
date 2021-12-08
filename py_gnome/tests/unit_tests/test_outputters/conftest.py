@@ -2,10 +2,6 @@
 common fixture for output_dirs required by different outputters
 '''
 
-
-
-
-
 import os
 import pytest
 
