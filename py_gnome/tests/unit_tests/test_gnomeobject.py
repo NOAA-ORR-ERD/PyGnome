@@ -7,7 +7,7 @@ import pytest
 import copy
 
 from uuid import uuid1
-from gnome.gnomeobject import GnomeId
+from gnome.gnomeobject import GnomeId, combine_signatures
 from gnome import (environment,
                    movers,
                    outputters,
@@ -112,3 +112,37 @@ def test_make_default_refs():
 
     assert waves1.wind is None
     assert waves1.water is None
+
+class demo1(GnomeId):
+    @combine_signatures
+    def __init__(self, foo, bar=None, **kwargs):
+        super().__init__(**kwargs)
+
+    @combine_signatures
+    def footest(self):
+        return 'testfunc'
+
+    @classmethod
+    @combine_signatures
+    def new_from_dict(cls, something, *args, options='foo'):
+        '''new from dict with a different signature'''
+        return super().new_from_dict(*args)
+
+def test_signature_combination():
+    #test class signature
+    paramnames = [p.name for p in demo1.__signature__.parameters.values()]
+    assert 'name' in paramnames
+
+    #test footest signature. Should do nothing but assign a __signature__ (nothing to combine)
+    paramnames = [p.name for p in demo1.footest.__signature__.parameters.values()]
+    assert len(paramnames) == 1
+
+    #test classmethod, and checks proper arg ordering
+    paramnames = [p.name for p in demo1.new_from_dict.__signature__.parameters.values()]
+    assert len(paramnames) == 4
+    assert paramnames[0] == 'something'
+    assert paramnames[1] == 'dict_'
+    assert paramnames[2] == 'args'
+    assert paramnames[3] == 'options'
+
+

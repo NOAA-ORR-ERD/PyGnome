@@ -14,6 +14,7 @@ from gnome.persist import (Boolean,
 
 
 import gridded
+from gnome.gnomeobject import combine_signatures
 import unit_conversion as uc
 
 from .environment import Environment
@@ -170,6 +171,7 @@ class S_Depth_T1(object):
         return indices, alphas
 
 
+@combine_signatures
 class VelocityTS(TimeseriesVector):
 
     _gnome_unit = 'm/s'
@@ -215,6 +217,7 @@ class VelocityGrid(VectorVariable):
     _gnome_unit = 'm/s'
     comp_order = ['u', 'v', 'w']
 
+    @combine_signatures
     def __init__(self, angle=None, **kwargs):
         """
             :param angle: scalar field of cell rotation angles (for rotated/distorted grids)
