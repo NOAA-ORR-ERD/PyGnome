@@ -15,6 +15,7 @@ import gridded
 from gridded.utilities import get_dataset
 import unit_conversion as uc
 
+from gnome.gnomeobject import combine_signatures
 from gnome.persist import base_schema
 from gnome.gnomeobject import GnomeId
 from gnome.persist.extend_colander import FilenameSchema
@@ -150,6 +151,7 @@ class Grid_U(gridded.grids.Grid_U, GnomeId):
         ax.add_collection(lines)
 
     @classmethod
+    @combine_signatures
     def new_from_dict(cls, dict_):
         rv = cls.from_netCDF(**dict_)
 
@@ -236,6 +238,7 @@ class Grid_S(GnomeId, gridded.grids.Grid_S):
             ax.plot(lon.T, lat.T, **s)
 
     @classmethod
+    @combine_signatures
     def new_from_dict(cls, dict_):
         rv = cls.from_netCDF(**dict_)
         return rv
@@ -585,6 +588,7 @@ class Variable(gridded.Variable, GnomeId):
                       **kwargs)
 
     @classmethod
+    @combine_signatures
     def from_netCDF(cls, *args, **kwargs):
         """
         create a new variable object from a netcdf file
@@ -595,6 +599,7 @@ class Variable(gridded.Variable, GnomeId):
         var.init_from_netCDF(*args, **kwargs)
         return var
 
+    @combine_signatures
     def at(self, points, time, units=None, *args, **kwargs):
         if ('extrapolate' not in kwargs):
             kwargs['extrapolate'] = False
@@ -620,6 +625,7 @@ class Variable(gridded.Variable, GnomeId):
         return value
 
     @classmethod
+    @combine_signatures
     def new_from_dict(cls, dict_):
         if 'data' not in dict_:
             return cls.from_netCDF(**dict_)
