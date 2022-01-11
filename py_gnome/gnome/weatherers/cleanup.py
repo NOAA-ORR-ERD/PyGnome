@@ -736,7 +736,7 @@ class ChemicalDispersionSchema(WeathererSchema):
                                   validator=Range(0, 1.0))
     efficiency = SchemaNode(Float(), save=True, update=True, missing=drop,
                             validator=Range(0, 1.0))
-    _rate = SchemaNode(Float(), save=True, update=True, missing=drop)
+    #_rate = SchemaNode(Float(), save=True, update=True, missing=drop)
     waves = WavesSchema(save=True, update=True, missing=drop,
                         save_reference=True)
 
