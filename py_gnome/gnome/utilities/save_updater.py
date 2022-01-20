@@ -8,6 +8,7 @@ import contextlib
 import os
 import re
 import zipfile
+from pathlib import Path
 
 log = logging.getLogger(__name__)
 
@@ -187,7 +188,7 @@ def v0tov1(messages, errors):
 
 def v1tov2(messages, errors):
     '''
-    Takes a zipfile containing no version.txt and up-converts it
+    Takes a zipfile containing version 1 and up-converts it
     to 'version 2'.
 
     This function's purpose is to upgrade save files to maintain compatibility
@@ -198,6 +199,7 @@ def v1tov2(messages, errors):
 
     jsonfiles = glob.glob('*.json')
 
+    files_to_remove = []
     # GnomeOil update
     oils = []
     for fname in jsonfiles:
@@ -251,8 +253,25 @@ def v1tov2(messages, errors):
         with open(fn, 'w') as fp:
             json.dump(mv, fp, indent=True)
 
+    # remove InitWindages
+    for fname in jsonfiles:
+        with open(fname, 'r') as fn:
+            json_ = json.load(fn)
+            if 'obj_type' in json_ and 'initializers' in json_:
+                # this is assuming only one
+                for wind_init in json_.pop('initializers'):
+                    init_js = json.load(open(wind_init, 'r'))
+                    if "InitWindages" in init_js["obj_type"]:
+                        json_['windage_range'] = init_js['windage_range']
+                        json_['windage_persist'] = init_js['windage_persist']
+                        json.dump(json_, open(fname, 'w'))
+                        files_to_remove.append(wind_init)
+
     with open('version.txt', 'w') as vers_file:
         vers_file.write('2')
+
+    for fname in files_to_remove:
+        Path(fname).unlink()
 
     messages.append('**Update from v1 to v2 successful**')
     return messages, errors
@@ -287,7 +306,7 @@ def extract_zipfile(zip_file, to_folder='.'):
                      'Editing extracted json to maintain save file integrity.')
             for jsonfile in glob.glob(os.path.join(to_folder, '*.json')):
                 # if any file name edits were made, references may need to be updated too
-                # otherwise the .json file wont be found
+                # otherwise the .json file won't be found
                 contents = None
                 replaced = False
                 with open(jsonfile, 'r') as jf:

@@ -440,8 +440,6 @@ class Spill(BaseSpill):
             sc['frac_coverage'][-to_rel:] = self.frac_coverage
 
         self.substance.initialize_LEs(to_rel, sc)
-        #empty list above should be model environment collection eventually??
-        #weatherers may still initialize further, but this is triggered from Model
         return to_rel
 
     def num_elements_to_release(self, current_time, time_step):

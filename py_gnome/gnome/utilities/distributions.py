@@ -3,18 +3,46 @@
 Classes that generate various types of probability distributions
 '''
 
-
-
-
-
-import copy
-import numpy
+import numpy as np
 from gnome.gnomeobject import GnomeId
-np = numpy
 from colander import Float, SchemaNode, drop
 
 from gnome.persist.base_schema import ObjTypeSchema
 from gnome.utilities.compute_fraction import fraction_below_d
+
+
+def get_distribution_by_name(dist_name):
+    """
+    Return a distribution object corresponding to its name
+
+    note: this isn't really helpful until / unless we
+    standardize the initialization interface.
+    """
+    try:
+        return ALL_DISTS[dist_name]
+    except KeyError:
+        raise ValueError(f"Distributiuon: {dist_name} doesn't exist.\n"
+                         f"options are: {list(ALL_DISTS.keys())}")
+
+class DistributionBase(GnomeId):
+    """
+    Base class for distributions, just to make it easier to know
+    what is a distribution class
+
+    At them moment, all they need is a set_values method
+
+    NOTE: if possible, it would be good to have the same
+    interface to all distributions. For example, see: the
+    distributions in numpy.random. for example:
+
+    `random.normal(loc=0.0, scale=1.0, size=None)`
+
+    all distribution have a location and a scale,
+    which have different meanings depending on the distribution.
+    """
+
+    def set_values(self, np_array):
+        raise NotImplementedError
 
 
 class UniformDistributionSchema(ObjTypeSchema):
@@ -76,10 +104,11 @@ class WeibullDistributionSchema(ObjTypeSchema):
     )
 
 
-class UniformDistribution(GnomeId):
+class UniformDistribution(DistributionBase):
     _schema = UniformDistributionSchema
 
     'Uniform Probability Distribution'
+
     def __init__(self, low=0., high=0.1, **kwargs):
         '''
         :param low: For the Uniform distribution, it is lower bound.
@@ -103,7 +132,7 @@ class UniformDistribution(GnomeId):
         self._uniform(np_array)
 
 
-class NormalDistribution(GnomeId):
+class NormalDistribution(DistributionBase):
     _schema = NormalDistributionSchema
 
     'Normal Probability Distribution'
@@ -129,7 +158,7 @@ class NormalDistribution(GnomeId):
         self._normal(np_array)
 
 
-class LogNormalDistribution(GnomeId):
+class LogNormalDistribution(DistributionBase):
     _schema = LogNormalDistributionSchema
 
     'Log Normal Probability Distribution'
@@ -155,7 +184,7 @@ class LogNormalDistribution(GnomeId):
         self._lognormal(np_array)
 
 
-class WeibullDistribution(GnomeId):
+class WeibullDistribution(DistributionBase):
     _schema = WeibullDistributionSchema
 
     'Log Normal Probability Distribution'
@@ -239,6 +268,10 @@ class RayleighDistribution():
     @classmethod
     def quantile(cls, f, sigma):
         return (sigma * np.sqrt((-1.0 * np.log((1.0 - f) ** 2.0)) + 0j)).real
+
+
+ALL_DISTS = {name: obj for name, obj in vars().items()
+             if isinstance(obj, type) and issubclass(obj, DistributionBase)}
 
 
 if __name__ == '__main__':
