@@ -159,7 +159,7 @@ class GnomeOil(Substance):
         GnomeOil("oil.json")               ---load from file using OilDB, parse as **json_
         GnomeOil(filename="oil.json")
         GnomeOil(**json_)                  ---webgnomeclient, save, new_from_dict API
-        
+
         GnomeOil("invalid_name")           ---ValueError (not in sample oils)
         GnomeOil("any_name", "valid.json") ---TypeError (no name + filename)
         """
@@ -172,7 +172,9 @@ class GnomeOil(Substance):
             oil_dict = _sample_oils[oil_name]
             kwargs.update(oil_dict)
             super_kwargs = self._init_from_json(**kwargs)
-        elif filename and os.path.exists(filename):
+        elif filename:
+            if not os.path.exists(filename):
+                raise ValueError(f"File: {filename} does not exist")
             # load from file using oil database
             try:
                 import adios_db
