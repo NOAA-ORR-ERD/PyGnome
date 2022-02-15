@@ -123,10 +123,10 @@ class GnomeOilSchema(SubstanceSchema):
     boiling_point = NumpyArraySchema(missing=drop, save=True, update=True)
     molecular_weight = NumpyArraySchema(missing=drop, save=True, update=True)
     component_density = NumpyArraySchema(missing=drop, save=True, update=True)
-    sara_type = SequenceSchema(SchemaNode(String()),
-                               missing=drop,
-                               save=True,
-                               update=True)
+#     sara_type = SequenceSchema(SchemaNode(String()),
+#                                missing=drop,
+#                                save=True,
+#                                update=True)
     num_components = SchemaNode(Int(), missing=drop, save=True, update=True)
 
 
@@ -231,7 +231,7 @@ class GnomeOil(Substance):
                         boiling_point,
                         molecular_weight,
                         component_density,
-                        sara_type,
+                        sara_type=None,
                         adios_oil_id=None,
                         k0y=None,
                         num_components=None,
@@ -269,11 +269,11 @@ class GnomeOil(Substance):
         self._set_pc_values('molecular_weight', molecular_weight)
         self._set_pc_values('boiling_point', boiling_point)
         self._set_pc_values('component_density', component_density)
-        if len(sara_type) == self.num_components:
-            self.sara_type = sara_type
-        else:
-            raise ValueError("You must have the same number of sara_type as PCs")
-
+#         if len(sara_type) == self.num_components:
+#             self.sara_type = sara_type
+#         else:
+#             raise ValueError("You must have the same number of sara_type as PCs")
+# 
         self._k_v2 = None  # decay constant for viscosity curve
         self._visc_A = None  # constant for viscosity curve
         self.k0y = k0y

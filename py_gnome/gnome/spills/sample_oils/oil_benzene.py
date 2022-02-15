@@ -136,5 +136,4 @@ oil_benzene = {'api': 28.6,
  'molecular_weight': [78.11],
  'name': 'oil_benzene',
  'pour_point': 278.68,
- 'sara_type': ['Aromatics'],
  'solubility': 0.0}
