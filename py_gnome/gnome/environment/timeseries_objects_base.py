@@ -3,6 +3,7 @@ import warnings
 import copy
 from numbers import Number
 from collections import abc
+import gridded
 
 import numpy as np
 from gnome.persist import (ObjTypeSchema, SchemaNode, String, drop,
@@ -124,7 +125,7 @@ class TimeseriesData(GnomeId):
             warnings.warn("Data/time interval mismatch, doing nothing")
             return
 
-        if isinstance(t, Time):
+        if isinstance(t, Time) or issubclass(t.__class__, gridded.time.Time):
             self._time = t
         elif isinstance(t, abc.Iterable):
             self._time = Time(t)
