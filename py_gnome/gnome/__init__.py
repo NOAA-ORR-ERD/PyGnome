@@ -40,7 +40,7 @@ def check_dependency_versions():
     libs = [('gridded', '0.3.0', ''),
             ('unit_conversion', '2.10', ''),
             ('py_gd', '0.1.7', ''),
-            ('adios_db', '0.7.1', 'Only required to use the ADIOS Database '
+            ('adios_db', '1.0.0', 'Only required to use the ADIOS Database '
                                   'JSON format for oil data.')
             ]
 
@@ -53,7 +53,8 @@ def check_dependency_versions():
                    "needs to be installed: {}".format(name, version, note))
             warnings.warn(msg)
         else:
-            if module.__version__ < version:
+            ver = ".".join(module.__version__.split(".")[:3])
+            if ver < version:
                 msg = ('Version {0} of {1} package is required, '
                        'but actual version in module is {2}:'
                        '{3}'

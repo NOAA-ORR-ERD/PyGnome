@@ -123,10 +123,10 @@ class GnomeOilSchema(SubstanceSchema):
     boiling_point = NumpyArraySchema(missing=drop, save=True, update=True)
     molecular_weight = NumpyArraySchema(missing=drop, save=True, update=True)
     component_density = NumpyArraySchema(missing=drop, save=True, update=True)
-    sara_type = SequenceSchema(SchemaNode(String()),
-                               missing=drop,
-                               save=True,
-                               update=True)
+#     sara_type = SequenceSchema(SchemaNode(String()),
+#                                missing=drop,
+#                                save=True,
+#                                update=True)
     num_components = SchemaNode(Int(), missing=drop, save=True, update=True)
 
 
@@ -159,7 +159,7 @@ class GnomeOil(Substance):
         GnomeOil("oil.json")               ---load from file using OilDB, parse as **json_
         GnomeOil(filename="oil.json")
         GnomeOil(**json_)                  ---webgnomeclient, save, new_from_dict API
-        
+
         GnomeOil("invalid_name")           ---ValueError (not in sample oils)
         GnomeOil("any_name", "valid.json") ---TypeError (no name + filename)
         """
@@ -172,7 +172,9 @@ class GnomeOil(Substance):
             oil_dict = _sample_oils[oil_name]
             kwargs.update(oil_dict)
             super_kwargs = self._init_from_json(**kwargs)
-        elif filename and os.path.exists(filename):
+        elif filename:
+            if not os.path.exists(filename):
+                raise ValueError(f"File: {filename} does not exist")
             # load from file using oil database
             try:
                 import adios_db
@@ -229,7 +231,7 @@ class GnomeOil(Substance):
                         boiling_point,
                         molecular_weight,
                         component_density,
-                        sara_type,
+                        sara_type=None,
                         adios_oil_id=None,
                         k0y=None,
                         num_components=None,
@@ -267,11 +269,11 @@ class GnomeOil(Substance):
         self._set_pc_values('molecular_weight', molecular_weight)
         self._set_pc_values('boiling_point', boiling_point)
         self._set_pc_values('component_density', component_density)
-        if len(sara_type) == self.num_components:
-            self.sara_type = sara_type
-        else:
-            raise ValueError("You must have the same number of sara_type as PCs")
-
+#         if len(sara_type) == self.num_components:
+#             self.sara_type = sara_type
+#         else:
+#             raise ValueError("You must have the same number of sara_type as PCs")
+# 
         self._k_v2 = None  # decay constant for viscosity curve
         self._visc_A = None  # constant for viscosity curve
         self.k0y = k0y

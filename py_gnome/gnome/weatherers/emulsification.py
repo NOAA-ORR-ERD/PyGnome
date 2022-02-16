@@ -79,6 +79,7 @@ class Emulsification(Weatherer):
             return
 
     # eventually switch this in
+    # this will have to be updated; SARA is being refactored out of gnome_oil
     def weather_elements_lehr(self, sc, time_step, model_time):
         '''
         weather elements over time_step
