@@ -431,7 +431,7 @@ class GridSediment(Variable, Environment):
 
 class IceConcentration(Variable, Environment):
     _ref_as = ['ice_concentration', 'ice_aware']
-    default_names = ['ice_fraction', ]
+    default_names = ['ice_fraction', 'aice' ]
     cf_names = ['sea_ice_area_fraction']
     _gnome_unit = 'fraction'
 
@@ -768,8 +768,8 @@ class LandMask(Variable):
 class IceVelocity(VelocityGrid, Environment):
     _ref_as = ['ice_velocity', 'ice_aware']
     _gnome_unit = 'm/s'
-    default_names = {'u': ['ice_u'],
-                     'v': ['ice_v']}
+    default_names = {'u': ['ice_u','uice'],
+                     'v': ['ice_v','vice']}
 
     cf_names = {'u': ['eastward_sea_ice_velocity'],
                 'v': ['northward_sea_ice_velocity']}
