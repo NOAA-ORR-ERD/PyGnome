@@ -819,7 +819,8 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
         if depth is None:
             if (isinstance(grid, (Grid_S, Grid_R)) and len(data.shape) == 4 or
                     isinstance(grid, Grid_U) and len(data.shape) == 3):
-                depth = Depth.from_netCDF(grid_file,
+                depth = Depth.from_netCDF(grid_file=grid_file,
+                                          grid=grid,
                                           dataset=dg,
                                           )
 
