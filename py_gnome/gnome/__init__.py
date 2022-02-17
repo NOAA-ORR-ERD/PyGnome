@@ -1,5 +1,13 @@
 """
-    __init__.py for the gnome package
+__init__.py for the gnome package
+
+import various names, and provides:
+
+initialize_console_log(level='debug')
+
+  set up the logger to dump to console.
+
+
 """
 
 from itertools import chain
@@ -12,13 +20,13 @@ import warnings
 
 import importlib
 
-import unit_conversion as uc
+import nucos as uc
 
 # just so it will be in the namespace.
 from .gnomeobject import GnomeId, AddLogger
 # from gnomeobject import init_obj_log
 
-__version__ = '1.1.1'
+__version__ = '1.1.2'
 
 
 # a few imports so that the basic stuff is there
@@ -38,7 +46,7 @@ def check_dependency_versions():
     a warning is displayed
     """
     libs = [('gridded', '0.3.0', ''),
-            ('unit_conversion', '2.10', ''),
+            ('nucos', '3.0.0', ''),
             ('py_gd', '0.1.7', ''),
             ('adios_db', '1.0.0', 'Only required to use the ADIOS Database '
                                   'JSON format for oil data.')
