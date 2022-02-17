@@ -15,22 +15,23 @@ Add the conda-forge channel::
 
 Create an environment for PyGNOME::
 
-    conda create -n gnome --file conda_requirements.txt
+    > conda create -n gnome --file conda_requirements.txt
 
 Activate the gnome environment::
 
-    conda activate gnome
+    > conda activate gnome
 
 Build the gnome package::
 
+    > cd py_gnome
     > python setup.py develop
 
 You now should be good to go, but to make sure:
 
 Run the tests::
 
-    > cd PyGnome/py_gnome/tests/unit_tests
-    > py.test --runslow
+    > cd tests/unit_tests
+    > pytest --runslow
 
 
 All the details
@@ -244,9 +245,9 @@ You will need a git client:
 Linux:
   it should be available from your package manager::
 
-    $ apt_get install git
+    > apt_get install git
     or
-    $ yum install git
+    > yum install git
 
 OS-X:
   git comes with the XCode command line tools:
@@ -260,7 +261,7 @@ Windows:
 
 Once you have the client, it's as easy as::
 
-  $ git clone https://github.com/NOAA-ORR-ERD/PyGnome.git
+  > git clone https://github.com/NOAA-ORR-ERD/PyGnome.git
 
 This will create a PyGnome directory with all the code in it.
 
@@ -277,13 +278,13 @@ Once you have the source code, you can create an environment for PyGNOME::
 
 This will create an environment called "gnome" with Python itself and everything that it needs to run -- it will be quite a bit, so may take a while.
 
-a activate gnomeTo use that environment, you activate it with::
+activate gnome to use that environment, you activate it with::
 
-    cond
+    > conda activate gnome
 
 and when you are done, you can deactivate it with::
 
-    conda deactivate
+    > conda deactivate
 
 If you don't want to create and environment (Or already have one), you can install what ``PyGNOME`` needs into an existing environment:
 
@@ -338,24 +339,24 @@ The latest releases (of the same branch) of each should be compatible.
 
 cloning the repository ::
 
-  $ git clone https://github.com/NOAA-ORR-ERD/adios_oil_database.git
+  > git clone https://github.com/NOAA-ORR-ERD/adios_oil_database.git
 
 Installing its dependencies::
 
-  $ cd adios_db
-  $ conda install --file conda_requirements.txt
+  > cd adios_db
+  > conda install --file conda_requirements.txt
 
 
 Installing the package::
 
-  $ pip install ./
+  > pip install ./
 
 (or ``pip install -e ./`` to get an "editable" version)
 
 
 Testing the adios_db install::
 
-  $ pytest --pyargs oil_library
+  > pytest --pyargs oil_library
 
 (you may need to ``conda install pytest`` to get that command)
 
@@ -433,7 +434,7 @@ tools in place.
 Right now, you'll need to build ``PyGNOME`` from source.
 
 And it is probably best to build a "develop" target for your ``PyGNOME`` package if you plan on developing or debugging the ``PyGNOME`` source code
-(or updating the source code from gitHub).
+(or updating the source code from GitHub).
 
 Building the "develop" target allows changes in the python code
 to be immediately available in your python environment without re-installing.
@@ -470,11 +471,11 @@ We have an extensive set of unit and functional tests to make sure that
 To run the tests::
 
     > cd PyGnome/py_gnome/tests/unit_tests
-    > py.test
+    > pytest
 
 and if those pass, you can run::
 
-    > py.test --runslow
+    > pytest --runslow
 
 which will run some more tests, some of which take a while to run.
 
@@ -487,7 +488,7 @@ runs.
 What if some tests fail?
 ........................
 
-We do our best to keep all tests passing on release versions of the package. But sometimes tests will fail due to the setup of the machine they are being run on -- package versions, etc. So the first thing to do is to make ure you have installed the dependencies as specified.
+We do our best to keep all tests passing on release versions of the package. But sometimes tests will fail due to the setup of the machine they are being run on -- package versions, etc. So the first thing to do is to make sure you have installed the dependencies as specified.
 
 But ``gnome`` is large package -- hardly anyone is going to use all of it. So while we'd like all tests to pass, a given test failure may not be an issue for any given use case. It's a bit hard to know whether a given test failure will affect your use case, but if you look at the name of the tests that fail, you might get a hint. For example, if any of the tests fail under ``test_weathering``, and you are not doing and oil weathering modeling, you don't need to worry about it.
 
@@ -503,20 +504,16 @@ To run a script on the command line:
 
 ::
 
-    cd py_gnome/example_scripts
+    > cd py_gnome/example_scripts
 
 
 If you are using a conda environment:
 
-    source activate gnome
-
-or on Windows::
-
-    activate gnome
+    > conda activate gnome
 
 Run the script::
 
-    python script_boston.py
+    > python script_boston.py
 
 Each of the scripts exercises different features of PyGNOME -- they are hopefully well commented to see how they work.
 
