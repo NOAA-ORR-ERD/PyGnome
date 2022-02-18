@@ -33,13 +33,14 @@ Run the tests::
     > cd tests/unit_tests
     > pytest --runslow
 
+NOTE: the "runslow" tests requiring downloading data for the tests -- you can elimate that flag to get most of the tests to run)
 
 All the details
 ===============
 
 `Anaconda <https://store.continuum.io/cshop/anaconda/>`__ is a Python
 distribution that has most of the difficult-to-build packages that
-``PyGNOME`` needs already built in. Thus it's a nice target for running
+PyGNOME needs already built in. Thus it's a nice target for running
 GNOME on your own system. "conda" is the packaging manager used to manage the system.
 
 PyGNOME CAN be used with any Python distribution, but you will need to find or build a number of packages that are not easy to manage. If you are familiar with complex python packaging, then you can probably make it work. But conda makes it much easier, and that's what we use ourselves, and support that use.
@@ -49,9 +50,9 @@ Anaconda vs miniconda:
 
 `Anaconda <https://store.continuum.io/cshop/anaconda/>`__ provides a fairly complete python system for computational programming -- it is a large install, but comes with a lot of nice stuff pre-packaged that all works together.
 
-`miniconda <http://conda.pydata.org/miniconda.html>`__ is a much smaller install -- it provides only Python and the conda package management system. You can install miniconda, and then install only the packages you need to run ``PyGNOME``.
+`miniconda <http://conda.pydata.org/miniconda.html>`__ is a much smaller install -- it provides only Python and the conda package management system. You can install miniconda, and then install only the packages you need to run PyGNOME.
 
-Either will work fine with ``PyGNOME``.
+Either will work fine with PyGNOME.
 
 **NOTES:**
 
@@ -75,7 +76,7 @@ OS-X:
 .....
 
 Anaconda provides a 64 bit version -- this should work well with
-``PyGNOME``. Either the graphical installer or the command line one is
+PyGNOME. Either the graphical installer or the command line one is
 fine -- use the graphical one if you are not all that comfortable with
 the \*nix command line.
 
@@ -135,7 +136,7 @@ anaconda "channels", which can be thought of simply as places on
 ``anaconda.org`` where collections of packages are bundled together by the
 people hosting them.
 
-Many of the dependencies that ``PyGNOME`` requires come out of the box
+Many of the dependencies that PyGNOME requires come out of the box
 with Anaconda (or the conda "defaults" channel), but a few don't.
 
 **The "conda-forge" project:**
@@ -149,7 +150,7 @@ it should support everything that PyGNOME needs.
 Adding another channel to conda:
 ................................
 
-To make it easy for your install to find conda-forge packages, they should be added to your conda configuration:
+To make it easy for your install to find conda-forge packages, it should be added to your conda configuration:
 
 Add the conda-forge channel::
 
@@ -174,46 +175,49 @@ conda environments
 ------------------
 
 The conda system supports isolated "environments" that can be used to
-maintain different versions of various packages. For more information
-see:
+maintain different versions of various packages for different projects.
+For more information see:
 
 http://conda.pydata.org/docs/using/envs.html
 
-NOTE: We highly recommend that you use an environment for GNOME.
+NOTE: We highly recommend that you use a conda environment for GNOME.
 
-If you are only going to use Python / conda for PyGNOME, then you could use the base environment. However, pyGNOME needs a number of specific package versions, so it is best to keep it separate from any other work you are doing.
+If you are only going to use Python / conda for PyGNOME, then you could use the base environment.
+However, pyGNOME needs a number of specific package versions, so it is best to keep it separate from any other work you are doing.
 
 (NOTE: you can do these steps with the Anaconda Navigator GUI if you have that installed)
 
 Create an environment for PyGNOME::
 
-    conda create -n gnome --file conda_requirements.txt
+    > conda create -n gnome --file conda_requirements.txt
 
 This will create an environment called "gnome" with Python itself and everything that it needs to run -- it will be quite a bit, so may take a while.
 
 To use that environment, you activate it with::
 
-    conda activate gnome
+    > conda activate gnome
 
 
 and when you are done, you can deactivate it with::
 
-    conda deactivate
+    > conda deactivate
 
 
 After activating the environment, you can proceed with these instructions,
-and all the packages ``PyGNOME`` needs will be installed into that environment and kept separate from your main Anaconda install.
+and all the packages PyGNOME needs will be installed into that environment and kept separate from your main Anaconda install.
 
 You will need to activate the environment any time you want to work with
-``PyGNOME`` in the future
+PyGNOME in the future
 
 
-Download GNOME
---------------
+Download the PyGNOME Code
+-------------------------
 
-Once you have conda (or an environment) set up, you can compile and install ``PyGNOME``. PyGNOME is not currently available as a conda package, as it is under active development, and many users will need access to the source code.
+PyGNOME is not currently available as a conda package, as it is under active development, and many users will need access to the source code.
 
-You will need the files from the ``PyGNOME`` sources. If you
+Once you have a conda environment set up, you can compile and install PyGNOME.
+
+You will need the files from the PyGNOME sources. If you
 have not downloaded it yet, it is available here:
 
 https://github.com/NOAA-ORR-ERD/PyGnome
@@ -269,12 +273,12 @@ This will create a PyGnome directory with all the code in it.
 Setting up conda
 ----------------
 
-The conda packages required by ``PyGNOME`` are listed in the file
+The conda packages required by PyGNOME are listed in the file
 ``conda_requirements.txt`` in the top directory of the project.
 
 Once you have the source code, you can create an environment for PyGNOME::
 
-    conda create -n gnome --file conda_requirements.txt
+    > conda create -n gnome --file conda_requirements.txt
 
 This will create an environment called "gnome" with Python itself and everything that it needs to run -- it will be quite a bit, so may take a while.
 
@@ -286,18 +290,19 @@ and when you are done, you can deactivate it with::
 
     > conda deactivate
 
-If you don't want to create and environment (Or already have one), you can install what ``PyGNOME`` needs into an existing environment:
+If you don't want to create an environment (or already have one), you can install what PyGNOME needs into an existing environment:
 
 ::
 
     > cd PyGnome  # or wherever you put the PyGnome project
     > conda install --file conda_requirements.txt
 
+NOTE: PyGNOME has a lot of specific dependencies -- it can be very hard for conda to resolve them with an large installed pacakge base. If you have trouble, it's easiest to make a new environment just for PyGNOME.
 
-This should install all the packages required by ``PyGNOME``.
+This should install all the packages required by PyGNOME.
 
 (make sure you are in the correct conda environment, and you have the
-conda-forge channel enabled.)
+conda-forge channel enabled)
 
 If installing conda_requirements.txt fails:
 ...........................................
@@ -325,15 +330,15 @@ And it may work for you.
 The ADIOS Oil Database
 ----------------------
 
-If you want to use PyGNOME with "real oil", rather than inert particles, you will need NOAA's adios_db package from the ADIOS Oil Database Project:
+If you want to use PyGNOME with "real oil", rather than inert particles, you will need NOAA's ``adios_db`` package from the ADIOS Oil Database Project:
 
 https://github.com/NOAA-ORR-ERD/adios_oil_database
 
 This will allow you to use the JSON oil data format downloadable from NOAA's ADIOS Oil Database web app:
 
-https://adios.orr.noaa.gov/oils/
+https://adios.orr.noaa.gov/
 
-The ``adios_db`` package is under active development along with ``PyGNOME``, so you are best off downloading the sources from gitHub and installing it from source -- similar to ``PyGNOME``.
+The ``adios_db`` package is under active development along with PyGNOME, so you are best off downloading the sources from gitHub and installing it from source -- similar to PyGNOME.
 
 The latest releases (of the same branch) of each should be compatible.
 
@@ -353,23 +358,15 @@ Installing the package::
 
 (or ``pip install -e ./`` to get an "editable" version)
 
+Testing the adios_db install.
 
-Testing the adios_db install::
+If you run the PyGNOME tests after having installed ``adios_db``, it will run a few additional tests that require the ``adios_db``. It should not need independent testing.
 
-  > pytest --pyargs oil_library
-
-(you may need to ``conda install pytest`` to get that command)
-
-you should see a lot of output, and then something like::
-
-  ====== 1130 passed, 192 skipped, 1 warning in 50.78s ======
-
-when done.
 
 Compilers
 ---------
 
-To build ``PyGNOME``, you will need a C/C++ compiler. The procedure for
+To build PyGNOME, you will need a C/C++ compiler. The procedure for
 getting the compiler tools varies with the platform you are on.
 
 OS-X
@@ -378,27 +375,15 @@ OS-X
 The system compiler for OS-X is XCode. It can be installed from the App
 Store.
 
-*Note: it is a HUGE download.*
 
-[you may be able to install only the command line tools -- Apple keeps changing its mind]
+Apple has changed the XCode install process a number of times over the years.
 
-After installing XCode, you still need to install the "Command Line
-Tools".  XCode includes a new "Downloads" preference pane to install
-optional components such as command line tools, and previous iOS
-Simulators.
+Rather than providing out of date information:
 
-**NOTE:** This may be slightly different on different versions of OS-X
-and XCode -- google is your friend.
-
-To install the XCode command line tools: - Start XCode from the
-launchpad - Click the "XCode" dropdown menu button in the top left of
-the screen near the Apple logo - Click "Preferences", then click
-"Downloads". - Command Line Tools should be one of the downloadable
-items, and there should be an install button for that item. Click to
-install.
+You need the "Xcode Command Line Tools" -- look for Apple's documentation for how to install those.
 
 Once the command line tools are installed, you should be able to build
-``PyGNOME`` as described below.
+PyGNOME as described below.
 
 
 Windows
@@ -406,11 +391,13 @@ Windows
 
 For compiling python extensions on Windows with python3 it is best to use the
 
-Microsoft the Visual Studio 2019 Build Tools. They should be available here:
+Microsoft the Visual Studio 2019 (or later) Build Tools. They should be available here:
 
 https://visualstudio.microsoft.com/downloads/
 
 The free "Community" version should be fine.
+
+Once installed, you will want to use one of the  "Visual Studio Developer Command Prompts" provided to actually build PyGNOME -- it sets up the compiler for you.
 
 
 Linux
@@ -425,15 +412,14 @@ system, use your system package manager to get it.
 -  yum for CentOS
 -  ??? for other distros
 
-Building ``PyGNOME``
+Building PyGNOME
 .....................
 
 At this point you should have all the necessary third-party
 tools in place.
 
-Right now, you'll need to build ``PyGNOME`` from source.
 
-And it is probably best to build a "develop" target for your ``PyGNOME`` package if you plan on developing or debugging the ``PyGNOME`` source code
+And it is probably best to build the "develop" target for your PyGNOME package if you plan on developing or debugging the PyGNOME source code
 (or updating the source code from GitHub).
 
 Building the "develop" target allows changes in the python code
@@ -449,7 +435,12 @@ There are a number of options for building:
 ::
     > python setup.py develop
 
-builds and installs the gnome module development target.
+builds and installs the ``gnome`` package in "development" (editable) mode.
+
+::
+    > python setup.py install
+
+builds and installs the ``gnome`` package into your Python install.
 
 ::
 
@@ -461,16 +452,18 @@ gitHub repo -- particularly if strange errors are occurring.
 
 You will need to re-run ``develop`` or ``install`` after running ``cleanall``
 
+NOTE: PyGNOME is not currently configured to be build with pip -- you need to call setup.py directly.
 
-Testing ``PyGNOME``
---------------------
+
+Testing PyGNOME
+---------------
 
 We have an extensive set of unit and functional tests to make sure that
-``PyGNOME`` is working properly.
+PyGNOME is working properly.
 
 To run the tests::
 
-    > cd PyGnome/py_gnome/tests/unit_tests
+    > cd py_gnome/tests/unit_tests
     > pytest
 
 and if those pass, you can run::
@@ -490,21 +483,30 @@ What if some tests fail?
 
 We do our best to keep all tests passing on release versions of the package. But sometimes tests will fail due to the setup of the machine they are being run on -- package versions, etc. So the first thing to do is to make sure you have installed the dependencies as specified.
 
-But ``gnome`` is large package -- hardly anyone is going to use all of it. So while we'd like all tests to pass, a given test failure may not be an issue for any given use case. It's a bit hard to know whether a given test failure will affect your use case, but if you look at the name of the tests that fail, you might get a hint. For example, if any of the tests fail under ``test_weathering``, and you are not doing and oil weathering modeling, you don't need to worry about it.
+But ``gnome`` is large package -- hardly anyone is going to use all of it. So while we'd like all tests to pass, a given test failure may not be an issue for any given use case.
+It's a bit hard to know whether a given test failure will affect your use case, but if you look at the name of the tests that fail, you might get a hint. For example, if any of the tests fail under ``test_weathering``, and you are not doing and oil weathering modeling, you don't need to worry about it.
 
 In any case, you can try to run your use case, and see what happens.
 
+Please report any unresolved test failures as an Issue in the gitHub project.
 
 Running scripts
 ---------------
 
-There are some example scripts in the ``scripts`` directory. You should be able to run these scripts in the same way as any Python script (with an IDE such as Spyder or PyCharm, or at the command line).
+There are a number of scripts in the ``scripts`` directory.
+
+In ``example_scripts`` you will find examples of using the ``gnome`` package for various tasks.
+
+In ``testing_scripts`` you will find scripts that have been developed to test various features of the model. There are many more of these, so do look to see if they have what you need. But they are generally written in a less compact way as they are designed to exercise particular features.
+
+You should be able to run these scripts in the same way as any Python script (with an IDE such as Spyder or PyCharm, or at the command line).
+
 
 To run a script on the command line:
 
 ::
 
-    > cd py_gnome/example_scripts
+    > cd py_gnome/scripts/example_scripts
 
 
 If you are using a conda environment:
@@ -513,10 +515,11 @@ If you are using a conda environment:
 
 Run the script::
 
-    > python script_boston.py
+    > python example_script.py
 
 Each of the scripts exercises different features of PyGNOME -- they are hopefully well commented to see how they work.
 
+In the ``testing_scripts`` dir, there is a ``run_all.py`` script that will run all the testing scripts -- primarily to make sure they all can still run as we update the model.
 
 
 
