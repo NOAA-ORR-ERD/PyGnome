@@ -3,12 +3,9 @@
 """
 Example of using gnome in "ice infested waters"
 
-With the ice and current data coming from a ROMS coupled ocean-ice model.
+With the ice and current data coming from a ROMS coupled
+ocean-ice model.
 """
-
-
-
-
 
 
 # The gnome.scripting module provides most of what you need for basic scripts
@@ -59,16 +56,12 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     model.spills += spill1
 
-
-
     print('adding the ice movers')
     print('getting the datafiles')
     fn = [gs.get_datafile((os.path.join(base_dir,'arctic_avg2_0001_gnome.nc'))),
           gs.get_datafile((os.path.join(base_dir,'arctic_avg2_0002_gnome.nc'))),
           ]
-#
-    # filelist is not working
-    #fn = gs.get_datafile((os.path.join(base_dir,'arctic_avg2_0001_gnome.nc')))
+
     gt = {'node_lon': 'lon',
           'node_lat': 'lat'}
 

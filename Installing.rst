@@ -362,6 +362,12 @@ Testing the adios_db install.
 
 If you run the PyGNOME tests after having installed ``adios_db``, it will run a few additional tests that require the ``adios_db``. It should not need independent testing.
 
+But if you w ant to::
+
+  > pytest --pyargs adios_db
+
+Should run all the tests.
+
 
 Compilers
 ---------
