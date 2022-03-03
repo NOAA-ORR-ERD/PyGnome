@@ -21,6 +21,7 @@ import shutil
 import datetime
 
 # to support "develop" mode:
+import setuptools
 from setuptools import setup, find_packages
 from distutils.command.clean import clean
 
@@ -447,7 +448,15 @@ elif sys.platform == "win32":
     #     libname = 'gnome' + suffix
     # else:
     #     libname = 'gnome.lib'
-    static_lib_files = [os.path.join(target_path(),
+
+    #setuptools > 55 no longer puts built .lib in Release. These are now in lib_gnome
+    static_lib_files = None
+    if setuptools.__version__ > '55':
+        static_lib_files = [os.path.join(target_path(),
+                                        'lib_gnome',
+                                        'cy_basic_types'+ win_comp_modules_ext)]
+    else:
+        static_lib_files = [os.path.join(target_path(),
                                      'Release', 'gnome', 'cy_gnome',
                                      'cy_basic_types'+ win_comp_modules_ext)]
     libdirs = []
@@ -620,8 +629,8 @@ setup(name='pyGnome',
                    "might follow in or on a body of water, such as in an "
                    "oil spill.  "
                    "It can also be used as a customizable general particle "
-                   "tracking code.\n"
-                   "Branch: {}\n"
+                   "tracking code. "
+                   "Branch: {} "
                    "LastUpdate: {}"
                    .format(branch_name, last_update)),
       license="Public Domain",
