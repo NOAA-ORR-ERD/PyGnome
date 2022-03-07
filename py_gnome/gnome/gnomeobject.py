@@ -148,7 +148,7 @@ def create_signatures(cls, dct):
     worklist = []
     for k in dct.keys():
         f = getattr(cls, k)
-        
+
         if hasattr(f, '__wrapped__'):
             try:
                 if f.__wrapped__.__signature_tag__ == 'combine':
@@ -168,10 +168,10 @@ def create_signatures(cls, dct):
 
             except AttributeError:
                 pass
-            
+
     if hasattr(cls, '__signature_tag__') and cls.__signature_tag__ == 'combine':
         worklist.append(cls)
-  
+
     for item in worklist:
         #would love to clean up the tag, but this breaks for classmethods
         #del item.__signature_tag__
@@ -180,12 +180,12 @@ def create_signatures(cls, dct):
             t = lambda c: c
         else:
             t = lambda c: getattr(c, item.__name__) if hasattr(c, item.__name__) else None
-        
+
         pruned_func_mro = [i for i in map(t, cls.__mro__) if i is not None]
         sigs = [inspect.signature(e) for e in pruned_func_mro]
 
         paramlist = []
-        #0-5 is the enum values of the parameter kind 
+        #0-5 is the enum values of the parameter kind
         #https://docs.python.org/3/library/inspect.html#inspect.Parameter.kind
         for k in range(0,5):
             for sig in sigs:
@@ -200,10 +200,10 @@ class GnomeObjMeta(type):
     def __new__(cls, name, parents, dct):
         if '_instance_count' not in dct:
             dct['_instance_count'] = 0
-        
+
         newclass = super(GnomeObjMeta, cls).__new__(cls, name, parents, dct)
         create_signatures(newclass, newclass.__dict__)
-        
+
         if hasattr(newclass.__init__, '__signature__'):
             newclass.__signature__ = newclass.__init__.__signature__
         return newclass
@@ -755,6 +755,13 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
                                             reference to the object that
                                             called ``.save`` itself.
         """
+        # convert save location to a string
+        # fixme: we should probably use pathlib in the rest of this instead,
+        #        but this should work for now.
+        if saveloc is not None:
+            saveloc = os.fspath(saveloc)
+
+
         zipfile_ = None
 
         if saveloc is None:
