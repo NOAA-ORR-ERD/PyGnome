@@ -376,4 +376,9 @@ class Water(Environment):
         else:
             return self.sediment * 1000.0
 
+# from gnome.environment.gridded_objects_base import VectorVariable
 
+# class WaterConditions(VectorVariable, Environment):
+#     '''
+#     An aggregated object describing the water conditions.
+#     '''

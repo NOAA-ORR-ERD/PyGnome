@@ -8,6 +8,8 @@ import numpy as np
 
 from gnome.basic_types import fate, oil_status
 from gnome.array_types import gat
+from pygnome.py_gnome.gnome.ops.density import init_density
+from pygnome.py_gnome.gnome.ops.viscosity import init_viscosity
 from .sample_oils import _sample_oils
 from .substance import Substance, SubstanceSchema
 
@@ -313,7 +315,7 @@ class GnomeOil(Substance):
 #         substance = cls.get_GnomeOil(dict_)
 #         return substance
 
-    def initialize_LEs(self, to_rel, arrs):
+    def initialize_LEs(self, to_rel, arrs, environment=None):
         '''
         :param to_rel - number of new LEs to initialize
         :param arrs - dict-like of data arrays representing LEs
@@ -324,40 +326,14 @@ class GnomeOil(Substance):
                NOTE: weathering data is currently broken
                      fir initial setting
         '''
+        water = self._pick_water(environment)
+        init_viscosity(arrs, to_rel, water=water, aggregate=False)
+
+
         sl = slice(-to_rel, None, 1)
-        water = self.water
-        if water is None:
-            # LEs released at standard temperature and pressure
-            # fixme: we should probably not use a default here.
-            #        If we want a default, it should be specified elsewhere.
-            self.logger.warning('No water provided for substance '
-                                'initialization, using default Water object')
-            water = Water()
-
-        water_temp = water.get('temperature', 'K')
-        density = self.density_at_temp(water_temp)
-        if density > water.get('density'):
-            msg = ("{0} will sink at given water temperature: {1:.1f} {2}. "
-                   "Setting density to water density"
-                   .format(self.name,
-                           water.get('temperature',
-                                     self.water.units['temperature']),
-                           water.units['temperature']))
-            self.logger.error(msg)
-
-            arrs['density'][sl] = water.get('density')
-        else:
-            arrs['density'][sl] = density
-
-        substance_kvis = self.kvis_at_temp(water_temp)
-
         fates = np.logical_and(arrs['positions'][sl, 2] == 0, arrs['status_codes'][sl] == oil_status.in_water)
-
-        # set status for new_LEs correctly
         if ('fate_status' in arrs):
             arrs['fate_status'][sl] = np.choose(fates, [fate.subsurf_weather, fate.surface_weather])
-            if substance_kvis is not None:
-                arrs['viscosity'][sl] = substance_kvis
 
         # initialize mass_components
         arrs['mass_components'][sl] = (np.asarray(self.mass_fraction, dtype=np.float64) * (arrs['mass'][sl].reshape(len(arrs['mass'][sl]), -1)))
