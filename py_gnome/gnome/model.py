@@ -85,6 +85,7 @@ from gnome.spills.spill import SpillSchema
 from gnome.gnomeobject import GnomeId, allowzip64, Refs
 from gnome.persist.extend_colander import OrderedCollectionSchema
 from gnome.spills.substance import NonWeatheringSubstance
+from pygnome.py_gnome.gnome.ops import aggregated_data
 
 
 class ModelSchema(ObjTypeSchema):
@@ -762,17 +763,7 @@ class Model(GnomeId):
             except AttributeError:
                 pass
 
-        # if WeatheringData object and FayGravityViscous (spreading object)
-        # are not defined by user, add them automatically because most
-        # weatherers will need these
-        if len(weather_data) > 0:
-            if wd is None:
-                self.weatherers += WeatheringData()
-            else:
-                # turn WD back on
-                wd.on = True
-
-        # if a weatherer is using 'area' array, make sure it is being set.
+# if a weatherer is using 'area' array, make sure it is being set.
         # Objects that set 'area' are referenced as 'spreading'
         if 'area' in weather_data:
             if spread is None:
@@ -813,7 +804,13 @@ class Model(GnomeId):
         ref_dict = {}
         self._attach_default_refs(ref_dict)
 
-        '''Step 5 & 6: Call prepare_for_model_run and misc setup'''
+        '''Step 5: Setup mass balance'''
+        for sc in self.spills.items():
+            for key in ('avg_density', 'floating', 'amount_released', 'non_weathering',
+                        'avg_viscosity'):
+                sc.mass_balance[key] = 0.0
+
+        '''Step 6: Call prepare_for_model_run and misc setup'''
         transport = False
         for mover in self.movers:
             if mover.on:
@@ -1023,6 +1020,11 @@ class Model(GnomeId):
 
         Output data
         '''
+
+        #run aggregation step for mass_balance
+        for sc in self.spills.items():
+            aggregated_data.aggregate(sc)
+
         for mover in self.movers:
             for sc in self.spills.items():
                 mover.model_step_is_done(sc)
@@ -1141,6 +1143,7 @@ class Model(GnomeId):
         """
 
         num_released = 0
+        env = self.compile_env()
         for sc in self.spills.items():
             # release particles
             num_released = sc.release_elements(start_time, end_time)
@@ -1156,6 +1159,19 @@ class Model(GnomeId):
                               " {1.current_time_step} for {1.name}".
                               format(num_released, self))
         return num_released
+
+    def compile_env(self):
+        '''
+        Produces a dictionary of objects that describe the model environmental conditions
+
+        Currently, only works with the 'water' object because the other environmental phenomena
+        are not compatible yet
+        '''
+        env = {}
+        water = self.find_by_attr('_ref_as', 'water', self.environment)
+        if water:
+            env['water'] = water
+        return env
 
     def __iter__(self):
         '''

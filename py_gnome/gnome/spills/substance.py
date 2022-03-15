@@ -191,7 +191,7 @@ class Substance(GnomeId):
 
     def _pick_water(self, environment):
         #compatibility function for optional self.water and passed environment dictionary
-        return environment['water'] if environment else self.water if hasattr(self, 'water') and self.water else Water()
+        return environment.get('water') if environment else self.water if (hasattr(self, 'water') and self.water) else Water()
 
     def density_at_temp(self, temp=273.15):
         '''
