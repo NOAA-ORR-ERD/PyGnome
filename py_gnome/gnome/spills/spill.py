@@ -416,7 +416,7 @@ class Spill(BaseSpill):
         '''
         self.release.prepare_for_model_run(timestep)
 
-    def release_elements(self, sc, start_time, end_time):
+    def release_elements(self, sc, current_time, time_step, environment=None):
         """
         Releases and partially initializes new LEs
         """
@@ -439,7 +439,7 @@ class Spill(BaseSpill):
         if 'frac_coverage' in sc:
             sc['frac_coverage'][-to_rel:] = self.frac_coverage
 
-        self.substance.initialize_LEs(to_rel, sc)
+        self.substance.initialize_LEs(to_rel, sc, environment=environment)
         return to_rel
 
     def num_elements_to_release(self, current_time, time_step):
