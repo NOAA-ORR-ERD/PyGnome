@@ -1156,10 +1156,11 @@ class MapFromBNA(RasterMap):
         spillable_area_bna = PolygonSet()
 
         #add if based on input param
-        if shift_lons == 360:
-            polygons.TransformData(ShiftLon360)
-        elif shift_lons == 180:
-            polygons.TransformData(ShiftLon180)
+        tf = ShiftLon360 if shift_lons == 360 else ShiftLon180 if shift_lons == 180 else None
+        if tf is not None:
+            polygons.TransformData(tf)
+            if map_bounds:
+                map_bounds = tf(np.array(map_bounds)).tolist()
 
         for p in polygons:
             if p.metadata[1].lower().replace(' ', '') == 'spillablearea':
