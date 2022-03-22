@@ -1,7 +1,7 @@
 import logging
 import numpy as np
 from gnome.ops import default_constants
-from aggregated_data import aggregate as agg_func
+from .aggregated_data import aggregate as agg_func
 
 logger = logging.getLogger(__name__)
 
@@ -20,8 +20,8 @@ def init_viscosity(sc, num_released, water=None, aggregate=True):
     water_temp = water_density = None
     if substance.is_weatherable:
         if water is None:
-            water_temp = default_constants.water_temperature
-            water_density = default_constants.water_density
+            water_temp = default_constants.default_water_temperature
+            water_density = default_constants.default_water_density
         else:
             water_temp = water.get('temperature', 'K')
             water_density = water.get('density')
@@ -42,11 +42,10 @@ def recalc_viscosity(sc, water=None, aggregate=True):
 
     substance = sc.substance
     water_temp = water_rho = None
-    sc = None
     if substance.is_weatherable:
         if water is None:
-            water_temp = default_constants.water_temperature
-            water_rho = default_constants.water_density
+            water_temp = default_constants.default_water_temperature
+            water_rho = default_constants.default_water_density
         else:
             water_temp = water.get('temperature', 'K')
             water_rho = water.get('density')

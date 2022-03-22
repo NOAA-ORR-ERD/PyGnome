@@ -8,8 +8,8 @@ import numpy as np
 
 from gnome.basic_types import fate, oil_status
 from gnome.array_types import gat
-from pygnome.py_gnome.gnome.ops.density import init_density
-from pygnome.py_gnome.gnome.ops.viscosity import init_viscosity
+from gnome.ops.density import init_density
+from gnome.ops.viscosity import init_viscosity
 from .sample_oils import _sample_oils
 from .substance import Substance, SubstanceSchema
 
