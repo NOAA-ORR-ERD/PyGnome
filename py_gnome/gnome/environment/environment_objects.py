@@ -686,17 +686,17 @@ class GridWind(VelocityGrid, Environment):
         #this function transforms those to the alternates before returning
         rv = value
         if coord_sys == 'u':
-            rv = value[:, 0]
+            rv = value[:, 0][:, None]
         elif coord_sys == 'v':
-            rv = value[:, 1]
+            rv = value[:, 1][:, None]
         elif coord_sys in ('r-theta', 'r', 'theta'):
             _mag = np.sqrt(value[:, 0] ** 2 + value[:, 1] ** 2)
             _dir = np.arctan2(value[:, 1], value[:, 0]) * 180. / np.pi
 
             if coord_sys == 'r':
-                rv = _mag
+                rv = _mag[:, None]
             elif coord_sys == 'theta':
-                rv = _dir
+                rv = _dir[:, None]
             else:
                 rv = np.column_stack((_mag, _dir))
         return rv
@@ -924,7 +924,32 @@ class IceAwareWind(GridWind):
                              ice_velocity=ice_velocity,
                              **kwargs))
 
-    def at(self, points, time, *args, **kwargs):
+    def at(self, points, time
+           coord_sys='uv', _auto_align=True, **kwargs):
+        '''
+        Find the value of the property at positions P at time T
+
+        :param points: Coordinates to be queried (P)
+        :type points: Nx2 array of double
+
+        :param time: The time at which to query these points (T)
+        :type time: datetime.datetime object
+
+        :param depth: Specifies the depth level of the variable
+        :type depth: integer
+
+        :param units: units the values will be returned in (or converted to)
+        :type units: string such as ('m/s', 'knots', etc)
+
+        :param extrapolate: if True, extrapolation will be supported
+        :type extrapolate: boolean (True or False)
+
+        :param coord_sys: String describing the coordinate system to be used.
+        :type coord_sys: string, one of ('uv','u','v','r-theta','r','theta')
+
+        :return: returns a Nx2 array of interpolated values
+        :rtype: double
+        '''
         extrapolate = self.extrapolation_is_allowed
 
         cctn = self.ice_concentration.at(points, time, extrapolate=extrapolate, *args, **kwargs)
