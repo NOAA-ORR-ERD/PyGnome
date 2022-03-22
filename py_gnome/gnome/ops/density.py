@@ -1,6 +1,7 @@
 import logging
+import numpy as np
 from gnome.ops import default_constants
-from aggregated_data import aggregate as agg_func
+from .aggregated_data import aggregate as agg_func
 
 logger = logging.getLogger(__name__)
 
@@ -17,27 +18,28 @@ def init_density(sc, num_released, water=None, substance=None, aggregate=True):
     '''
     substance = sc.substance if substance is None else substance
     water_temp = water_density = None
-    if substance.is_weatherable:
-        if water is None:
-            water_temp = default_constants.water_temperature
-            water_density = default_constants.water_density
-        else:
-            water_temp = water.get('temperature', 'K')
-            water_density = water.get('density')
+    #if substance.is_weatherable:
+    if water is None:
+        water_temp = default_constants.default_water_temperature
+        water_density = default_constants.default_water_density
+    else:
+        water_temp = water.get('temperature', 'K')
+        water_density = water.get('density')
 
-        # Only the new elements need to be initialized
-        sl = slice(-num_released, None, 1)
-        density = substance.density_at_temp(water_temp)
-        if density > water_density:
-            msg = ("{0} will sink at given water temperature: {1} {2}. "
-                    "Setting density to water density"
-                    .format(substance.name,
-                            water_temp,
-                            'K')
-            logger.error(msg)
-            sc['density'][sl] = water_density
-        else:
-            sc['density'][sl] = density
+    # Only the new elements need to be initialized
+    sl = slice(-num_released, None, 1)
+    density = substance.density_at_temp(water_temp)
+    if density > water_density:
+        msg = ("{0} will sink at given water temperature: {1} {2}. "
+                "Setting density to water density"
+                .format(substance.name,
+                        water_temp,
+                        'K')
+        )
+        logger.error(msg)
+        sc['density'][sl] = water_density
+    else:
+        sc['density'][sl] = density
 
     if aggregate:
         agg_func(sc, num_released)
@@ -53,11 +55,10 @@ def recalc_density(sc, water=None, aggregate=True):
 
     substance = sc.substance
     water_temp = water_rho = None
-    sc = None
     if substance.is_weatherable:
         if water is None:
-            water_temp = default_constants.water_temperature
-            water_rho = default_constants.water_density
+            water_temp = default_constants.default_water_temperature
+            water_rho = default_constants.default_water_density
         else:
             water_temp = water.get('temperature', 'K')
             water_rho = water.get('density')
@@ -65,11 +66,10 @@ def recalc_density(sc, water=None, aggregate=True):
         if not substance.is_weatherable or len(sc['density']) == 0:
             #substance isn't weatherable or no elements are present
             if aggregate:
-                aggregate(sc, 0)
+                agg_func(sc, 0)
             return
 
-        k_rho = self._get_k_rho_weathering_dens_update(substance,
-                                                        self.water.get('temperature', 'K'))
+        k_rho = _get_k_rho_weathering_dens_update(substance, water_temp)
 
         # sub-select mass_components array by substance.num_components.
         # Currently, physics for modeling multiple spills with different
@@ -91,15 +91,15 @@ def recalc_density(sc, water=None, aggregate=True):
         new_rho = (sc['frac_water'] * water_rho +
                     (1 - sc['frac_water']) * oil_rho)
 
-        if np.any(new_rho > self.water.density):
-            new_rho[new_rho > self.water.density] = self.water.density
+        if np.any(new_rho > water_rho):
+            new_rho[new_rho > water_rho] = water_rho
             logger.info('During density update, density is larger '
                                 'than water density - set to water density')
 
         sc['density'] = new_rho
         sc['oil_density'] = oil_rho
 
-    sc.update_from_fatescview(fate_status='all')
+    sc.update_from_fatedataview(fate_status='all')
 
     # also initialize/update aggregated sc
     if aggregate:

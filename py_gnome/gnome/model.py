@@ -85,7 +85,10 @@ from gnome.spills.spill import SpillSchema
 from gnome.gnomeobject import GnomeId, allowzip64, Refs
 from gnome.persist.extend_colander import OrderedCollectionSchema
 from gnome.spills.substance import NonWeatheringSubstance
-from pygnome.py_gnome.gnome.ops import aggregated_data
+
+from gnome.ops import aggregated_data, weathering_array_types, non_weathering_array_types
+from gnome.ops.viscosity import recalc_viscosity
+from gnome.ops.density import recalc_density
 
 
 class ModelSchema(ObjTypeSchema):
@@ -786,6 +789,12 @@ class Model(GnomeId):
 
         '''Step 3: Compile array_types and run setup on spills'''
         array_types = dict()
+        #setup basic array types. non_weathering is subset of weathering
+        array_types.update(non_weathering_array_types)
+        for sp in self.spills:
+            if sp.substance and sp.substance.is_weatherable:
+                array_types.update(weathering_array_types)
+        #Go through all subcomponents to see what array types they need
         for oc in [self.movers,
                    self.outputters,
                    self.environment,
@@ -1021,8 +1030,11 @@ class Model(GnomeId):
         Output data
         '''
 
-        #run aggregation step for mass_balance
+        #run ops and aggregation step for mass_balance
+        env = self.compile_env()
         for sc in self.spills.items():
+            recalc_density(sc, env['water'])
+            recalc_viscosity(sc, env['water'])
             aggregated_data.aggregate(sc)
 
         for mover in self.movers:
@@ -1154,6 +1166,8 @@ class Model(GnomeId):
                 for item in self.weatherers:
                     if item.on:
                         item.initialize_data(sc, num_released)
+            
+            aggregated_data.aggregate(sc, num_released)
 
             self.logger.debug("{1._pid} released {0} new elements for step:"
                               " {1.current_time_step} for {1.name}".
