@@ -35,12 +35,35 @@ def test_init_density():
 
 def test_recalc_density():
     sc = SpillContainer()
-    sc.substance = NonWeatheringSubstance()
+    nw_subs = NonWeatheringSubstance(standard_density=900)
+    sc.substance = nw_subs
     sc.prepare_for_model_run(weathering_array_types)
     sc._append_data_arrays(100)
-    init_density(sc, 100, water=None)
+    init_density(sc, 100, water=None, aggregate=False)
+    assert np.all(sc['density'] == 900)
+    default_water = Water()
+    assert sc.mass_balance['average_density'] == 0
 
-    
+    #Nonweathering density should not get recalculated.
+    #Aggregation should still occur.
+    recalc_density(sc, water=default_water, aggregate=True)
+    assert np.all(sc['density'] == 900) 
+    assert sc.mass_balance['average_density'] == 900
+
+def test_sinker():
+    sc = SpillContainer()
+    new_subs = GnomeOil('oil_crude')
+    new_subs.densities = [1004.0]
+    new_subs.density_ref_temps = [288.15]
+    sc.substance= new_subs
+
+    w = Water()
+    w.set('temperature', 288, 'K')
+    w.set('salinity', 0, 'psu')
+    init_density(sc, 100, water=w)
+    assert np.all(sc['density'] == w.get('density'))
+
+
 
     
     
