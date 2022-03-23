@@ -87,6 +87,8 @@ from gnome.environment import (FileGridCurrent,
                                Waves,
                                )
 
+from gnome.environment.environment_objects import IceVelocity,IceConcentration
+
 from gnome.movers import (RandomMover,
                           RandomMover3D,
                           WindMover,

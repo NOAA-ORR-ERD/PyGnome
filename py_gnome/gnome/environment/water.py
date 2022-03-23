@@ -108,7 +108,7 @@ class Water(Environment):
     # Fixme: SI units are defined by an outside boy (that is, SI :-) )
     #        we should not be redefining it locally
     #        We *may* want to have system for "GNOME units" which is almost SI
-    #        But if so -- it should be somwhere central. This is NOT Water specific!
+    #        But if so -- it should be somewhere central. This is NOT Water specific!
     # keep track of valid SI units for properties - these are used for
     # conversion since internal code uses SI units. Don't expect to change
     # these so make it a class level attribute
@@ -134,12 +134,24 @@ class Water(Environment):
             units=None,
             name='Water',
             **kwargs):
-        '''
+        """
         Assume units are SI for all properties. 'units' attribute assumes SI
         by default. This can be changed, but initialization takes SI.
 
-        NOTE: Document this !!!!
-        '''
+        Units is dict, with some subset of these keys::
+
+            {
+            'temperature': 'K',
+            'salinity': 'psu',
+            'sediment': 'kg/m^3',
+            'wave_height': 'm',
+            'fetch': 'm',
+            }
+
+        So to set units of temperature to F:
+
+        ``units = {'temperature': 'F'}``
+        """
 
         # define properties in SI units
         # ask if we want unit conversion implemented here?
