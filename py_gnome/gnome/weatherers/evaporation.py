@@ -93,7 +93,7 @@ class Evaporation(Weatherer):
 
         .. note:: wind speed is at least 1 m/s.
         '''
-        wind_speed = self.get_wind_speed(points, model_time, fill_value=1.0)
+        wind_speed = self.get_wind_speed(points, model_time, fill_value=1.0).reshape(-1)
         wind_speed[wind_speed < 1.0] = 1.0
         c_evap = 0.0025     # if wind_speed in m/s
         return c_evap * wind_speed ** 0.78
