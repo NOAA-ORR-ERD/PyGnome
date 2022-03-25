@@ -34,21 +34,44 @@ def test_init_density():
     assert np.all(sc['density'] < rho1)
 
 def test_recalc_density():
+    #Setup with NonWeatheringSubstance, 100 LEs
     sc = SpillContainer()
     nw_subs = NonWeatheringSubstance(standard_density=900)
     sc.substance = nw_subs
     sc.prepare_for_model_run(weathering_array_types)
     sc._append_data_arrays(100)
+    sc.mass_balance['avg_density'] = 0
     init_density(sc, 100, water=None, aggregate=False)
+    sc['mass'][:] = 10 #necessary for avg_density
+
     assert np.all(sc['density'] == 900)
     default_water = Water()
-    assert sc.mass_balance['average_density'] == 0
+    assert sc.mass_balance['avg_density'] == 0
 
     #Nonweathering density should not get recalculated.
     #Aggregation should still occur.
     recalc_density(sc, water=default_water, aggregate=True)
     assert np.all(sc['density'] == 900) 
-    assert sc.mass_balance['average_density'] == 900
+    assert sc.mass_balance['avg_density'] == 900
+
+    
+    new_subs = GnomeOil('oil_crude')
+    sc.rewind()
+    sc.substance = new_subs
+    sc.prepare_for_model_run(weathering_array_types)
+    sc._append_data_arrays(100)
+    sc.mass_balance['avg_density'] = 0
+    sc['mass'][:] = 10 #necessary for avg_density and mass components
+    new_subs.initialize_LEs(100, sc, environment={'water':default_water})
+
+    init_rho = new_subs.density_at_temp(default_water.get('temperature'))
+    assert np.all(sc['density'] == init_rho)
+    new_water = Water(temperature=277)
+    recalc_density(sc, water=new_water, aggregate=True)
+
+    #temp went down so density goes up.
+    assert np.all(sc['density'] > init_rho)
+    assert sc.mass_balance['avg_density'] > init_rho
 
 def test_sinker():
     sc = SpillContainer()
@@ -56,6 +79,8 @@ def test_sinker():
     new_subs.densities = [1004.0]
     new_subs.density_ref_temps = [288.15]
     sc.substance= new_subs
+    sc.prepare_for_model_run(weathering_array_types)
+    sc._append_data_arrays(100)
 
     w = Water()
     w.set('temperature', 288, 'K')
