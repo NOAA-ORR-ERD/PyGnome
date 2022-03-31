@@ -148,7 +148,7 @@ class FayGravityViscous(Weatherer):
         area = (PI *
                 # correct k_nu, Spreading Law coefficient -- Eq.(6.14), 11/23/2021
                 #self.spreading_const[1] ** 2 *
-                self.spreading_const[2] ** 2 * 
+                self.spreading_const[2] ** 2 *
                 (blob_init_volume ** 2 *
                  constants.gravity *
                  relative_buoyancy /
@@ -422,14 +422,19 @@ class FayGravityViscous(Weatherer):
             return
 
         for substance, data in sc.itersubstancedata(self.array_types):
+            # doing this first to make sure it happens
+            #  - for elements released below the surface?
+            # note: if there are ever more than one substance
+            #       this could be a problem.
+            if self._init_relative_buoyancy is None:
+                self._set_init_relative_buoyancy(substance)
             if len(data['fay_area']) == 0:
                 # no particles released yet
                 continue
-            if self._init_relative_buoyancy is None:
-                self._set_init_relative_buoyancy(substance)
-
             mask = data['fay_area'] == 0
             # looping through spills, as each spill has a different initial volume
+            # this should be doing it for each release
+            # or really each element, yes?
             for s_num in np.unique(data['spill_num'][mask]):
                 s_mask = np.logical_and(mask, data['spill_num'] == s_num)
                 # do the sum only once for efficiency
