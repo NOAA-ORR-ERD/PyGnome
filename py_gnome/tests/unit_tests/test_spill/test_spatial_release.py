@@ -4,10 +4,8 @@ tests for the spatial release from polygons:
 e.g. from the NESDIS MPSR reports
 """
 
-
-
-
 import os
+from pathlib import Path
 import datetime
 import numpy as np
 import datetime
@@ -20,9 +18,9 @@ from gnome.utilities.geometry import geo_routines
 
 from gnome.spills.release import (SpatialRelease, NESDISRelease)
 
-data_dir = os.path.join(os.path.split(__file__)[0], "data_for_tests")
+data_dir = Path(__file__).parent / "data_for_tests"
 
-sample_shapefile = os.path.join(data_dir, "NESDIS_files.zip")
+sample_nesdis_shapefile = data_dir / "NESDIS_files.zip"
 
 simplePolys = [shapely.geometry.Polygon([[0,0],[3,0],[3,3],[0,3]]),
                shapely.geometry.MultiPolygon(
@@ -31,16 +29,17 @@ simplePolys = [shapely.geometry.Polygon([[0,0],[3,0],[3,3],[0,3]]),
                 )]
 thicknesses = [0.0005,0.0001]
 weights = [0.75, 0.25]
-class TestSpatialRelease(object):
+
+class TestSpatialRelease:
 
     def test_construction(self):
 
-        sr_from_file = SpatialRelease(filename=sample_shapefile)
+        sr_from_file = SpatialRelease(filename=sample_nesdis_shapefile)
         assert len(sr_from_file.features[:]) == 2
 
         sr_from_features = SpatialRelease(features=sr_from_file.__geo_interface__)
         assert len(sr_from_features.features[:]) == 2
-        
+
         #NOTE It is worth pointing out here that sr_from_file and sr_from_features are
         #NOT EQUAL. This is because the release_time and other release attributes are NOT currently put
         #into the __geo_interface__
@@ -50,10 +49,10 @@ class TestSpatialRelease(object):
             sr2 = SpatialRelease(polygons=simplePolys, weights=[0.5,0.25,0.25])
         with pytest.raises(ValueError):
             sr3 = SpatialRelease(polygons=simplePolys, weights = [0.5, 0.5], thicknesses=thicknesses)
-    
+
     def test_properties(self):
 
-        sr = SpatialRelease(filename=sample_shapefile)
+        sr = SpatialRelease(filename=sample_nesdis_shapefile)
 
         assert len(sr.polygons) == 2
         assert sr.weights == None
@@ -66,7 +65,7 @@ class TestSpatialRelease(object):
         with pytest.raises(ValueError):
             #cannot have both thicknesses and weights
             sr.thicknesses = thicknesses
-        
+
         sr.weights = None
 
         sr.thicknesses = thicknesses
@@ -77,20 +76,20 @@ class TestSpatialRelease(object):
         assert all([a == b for a, b in zip(sr.thicknesses, [0.0005, 0.0001])])
 
     def test_serialize(self):
-        sr = SpatialRelease(filename=sample_shapefile)
+        sr = SpatialRelease(filename=sample_nesdis_shapefile)
         ser = sr.serialize()
         sr2 = SpatialRelease.deserialize(ser)
         assert sr == sr2
-    
+
     def test_prepare(self):
-        sr = SpatialRelease(filename=sample_shapefile)
+        sr = SpatialRelease(filename=sample_nesdis_shapefile)
         sr.prepare_for_model_run(900)
 
     def test_feature_update(self):
         #polygons, weights, and thicknesses can be updated from the web client by passing
         #a new FeatureCollection through the feature attribute.
 
-        sr = SpatialRelease(filename=sample_shapefile)
+        sr = SpatialRelease(filename=sample_nesdis_shapefile)
         ser = sr.serialize()
         assert sr.weights == None
         ser['features']['features'][0]['properties']['weight'] = 0.75
@@ -101,25 +100,25 @@ class TestSpatialRelease(object):
 class TestNESDISRelease(object):
 
     def test_construction(self):
-        nr_from_file = NESDISRelease(filename=sample_shapefile)
+        nr_from_file = NESDISRelease(filename=sample_nesdis_shapefile)
         assert len(nr_from_file.features[:]) == 2
 
         nr_from_features = NESDISRelease(features=nr_from_file.__geo_interface__)
         assert len(nr_from_features.features[:]) == 2
 
         assert nr_from_file == nr_from_features
-    
+
     def test_default_construction(self):
-        features = geo_routines.load_shapefile(sample_shapefile)
+        features = geo_routines.load_shapefile(sample_nesdis_shapefile)
 
     def test_release_time(self):
-        nr = NESDISRelease(filename=sample_shapefile)
+        nr = NESDISRelease(filename=sample_nesdis_shapefile)
 
         assert nr.release_time == datetime.datetime.strptime('5/14/2020 15:20', '%m/%d/%Y %H:%M')
         assert nr.end_release_time == datetime.datetime.strptime('5/14/2020 15:20', '%m/%d/%Y %H:%M')
 
     def test_alter_release_time_and_save_load(self):
-        nr = NESDISRelease(filename=sample_shapefile)
+        nr = NESDISRelease(filename=sample_nesdis_shapefile)
 
         assert nr.release_time == datetime.datetime.strptime('5/14/2020 15:20', '%m/%d/%Y %H:%M')
         assert nr.end_release_time == datetime.datetime.strptime('5/14/2020 15:20', '%m/%d/%Y %H:%M')
@@ -135,18 +134,29 @@ class TestNESDISRelease(object):
 
 
     def test_coord_reprojection(self):
-        nr = NESDISRelease(filename=sample_shapefile)
+        nr = NESDISRelease(filename=sample_nesdis_shapefile)
 
         for poly in nr.polygons:
             geo_routines.check_valid_polygon(poly)
 
     def test_prepare(self):
-        sr = NESDISRelease(filename=sample_shapefile)
+        sr = NESDISRelease(filename=sample_nesdis_shapefile)
         sr.prepare_for_model_run(900)
         assert len(sr._weights) == len(sr._tris)
         assert np.isclose(sum(sr._weights), 1.0)
         assert np.isclose(sum([geo_routines.geo_area_of_polygon(t) for t in sr._tris]),
         sum([geo_routines.geo_area_of_polygon(p) for p in sr.polygons]))
+
+def test_load_minimal_shapefile():
+    """
+    test loading a shapefile with just a polygon in it
+    """
+    shapefilename  = data_dir / "spatial_example.zip"
+    sr = SpatialRelease(filename=shapefilename)
+
+    # should maybe test more, but at least this will show it loaded
+    assert len(sr.polygons) == 1
+
 
 '''
 def test_load_shapefile():
@@ -155,7 +165,7 @@ def test_load_shapefile():
      all_oil_weights,
      all_oil_thicknesses,
      all_oil_areas,
-     all_oil_types) = NESDISRelease.load_nesdis(sample_shapefile)
+     all_oil_types) = NESDISRelease.load_nesdis(sample_nesdis_shapefile)
 
     assert release_time == datetime.datetime.strptime('5/14/2020 15:20', '%m/%d/%Y %H:%M')
     assert len(all_oil_polys) == 8
@@ -179,7 +189,7 @@ def test_load_shapefile():
                                              ], rtol=1e-12)
 
 def test_construct_from_shapefile():
-    rel = NESDISRelease(filename=sample_shapefile)
+    rel = NESDISRelease(filename=sample_nesdis_shapefile)
     assert rel.release_time == datetime.datetime.strptime('5/14/2020 15:20', '%m/%d/%Y %H:%M')
     assert rel.end_release_time == datetime.datetime.strptime('5/14/2020 15:20', '%m/%d/%Y %H:%M')
     assert len(rel.polygons) == 8
