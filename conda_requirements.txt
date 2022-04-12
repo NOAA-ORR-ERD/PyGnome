@@ -11,7 +11,10 @@
 # conda-forge
 # NOAA-ORR-ERD
 
-python>=3.8,<3.10
+# should get it working with 3.9 and 3.10, but building now fails
+# we NEED to update our build scripts
+python=3.8
+#python>=3.8,<3.11
 
 # for SpatialRelease
 trimesh
@@ -19,6 +22,7 @@ shapely
 pyproj
 mapbox_earcut # from NOAA_ORR_ERD channel -- not working
 
+# we really need to update our build scripts!
 setuptools>55
 gitpython
 numpy
