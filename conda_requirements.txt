@@ -23,7 +23,7 @@ pyproj
 mapbox_earcut # from NOAA_ORR_ERD channel -- not working
 
 # we really need to update our build scripts!
-setuptools<61
+setuptools
 gitpython
 numpy
 scipy
