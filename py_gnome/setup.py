@@ -66,7 +66,7 @@ except:  # anything goes wrong -- we want to keep moving
 
 def target_dir(name):
     '''Returns the name of a distutils build directory'''
-    return ('{dirname}.{platform}-{version[0]}.{version[1]}'
+    return ('{dirname}.{platform}-cpython-{version[0]}{version[1]}'
             .format(dirname=name,
                     platform=sysconfig.get_platform(),
                     version=sys.version_info))
