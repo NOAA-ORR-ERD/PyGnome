@@ -1166,7 +1166,7 @@ class Model(GnomeId):
                 for item in self.weatherers:
                     if item.on:
                         item.initialize_data(sc, num_released)
-            
+
             aggregated_data.aggregate(sc, num_released)
 
             self.logger.debug("{1._pid} released {0} new elements for step:"

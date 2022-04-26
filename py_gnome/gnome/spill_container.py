@@ -868,7 +868,7 @@ class SpillContainer(AddLogger, SpillContainerData):
         w_mask = np.logical_and(w_mask, self['mass'] > 0.0)
         return w_mask
 
-    def release_elements(self, time_step, model_time, environment=None):
+    def release_elements(self, start_time, end_time, environment=None):
         """
         :param start_time: -- beginning of the release
         :param end_time: -- end of the release.
@@ -887,7 +887,8 @@ class SpillContainer(AddLogger, SpillContainerData):
             # only want to include the spills that are turned on.
             if not spill.on:
                 continue
-            num_rel = spill.release_elements(self, model_time, time_step, environment=environment)
+
+            num_rel = spill.release_elements(self, start_time, end_time, environment=environment)
             if num_rel > 0:
                 # update 'spill_num' ArrayType's initial_value so it
                 # corresponds with spill number for this set of released

@@ -416,7 +416,7 @@ class Spill(BaseSpill):
         '''
         self.release.prepare_for_model_run(timestep)
 
-    def release_elements(self, sc, current_time, time_step, environment=None):
+    def release_elements(self, sc, start_time, end_step, environment=None):
         """
         Releases and partially initializes new LEs
         """
