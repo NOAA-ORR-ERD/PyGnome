@@ -1,6 +1,7 @@
 # Documents the conda packages required for PyGnome
-#  this covers py_gnome and the oil_library
-#  This should be the minimal conda install
+#
+#  This should be the minimal conda install to build and run
+#  See conda_requirements_dev.txt for others handy for development
 #  install with:
 #    conda install --file conda_requirements.txt
 #
@@ -11,10 +12,8 @@
 # conda-forge
 # NOAA-ORR-ERD
 
-# should get it working with 3.9 and 3.10, but building now fails
-# we NEED to update our build scripts
-python=3.8.*
-#python>=3.8,<3.11
+# should get it working with 3.10 -- but mapbox-earcut not ready :-(
+python>=3.8,<3.10
 
 # for SpatialRelease
 trimesh
@@ -23,7 +22,7 @@ pyproj
 mapbox_earcut # from NOAA_ORR_ERD channel -- not working
 
 # we really need to update our build scripts!
-setuptools
+setuptools>=62  # older versions uses different build dirs
 gitpython
 numpy
 scipy
@@ -37,9 +36,6 @@ colander
 tblib # still needed for child process exception handling.
 
 netCDF4
-# awesome-slugify>=1.6.5 # required for adios_db
-# regex
-# unidecode>=0.04.19
 pyshp
 
 
@@ -47,27 +43,10 @@ pyshp
 gridded=0.3.0
 pynucos
 cell_tree2d
-py_gd>=1
+py_gd=2.*.*
 
 
 # required for building
-cython
-
-# needed to run tests
-pytest
-pytest-cov
-pytest-timeout
-testfixtures
-
-# nice to have for development, not required to run
-matplotlib
-ipython
-notebook # this gets you Jupyter notebook without all the QT stuff
-
-# required to build docs
-sphinx
-sphinx_rtd_theme
-nbsphinx
-sphinx-autoapi
+cython=0.29.*
 
 

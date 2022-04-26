@@ -1,3 +1,6 @@
+variables:
+  PYTHON_VER: "3.8"
+
 stages:
   - compile
   - test
@@ -14,7 +17,7 @@ before_script:
 
 configure_env:
   stage: .pre
-  image: registry.orr.noaa.gov/erd/centos-conda/centos7-python3.8
+  image: registry.orr.noaa.gov/erd/centos-conda/centos7-python$PYTHON_VER
   before_script:
     - echo '' # manual override of before_script because we're on runner 12.3 and inherit options are only 12.9+
   script:
@@ -28,39 +31,42 @@ configure_env:
 
 compile_pygnome:
   stage: compile
-  only:
-    - develop
-    - master
-    - production
-  image: registry.orr.noaa.gov/erd/centos-conda/centos7-python3.8
+  # only:
+  #   - develop
+  #   - master
+  #   - production
+  image: registry.orr.noaa.gov/erd/centos-conda/centos7-python$PYTHON_VER
   script:
-    - echo "compiling python3_compile"
-    - yum install gcc gcc-c++ make -y
-#    - yum install netcdf-devel -y
-    - yum install libXext libSM libXrender -y
-    - conda install --file conda_requirements.txt
+    - echo "compiling PyGNOME"
+    - yum install gcc gcc-c++ make libXext libSM libXrender -y
+    - conda install python=$PYTHON_VER --file conda_requirements.txt --file conda_requirements_dev.txt
+    # install the adios_db from production
     - pip install git+https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.orr.noaa.gov/gnome/oil_database/oil_database.git@production#subdirectory=adios_db
+    - conda env export --file build_environment.yml
     - cd ./py_gnome
-    - python setup.py install
-#    - python -m pip install ./  # not set up for a pip build :-(
+#    - python setup.py install
+    # looks like we can pip install now!
+    - python -m pip install ./
     - cd ../  # make sure that it won't find the source gnome package.
-    - python -c "import gnome"
-    - cd py_gnome/documentation && make html
+    - python -c "import gnome"  # make sure that it imports
+    - cd py_gnome/documentation && make html  # build the docs
   tags:
     - docker
   artifacts:
     when: always
-    expire_in: 5 days
+    expire_in: 15 days
     paths:
       - ./$CI_PIPELINE_ID
       - ./py_gnome/documentation/build/html
+      - ./build_environment.yml
 
 test_pygnome_develop:
   stage: test
   allow_failure: true
-  image: registry.orr.noaa.gov/erd/centos-conda/centos7-python3.8
-  only:
-    - develop
+  image: registry.orr.noaa.gov/erd/centos-conda/centos7-python$PYTHON_VER
+  except:
+    - master
+    - production
   script:
     - cd ./py_gnome/tests/unit_tests && pytest --runslow
   tags:
@@ -69,7 +75,7 @@ test_pygnome_develop:
 test_pygnome_master:
   stage: test
   allow_failure: false
-  image: registry.orr.noaa.gov/erd/centos-conda/centos7-python3.8
+  image: registry.orr.noaa.gov/erd/centos-conda/centos7-python$PYTHON_VER
   only:
     - master
     - production
@@ -89,10 +95,6 @@ develop:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker push registry.orr.noaa.gov/gnome/pygnome/docs
 
-    # - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    # - docker pull registry.orr.noaa.gov/gnome/oillibrary:develop
-    # - docker tag registry.orr.noaa.gov/gnome/oillibrary:develop oillibrary
-
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker build . -t registry.orr.noaa.gov/gnome/pygnome:develop
     - docker push registry.orr.noaa.gov/gnome/pygnome:develop
@@ -107,12 +109,8 @@ master:
   before_script:
     - echo ''
   script:
-    # now only building the py_gnome docs with develop
-#    - docker build -f dockerfile-docs ./py_gnome/documentation/build/html -t registry.orr.noaa.gov/gnome/pygnome/docs
-#    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-#    - docker push registry.orr.noaa.gov/gnome/pygnome/docs
     # get the adios_db code, so we can install it in the docker image
-    - git clone --depth 1 -b develop https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.orr.noaa.gov/gnome/oil_database/oil_database.git
+    - git clone --depth 1 -b production https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.orr.noaa.gov/gnome/oil_database/oil_database.git
 
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker build . -t registry.orr.noaa.gov/gnome/pygnome:master
@@ -128,13 +126,8 @@ production:
     - echo ''
   stage: build
   script:
-    # building docs only in develop branch
-#    - docker build -f dockerfile-docs ./py_gnome/documentation/build/html -t registry.orr.noaa.gov/gnome/pygnome/docs
-#    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-#    - docker push registry.orr.noaa.gov/gnome/pygnome/docs
-
     # get the adios_db code, so we can install it in the docker image
-    - git clone --depth 1 -b develop https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.orr.noaa.gov/gnome/oil_database/oil_database.git
+    - git clone --depth 1 -b production https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.orr.noaa.gov/gnome/oil_database/oil_database.git
 
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker build . -t registry.orr.noaa.gov/gnome/pygnome:production

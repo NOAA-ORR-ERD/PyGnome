@@ -24,9 +24,8 @@ import nucos as uc
 
 # just so it will be in the namespace.
 from .gnomeobject import GnomeId, AddLogger
-# from gnomeobject import init_obj_log
 
-__version__ = '1.1.2'
+__version__ = '1.1.3'
 
 
 # a few imports so that the basic stuff is there

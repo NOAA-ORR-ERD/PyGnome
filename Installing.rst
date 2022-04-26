@@ -83,7 +83,7 @@ the \*nix command line.
 Linux:
 ......
 
-The Linux 64bit-python3.8 is the one to use.
+The Linux 64bit-python3.9 is the one to use.
 
 We do not support 32 bit on any platform.
 
