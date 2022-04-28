@@ -41,7 +41,7 @@ class DischargeRate(object):
             self.rate = rate
             self._calculate_diameter()
         else:
-            raise "need some combination of diameter, velocity, or rate"
+            raise ValueError("need some combination of diameter, velocity, or rate")
 
     def _calculate_rate(self):
         'Here we solve Qt = (pi/2) * Do^2 * Uo'
@@ -118,24 +118,24 @@ class Model(object):
 
 
 def test_discharge_rate():
-    print 'testing out our discharge rate calculator...'
+    print('testing out our discharge rate calculator...')
     # Do = diameter of round hole (m)
     # Uo = discharge velocity (m/s)
 
     # calculate our total discharge rate
     holeDiameter, dischargeVelocity, totalDischargeRate = DischargeRate(diameter=0.1, velocity=1.).items()
-    print holeDiameter, dischargeVelocity, totalDischargeRate
+    print(holeDiameter, dischargeVelocity, totalDischargeRate)
     dr = DischargeRate(diameter=holeDiameter, velocity=dischargeVelocity)
-    print dr
-    print 'Our rate in bbl/day: %s' % (Volume.CubicMetersPerSecondToStbsPerDay(dr.rate))
+    print(dr)
+    print('Our rate in bbl/day: %s' % (Volume.CubicMetersPerSecondToStbsPerDay(dr.rate)))
     assert np.isclose(dr.rate, 0.0157079632679)
 
     dr = DischargeRate(diameter=holeDiameter, rate=0.0157079632679)
-    print dr
+    print(dr)
     assert np.isclose(dr.velocity, 1.)
 
     dr = DischargeRate(velocity=dischargeVelocity, rate=0.0157079632679)
-    print dr
+    print(dr)
     assert np.isclose(dr.diameter, 0.1)
 
 
@@ -145,7 +145,7 @@ if __name__ == '__main__':
     discharge_rate = DischargeRate(diameter=.09, velocity=20.2)
     model = Model(106, discharge_rate, 893.0, 1027.0)
 
-    print model.depth
-    print model.discharge_rate
-    print model.oil_density
-    print model.water_density
+    print(model.depth)
+    print(model.discharge_rate)
+    print(model.oil_density)
+    print(model.water_density)
