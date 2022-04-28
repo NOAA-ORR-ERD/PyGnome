@@ -3,17 +3,19 @@
     The Water object defines the Water conditions for the spill
 '''
 
-from functools import lru_cache  # it's built-in on py3
+from functools import lru_cache
 
-from colander import (SchemaNode, MappingSchema, Float, String, drop, OneOf,
-                      required)
+import numpy as np
+
+from colander import (SchemaNode, MappingSchema, Float, String, drop,
+                      OneOf, required)
 
 import gsw
 
 import unit_conversion as uc
 
 from gnome import constants
-from gnome.utilities.inf_datetime import InfDateTime
+from gnome.utilities.inf_datetime import InfTime, MinusInfTime
 
 from gnome.persist import base_schema
 
@@ -28,6 +30,64 @@ _valid_kvis_units = _valid_units('Kinematic Viscosity')
 _valid_density_units = _valid_units('Density')
 _valid_salinity_units = ('psu',)
 _valid_sediment_units = _valid_units('Concentration In Water')
+
+# New stuff to make a water object more like an environment object
+
+
+# NOTE: I got a little obsessed with DRY and wrote a fancy decorator system
+#       For only three classes, so probably not at all worth it :-) - CHB
+
+class WaterProperty(Environment):
+    """
+    Base class for making an Environment object for a water property
+
+    These one uses a Water object for the data itself
+
+    Needs to be wrapped with the make_water_property decorator to be functional
+    """
+    data_start = MinusInfTime()
+    data_stop = InfTime()
+
+    def __init__(self, water):
+        self.water = water
+        super().__init__()
+
+def make_water_property(property, default_unit):
+
+    def wrapper(cls):
+
+        def at(self, points, time, units=default_unit):
+            """
+            return the temperature at the points and time asked for
+
+            current implementation always returns the same value
+            """
+            temp = self.water.get(property, unit=units)
+            return np.zeros((len(points),)) + temp
+        cls.at = at
+        return cls
+
+    return wrapper
+
+
+@make_water_property('temperature', 'K')
+class Temperature(WaterProperty):
+    pass
+
+
+@make_water_property('salinity', 'psu')
+class Salinity(WaterProperty):
+    pass
+
+
+@make_water_property('sediment', 'kg/m^3')
+class Sediment(WaterProperty):
+    pass
+
+
+@make_water_property('wave_height', 'meter')
+class WaveHeight(WaterProperty):
+    pass
 
 
 class UnitsSchema(MappingSchema):
@@ -76,10 +136,21 @@ class WaterSchema(base_schema.ObjTypeSchema):
 class Water(Environment):
     '''
     Define the environmental conditions for a spill, like water_temperature,
-    atmos_pressure (most likely a constant)
+
+    Single values for all all time and space
 
     Defined in a Serializable class since user will need to set/get some of
     these properties through the client
+
+    Includes attributes with a Environment interface:
+
+    Temperature
+    Salinity
+    Sediment
+    WaveHeight
+
+    Example: water.Temperature.at(points, time, unit)
+
     '''
     _ref_as = 'water'
     _field_descr = {
@@ -105,14 +176,14 @@ class Water(Environment):
         'density': ('density', _valid_density_units),
     }
 
-    # Fixme: SI units are defined by an outside boy (that is, SI :-) )
+    # Fixme: SI units are defined by an outside body (that is, SI :-) )
     #        we should not be redefining it locally
     #        We *may* want to have system for "GNOME units" which is almost SI
     #        But if so -- it should be somewhere central. This is NOT Water specific!
     # keep track of valid SI units for properties - these are used for
     # conversion since internal code uses SI units. Don't expect to change
     # these so make it a class level attribute
-    _si_units = {
+    _gnome_units = {
         'temperature': 'K',
         'salinity': 'psu',
         'sediment': 'kg/m^3',
@@ -163,11 +234,15 @@ class Water(Environment):
         self.kinematic_viscosity = 0.000001
         self.name = name
 
-        self.units = self._si_units
+        self.units = self._gnome_units
         if units is not None:
             # self.units is a property, so this is non-destructive
             self.units = units
         super(Water, self).__init__(**kwargs)
+        self.Temperature = Temperature(self)
+        self.Salinity = Salinity(self)
+        self.Sediment = Sediment(self)
+        self.WaveHeight = WaveHeight(self)
 
     def __repr__(self):
         info = ("{0.__class__.__module__}.{0.__class__.__name__}"
@@ -180,15 +255,15 @@ class Water(Environment):
     @property
     def data_start(self):
         '''
-            The Water object doesn't directly manage a time series of data,
-            so it will not have a data range.
-            We will just return an infinite range for Water.
+        The Water object doesn't directly manage a time series of data,
+        so it will not have a data range.
+        We will just return an infinite range for Water.
         '''
-        return InfDateTime("-inf")
+        return MinusInfTime()
 
     @property
     def data_stop(self):
-        return InfDateTime("inf")
+        return InfTime()
 
     def get(self, attr, unit=None):
         '''
@@ -205,11 +280,14 @@ class Water(Environment):
             # Note: salinity only have one units since we don't
             # have any conversions for them in unit_conversion yet - revisit
             # this per requirements
-            if (attr not in self._si_units or
-                    self._si_units[attr] == self._units[attr]):
+            if (attr not in self._gnome_units or
+                    self._gnome_units[attr] == self._units[attr]):
                 return val
             else:
-                unit = self._si_units[attr]
+                unit = self._gnome_units[attr]
+
+        if unit == self._units[attr]:  # no need to convert
+            return val
 
         if unit in self._units_type[attr][1]:
             return uc.convert(self._units_type[attr][0], self.units[attr], unit,
@@ -299,3 +377,5 @@ class Water(Environment):
             return self.sediment / 1000.0
         else:
             return self.sediment * 1000.0
+
+

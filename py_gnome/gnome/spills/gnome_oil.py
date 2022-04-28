@@ -273,7 +273,7 @@ class GnomeOil(Substance):
 #             self.sara_type = sara_type
 #         else:
 #             raise ValueError("You must have the same number of sara_type as PCs")
-# 
+#
         self._k_v2 = None  # decay constant for viscosity curve
         self._visc_A = None  # constant for viscosity curve
         self.k0y = k0y
@@ -327,6 +327,8 @@ class GnomeOil(Substance):
         water = self.water
         if water is None:
             # LEs released at standard temperature and pressure
+            # fixme: we should probably not use a default here.
+            #        If we want a default, it should be specified elsewhere.
             self.logger.warning('No water provided for substance '
                                 'initialization, using default Water object')
             water = Water()
@@ -334,8 +336,8 @@ class GnomeOil(Substance):
         water_temp = water.get('temperature', 'K')
         density = self.density_at_temp(water_temp)
         if density > water.get('density'):
-            msg = ("{0} will sink at given water temperature: {1} {2}. "
-                   "Set density to water density"
+            msg = ("{0} will sink at given water temperature: {1:.1f} {2}. "
+                   "Setting density to water density"
                    .format(self.name,
                            water.get('temperature',
                                      self.water.units['temperature']),

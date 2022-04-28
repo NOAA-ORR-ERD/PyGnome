@@ -108,9 +108,9 @@ class WeatheringData(Weatherer):
             water_temp = water.get('temperature', 'K')
             density = substance.density_at_temp(water_temp)
             if density > water.get('density'):
-                msg = ("{0} will sink at given water temperature: {1} {2}. "
+                msg = ("{0} will sink at given water temperature: {1:.1f} {2}. "
                        "Setting density to water density"
-                       .format(self.name,
+                       .format(substance.name,
                                water.get('temperature',
                                          self.water.units['temperature']),
                                water.units['temperature']))
