@@ -222,12 +222,3 @@ class InfDateTime(datetime.datetime):
             return inst
 
 
-if __name__ == '__main__':
-    dt = InfDateTime('inf')
-    print((dt, type(dt)))
-
-    dt = InfDateTime('-inf')
-    print((dt, type(dt)))
-
-    dt = InfDateTime(2012, 4, 20)
-    print((dt, type(dt)))

@@ -411,13 +411,13 @@ class TestWeatheringData(object):
         if num > 0:
             wd.initialize_data(sc, num)
 
-        msg = ("{0} will sink at given water temperature: {1} {2}. "
-               "Set density to water density".format(new_subs.name,
-                                                     288.0,
+        msg = ("{0} will sink at given water temperature: {1:.1f} {2}. "
+               "Setting density to water density".format(new_subs.name,
+                                                     288,
                                                      'K'))
         l.check_present(('gnome.spills.gnome_oil.GnomeOil',
                  'ERROR',
-                 msg))
+                 msg), order_matters=False)
 
 
     def test_no_substance(self):
