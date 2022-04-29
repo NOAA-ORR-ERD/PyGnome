@@ -2,15 +2,12 @@
 tests for cleanup options
 '''
 
-
-
-
 from datetime import datetime, timedelta
 
 import numpy as np
 from pytest import raises, mark
 
-import unit_conversion as uc
+import nucos as uc
 
 from gnome.basic_types import oil_status, fate
 
@@ -89,14 +86,14 @@ class ObjForTests(object):
 
     def reset_and_release(self, rel_time=None, time_step=900.0):
         '''
-        reset test objects and relaese elements
+        reset test objects and release elements
         '''
         self.prepare_test_objs()
         if rel_time is None:
             # there is only one spill, use its release time
             rel_time = self.sc.spills[0].release_time
 
-        num_rel = self.sc.release_elements(time_step, rel_time)
+        num_rel = self.sc.release_elements(rel_time, rel_time + timedelta(seconds=time_step))
         if num_rel > 0:
             for wd in self.weatherers:
                 wd.initialize_data(self.sc, num_rel)
@@ -106,7 +103,7 @@ class ObjForTests(object):
         release_elements - return num_released so test article can manipulate
         data arrays if required for testing
         '''
-        num_rel = self.sc.release_elements(time_step, model_time)
+        num_rel = self.sc.release_elements(model_time, model_time + timedelta(seconds=time_step))
 
         if num_rel > 0:
             for wd in self.weatherers:

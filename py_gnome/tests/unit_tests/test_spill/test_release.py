@@ -209,7 +209,7 @@ class TestPointLineRelease(object):
             data.prepare_for_model_run(r.array_types, None)
             data.extend_data_arrays(10)
             #initialize over the time interval 0-10%
-            r.initialize_LEs(10, data, r.release_time, ts)
+            r.initialize_LEs(10, data, r.release_time, r.release_time+timedelta(seconds=ts))
 
             #particles should have positions spread over 0-10% (frac) of the
             #line from start_position to end_position
@@ -227,7 +227,7 @@ class TestPointLineRelease(object):
             data.prepare_for_model_run(r.array_types, None)
             data.extend_data_arrays(100)
             #initialize 100 LEs overlapping the start of the release
-            r.initialize_LEs(100, data, r.release_time - timedelta(seconds=ts/2), ts)
+            r.initialize_LEs(100, data, r.release_time - timedelta(seconds=ts/2), r.release_time)
             for pos in data['positions']:
                 for d in [0,1,2]:
                     assert pos[d] >= r.start_position[d]
@@ -238,7 +238,12 @@ class TestPointLineRelease(object):
 
             data.extend_data_arrays(900)
             #Should be fine initializing over a longer or shorter time interval than was prepared with
-            r.initialize_LEs(1000, data, r.release_time - timedelta(seconds=ts/2), 10000)
+            # r.initialize_LEs(1000, data, r.release_time - timedelta(seconds=ts/2), 10000)
+            r.initialize_LEs(1000,
+                             data,
+                             r.release_time - timedelta(seconds=ts/2),
+                             r.release_time - timedelta(seconds=ts/2) + timedelta(seconds=10000)
+                             )
             for pos in data['positions']:
                 for d in [0,1,2]:
                     assert pos[d] >= r.start_position[d]
@@ -248,11 +253,70 @@ class TestPointLineRelease(object):
             data.rewind()
             data.prepare_for_model_run(r.array_types, None)
             data.extend_data_arrays(100)
-            r.initialize_LEs(100, data, r.release_time + timedelta(seconds=ts/4), 225)
+            r.initialize_LEs(100,
+                             data,
+                             r.release_time + timedelta(seconds=ts/4),
+                             r.release_time + timedelta(seconds=(ts/4 + 225)),
+                             )
             for pos in data['positions']:
                 for d in [0,1,2]:
                     assert pos[d] >= r._pos_ts.at(None, r.release_time + timedelta(seconds=ts/4))[d]
                     assert pos[d] <= r._pos_ts.at(None, r.release_time + timedelta(seconds=ts/2))[d]
+
+def test_moving_point_line():
+    """
+    tests that the half-timestep releases release correctly along
+    a moving releases
+    """
+    num_elements = 10
+    timestep = timedelta(minutes=40)
+    rel = PointLineRelease(num_elements=10,
+                           start_position=(0, 0, 0),
+                           end_position=(10, 10, 10),
+                           release_time="2022-04-26T12:00",
+                           end_release_time="2022-04-26T12:40",
+                           )
+    rel.prepare_for_model_run(timestep.total_seconds())
+    # before timestep
+    num_to_rel = rel.num_elements_after_time(rel.release_time)
+    assert num_to_rel == 0
+    # first half timestep
+    start_time = rel.release_time
+    end_time = rel.release_time + timestep / 2
+    num_to_rel = rel.num_elements_after_time(end_time)
+    assert num_to_rel == num_elements / 2
+    sc = {'positions': np.zeros((num_to_rel, 3)),
+          'mass': np.zeros((num_to_rel,)),
+          'init_mass': np.zeros((num_to_rel,)),
+          }
+    rel.initialize_LEs(num_to_rel, sc, start_time, end_time)
+    print(sc['positions'][:,0])
+    assert np.array_equal(sc['positions'],
+                          np.c_[np.linspace(0, 5, num_to_rel),
+                                 np.linspace(0, 5, num_to_rel),
+                                 np.linspace(0, 5, num_to_rel),]
+                          )
+    print(np.linspace(0, 5, num_to_rel))
+
+    # second half timestep
+    start_time = end_time
+    end_time = rel.release_time + timestep
+    num_to_rel = rel.num_elements_after_time(end_time)
+    num_to_rel //= 2
+    assert num_to_rel == num_elements / 2
+
+    sc = {'positions': np.zeros((num_to_rel, 3)),
+          'mass': np.zeros((num_to_rel,)),
+          'init_mass': np.zeros((num_to_rel,)),
+          }
+    rel.initialize_LEs(num_to_rel, sc, start_time, end_time)
+    print(sc['positions'][:,0])
+    assert np.array_equal(sc['positions'],
+                          np.c_[np.linspace(5, 10, num_to_rel),
+                                 np.linspace(5, 10, num_to_rel),
+                                 np.linspace(5, 10, num_to_rel),]
+                          )
+    print(np.linspace(5, 10, num_to_rel))
 
 from shapely.geometry import Polygon
 custom_positions=np.array([[5,6,7], [8,9,10]])

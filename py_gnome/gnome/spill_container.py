@@ -868,17 +868,15 @@ class SpillContainer(AddLogger, SpillContainerData):
         w_mask = np.logical_and(w_mask, self['mass'] > 0.0)
         return w_mask
 
-    def release_elements(self, time_step, model_time):
+    def release_elements(self, start_time, end_time):
         """
-        Called at the end of a time step
+        :param start_time: -- beginning of the release
+        :param end_time: -- end of the release.
 
         This calls release_elements on all of the contained spills, and adds
         the elements to the data arrays
 
         :returns: total number of particles released
-
-        todo: may need to update the 'mass' array to use a default of 1.0 but
-        will need to define it in particle units or something along those lines
         """
         total_rel = 0
         # substance index - used label elements from same substance
@@ -889,7 +887,7 @@ class SpillContainer(AddLogger, SpillContainerData):
             # only want to include the spills that are turned on.
             if not spill.on:
                 continue
-            num_rel = spill.release_elements(self, model_time, time_step)
+            num_rel = spill.release_elements(self, start_time, end_time)
             if num_rel > 0:
                 # update 'spill_num' ArrayType's initial_value so it
                 # corresponds with spill number for this set of released
@@ -917,7 +915,9 @@ class SpillContainer(AddLogger, SpillContainerData):
                 # currently the same for all spills
                 total_rel += num_rel
 
-            # reset fate_dataview at each step - do it after release elements
+        # reset fate_dataview at each step - do it after release elements
+        # fixme: now that release_elements is called twice -- maybe not
+        #        the place to do it?
         self.reset_fate_dataview()
         return total_rel
 

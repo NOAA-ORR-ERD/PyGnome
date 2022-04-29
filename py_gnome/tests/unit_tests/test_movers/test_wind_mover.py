@@ -1,17 +1,13 @@
 
-
-
-
 from datetime import timedelta, datetime
 
 from pytest import raises
 
 import numpy as np
 import pytest
-import unit_conversion as uc
+import nucos
 
 from gnome.basic_types import datetime_value_2d, ts_format
-
 
 from gnome.utilities.projections import FlatEarthProjection
 from gnome.utilities.time_utils import date_to_sec, sec_to_date
@@ -84,7 +80,7 @@ def test_read_file_init():
     #       but what the heck - do it here too.
 
     wind_ts = wind.get_wind_data(coord_sys=ts_format.uv)
-    cpp_timeseries['value'] = uc.convert('Velocity',
+    cpp_timeseries['value'] = nucos.convert('Velocity',
                                          'meter per second', wind.units,
                                          cpp_timeseries['value'])
 
@@ -621,9 +617,7 @@ def test_constant_wind_mover():
     """
     tests the constant_wind_mover utility function
     """
-    with raises(Exception):
-        # it should raise an InvalidUnitError, but I don't want to have to
-        # import unit_conversion just for that...
+    with raises(nucos.InvalidUnitError):
         _wm = constant_wind_mover(10, 45, units='some_random_string')
 
     wm = constant_wind_mover(10, 45, units='m/s')

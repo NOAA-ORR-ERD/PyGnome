@@ -1,9 +1,5 @@
 #!/usr/bin/env python
 
-
-
-
-
 import os
 from datetime import datetime, timedelta
 import shutil
@@ -13,7 +9,7 @@ from pytest import raises
 
 import numpy as np
 
-import unit_conversion
+import nucos
 
 from gnome.basic_types import datetime_value_2d
 from gnome.utilities.time_utils import (zero_time,
@@ -53,7 +49,7 @@ def test_exceptions():
         wind.set_wind_data(dtv)
 
     # invalid units
-    with raises(unit_conversion.InvalidUnitError):
+    with raises(nucos.InvalidUnitError):
         Wind(timeseries=dtv, units='met per second')
 
 
@@ -129,7 +125,7 @@ def test_wind_circ_fixture(wind_circ):
 
     gtime_val = (wm.get_wind_data(coord_sys='uv', units='meter per second')
                  .view(dtype=np.recarray))
-    expected = unit_conversion.convert('Velocity',
+    expected = nucos.convert('Velocity',
                                        wm.units,
                                        'meter per second',
                                        wind_circ['uv'].value)
@@ -625,7 +621,7 @@ def test_wind_from_values_knots():
     # see if it's got the correct data
     for dt, r, theta in values:
         vals = wind.get_value(dt)
-        assert np.allclose(vals[0], unit_conversion.convert('velocity',
+        assert np.allclose(vals[0], nucos.convert('velocity',
                                                             'knot', 'm/s', r))
         assert np.allclose(vals[1], theta)
 
