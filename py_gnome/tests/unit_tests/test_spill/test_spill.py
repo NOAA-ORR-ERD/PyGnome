@@ -86,7 +86,7 @@ class TestSpill:
         sp.prepare_for_model_run(900)
         for ix in range(5):
             model_time = self.rel_time + timedelta(seconds=900 * ix)
-            to_rel = sp.release_elements(sc, model_time, 900)
+            to_rel = sp.release_elements(sc, model_time, model_time + timedelta(seconds=900))
             if model_time < sp.end_release_time:
                 assert to_rel == 250
                 assert len(sc['spill_num']) == min((ix + 1) * 250, 1000)

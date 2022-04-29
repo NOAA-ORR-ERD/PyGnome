@@ -4,7 +4,10 @@ test object in environment module
 
 import pytest
 
-from gnome.environment import Environment
+from nucos import InvalidUnitError
+
+from gnome.utilities.inf_datetime import InfDateTime
+from gnome.environment import Environment, Water
 
 
 def test_environment_init():

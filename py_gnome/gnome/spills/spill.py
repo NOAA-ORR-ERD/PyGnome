@@ -119,7 +119,7 @@ class Spill(BaseSpill):
         :param release: an object defining how elements are to be released
         :type release: derived from :class:`~gnome.spills.release.Release`
 
-        :param substance: an object defining the substance of this spill 
+        :param substance: an object defining the substance of this spill
         Defaults to :class:`~gnome.spills.substance.NonWeatheringSubstance
         :type substance: derived from :class:`~gnome.spills.substance.Substance`
 
@@ -416,14 +416,14 @@ class Spill(BaseSpill):
         '''
         self.release.prepare_for_model_run(timestep)
 
-    def release_elements(self, sc, current_time, time_step):
+    def release_elements(self, sc, start_time, end_time):
         """
         Releases and partially initializes new LEs
         """
         if not self.on:
             return 0
         idx = sc.spills.index(self)
-        expected_num_release = self.release.num_elements_after_time(current_time, time_step)
+        expected_num_release = self.release.num_elements_after_time(end_time)
         actual_num_release = self._num_released
         to_rel = expected_num_release - actual_num_release
         if to_rel <= 0:
@@ -434,7 +434,7 @@ class Spill(BaseSpill):
         sc['spill_num'][-to_rel:] = idx
 
         #Partial initialization from various objects
-        self.release.initialize_LEs(to_rel, sc, current_time, time_step)
+        self.release.initialize_LEs(to_rel, sc, start_time, end_time)
 
         if 'frac_coverage' in sc:
             sc['frac_coverage'][-to_rel:] = self.frac_coverage

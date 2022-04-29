@@ -7,7 +7,7 @@ import tempfile
 
 import numpy as np
 import netCDF4 as nc
-import unit_conversion as uc
+import nucos as uc
 
 from gnome.environment.gridded_objects_base import (Variable,
                                                     VectorVariable,

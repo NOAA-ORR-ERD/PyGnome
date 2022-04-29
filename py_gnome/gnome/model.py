@@ -3,7 +3,6 @@
 """
 module with the core Model class, and various supporting classes
 
-
 This is the main class that contains objects used to model trajectory and
 weathering processes. It runs the loop through time, etc.
 The code comes with a full-featured version -- you may want a simpler one if
@@ -1087,8 +1086,11 @@ class Model(GnomeId):
 
             # going into step 0
             self.current_time_step += 1
-            # only release 1 second, to catch any instantaneous releases
-            self.release_elements(0, self.model_time)
+            model_time = self.model_time
+            for sc in self.spills.items():
+                sc.current_time_stamp = model_time
+            # this will only release an instantaneous release
+            self.release_elements(model_time, model_time)
             # step 0 output
             output_info = self.output_step(isValid)
 
@@ -1104,14 +1106,20 @@ class Model(GnomeId):
 
         else:
             # release half the LEs for this time interval
-            self.release_elements(self.time_step / 2, self.model_time)
+            half_step = timedelta(seconds=self.time_step / 2)
+            self.release_elements(self.model_time,
+                                  self.model_time + half_step)
             self.setup_time_step()
             self.move_elements()
             self.weather_elements()
             self.step_is_done()
             self.current_time_step += 1
+            for sc in self.spills.items():
+                # could this be set in the current_time_step setter?
+                sc.current_time_stamp = self.model_time
             # Release the remaining half of the LEs in this time interval
-            self.release_elements(0, self.model_time)
+            self.release_elements(self.model_time - half_step,
+                                  self.model_time)
             output_info = self.output_step(isValid)
             return output_info
 
@@ -1124,14 +1132,18 @@ class Model(GnomeId):
                           .format(self))
         return output_info
 
-    def release_elements(self, time_step, model_time):
+    def release_elements(self, start_time, end_time):
+        """
+        release elements into the model
+
+        :param start_time: -- beginning of the release
+        :param end_time: -- end of the release.
+        """
+
         num_released = 0
         for sc in self.spills.items():
-            sc.current_time_stamp = model_time
-            # release particles for next step - these particles will be aged
-            # in the next step
-            num_released = sc.release_elements(time_step, model_time)
-
+            # release particles
+            num_released = sc.release_elements(start_time, end_time)
             # initialize data - currently only weatherers do this so cycle
             # over weatherers collection - in future, maybe movers can also do
             # this
