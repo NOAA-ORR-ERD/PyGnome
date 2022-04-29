@@ -105,7 +105,7 @@ class TestWeatheringData(object):
         init_dens = spill.substance.density_at_temp(wd.water.temperature)
         init_visc = spill.substance.kvis_at_temp(wd.water.temperature)
 
-        num = sc.release_elements(default_ts, rel_time)
+        num = sc.release_elements(rel_time, rel_time + timedelta(seconds=default_ts))
         wd.initialize_data(sc, num)
 
         assert np.allclose(sc['density'], init_dens)
@@ -137,7 +137,7 @@ class TestWeatheringData(object):
         init_dens = spill.substance.density_at_temp(wd.water.temperature)
         init_visc = spill.substance.kvis_at_temp(wd.water.temperature)
 
-        num = sc.release_elements(default_ts, rel_time)
+        num = sc.release_elements(rel_time, rel_time + timedelta(seconds=default_ts))
         wd.initialize_data(sc, num)
         assert np.allclose(sc['density'], init_dens)
         assert np.allclose(sc['viscosity'], init_visc)
@@ -166,7 +166,7 @@ class TestWeatheringData(object):
         '''
         rel_time = datetime.now().replace(microsecond=0)
         (sc, wd) = self.sample_sc_intrinsic(100, rel_time)
-        num = sc.release_elements(default_ts, rel_time)
+        num = sc.release_elements(rel_time, rel_time + timedelta(seconds=default_ts))
         wd.initialize_data(sc, num)
 
         self.mock_weather_data(sc, wd, 3)
@@ -203,12 +203,12 @@ class TestWeatheringData(object):
         ts = 900
         for i in range(-1, 5):
             curr_time = rel_time + timedelta(seconds=i * ts)
-            num1 = sc1.release_elements(ts, curr_time)
+            num1 = sc1.release_elements(curr_time, rel_time + timedelta(seconds=ts))
             if num1 > 0:
                 for w in (wd1, spread1):
                     w.initialize_data(sc1, num1)
 
-            num2 = sc2.release_elements(ts, curr_time)
+            num2 = sc2.release_elements(curr_time, rel_time + timedelta(seconds=ts))
             if num2 > 0:
                 for w in (wd2, spread2):
                     w.initialize_data(sc2, num2)
@@ -288,7 +288,7 @@ class TestWeatheringData(object):
         ts = 900
         for i in range(-1, 5):
             curr_time = rel_time + timedelta(seconds=i * ts)
-            num_released = sc.release_elements(ts, curr_time)
+            num_released = sc.release_elements(curr_time, curr_time + timedelta(seconds=ts))
 
             if num_released > 0:
                 for w in weatherers:
@@ -352,7 +352,7 @@ class TestWeatheringData(object):
 
         print("step 1:", sc['density'])
         # release elements
-        num = sc.release_elements(default_ts, rel_time)
+        num = sc.release_elements(rel_time, rel_time + timedelta(seconds=default_ts))
         print("step 2:", sc['density'])
         if num > 0:
             for w in (wd, spread):
@@ -404,7 +404,7 @@ class TestWeatheringData(object):
         sc.prepare_for_model_run(ats)
         l.install()
 
-        num = sc.release_elements(default_ts, rel_time)
+        num = sc.release_elements(rel_time, rel_time+timedelta(seconds=default_ts))
 
         # only capture and test density error
 
@@ -433,6 +433,5 @@ class TestWeatheringData(object):
         sc.rewind()
         sc.prepare_for_model_run(wd.array_types)
         wd.prepare_for_model_run(sc)
-
-        num = sc.release_elements(default_ts, rel_time)
+        num = sc.release_elements(rel_time, rel_time + timedelta(seconds=default_ts))
         wd.initialize_data(sc, num)

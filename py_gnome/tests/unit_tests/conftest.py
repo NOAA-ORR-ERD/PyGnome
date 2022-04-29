@@ -223,9 +223,9 @@ def sample_sc_release(num_elements=10,
 
     if spill is None:
         spill = gnome.spills.surface_point_line_spill(num_elements,
-                                                     start_pos,
-                                                     release_time,
-                                                     amount=0)
+                                                      start_pos,
+                                                      release_time,
+                                                      amount=0)
     spill.units = units
     spill.amount = amount_per_element * num_elements
 
@@ -248,7 +248,7 @@ def sample_sc_release(num_elements=10,
 
     # used for testing so just assume there is a Windage array
     sc.prepare_for_model_run(arr_types)
-    sc.release_elements(time_step, current_time)
+    sc.release_elements(current_time, current_time + timedelta(seconds=time_step))
 
     return sc
 
