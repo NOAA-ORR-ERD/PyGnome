@@ -330,6 +330,7 @@ class GnomeOil(Substance):
 
 
         sl = slice(-to_rel, None, 1)
+
         fates = np.logical_and(arrs['positions'][sl, 2] == 0, arrs['status_codes'][sl] == oil_status.in_water)
         if ('fate_status' in arrs):
             arrs['fate_status'][sl] = np.choose(fates, [fate.subsurf_weather, fate.surface_weather])

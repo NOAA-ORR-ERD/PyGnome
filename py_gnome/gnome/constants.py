@@ -16,7 +16,7 @@ drop_max = 1.0e-5
 volume_entrained = 3.9e-8
 ka = 1.0e-4
 gravity = 9.80665  # gravitation acceleration m/s^2
-
+water_kinematic_viscosity = 0.000001 # m^2/s
 
 units = {'gas_constant': 'J/(K mol)',
          'pressure': 'Pa',
