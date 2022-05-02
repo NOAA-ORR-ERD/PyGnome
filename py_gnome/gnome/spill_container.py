@@ -442,8 +442,10 @@ class SpillContainer(AddLogger, SpillContainerData):
                 if spill.substance != substance:
                     subs = [spill.substance for spill in self.spills if spill.on]
                     raise ValueError("A spill container can only hold one substance at a time\n"
+                                     "trying to add :{}\n"
                                      "These are the substances in the on spills:\n"
-                                     "{}".format(subs))
+                                     "{}".format(substance, subs))
+                                     
         # set the number of oil components
         # fixme: with only one substance this could be determined elsewhere
         if hasattr(substance, 'num_components'):
