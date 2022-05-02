@@ -4,3 +4,5 @@ renderer_output_dir
 save_model
 OilLibrary.db
 Test_images2
+output_dir/
+
