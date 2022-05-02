@@ -345,7 +345,7 @@ class TestWeatheringData(object):
         op = sc.spills[0].substance
         rho = op.density_at_temp(wd.water.temperature)
         b_init_vol = [spill.get_mass() / rho for spill in sc.spills]
-
+        
         sc.prepare_for_model_run(wd.array_types)
         wd.prepare_for_model_run(sc)
         spread.prepare_for_model_run(sc)
@@ -353,6 +353,7 @@ class TestWeatheringData(object):
         print("step 1:", sc['density'])
         # release elements
         num = sc.release_elements(rel_time, rel_time + timedelta(seconds=default_ts))
+        
         print("step 2:", sc['density'])
         if num > 0:
             for w in (wd, spread):
@@ -362,6 +363,7 @@ class TestWeatheringData(object):
 
         # bulk_init_volume is set in same order as b_init_vol
         mask = sc['spill_num'] == 0
+        
         assert np.allclose(sc['bulk_init_volume'][mask], b_init_vol[0])
         assert np.allclose(sc['bulk_init_volume'][~mask], b_init_vol[1])
         assert np.all(sc['fay_area'][mask] != sc['fay_area'][~mask])
