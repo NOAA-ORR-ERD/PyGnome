@@ -59,6 +59,7 @@ from gnome.maps.map import (GnomeMapSchema,
                             GnomeMap)
 
 from gnome.environment import Environment, Wind
+from gnome.environment.water import Water
 from gnome.array_types import gat
 from gnome.environment import schemas as env_schemas
 
@@ -1185,6 +1186,8 @@ class Model(GnomeId):
         water = self.find_by_attr('_ref_as', 'water', self.environment)
         if water:
             env['water'] = water
+        else:
+            env['water'] = Water()
         return env
 
     def __iter__(self):
