@@ -432,7 +432,7 @@ class SpillContainer(AddLogger, SpillContainerData):
             view of the data - it doesn't contain any state that needs to be
             persisted.
         '''
-        substance = False if self.substance is None else self.substance
+        substance = False #if self.substance is None else self.substance
         for spill in self.spills:
             if not spill.on:
                 continue
