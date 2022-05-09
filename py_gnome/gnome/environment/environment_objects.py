@@ -31,6 +31,7 @@ from gnome.persist.validators import convertible_to_seconds
 
 from .gridcur import init_from_gridcur, GridCurReadError
 
+from .names import nc_names
 
 class S_Depth_T1(object):
 
@@ -364,9 +365,9 @@ class TemperatureTS(TimeseriesData, Environment):
 
 
 class GridTemperature(Variable, Environment):
-    default_names = ['water_t', 'temp']
+    default_names =  nc_names['grid_temperature']['default_names'] #['water_t', 'temp']
 
-    cf_names = ['sea_water_temperature', 'sea_surface_temperature']
+    cf_names = nc_names['grid_temperature']['cf_names'] #['sea_water_temperature', 'sea_surface_temperature']
 
     _gnome_unit = 'K'
     _default_unit_type = 'Temperature'
@@ -384,9 +385,9 @@ class SalinityTS(TimeseriesData, Environment):
 
 
 class GridSalinity(Variable, Environment):
-    default_names = ['salt']
+    default_names = nc_names['grid_salinity']['default_names'] #['salt']
 
-    cf_names = ['sea_water_salinity', 'sea_surface_salinity']
+    cf_names = nc_names['grid_salinity']['cf_names'] #['sea_water_salinity', 'sea_surface_salinity']
     _gnome_unit = 'ppt'
 
 
@@ -426,13 +427,13 @@ class WaterDensityTS(TimeseriesData, Environment):
 
 class GridSediment(Variable, Environment):
     _gnome_unit = 'ppt'
-    default_names = ['sand_06']
+    default_names = nc_names['grid_sediment']['default_names'] #['sand_06']
 
 
 class IceConcentration(Variable, Environment):
     _ref_as = ['ice_concentration', 'ice_aware']
-    default_names = ['ice_fraction', 'aice' ]
-    cf_names = ['sea_ice_area_fraction']
+    default_names = nc_names['ice_concentration']['default_names'] #['ice_fraction', 'aice' ]
+    cf_names = nc_names['ice_concentration']['cf_names'] #['sea_ice_area_fraction']
     _gnome_unit = 'fraction'
 
     def __init__(self, *args, **kwargs):
@@ -441,8 +442,8 @@ class IceConcentration(Variable, Environment):
 
 class Bathymetry(Variable):
     _gnome_unit = 'm'
-    default_names = ['h']
-    cf_names = ['depth']
+    default_names = nc_names['bathymetry']['default_names'] #['h']
+    cf_names = nc_names['bathymetry']['cf_names'] #['depth']
 
 
 class GridCurrent(VelocityGrid, Environment):
@@ -461,14 +462,14 @@ class GridCurrent(VelocityGrid, Environment):
 
     _ref_as = 'current'
     _gnome_unit = 'm/s'
-    default_names = {'u': ['u', 'U', 'water_u', 'curr_ucmp', 'u_surface', 'u_sur'],
-                     'v': ['v', 'V', 'water_v', 'curr_vcmp', 'v_surface', 'v_sur'],
-                     'w': ['w', 'W']}
-    cf_names = {'u': ['eastward_sea_water_velocity',
-                      'surface_eastward_sea_water_velocity'],
-                'v': ['northward_sea_water_velocity',
-                      'surface_northward_sea_water_velocity'],
-                'w': ['upward_sea_water_velocity']}
+    default_names = nc_names['grid_current']['default_names'] #{'u': ['u', 'U', 'water_u', 'curr_ucmp', 'u_surface', 'u_sur'],
+#                     'v': ['v', 'V', 'water_v', 'curr_vcmp', 'v_surface', 'v_sur'],
+#                     'w': ['w', 'W']}
+    cf_names = nc_names['grid_current']['cf_names']  #{'u': ['eastward_sea_water_velocity',
+#                      'surface_eastward_sea_water_velocity'],
+#                'v': ['northward_sea_water_velocity',
+#                      'surface_northward_sea_water_velocity'],
+#                'w': ['upward_sea_water_velocity']}
 
     def at(self, points, time, *args, **kwargs):
         '''
@@ -581,11 +582,11 @@ class GridWind(VelocityGrid, Environment):
     """
     _ref_as = 'wind'
     _gnome_unit = 'm/s'
-    default_names = {'u': ['air_u', 'Air_U', 'air_ucmp', 'wind_u'],
-                     'v': ['air_v', 'Air_V', 'air_vcmp', 'wind_v']}
+    default_names = nc_names['grid_wind']['default_names'] #{'u': ['air_u', 'Air_U', 'air_ucmp', 'wind_u'],
+#                     'v': ['air_v', 'Air_V', 'air_vcmp', 'wind_v']}
 
-    cf_names = {'u': ['eastward_wind', 'eastward wind'],
-                'v': ['northward_wind', 'northward wind']}
+    cf_names = nc_names['grid_wind']['cf_names'] #{'u': ['eastward_wind', 'eastward wind'],
+#                'v': ['northward_wind', 'northward wind']}
 
     def __init__(self,
                  wet_dry_mask=None,
@@ -768,11 +769,11 @@ class LandMask(Variable):
 class IceVelocity(VelocityGrid, Environment):
     _ref_as = ['ice_velocity', 'ice_aware']
     _gnome_unit = 'm/s'
-    default_names = {'u': ['ice_u','uice'],
-                     'v': ['ice_v','vice']}
+    default_names = nc_names['ice_velocity']['default_names'] #{'u': ['ice_u','uice'],
+#                     'v': ['ice_v','vice']}
 
-    cf_names = {'u': ['eastward_sea_ice_velocity'],
-                'v': ['northward_sea_ice_velocity']}
+    cf_names = nc_names['ice_velocity']['cf_names'] #{'u': ['eastward_sea_ice_velocity'],
+#                'v': ['northward_sea_ice_velocity']}
 
 
 class IceAwarePropSchema(VectorVariableSchema):
