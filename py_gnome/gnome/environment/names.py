@@ -62,18 +62,21 @@ def build_table_for_docstring():
 
 def insert_names_table(table_text):
     this = __file__
-
+    tempfile = "names.temp.py"
     with open(this) as infile:
-        contents = infile.readlines()
+        contents = iter(infile.readlines())
 
-    with open(this, 'w') as outfile:
+
+    with open(tempfile, 'w') as outfile:
         for line in contents:
             outfile.write(line)
             if "**Name Mapping:**" in line:
                break
+        outfile.write("\n")
         outfile.write(table_text)
+        outfile.write("\n")
         for line in contents:
-            if line.strip == '"""':
+            if line.strip() == '"""':
                 outfile.write(line)
                 break
         for line in contents:
