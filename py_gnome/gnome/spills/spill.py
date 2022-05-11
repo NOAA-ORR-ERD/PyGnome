@@ -653,10 +653,10 @@ def subsurface_plume_spill(num_elements,
 
     :type end_release_time: datetime.datetime
 
-    :param substance='None': Required unless density specified.
+    :param substance=None: Required unless density specified.
                              Type of oil spilled.
 
-    :type substance: str or OilProps
+    :type substance: GnomeOil
 
     :param float density=None: Required unless substance specified.
                                Density of spilled material.
