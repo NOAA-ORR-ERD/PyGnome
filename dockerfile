@@ -13,7 +13,12 @@ COPY ./ /pygnome/
 RUN cd pygnome && conda install python=$PYTHON_VER --file conda_requirements.txt
 RUN conda list
 
+# only because this was giving us problems
+RUN python -c "import py_gd"
+
+
 RUN cd pygnome/py_gnome && python setup.py install
+# to check if it got installed properly
 RUN python -c "import gnome"
 
 RUN cd pygnome/oil_database/adios_db && conda install --file conda_requirements.txt
