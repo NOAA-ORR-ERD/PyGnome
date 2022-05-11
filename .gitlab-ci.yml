@@ -44,9 +44,9 @@ compile_pygnome:
     - pip install git+https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.orr.noaa.gov/gnome/oil_database/oil_database.git@production#subdirectory=adios_db
     - conda env export --file build_environment.yml
     - cd ./py_gnome
-#    - python setup.py install
+    - python setup.py install
     # looks like we can pip install now!
-    - python -m pip install ./
+    # - python -m pip install ./
     - cd ../  # make sure that it won't find the source gnome package.
     - python -c "import gnome"  # make sure that it imports
     - cd py_gnome/documentation && make html  # build the docs
