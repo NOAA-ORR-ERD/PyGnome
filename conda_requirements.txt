@@ -22,6 +22,7 @@ pyproj
 mapbox_earcut # from NOAA_ORR_ERD channel -- not working
 
 # we really need to update our build scripts!
+backports.functools_lru_cache
 setuptools>=62  # older versions uses different build dirs
 gitpython
 numpy
@@ -30,6 +31,7 @@ gsw
 psutil
 progressbar
 pyzmq
+python-dateutil
 geojson
 colander
 
