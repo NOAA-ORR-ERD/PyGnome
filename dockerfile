@@ -13,6 +13,9 @@ COPY ./ /pygnome/
 RUN cd pygnome && conda install python=$PYTHON_VER --file conda_requirements.txt
 RUN conda list
 
+RUN conda update -y libgd
+
+
 # only because this was giving us problems
 RUN python -c "import py_gd"
 
