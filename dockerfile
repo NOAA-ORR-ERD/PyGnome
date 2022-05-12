@@ -10,9 +10,9 @@ RUN yum install -y wget gcc make bzip2 gcc-c++ ca-certificates \
 
 COPY ./ /pygnome/
 
-#RUN cd pygnome && conda install python=$PYTHON_VER --file conda_requirements.txt
+# RUN cd pygnome && conda install python=$PYTHON_VER --file conda_requirements.txt
 
-cd pygnome && conda install -y --file deploy_requirements.txt
+RUN cd pygnome && conda install -y --file deploy_requirements.txt
 
 RUN conda list
 
@@ -23,7 +23,9 @@ RUN conda list
 
 RUN cd pygnome/py_gnome && python setup.py install
 
+# adios_db requirements should already be there
 # RUN cd pygnome/oil_database/adios_db && conda install --file conda_requirements.txt
+
 RUN cd pygnome/oil_database/adios_db && python -m pip install ./
 
 # to check if it got installed properly
