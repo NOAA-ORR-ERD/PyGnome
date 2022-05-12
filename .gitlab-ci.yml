@@ -75,6 +75,7 @@ test_pygnome_develop:
     - master
     - production
   script:
+    - conda install -y --file conda_requirements_test.txt
     - cd ./py_gnome/tests/unit_tests && pytest --runslow
   tags:
     - docker
