@@ -1,0 +1,6 @@
+# needed to run tests
+pytest
+pytest-cov
+pytest-timeout
+testfixtures
+

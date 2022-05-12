@@ -39,16 +39,23 @@ compile_pygnome:
   script:
     - echo "compiling PyGNOME"
     - yum install gcc gcc-c++ make libXext libSM libXrender -y
-    - conda install python=$PYTHON_VER --file conda_requirements.txt --file conda_requirements_dev.txt
-    # install the adios_db from production
-    - pip install git+https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.orr.noaa.gov/gnome/oil_database/oil_database.git@production#subdirectory=adios_db
-    - conda env export --file build_environment.yml
+    # get the adios_db code: needed for tests and requirements
+    - git clone --depth 1 -b develop https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.orr.noaa.gov/gnome/oil_database/oil_database.git
+    - conda install -y python=$PYTHON_VER --file conda_requirements.txt --file oil_database/adios_db/conda_requirements.txt
+    # install adios_db
+    - pip install oil_database/adios_db/
+    # - pip install git+https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.orr.noaa.gov/gnome/oil_database/oil_database.git@production#subdirectory=adios_db
+    # export the conda packages for use in later stages.
+
+    - conda list --export --no-pip > deploy_requirements.txt
     - cd ./py_gnome
     - python setup.py install
-    # looks like we can pip install now!
-    # - python -m pip install ./
+
     - cd ../  # make sure that it won't find the source gnome package.
     - python -c "import gnome"  # make sure that it imports
+
+    # need extra requirements for the docs
+    - conda install -y --file conda_requirements_docs.txt
     - cd py_gnome/documentation && make html  # build the docs
   tags:
     - docker
@@ -58,7 +65,7 @@ compile_pygnome:
     paths:
       - ./$CI_PIPELINE_ID
       - ./py_gnome/documentation/build/html
-      - ./build_environment.yml
+      - ./deploy_requirements.txt
 
 test_pygnome_develop:
   stage: test
@@ -76,30 +83,32 @@ test_pygnome_master:
   stage: test
   allow_failure: false
   image: registry.orr.noaa.gov/erd/centos-conda/centos7-python$PYTHON_VER
-  only:
-    - master
-    - production
+  except:
+    - develop
   script:
     - cd ./py_gnome/tests/unit_tests && pytest --runslow
   tags:
     - docker
 
-develop:
+build_develop:
   stage: build
+  only:
+    - develop
   before_script:
     - echo '' # manual override of before_script because we're on runner 12.3 and inherit options are only 12.9+
   script:
     # get the adios_db code, so we can install it in the docker image
-    - git clone --depth 1 -b develop https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.orr.noaa.gov/gnome/oil_database/oil_database.git
+    # - git clone --depth 1 -b develop https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.orr.noaa.gov/gnome/oil_database/oil_database.git
+
+    # build the docs image
     - docker build -f dockerfile-docs ./py_gnome/documentation/build/html -t registry.orr.noaa.gov/gnome/pygnome/docs
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker push registry.orr.noaa.gov/gnome/pygnome/docs
 
+    # build the py_gnome image
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker build . --build-arg PYTHON_VER=$PYTHON_VER -t registry.orr.noaa.gov/gnome/pygnome:develop
     - docker push registry.orr.noaa.gov/gnome/pygnome:develop
-  only:
-    - develop
   tags:
     - shell
     - build
