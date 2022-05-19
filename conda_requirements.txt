@@ -2,11 +2,14 @@
 #
 #  This should be the minimal conda install to build and run
 #  See conda_requirements_dev.txt for others handy for development
+#  and conda_requirements_test for testing requirements
+
 #  install with:
 #    conda install --file conda_requirements.txt
 #
 #  or create an environmemnt:
-#    conda create -n gnome --file conda_requirements.txt
+#    conda create -n gnome python=3.9 --file conda_requirements.txt
+#   (python version is not specified in the conda_requirements file)
 # These packages would all be in one of the following channels:
 # defaults
 # conda-forge
@@ -19,7 +22,7 @@ python>=3.8,<3.10
 trimesh
 shapely
 pyproj
-mapbox_earcut # from NOAA_ORR_ERD channel -- not working
+mapbox_earcut
 
 # we really need to update our build scripts!
 backports.functools_lru_cache
