@@ -8,15 +8,9 @@ pushing some rendering to the server.
 
 Also used for making raster maps.
 
-This should have the basic drawing stuff. Ideally nothig in here is
+This should have the basic drawing stuff. Ideally nothing in here is
 GNOME-specific.
-
-This version used libgd and py_gd instead of PIL for the rendering
 """
-
-
-
-
 
 import bisect
 
@@ -24,7 +18,7 @@ import numpy as np
 
 import py_gd
 
-import unit_conversion as uc
+import nucos as uc
 
 from gnome.utilities.projections import FlatEarthProjection
 

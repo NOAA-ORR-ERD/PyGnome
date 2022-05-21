@@ -12,7 +12,7 @@ Element_types -- what the types of the elements are.
 from datetime import datetime
 import copy
 
-import unit_conversion as uc
+import nucos as uc
 from gnome.utilities.time_utils import asdatetime
 from gnome.utilities.appearance import SpillAppearanceSchema
 

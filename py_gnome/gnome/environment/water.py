@@ -7,17 +7,15 @@ from functools import lru_cache
 
 import numpy as np
 
-from colander import (SchemaNode, MappingSchema, Float, String, drop,
-                      OneOf, required)
-
 import gsw
 
-import unit_conversion as uc
+import nucos as uc
 
 from gnome import constants
 from gnome.utilities.inf_datetime import InfTime, MinusInfTime
 
-from gnome.persist import base_schema
+from gnome.persist import (base_schema, SchemaNode, MappingSchema, Float,
+                           String, drop, OneOf, required)
 
 from .environment import Environment
 
@@ -278,7 +276,7 @@ class Water(Environment):
 
         if unit is None:
             # Note: salinity only have one units since we don't
-            # have any conversions for them in unit_conversion yet - revisit
+            # have any conversions for them in nucos yet - revisit
             # this per requirements
             if (attr not in self._gnome_units or
                     self._gnome_units[attr] == self._units[attr]):

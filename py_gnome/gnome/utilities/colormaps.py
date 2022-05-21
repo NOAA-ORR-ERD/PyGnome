@@ -34,10 +34,6 @@ The following colormaps are included:
 autumn, bone, cool, copper, hot, hsv, jet, pink, winter
 """
 
-
-
-
-
 import collections
 
 import numpy as np
@@ -67,7 +63,7 @@ class ColorMap:
                             'passed in')
 
         if (val_range is not None and
-            isinstance(val_range, collections.Iterable) and
+            isinstance(val_range, collections.abc.Iterable) and
                 not isinstance(val_range, str)):
             self.val_range = val_range
         else:
