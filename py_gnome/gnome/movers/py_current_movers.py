@@ -120,7 +120,8 @@ class PyCurrentMover(movers.PyMover):
 
         self.is_first_step = False
         self.time_uncertainty_was_set = 0
-        self.uncertainty_list = np.zeros(shape=(2,), dtype=np.float64)
+        self.shape = (2,)
+        self.uncertainty_list = np.zeros((0,)+self.shape, dtype=np.float64)
 
     @classmethod
     def from_netCDF(cls,
@@ -327,11 +328,12 @@ class PyCurrentMover(movers.PyMover):
 
         if not add_uncertainty:
             #I'm not sure if we have to do anything here # we will not be adding uncertainty
-            #self.uncertainty_list = np.zeros(shape=(2,), dtype=np.float64)
+            #self.uncertainty_list = np.zeros((0,)+self.shape, dtype=np.float64)
             #self.time_uncertainty_was_set = 0
             return
 
         uncertain_list_size = len(self.uncertainty_list)
+
         if uncertain_list_size==0:
             need_to_reinit = True
 
@@ -345,12 +347,13 @@ class PyCurrentMover(movers.PyMover):
             need_to_reinit = True
 
         if need_to_reallocate and uncertain_list_size!=0:
-            shape=(2,)
-            a_append = np.zeros((num_les-uncertain_list_size,)+shape,dtype=np.float64)
+            a_append = np.zeros((num_les-uncertain_list_size,)+self.shape,dtype=np.float64)
+            a_append[:,0] = np.random.uniform(-self.uncertain_along, self.uncertain_along)
+            a_append[:,1] = np.random.uniform(-self.uncertain_cross, self.uncertain_cross)
             self.uncertainty_list = np.r_[self.uncertainty_list, a_append]
-            for i in range(uncertain_list_size,num_les):
-                self.uncertainty_list[i:,0] = np.random.uniform(-self.uncertain_along, self.uncertain_along)
-                self.uncertainty_list[i:,1] = np.random.uniform(-self.uncertain_cross, self.uncertain_cross)
+#             for i in range(uncertain_list_size,num_les):
+#                 self.uncertainty_list[i:,0] = np.random.uniform(-self.uncertain_along, self.uncertain_along)
+#                 self.uncertainty_list[i:,1] = np.random.uniform(-self.uncertain_cross, self.uncertain_cross)
 
         if need_to_reinit:
             self.allocate_uncertainty(num_les)
@@ -425,7 +428,7 @@ class PyCurrentMover(movers.PyMover):
         reset uncertainty
         """
         self.is_first_step = True
-        self.uncertainty_list = np.zeros(shape=(2,), dtype=np.float64)
+        self.uncertainty_list = np.zeros((0,)+self.shape, dtype=np.float64)
         self.time_uncertainty_was_set = 0
 
         return
