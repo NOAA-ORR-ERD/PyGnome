@@ -32,7 +32,7 @@ def init_density(sc, num_released, water=None, substance=None, aggregate=True):
 
     if density > water_density:
         msg = ("{0} will sink at given water temperature: {1} {2}. "
-                "Set density to water density"
+                "Setting density to water density"
                 .format(substance.name,
                         water_temp,
                         'K')
