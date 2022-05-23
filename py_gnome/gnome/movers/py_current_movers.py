@@ -454,10 +454,16 @@ class PyCurrentMover(movers.PyMover):
         """
         remove any off map les
         """
+        if not self.active or not self.on:
+            return
+
         self.is_first_step = False
 
-        to_be_removed = np.where(sc['status_codes'] ==
-                                 oil_status.to_be_removed)[0]
+        if sc.uncertain:
+            to_be_removed = np.where(sc['status_codes'] ==
+                                     oil_status.to_be_removed)[0]
 
-        if len(to_be_removed) > 0:
-            self.uncertainty_list = np.delete(self.uncertainty_list, to_be_removed, axis=0)
+            if len(to_be_removed) > 0:
+                new_uncertainty = np.copy(self.uncertainty_list)
+                #self.uncertainty_list = np.delete(self.uncertainty_list, to_be_removed, axis=0)
+                self.uncertainty_list = np.delete(new_uncertainty, to_be_removed, axis=0)
