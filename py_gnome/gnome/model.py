@@ -1187,7 +1187,7 @@ class Model(GnomeId):
         if water:
             env['water'] = water
         else:
-            env['water'] = Water()
+            env['water'] = None         
         return env
 
     def __iter__(self):

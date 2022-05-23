@@ -21,6 +21,7 @@ from gnome.exceptions import GnomeRuntimeError
 from .core import WeathererSchema
 from gnome.persist.base_schema import GeneralGnomeObjectSchema
 from gnome.environment.gridded_objects_base import VectorVariableSchema
+from gnome.ops import default_constants
 
 PI = np.pi
 PISQUARED = np.pi ** 2
@@ -566,9 +567,12 @@ class FayGravityViscous(Weatherer):
         '''
         subs = sc.get_substances(False)
         if len(subs) > 0 and subs[0].is_weatherable:
-            vo = subs[0].kvis_at_temp(self.water.get('temperature'))
+           if self.water is None:
+              vo = subs[0].kvis_at_temp(default_constants.default_water_temperature)
+           else:
+              vo = subs[0].kvis_at_temp(self.water.get('temperature'))
             # set thickness_limit
-            self._set_thickness_limit(vo)
+           self._set_thickness_limit(vo)
 
         # reset _init_relative_buoyancy for every run
         # make it None so no stale data
@@ -583,8 +587,12 @@ class FayGravityViscous(Weatherer):
         if relative_buoyancy < 0 raises a GnomeRuntimeError - particles will
         sink.
         '''
-        rho_h2o = self.water.get('density')
-        rho_oil = substance.density_at_temp(self.water.get('temperature'))
+        if self.water is None:
+           rho_h2o = default_constants.default_water_density
+           rho_oil = substance.standard_density #density_at_temp(default_constants.default_water_temperature)
+        else:
+           rho_h2o = self.water.get('density')
+           rho_oil = substance.standard_density #density_at_temp(self.water.get('temperature'))
         
         # maybe weathering_data should catch error below?
         # todo: write and raise appropriate exception

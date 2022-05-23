@@ -29,9 +29,10 @@ def init_density(sc, num_released, water=None, substance=None, aggregate=True):
     # Only the new elements need to be initialized
     sl = slice(-num_released, None, 1)
     density = substance.density_at_temp(water_temp)
+
     if density > water_density:
         msg = ("{0} will sink at given water temperature: {1} {2}. "
-                "Setting density to water density"
+                "Set density to water density"
                 .format(substance.name,
                         water_temp,
                         'K')
