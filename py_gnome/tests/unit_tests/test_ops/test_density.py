@@ -76,8 +76,8 @@ def test_recalc_density():
                                         start_position=(0.0, 0.0, 0.0),
                                         release_time=datetime(2014, 1, 1, 0, 0),
                                         amount=100,
-                                        units='bbl')  
-    spill.substance = GnomeOil('oil_crude')
+                                        units='bbl',
+                                        substance=GnomeOil('oil_crude'))  
     sc.spills.add(spill)
 # fix it **********
     sc.prepare_for_model_run(weathering_array_types)
