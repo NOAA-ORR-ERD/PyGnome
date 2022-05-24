@@ -388,9 +388,14 @@ class Renderer(Outputter, MapCanvas):
                                         self.foreground_filename_glob))
         files += glob.glob(os.path.join(self.output_dir,
                                         self.anim_filename) + "*")
-
+        
         for name in files:
-            os.remove(name)
+            try:
+                os.remove(name)
+            except OSError:
+            # it's not there to delete..
+                pass
+#            os.remove(name)
 
     def draw_background(self):
         """
