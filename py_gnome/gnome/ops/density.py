@@ -9,7 +9,7 @@ def init_density(sc, num_released, water=None, substance=None, aggregate=True):
     '''
     Initializes the density of the last num_rel elements of a spill container (sc),
     taking into account environmental conditions.
-    
+
     :param sc: spill container
     :param num_rel: int
     :param water: Water object to use. If None, uses default values
@@ -31,7 +31,7 @@ def init_density(sc, num_released, water=None, substance=None, aggregate=True):
     density = substance.density_at_temp(water_temp)
 
     if density > water_density:
-        msg = ("{0} will sink at given water temperature: {1} {2}. "
+        msg = ("{0} will sink at given water temperature: {1:.1f} {2}. "
                 "Setting density to water density"
                 .format(substance.name,
                         water_temp,
