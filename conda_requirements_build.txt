@@ -1,0 +1,6 @@
+# Extra requirements useful for development
+# not required to build or run PyGNOME
+
+cython=0.29.*
+setuptools>=62  # older versions uses different build dirs
+gitpython

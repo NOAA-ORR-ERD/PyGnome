@@ -24,15 +24,10 @@ shapely
 pyproj
 mapbox_earcut
 
-# we really need to update our build scripts!
-backports.functools_lru_cache
-setuptools>=62  # older versions uses different build dirs
-gitpython
 numpy
 scipy
 gsw
 psutil
-progressbar
 pyzmq
 python-dateutil
 geojson
@@ -42,6 +37,7 @@ tblib # still needed for child process exception handling.
 
 netCDF4
 pyshp
+progressbar
 
 
 # NOAA maintained packages
@@ -49,9 +45,8 @@ gridded=0.3.0
 pynucos
 cell_tree2d
 py_gd=2.*
-libgd  # this should be brought in by py_gd, but something odd was happening on the CI
+# libgd  # this should be brought in by py_gd, but something odd was happening on the CI
 
-# required for building
-cython=0.29.*
+
 
 

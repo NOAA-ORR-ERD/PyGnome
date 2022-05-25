@@ -41,9 +41,11 @@ compile_pygnome:
     - yum install gcc gcc-c++ make libXext libSM libXrender -y
     # get the adios_db code: needed for tests and requirements
     - git clone --depth 1 -b develop https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.orr.noaa.gov/gnome/oil_database/oil_database.git
-    - conda install -y python=$PYTHON_VER --file conda_requirements.txt --file oil_database/adios_db/conda_requirements.txt
+    - conda install -y python=$PYTHON_VER --file conda_requirements.txt
+                                          --file conda_requirements_build.txt
+                                          --file oil_database/adios_db/conda_requirements.txt
 
-    - conda list --export --no-pip > deploy_requirements.txt
+    # - conda list --export --no-pip > deploy_requirements.txt
 
     # install adios_db
     - pip install oil_database/adios_db/
@@ -69,25 +71,25 @@ compile_pygnome:
       - ./py_gnome/documentation/build/html
       - ./deploy_requirements.txt
 
-test_pygnome_develop:
-  stage: test
-  allow_failure: true
-  image: registry.orr.noaa.gov/erd/centos-conda/centos7-python$PYTHON_VER
-  except:
-    - master
-    - production
-  script:
-    - conda install -y --file conda_requirements_test.txt
-    - cd ./py_gnome/tests/unit_tests && pytest --runslow
-  tags:
-    - docker
+# test_pygnome_develop:
+#   stage: test
+#   allow_failure: true
+#   image: registry.orr.noaa.gov/erd/centos-conda/centos7-python$PYTHON_VER
+#   except:
+#     - master
+#     - production
+#   script:
+#     - conda install -y --file conda_requirements_test.txt
+#     - cd ./py_gnome/tests/unit_tests && pytest --runslow
+#   tags:
+#     - docker
 
-test_pygnome_master:
+test_pygnome:
   stage: test
   allow_failure: false
   image: registry.orr.noaa.gov/erd/centos-conda/centos7-python$PYTHON_VER
-  except:
-    - develop
+  # except:
+  #   - develop
   script:
     - conda install -y --file conda_requirements_test.txt
     - cd ./py_gnome/tests/unit_tests && pytest --runslow
