@@ -12,11 +12,9 @@ COPY ./ /pygnome/
 
 RUN cd pygnome && conda install python=$PYTHON_VER \
                                 --file conda_requirements.txt \
-<<<<<<< HEAD
-=======
                                 --file conda_requirements_build.txt \
->>>>>>> develop
                                 --file oil_database/adios_db/conda_requirements.txt
+
 # this was pinning things down too much for the webapi step
 # RUN cd pygnome && conda install -y --file deploy_requirements.txt
 
