@@ -479,8 +479,8 @@ def surface_point_line_spill(num_elements,
                              units='kg',
                              water=None,
                              on=True,
-                             windage_range=(.01, .04),
-                             windage_persist=900,
+                             windage_range=None,
+                             windage_persist=None,
                              name='Surface Point or Line Release'):
     '''
     Helper function returns a Spill object
@@ -535,17 +535,25 @@ def surface_point_line_spill(num_elements,
                                end_position=end_position,
                                end_release_time=end_release_time)
 
-    retv = Spill(release=release,
+    spill = Spill(release=release,
                  water=water,
                  substance=substance,
                  amount=amount,
                  units=units,
                  name=name,
                  on=on)
+
     if substance is None:
-        retv.substance.windage_range = windage_range
-        retv.substance.windage_persist = windage_persist
-    return retv
+        if windage_range is None:
+            windage_range = (.01, .04)
+        if windage_persist is None:
+            windage_persist = 900
+        spill.substance.windage_range = windage_range
+        spill.substance.windage_persist = windage_persist
+    elif windage_range is not None or windage_persist is not None:
+        raise TypeError("You can not specify windage values if you specify a substance.\n"
+                        "Set the windage on the substance instead")
+    return spill
 
 
 def grid_spill(bounds,
