@@ -12,7 +12,7 @@ Element_types -- what the types of the elements are.
 from datetime import datetime
 import copy
 
-import unit_conversion as uc
+import nucos as uc
 from gnome.utilities.time_utils import asdatetime
 from gnome.utilities.appearance import SpillAppearanceSchema
 
@@ -653,10 +653,10 @@ def subsurface_plume_spill(num_elements,
 
     :type end_release_time: datetime.datetime
 
-    :param substance='None': Required unless density specified.
+    :param substance=None: Required unless density specified.
                              Type of oil spilled.
 
-    :type substance: str or OilProps
+    :type substance: GnomeOil
 
     :param float density=None: Required unless substance specified.
                                Density of spilled material.

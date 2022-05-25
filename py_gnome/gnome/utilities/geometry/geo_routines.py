@@ -15,7 +15,7 @@ import random
 geod = pyproj.Geod(ellps='WGS84')
 def geo_area_of_polygon(poly):
     '''
-    :param poly: 
+    :param poly:
     :type poly: shapely or geojson MultiPolygon or Polygon
 
     :return: area of polygon in m^2
@@ -34,7 +34,7 @@ def triangulate_poly(poly):
         poly = shapely.geometry.shape(poly)
     retval = []
     if isinstance(poly, shapely.geometry.MultiPolygon):
-        for p in poly:
+        for p in poly.geoms:
             pts, tris = trimesh.creation.triangulate_polygon(p, engine='earcut')
             retval = retval + [Polygon(k) for k in pts[tris]]
     else:
@@ -76,7 +76,7 @@ def check_valid_polygon(poly):
     checks that a shapely Polygon object at least has valid values for coordinates
     """
     if isinstance(poly, shapely.geometry.MultiPolygon):
-        for p in poly:
+        for p in poly.geoms:
             for point in p.exterior.coords:
                 assert -360 < point[0] < 360
                 assert -90 < point[1] < 90
@@ -84,7 +84,7 @@ def check_valid_polygon(poly):
         for point in poly.exterior.coords:
             assert -360 < point[0] < 360
             assert -90 < point[1] < 90
-            
+
 #tri is a Shapely.Polygon, or 3x2 array of coords
 #returns a 2D coordinate
 def random_pt_in_tri(tri):
@@ -144,7 +144,7 @@ def load_shapefile(filename, transform_crs=True):
 
     :param filename: string path of a zip file
     :param transform_crs: attempts to read the .prj file if any and convert to EPSG:4326
-    
+
     :return: geojson.FeatureCollection
     """
     rv = open_shapefile(filename)

@@ -8,7 +8,7 @@ run the simulation in a seemless integration with GNOME.
 
 from datetime import datetime, timedelta
 
-import unit_conversion as uc
+import nucos as uc
 
 from gnome.spills.release import Release
 from gnome.spills.spill import SpillSchema, Spill

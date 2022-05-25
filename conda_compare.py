@@ -76,6 +76,7 @@ if __name__ == "__main__":
         env2 = sys.argv[2]
     except IndexError:
         print("you need to pass the name of two environments at the command line")
+        sys.exit(1)
 
     e1 = get_env_list(env1)
     e2 = get_env_list(env2)

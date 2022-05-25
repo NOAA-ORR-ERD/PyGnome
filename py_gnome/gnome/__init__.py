@@ -38,7 +38,7 @@ def check_dependency_versions():
     from source, rather than managed by conda, etc.
         gridded
         oillibrary
-        unit_conversion
+        nucos
         py_gd
         adios_db
     If the version is not at least as current as what's defined here
@@ -121,7 +121,7 @@ def initialize_console_log(level='debug'):
 def _valid_units(unit_name):
     # fixme: I think there is something built in to nucos for this
     #        or there should be
-    'convenience function to get all valid units accepted by unit_conversion'
+    'convenience function to get all valid units accepted by nucos'
     _valid_units = list(uc.GetUnitNames(unit_name))
     _valid_units.extend(chain(*[val[1] for val in
                                 uc.ConvertDataUnits[unit_name].values()]))

@@ -88,7 +88,7 @@ def validate_save_json(json_, zipfile_, orig_obj):
     save_refs = schema.get_nodes_by_attr('save_reference')
     for n in save_refs:
         if getattr(orig_obj, n) is not None:
-            if isinstance(getattr(orig_obj, n), collections.Iterable):
+            if isinstance(getattr(orig_obj, n), collections.abc.Iterable):
                 for i, ref in enumerate(getattr(orig_obj, n)):
                     assert json_[n][i] == ref.name + '.json'
                     assert json_[n][i] in zipfile_.namelist()

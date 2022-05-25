@@ -2,9 +2,6 @@
 test manual_beaching
 '''
 
-
-
-
 from datetime import datetime, timedelta
 import pytest
 import numpy as np
@@ -95,6 +92,10 @@ class TestBeaching(ObjForTests):
 
         self.prepare_test_objs()
         self.b.prepare_for_model_run(self.sc)
+
+        print(f"{self.b.water}")
+        from gnome.environment import  Water
+        self.b.water = Water()
 
         assert self.sc.mass_balance['observed_beached'] == 0.0
 

@@ -83,7 +83,7 @@ class Tide(Environment):
         :type timeseries: numpy.ndarray with dtype=datetime_value_1d
         :param units: units associated with the timeseries data. If 'filename'
             is given, then units are read in from the filename.
-            unit_conversion - NOT IMPLEMENTED YET
+            unit conversion - NOT IMPLEMENTED YET
         :type units=None:  (Optional) string, for example:
             'knot', 'meter per second', 'mile per hour' etc
         :param filename: path to a long wind filename from which to read
