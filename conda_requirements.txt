@@ -2,34 +2,34 @@
 #
 #  This should be the minimal conda install to build and run
 #  See conda_requirements_dev.txt for others handy for development
+#  and conda_requirements_test for testing requirements
+
 #  install with:
 #    conda install --file conda_requirements.txt
 #
 #  or create an environmemnt:
-#    conda create -n gnome --file conda_requirements.txt
+#    conda create -n gnome python=3.9 --file conda_requirements.txt
+#   (python version is not specified in the conda_requirements file)
 # These packages would all be in one of the following channels:
 # defaults
 # conda-forge
 # NOAA-ORR-ERD
 
 # should get it working with 3.10 -- but mapbox-earcut not ready :-(
-python>=3.8,<3.10
+python>=3.8,<3.11
 
 # for SpatialRelease
 trimesh
 shapely
 pyproj
-mapbox_earcut # from NOAA_ORR_ERD channel -- not working
+mapbox_earcut
 
-# we really need to update our build scripts!
-setuptools>=62  # older versions uses different build dirs
-gitpython
 numpy
 scipy
 gsw
 psutil
-progressbar
 pyzmq
+python-dateutil
 geojson
 colander
 
@@ -37,16 +37,16 @@ tblib # still needed for child process exception handling.
 
 netCDF4
 pyshp
+progressbar
 
 
 # NOAA maintained packages
 gridded=0.3.0
 pynucos
 cell_tree2d
-py_gd=2.*.*
+py_gd=2.*
+# libgd  # this should be brought in by py_gd, but something odd was happening on the CI
 
 
-# required for building
-cython=0.29.*
 
 

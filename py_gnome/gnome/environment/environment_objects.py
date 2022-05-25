@@ -5,8 +5,8 @@ from datetime import datetime
 import netCDF4 as nc4
 import numpy as np
 
-from colander import drop
-from gnome.persist import (Boolean,
+from gnome.persist import (drop,
+                           Boolean,
                            SchemaNode,
                            ObjTypeSchema,
                            FilenameSchema,
@@ -15,7 +15,7 @@ from gnome.persist import (Boolean,
 
 import gridded
 from gnome.gnomeobject import combine_signatures
-import unit_conversion as uc
+import nucos as uc
 
 from .environment import Environment
 from .timeseries_objects_base import TimeseriesData, TimeseriesVector

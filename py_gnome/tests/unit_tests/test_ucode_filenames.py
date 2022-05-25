@@ -19,6 +19,9 @@ from gnome.movers import CatsMover, c_GridCurrentMover, GridWindMover
 from gnome.environment import Wind, Tide
 from gnome.utilities.remote_data import get_datafile
 
+# skip all the tests for windows for now
+print(sys.platform)
+pytestmark = pytest.mark.skipif(sys.platform.startswith("win"), reason="skip all the tests for windows for now")
 
 def create_ucode_file(filename, valid=True):
     """

@@ -13,13 +13,13 @@ from colander import (SchemaNode, SequenceSchema,
 
 import gridded
 from gridded.utilities import get_dataset
-import unit_conversion as uc
+import nucos as uc
 
 from gnome.gnomeobject import combine_signatures
 from gnome.persist import base_schema
 from gnome.gnomeobject import GnomeId
-from gnome.persist.extend_colander import FilenameSchema
-from gnome.persist.base_schema import GeneralGnomeObjectSchema
+from gnome.persist import (GeneralGnomeObjectSchema, SchemaNode, SequenceSchema,
+                           String, Boolean, DateTime, drop, FilenameSchema)
 from gnome.persist.validators import convertible_to_seconds
 from gnome.persist.extend_colander import LocalDateTime
 from gnome.utilities.inf_datetime import InfDateTime

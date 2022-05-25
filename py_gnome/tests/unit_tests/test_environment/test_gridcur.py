@@ -198,6 +198,7 @@ def test_make_mover_from_gridcur():
     assert mover.data_stop == datetime(2020, 7, 15, 0)
 
 
+@pytest.mark.skipif(True, reason="needs uncertain in the spill container")
 def test_mover_get_move():
     current = gridcur.from_gridcur(filename=test_data_dir / NODE_EXAMPLE)
     mover = PyCurrentMover(current=current)
