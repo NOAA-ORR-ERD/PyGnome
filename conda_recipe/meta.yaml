@@ -1,0 +1,75 @@
+{% set name = "py_gnome" %}
+{% set version = "1.1.4" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  # url: https://github.com/NOAA-ORR-ERD/adios_oil_database/archive/v{{ version }}.tar.gz
+  # sha256: 4b2b1c7c68b278aeb07d1d1715e26fb96bc6c19b82085d2ccb0568a20ef3e5df
+  path: ../
+
+build:
+  number: 0
+  script: cd py_gnome && {{ PYTHON }} setup.py install
+
+requirements:
+  host:
+    - python {{ python }}
+    - pip
+    - setuptools>=62
+    - cython=0.29.*
+    - gitpython
+    - numpy  {{ numpy }}
+
+  build:
+    - {{ compiler('cxx') }}
+
+
+  run:
+    - python {{ python }}
+    - numpy  {{ numpy }}
+    - trimesh
+    - shapely
+    - pyproj
+    - mapbox_earcut
+    - scipy
+    - gsw
+    - psutil
+    - pyzmq
+    - python-dateutil
+    - geojson
+    - colander
+    - tblib
+    - netCDF4
+    - pyshp
+
+    - gridded=0.3.0
+    - pynucos
+    - cell_tree2d
+    - py_gd=2.*
+
+test:
+  requires:
+    - pytest
+    - pytest-raises >=0.11
+  imports:
+    - gnome
+
+about:
+  home: https://github.com/NOAA-ORR-ERD/PyGnome
+  license: CC0-1.0
+ # license_file: LICENSE.txt
+  summary: PyGNOME
+  description: |
+    PyGNOME: Oil spill fate and transport model and particle tracking
+    framework. Part of the GNOME Suite, and the engine behind WebGNOME:
+    https://gnome.orr.noaa.gov
+  dev_url: https://github.com/NOAA-ORR-ERD/PyGnome
+
+extra:
+  recipe-maintainers:
+    - ChrisBarker-NOAA
+    - JamesMakela-NOAA
+    - jay-hennen
