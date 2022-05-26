@@ -211,8 +211,8 @@ class Spill(BaseSpill):
             if isinstance(val, str):
                 raise
 
-            self.logger.info('Failed to get_oil_props for {0}. Use as is '
-                             'assuming has OilProps interface'.format(val))
+            self.logger.info('Failed to make a GnomeOil for {0}. Use as is '
+                             'assuming it has a Substance interface'.format(val))
             self._substance = val
 
     @property
@@ -468,6 +468,40 @@ class Spill(BaseSpill):
 
 """ Helper functions """
 
+def _setup_spill(release,
+                 water,
+                 substance,
+                 amount,
+                 units,
+                 name,
+                 on,
+                 windage_range,
+                 windage_persist,
+                 ):
+    """
+    set the windage on the substance, if it's provided
+
+    otherwise simply passes everything in to the Spill
+    """
+    spill = Spill(release=release,
+                  water=water,
+                  substance=substance,
+                  amount=amount,
+                  units=units,
+                  name=name,
+                  on=on)
+
+    if substance is None:
+        if windage_range is None:
+            windage_range = (.01, .04)
+        if windage_persist is None:
+            windage_persist = 900
+        spill.substance.windage_range = windage_range
+        spill.substance.windage_persist = windage_persist
+    elif windage_range is not None or windage_persist is not None:
+        raise TypeError("You can not specify windage values if you specify a substance.\n"
+                        "Set the windage on the substance instead")
+    return spill
 
 def surface_point_line_spill(num_elements,
                              start_position,
@@ -535,24 +569,17 @@ def surface_point_line_spill(num_elements,
                                end_position=end_position,
                                end_release_time=end_release_time)
 
-    spill = Spill(release=release,
-                 water=water,
-                 substance=substance,
-                 amount=amount,
-                 units=units,
-                 name=name,
-                 on=on)
+    spill = _setup_spill(release=release,
+                         water=water,
+                         substance=substance,
+                         amount=amount,
+                         units=units,
+                         name=name,
+                         on=on,
+                         windage_range=windage_range,
+                         windage_persist=windage_persist
+                         )
 
-    if substance is None:
-        if windage_range is None:
-            windage_range = (.01, .04)
-        if windage_persist is None:
-            windage_persist = 900
-        spill.substance.windage_range = windage_range
-        spill.substance.windage_persist = windage_persist
-    elif windage_range is not None or windage_persist is not None:
-        raise TypeError("You can not specify windage values if you specify a substance.\n"
-                        "Set the windage on the substance instead")
     return spill
 
 
@@ -564,8 +591,8 @@ def grid_spill(bounds,
                units='kg',
                on=True,
                water=None,
-               windage_range=(.01, .04),
-               windage_persist=900,
+               windage_range=None,
+               windage_persist=None,
                name='Surface Grid Spill'):
     '''
     Helper function returns a Grid Spill object
@@ -603,17 +630,18 @@ def grid_spill(bounds,
                           bounds,
                           resolution)
 
-    retv = Spill(release=release,
-                 water=water,
-                 substance=substance,
-                 amount=amount,
-                 units=units,
-                 name=name,
-                 on=on)
-    if substance is None:
-        retv.substance.windage_range = windage_range
-        retv.substance.windage_persist = windage_persist
-    return retv
+    spill = _setup_spill(release=release,
+                         water=water,
+                         substance=substance,
+                         amount=amount,
+                         units=units,
+                         name=name,
+                         on=on,
+                         windage_range=windage_range,
+                         windage_persist=windage_persist
+                         )
+
+    return spill
 
 
 def subsurface_plume_spill(num_elements,
@@ -627,8 +655,8 @@ def subsurface_plume_spill(num_elements,
                            units='kg',
                            water=None,
                            on=True,
-                           windage_range=(.01, .04),
-                           windage_persist=900,
+                           windage_range=None,
+                           windage_persist=None,
                            name='Subsurface plume'):
     '''
     Helper function returns a Spill object
@@ -700,18 +728,18 @@ def subsurface_plume_spill(num_elements,
                                windage_range=windage_range,
                                windage_persist=windage_persist)
 
-    retv = Spill(release=release,
-                 water=water,
-                 substance=substance,
-                 amount=amount,
-                 units=units,
-                 name=name,
-                 on=on)
-    retv.substance.initializers = inits
-    if substance is None:
-        retv.substance.windage_range = windage_range
-        retv.substance.windage_persist = windage_persist
-    return retv
+    spill = _setup_spill(release=release,
+                         water=water,
+                         substance=substance,
+                         amount=amount,
+                         units=units,
+                         name=name,
+                         on=on,
+                         windage_range=windage_range,
+                         windage_persist=windage_persist
+                         )
+
+    return spill
 
 # def continuous_release_spill(initial_elements,
 #                              num_elements,
@@ -755,8 +783,8 @@ def spatial_release_spill(start_positions,
                           on=True,
                           amount=0,
                           units='kg',
-                          windage_range=(.01, .04),
-                          windage_persist=900,
+                          windage_range=None,
+                          windage_persist=None,
                           name='spatial_release'):
     '''
     Helper function returns a Spill object containing a spatial release
@@ -766,14 +794,15 @@ def spatial_release_spill(start_positions,
     release = Release(release_time=release_time,
                              custom_positions=start_positions,
                              name=name)
-    retv = Spill(release=release,
-                 water=water,
-                 substance=substance,
-                 amount=amount,
-                 units=units,
-                 name=name,
-                 on=on)
-    if substance is None:
-        retv.substance.windage_range = windage_range
-        retv.substance.windage_persist = windage_persist
-    return retv
+    spill = _setup_spill(release=release,
+                         water=water,
+                         substance=substance,
+                         amount=amount,
+                         units=units,
+                         name=name,
+                         on=on,
+                         windage_range=windage_range,
+                         windage_persist=windage_persist
+                         )
+
+    return spill
