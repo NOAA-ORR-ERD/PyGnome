@@ -27,7 +27,7 @@ class PyCurrentMoverSchema(ObjTypeSchema):
                                        acceptable_schemas=[VectorVariableSchema,
                                                            GridCurrent._schema]
                                        )
-    filename = FilenameSchema(save=True, update=False, isdatafile=True,
+    filename = FilenameSchema(save=True, update=False, isdatafile=True, test_equal=False,
                               missing=drop)
     scale_value = SchemaNode(Float(), save=True, update=True,
                                missing=drop)
