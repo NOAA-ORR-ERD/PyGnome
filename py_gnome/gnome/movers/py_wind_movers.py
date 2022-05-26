@@ -32,7 +32,7 @@ class PyWindMoverSchema(ObjTypeSchema):
                                     save_reference=True,
                                     acceptable_schemas=[VectorVariableSchema,
                                                         GridWind._schema])
-    filename = FilenameSchema(save=True, update=False, isdatafile=True,
+    filename = FilenameSchema(save=True, update=False, isdatafile=True, test_equal=False,
                               missing=drop)
     scale_value = SchemaNode(Float(), save=True, update=True, missing=drop)
     time_offset = SchemaNode(Float(), save=True, update=True, missing=drop)
