@@ -390,12 +390,7 @@ class Renderer(Outputter, MapCanvas):
                                         self.anim_filename) + "*")
         
         for name in files:
-            try:
-                os.remove(name)
-            except OSError:
-            # it's not there to delete..
-                pass
-#            os.remove(name)
+            os.remove(name)
 
     def draw_background(self):
         """
