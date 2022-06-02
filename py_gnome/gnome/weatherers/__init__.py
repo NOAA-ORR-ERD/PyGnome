@@ -6,7 +6,7 @@ from .evaporation import Evaporation
 from .natural_dispersion import NaturalDispersion
 from .dissolution import Dissolution
 from .emulsification import Emulsification
-from .weathering_data import WeatheringData
+#from .weathering_data import WeatheringData
 from .bio_degradation import Biodegradation
 from .spreading import Langmuir, FayGravityViscous, ConstantArea
 from .roc import Burn as ROC_Burn
@@ -55,7 +55,7 @@ sort_order = [ChemicalDispersion,
               Dissolution,
               Biodegradation,
               Emulsification,
-              WeatheringData,
+#              WeatheringData,
               FayGravityViscous,
               ConstantArea,
               Langmuir,

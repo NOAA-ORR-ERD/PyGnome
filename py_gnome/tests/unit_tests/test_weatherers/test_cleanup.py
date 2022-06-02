@@ -12,7 +12,7 @@ import nucos as uc
 from gnome.basic_types import oil_status, fate
 
 from gnome.weatherers.cleanup import CleanUpBase
-from gnome.weatherers import (WeatheringData,
+from gnome.weatherers import (#WeatheringData,
                               FayGravityViscous,
                               Skimmer,
                               Burn,
@@ -22,6 +22,8 @@ from gnome.spill_container import SpillContainer
 from gnome.spills import surface_point_line_spill
 from gnome.utilities.inf_datetime import InfDateTime
 from gnome.environment import Waves, constant_wind, Water
+
+from gnome.ops import weathering_array_types
 
 from .conftest import test_oil
 
@@ -54,7 +56,8 @@ class ObjForTests(object):
             water = Water()
 
         # keep this order
-        weatherers = [WeatheringData(water), FayGravityViscous(water)]
+#        weatherers = [WeatheringData(water), FayGravityViscous(water)]
+        weatherers = [FayGravityViscous(water),]
         weatherers.sort(key=weatherer_sort)
         sc = SpillContainer()
         print("******************")
@@ -81,7 +84,9 @@ class ObjForTests(object):
 
         if obj_arrays is not None:
             at.update(obj_arrays)
-
+        
+        at.update(weathering_array_types)
+        
         self.sc.prepare_for_model_run(at)
 
     def reset_and_release(self, rel_time=None, time_step=900.0):

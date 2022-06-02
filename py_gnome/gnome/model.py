@@ -66,7 +66,6 @@ from gnome.environment import schemas as env_schemas
 from gnome.movers import Mover, mover_schemas
 from gnome.weatherers import (weatherer_sort,
                               Weatherer,
-                              WeatheringData,
                               FayGravityViscous,
                               Langmuir,
                               weatherer_schemas,
@@ -747,16 +746,13 @@ class Model(GnomeId):
 
         '''Step 1: Set up special objects'''
         weather_data = dict()
-        wd = None
+
         spread = None
         langmuir = None
         for item in self.weatherers:
             if item.on:
                 weather_data.update(item.array_types)
 
-            if isinstance(item, WeatheringData):
-                item.on = False
-                wd = item
             try:
                 if item._ref_as == 'spreading':
                     item.on = False
@@ -1159,7 +1155,7 @@ class Model(GnomeId):
         env = self.compile_env()
         for sc in self.spills.items():
             # release particles
-            num_released = sc.release_elements(start_time, end_time)
+            num_released = sc.release_elements(start_time, end_time, environment=env)
             # initialize data - currently only weatherers do this so cycle
             # over weatherers collection - in future, maybe movers can also do
             # this
@@ -1223,7 +1219,7 @@ class Model(GnomeId):
         if rewind:
             self.rewind()
 
-        self.setup_model_run()
+#        self.setup_model_run()
         # run the model
         output_data = []
         while True:
