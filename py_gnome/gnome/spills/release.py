@@ -541,7 +541,8 @@ class PointLineRelease(Release):
         '''
         # if time_step == 0:
         #     time_step = 1  # to deal with initializing position in instantaneous release case
-
+        if start_time == end_time:
+            end_time += timedelta(seconds=1)
         sl = slice(-to_rel, None, 1)
         # if we have an interpolator -- why use linspace later?
         start_position = self._pos_ts.at(None, start_time, extrapolate=True)
