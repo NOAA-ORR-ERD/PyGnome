@@ -398,7 +398,7 @@ class PyCurrentMover(movers.PyMover):
         :param deltas: the movement for the current time step
         """
         if self.uncertainty_list is None:
-            return 0; # this is our clue to not add uncertainty
+            return deltas # this is our clue to not add uncertainty
 
         if len(self.uncertainty_list)>0:
             #make a copy of deltas
@@ -437,6 +437,9 @@ class PyCurrentMover(movers.PyMover):
         """
         add uncertainty
         """
+        super(PyCurrentMover, self).prepare_for_model_step(sc, time_step,
+                                                           model_time_datetime)
+
         if not self.active:
             return
 
