@@ -403,7 +403,7 @@ class Emulsification(Weatherer):
         '''
 
         ## higher of real or psuedo wind
-        wind_speed = self.waves.get_emulsification_wind(points, model_time)
+        wind_speed = self.waves.get_emulsification_wind(points, model_time).reshape(-1)
 
         # water uptake rate constant - get this from database
         #K0Y = substance.get('k0y')
