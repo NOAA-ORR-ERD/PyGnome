@@ -277,6 +277,43 @@ def v1tov2(messages, errors):
     return messages, errors
 
 
+def v2tov3(messages, errors):
+    '''
+    Takes a zipfile containing version 1 and up-converts it
+    to 'version 2'.
+
+    This function's purpose is to upgrade save files to maintain compatibility
+    after the grand renaming:
+    [link to commit here]
+    '''
+    log.debug('updating save file from v2 to v3 (Renaming)')
+
+    jsonfiles = glob.glob('*.json')
+
+    files_to_remove = []    
+
+    for fname in jsonfiles:
+            with open(fname, 'r') as fn:
+                json_ = json.load(fn)
+                if 'obj_type' in json_:
+                   if json_['obj_type'] == "gnome.weatherers.weathering_data.WeatheringData":
+                      files_to_remove.append(fname)
+                      
+    for fname in jsonfiles:
+            with open(fname, 'r') as fn:
+                json_ = json.load(fn)                  
+                if 'weatherers' in json_:
+                    # this is assuming only one
+                    for item in json_['weatherers']:
+                        if item in files_to_remove:
+                             json_['weatherers'].remove(item)
+                json.dump(json_, open(fname, 'w'))
+    for fname in files_to_remove:
+            Path(fname).unlink()  
+
+    messages.append('**Update from v2 to v3 successful**')
+    return messages, errors            
+
 def extract_zipfile(zip_file, to_folder='.'):
     def work(zf):
         folders = [name for name in zf.namelist()
@@ -335,4 +372,4 @@ def sanitize_filename(fname):
 
 
 # note these should be indexed by version number
-all_update_steps = [v0tov1, v1tov2]
+all_update_steps = [v0tov1, v1tov2, v2tov3]
