@@ -12,7 +12,7 @@ import nucos as uc
 from gnome.basic_types import oil_status, fate
 
 from gnome.weatherers.cleanup import CleanUpBase
-from gnome.weatherers import (#WeatheringData,
+from gnome.weatherers import (
                               FayGravityViscous,
                               Skimmer,
                               Burn,
@@ -56,7 +56,6 @@ class ObjForTests(object):
             water = Water()
 
         # keep this order
-#        weatherers = [WeatheringData(water), FayGravityViscous(water)]
         weatherers = [FayGravityViscous(water),]
         weatherers.sort(key=weatherer_sort)
         sc = SpillContainer()
