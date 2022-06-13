@@ -16,7 +16,7 @@ from gnome.model import Model
 
 from gnome.maps import MapFromBNA
 from gnome.spills import surface_point_line_spill
-from gnome.movers import RandomMover, constant_wind_mover, c_GridCurrentMover
+from gnome.movers import RandomMover, constant_point_wind_mover, c_GridCurrentMover
 
 from gnome.outputters import (Renderer,
                               # NetCDFOutput
@@ -65,7 +65,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     model.movers += RandomMover(diffusion_coef=10000)
 
     print('adding a simple wind mover:')
-    model.movers += constant_wind_mover(5, 315, units='m/s')
+    model.movers += constant_point_wind_mover(5, 315, units='m/s')
 
     print('adding a current mover:')
 

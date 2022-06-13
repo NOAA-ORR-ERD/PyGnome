@@ -36,7 +36,7 @@ from gnome.movers import (RandomMover,
                           SimpleMover,
                           c_GridCurrentMover,
                           PyCurrentMover,
-                          constant_wind_mover,
+                          constant_point_wind_mover,
                           IceMover)
 
 from gnome.outputters import Renderer
@@ -101,7 +101,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     model.movers += PyCurrentMover(current = ic)
     model.movers += SimpleMover(velocity=(0., 0., 0.))
-    model.movers += constant_wind_mover(20, 315, units='knots')
+    model.movers += constant_point_wind_mover(20, 315, units='knots')
 
     # Now to add in the TAMOC "spill"
     print("Adding TAMOC spill")

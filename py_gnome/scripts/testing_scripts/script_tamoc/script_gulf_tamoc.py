@@ -34,7 +34,7 @@ from gnome.movers import (RandomMover,
                           SimpleMover,
                           c_GridCurrentMover,
                           PyCurrentMover,
-                          constant_wind_mover,
+                          constant_point_wind_mover,
                           WindMover)
 
 from gnome.outputters import Renderer
@@ -121,7 +121,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     #model.movers += PyCurrentMover('HYCOM_3d.nc')
     model.movers += PyCurrentMover(hycom_file)
 #    model.movers += SimpleMover(velocity=(0., 0, 0.))
-    model.movers += constant_wind_mover(10, 315, units='knots')
+    model.movers += constant_point_wind_mover(10, 315, units='knots')
 
     # Wind from a buoy
     #w = Wind(filename='KIKT.osm')
