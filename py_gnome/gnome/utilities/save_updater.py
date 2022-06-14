@@ -312,21 +312,24 @@ def v2tov3(messages, errors):
     messages.append('**Update from v2 to v3 successful**')
     return messages, errors
 
-def v2tov3(messages, errors):
-    '''
-    Takes a zipfile containing version 1 and up-converts it
-    to 'version 2'.
 
-    This function's purpose is to upgrade save files to maintain compatibility
-    after the grand renaming:
-    [link to commit here]
+def v3tov4(messages, errors):
     '''
-    log.debug('updating save file from v2 to v3 (Renaming)')
+    Takes a zipfile containing version 2 and up-converts it
+    to 'version 3'.
+
+    This function's purpose is to upgrade save files that have the old
+    ``WeatheringData`` object in them
+    '''
+
+    # loading json files
+    log.debug('updating save file from v3 to v4 (Renaming)')
 
     jsonfiles = glob.glob('*.json')
 
     files_to_remove = []
 
+    # search for files which have weathering_data object, added to the files_to_remove list
     for fname in jsonfiles:
             with open(fname, 'r') as fn:
                 json_ = json.load(fn)
@@ -334,6 +337,7 @@ def v2tov3(messages, errors):
                    if json_['obj_type'] == "gnome.weatherers.weathering_data.WeatheringData":
                       files_to_remove.append(fname)
 
+    # remove weathering_data reference from model file
     for fname in jsonfiles:
             with open(fname, 'r') as fn:
                 json_ = json.load(fn)
@@ -343,10 +347,12 @@ def v2tov3(messages, errors):
                         if item in files_to_remove:
                              json_['weatherers'].remove(item)
                 json.dump(json_, open(fname, 'w'))
+
+    # remove targeted files
     for fname in files_to_remove:
             Path(fname).unlink()
 
-    messages.append('**Update from v2 to v3 successful**')
+    messages.append('**Update from v3 to v4 successful**')
     return messages, errors
 
 
@@ -406,5 +412,6 @@ def sanitize_filename(fname):
     return re.sub(r'[\\\\/*?:"<>|]', "", fname)
 
 
-# note: these should be indexed by version number
-all_update_steps = [v0tov1, v1tov2, v2tov3]
+
+# note these should be indexed by version number
+all_update_steps = [v0tov1, v1tov2, v2tov3, v3tov4]
