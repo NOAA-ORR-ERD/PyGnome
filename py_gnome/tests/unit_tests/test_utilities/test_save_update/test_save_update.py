@@ -11,7 +11,7 @@ from gnome.utilities.save_updater import (extract_zipfile,
                                           remember_cwd,
                                           v0tov1,
                                           v1tov2,
-                                          v2tov3,
+                                          v3tov4,
                                           )
 
 '''
@@ -118,13 +118,7 @@ def test_v1_to_v2():
         assert check_files(checker)
 
 
-def test_v2_to_v3():
-    """
-    fixme: this is only checking 'gnome.spills.substance.GnomeOil'
-    not any others, including: gnome.spills.spill.Spill
-
-    check_files should probably be updated to do more than one check
-    """
+def test_v3_to_v4():
     with setup_workspace('v0_diesel_mac.zip'):
         errs = []
         msgs = []
@@ -132,7 +126,7 @@ def test_v2_to_v3():
         # have to run v0tov1 first for this old data
         v0tov1(msgs, errs)
         v1tov2(msgs, errs)
-        v2tov3(msgs, errs)
+        v3tov4(msgs, errs)
         assert len(errs) == 0
 
         def checker(js):
