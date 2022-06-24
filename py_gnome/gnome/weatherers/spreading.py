@@ -514,9 +514,11 @@ class FayGravityViscous(Weatherer):
                                            relative_buoyancy,
                                            blob_init_vol,
                                            self.spreading_const)
-
-        s_mask = np.logical_and(age > t0, area < max_area_le)
+        
+        mask = np.logical_and(age > t0, area != max_area_le)
+        s_mask = np.logical_and(mask, area >1.e-20)
         if len(area[s_mask]) > 0:
+            # print(area[s_mask])
             C = (PI *
                  self.spreading_const[2] ** 2 *
                  (blob_init_vol ** 2 *
@@ -662,6 +664,7 @@ class FayGravityViscous(Weatherer):
             return
         
         for substance, data in sc.itersubstancedata(self.array_types):
+       
             if len(data['fay_area']) == 0:
                 continue
 
@@ -698,7 +701,8 @@ class FayGravityViscous(Weatherer):
     #                                      data['age'][s_mask] + time_step)
 
                 data['area'][s_mask] = data['fay_area'][s_mask]
-
+        
+        #print('llleeeooo', sc['mass'], sc['area'], sc['fate_status'])
         sc.update_from_fatedataview()
 
 
