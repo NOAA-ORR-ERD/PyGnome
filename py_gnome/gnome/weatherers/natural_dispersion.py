@@ -132,7 +132,7 @@ class NaturalDispersion(Weatherer):
             except:
                 import pdb
                 pdb.post_mortem()
-
+            
             sc.mass_balance['natural_dispersion'] += np.sum(disp[:])
 
             if data['mass'].sum() > 0:
@@ -209,14 +209,15 @@ class NaturalDispersion(Weatherer):
             # print ('dispersion: mass_components = {}'
             #        .format(data['mass_components'].sum(1)))
             
-            disp = self.disperse_oil2(time_step,
+            disp, droplet_avg_size, sed = self.disperse_oil2(time_step,
                         data['frac_water'],
                         data['mass'],
                         data['viscosity'],
                         data['density'],
                         data['area'],
                         disp,
-                        sed,
+                        sed, 
+                        droplet_avg_size,
                         frac_breaking_waves,
                         disp_wave_energy,
                         wave_height,
@@ -225,6 +226,25 @@ class NaturalDispersion(Weatherer):
                         sediment,
                         V_entrain,
                         ka)
+            '''
+            disp, droplet_avg_size, sed = self.disperse_oil(time_step,
+                     data['frac_water'],
+                     data['mass'],
+                     data['viscosity'],
+                     data['density'],
+                     data['area'],
+                     disp, # output
+                     sed,  # output
+                     droplet_avg_size, # output
+                     frac_breaking_waves,
+                     disp_wave_energy,
+                     wave_height,
+                     visc_w,
+                     rho_w,
+                     sediment,
+                     V_entrain,
+                     ka)
+            '''
             
             sc.mass_balance['natural_dispersion'] += np.sum(disp[:])
             
@@ -273,54 +293,7 @@ class NaturalDispersion(Weatherer):
                      area,
                      disp_out,
                      sed_out,
-                     frac_breaking_waves,
-                     disp_wave_energy,
-                     wave_height,
-                     visc_w,
-                     rho_w,
-                     sediment,
-                     V_entrain,
-                     ka):
-        # typical range of interfacial tension between oil and water 30-40 dyne/cm (10-5, 10-2)
-        sigma_o_w = 3.5e-2 # unit N/m         
-        H0 = wave_height / 0.707 
-        d_oil = 4.0 * np.sqrt(sigma_o_w / (constants.gravity * (rho_w - density)))
-        dynamic_visc = viscosity * density
-        
-        a = 4.604e-10 
-        b = 1.805
-        c = -1.023
-        
-        Weber = rho_w * constants.gravity * H0 * d_oil / sigma_o_w        
-        Ohnesorge = dynamic_visc / np.sqrt(density * sigma_o_w * d_oil)         
-        Q_oil = a * (Weber**b) * (Ohnesorge**c)  
-        
-        s_mask = area > 0
-        Vemul = (mass[s_mask] / density[s_mask])  / (1.0 - frac_water[s_mask]);
-        thickness = Vemul / area[s_mask];
-#        print('LE mass', mass)
-#        print('Vemul', Vemul)
-#        print('area', area)
-#        print('thickness', thickness)        
-#        print('fraction-waves', frac_breaking_waves)
-#        print('Q_oil', Q_oil)
-        
-        Q_disp = density[s_mask] * thickness * frac_breaking_waves * Q_oil[s_mask] * (1.0 - frac_water[s_mask]) * area[s_mask]
-        # print(area[s_mask], area)
-        disp_out[s_mask] = Q_disp * time_step
-#        print(mass, disp_out)
-        return disp_out          
-
-    
-
-    def disperse_oil(self, time_step,
-                     frac_water,
-                     mass,
-                     viscosity,
-                     density,
-                     area,
-                     disp_out,
-                     sed_out,
+                     droplet_avg_size,
                      frac_breaking_waves,
                      disp_wave_energy,
                      wave_height,
@@ -330,6 +303,90 @@ class NaturalDispersion(Weatherer):
                      V_entrain,
                      ka):
         '''
+        Oil natural dispersion algorithm developed by Li et al., (2017)
+        '''        
+        # typical range of interfacial tension between oil and water 30-40 dyne/cm (10-5, 10-2)
+        sigma_o_w = 3.0e-2 #3.5e-2 # unit N/m         
+        H0 = wave_height / 0.707 # significant wave height
+        d_oil = 4.0 * np.sqrt(sigma_o_w / (constants.gravity * (rho_w - density))) # maximum stable droplet diameter
+        dynamic_visc = viscosity * density
+        
+        # parameter values estimated by Li et al., (2017)
+        a = 4.604e-10 
+        b = 1.805
+        c = -1.023
+        
+        r = 1.791
+        p = 0.460
+        q = -0.518
+        
+        Weber = rho_w * constants.gravity * H0 * d_oil / sigma_o_w # Weber number       
+        Ohnesorge = dynamic_visc / np.sqrt(density * sigma_o_w * d_oil) # Ohnesorge number        
+        Q_oil = a * (Weber**b) * (Ohnesorge**c)  
+        
+        s_mask = area > 0
+        Vemul = (mass[s_mask] / density[s_mask])  / (1.0 - frac_water[s_mask]);
+        thickness = Vemul / area[s_mask];
+        
+        Q_disp = density[s_mask] * thickness * frac_breaking_waves[s_mask] * Q_oil[s_mask] * (1.0 - frac_water[s_mask]) * area[s_mask]
+        # print(area[s_mask], area)
+        disp_out[s_mask] = Q_disp * time_step
+        
+        droplet_avg_size[s_mask] = d_oil[s_mask] * r * (Ohnesorge[s_mask]**p) * (Weber[s_mask]**q) 
+
+
+        # sedimentation algorithm below
+        droplet = 0.613 * thickness        
+        # droplet average rising velocity
+        speed = (droplet * droplet * constants.gravity * (1.0 - density / rho_w) / (18.0 * visc_w))
+
+        # vol of refloat oil/wave p
+        V_refloat = 0.588 * (np.power(thickness, 1.7) - 5.0e-8)
+        V_refloat[V_refloat < 0.0] = 0.0
+               
+        # dispersion term at current time.
+        C_disp = disp_wave_energy ** 0.57 * frac_breaking_waves
+        
+        # Roy's constant
+        C_Roy = 2400.0 * np.exp(-73.682 * np.sqrt(viscosity)) 
+        
+        q_refloat = C_Roy * C_disp * V_refloat * area
+        
+        C_oil = (q_refloat * time_step / (speed * time_step + 1.5 * wave_height))
+        #print('C_oil', C_oil[0])
+        # mass rate of oil loss due to sedimentation 
+        Q_sed = (1.6 * ka * np.sqrt(wave_height * disp_wave_energy * frac_breaking_waves / (rho_w * visc_w)) * C_oil * sediment)               
+        
+        
+        s_mask = np.logical_and(sediment > 0.0, thickness >= 1.0e-4)
+        sed_out[s_mask] = (1.0 - frac_water[s_mask]) * Q_sed[s_mask] * time_step
+        
+        s_mask = (disp_out + sed_out) > mass
+        disp_out[s_mask] = (disp_out[s_mask] / (disp_out[s_mask] + sed_out[s_mask])) * mass[s_mask]
+        sed_out[s_mask] = mass[s_mask] - disp_out[s_mask]
+        
+        return disp_out, droplet_avg_size, sed_out              
+
+
+    def disperse_oil(self, time_step,
+                     frac_water,
+                     mass,
+                     viscosity,
+                     density,
+                     area,
+                     disp_out, # output
+                     sed_out,  # output
+                     droplet_avg_size, # output
+                     frac_breaking_waves,
+                     disp_wave_energy,
+                     wave_height,
+                     visc_w,
+                     rho_w,
+                     sediment,
+                     V_entrain,
+                     ka):
+        '''
+            Oil natural dispersion model developed by Delvgine and Sweeney (1988)
             Right now we just want to recreate what the lib_gnome dispersion
             function is doing...but in python.
             This will allow us to more easily refactor, and we can always
@@ -339,11 +396,66 @@ class NaturalDispersion(Weatherer):
         D_e = disp_wave_energy
         f_bw = frac_breaking_waves
         H_rms = wave_height
-
+        
         # dispersion term at current time.
-        C_disp = D_e ** 0.57 * f_bw
-
-        for i, (rho, mass, visc, Y, A) in enumerate(zip(density, mass,
+        C_disp = D_e ** 0.57 * f_bw 
+        # Roy's constant
+        C_Roy = 2400.0 * np.exp(-73.682 * np.sqrt(viscosity)) 
+            
+        for i, (rho, mass_elem, visc, Y, A) in enumerate(zip(density, mass,
                                                         viscosity, frac_water,
                                                         area)):
-            pass
+            if Y >= 1:
+               disp_out[i] = 0.0
+               sed_out[i] = 0.0
+               droplet_avg_size[i] = 0.0
+               continue
+            # shouldn't happen
+            
+            # natural dispersion computation below
+            if A > 0:
+               # emulsion volume (m3)
+               Vemul = (mass_elem / rho) / (1.0 - Y)
+               thickness = Vemul / A
+            else:
+               thickness = 0.0
+            
+            # mass rate of oil driven into the first 1.5 wave height (kg/sec)
+            Q_disp = C_Roy[i] * C_disp[i] * V_entrain * (1.0 - Y) * A   
+            
+            d_disp_out = Q_disp * time_step
+            
+            # sedimentation computation below
+            droplet = 0.613 * thickness
+            if sediment > 0.0 and thickness >= 1.0e-4:
+               # droplet average rising velocity
+               speed = (droplet * droplet * constants.gravity * (1.0 - rho / rho_w) / (18.0 * visc_w))
+
+               # vol of refloat oil/wave p
+               V_refloat = 0.588 * (np.power(thickness, 1.7) - 5.0e-8)
+               if V_refloat < 0.0:
+                  V_refloat = 0.0;
+               
+               # (kg/m2-sec) mass rate of emulsion
+               q_refloat = C_Roy[i] * C_disp[i] * V_refloat * A
+               
+               C_oil = (q_refloat * time_step / (speed * time_step + 1.5 * H_rms[i]))
+               # print('C_oil', C_oil)
+               # mass rate of oil loss due to sedimentation 
+               Q_sed = (1.6 * ka * np.sqrt(H_rms[i] * D_e[i] * f_bw[i] / (rho_w * visc_w)) * C_oil * sediment)              
+               
+               d_sed_out = (1.0 - Y) * Q_sed * time_step
+            else:
+               d_sed_out = 0.0            
+            
+            if (d_disp_out + d_sed_out) > mass_elem:
+               ratio = d_disp_out / (d_disp_out + d_sed_out)
+               
+               d_disp_out = ratio * mass_elem
+               d_sed_out = mass_elem - d_disp_out 
+            
+            disp_out[i] = d_disp_out
+            sed_out[i] = d_sed_out
+            droplet_avg_size[i] = droplet
+            
+        return disp_out, droplet_avg_size, sed_out          
