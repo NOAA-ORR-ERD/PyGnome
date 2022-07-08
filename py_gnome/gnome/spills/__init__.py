@@ -8,7 +8,7 @@ from .release import (Release,
                       BaseReleaseSchema,
                       PointLineRelease,
                       PointLineReleaseSchema,
-                      SpatialRelease,
+                      PolygonRelease,
                       GridRelease,
                       VerticalPlumeRelease,
                       InitElemsFromFile)

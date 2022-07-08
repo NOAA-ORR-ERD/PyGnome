@@ -13,7 +13,7 @@ from gnome.model import Model
 from gnome.utilities import time_utils
 from gnome.utilities.projections import FlatEarthProjection, GeoProjection
 
-from gnome.spills import SpatialRelease, Spill, surface_point_line_spill
+from gnome.spills import PolygonRelease, Spill, surface_point_line_spill
 from gnome.movers import IceMover
 from gnome.outputters import IceImageOutput
 
@@ -50,7 +50,7 @@ def make_model():
     #                                          release_time=model.start_time,
     #                                          end_position=start_pos)
 
-    # release = SpatialRelease(start_position=line_pos,
+    # release = PolygonRelease(start_position=line_pos,
     #                          release_time=model.start_time)
     # model.spills += Spill(release)
 

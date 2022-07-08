@@ -28,10 +28,10 @@ from gnome.environment.water import WaterSchema
 from .release import (Release,
                       PointLineRelease,
                       GridRelease,
-                      SpatialRelease,
+                      PolygonRelease,
                       BaseReleaseSchema,
                       PointLineReleaseSchema,
-                      SpatialReleaseSchema)
+                      PolygonReleaseSchema)
 
 from .substance import (Substance,
                         SubstanceSchema,
@@ -53,7 +53,7 @@ class SpillSchema(ObjTypeSchema):
     release = GeneralGnomeObjectSchema(
         acceptable_schemas=[BaseReleaseSchema,
                             PointLineReleaseSchema,
-                            SpatialReleaseSchema],
+                            PolygonReleaseSchema],
         save=True, update=True, save_reference=True
     )
     substance = GeneralGnomeObjectSchema(

@@ -18,6 +18,9 @@
 # should get it working with 3.10 -- but mapbox-earcut not ready :-(
 python>=3.8,<3.11
 
+# for building
+cython=0.29.*
+
 # for SpatialRelease
 trimesh
 shapely

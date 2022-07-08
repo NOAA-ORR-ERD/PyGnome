@@ -10,7 +10,7 @@ import datetime
 import numpy as np
 import pytest
 
-from gnome.movers import IceWindMover, GridWindMover
+from gnome.movers import IceWindMover, c_GridWindMover
 from gnome.utilities import time_utils
 
 from ..conftest import sample_sc_release, testdata
@@ -78,7 +78,7 @@ def test_loop_gridwind():
     """
     pSpill = sample_sc_release(num_le, start_pos, rel_time,
                                windage_range=(0.03, 0.03))
-    wind = GridWindMover(ice_file, topology_file)
+    wind = c_GridWindMover(ice_file, topology_file)
     delta = _certain_loop(pSpill, wind)
 
     _assert_move(delta)

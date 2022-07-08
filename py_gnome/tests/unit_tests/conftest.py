@@ -326,7 +326,7 @@ def get_testdata():
     get_datafile(os.path.join(curr_dir, 'gridcur_tsA.cur'))
     get_datafile(os.path.join(curr_dir, 'gridcur_tsB.cur'))
 
-    data['GridWindMover'] = \
+    data['c_GridWindMover'] = \
         {'wind_curv': get_datafile(os.path.join(wind_dir,
                                                 'WindSpeedDirSubset.nc')),
          'top_curv': get_datafile(os.path.join(wind_dir,

@@ -348,8 +348,8 @@ class PyCurrentMover(movers.PyMover):
 
         if need_to_reallocate and uncertain_list_size!=0:
             a_append = np.zeros((num_les-uncertain_list_size,)+self.shape,dtype=np.float64)
-            a_append[:,0] = np.random.uniform(-self.uncertain_along, self.uncertain_along)
-            a_append[:,1] = np.random.uniform(-self.uncertain_cross, self.uncertain_cross)
+            a_append[:,0] = np.random.uniform(-self.uncertain_along, self.uncertain_along, size=(num_les-uncertain_list_size,))
+            a_append[:,1] = np.random.uniform(-self.uncertain_cross, self.uncertain_cross, size=(num_les-uncertain_list_size,))
             self.uncertainty_list = np.r_[self.uncertainty_list, a_append]
 #             for i in range(uncertain_list_size,num_les):
 #                 self.uncertainty_list[i:,0] = np.random.uniform(-self.uncertain_along, self.uncertain_along)

@@ -96,7 +96,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # model.movers += w_mover
     # model.environment += w_mover.wind
 
-    w_mover = gs.constant_wind_mover(5, 180, units='m/s')
+    w_mover = gs.constant_point_wind_mover(5, 180, units='m/s')
     model.movers += w_mover
     print('adding a cats shio mover:')
 

@@ -16,7 +16,7 @@ from gnome.utilities.remote_data import get_datafile
 from gnome.model import Model
 from gnome.maps import MapFromBNA
 from gnome.spills import surface_point_line_spill
-from gnome.movers import GridWindMover
+from gnome.movers import c_GridWindMover
 
 from gnome.outputters import Renderer
 from gnome.outputters import NetCDFOutput
@@ -67,7 +67,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     wind_file = get_datafile(os.path.join(base_dir, 'WindSpeedDirSubset.nc'))
     topology_file = get_datafile(os.path.join(base_dir,
                                               'WindSpeedDirSubsetTop.dat'))
-    w_mover = GridWindMover(wind_file, topology_file)
+    w_mover = c_GridWindMover(wind_file, topology_file)
 
     # w_mover.uncertain_time_delay = 6
     # w_mover.uncertain_duration = 6

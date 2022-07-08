@@ -54,7 +54,7 @@ model.map = gs.MapFromBNA(mapfile,
 
 windfile = gs.get_datafile(os.path.join(base_dir, '28NM SSW San Francisco CA-4-18.nws'))
 
-forecast = gs.wind_mover_from_file(windfile)
+forecast = gs.point_wind_mover_from_file(windfile)
 #forecast.active_range = (gs.asdatetime("2019-04-19T22:01"),
 #                          gs.InfTime())
 model.movers += forecast

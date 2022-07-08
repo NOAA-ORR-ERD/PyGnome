@@ -15,7 +15,7 @@ import numpy as np
 import pytest
 
 from gnome.outputters import TrajectoryGeoJsonOutput
-from gnome.spills import SpatialRelease, Spill, surface_point_line_spill
+from gnome.spills import PolygonRelease, Spill, surface_point_line_spill
 from gnome.basic_types import oil_status
 from gnome.environment import constant_wind, Water
 from gnome.weatherers import Evaporation
