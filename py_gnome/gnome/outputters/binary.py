@@ -138,28 +138,33 @@ class BinaryOutput(OutputterFilenameMixin,Outputter):
         '''
         super(BinaryOutput, self).write_output(step_num, islast_step)
 
-        if not self._write_step:
+        #if not self._write_step:
+        if self.on is False:
             return None
 
-        for sc in self.cache.load_timestep(step_num).items():
-            # loop through uncertain and certain LEs
-            # extract the data
-            if sc.uncertain:
-                #self._u_filename = '{0}UNCRTN.{1:03d}'.format(self.name,self.file_num)
-                filename = '{0}UNCRTN.{1:03d}'.format(self.name,self.file_num)
-            else:
-                #self._c_filename = '{0}FORCST.{1:03d}'.format(self.name,self.file_num)
-                filename = '{0}FORCST.{1:03d}'.format(self.name,self.file_num)
+        if self._write_step:
+            for sc in self.cache.load_timestep(step_num).items():
+                # loop through uncertain and certain LEs
+                # extract the data
+                if sc.uncertain:
+                    #self._u_filename = '{0}UNCRTN.{1:03d}'.format(self.name,self.file_num)
+                    filename = '{0}UNCRTN.{1:03d}'.format(self.name,self.file_num)
+                else:
+                    #self._c_filename = '{0}FORCST.{1:03d}'.format(self.name,self.file_num)
+                    filename = '{0}FORCST.{1:03d}'.format(self.name,self.file_num)
 
-            self._file_exists_error(filename)
+                self._file_exists_error(filename)
 
-            output_filename = self.output_to_file(filename, sc)
+                output_filename = self.output_to_file(filename, sc)
 
 
         if islast_step:
             num_files = self.file_num + 1
             self._zip_binary_files(num_files)
  
+        if not self._write_step:
+            return None
+
         self.file_num += 1
         
         output_info = {'time_stamp': sc.current_time_stamp.isoformat(),
