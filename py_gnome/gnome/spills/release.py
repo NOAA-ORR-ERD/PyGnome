@@ -293,8 +293,8 @@ class Release(GnomeId):
             # This is a special case, when the release is short enough a single
             # timestep encompasses the whole thing.
             if self.release_duration == 0:
-                t = Time([self.release_time,
-                          self.end_release_time + timedelta(seconds=1)])
+                t = Time([self.release_time - timedelta(seconds=1),
+                          self.end_release_time])
             else:
                 t = Time([self.release_time, self.end_release_time])
         else:
