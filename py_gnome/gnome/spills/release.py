@@ -99,6 +99,7 @@ class Release(GnomeId):
                  end_release_time=None,
                  custom_positions=None,
                  release_mass=0,
+                 retain_initial_position=False,
                  **kwargs):
         """
         Required Arguments:
@@ -128,6 +129,10 @@ class Release(GnomeId):
 
         :param release_mass=0: optional. This is the mass released in kilograms.
         :type release_mass: integer
+
+        :param retain_initial_positions: Optional. If True, each LE will retain
+            information about it's originally released position
+        :type retain_initial_positions: boolean
         """
         self._num_elements = self._num_per_timestep = None
 
@@ -146,11 +151,14 @@ class Release(GnomeId):
             self.release_time = datetime.now()
         self.release_mass = release_mass
         self.custom_positions = custom_positions
+        self.retain_initial_positions = retain_initial_positions
         self.rewind()
         super(Release, self).__init__(**kwargs)
         self.array_types.update({'positions': gat('positions'),
                                  'mass': gat('mass'),
                                  'init_mass': gat('mass')})
+        if self.retain_initial_positions:
+            self.array_types.update({'init_positions': gat('positions')})
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
@@ -366,11 +374,13 @@ class Release(GnomeId):
         rem_pos = self.custom_positions[np.random.randint(0, len(self.custom_positions), rem)]
         pos = np.vstack((qt_pos, rem_pos))
         assert len(pos) == to_rel
+
         data['positions'][sl] = pos
-
-
         data['mass'][sl] = self._mass_per_le
         data['init_mass'][sl] = self._mass_per_le
+        
+        if self.retain_initial_positions:
+            data['init_positions'][sl] = pos
 
 
 
@@ -561,6 +571,9 @@ class PointLineRelease(Release):
                         to_rel)
         data['mass'][sl] = self._mass_per_le
         data['init_mass'][sl] = self._mass_per_le
+        
+        if self.retain_initial_positions:
+            data['init_positions'][sl] = data['positions'][sl]
 
 class PolygonReleaseSchema(BaseReleaseSchema):
     filename = FilenameSchema(save=False, update=False, test_equal=False, missing=drop)
@@ -814,6 +827,9 @@ class PolygonRelease(Release):
         pts = [np.append(pt, 0) for pt in pts] #add Z coordinate
 
         data['positions'][sl] = pts
+
+        if self.retain_initial_positions:
+            data['init_positions'][sl] = data['positions'][sl]
 
         data['mass'][sl] = self._mass_per_le
         data['init_mass'][sl] = self._mass_per_le
