@@ -206,8 +206,8 @@ class PyCurrentMover(movers.PyMover):
 
             return lons, lats
         else:
-            lons = self.current.grid.node_lon
-            lats = self.current.grid.node_lat
+            lons = self.current.grid.node_lon[:]
+            lats = self.current.grid.node_lat[:]
 
             return lons.reshape(-1), lats.reshape(-1)
 
