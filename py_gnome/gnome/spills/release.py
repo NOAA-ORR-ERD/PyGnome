@@ -99,7 +99,7 @@ class Release(GnomeId):
                  end_release_time=None,
                  custom_positions=None,
                  release_mass=0,
-                 retain_initial_position=False,
+                 retain_initial_positions=False,
                  **kwargs):
         """
         Required Arguments:
