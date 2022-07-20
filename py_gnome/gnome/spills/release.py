@@ -390,11 +390,9 @@ class Release(GnomeId):
         data['mass'][sl] = self._mass_per_le
         data['init_mass'][sl] = self._mass_per_le
 
-        if self.retain_initial_positions:
-            data['init_positions'][sl] = pos
-
-    def initialize_LEs_Area(self, to_rel, data, start_time, end_time):
+    def initialize_LEs_Area(self, to_rel, data, std_density):
         pass
+
 
 
 class PointLineRelease(Release):
@@ -595,8 +593,7 @@ class PointLineRelease(Release):
             data['release_rate'][sl] = np.nan
         # compute release rate
 
-
-    def initialize_LEs_Area(self, to_rel, data, start_time, end_time):
+    def initialize_LEs_Area(self, to_rel, data, std_density):
 
         # compute initial spreading area
         sl = slice(-to_rel, None, 1)
@@ -607,9 +604,9 @@ class PointLineRelease(Release):
                    data['bulk_init_volume'][sl] = sum(data['init_mass'][sl] / data['density'][sl])
 
         data['vol_frac_le_st'][sl] = (data['init_mass'][sl] / data['density'][sl]) / data['bulk_init_volume'][sl]
+
         self.spread = FayGravityViscous()
-        if self.spread.water is None:
-           self.spread.water = Water()
+
         if hasattr(data, 'substance'):
            self.spread.prepare_for_model_run(data)
            if data.substance.is_weatherable:

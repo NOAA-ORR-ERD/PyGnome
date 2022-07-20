@@ -440,8 +440,7 @@ class Spill(BaseSpill):
             sc['frac_coverage'][-to_rel:] = self.frac_coverage
 
         self.substance.initialize_LEs(to_rel, sc, environment=environment)
-
-        self.release.initialize_LEs_Area(to_rel, sc, start_time, end_time)
+        self.release.initialize_LEs_Area(to_rel, sc, self.substance.standard_density)
 
         return to_rel
 
@@ -450,7 +449,7 @@ class Spill(BaseSpill):
         Determines the number of elements to be released during:
         current_time + time_step
 
-        It invokes the num_elements_to_release method for the the unerlying
+        It invokes the num_elements_to_release method for the the underlying
         release object: self.release.num_elements_to_release()
 
         :param current_time: current time

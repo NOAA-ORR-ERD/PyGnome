@@ -7,6 +7,9 @@ from gnome.spill_container import SpillContainer
 import numpy as np
 from gnome.ops import weathering_array_types
 
+from datetime import datetime, timedelta
+from gnome import scripting as gs
+
 def test_init_density():
     sc = SpillContainer()
     sc.substance = NonWeatheringSubstance()
@@ -34,10 +37,19 @@ def test_init_density():
     assert np.all(sc['density'] < rho1)
 
 def test_recalc_density():
-    #Setup with NonWeatheringSubstance, 100 LEs
+# Setup with NonWeatheringSubstance, 100 LEs
     sc = SpillContainer()
-    nw_subs = NonWeatheringSubstance(standard_density=900)
-    sc.substance = nw_subs
+#    nw_subs = NonWeatheringSubstance(standard_density=900)
+#    sc.substance = nw_subs
+# fix it **********
+    spill = gs.surface_point_line_spill(num_elements=100,
+                                        start_position=(0.0, 0.0, 0.0),
+                                        release_time=datetime(2014, 1, 1, 0, 0),
+                                        amount=100,
+                                        units='bbl',
+                                        substance = NonWeatheringSubstance(standard_density=900))  
+    sc.spills.add(spill)
+# fix it **********
     sc.prepare_for_model_run(weathering_array_types)
     sc._append_data_arrays(100)
     sc.mass_balance['avg_density'] = 0
@@ -55,16 +67,28 @@ def test_recalc_density():
     assert sc.mass_balance['avg_density'] == 900
 
     
-    new_subs = GnomeOil('oil_crude')
-    sc.rewind()
-    sc.substance = new_subs
+#    new_subs = GnomeOil('oil_crude')
+#    sc.rewind()
+#    sc.substance = new_subs
+# fix it **********
+    sc = SpillContainer()
+    spill = gs.surface_point_line_spill(num_elements=100,
+                                        start_position=(0.0, 0.0, 0.0),
+                                        release_time=datetime(2014, 1, 1, 0, 0),
+                                        amount=100,
+                                        units='bbl')  
+    spill.substance = GnomeOil('oil_crude')
+    sc.spills.add(spill)
+# fix it **********
     sc.prepare_for_model_run(weathering_array_types)
     sc._append_data_arrays(100)
     sc.mass_balance['avg_density'] = 0
     sc['mass'][:] = 10 #necessary for avg_density and mass components
-    new_subs.initialize_LEs(100, sc, environment={'water':default_water})
+#    new_subs.initialize_LEs(100, sc, environment={'water':default_water})
+    sc.substance.initialize_LEs(100, sc, environment={'water':default_water})
 
-    init_rho = new_subs.density_at_temp(default_water.get('temperature'))
+#    init_rho = new_subs.density_at_temp(default_water.get('temperature'))
+    init_rho = sc.substance.density_at_temp(default_water.get('temperature'))
     assert np.all(sc['density'] == init_rho)
     new_water = Water(temperature=277)
     recalc_density(sc, water=new_water, aggregate=True)
