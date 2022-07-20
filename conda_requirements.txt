@@ -1,8 +1,10 @@
 # Documents the conda packages required for PyGnome
 #
-#  This should be the minimal conda install to build and run
-#  See conda_requirements_dev.txt for others handy for development
-#  and conda_requirements_test for testing requirements
+#  This should be the minimal conda install to run PyGNOME
+#  See:
+#    conda_requirements_build.txt for build requirements
+#    conda_requirements_test for testing requirements
+#    conda_requirements_docs.txt requirements for building the sphinx docs
 
 #  install with:
 #    conda install --file conda_requirements.txt
@@ -10,16 +12,21 @@
 #  or create an environmemnt:
 #    conda create -n gnome python=3.9 --file conda_requirements.txt
 #   (python version is not specified in the conda_requirements file)
-# These packages would all be in one of the following channels:
+# if you want a full development environment,
+# you can install the whole thing at once:
+#
+# conda create -n gnome python=3.9 --file conda_requirements.txt --file conda_requirements_build.txt --file conda_requirements_test.txt --file conda_requirements_docs.txt
+
+
+# These packages should all be in one of the following channels:
 # defaults
 # conda-forge
-# NOAA-ORR-ERD
 
-# should get it working with 3.10 -- but mapbox-earcut not ready :-(
+# we should get it working with 3.10 -- but mapbox-earcut not ready :-(
 python>=3.8,<3.11
 
 # for building
-cython=0.29.*
+# cython=0.29.* # see the build requirements
 
 # for SpatialRelease
 trimesh
