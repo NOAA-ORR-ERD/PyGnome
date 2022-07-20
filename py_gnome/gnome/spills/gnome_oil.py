@@ -1,5 +1,5 @@
 
-from backports.functools_lru_cache import lru_cache
+from functools import lru_cache
 
 import numpy as np
 import os
