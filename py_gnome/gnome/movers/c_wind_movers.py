@@ -55,7 +55,7 @@ class WindMoversBase(CyMover):
                  uncertain_angle_scale=0.4,
                  **kwargs):
         """
-        This is simply a base class for WindMover and GridWindMover for the
+        This is simply a base class for WindMover and c_GridWindMover for the
         common properties.
 
         The classes that inherit from this should define the self.mover object
@@ -278,7 +278,7 @@ class WindMover(WindMoversBase):
             raise ReferencedObjectNotSet(msg)
 
 
-def wind_mover_from_file(filename, **kwargs):
+def point_wind_mover_from_file(filename, **kwargs):
     """
     Creates a wind mover from a wind time-series file (OSM long wind format)
 
@@ -293,9 +293,9 @@ def wind_mover_from_file(filename, **kwargs):
     return WindMover(w, name=w.name, **kwargs)
 
 
-def constant_wind_mover(speed, direction, units='m/s'):
+def constant_point_wind_mover(speed, direction, units='m/s'):
     """
-    utility function to create a mover with a constant wind
+    utility function to create a point wind mover with a constant wind
 
     :param speed: wind speed
     :param direction: wind direction in degrees true
@@ -312,7 +312,7 @@ def constant_wind_mover(speed, direction, units='m/s'):
     return WindMover(constant_wind(speed, direction, units=units))
 
 
-class GridWindMoverSchema(WindMoversBaseSchema):
+class c_GridWindMoverSchema(WindMoversBaseSchema):
     """
         Similar to WindMover except it doesn't have wind_id
     """
@@ -330,9 +330,9 @@ class GridWindMoverSchema(WindMoversBaseSchema):
     )
 
 
-class GridWindMover(WindMoversBase):
+class c_GridWindMover(WindMoversBase):
 
-    _schema = GridWindMoverSchema
+    _schema = c_GridWindMoverSchema
 
     def __init__(self, filename=None, topology_file=None,
                  extrapolate=False, time_offset=0,
@@ -348,7 +348,7 @@ class GridWindMover(WindMoversBase):
         :param time_offset: Time zone shift if data is in GMT
 
         Pass optional arguments to base class
-        uses super: ``super(GridWindMover,self).__init__(**kwargs)``
+        uses super: ``super(c_GridWindMover,self).__init__(**kwargs)``
         """
         if not os.path.exists(filename):
             raise ValueError('Path for wind file does not exist: {0}'
@@ -365,7 +365,7 @@ class GridWindMover(WindMoversBase):
         # Ideally, we would be able to run the base class initialization first
         # because we designed the Movers well.  As it is, we inherit from the
         # CyMover, and the CyMover needs to have a self.mover attribute.
-        super(GridWindMover, self).__init__(**kwargs)
+        super(c_GridWindMover, self).__init__(**kwargs)
 
         # is wind_file and topology_file is stored with cy_gridwind_mover?
         self.name = os.path.split(filename)[1]
@@ -388,10 +388,10 @@ class GridWindMover(WindMoversBase):
         .. todo::
             We probably want to include more information.
         """
-        return 'GridWindMover(\n{0})'.format(self._state_as_str())
+        return 'c_GridWindMover(\n{0})'.format(self._state_as_str())
 
     def __str__(self):
-        return ('GridWindMover - current _state.\n{0}'
+        return ('c_GridWindMover - current _state.\n{0}'
                 .format(self._state_as_str()))
 
     wind_scale = property(lambda self: self.mover.wind_scale,

@@ -15,7 +15,7 @@ import numpy as np
 
 from gnome.spills import (Release,
                          PointLineRelease,
-                         SpatialRelease,
+                         PolygonRelease,
                          #GridRelease,
                          )
 from gnome.spills.release import release_from_splot_data
@@ -61,7 +61,7 @@ rel_type = [PointLineRelease(release_time=rel_time,
             PointLineRelease(release_time=rel_time,
                              num_per_timestep=5,
                              start_position=(0, 0, 0))]
-# SpatialRelease(rel_time, np.zeros((4, 3), dtype=np.float64))]
+# PolygonRelease(rel_time, np.zeros((4, 3), dtype=np.float64))]
 
 
 @pytest.mark.parametrize("rel_type", rel_type)
@@ -325,7 +325,7 @@ polys = [Polygon([[0,0],[0,1],[1,0]])]
 @pytest.fixture(scope='function')
 def sr1():
     #150 minute continuous release
-    return SpatialRelease(release_time=rel_time,
+    return PolygonRelease(release_time=rel_time,
                           end_release_time=rel_time + timedelta(seconds=900)*10,
                           num_elements=1000,
                           release_mass=5000,
@@ -333,12 +333,12 @@ def sr1():
 
 @pytest.fixture(scope='function')
 def sr2():
-    return SpatialRelease(release_time=rel_time,
+    return PolygonRelease(release_time=rel_time,
                           num_elements=1000,
                           polygons=polys)
 
 
-class TestSpatialRelease:
+class TestPolygonRelease:
 
     def test_LE_timestep_ratio(self, sr1):
         sr1.end_release_time = rel_time + timedelta(seconds=1000)*10
@@ -397,12 +397,12 @@ class TestSpatialRelease:
 
     def test_serialization(self, sr1):
         ser = sr1.serialize()
-        deser = SpatialRelease.deserialize(ser)
+        deser = PolygonRelease.deserialize(ser)
         assert deser == sr1
 
         sr1.prepare_for_model_run(900)
         ser = sr1.serialize()
-        deser = SpatialRelease.deserialize(ser)
+        deser = PolygonRelease.deserialize(ser)
         assert deser == sr1
 
 

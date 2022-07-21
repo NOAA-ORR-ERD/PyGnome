@@ -63,8 +63,8 @@ from gnome.spills.substance import NonWeatheringSubstance
 from gnome.spills.gnome_oil import GnomeOil
 
 from gnome.environment.wind import Wind, constant_wind
-from gnome.movers.wind_movers import (constant_wind_mover,
-                                      wind_mover_from_file,
+from gnome.movers.c_wind_movers import (constant_point_wind_mover,
+                                      point_wind_mover_from_file,
                                       )
 
 from gnome.outputters import (Renderer,

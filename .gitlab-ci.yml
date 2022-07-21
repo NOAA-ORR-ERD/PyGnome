@@ -31,10 +31,6 @@ configure_env:
 
 compile_pygnome:
   stage: compile
-  # only:
-  #   - develop
-  #   - master
-  #   - production
   image: registry.orr.noaa.gov/erd/centos-conda/centos7-python$PYTHON_VER
   script:
     - echo "compiling PyGNOME"
@@ -45,12 +41,8 @@ compile_pygnome:
                                           --file conda_requirements_build.txt
                                           --file oil_database/adios_db/conda_requirements.txt
 
-    # - conda list --export --no-pip > deploy_requirements.txt
-
     # install adios_db
     - pip install oil_database/adios_db/
-    # - pip install git+https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.orr.noaa.gov/gnome/oil_database/oil_database.git@production#subdirectory=adios_db
-    # export the conda packages for use in later stages.
 
     - cd ./py_gnome
     - python setup.py install

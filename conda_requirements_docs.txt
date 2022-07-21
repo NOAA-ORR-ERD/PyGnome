@@ -1,4 +1,4 @@
-# required to build docs
+# required to build the sphinx docs
 sphinx
 sphinx_rtd_theme
 nbsphinx

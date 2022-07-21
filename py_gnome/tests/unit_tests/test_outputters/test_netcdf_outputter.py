@@ -18,7 +18,7 @@ from gnome.spills import surface_point_line_spill, Spill, Release
 from gnome.spill_container import SpillContainerPair
 from gnome.weatherers import Evaporation
 from gnome.environment import Water
-from gnome.movers import RandomMover, constant_wind_mover
+from gnome.movers import RandomMover, constant_point_wind_mover
 from gnome.outputters import NetCDFOutput
 from gnome.model import Model
 from ..conftest import test_oil
@@ -48,7 +48,7 @@ def model(sample_model_fcn, output_filename):
 
     water = Water()
     model.movers += RandomMover(diffusion_coef=100000)
-    model.movers += constant_wind_mover(1.0, 0.0)
+    model.movers += constant_point_wind_mover(1.0, 0.0)
     model.weatherers += Evaporation(water=water, wind=model.movers[-1].wind)
 
     model.outputters += NetCDFOutput(output_filename)

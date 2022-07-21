@@ -32,16 +32,24 @@ class PyWindMoverSchema(ObjTypeSchema):
                                     save_reference=True,
                                     acceptable_schemas=[VectorVariableSchema,
                                                         GridWind._schema])
-    filename = FilenameSchema(save=True, update=False, isdatafile=True,
+    filename = FilenameSchema(save=True, update=False, isdatafile=True, test_equal=False,
                               missing=drop)
     scale_value = SchemaNode(Float(), save=True, update=True, missing=drop)
-    time_offset = SchemaNode(Float(), save=True, update=True, missing=drop)
+    #time_offset = SchemaNode(Float(), save=True, update=True, missing=drop)
     on = SchemaNode(Bool(), save=True, update=True, missing=drop)
     active_range = TimeRangeSchema()
     data_start = SchemaNode(LocalDateTime(), read_only=True,
                             validator=convertible_to_seconds)
     data_stop = SchemaNode(LocalDateTime(), read_only=True,
                            validator=convertible_to_seconds)
+    uncertain_duration = SchemaNode(Float())
+    uncertain_time_delay = SchemaNode(Float())
+    uncertain_speed_scale = SchemaNode(
+        Float(), missing=drop, save=True, update=True
+    )
+    uncertain_angle_scale = SchemaNode(
+        Float(), missing=drop, save=True, update=True
+    )
 
 
 class PyWindMover(movers.PyMover):
@@ -55,7 +63,7 @@ class PyWindMover(movers.PyMover):
                  filename=None,
                  wind=None,
                  time_offset=0,
-                 uncertain_duration=3,
+                 uncertain_duration=3.* 3600,
                  uncertain_time_delay=0,
                  uncertain_speed_scale=2.,
                  uncertain_angle_scale=0.4,
@@ -80,8 +88,8 @@ class PyWindMover(movers.PyMover):
         :param uncertain_duration: how often does a given uncertain element
                                    get reset
         :param uncertain_time_delay: when does the uncertainly kick in.
-        :param uncertain_cross: Scale for uncertainty perpendicular to the flow
-        :param uncertain_along: Scale for uncertainty parallel to the flow
+        :param uncertain_speed_scale: Scale for uncertainty of wind speed
+        :param uncertain_angle_scale: Scale for uncertainty of wind angle
         :param time_offset: Time zone shift if data is in GMT
         :param num_method: Numerical method for calculating movement delta.
                            Choices:('Euler', 'RK2', 'RK4')
@@ -105,11 +113,18 @@ class PyWindMover(movers.PyMover):
         self.uncertain_duration = uncertain_duration
         self.uncertain_time_delay = uncertain_time_delay
         self.uncertain_speed_scale = uncertain_speed_scale
-        self.scale_value = scale_value
-        self.time_offset = time_offset
-
-        # also sets self._uncertain_angle_units
         self.uncertain_angle_scale = uncertain_angle_scale
+        self.uncertain_diffusion = 0
+
+        self.scale_value = scale_value
+        #self.time_offset = time_offset
+
+        self.sigma_theta = 0
+        self.sigma2 = 0
+        self.is_first_step = False
+        self.time_uncertainty_was_set = 0
+        self.shape = (2,)
+        self.uncertainty_list = np.zeros((0,)+self.shape, dtype=np.float64)
 
         self.array_types.update({'windages': gat('windages'),
                                  'windage_range': gat('windage_range'),
@@ -120,11 +135,10 @@ class PyWindMover(movers.PyMover):
                     filename=None,
                     time_offset=0,
                     scale_value=1,
-                    uncertain_duration=24 * 3600,
+                    uncertain_duration=3 * 3600,
                     uncertain_time_delay=0,
-                    uncertain_along=.5,
-                    uncertain_across=.25,
-                    uncertain_cross=.25,
+                    uncertain_speed_scale=2.,
+                    uncertain_angle_scale=.4,
                     default_num_method='RK2',
                     **kwargs):
 
@@ -134,9 +148,8 @@ class PyWindMover(movers.PyMover):
                    filename=filename,
                    time_offset=time_offset,
                    scale_value=scale_value,
-                   uncertain_along=uncertain_along,
-                   uncertain_across=uncertain_across,
-                   uncertain_cross=uncertain_cross,
+                   uncertain_speed_scale=uncertain_speed_scale,
+                   uncertain_angle_scale=uncertain_angle_scale,
                    default_num_method=default_num_method)
 
     @property
@@ -150,6 +163,16 @@ class PyWindMover(movers.PyMover):
     @property
     def is_data_on_cells(self):
         return self.wind.grid.infer_location(self.wind.u.data) != 'node'
+
+    def prepare_for_model_run(self):
+        """
+        reset uncertainty
+        """
+        self.is_first_step = True
+        self.uncertainty_list = np.zeros((0,)+self.shape, dtype=np.float64)
+        self.time_uncertainty_was_set = 0
+
+        return
 
     def prepare_for_model_step(self, sc, time_step, model_time_datetime):
         """
@@ -174,6 +197,35 @@ class PyWindMover(movers.PyMover):
                                     sc['windages'],
                                     sc['windage_persist'],
                                     time_step)
+
+            seconds = self.datetime_to_seconds(model_time_datetime)
+            if self.is_first_step:
+                self.model_start_time = seconds	#check units on this
+
+            if sc.uncertain:
+                elapsed_time = seconds - self.model_start_time
+                eddy_diffusion = 1000000.	#this is fixed, should it be an input?
+                self.update_uncertainty(sc.num_released, elapsed_time)
+                self.uncertain_diffusion = np.sqrt(6 * (eddy_diffusion / 10000.) / time_step)
+
+        return
+
+    def model_step_is_done(self, sc):
+        """
+        remove any off map les
+        """
+        if not self.active or not self.on:
+            return
+
+        self.is_first_step = False
+
+        if sc.uncertain:
+            to_be_removed = np.where(sc['status_codes'] ==
+                                     oil_status.to_be_removed)[0]
+
+            if len(to_be_removed) > 0:
+                new_uncertainty = np.copy(self.uncertainty_list)
+                self.uncertainty_list = np.delete(new_uncertainty, to_be_removed, axis=0)
 
     def get_grid_data(self):
         """
@@ -249,6 +301,169 @@ class PyWindMover(movers.PyMover):
 
             return centroids
 
+    def update_uncertainty(self, num_les, elapsed_time):
+        """
+        update uncertainty
+
+        :param num_les: the number released so far
+        :param elapsed_time: time in seconds since model run started
+        """
+        need_to_reinit = False
+        need_to_reallocate = False
+
+        add_uncertainty = elapsed_time >= self.uncertain_time_delay
+
+        if not add_uncertainty:
+            #I'm not sure if we have to do anything here # we will not be adding uncertainty
+            #self.uncertainty_list = np.zeros((0,)+self.shape, dtype=np.float64)
+            #self.time_uncertainty_was_set = 0
+            return
+
+        uncertain_list_size = len(self.uncertainty_list)
+
+        if uncertain_list_size==0:
+            need_to_reinit = True
+
+        if elapsed_time < self.time_uncertainty_was_set:
+            # this shouldn't happen
+            need_to_reinit = True
+
+        if num_les > uncertain_list_size:
+            need_to_reallocate = True
+
+        if num_les < uncertain_list_size: # this shouldn't happen unless a reset was missed
+            need_to_reinit = True
+
+        if need_to_reallocate and uncertain_list_size!=0:
+            a_append = np.zeros((num_les-uncertain_list_size,)+self.shape,dtype=np.float64)
+            cos_arg = np.zeros((num_les-uncertain_list_size,)+self.shape,dtype=np.float64)
+            srt = np.zeros((num_les-uncertain_list_size,)+self.shape,dtype=np.float64)
+            cos_arg = 2. * np.pi * np.random.uniform(0,1, size=(num_les,))
+            srt = np.sqrt(-2. * np.log(np.random.uniform(0.001,.999, size=(num_les,))))
+            # need a loop to check TermsLessThanMax fabs(self.sigma_theta * sinTerm/rndv2) <= angleMax (60)
+            for i in range(uncertain_list_size,num_les):
+                for j in range(10):
+                    if np.abs(self.sigma_theta * srt[i] * np.sin(cos_arg[i])) <= 60.:
+                        break
+                        cos_arg[i] = 2. * np.pi * np.random.uniform(0,1)
+                        srt[i] = np.sqrt(-2. * np.log(np.random.uniform(0.001,.999)))
+
+            a_append[:,0] = srt * np.cos(cos_arg) #cos term
+            a_append[:,1] = srt * np.sin(cos_arg) #sin term
+            self.uncertainty_list = np.r_[self.uncertainty_list, a_append]
+
+        # question - should self.sigma2 change only when the duration value is exceeded ??
+        # or every step as it does now ??
+        self.sigma2 = self.uncertain_speed_scale * .315 * np.power(elapsed_time - self.uncertain_time_delay, .147)
+        self.sigma2 = self.sigma2 * self.sigma2 / 2.
+
+        self.sigma_theta = self.uncertain_angle_scale * 2.73 * np.sqrt(np.sqrt(elapsed_time - self.uncertain_time_delay))
+	
+        if need_to_reinit:
+            self.allocate_uncertainty(num_les)
+            self.update_uncertainty_values(elapsed_time)
+        elif elapsed_time >= self.time_uncertainty_was_set + self.uncertain_duration:
+            self.update_uncertainty_values(elapsed_time)
+
+        return
+
+
+    def update_uncertainty_values(self, elapsed_time):
+        """
+        update uncertainty values
+
+        :param elapsed_time: time in seconds since model run started
+        """
+        self.time_uncertainty_was_set = elapsed_time
+        num_les = len(self.uncertainty_list)
+        if num_les==0:
+            return
+
+        cos_arg = np.zeros((num_les,)+self.shape,dtype=np.float64)
+        srt = np.zeros((num_les,)+self.shape,dtype=np.float64)
+        cos_arg = 2. * np.pi * np.random.uniform(0,1, size=(num_les,))
+        srt = np.sqrt(-2. * np.log(np.random.uniform(0.001,.999, size=(num_les,))))
+        # need a loop to check TermsLessThanMax: fabs(self.sigma_theta * sinTerm/rndv2) <= angleMax (60)
+        for i in range(0,num_les):
+            for j in range(10):
+                if np.abs(self.sigma_theta * srt[i] * np.sin(cos_arg[i])) <= 60.:
+                    break
+                    cos_arg[i] = 2. * np.pi * np.random.uniform(0,1)
+                    srt[i] = np.sqrt(-2. * np.log(np.random.uniform(0.001,.999)))
+
+        self.uncertainty_list[:,0] = srt * np.cos(cos_arg) #cos term
+        self.uncertainty_list[:,1] = srt * np.sin(cos_arg) #sin term
+
+
+    def allocate_uncertainty(self, num_les):
+        """
+        add uncertainty
+
+        :param num_les: the number of les released so far
+        """
+        shape = (2,)
+        self.uncertainty_list = np.zeros((num_les,)+shape, dtype=np.float64)
+
+        return
+
+
+    def add_uncertainty(self, deltas, time_step):
+        """
+        add uncertainty
+
+        :param deltas: the movement for the current time step
+        """
+        if self.uncertainty_list is None:
+            return deltas # this is our clue to not add uncertainty
+
+        num_les = len(self.uncertainty_list)
+        if len(self.uncertainty_list)>0:
+            #make a copy of deltas
+            new_deltas=deltas.copy()
+            unrec=self.uncertainty_list
+            u = new_deltas[:,0] / time_step
+            v = new_deltas[:,1] / time_step
+            norm = np.sqrt(u*u + v*v)
+
+            s = norm * norm - self.sigma2
+            s = np.clip(s,a_min=0,a_max=None)
+            sqs = np.sqrt(s)
+            m = np.sqrt(sqs)
+            s2 = np.sqrt(norm - sqs)
+            rand_cos = unrec[:,0]	#cos term
+            rand_sin = unrec[:,1]	#sin term
+            x = rand_cos * s2 + m
+            w = x * x
+            dtheta = rand_sin * self.sigma_theta * np.pi / 180.
+            cos_theta = np.cos(dtheta)
+            sin_theta = np.sin(dtheta)
+            #w = w / (cos_theta < .001 ? .001 : costheta) # compensate for projection vector effect
+            norm_clip = np.clip(norm,a_min=0.001,a_max=None)
+            cos_theta_clip = np.clip(cos_theta,a_min=0.001,a_max=None)
+            w = w / cos_theta_clip  # compensate for projection vector effect
+
+            # Scale pattern velocity to have norm w
+            t = w / norm_clip
+            u *= t
+            v *= t
+
+            # Rotate velocity by dtheta
+            deltas[:,0] = (u * cos_theta - v * sin_theta) * time_step
+            deltas[:,1] = (v * cos_theta + u * sin_theta) * time_step	
+
+            for i in range(0,num_les):
+                if norm[i] < 1:
+                    rand1 = np.random.uniform(-1., 1.)
+                    rand2 = np.random.uniform(-1., 1.)
+                    deltas[i,0] = u[i] * self.uncertain_diffusion * rand1
+                    deltas[i,1] = v[i] * self.uncertain_diffusion * rand2
+
+        else:
+            raise ValueError("something wrong with uncertainty")
+
+        return deltas
+
+
     def get_move(self, sc, time_step, model_time_datetime, num_method=None):
         """
         Compute the move in (long,lat,z) space. It returns the delta move
@@ -273,10 +488,15 @@ class PyWindMover(movers.PyMover):
             pos = positions[:]
 
             deltas = self.delta_method(num_method)(sc, time_step, model_time_datetime, pos, self.wind)
+
+            if sc.uncertain:
+                deltas = self.add_uncertainty(deltas, time_step)
+
             deltas[:, 0] *= sc['windages'] * self.scale_value
             deltas[:, 1] *= sc['windages'] * self.scale_value
 
             deltas = FlatEarthProjection.meters_to_lonlat(deltas, positions)
+
             deltas[status] = (0, 0, 0)
         else:
             deltas = np.zeros_like(positions)

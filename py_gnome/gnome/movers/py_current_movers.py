@@ -27,7 +27,7 @@ class PyCurrentMoverSchema(ObjTypeSchema):
                                        acceptable_schemas=[VectorVariableSchema,
                                                            GridCurrent._schema]
                                        )
-    filename = FilenameSchema(save=True, update=False, isdatafile=True,
+    filename = FilenameSchema(save=True, update=False, isdatafile=True, test_equal=False,
                               missing=drop)
     scale_value = SchemaNode(Float(), save=True, update=True,
                                missing=drop)
@@ -206,8 +206,8 @@ class PyCurrentMover(movers.PyMover):
 
             return lons, lats
         else:
-            lons = self.current.grid.node_lon
-            lats = self.current.grid.node_lat
+            lons = self.current.grid.node_lon[:]
+            lats = self.current.grid.node_lat[:]
 
             return lons.reshape(-1), lats.reshape(-1)
 
@@ -348,8 +348,8 @@ class PyCurrentMover(movers.PyMover):
 
         if need_to_reallocate and uncertain_list_size!=0:
             a_append = np.zeros((num_les-uncertain_list_size,)+self.shape,dtype=np.float64)
-            a_append[:,0] = np.random.uniform(-self.uncertain_along, self.uncertain_along)
-            a_append[:,1] = np.random.uniform(-self.uncertain_cross, self.uncertain_cross)
+            a_append[:,0] = np.random.uniform(-self.uncertain_along, self.uncertain_along, size=(num_les-uncertain_list_size,))
+            a_append[:,1] = np.random.uniform(-self.uncertain_cross, self.uncertain_cross, size=(num_les-uncertain_list_size,))
             self.uncertainty_list = np.r_[self.uncertainty_list, a_append]
 #             for i in range(uncertain_list_size,num_les):
 #                 self.uncertainty_list[i:,0] = np.random.uniform(-self.uncertain_along, self.uncertain_along)
@@ -398,7 +398,7 @@ class PyCurrentMover(movers.PyMover):
         :param deltas: the movement for the current time step
         """
         if self.uncertainty_list is None:
-            return 0; # this is our clue to not add uncertainty
+            return deltas # this is our clue to not add uncertainty
 
         if len(self.uncertainty_list)>0:
             #make a copy of deltas
@@ -437,6 +437,9 @@ class PyCurrentMover(movers.PyMover):
         """
         add uncertainty
         """
+        super(PyCurrentMover, self).prepare_for_model_step(sc, time_step,
+                                                           model_time_datetime)
+
         if not self.active:
             return
 

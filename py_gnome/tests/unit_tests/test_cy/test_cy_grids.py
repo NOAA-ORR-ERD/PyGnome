@@ -21,7 +21,7 @@ def test_grid_wind_rect():
     check CyTimeGridWindRect correctly parses data
     '''
     idx = 5
-    file_ = testdata['GridWindMover']['wind_rect']
+    file_ = testdata['c_GridWindMover']['wind_rect']
     with nc.Dataset(file_) as data:
         time = nc.num2date(data.variables['time'][idx],
                            units=data.variables['time'].units)
@@ -40,8 +40,8 @@ def test_grid_wind_rect():
 
 def test_grid_wind_curv():
     # curvlinear grid
-    curv = CyTimeGridWindCurv(testdata['GridWindMover']['wind_curv'],
-                              testdata['GridWindMover']['top_curv'])
+    curv = CyTimeGridWindCurv(testdata['c_GridWindMover']['wind_curv'],
+                              testdata['c_GridWindMover']['top_curv'])
     time = date_to_sec(datetime(2006, 3, 31, 21))
     vel = curv.get_value(time, (-122.934656, 38.27594))
     print("Curv grid - vel: {0}\n".format(vel))

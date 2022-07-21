@@ -148,7 +148,7 @@ class TestGridWindMover(object):
         time = datetime.datetime(1999, 11, 29, 21)
         self.cm.model_time = date_to_sec(time)
 
-        time_grid_file = testdata['GridWindMover']['wind_rect']
+        time_grid_file = testdata['c_GridWindMover']['wind_rect']
 
         self.gcm.text_read(time_grid_file)
         self.cm.ref[:]['long'] = 3.104588  # for simple example
@@ -187,7 +187,7 @@ class TestGridWindMover(object):
         time = datetime.datetime(1999, 11, 29, 20)	# before first time in file
         self.cm.model_time = date_to_sec(time)
 
-        time_grid_file = testdata['GridWindMover']['wind_rect']
+        time_grid_file = testdata['c_GridWindMover']['wind_rect']
 
         self.gcm.text_read(time_grid_file)
         self.gcm.extrapolate_in_time(True)
@@ -228,8 +228,8 @@ class TestGridWindMover(object):
         self.cm.model_time = date_to_sec(time)
         self.cm.uncertain = True
 
-        self.gcm.text_read(testdata['GridWindMover']['wind_curv'],
-                           testdata['GridWindMover']['top_curv'])
+        self.gcm.text_read(testdata['c_GridWindMover']['wind_curv'],
+                           testdata['c_GridWindMover']['top_curv'])
         self.cm.ref[:]['long'] = -122.934656  # for NWS off CA
         self.cm.ref[:]['lat'] = 38.27594
         #self.check_move()
@@ -276,7 +276,7 @@ class TestGridWindMover(object):
         time = datetime.datetime(2006, 3, 31, 21)
         self.cm.model_time = date_to_sec(time)
 
-        time_grid_file = testdata['GridWindMover']['wind_curv']
+        time_grid_file = testdata['c_GridWindMover']['wind_curv']
         self.gcm.text_read(time_grid_file)
 
         topology_file2 = os.path.join(os.path.split(time_grid_file)[0],
@@ -356,7 +356,7 @@ class TestGridWindMover(object):
         time = datetime.datetime(2002, 1, 30, 1)
         self.cm.model_time = date_to_sec(time)
 
-        time_grid_file = testdata['GridWindMover']['grid_ts']
+        time_grid_file = testdata['c_GridWindMover']['grid_ts']
 
         self.gcm.text_read(time_grid_file)
         self.cm.ref[:]['long'] = -119.861328  # for gridWind test

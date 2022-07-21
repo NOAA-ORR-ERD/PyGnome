@@ -22,7 +22,7 @@ from gnome.model import Model
 from gnome.maps import MapFromBNA
 from gnome.environment import Wind
 from gnome.spills import surface_point_line_spill
-from gnome.movers import RandomMover, constant_wind_mover, c_GridCurrentMover
+from gnome.movers import RandomMover, constant_point_wind_mover, c_GridCurrentMover
 
 from gnome.outputters import Renderer
 
@@ -76,7 +76,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     print('adding a wind mover:')
 
-    model.movers += constant_wind_mover(0.5, 0, units='m/s')
+    model.movers += constant_point_wind_mover(0.5, 0, units='m/s')
 
     print('adding a current mover:')
     curr_file = get_datafile(os.path.join(base_dir, 'COOPSu_CREOFS24.nc'))
