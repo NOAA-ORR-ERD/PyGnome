@@ -944,7 +944,7 @@ def test_setup_model_run(model):
     # no exp_keys in model data_arrays
     assert not exp_keys.intersection(model.spills.LE_data)
 
-    cwm = gnome.movers.constant_wind_mover(1., 0.)
+    cwm = gnome.movers.constant_point_wind_mover(1., 0.)
 
     model.weatherers += [HalfLifeWeatherer(), Evaporation()]
     model.movers += cwm

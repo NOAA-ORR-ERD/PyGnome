@@ -95,7 +95,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     print('adding a wind mover:')
 
-    w_mover = gs.constant_wind_mover(15, 270, units='knot')
+    w_mover = gs.constant_point_wind_mover(15, 270, units='knot')
     model.movers += w_mover
 
     return model

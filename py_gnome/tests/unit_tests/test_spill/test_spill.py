@@ -1,7 +1,7 @@
 
 from datetime import datetime, timedelta
 
-from gnome.spills.spill import Spill
+from gnome.spills.spill import Spill, surface_point_line_spill
 from gnome.spills.substance import NonWeatheringSubstance
 from gnome.spills.release import PointLineRelease
 from gnome.spill_container import SpillContainer
@@ -193,3 +193,52 @@ class TestSpill:
     #                 assert spill._num_released == spill.release.num_per_timestep * spill.release.get_num_release_time_steps(900)
     #             assert sum(spill.data['mass']) == spill.release.release_mass
     #         model_time += tsd
+
+def test_surface_point_line_spill():
+    # does the default windage work?
+
+    sp = surface_point_line_spill(100,
+                                  (-87.2, 37.5,),
+                                  "2022-05-23T12:10:15",
+                                  )
+
+    assert sp.substance.windage_range == (0.01, 0.04)
+    assert sp.substance.windage_persist == 900
+
+
+def test_surface_point_line_spill_specify_windage():
+    # does the default windage work?
+
+    sp = surface_point_line_spill(100,
+                                  (-87.2, 37.5,),
+                                  "2022-05-23T12:10:15",
+                                  windage_range=(0.02, 0.03),
+                                  windage_persist=400,
+                                  )
+    assert sp.substance.windage_range == (0.02, 0.03)
+    assert sp.substance.windage_persist == 400
+
+def test_surface_point_line_spill_specify_substance_and_windage():
+    """
+    It should raise an error when you set both
+    """
+
+    with pytest.raises(TypeError):
+        sp = surface_point_line_spill(100,
+                                      (-87.2, 37.5,),
+                                      "2022-05-23T12:10:15",
+                                      substance = NonWeatheringSubstance(),
+                                      # windage_range=(0.02, 0.03),
+                                      windage_persist=400,
+                                      )
+
+    with pytest.raises(TypeError):
+        sp = surface_point_line_spill(100,
+                                      (-87.2, 37.5,),
+                                      "2022-05-23T12:10:15",
+                                      substance = NonWeatheringSubstance(),
+                                      windage_range=(0.02, 0.03),
+                                      # windage_persist=400,
+                                      )
+
+

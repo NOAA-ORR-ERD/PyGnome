@@ -9,7 +9,7 @@ from functools import wraps
 
 from colander import (SchemaNode, SequenceSchema,
                       String, Boolean, DateTime,
-                      drop)
+                      drop, Int)
 
 import gridded
 from gridded.utilities import get_dataset
@@ -46,7 +46,7 @@ class TimeSchema(base_schema.ObjTypeSchema):
 
 
 class GridSchema(base_schema.ObjTypeSchema):
-    name = SchemaNode(String(), test_equal=False) #remove this once gridded stops using _def_count
+    name = SchemaNode(String(), test_equal=False)
     filename = FilenameSchema(
         isdatafile=True, test_equal=False, update=False
     )
@@ -55,6 +55,10 @@ class DepthSchema(base_schema.ObjTypeSchema):
     filename = FilenameSchema(
         isdatafile=True, test_equal=False, update=False
     )
+
+class S_DepthSchema(DepthSchema):
+    vtransform = SchemaNode(Int())
+    zero_ref = SchemaNode(String())
 
 
 class VariableSchemaBase(base_schema.ObjTypeSchema):
@@ -690,13 +694,18 @@ class L_Depth(gridded.depth.L_Depth, GnomeId):
 
 class S_Depth(gridded.depth.S_Depth, GnomeId):
 
-    _schema = DepthSchema
+    _schema = S_DepthSchema
 
     _default_component_types = copy.deepcopy(gridded.depth.S_Depth
                                              ._default_component_types)
     _default_component_types.update({'time': Time,
                                      'grid': PyGrid,
                                      'variable': Variable})
+
+    def __init__(self,
+                 zero_ref = 'surface',
+                 **kwargs):
+        return super(S_Depth, self).__init__(zero_ref=zero_ref, **kwargs)
 
     @classmethod
     def new_from_dict(cls, dict_):

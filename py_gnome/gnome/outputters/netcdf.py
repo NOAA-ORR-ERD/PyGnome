@@ -704,55 +704,60 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
         """
         super(NetCDFOutput, self).write_output(step_num, islast_step)
 
-        if self.on is False or not self._write_step:
+        #if self.on is False or not self._write_step:
+        if self.on is False:
             return None
 
-        for sc in self.cache.load_timestep(step_num).items():
-            if sc.uncertain and self._u_filename is not None:
-                file_ = self._u_filename
-            else:
-                file_ = self.forecast_filename
+        if self._write_step:
+            for sc in self.cache.load_timestep(step_num).items():
+                if sc.uncertain and self._u_filename is not None:
+                    file_ = self._u_filename
+                else:
+                    file_ = self.forecast_filename
 
-            time_stamp = sc.current_time_stamp
+                time_stamp = sc.current_time_stamp
 
-            with nc.Dataset(file_, 'a') as rootgrp:
-                rg_vars = rootgrp.variables
-                idx = len(rg_vars['time'])
+                with nc.Dataset(file_, 'a') as rootgrp:
+                    rg_vars = rootgrp.variables
+                    idx = len(rg_vars['time'])
 
-                rg_vars['time'][idx] = nc.date2num(time_stamp,
-                                                   rg_vars['time'].units,
-                                                   rg_vars['time'].calendar)
-                pc = rg_vars['particle_count']
-                pc[idx] = len(sc)
+                    rg_vars['time'][idx] = nc.date2num(time_stamp,
+                                                       rg_vars['time'].units,
+                                                       rg_vars['time'].calendar)
+                    pc = rg_vars['particle_count']
+                    pc[idx] = len(sc)
 
-                _end_idx = self._start_idx + pc[idx]
+                    _end_idx = self._start_idx + pc[idx]
 
-                # add the data:
-                for var_name in self.arrays_to_output:
-                    # special case positions:
-                    if var_name == 'longitude':
-                        rg_vars['longitude'][self._start_idx:_end_idx] = sc['positions'][:, 0]
-                    elif var_name == 'latitude':
-                        rg_vars['latitude'][self._start_idx:_end_idx] = sc['positions'][:, 1]
-                    elif var_name == 'depth':
-                        rg_vars['depth'][self._start_idx:_end_idx] = sc['positions'][:, 2]
-                    else:
-                        rg_vars[var_name][self._start_idx:_end_idx] = sc[var_name]
+                    # add the data:
+                    for var_name in self.arrays_to_output:
+                        # special case positions:
+                        if var_name == 'longitude':
+                            rg_vars['longitude'][self._start_idx:_end_idx] = sc['positions'][:, 0]
+                        elif var_name == 'latitude':
+                            rg_vars['latitude'][self._start_idx:_end_idx] = sc['positions'][:, 1]
+                        elif var_name == 'depth':
+                            rg_vars['depth'][self._start_idx:_end_idx] = sc['positions'][:, 2]
+                        else:
+                            rg_vars[var_name][self._start_idx:_end_idx] = sc[var_name]
 
-                # write mass_balance data
-                if sc.mass_balance:
-                    grp = rootgrp.groups['mass_balance']
-                    for key, val in sc.mass_balance.items():
-                        if key not in grp.variables:
-                            self._create_nc_var(grp,
-                                                key, 'float', ('time', ),
-                                                (self._chunksize,)
-                                                )
-                        grp.variables[key][idx] = val
+                    # write mass_balance data
+                    if sc.mass_balance:
+                        grp = rootgrp.groups['mass_balance']
+                        for key, val in sc.mass_balance.items():
+                            if key not in grp.variables:
+                                self._create_nc_var(grp,
+                                                    key, 'float', ('time', ),
+                                                    (self._chunksize,)
+                                                    )
+                            grp.variables[key][idx] = val
 
         if islast_step:
             if self.zip_output is True:
                 self._zip_output_files()
+
+        if not self._write_step:
+            return None
 
         self._start_idx = _end_idx  # set _start_idx for the next timestep
 

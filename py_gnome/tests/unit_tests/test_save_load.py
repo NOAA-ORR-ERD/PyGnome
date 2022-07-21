@@ -18,7 +18,7 @@ from gnome.environment import (Wind,
                                constant_wind,
                                GridCurrent)
 
-from gnome.movers import (constant_wind_mover,
+from gnome.movers import (constant_point_wind_mover,
                           SimpleMover,
                           RandomMover,
                           RandomMover3D,
@@ -27,7 +27,9 @@ from gnome.movers import (constant_wind_mover,
                           ComponentMover,
                           CurrentCycleMover,
                           c_GridCurrentMover,
-                          GridWindMover)
+                          PyWindMover,
+                          PyCurrentMover,
+                          c_GridWindMover)
 
 from gnome.weatherers import (Evaporation,
                               Skimmer,
@@ -116,7 +118,7 @@ def test_gnome_obj_reference():
     create two equal but different objects and make sure a new reference is
     created for each
     '''
-    objs = [constant_wind_mover(0, 0) for _i in range(2)]
+    objs = [constant_point_wind_mover(0, 0) for _i in range(2)]
     assert objs[0] is not objs[1]
 
     refs = References()
@@ -128,7 +130,7 @@ def test_gnome_obj_reference():
         assert refs.retrieve(ref) is objs[ix]
         assert objs[ix] in refs   # double check __contains__
 
-    unknown = constant_wind_mover(0, 0)
+    unknown = constant_point_wind_mover(0, 0)
     assert unknown not in refs  # check __contains__
 
 
@@ -159,6 +161,10 @@ g_objects = (
     ComponentMover(testdata['ComponentMover']['curr'],
                    wind=constant_wind(5., 270, 'knots')),
                    # wind=Wind(filename=testdata['ComponentMover']['wind'])),
+     PyWindMover(testdata['c_GridWindMover']['wind_rect']),
+     #PyWindMover(testdata['c_GridWindMover']['wind_curv']), #variable names wrong
+     PyCurrentMover(testdata['c_GridCurrentMover']['curr_tri']),
+     PyCurrentMover(testdata['c_GridCurrentMover']['curr_reg']),
     RandomMover3D(),
     SimpleMover(velocity=(10.0, 10.0, 0.0)),
 
@@ -181,8 +187,8 @@ g_objects = (
     # todo: ask Caitlin how to fix
     # movers.RiseVelocityMover(),
     # todo: This is incomplete - no _schema for
-    #       SpatialRelease, GeoJson
-    # spill.SpatialRelease(datetime.now(), ((0, 0, 0), (1, 2, 0))),
+    #       PolygonRelease, GeoJson
+    # spill.PolygonRelease(datetime.now(), ((0, 0, 0), (1, 2, 0))),
     TrajectoryGeoJsonOutput(),
 )
 
@@ -255,8 +261,8 @@ l_movers2 = (CurrentCycleMover(testdata['CurrentCycleMover']['curr'],
                                topology_file=testdata['CurrentCycleMover']['top']),
              c_GridCurrentMover(testdata['c_GridCurrentMover']['curr_tri'],
                               testdata['c_GridCurrentMover']['top_tri']),
-             GridWindMover(testdata['GridWindMover']['wind_curv'],
-                           testdata['GridWindMover']['top_curv']),
+             c_GridWindMover(testdata['c_GridWindMover']['wind_curv'],
+                           testdata['c_GridWindMover']['top_curv']),
              )
 
 
