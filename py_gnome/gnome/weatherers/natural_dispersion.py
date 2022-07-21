@@ -306,18 +306,18 @@ class NaturalDispersion(Weatherer):
         Oil natural dispersion algorithm developed by Li et al., (2017)
         '''        
         # typical range of interfacial tension between oil and water 30-40 dyne/cm (10-5, 10-2)
-        sigma_o_w = 3.0e-2 #3.5e-2 # unit N/m         
+        sigma_o_w = 3.5e-2 # unit N/m         
         H0 = wave_height / 0.707 # significant wave height
         d_oil = 4.0 * np.sqrt(sigma_o_w / (constants.gravity * (rho_w - density))) # maximum stable droplet diameter
         dynamic_visc = viscosity * density
         
         # parameter values estimated by Li et al., (2017)
-        a = 4.604e-10 
-        b = 1.805
+        a =  4.604e-10 
+        b =  1.805
         c = -1.023
         
-        r = 1.791
-        p = 0.460
+        r =  1.791
+        p =  0.460
         q = -0.518
         
         Weber = rho_w * constants.gravity * H0 * d_oil / sigma_o_w # Weber number       

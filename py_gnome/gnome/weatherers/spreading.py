@@ -514,9 +514,9 @@ class FayGravityViscous(Weatherer):
                                            relative_buoyancy,
                                            blob_init_vol,
                                            self.spreading_const)
-        
-        mask = np.logical_and(age > t0, area != max_area_le)
-        s_mask = np.logical_and(mask, area >1.e-20)
+        # once the area computed from previous ts is larger than the max_area_le at current ts area needs to remain
+        mask = np.logical_and(age > t0, area < max_area_le)
+        s_mask = np.logical_and(mask, area > 0.0)
         if len(area[s_mask]) > 0:
             # print(area[s_mask])
             C = (PI *
