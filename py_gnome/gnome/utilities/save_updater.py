@@ -355,7 +355,6 @@ def v3tov4(messages, errors):
     messages.append('**Update from v3 to v4 successful**')
     return messages, errors
 
-
 def extract_zipfile(zip_file, to_folder='.'):
     def work(zf):
         folders = [name for name in zf.namelist()
@@ -413,5 +412,4 @@ def sanitize_filename(fname):
 
 
 
-# note these should be indexed by version number
 all_update_steps = [v0tov1, v1tov2, v2tov3, v3tov4]

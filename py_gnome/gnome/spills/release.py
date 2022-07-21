@@ -393,6 +393,9 @@ class Release(GnomeId):
     def initialize_LEs_Area(self, to_rel, data, std_density):
         pass
 
+    def initialize_LEs_Area(self, to_rel, data, std_density):
+        pass
+
 
 
 class PointLineRelease(Release):
