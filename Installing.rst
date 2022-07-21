@@ -13,9 +13,11 @@ Add the conda-forge channel::
 
     > conda config --add channels conda-forge
 
-Create an environment for PyGNOME::
+Create an environment for PyGNOME with all requirements::
 
     > conda create -n gnome --file conda_requirements.txt
+
+    > conda create -n gnome python=3.9 --file conda_requirements.txt --file conda_requirements_build.txt --file conda_requirements_test.txt
 
 Activate the gnome environment::
 
@@ -33,7 +35,7 @@ Run the tests::
     > cd tests/unit_tests
     > pytest --runslow
 
-NOTE: the "runslow" tests requiring downloading data for the tests -- you can elimate that flag to get most of the tests to run)
+NOTE: the "runslow" tests requiring downloading data for the tests -- you can elimate that flag to get most of the tests to run faster.
 
 All the details
 ===============
@@ -137,7 +139,8 @@ anaconda "channels", which can be thought of simply as places on
 people hosting them.
 
 Many of the dependencies that PyGNOME requires come out of the box
-with Anaconda (or the conda "defaults" channel), but a few don't.
+with Anaconda (or the conda "defaults" channel), but a few important
+ones don't.
 
 **The "conda-forge" project:**
 
@@ -189,9 +192,9 @@ However, pyGNOME needs a number of specific package versions, so it is best to k
 
 Create an environment for PyGNOME::
 
-    > conda create -n gnome --file conda_requirements.txt
+    > conda create -n gnome python=3.9 --file conda_requirements.txt --file conda_requirements_build.txt --file conda_requirements_test.txt
 
-This will create an environment called "gnome" with Python itself and everything that it needs to run -- it will be quite a bit, so may take a while.
+This will create an environment called "gnome" with Python itself and everything that it needs to be built, run, and tested -- it will be quite a bit, so may take a while.
 
 To use that environment, you activate it with::
 

@@ -1650,6 +1650,8 @@ class Model(GnomeId):
 
         map_bounding_box = self.map.get_map_bounding_box()
         for mover in self.movers:
+            if not mover.on:
+                continue
             bounds = mover.get_bounds()
             # check longitude is within map bounds
             if (bounds[1][0] < map_bounding_box[0][0] or bounds[0][0] > map_bounding_box[1][0] or

@@ -1,4 +1,4 @@
-# needed to run tests
+# requirements needed to run the tests
 pytest
 pytest-cov
 pytest-timeout

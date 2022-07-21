@@ -16,7 +16,7 @@ import shapefile
 
 from gnome.utilities.geometry import geo_routines
 
-from gnome.spills.release import (SpatialRelease, NESDISRelease)
+from gnome.spills.release import (PolygonRelease, NESDISRelease)
 
 data_dir = Path(__file__).parent / "data_for_tests"
 
@@ -30,29 +30,29 @@ simplePolys = [shapely.geometry.Polygon([[0,0],[3,0],[3,3],[0,3]]),
 thicknesses = [0.0005,0.0001]
 weights = [0.75, 0.25]
 
-class TestSpatialRelease:
+class TestPolygonRelease:
 
     def test_construction(self):
 
-        sr_from_file = SpatialRelease(filename=sample_nesdis_shapefile)
+        sr_from_file = PolygonRelease(filename=sample_nesdis_shapefile)
         assert len(sr_from_file.features[:]) == 2
 
-        sr_from_features = SpatialRelease(features=sr_from_file.__geo_interface__)
+        sr_from_features = PolygonRelease(features=sr_from_file.__geo_interface__)
         assert len(sr_from_features.features[:]) == 2
 
         #NOTE It is worth pointing out here that sr_from_file and sr_from_features are
         #NOT EQUAL. This is because the release_time and other release attributes are NOT currently put
         #into the __geo_interface__
 
-        sr = SpatialRelease(polygons=simplePolys)
+        sr = PolygonRelease(polygons=simplePolys)
         with pytest.raises(ValueError):
-            sr2 = SpatialRelease(polygons=simplePolys, weights=[0.5,0.25,0.25])
+            sr2 = PolygonRelease(polygons=simplePolys, weights=[0.5,0.25,0.25])
         with pytest.raises(ValueError):
-            sr3 = SpatialRelease(polygons=simplePolys, weights = [0.5, 0.5], thicknesses=thicknesses)
+            sr3 = PolygonRelease(polygons=simplePolys, weights = [0.5, 0.5], thicknesses=thicknesses)
 
     def test_properties(self):
 
-        sr = SpatialRelease(filename=sample_nesdis_shapefile)
+        sr = PolygonRelease(filename=sample_nesdis_shapefile)
 
         assert len(sr.polygons) == 2
         assert sr.weights == None
@@ -76,20 +76,20 @@ class TestSpatialRelease:
         assert all([a == b for a, b in zip(sr.thicknesses, [0.0005, 0.0001])])
 
     def test_serialize(self):
-        sr = SpatialRelease(filename=sample_nesdis_shapefile)
+        sr = PolygonRelease(filename=sample_nesdis_shapefile)
         ser = sr.serialize()
-        sr2 = SpatialRelease.deserialize(ser)
+        sr2 = PolygonRelease.deserialize(ser)
         assert sr == sr2
 
     def test_prepare(self):
-        sr = SpatialRelease(filename=sample_nesdis_shapefile)
+        sr = PolygonRelease(filename=sample_nesdis_shapefile)
         sr.prepare_for_model_run(900)
 
     def test_feature_update(self):
         #polygons, weights, and thicknesses can be updated from the web client by passing
         #a new FeatureCollection through the feature attribute.
 
-        sr = SpatialRelease(filename=sample_nesdis_shapefile)
+        sr = PolygonRelease(filename=sample_nesdis_shapefile)
         ser = sr.serialize()
         assert sr.weights == None
         ser['features']['features'][0]['properties']['weight'] = 0.75
@@ -152,7 +152,7 @@ def test_load_minimal_shapefile():
     test loading a shapefile with just a polygon in it
     """
     shapefilename  = data_dir / "spatial_example.zip"
-    sr = SpatialRelease(filename=shapefilename)
+    sr = PolygonRelease(filename=shapefilename)
 
     # should maybe test more, but at least this will show it loaded
     assert len(sr.polygons) == 1

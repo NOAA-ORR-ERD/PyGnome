@@ -14,9 +14,9 @@ from gnome.outputters import KMZOutput
 from gnome.outputters import kmz_templates
 
 
-from gnome.spills import SpatialRelease, Spill, surface_point_line_spill
+from gnome.spills import PolygonRelease, Spill, surface_point_line_spill
 from gnome.spill_container import SpillContainerPair
-from gnome.movers import RandomMover, constant_wind_mover
+from gnome.movers import RandomMover, constant_point_wind_mover
 from gnome.model import Model
 
 # file extension to use for test output files

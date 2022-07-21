@@ -118,33 +118,35 @@ class KMZOutput(OutputterFilenameMixin, Outputter):
 
         super(KMZOutput, self).write_output(step_num, islast_step)
 
-        if not self.on or not self._write_step:
+        #if not self.on or not self._write_step:
+        if not self.on:
             return None
 
         # add to the kml list:
-        for sc in self.cache.load_timestep(step_num).items():
-            # loop through uncertain and certain LEs
-            # extract the data
-            start_time = sc.current_time_stamp
+        if self._write_step:
+            for sc in self.cache.load_timestep(step_num).items():
+                # loop through uncertain and certain LEs
+                # extract the data
+                start_time = sc.current_time_stamp
 
-            if self.output_timestep is None:
-                end_time = start_time + timedelta(seconds=self.model_timestep)
-            else:
-                end_time = start_time + self.output_timestep
+                if self.output_timestep is None:
+                    end_time = start_time + timedelta(seconds=self.model_timestep)
+                else:
+                    end_time = start_time + self.output_timestep
 
-            start_time = start_time.isoformat()
-            end_time = end_time.isoformat()
+                start_time = start_time.isoformat()
+                end_time = end_time.isoformat()
 
-            positions = sc['positions']
-            water_positions = positions[sc['status_codes'] == oil_status.in_water]
-            beached_positions = positions[sc['status_codes'] == oil_status.on_land]
+                positions = sc['positions']
+                water_positions = positions[sc['status_codes'] == oil_status.in_water]
+                beached_positions = positions[sc['status_codes'] == oil_status.on_land]
 
-            self.kml.append(kmz_templates.build_one_timestep(water_positions,
-                                                             beached_positions,
-                                                             start_time,
-                                                             end_time,
-                                                             sc.uncertain
-                                                             ))
+                self.kml.append(kmz_templates.build_one_timestep(water_positions,
+                                                                 beached_positions,
+                                                                 start_time,
+                                                                 end_time,
+                                                                 sc.uncertain
+                                                                 ))
 
         if islast_step:  # now we really write the file:
             self.kml.append(kmz_templates.footer)
@@ -155,6 +157,10 @@ class KMZOutput(OutputterFilenameMixin, Outputter):
                 kmzfile.writestr('x.png', base64.b64decode(X))
                 kmzfile.writestr(self.kml_name,
                                  "".join(self.kml).encode('utf8'))
+
+
+        if not self._write_step:
+            return None
 
         output_info = {'time_stamp': sc.current_time_stamp.isoformat(),
                        'output_filename': self.filename}

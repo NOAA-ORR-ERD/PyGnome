@@ -67,7 +67,7 @@ def make_model(img_dir=os.path.join(base_dir, 'images')):
     model.movers += gs.RandomMover(diffusion_coef=100000)
 
     print('adding a simple wind mover:')
-    model.movers += gs.constant_wind_mover(10, 225, units='m/s')
+    model.movers += gs.constant_point_wind_mover(10, 225, units='m/s')
 
     print('adding a current mover:')
 

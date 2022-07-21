@@ -42,7 +42,7 @@ def make_model():
 
     print('adding a wind mover:')
 
-    model.movers += gs.constant_wind_mover(speed=10, direction=0, units="m/s")
+    model.movers += gs.constant_point_wind_mover(speed=10, direction=0, units="m/s")
 
 
     model.environment += gs.Water(25, units={"temperature": "C"})

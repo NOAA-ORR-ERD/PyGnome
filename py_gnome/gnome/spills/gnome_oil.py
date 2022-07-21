@@ -1,8 +1,8 @@
 
-from backports.functools_lru_cache import lru_cache
+import os
+from functools import lru_cache
 
 import numpy as np
-import os
 
 from gnome.basic_types import fate, oil_status
 from gnome.array_types import gat
@@ -17,12 +17,11 @@ from gnome.persist import (NumpyArraySchema,
                            String,
                            Float,
                            SchemaNode,
-                           SequenceSchema,
                            drop)
 
 from gnome.environment.water import Water, WaterSchema
 
-from gnome.spills.sample_oils import _sample_oils
+# from gnome.spills.sample_oils import _sample_oils
 
 
 class Density(object):

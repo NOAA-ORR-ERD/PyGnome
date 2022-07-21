@@ -70,7 +70,7 @@ def simple_model(output_dir):
                      name="test model for tideflats",
                      )
     model.map = MapFromBNA(bna_file)
-    model.movers += gs.constant_wind_mover(10, 300, "m/s")
+    model.movers += gs.constant_point_wind_mover(10, 300, "m/s")
 
     model.spills += gs.surface_point_line_spill(num_elements=100,
                                                 start_position=(5.4, 53.38, 0),

@@ -471,7 +471,7 @@ class OutputterFilenameMixin(object):
 
     def __init__(self, filename, *args, **kwargs):
 
-        super(OutputterFilenameMixin, self).__init__()
+        super(OutputterFilenameMixin, self).__init__(**kwargs)
         self.filename = filename
 
     @property
