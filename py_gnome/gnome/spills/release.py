@@ -189,6 +189,14 @@ class Release(GnomeId):
         self._release_mass = val
 
     @property
+    def custom_positions(self):
+        return self._custom_positions
+    
+    @custom_positions.setter
+    def custom_positions(self, c):
+        self._custom_positions = np.array(c)
+
+    @property
     def num_per_timestep(self):
         return self._num_per_timestep
 
