@@ -180,7 +180,7 @@ def v0tov1(messages, errors):
         with open(fn, 'w', encoding='utf-8') as fp:
             json.dump(init, fp, indent=4)
     with open('version.txt', 'w', encoding='utf-8') as vers_file:
-        vers_file.write('1')
+        vers_file.write('1\n')
 
     messages.append('**Update from v0 to v1 successful**')
     return messages, errors
@@ -240,7 +240,7 @@ def v1tov2(messages, errors):
                         files_to_remove.append(wind_init)
 
     with open('version.txt', 'w', encoding='utf-8') as vers_file:
-        vers_file.write('2')
+        vers_file.write('2\n')
 
     for fname in files_to_remove:
         Path(fname).unlink()
@@ -307,7 +307,7 @@ def v2tov3(messages, errors):
             json.dump(mv, fp, indent=4)
 
     with open('version.txt', 'w', encoding='utf-8') as vers_file:
-        vers_file.write('3')
+        vers_file.write('3\n')
 
     messages.append('**Update from v2 to v3 successful**')
     return messages, errors
