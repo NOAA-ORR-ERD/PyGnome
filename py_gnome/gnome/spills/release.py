@@ -189,14 +189,6 @@ class Release(GnomeId):
         self._release_mass = val
 
     @property
-    def custom_positions(self):
-        return self._custom_positions
-    
-    @custom_positions.setter
-    def custom_positions(self, c):
-        self._custom_positions = np.array(c)
-
-    @property
     def num_per_timestep(self):
         return self._num_per_timestep
 
@@ -376,10 +368,11 @@ class Release(GnomeId):
             warnings.warn("{0} is releasing fewer LEs than number of start positions at time: {1}".format(self, end_time))
 
         sl = slice(-to_rel, None, 1)
+        c_p = np.asarray(self.custom_positions)
         qt = to_rel // num_locs # number of times to tile self.start_positions
         rem = to_rel % num_locs # remaining LES to distribute randomly
-        qt_pos = np.tile(self.custom_positions, (qt, 1))
-        rem_pos = self.custom_positions[np.random.randint(0, len(self.custom_positions), rem)]
+        qt_pos = np.tile(c_p, (qt, 1))
+        rem_pos = c_p[np.random.randint(0, len(c_p), rem)]
         pos = np.vstack((qt_pos, rem_pos))
         assert len(pos) == to_rel
 
