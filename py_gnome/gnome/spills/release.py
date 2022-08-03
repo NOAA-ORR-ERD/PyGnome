@@ -44,6 +44,11 @@ from gnome.environment.timeseries_objects_base import (TimeseriesData,
                                                        TimeseriesVector)
 from gnome.environment.gridded_objects_base import Time
 
+from gnome.weatherers.spreading import FayGravityViscous
+from gnome.weatherers.spreading import r_time_scale
+from gnome.environment import Water
+from gnome.constants import water_kinematic_viscosity as water_kvis
+from gnome.constants import gravity
 
 class StartPositions(SequenceSchema):
     start_position = WorldPoint()
@@ -156,7 +161,13 @@ class Release(GnomeId):
         super(Release, self).__init__(**kwargs)
         self.array_types.update({'positions': gat('positions'),
                                  'mass': gat('mass'),
-                                 'init_mass': gat('mass')})
+                                 'init_mass': gat('mass'),
+                                 'density': gat('density'),
+                                 'release_rate': gat('release_rate'),
+                                 'bulk_init_volume': gat('bulk_init_volume'),
+                                 'area': gat('area'),
+                                 'fay_area': gat('fay_area'),
+                                 'frac_coverage': gat('frac_coverage'),})
         if self.retain_initial_positions:
             self.array_types.update({'init_positions': gat('positions')})
 
@@ -379,9 +390,12 @@ class Release(GnomeId):
         data['positions'][sl] = pos
         data['mass'][sl] = self._mass_per_le
         data['init_mass'][sl] = self._mass_per_le
-        
-        if self.retain_initial_positions:
-            data['init_positions'][sl] = pos
+
+    def initialize_LEs_Area(self, to_rel, data, std_density):
+        pass
+
+    def initialize_LEs_Area(self, to_rel, data, std_density):
+        pass
 
 
 
@@ -572,9 +586,40 @@ class PointLineRelease(Release):
                         to_rel)
         data['mass'][sl] = self._mass_per_le
         data['init_mass'][sl] = self._mass_per_le
-        
+
         if self.retain_initial_positions:
             data['init_positions'][sl] = data['positions'][sl]
+
+        # compute release rate
+        if self.release_duration > 0:
+            data['release_rate'][sl] = sum(data['init_mass'][sl] / data['density'][sl]) / (end_time-start_time).total_seconds()
+        else:
+            data['release_rate'][sl] = np.nan
+        # compute release rate
+
+    def initialize_LEs_Area(self, to_rel, data, std_density):
+
+        # compute initial spreading area
+        sl = slice(-to_rel, None, 1)
+
+        if not np.isnan(data['release_rate'][sl][0]):
+                   data['bulk_init_volume'][sl] = r_time_scale * data['release_rate'][sl]
+        else:
+                   data['bulk_init_volume'][sl] = sum(data['init_mass'][sl] / data['density'][sl])
+
+        data['vol_frac_le_st'][sl] = (data['init_mass'][sl] / data['density'][sl]) / data['bulk_init_volume'][sl]
+
+        self.spread = FayGravityViscous()
+
+        if hasattr(data, 'substance'):
+           self.spread.prepare_for_model_run(data)
+           if data.substance.is_weatherable:
+              self.spread._set_init_relative_buoyancy(data.substance)
+              init_blob_area = self.spread.init_area(water_kvis, self.spread._init_relative_buoyancy, data['bulk_init_volume'][sl][0])
+              data['fay_area'][sl] = init_blob_area * data['vol_frac_le_st'][sl]
+              data['area'][sl] = data['fay_area'][sl]
+        # compute initial spreading area
+
 
 class PolygonReleaseSchema(BaseReleaseSchema):
     filename = FilenameSchema(save=False, update=False, test_equal=False, missing=drop)

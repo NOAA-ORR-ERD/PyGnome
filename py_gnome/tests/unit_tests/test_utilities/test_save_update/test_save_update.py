@@ -1,4 +1,4 @@
-
+from pathlib import Path
 import os
 import sys
 import pytest
@@ -11,6 +11,7 @@ from gnome.utilities.save_updater import (extract_zipfile,
                                           remember_cwd,
                                           v0tov1,
                                           v1tov2,
+                                          v3tov4,
                                           )
 
 '''
@@ -113,5 +114,22 @@ def test_v1_to_v2():
         def checker(js):
             return ('gnome.spills.substance.GnomeOil' in js['obj_type']
                     and js.get('name', None) == "*GENERIC DIESEL")
+
+        assert check_files(checker)
+
+
+def test_v3_to_v4():
+    with setup_workspace('v0_diesel_mac.zip'):
+        errs = []
+        msgs = []
+        # fixme: we should probably have some v1 data to use for tests!
+        # have to run v0tov1 first for this old data
+        v0tov1(msgs, errs)
+        v1tov2(msgs, errs)
+        v3tov4(msgs, errs)
+        assert len(errs) == 0
+
+        def checker(js):
+            return ('gnome.weatherers.weathering_data.WeatheringData' not in js['obj_type'])
 
         assert check_files(checker)

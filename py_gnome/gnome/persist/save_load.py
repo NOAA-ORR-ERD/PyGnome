@@ -162,9 +162,9 @@ def load(saveloc, fname='Model.json', references=None):
 
     if os.path.isdir(saveloc):
         # is a directory, look for our fname in directory
-        fd = open(os.path.join(saveloc, fname), 'r')
+        fd = open(os.path.join(saveloc, fname), 'r', encoding='utf-8')
     elif os.path.isfile(saveloc):
-        fd = open(saveloc, 'r')
+        fd = open(saveloc, 'r', encoding='utf-8')
         saveloc, fname = os.path.split(saveloc)
     else:
         # nothing to do, saveloc is not a file or a directory
@@ -281,7 +281,7 @@ class Savable(object):
         json_ = self._move_data_file(saveloc, json_)
 
         if zipfile.is_zipfile(saveloc):
-            self._write_to_zip(saveloc, f_name, json.dumps(json_, indent=True))
+            self._write_to_zip(saveloc, f_name, json.dumps(json_, indent=4))
         else:
             # make last leaf of save location if it doesn't exist
             self._write_to_file(saveloc, f_name, json_)
@@ -291,8 +291,8 @@ class Savable(object):
     def _write_to_file(self, saveloc, f_name, json_):
         full_name = os.path.join(saveloc, f_name)
 
-        with open(full_name, 'w') as outfile:
-            json.dump(json_, outfile, indent=True)
+        with open(full_name, 'w', encoding='utf-8') as outfile:
+            json.dump(json_, outfile, indent=4)
 
     def _write_to_zip(self, saveloc, f_name, s_data):
         '''

@@ -12,7 +12,6 @@ HERE = Path(__file__).parent
 
 v1_savefile = HERE / "v1_non_weatherable_2.gnome"
 
-
 def test_windages():
     model = Model.load_savefile(v1_savefile)
 
