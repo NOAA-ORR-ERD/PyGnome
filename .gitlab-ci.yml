@@ -142,7 +142,7 @@ build_production:
     - git clone --depth 1 -b production https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.orr.noaa.gov/gnome/oil_database/oil_database.git
 
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker build . -t registry.orr.noaa.gov/gnome/pygnome:production
+    - docker build . --build-arg PYTHON_VER=$PYTHON_VER -t registry.orr.noaa.gov/gnome/pygnome:production
     - docker push registry.orr.noaa.gov/gnome/pygnome:production
 
   tags:
