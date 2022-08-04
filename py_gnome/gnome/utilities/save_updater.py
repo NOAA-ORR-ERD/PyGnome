@@ -67,8 +67,8 @@ def update_savefile(save_directory):
             with open('version.txt') as fp:
                 v = int(fp.readline())
         else:
-            v = 0      
-        
+            v = 0
+
         for i in range(v, len(all_update_steps)):
             # execute update
             step = all_update_steps[i]
@@ -128,7 +128,7 @@ def v0tov1(messages, errors):
     spills = []
     inits = []
     for fname in jsonfiles:
-        with open(fname, 'r') as fn:
+        with open(fname, 'r', encoding='utf-8') as fn:
             json_ = json.load(fn)
             if 'obj_type' in json_:
                 if ('Water' in json_['obj_type']
@@ -166,21 +166,21 @@ def v0tov1(messages, errors):
 
     # Write modified and new files
     if substance is not None:
-        with open(substance_fn, 'w') as subs_file:
-            json.dump(substance, subs_file, indent=True)
+        with open(substance_fn, 'w', encoding='utf-8') as subs_file:
+            json.dump(substance, subs_file, indent=4)
     for spill in spills:
         fn, sp = spill
         del sp['element_type']
         sp['substance'] = substance_fn
-        with open(fn, 'w') as fp:
-            json.dump(sp, fp, indent=True)
+        with open(fn, 'w', encoding='utf-8') as fp:
+            json.dump(sp, fp, indent=4)
     for init in inits:
         fn, init = init
         init['obj_type'] = init['obj_type'].replace('.elements.', '.')
-        with open(fn, 'w') as fp:
-            json.dump(init, fp, indent=True)
-    with open('version.txt', 'w') as vers_file:
-        vers_file.write('1')
+        with open(fn, 'w', encoding='utf-8') as fp:
+            json.dump(init, fp, indent=4)
+    with open('version.txt', 'w', encoding='utf-8') as vers_file:
+        vers_file.write('1\n')
 
     messages.append('**Update from v0 to v1 successful**')
     return messages, errors
@@ -192,8 +192,8 @@ def v1tov2(messages, errors):
     to 'version 2'.
 
     This function's purpose is to upgrade save files to maintain compatibility
-    after changes to the  GnomeOil -- i.e. can the json file still be used to 
-    create an oil - if not, replace with non-weathering substance so save file 
+    after changes to the  GnomeOil -- i.e. can the json file still be used to
+    create an oil - if not, replace with non-weathering substance so save file
     can be loaded. Also removes InitWindages
     '''
     log.debug('updating save file from v1 to v2 (Renaming)')
@@ -204,7 +204,7 @@ def v1tov2(messages, errors):
     # GnomeOil update
     oils = []
     for fname in jsonfiles:
-        with open(fname, 'r') as fn:
+        with open(fname, 'r', encoding='utf-8') as fn:
             json_ = json.load(fn)
             if 'obj_type' in json_:
                 if json_['obj_type'] == "gnome.spill.substance.GnomeOil":
@@ -222,25 +222,25 @@ def v1tov2(messages, errors):
                         # this will catch the windages info
                         nws['initializers'] = json_['initializers']
                         # write out the new file
-                        with open(fname, 'w') as fn:
-                            json.dump(nws, fn)
+                        with open(fname, 'w', encoding='utf-8') as fn:
+                            json.dump(nws, fn, indent=4)
 
     # remove InitWindages
     for fname in jsonfiles:
-        with open(fname, 'r') as fn:
+        with open(fname, 'r', encoding='utf-8') as fn:
             json_ = json.load(fn)
             if 'obj_type' in json_ and 'initializers' in json_:
                 # this is assuming only one
                 for wind_init in json_.pop('initializers'):
-                    init_js = json.load(open(wind_init, 'r'))
+                    init_js = json.load(open(wind_init, 'r', encoding='utf-8'))
                     if "InitWindages" in init_js["obj_type"]:
                         json_['windage_range'] = init_js['windage_range']
                         json_['windage_persist'] = init_js['windage_persist']
-                        json.dump(json_, open(fname, 'w'))
+                        json.dump(json_, open(fname, 'w', encoding='utf-8'), indent=4)
                         files_to_remove.append(wind_init)
 
-    with open('version.txt', 'w') as vers_file:
-        vers_file.write('2')
+    with open('version.txt', 'w', encoding='utf-8') as vers_file:
+        vers_file.write('2\n')
 
     for fname in files_to_remove:
         Path(fname).unlink()
@@ -257,7 +257,7 @@ def v2tov3(messages, errors):
     after the grand renaming:
     [link to commit here]
     '''
-    
+
     log.debug('updating save file from v2 to v3 (Renaming)')
 
     jsonfiles = glob.glob('*.json')
@@ -268,7 +268,7 @@ def v2tov3(messages, errors):
     wind_movers = []  # wind_movers, GridWindMover
     srs = [] # SpatialRelease
     for fname in jsonfiles:
-        with open(fname, 'r') as fn:
+        with open(fname, 'r', encoding='utf-8') as fn:
             json_ = json.load(fn)
             if 'obj_type' in json_:
                 if 'gnome.spill.' in json_['obj_type']:
@@ -279,40 +279,82 @@ def v2tov3(messages, errors):
                     wind_movers.append((fname, json_))
                 if 'SpatialRelease' in json_['obj_type']:
                     srs.append((fname, json_))
-    
+
     for fn, sp in spills:
         sp['obj_type'] = sp['obj_type'].replace('gnome.spill.', 'gnome.spills.')
-        with open(fn, 'w') as fp:
-            json.dump(sp, fp, indent=True)
+        with open(fn, 'w', encoding='utf-8') as fp:
+            json.dump(sp, fp, indent=4)
 
     for fn, sr in srs:
         sr['obj_type'] = sr['obj_type'].replace('SpatialRelease', 'PolygonRelease')
-        with open(fn, 'w') as fp:
-            json.dump(sr, fp, indent=True)
-            
+        with open(fn, 'w', encoding='utf-8') as fp:
+            json.dump(sr, fp, indent=4)
+
     for fn, mv in movers:
         mv['obj_type'] = mv['obj_type'].replace('current_movers.',
                                                 'c_current_movers.')
         mv['obj_type'] = mv['obj_type'].replace('GridCurrentMover',
                                                 'c_GridCurrentMover')
-        with open(fn, 'w') as fp:
-            json.dump(mv, fp, indent=True)     
-            
+        with open(fn, 'w', encoding='utf-8') as fp:
+            json.dump(mv, fp, indent=4)
+
     for fn, mv in wind_movers:
         mv['obj_type'] = mv['obj_type'].replace('wind_movers.',
                                                 'c_wind_movers.')
         mv['obj_type'] = mv['obj_type'].replace('GridWindMover',
                                                 'c_GridWindMover')
-        with open(fn, 'w') as fp:
-            json.dump(mv, fp, indent=True)
+        with open(fn, 'w', encoding='utf-8') as fp:
+            json.dump(mv, fp, indent=4)
 
-    with open('version.txt', 'w') as vers_file:
-        vers_file.write('3')
+    with open('version.txt', 'w', encoding='utf-8') as vers_file:
+        vers_file.write('3\n')
 
     messages.append('**Update from v2 to v3 successful**')
     return messages, errors
-    
-    
+
+
+def v3tov4(messages, errors):
+    '''
+    Takes a zipfile containing version 2 and up-converts it
+    to 'version 3'.
+
+    This function's purpose is to upgrade save files that have the old
+    ``WeatheringData`` object in them
+    '''
+
+    # loading json files
+    log.debug('updating save file from v3 to v4 (Renaming)')
+
+    jsonfiles = glob.glob('*.json')
+
+    files_to_remove = []
+
+    # search for files which have weathering_data object, added to the files_to_remove list
+    for fname in jsonfiles:
+            with open(fname, 'r', encoding='utf-8') as fn:
+                json_ = json.load(fn)
+                if 'obj_type' in json_:
+                   if json_['obj_type'] == "gnome.weatherers.weathering_data.WeatheringData":
+                      files_to_remove.append(fname)
+
+    # remove weathering_data reference from model file
+    for fname in jsonfiles:
+            with open(fname, 'r', encoding='utf-8') as fn:
+                json_ = json.load(fn)
+                if 'weatherers' in json_:
+                    # this is assuming only one
+                    for item in json_['weatherers']:
+                        if item in files_to_remove:
+                             json_['weatherers'].remove(item)
+                json.dump(json_, open(fname, 'w', encoding='utf-8'), indent=4)
+
+    # remove targeted files
+    for fname in files_to_remove:
+            Path(fname).unlink()
+
+    messages.append('**Update from v3 to v4 successful**')
+    return messages, errors
+
 def extract_zipfile(zip_file, to_folder='.'):
     def work(zf):
         folders = [name for name in zf.namelist()
@@ -345,14 +387,14 @@ def extract_zipfile(zip_file, to_folder='.'):
                 # otherwise the .json file won't be found
                 contents = None
                 replaced = False
-                with open(jsonfile, 'r') as jf:
+                with open(jsonfile, 'r', encoding='utf-8') as jf:
                     contents = jf.read()
                     for k, v in fn_edits.items():
                         if k in contents:
                             contents = contents.replace(k, v)
                             replaced = True
                 if replaced:
-                    with open(jsonfile, 'w') as jf:
+                    with open(jsonfile, 'w', encoding='utf-8') as jf:
                         jf.write(contents)
 
     if isinstance(zip_file, zipfile.ZipFile):
@@ -367,9 +409,7 @@ def sanitize_filename(fname):
     make filename legal on all systems (windows is pickier)
     '''
     return re.sub(r'[\\\\/*?:"<>|]', "", fname)
-    
-    
-# note these should be indexed by version number
-all_update_steps = [v0tov1, v1tov2, v2tov3]
 
 
+
+all_update_steps = [v0tov1, v1tov2, v2tov3, v3tov4]
