@@ -11,11 +11,10 @@ NOTE: some of these only really test if the code crashes
 
 """
 
-
-
-
 import os
 from os.path import basename
+
+import numpy as np
 
 from datetime import datetime
 
@@ -29,6 +28,8 @@ from gnome.utilities.projections import GeoProjection
 
 from ..conftest import sample_sc_release, testdata
 
+import gnome.scripting as gs
+
 # fixme -- this should be in conftest
 from gnome.spill_container import SpillContainerPairData
 
@@ -38,12 +39,13 @@ bna_star = testdata['Renderer']['bna_star']
 
 class FakeCache(object):
     def __init__(self, sc):
-        # pass in a  spill containters
+        # pass in a  spill container
         self.sc = sc
         self.sc.current_time_stamp = datetime.now()
 
     def load_timestep(self, step):
-        return SpillContainerPairData(self.sc, )
+        print(f"loading step {step}")
+        return SpillContainerPairData(self.sc)
 
 
 def test_exception(output_dir):
@@ -372,6 +374,64 @@ def test_serialize_deserialize(output_dir):
 
     assert r == r2
 
+def fake_run_for_animation(rend):
+
+    # create a sc
+    sc = sample_sc_release(num_elements=100)
+
+    lon = np.random.random((100,))
+    lat = np.random.random((100,))
+
+    sc['positions'][:, 0] = lon
+    sc['positions'][:, 1] = lat
+
+    rend.cache = FakeCache(sc)
+
+    stime = datetime(2021, 1, 1, 0)
+    rend.prepare_for_model_run(model_start_time=stime)
+    for step in range(30):
+        rend.prepare_for_model_step(3600, stime)
+        rend.write_output(step, islast_step=False)
+        # move the elements
+        sc['positions'] += 0.02
+    rend.post_model_run()
+
+
+def test_animation(output_dir):
+    """
+    tests the animated gif support
+    """
+    odir = os.path.join(output_dir, "animation")
+    rend = Renderer(output_dir=odir,
+                    image_size=(400, 400),
+                    viewport=(((0, 0),(1, 1))),
+                    formats=['gif']
+                    )
+    fake_run_for_animation(rend)
+
+    # do it again: make sure it got cleaned up
+    fake_run_for_animation(rend)
+
+def test_animation_in_model(output_dir):
+    """
+    note: this is probably not the least bit necessary, but there you go
+    """
+    model = gs.Model()
+    model.movers += gs.RandomMover()
+    model.spills += gs.surface_point_line_spill(num_elements=100,
+                                                start_position=(0, 0),
+                                                release_time=model.start_time,
+                                                )
+    odir = os.path.join(output_dir, "animation_model")
+    model.outputters += Renderer(output_dir=odir,
+                                 image_size=(400, 400),
+                                 viewport=(((-0.02, -0.02), (0.02, 0.02))),
+                                 formats=['gif']
+                                 )
+
+    model.full_run()
+
+#    assert False
 
 # # if __name__ == '__main__':
 # #     test_set_viewport()

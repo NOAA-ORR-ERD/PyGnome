@@ -50,7 +50,7 @@ class FayGravityViscous(Weatherer):
         initialize object - invoke super, add required data_arrays.
         '''
         super(FayGravityViscous, self).__init__(**kwargs)
-        self.spreading_const = (1.53, 1.21)
+        self.spreading_const = (1.53, 1.21, 1.45)
 
         # need water temp to get initial viscosity of oil so thickness_limit
         # can be set
@@ -97,7 +97,9 @@ class FayGravityViscous(Weatherer):
         All inputs are scalars
         '''
         max_area = blob_init_vol / self.thickness_limit
-        time = (max_area / (PI * self.spreading_const[1] ** 2) *
+        # correct k_nu, Spreading Law coefficient -- Eq.(6.14), 11/23/2021
+        #time = (max_area / (PI * self.spreading_const[1] ** 2) *
+        time = (max_area / (PI * self.spreading_const[2] ** 2) *
                 (np.sqrt(water_viscosity) /
                  (blob_init_vol ** 2 * constants.gravity * rel_buoy)) ** (1. / 3)
                 ) ** 2
@@ -144,7 +146,9 @@ class FayGravityViscous(Weatherer):
     def _update_blob_area(self, water_viscosity, relative_buoyancy,
                           blob_init_volume, age):
         area = (PI *
-                self.spreading_const[1] ** 2 *
+                # correct k_nu, Spreading Law coefficient -- Eq.(6.14), 11/23/2021
+                #self.spreading_const[1] ** 2 *
+                self.spreading_const[2] ** 2 *
                 (blob_init_volume ** 2 *
                  constants.gravity *
                  relative_buoyancy /
@@ -310,7 +314,9 @@ class FayGravityViscous(Weatherer):
             if area[m_age].sum() < max_area:
 
                 C = (PI *
-                    self.spreading_const[1] ** 2 *
+                    # correct k_nu, Spreading Law coefficient -- Eq.(6.14), 11/23/2021
+                    #self.spreading_const[1] ** 2 *
+                    self.spreading_const[2] ** 2 *
                     (blob_init_volume[m_age][0] ** 2 *
                     constants.gravity *
                     relative_buoyancy /
@@ -416,14 +422,19 @@ class FayGravityViscous(Weatherer):
             return
 
         for substance, data in sc.itersubstancedata(self.array_types):
+            # doing this first to make sure it happens
+            #  - for elements released below the surface?
+            # note: if there are ever more than one substance
+            #       this could be a problem.
+            if self._init_relative_buoyancy is None:
+                self._set_init_relative_buoyancy(substance)
             if len(data['fay_area']) == 0:
                 # no particles released yet
                 continue
-            if self._init_relative_buoyancy is None:
-                self._set_init_relative_buoyancy(substance)
-
             mask = data['fay_area'] == 0
             # looping through spills, as each spill has a different initial volume
+            # this should be doing it for each release
+            # or really each element, yes?
             for s_num in np.unique(data['spill_num'][mask]):
                 s_mask = np.logical_and(mask, data['spill_num'] == s_num)
                 # do the sum only once for efficiency
@@ -596,10 +607,13 @@ class Langmuir(Weatherer):
         #        this gets caught in the next line, but the warnings
         #        are kind of annoying -- can we catch this sooner?
         #        and is this doing the right thing for a "sinking" oil?
-        frac_cov = (v_max ** 2 *
-                    4 *
-                    PISQUARED /
-                    (thickness * rel_buoy * gravity)) ** (-0.3333333333333333)
+        mask = rel_buoy == 0
+        frac_cov = np.empty_like(rel_buoy)
+        frac_cov[mask] = .1
+        frac_cov[~mask] = (v_max ** 2 *
+                           4 *
+                           PISQUARED /
+                           (thickness * rel_buoy[~mask] * gravity)) ** (-0.3333333333333333)
         # due to oil density > water density
         frac_cov[np.isnan(frac_cov)] = 0.1
 
@@ -653,6 +667,7 @@ class Langmuir(Weatherer):
 
                 # assume only one type of oil is modeled so thickness_limit is
                 # already set and constant for all
+
                 rel_buoy = (rho_h2o - data['density'][s_mask]) / rho_h2o
                 data['frac_coverage'][s_mask] = \
                     self._get_frac_coverage(points, model_time, rel_buoy, thickness)

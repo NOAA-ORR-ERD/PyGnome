@@ -22,6 +22,8 @@ log = logging.getLogger(__name__)
 
 allowzip64 = False
 
+SAVEFILE_VERSION = '2'
+
 
 def class_from_objtype(obj_type):
     '''
@@ -123,12 +125,89 @@ class Refs(dict):
         return base_name + num_of_same_type + 1
 
 
+def combine_signatures(cls_or_func):
+    '''
+    Decorator to tag a function or class that needs a full function signature.
+    CAUTION: Do not use this decorator on functions that do not pass kwargs up to
+    super, or do so after alteration. Doing so will definitely give you a wrong signature.
+    Use with care, verify your work.
+
+    This may not work when applied to classes if they get imported in a particular sequence.
+    If this occurs try applying this decorator to the __init__ directly.
+    '''
+    if not hasattr(cls_or_func, '__signature_tag__'):
+        cls_or_func.__signature_tag__ = 'combine'
+    return cls_or_func
+
+import inspect
+def create_signatures(cls, dct):
+    '''
+    Looks through the class for tagged functions, then builds and assigns signatures.
+    Uses the MRO to find ancestor functions and merges the signatures.
+    '''
+    worklist = []
+    for k in dct.keys():
+        f = getattr(cls, k)
+
+        if hasattr(f, '__wrapped__'):
+            try:
+                if f.__wrapped__.__signature_tag__ == 'combine':
+                    worklist.append(f.__wrapped__)
+            except AttributeError:
+                pass
+        elif hasattr(f, '__func__'):
+            try:
+                if (f.__func__.__signature_tag__ == 'combine'):
+                    worklist .append(f.__func__)
+            except AttributeError:
+                pass
+        else:
+            try:
+                if (f.__signature_tag__ == 'combine'):
+                    worklist.append(f)
+
+            except AttributeError:
+                pass
+
+    if hasattr(cls, '__signature_tag__') and cls.__signature_tag__ == 'combine':
+        worklist.append(cls)
+
+    for item in worklist:
+        #would love to clean up the tag, but this breaks for classmethods
+        #del item.__signature_tag__
+        t = None
+        if item is cls:
+            t = lambda c: c
+        else:
+            t = lambda c: getattr(c, item.__name__) if hasattr(c, item.__name__) else None
+
+        pruned_func_mro = [i for i in map(t, cls.__mro__) if i is not None]
+        sigs = [inspect.signature(e) for e in pruned_func_mro]
+
+        paramlist = []
+        #0-5 is the enum values of the parameter kind
+        #https://docs.python.org/3/library/inspect.html#inspect.Parameter.kind
+        for k in range(0,5):
+            for sig in sigs:
+                params = [s for s in sig.parameters.values()]
+                for p in params:
+                    if p.kind == k and p not in paramlist and p.name not in [prm.name for prm in paramlist]:
+                        paramlist.append(p)
+        #replace does not actually replace anything, it returns a new value
+        item.__signature__ = sigs[0].replace(parameters=paramlist)
+
 class GnomeObjMeta(type):
     def __new__(cls, name, parents, dct):
         if '_instance_count' not in dct:
             dct['_instance_count'] = 0
 
-        return super(GnomeObjMeta, cls).__new__(cls, name, parents, dct)
+        newclass = super(GnomeObjMeta, cls).__new__(cls, name, parents, dct)
+        create_signatures(newclass, newclass.__dict__)
+
+        if hasattr(newclass.__init__, '__signature__'):
+            newclass.__signature__ = newclass.__init__.__signature__
+        return newclass
+
 
 
 class GnomeId(AddLogger, metaclass=GnomeObjMeta):
@@ -676,6 +755,13 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
                                             reference to the object that
                                             called ``.save`` itself.
         """
+        # convert save location to a string
+        # fixme: we should probably use pathlib in the rest of this instead,
+        #        but this should work for now.
+        if saveloc is not None:
+            saveloc = os.fspath(saveloc)
+
+
         zipfile_ = None
 
         if saveloc is None:
@@ -724,7 +810,7 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
 
         obj_json = self._schema()._save(self, zipfile_=zipfile_, refs=refs)
 
-        zipfile_.writestr('version.txt', '1')
+        zipfile_.writestr('version.txt', SAVEFILE_VERSION)
 
         if saveloc is None:
             log.info('Returning open zipfile in memory')
@@ -734,7 +820,7 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
             return (obj_json, saveloc, refs)
 
     @classmethod
-    def load(cls, saveloc='.', filename=None, refs=None, apply_update_patches=True):
+    def load(cls, saveloc='.', filename=None, refs=None):
         '''
         Load an instance of this class from an archive or folder
 
@@ -762,8 +848,7 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
         if isinstance(saveloc, str):
             if os.path.isdir(saveloc):
                 #run the savefile update system
-                if apply_update_patches:
-                    update_savefile(saveloc)
+                update_savefile(saveloc)
 
                 if filename:
                     fn = os.path.join(saveloc, filename)
@@ -793,9 +878,6 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
                 # extract to a temporary file and retry load
                 tempdir = tempfile.mkdtemp()
                 extract_zipfile(saveloc, tempdir)
-
-                #run the savefile update system
-                update_savefile(tempdir)
                 return cls.load(saveloc=tempdir, filename=filename, refs=refs)
             else:
                 # saveloc is .json file
@@ -813,7 +895,7 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
                                                   refs=refs)
         elif isinstance(saveloc, zipfile.ZipFile):
             # saveloc is an already open zip archive
-            # extract to a temporary file and retry load
+            # extract to a temporary directory and retry load
             tempdir = tempfile.mkdtemp()
             extract_zipfile(saveloc, tempdir)
             return cls.load(saveloc=tempdir, filename=filename, refs=refs)

@@ -20,17 +20,17 @@ from gnome.basic_types import oil_status
 
 from gnome.model import Model
 
-from gnome.movers import (GridWindMover,
+from gnome.movers import (c_GridWindMover,
                           RandomMover,
-                          constant_wind_mover,
-                          wind_mover_from_file)
+                          constant_point_wind_mover,
+                          point_wind_mover_from_file)
 
-from gnome.spill import point_line_release_spill
+from gnome.spills import surface_point_line_spill
 
 from .conftest import sample_sc_release, testdata
 
-wind_file = testdata['GridWindMover']['wind_curv']
-topology_file = testdata['GridWindMover']['top_curv']
+wind_file = testdata['c_GridWindMover']['wind_curv']
+topology_file = testdata['c_GridWindMover']['top_curv']
 
 
 
@@ -62,7 +62,7 @@ def test_constant_wind():
     """
     make sure wind doesn't move the LEs marked as on_tideflat
     """
-    wm = constant_wind_mover(10, 270, units='m/s')
+    wm = constant_point_wind_mover(10, 270, units='m/s')
 
     windage = 0.03
     sc = sample_sc_release(10,  # ten elements
@@ -152,7 +152,7 @@ def test_gridded_wind():
                            windage_range=(0.01, 0.01),
                            )
 
-    wm = GridWindMover(wind_file, topology_file)
+    wm = c_GridWindMover(wind_file, topology_file)
 
     delta = run_one_timestep(sc, wm, time_step, model_time)
 
@@ -208,13 +208,13 @@ def test_full_model_run():
 #                  **kwargs):
 # )
 
-    model.movers += constant_wind_mover(speed=10,
+    model.movers += constant_point_wind_mover(speed=10,
                                         direction=225,
                                         units='m/s')
 
     model.movers += RandomMover()  # defaults are fine
 
-    model.spills += point_line_release_spill(num_elements=10,
+    model.spills += surface_point_line_spill(num_elements=10,
                                              start_position=(0.0, 0.0, 0.0),
                                              release_time=start_time,
                                              )

@@ -1,15 +1,4 @@
 
-
-# NOTES:
-#  - Should we just use non-projected coordinates for the raster map?
-#    It makes for a little less computation at every step.
-
-
-from gnome.gnomeobject import GnomeId
-from gnome.environment.gridded_objects_base import PyGrid
-import warnings
-
-
 """
 An implementation of the GNOME land-water map.
 
@@ -21,20 +10,29 @@ Features:
  - internally, raster is a numpy array
  - land raster is only as big as the land -- if the map bounds are bigger,
    extra space is not in the land map
+
+# NOTES:
+#  - Should we just use non-projected coordinates for the raster map?
+#    It makes for a little less computation at every step.
 """
+
 
 import os
 import math
+import warnings
 
 import py_gd
-
 import numpy as np
-
 from colander import SchemaNode, String, Float, Integer, Boolean, drop
 
 from geojson import FeatureCollection, Feature, MultiPolygon
 
-import unit_conversion as uc
+import nucos as uc
+
+from gnome.gnomeobject import GnomeId
+
+from gnome.environment.gridded_objects_base import PyGrid
+
 
 from gnome import _valid_units
 from gnome.basic_types import oil_status, world_point_type
@@ -53,7 +51,9 @@ from gnome.utilities.geometry import points_in_poly, point_in_poly
 from gnome.utilities.appearance import AppearanceSchema
 
 from gnome.cy_gnome.cy_land_check import check_land_layers, move_particles
-from gnome.persist import base_schema
+
+from gnome.persist import (base_schema, SchemaNode, String, Float, Int,
+                           Boolean, drop)
 
 
 class GnomeMapSchema(base_schema.ObjTypeSchema):
@@ -68,8 +68,8 @@ class GnomeMapSchema(base_schema.ObjTypeSchema):
 
 class ParamMapSchema(GnomeMapSchema):
     center = base_schema.WorldPoint()
-    distance = SchemaNode(Integer())
-    bearing = SchemaNode(Integer())
+    distance = SchemaNode(Int())
+    bearing = SchemaNode(Int())
     units = SchemaNode(String())
 
 # fixme: shouldn't the rasterMap have the raster size? and the raster itself?
@@ -81,7 +81,7 @@ class MapFromBNASchema(RasterMapSchema):
         String(), isdatafile=True, test_equal=False)
     refloat_halflife = SchemaNode(Float())
     raster_size = SchemaNode(Float())
-    shift_lons = SchemaNode(Integer(), missing=drop)
+    shift_lons = SchemaNode(Int(), missing=drop)
     approximate_raster_interval = SchemaNode(Float(), save=False, update=False, read_only=True)
 
 
@@ -1156,10 +1156,11 @@ class MapFromBNA(RasterMap):
         spillable_area_bna = PolygonSet()
 
         #add if based on input param
-        if shift_lons == 360:
-            polygons.TransformData(ShiftLon360)
-        elif shift_lons == 180:
-            polygons.TransformData(ShiftLon180)
+        tf = ShiftLon360 if shift_lons == 360 else ShiftLon180 if shift_lons == 180 else None
+        if tf is not None:
+            polygons.TransformData(tf)
+            if map_bounds:
+                map_bounds = tf(np.array(map_bounds)).tolist()
 
         for p in polygons:
             if p.metadata[1].lower().replace(' ', '') == 'spillablearea':

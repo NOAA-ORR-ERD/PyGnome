@@ -2,15 +2,12 @@
 tests for cleanup options
 '''
 
-
-
-
 from datetime import datetime, timedelta
 
 import numpy as np
 from pytest import raises, mark
 
-import unit_conversion as uc
+import nucos as uc
 
 from gnome.basic_types import oil_status, fate
 
@@ -22,7 +19,7 @@ from gnome.weatherers import (WeatheringData,
                               ChemicalDispersion,
                               weatherer_sort)
 from gnome.spill_container import SpillContainer
-from gnome.spill import point_line_release_spill
+from gnome.spills import surface_point_line_spill
 from gnome.utilities.inf_datetime import InfDateTime
 from gnome.environment import Waves, constant_wind, Water
 
@@ -62,7 +59,7 @@ class ObjForTests(object):
         sc = SpillContainer()
         print("******************")
         print("Adding a spill to spill container")
-        sc.spills += point_line_release_spill(10,
+        sc.spills += surface_point_line_spill(10,
                                               (0, 0, 0),
                                               rel_time,
                                               substance=test_oil,
@@ -89,14 +86,14 @@ class ObjForTests(object):
 
     def reset_and_release(self, rel_time=None, time_step=900.0):
         '''
-        reset test objects and relaese elements
+        reset test objects and release elements
         '''
         self.prepare_test_objs()
         if rel_time is None:
             # there is only one spill, use its release time
             rel_time = self.sc.spills[0].release_time
 
-        num_rel = self.sc.release_elements(time_step, rel_time)
+        num_rel = self.sc.release_elements(rel_time, rel_time + timedelta(seconds=time_step))
         if num_rel > 0:
             for wd in self.weatherers:
                 wd.initialize_data(self.sc, num_rel)
@@ -106,7 +103,7 @@ class ObjForTests(object):
         release_elements - return num_released so test article can manipulate
         data arrays if required for testing
         '''
-        num_rel = self.sc.release_elements(time_step, model_time)
+        num_rel = self.sc.release_elements(model_time, model_time + timedelta(seconds=time_step))
 
         if num_rel > 0:
             for wd in self.weatherers:
@@ -271,7 +268,7 @@ class TestBurn(ObjForTests):
     (sc, weatherers) = ObjForTests.mk_test_objs()
     spill = sc.spills[0]
     op = spill.substance
-    volume = spill.get_mass() / op.density_at_temp(spill.water.temperature)
+    volume = spill.get_mass() / op.standard_density
 
     thick = 1
     area = (0.5 * volume) / thick
@@ -453,7 +450,7 @@ class TestBurn(ObjForTests):
         # need to scale this by (1 - avg_frac_water)
         exp_burned = ((thick_si - burn._min_thickness) * burn.area *
                       (1 - avg_frac_water) *
-                      self.op.density_at_temp(water.temperature))
+                      self.op.standard_density)
         assert np.isclose(self.sc.mass_balance['burned'], exp_burned)
 
         mask = self.sc['fate_status'] & fate.burn == fate.burn
@@ -461,7 +458,7 @@ class TestBurn(ObjForTests):
         # given LEs are discrete elements, we cannot add a fraction of an LE
         mass_per_le = self.sc['init_mass'][mask][0]
         exp_init_oil_mass = (burn.area * thick_si * (1 - avg_frac_water) *
-                             self.op.density_at_temp(water.temperature))
+                             self.op.standard_density)
         assert (self.sc['init_mass'][mask].sum() - exp_init_oil_mass <
                 mass_per_le and
                 self.sc['init_mass'][mask].sum() - exp_init_oil_mass >= 0.0)
@@ -476,12 +473,12 @@ class TestBurn(ObjForTests):
 
         exp_mass_remain = (burn._oilwater_thickness * burn.area *
                            (1 - avg_frac_water) *
-                           self.op.density_at_temp(water.temperature))
+                           self.op.standard_density)
         # since we don't adjust the thickness anymore need to use min_thick
         min_thick = .002
         exp_mass_remain = (min_thick * burn.area *
                            (1.0 - avg_frac_water) *
-                           self.op.density_at_temp(water.temperature))
+                           self.op.standard_density)
 
         assert np.allclose(exp_mass_remain, mass_remain_for_burn_LEs,
                            rtol=0.001)

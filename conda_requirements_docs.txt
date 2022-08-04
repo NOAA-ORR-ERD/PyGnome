@@ -1,0 +1,7 @@
+# required to build the sphinx docs
+sphinx
+sphinx_rtd_theme
+nbsphinx
+sphinx-autoapi
+
+

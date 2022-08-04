@@ -1,41 +1,61 @@
+"""
+The substance is an abstraction for the various types of
+"things" one might model with pyGNOME.
 
-from backports.functools_lru_cache import lru_cache
+The role of a substance is to:
 
-from colander import Int, Schema, String, Float, SchemaNode, SequenceSchema, Boolean, drop
+ - Define what data is carried with the elements
+
+ - Provide a way to initialize the elements
+
+ - Optionally, provide tools to support computation during the run
+
+   - for example, GnomeOil can compute changes in density, etc of
+     the elements as the model runs.
+"""
+
 import numpy as np
-import os
 
-from gnome.basic_types import fate, oil_status
-from gnome.array_types import gat
-from gnome.spill.sample_oils import _sample_oils
-
-from gnome.persist.base_schema import (ObjTypeSchema,
-                                       ObjType,
-                                       GeneralGnomeObjectSchema)
-
-from gnome.persist.extend_colander import NumpyArraySchema
 from gnome.gnomeobject import GnomeId
-from gnome.environment.water import Water, WaterSchema
-from gnome.spill.sample_oils import _sample_oils
-from gnome.spill.initializers import (floating_initializers,
-                                      InitWindagesSchema,
-                                      DistributionBaseSchema)
+from gnome.array_types import gat
+from gnome.basic_types import fate, oil_status
+
+from gnome.persist import (Float, Int, SchemaNode,
+                           Boolean, ObjTypeSchema, GeneralGnomeObjectSchema,
+                           TupleSchema, Range)
+
+from gnome.spills.initializers import (InitWindages,
+                                       InitRiseVelFromDropletSizeFromDist,
+                                       )
+
+
+class WindageRangeSchema(TupleSchema):
+    min_windage = SchemaNode(Float(), validator=Range(0, 1.0),
+                             default=0.01)
+
+    max_windage = SchemaNode(Float(), validator=Range(0, 1.0),
+                             default=0.04)
 
 
 class SubstanceSchema(ObjTypeSchema):
-    initializers = SequenceSchema(
-        GeneralGnomeObjectSchema(
-            acceptable_schemas=[InitWindagesSchema,
-                                DistributionBaseSchema
-                                ]
-        ),
-        save=True, update=True, save_reference=True
+    # initializers = SequenceSchema(
+    #     GeneralGnomeObjectSchema(
+    #         acceptable_schemas=[DistributionBaseSchema]
+    #     ),
+    #     save=True, update=True, save_reference=True
+    # )
+    windage_range = WindageRangeSchema(
+        save=True, update=True,
+    )
+    windage_persist = SchemaNode(
+        Int(), default=900, save=True, update=True,
     )
     is_weatherable = SchemaNode(Boolean(), read_only=True)
+    standard_density = SchemaNode(Float(), read_only=True)
 
 
 class NonWeatheringSubstanceSchema(SubstanceSchema):
-    standard_density = SchemaNode(Float(), read_only=True)
+    pass
 
 
 class Substance(GnomeId):
@@ -43,37 +63,50 @@ class Substance(GnomeId):
     _ref_as = 'substance'
 
     def __init__(self,
-                 initializers=None,
                  windage_range=(.01, .04),
                  windage_persist=900,
+                 standard_density=1000.0,
                  *args,
                  **kwargs):
+        """
+        :param standard_density=1000.0: The density of the substance, used to convert
+                                        mass to/from volume
+        :type standard_density: Floating point decimal value
+
+        """
         super(Substance, self).__init__(*args, **kwargs)
-        if not initializers:
-            initializers = floating_initializers(windage_range=windage_range,
-                                                 windage_persist=windage_persist)
-        self.initializers = initializers
-        # add the types from initializers
-        self._windage_init = None
-        for i in self.initializers:
-            self.array_types.update(i.array_types)
-            if 'windages' in i.array_types:
-                self._windage_init = i
+        self._windage_init = InitWindages(windage_range=windage_range,
+                                          windage_persist=windage_persist)
+        self.initializers = [self._windage_init]
+        # fixme: shouldn't the array_types be defined on this class?
+        self.array_types.update(self._windage_init.array_types)
+        # fixme: why is this here? why not just set them?
         if windage_range != (.01, .04):
             self.windage_range = windage_range
         if windage_persist != 900:
             self.windage_persist = windage_persist
+        try:
+            self.standard_density = standard_density
+        except AttributeError:
+            # this has been overridden in a subclass
+            pass
+
+        self.array_types.update({
+            'density': gat('density'),
+            'fate_status': gat('fate_status')})
 
     @property
     def all_array_types(self):
         '''
-        Need to add array types from Release and Substance
+        Fixme: should the initializers be what holds the array types?
+                don't we know that this should have already?
         '''
         arr = self.array_types.copy()
         for init in self.initializers:
             arr.update(init.all_array_types)
         return arr
 
+    # fixme: can't we make this a regular attribute??
     @property
     def is_weatherable(self):
         if not hasattr(self, '_is_weatherable'):
@@ -148,10 +181,20 @@ class Substance(GnomeId):
         :param to_rel - number of new LEs to initialize
         :param arrs - dict-like of data arrays representing LEs
         '''
+        sl = slice(-to_rel, None, 1)
+        arrs['density'][sl] = self.standard_density
+
         for init in self.initializers:
             init.initialize(to_rel, arrs, self)
 
+    def density_at_temp(self, temp=273.15):
+        '''
+        For non-weathering substance, we just return the standard density.
+        '''
+        return self.standard_density
+
     def _attach_default_refs(self, ref_dict):
+        # fixme: is the necessary?
         for i in self.initializers:
             i._attach_default_refs(ref_dict)
         return GnomeId._attach_default_refs(self, ref_dict)
@@ -163,33 +206,28 @@ class NonWeatheringSubstance(Substance):
     """
     The simplest substance that can be used with the model
 
-    It can not be weathereed, but does have basic properties for transport:
+    It can not be weathered, but does have basic properties for transport:
 
     Windage, density, etc.
     """
 
-    def __init__(self,
-                 standard_density=1000.0,
-                 **kwargs):
-        """
-        Initialize a non-weathering substance.
+    # def __init__(self,
+    #              **kwargs):
+    #     """
+    #     Initialize a non-weathering substance.
 
-        All parameters are optional
+    #     All parameters are optional
 
-        :param standard_density=1000.0: The density of the substance, assumed
-                                        to be measured at 15 C.
-        :type standard_density: Floating point decimal value
+    #     :param standard_density=1000.0: The density of the substance, assumed
+    #                                     to be measured at 15 C.
+    #     :type standard_density: Floating point decimal value
 
-        :param pour_point=273.15: The pour_point of the substance, assumed
-                                  to be measured in degrees Kelvin.
-        :type pour_point: Floating point decimal value
-        """
+    #     """
+    #     # :param pour_point=273.15: The pour_point of the substance, assumed
+    #     #                           to be measured in degrees Kelvin.
+    #     # :type pour_point: Floating point decimal value
 
-        super(NonWeatheringSubstance, self).__init__(**kwargs)
-        self.standard_density = standard_density
-        self.array_types.update({
-            'density': gat('density'),
-            'fate_status': gat('fate_status')})
+    #     super(NonWeatheringSubstance, self).__init__(**kwargs)
 
     @property
     def is_weatherable(self):
@@ -207,16 +245,40 @@ class NonWeatheringSubstance(Substance):
         :param arrs - dict-like of data arrays representing LEs
         '''
         sl = slice(-to_rel, None, 1)
-        arrs['density'][sl] = self.standard_density
         if ('fate_status' in arrs):
             arrs['fate_status'][sl] = fate.non_weather
         super(NonWeatheringSubstance, self).initialize_LEs(to_rel, arrs)
 
-    def density_at_temp(self, temp=273.15):
-        '''
-            For non-weathering substance, we just return the standard density.
-        '''
-        return self.standard_density
+
+
+class SubsurfaceSubstance(NonWeatheringSubstance):
+    """
+    Substance that can be used subsurface
+
+    key feature is that it initializes rise velocity from a distribution
+
+    Note: this should probably be part of a Release Object, not a Substance.
+    """
+    def __init__(self,
+                 distribution,
+                 *args,
+                 **kwargs
+                 ):
+        """
+        :param distribution='UniformDistribution': which distribution to use
+        :type distribution: Distribution Object
+
+        Note: distribution should return values in m/s
+
+        See gnome.utilities.distributions for details
+        """
+        super().__init__(*args, **kwargs)
+
+        init = InitRiseVelFromDropletSizeFromDist(distribution=distribution)
+        self.initializers.append(init)
+        self.array_types.update(init.array_types)
+
+
 
 # so old save files will work
 # this should be removed eventually ...

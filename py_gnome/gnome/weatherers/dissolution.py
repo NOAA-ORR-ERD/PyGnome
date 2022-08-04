@@ -121,6 +121,7 @@ class Dissolution(Weatherer):
         '''
         pass
 
+    # this will have to be updated; SARA is being refactored out of gnome_oil
     def dissolve_oil(self, data, substance, **kwargs):
         '''
             Here is where we calculate the dissolved oil.

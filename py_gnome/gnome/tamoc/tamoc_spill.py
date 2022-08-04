@@ -8,14 +8,12 @@ run the simulation in a seemless integration with GNOME.
 
 from datetime import datetime, timedelta
 
-import unit_conversion as uc
+import nucos as uc
 
-from gnome.utilities.time_utils import asdatetime
-
-from gnome.spill.release import Release
-from gnome.spill.spill import SpillSchema, Spill
-from gnome.spill.substance import Substance
-from gnome.spill.gnome_oil import GnomeOil
+from gnome.spills.release import Release
+from gnome.spills.spill import SpillSchema, Spill
+from gnome.spills.substance import Substance
+from gnome.spills.gnome_oil import GnomeOil
 from gnome.utilities.time_utils import asdatetime
 from gnome.gnomeobject import GnomeId
 from gnome import _valid_units
@@ -266,15 +264,15 @@ class TamocSpill(Spill):
 
 #     Returns
 #     -------
-#     ts : gnome.spill.spill.Spill
-#         A gnome.spill.spill.Spill object that integrates seamlessly with
+#     ts : gnome.spills.spill.Spill
+#         A gnome.spills.spill.Spill object that integrates seamlessly with
 #         the GNOME simulation environment.  This object determines 1.) when
 #         and how many Lagrangian elements to create and 2.) specifies the
 #         initial properties of these Lagrangian elements.
 
 #     Notes
 #     -----
-#     This function is based on the gnome.spill.spill.point_line_release_spill
+#     This function is based on the gnome.spills.spill.surface_point_line_spill
 #     function in the py_gnome package.
 
 #     """

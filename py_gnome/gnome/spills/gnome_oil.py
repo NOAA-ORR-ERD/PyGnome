@@ -1,8 +1,10 @@
 
-from backports.functools_lru_cache import lru_cache
+# from backports.functools_lru_cache import lru_cache
+import os
+
+from functools import lru_cache
 
 import numpy as np
-import os
 
 from gnome.basic_types import fate, oil_status
 from gnome.array_types import gat
@@ -10,26 +12,16 @@ from .sample_oils import _sample_oils
 from .substance import Substance, SubstanceSchema
 
 
-from gnome.persist import (ObjTypeSchema,
-                           ObjType,
-                           GeneralGnomeObjectSchema,
-                           NumpyArraySchema,
+from gnome.persist import (NumpyArraySchema,
                            Int,
-                           Schema,
                            String,
                            Float,
                            SchemaNode,
-                           SequenceSchema,
-                           Boolean,
-                           drop,
-                           )
+                           drop)
 
-from gnome.gnomeobject import GnomeId
 from gnome.environment.water import Water, WaterSchema
-from gnome.spill.sample_oils import _sample_oils
-from gnome.spill.initializers import (floating_initializers,
-                                      InitWindagesSchema,
-                                      DistributionBaseSchema)
+
+# from gnome.spills.sample_oils import _sample_oils
 
 
 class Density(object):
@@ -82,9 +74,6 @@ def kvis_at_temp(ref_kvis, ref_temp_k, temp_k, k_v2=2100):
               multi-KVis oils in our oil library suggest that a value of
               2100 would be a good default value for k_v2.
     '''
-    print("kvis_at_temp called")
-    print(ref_kvis, ref_temp_k, temp_k, k_v2)
-    print("A:", ref_kvis * np.exp(-k_v2 / ref_temp_k))
     return ref_kvis * np.exp((k_v2 / temp_k) - (k_v2 / ref_temp_k))
 
 
@@ -135,10 +124,10 @@ class GnomeOilSchema(SubstanceSchema):
     boiling_point = NumpyArraySchema(missing=drop, save=True, update=True)
     molecular_weight = NumpyArraySchema(missing=drop, save=True, update=True)
     component_density = NumpyArraySchema(missing=drop, save=True, update=True)
-    sara_type = SequenceSchema(SchemaNode(String()),
-                               missing=drop,
-                               save=True,
-                               update=True)
+#     sara_type = SequenceSchema(SchemaNode(String()),
+#                                missing=drop,
+#                                save=True,
+#                                update=True)
     num_components = SchemaNode(Int(), missing=drop, save=True, update=True)
 
 
@@ -157,7 +146,7 @@ class GnomeOil(Substance):
         GnomeOil can be initialized in three ways:
 
         1) From a sample oil name : ``GnomeOil("sample_oil_name")`` the oils are available
-            in gnome.spill.sample_oils
+            in gnome.spills.sample_oils
 
 
         2) From a file name : ``GnomeOil(filename="adios_oil.json")`` usually oils from the
@@ -171,7 +160,7 @@ class GnomeOil(Substance):
         GnomeOil("oil.json")               ---load from file using OilDB, parse as **json_
         GnomeOil(filename="oil.json")
         GnomeOil(**json_)                  ---webgnomeclient, save, new_from_dict API
-        
+
         GnomeOil("invalid_name")           ---ValueError (not in sample oils)
         GnomeOil("any_name", "valid.json") ---TypeError (no name + filename)
         """
@@ -184,7 +173,9 @@ class GnomeOil(Substance):
             oil_dict = _sample_oils[oil_name]
             kwargs.update(oil_dict)
             super_kwargs = self._init_from_json(**kwargs)
-        elif filename and os.path.exists(filename):
+        elif filename:
+            if not os.path.exists(filename):
+                raise ValueError(f"File: {filename} does not exist")
             # load from file using oil database
             try:
                 import adios_db
@@ -241,7 +232,7 @@ class GnomeOil(Substance):
                         boiling_point,
                         molecular_weight,
                         component_density,
-                        sara_type,
+                        sara_type=None,
                         adios_oil_id=None,
                         k0y=None,
                         num_components=None,
@@ -279,11 +270,11 @@ class GnomeOil(Substance):
         self._set_pc_values('molecular_weight', molecular_weight)
         self._set_pc_values('boiling_point', boiling_point)
         self._set_pc_values('component_density', component_density)
-        if len(sara_type) == self.num_components:
-            self.sara_type = sara_type
-        else:
-            raise ValueError("You must have the same number of sara_type as PCs")
-
+#         if len(sara_type) == self.num_components:
+#             self.sara_type = sara_type
+#         else:
+#             raise ValueError("You must have the same number of sara_type as PCs")
+#
         self._k_v2 = None  # decay constant for viscosity curve
         self._visc_A = None  # constant for viscosity curve
         self.k0y = k0y
@@ -326,11 +317,19 @@ class GnomeOil(Substance):
         '''
         :param to_rel - number of new LEs to initialize
         :param arrs - dict-like of data arrays representing LEs
+
+        fixme: this shouldn't use water temp -- it should use
+               standard density and STP temp -- and let
+               weathering_data set it correctly
+               NOTE: weathering data is currently broken
+                     fir initial setting
         '''
         sl = slice(-to_rel, None, 1)
         water = self.water
         if water is None:
             # LEs released at standard temperature and pressure
+            # fixme: we should probably not use a default here.
+            #        If we want a default, it should be specified elsewhere.
             self.logger.warning('No water provided for substance '
                                 'initialization, using default Water object')
             water = Water()
@@ -338,8 +337,8 @@ class GnomeOil(Substance):
         water_temp = water.get('temperature', 'K')
         density = self.density_at_temp(water_temp)
         if density > water.get('density'):
-            msg = ("{0} will sink at given water temperature: {1} {2}. "
-                   "Set density to water density"
+            msg = ("{0} will sink at given water temperature: {1:.1f} {2}. "
+                   "Setting density to water density"
                    .format(self.name,
                            water.get('temperature',
                                      self.water.units['temperature']),
@@ -363,7 +362,6 @@ class GnomeOil(Substance):
         # initialize mass_components
         arrs['mass_components'][sl] = (np.asarray(self.mass_fraction, dtype=np.float64) * (arrs['mass'][sl].reshape(len(arrs['mass'][sl]), -1)))
         super(GnomeOil, self).initialize_LEs(to_rel, arrs)
-
 
     def _set_pc_values(self, prop, values):
         """
@@ -731,21 +729,3 @@ class GnomeOil(Substance):
                 pass
 
         return val
-
-
-    # # only here 'cause we use "bullwinkle" in some contexts
-    # # and "bullwinkle_fraction" in others
-    # # that should get cleaned up someday
-    # @property
-    # def bullwinkle(self):
-    #     """
-    #     return bullwinkle (emulsion constant)
-    #     """
-    #     return self.bullwinkle_fraction
-
-    # @bullwinkle.setter
-    # def bullwinkle(self, value):
-    #     """
-    #     set the emulsion constant
-    #     """
-    #     self.bullwinkle_fraction = value

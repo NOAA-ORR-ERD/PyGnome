@@ -17,7 +17,7 @@ from gnome.persist import (SchemaNode, String, drop, Int, Boolean,
 from gnome.utilities.time_utils import date_to_sec
 
 from .outputter import Outputter, BaseOutputterSchema
-from gnome.movers.current_movers import IceMoverSchema
+from gnome.movers.c_current_movers import IceMoverSchema
 
 
 class TrajectoryGeoJsonSchema(BaseOutputterSchema):

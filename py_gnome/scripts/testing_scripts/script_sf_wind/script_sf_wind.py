@@ -8,15 +8,15 @@ import os
 from datetime import datetime, timedelta
 
 from gnome import scripting
-from gnome.spill.substance import NonWeatheringSubstance
-#from gnome.spill.elements import floating
+from gnome.spills.substance import NonWeatheringSubstance
+#from gnome.spills.elements import floating
 
 from gnome.utilities.remote_data import get_datafile
 
 from gnome.model import Model
 from gnome.maps import MapFromBNA
-from gnome.spill import point_line_release_spill
-from gnome.movers import GridWindMover
+from gnome.spills import surface_point_line_spill
+from gnome.movers import c_GridWindMover
 
 from gnome.outputters import Renderer
 from gnome.outputters import NetCDFOutput
@@ -48,7 +48,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     model.outputters += NetCDFOutput(netcdf_file, which_data='all')
 
     print('adding a spill')
-    spill = point_line_release_spill(num_elements=1000,
+    spill = surface_point_line_spill(num_elements=1000,
                                      start_position=(-123.57152, 37.369436,
                                                      0.0),
                                      release_time=start_time,
@@ -67,7 +67,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     wind_file = get_datafile(os.path.join(base_dir, 'WindSpeedDirSubset.nc'))
     topology_file = get_datafile(os.path.join(base_dir,
                                               'WindSpeedDirSubsetTop.dat'))
-    w_mover = GridWindMover(wind_file, topology_file)
+    w_mover = c_GridWindMover(wind_file, topology_file)
 
     # w_mover.uncertain_time_delay = 6
     # w_mover.uncertain_duration = 6

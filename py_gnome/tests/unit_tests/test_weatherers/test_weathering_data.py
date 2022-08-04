@@ -10,8 +10,8 @@ from testfixtures import log_capture
 
 from gnome.environment import Water
 from gnome.weatherers import WeatheringData, FayGravityViscous
-from gnome.spill import point_line_release_spill
-from gnome.spill.gnome_oil import GnomeOil
+from gnome.spills import surface_point_line_spill
+from gnome.spills.gnome_oil import GnomeOil
 from gnome.spill_container import SpillContainer
 
 from ..conftest import test_oil
@@ -33,7 +33,7 @@ class TestWeatheringData(object):
         '''
         wd = WeatheringData(water)
         end_time = rel_time + timedelta(hours=1)
-        spills = [point_line_release_spill(num_elements,
+        spills = [surface_point_line_spill(num_elements,
                                            (0, 0, 0),
                                            rel_time,
                                            end_release_time=end_time,
@@ -105,7 +105,7 @@ class TestWeatheringData(object):
         init_dens = spill.substance.density_at_temp(wd.water.temperature)
         init_visc = spill.substance.kvis_at_temp(wd.water.temperature)
 
-        num = sc.release_elements(default_ts, rel_time)
+        num = sc.release_elements(rel_time, rel_time + timedelta(seconds=default_ts))
         wd.initialize_data(sc, num)
 
         assert np.allclose(sc['density'], init_dens)
@@ -137,7 +137,7 @@ class TestWeatheringData(object):
         init_dens = spill.substance.density_at_temp(wd.water.temperature)
         init_visc = spill.substance.kvis_at_temp(wd.water.temperature)
 
-        num = sc.release_elements(default_ts, rel_time)
+        num = sc.release_elements(rel_time, rel_time + timedelta(seconds=default_ts))
         wd.initialize_data(sc, num)
         assert np.allclose(sc['density'], init_dens)
         assert np.allclose(sc['viscosity'], init_visc)
@@ -166,7 +166,7 @@ class TestWeatheringData(object):
         '''
         rel_time = datetime.now().replace(microsecond=0)
         (sc, wd) = self.sample_sc_intrinsic(100, rel_time)
-        num = sc.release_elements(default_ts, rel_time)
+        num = sc.release_elements(rel_time, rel_time + timedelta(seconds=default_ts))
         wd.initialize_data(sc, num)
 
         self.mock_weather_data(sc, wd, 3)
@@ -203,12 +203,12 @@ class TestWeatheringData(object):
         ts = 900
         for i in range(-1, 5):
             curr_time = rel_time + timedelta(seconds=i * ts)
-            num1 = sc1.release_elements(ts, curr_time)
+            num1 = sc1.release_elements(curr_time, rel_time + timedelta(seconds=ts))
             if num1 > 0:
                 for w in (wd1, spread1):
                     w.initialize_data(sc1, num1)
 
-            num2 = sc2.release_elements(ts, curr_time)
+            num2 = sc2.release_elements(curr_time, rel_time + timedelta(seconds=ts))
             if num2 > 0:
                 for w in (wd2, spread2):
                     w.initialize_data(sc2, num2)
@@ -254,14 +254,14 @@ class TestWeatheringData(object):
 
         rel_time = datetime.now().replace(microsecond=0)
         end_time = rel_time + timedelta(hours=1)
-        spills = [point_line_release_spill(100,
+        spills = [surface_point_line_spill(100,
                                            (0, 0, 0),
                                            rel_time,
                                            end_release_time=end_time,
                                            amount=100,
                                            units='kg',
                                            substance=test_oil),
-                  point_line_release_spill(50,
+                  surface_point_line_spill(50,
                                            (0, 0, 0),
                                            rel_time + timedelta(hours=.25),
                                            substance=test_oil,
@@ -288,7 +288,7 @@ class TestWeatheringData(object):
         ts = 900
         for i in range(-1, 5):
             curr_time = rel_time + timedelta(seconds=i * ts)
-            num_released = sc.release_elements(ts, curr_time)
+            num_released = sc.release_elements(curr_time, curr_time + timedelta(seconds=ts))
 
             if num_released > 0:
                 for w in weatherers:
@@ -337,7 +337,7 @@ class TestWeatheringData(object):
         (sc, wd, spread) = self.sample_sc_wd_spreading(100, rel_time)
         sc.spills[0].end_release_time = None
         # add another spill to compare with
-        sc.spills += point_line_release_spill(100, (0, 0, 0),
+        sc.spills += surface_point_line_spill(100, (0, 0, 0),
                                               rel_time,
                                               amount=10,
                                               units='kg',
@@ -352,7 +352,7 @@ class TestWeatheringData(object):
 
         print("step 1:", sc['density'])
         # release elements
-        num = sc.release_elements(default_ts, rel_time)
+        num = sc.release_elements(rel_time, rel_time + timedelta(seconds=default_ts))
         print("step 2:", sc['density'])
         if num > 0:
             for w in (wd, spread):
@@ -404,20 +404,20 @@ class TestWeatheringData(object):
         sc.prepare_for_model_run(ats)
         l.install()
 
-        num = sc.release_elements(default_ts, rel_time)
+        num = sc.release_elements(rel_time, rel_time+timedelta(seconds=default_ts))
 
         # only capture and test density error
 
         if num > 0:
             wd.initialize_data(sc, num)
 
-        msg = ("{0} will sink at given water temperature: {1} {2}. "
-               "Set density to water density".format(new_subs.name,
-                                                     288.0,
+        msg = ("{0} will sink at given water temperature: {1:.1f} {2}. "
+               "Setting density to water density".format(new_subs.name,
+                                                     288,
                                                      'K'))
-        l.check_present(('gnome.spill.gnome_oil.GnomeOil',
+        l.check_present(('gnome.spills.gnome_oil.GnomeOil',
                  'ERROR',
-                 msg))
+                 msg), order_matters=False)
 
 
     def test_no_substance(self):
@@ -433,6 +433,5 @@ class TestWeatheringData(object):
         sc.rewind()
         sc.prepare_for_model_run(wd.array_types)
         wd.prepare_for_model_run(sc)
-
-        num = sc.release_elements(default_ts, rel_time)
+        num = sc.release_elements(rel_time, rel_time + timedelta(seconds=default_ts))
         wd.initialize_data(sc, num)

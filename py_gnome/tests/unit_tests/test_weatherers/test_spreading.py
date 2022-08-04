@@ -49,6 +49,7 @@ class TestFayGravityViscous(object):
         '''
         k1 = self.spread.spreading_const[0]
         k2 = self.spread.spreading_const[1]
+        k_nu = self.spread.spreading_const[2]
         g = constants.gravity
         nu_h2o = water_viscosity
 
@@ -57,7 +58,9 @@ class TestFayGravityViscous(object):
               (((init_vol) ** 5 * g * dbuoy) / (nu_h2o ** 2)) ** (1. / 6.))
 
         p_area = (np.pi *
-                  k2 ** 2 *
+                  # correct k_nu, Spreading Law coefficient -- Eq.(6.14), 11/23/2021
+                  #k2 ** 2 *
+                  k_nu ** 2 *
                   (init_vol ** 2 * g * dbuoy * p_age ** 1.5) ** (1. / 3.) /
                   (nu_h2o ** (1. / 6.)))
 
@@ -254,7 +257,7 @@ class TestLangmuir(ObjForTests):
         assert self.l.serialize() == j
 
     # langmuir temporarily turned off
-    @pytest.mark.xfail
+    #@pytest.mark.xfail
     def test_weather_elements(self):
         '''
         use ObjMakeTests from test_cleanup to setup test

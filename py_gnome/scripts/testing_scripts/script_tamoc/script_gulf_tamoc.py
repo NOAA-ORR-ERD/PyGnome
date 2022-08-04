@@ -22,23 +22,19 @@ import numpy as np
 from datetime import datetime, timedelta
 
 from gnome import scripting
-#from gnome.spill.elements import plume
-from gnome.utilities.distributions import WeibullDistribution
 from gnome.environment.gridded_objects_base import Variable, Time, Grid_S
 from gnome.environment import GridCurrent
 from gnome.environment import Wind
 
 from gnome.model import Model
 from gnome.maps.map import GnomeMap
-from gnome.spill import point_line_release_spill
-#from gnome.scripting import subsurface_plume_spill
 from gnome.movers import (RandomMover,
                           TamocRiseVelocityMover,
                           RandomMover3D,
                           SimpleMover,
-                          GridCurrentMover,
+                          c_GridCurrentMover,
                           PyCurrentMover,
-                          constant_wind_mover,
+                          constant_point_wind_mover,
                           WindMover)
 
 from gnome.outputters import Renderer
@@ -125,7 +121,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     #model.movers += PyCurrentMover('HYCOM_3d.nc')
     model.movers += PyCurrentMover(hycom_file)
 #    model.movers += SimpleMover(velocity=(0., 0, 0.))
-    model.movers += constant_wind_mover(10, 315, units='knots')
+    model.movers += constant_point_wind_mover(10, 315, units='knots')
 
     # Wind from a buoy
     #w = Wind(filename='KIKT.osm')

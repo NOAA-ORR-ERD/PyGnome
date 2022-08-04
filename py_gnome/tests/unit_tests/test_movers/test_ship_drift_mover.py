@@ -18,8 +18,8 @@ from gnome.utilities import time_utils
 from ..conftest import sample_sc_release, testdata
 
 
-wind_file = testdata['GridWindMover']['wind_curv']
-topology_file = testdata['GridWindMover']['top_curv']
+wind_file = testdata['c_GridWindMover']['wind_curv']
+topology_file = testdata['c_GridWindMover']['top_curv']
 
 
 def test_exceptions():

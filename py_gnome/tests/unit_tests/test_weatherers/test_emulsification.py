@@ -17,7 +17,7 @@ from .conftest import weathering_data_arrays
 from ..conftest import (sample_model_weathering,
                         sample_model_weathering2,
                         test_oil)
-from gnome.spill.gnome_oil import GnomeOil
+from gnome.spills.gnome_oil import GnomeOil
 
 
 water = Water()

@@ -2,10 +2,6 @@
 tests for geojson outputter
 '''
 
-
-
-
-
 # from builtins import int
 # from future import standard_library
 # standard_library.install_aliases()
@@ -19,7 +15,7 @@ import numpy as np
 import pytest
 
 from gnome.outputters import TrajectoryGeoJsonOutput
-from gnome.spill import SpatialRelease, Spill, point_line_release_spill
+from gnome.spills import PolygonRelease, Spill, surface_point_line_spill
 from gnome.basic_types import oil_status
 from gnome.environment import constant_wind, Water
 from gnome.weatherers import Evaporation
@@ -47,7 +43,7 @@ def model(sample_model, output_dir):
 
     # print start_points
 
-    model.spills += point_line_release_spill(1,
+    model.spills += surface_point_line_spill(1,
                                              start_position=rel_start_pos,
                                              release_time=model.start_time,
                                              end_position=rel_end_pos,

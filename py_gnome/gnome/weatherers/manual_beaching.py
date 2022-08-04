@@ -10,19 +10,16 @@ from datetime import datetime
 
 import numpy as np
 
-from colander import (SchemaNode, drop,
-                      Float, String, Range)
-
-import unit_conversion as uc
+import nucos as uc
 
 from gnome.basic_types import datetime_value_1d
 from gnome.weatherers import Weatherer
 from gnome.utilities.inf_datetime import InfDateTime
 
-from gnome.persist import validators, base_schema
-from gnome.persist.extend_colander import (DefaultTupleSchema,
-                                           LocalDateTime,
-                                           DatetimeValue1dArraySchema)
+from gnome.persist import (validators, base_schema, DefaultTupleSchema,
+                           LocalDateTime, DatetimeValue1dArraySchema,
+                           SchemaNode, drop, Float, String, Range)
+
 from .core import WeathererSchema
 from .cleanup import RemoveMass
 from gnome.environment.environment import WaterSchema
@@ -172,6 +169,10 @@ class Beaching(RemoveMass, Weatherer):
 
         .. note:: invoked by weather_elements only if object is active for
             the step.
+
+        fixme: the conversion to mass should happen all at once when the
+               timeseries is set. and it should use substance.standard_density
+
         '''
         if self._rate is None:
             # ensure active start < timeseries['time'][0]
@@ -181,18 +182,16 @@ class Beaching(RemoveMass, Weatherer):
             # convert timeseries to 'kg'
             dv = self.timeseries['value']
 
-            # types = uc.FindUnitTypes()
-            # unit_type = types[self.units]
-            unit_type = uc.UNIT_TYPES[self.units]
+            unit_type = uc.FindUnitTypes()[self.units]
             if unit_type == 'mass':
                 dm = uc.convert('mass', self.units, 'kg', dv)
             elif unit_type == 'volume':
-                water_temp = self.water.get('temperature')
-                rho = substance.density_at_temp(water_temp)
+                # water_temp = self.water.get('temperature')
+                # rho = substance.density_at_temp(water_temp)
                 volume = uc.convert('volume', self.units, 'm^3', dv)
-
-                dm = volume * rho
+                dm = volume * substance.standard_density
             else:
+                # fixme: shouldn't this be check earlier??
                 raise ValueError("{} is not a valid unit for beached oil"
                                  .format(self.unit))
             self._rate = dm / dt

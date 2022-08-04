@@ -9,11 +9,13 @@ import numpy as np
 
 import pytest
 
-from gnome.basic_types import oil_status  # .in_water
+from ..conftest import sample_sc_release
+
+from gnome.basic_types import oil_status, status_code_type  # .in_water
 from gnome.environment import gridcur
 
 from gnome.movers import PyCurrentMover
-from gnome.spill import grid_spill
+from gnome.spills import grid_spill
 
 import gnome.scripting as gs
 
@@ -209,12 +211,15 @@ def test_mover_get_move():
                                   (-87.0, 29.5, 0.0),  # near middle of grid
                                   (-89.0, 27.5, 0.0),  # outside the grid
                                   ])
-    status_codes = np.array([oil_status.in_water,
+    status_codes = np.array([oil_status.in_water,  # this is the default
                              oil_status.in_water,
-                             oil_status.in_water])
-    sc = {'positions': initial_positions,
-          'status_codes': status_codes}
-    deltas = mover.get_move(sc, time_step, model_time_datetime)
+                             oil_status.in_water],
+                             dtype=status_code_type)
+    num_le = 3
+    pSpill = sample_sc_release(num_le, (0.,0.,0), model_time_datetime)
+    pSpill['status_codes'] = status_codes
+    pSpill['positions'] = initial_positions
+    deltas = mover.get_move(pSpill, time_step, model_time_datetime)
 
     print("deltas are:", deltas)
 

@@ -6,17 +6,16 @@ Put all the common Schema nodes in one namespace
 '''
 
 from . import monkey_patch_colander
-# from . import base_schema, extend_colander, validators
-from .save_load import (Savable, References, load, is_savezip_valid)
-
 monkey_patch_colander.apply()
-
 del monkey_patch_colander
+
+from .save_load import (Savable, References, load, is_savezip_valid)
 
 # import everything, so it can all be in one place
 from colander import (Schema, Int, Float, DateTime, Sequence, Tuple, List,
                       TupleSchema, SequenceSchema, null, SchemaNode, String,
-                      Invalid, Boolean, drop)
+                      Invalid, Boolean, drop, Range, MappingSchema, OneOf,
+                      required)
 
 from .extend_colander import (TupleSchema, SequenceSchema, SchemaNode,
                               NumpyFixedLenSchema, FilenameSchema,

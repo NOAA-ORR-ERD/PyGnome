@@ -11,7 +11,7 @@ from colander import SchemaNode, MappingSchema, Float, String, drop, OneOf
 
 import gsw
 
-import unit_conversion as uc
+import nucos as uc
 
 from gnome import constants
 from gnome.persist import base_schema
@@ -43,6 +43,7 @@ class Environment(GnomeId):
 
     __metaclass__ = EnvironmentMeta
 
+    # fixme: are there any **kwargs to be passed on?
     def __init__(self, make_default_refs=True, **kwargs):
         '''
         base class for environment objects
@@ -51,8 +52,33 @@ class Environment(GnomeId):
         '''
         self.make_default_refs = make_default_refs
         self.array_types = {}
-        super(Environment, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
+    def at(self, points, time, units=None):
+        """
+        Find the value of the property at positions P at time T
+
+        :param points: Coordinates to be queried (lon, lat, depth)
+        :type points: Nx3 numpy array
+
+        :param time: The time at which to query these points (T)
+        :type time: datetime.datetime object
+
+        :param units=None: units the values will be returned in (or converted to)
+                           if None, the default units for the environment type will be used.
+        :type units: string such as ('m/s', 'knots', etc)
+
+        :param extrapolate=False: if True, extrapolation will be supported
+        :type extrapolate: boolean (True or False)
+
+        :return: returns a Nx2 or Nx3 array of interpolated values
+        :rtype: Nx2 or Nx3 numpy array of values
+        """
+        raise NotImplementedError("Environment subclasses must impliment"
+                                  "an at() method")
+
+    # These are properties so they can raise NotImplementedError
+    # alternatively, we could use -InfTime and IntTime as defaults
     @property
     def data_start(self):
         raise NotImplementedError
@@ -89,6 +115,8 @@ class Environment(GnomeId):
         any actions after a model run is complete (StopIteration triggered)
         """
         pass
+
+
 
 def env_from_netCDF(filename=None, dataset=None,
                     grid_file=None, data_file=None, _cls_list=None,
@@ -370,7 +398,7 @@ class Water(Environment):
 
         if unit is None:
             # Note: salinity only have one units since we don't
-            # have any conversions for them in unit_conversion yet - revisit
+            # have any conversions for them in nucos yet - revisit
             # this per requirements
             if (attr not in self._si_units or
                     self._si_units[attr] == self._units[attr]):

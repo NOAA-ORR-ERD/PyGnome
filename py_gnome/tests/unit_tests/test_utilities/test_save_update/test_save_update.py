@@ -1,8 +1,4 @@
 
-
-
-
-
 import os
 import sys
 import pytest
@@ -14,6 +10,7 @@ from gnome.utilities.save_updater import (extract_zipfile,
                                           update_savefile,
                                           remember_cwd,
                                           v0tov1,
+                                          v1tov2,
                                           )
 
 '''
@@ -64,17 +61,16 @@ def check_files(func):
 
 
 def test_extract_zipfile():
+    # note test changed -- we shouldn't have filenames
+    # that are illegal on Windows anywhere -- it could be a zip file
+    # that gets moved between platforms.
     #Ensure the *GENERIC DIESEL.json gets renamed as a file and as a reference
     with setup_workspace('v1_double_diesel.gnome'):
         files = glob.glob('*.json')
-        if sys.platform != "win32":
-            assert "*GENERIC DIESEL.json" in files
-        else:
-            assert "GENERIC DIESEL.json" in files
+        assert "GENERIC DIESEL.json" in files
         assert check_files(
-            lambda js:'spill.Spill' in js['obj_type'] and
-                (sys.platform == "win32" and js.get('substance', None) == "GENERIC DIESEL.json") or
-                (sys.platform != "win32" and js.get('substance', None) == "*GENERIC DIESEL.json")
+            lambda js: 'spill.Spill' in js['obj_type']
+                       and js.get('substance', None) == "GENERIC DIESEL.json"
         )
 
     # Ensure that the __MACOSX folder is ignored
@@ -93,6 +89,29 @@ def test_v0_to_v1():
         v0tov1(msgs, errs)
         assert len(errs) == 0
         assert check_files(
-            lambda js: 'gnome.spill.substance.GnomeOil' in js['obj_type'] and
+            lambda js: 'gnome.spills.substance.GnomeOil' in js['obj_type'] and
                 js.get('name', None) == "*GENERIC DIESEL"
         )
+
+
+def test_v1_to_v2():
+    """
+    fixme: this is only checking 'gnome.spills.substance.GnomeOil'
+    not any others, including: gnome.spills.spill.Spill
+
+    check_files should probably be updated to do more than one check
+    """
+    with setup_workspace('v0_diesel_mac.zip'):
+        errs = []
+        msgs = []
+        # fixme: we should probably have some v1 data to use for tests!
+        # have to run v0tov1 first for this old data
+        v0tov1(msgs, errs)
+        v1tov2(msgs, errs)
+        assert len(errs) == 0
+
+        def checker(js):
+            return ('gnome.spills.substance.GnomeOil' in js['obj_type']
+                    and js.get('name', None) == "*GENERIC DIESEL")
+
+        assert check_files(checker)

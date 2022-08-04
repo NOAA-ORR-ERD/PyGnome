@@ -8,14 +8,12 @@ import os
 # import copy
 import io
 # import zipfile
-import gridded
 
 import numpy as np
 
-from colander import (SchemaNode, drop, OneOf,
-                      Float, String, Range, Boolean)
+import nucos as uc
 
-import unit_conversion as uc
+import gridded
 
 from gnome.basic_types import datetime_value_2d
 from gnome.basic_types import ts_format
@@ -23,22 +21,19 @@ from gnome.basic_types import wind_datasources
 
 from gnome.cy_gnome.cy_ossm_time import ossm_wind_units
 
-from gnome.utilities.time_utils import sec_to_datetime
-from gnome.utilities.time_utils import (zero_time,
-                                        sec_to_date)
+from gnome.utilities.time_utils import (sec_to_datetime, zero_time, sec_to_date)
 from gnome.utilities.timeseries import Timeseries
 from gnome.utilities.inf_datetime import InfDateTime
 from gnome.utilities.distributions import RayleighDistribution as rayleigh
 
-from gnome.persist.extend_colander import (DefaultTupleSchema,
-                                           LocalDateTime,
-                                           DatetimeValue2dArraySchema,
-                                           FilenameSchema)
+from gnome.persist import (SchemaNode, drop, OneOf, Float, String, Range,
+                           Boolean, DefaultTupleSchema, LocalDateTime,
+                           DatetimeValue2dArraySchema, FilenameSchema,
+                           validators, base_schema)
 from gnome.utilities.convert import (to_time_value_pair,
                                      tsformat,
                                      to_datetime_value_2d)
 from gnome.persist.validators import convertible_to_seconds
-from gnome.persist import validators, base_schema
 
 from .environment import Environment
 from gnome.environment.gridded_objects_base import Time, TimeSchema
@@ -424,7 +419,7 @@ class Wind(Timeseries, Environment):
 
         :param units: [optional] outputs data in these units. Default is to
             output data without unit conversion
-        :type units: string. Uses the unit_conversion module.
+        :type units: string. Uses the nucos module.
 
         :param coord_sys: output coordinate system for the times series:
                           either 'r-theta' or 'uv'

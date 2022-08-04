@@ -10,7 +10,6 @@ For now just define a FayGravityInertial class here
 It is only used by WeatheringData to update the 'area' and related arrays
 '''
 
-
 import numpy as np
 
 from functools import lru_cache
@@ -32,6 +31,7 @@ class WeatheringData(Weatherer):
     '''
     Serves to initialize weathering data arrays. Also updates data arrays
     like density, viscosity
+
     Doesn't have an id like other gnome objects. It isn't exposed to
     application since Model will automatically instantiate if there
     are any Weathering objects defined
@@ -108,9 +108,9 @@ class WeatheringData(Weatherer):
             water_temp = water.get('temperature', 'K')
             density = substance.density_at_temp(water_temp)
             if density > water.get('density'):
-                msg = ("{0} will sink at given water temperature: {1} {2}. "
+                msg = ("{0} will sink at given water temperature: {1:.1f} {2}. "
                        "Setting density to water density"
-                       .format(self.name,
+                       .format(substance.name,
                                water.get('temperature',
                                          self.water.units['temperature']),
                                water.units['temperature']))
@@ -287,8 +287,8 @@ class WeatheringData(Weatherer):
     @lru_cache(1)
     def _get_k_rho_weathering_dens_update(substance, temp_in_k):
         '''
-        use lru_cache on substance. substance is an OilProps object, if this
-        object stays the same, then return the cached value for k_rho
+        use lru_cache on substance. substance is expected to be a GnomeOil,
+        if this object stays the same, then return the cached value for k_rho
         This depends on initial mass fractions, initial density and fixed
         component densities
         '''

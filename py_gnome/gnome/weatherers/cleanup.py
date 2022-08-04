@@ -6,7 +6,6 @@ add these as weatherers
 from datetime import timedelta
 
 import numpy as np
-from colander import (SchemaNode, Float, String, drop, Range)
 
 from gnome.basic_types import oil_status, fate as bt_fate
 from gnome.array_types import gat
@@ -16,13 +15,16 @@ from gnome.environment.wind import WindSchema
 from .core import WeathererSchema
 from .. import _valid_units
 
-import unit_conversion as uc
+import nucos as uc
+from gnome.persist import (SchemaNode, Float, String, drop, Range,
+                           GeneralGnomeObjectSchema, SchemaNode, Float, String,
+                           drop, Range, LocalDateTime)
 from gnome.environment.water import WaterSchema
-from gnome.persist.base_schema import GeneralGnomeObjectSchema
 from gnome.environment.gridded_objects_base import VectorVariableSchema
 from gnome.environment.waves import WavesSchema
-from gnome.persist.extend_colander import LocalDateTime
+
 from gnome.persist.validators import convertible_to_seconds
+
 from gnome.utilities.inf_datetime import InfDateTime
 
 
@@ -44,11 +46,8 @@ class RemoveMass(object):
             rm_mass = uc.convert('Mass', units, 'kg', amount)
         else:
             # amount must be in volume units
-            water_temp = self.water.get('temperature')
-            rho = substance.density_at_temp(water_temp)
             rm_vol = uc.convert('Volume', units, 'm^3', amount)
-
-            rm_mass = rho * rm_vol
+            rm_mass = substance.standard_density * rm_vol
 
         return rm_mass
 
@@ -736,7 +735,7 @@ class ChemicalDispersionSchema(WeathererSchema):
                                   validator=Range(0, 1.0))
     efficiency = SchemaNode(Float(), save=True, update=True, missing=drop,
                             validator=Range(0, 1.0))
-    _rate = SchemaNode(Float(), save=True, update=True, missing=drop)
+    #_rate = SchemaNode(Float(), save=True, update=True, missing=drop)
     waves = WavesSchema(save=True, update=True, missing=drop,
                         save_reference=True)
 

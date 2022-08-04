@@ -1,69 +1,62 @@
 # Documents the conda packages required for PyGnome
-#  this covers py_gnome and the oil_library
-#  This should be the minimal conda install
+#
+#  This should be the minimal conda install to run PyGNOME
+#  See:
+#    conda_requirements_build.txt for build requirements
+#    conda_requirements_test for testing requirements
+#    conda_requirements_docs.txt requirements for building the sphinx docs
+
 #  install with:
 #    conda install --file conda_requirements.txt
 #
 #  or create an environmemnt:
-#    conda create -n gnome --file conda_requirements.txt
-# These packages would all be in one of the following channels:
+#    conda create -n gnome python=3.9 --file conda_requirements.txt
+#   (python version is not specified in the conda_requirements file)
+# if you want a full development environment,
+# you can install the whole thing at once:
+#
+# conda create -n gnome python=3.9 --file conda_requirements.txt --file conda_requirements_build.txt --file conda_requirements_test.txt --file conda_requirements_docs.txt
+
+
+# These packages should all be in one of the following channels:
 # defaults
 # conda-forge
-# NOAA-ORR-ERD
 
-python=3.8.*
+# we should get it working with 3.10 -- but mapbox-earcut not ready :-(
+python>=3.8,<3.11
+
+# for building
+# cython=0.29.* # see the build requirements
 
 # for SpatialRelease
 trimesh
 shapely
 pyproj
-mapbox_earcut # from NOAA_ORR_ERD channel -- not working
+mapbox_earcut
 
-setuptools>=62
-gitpython
 numpy
 scipy
 gsw
 psutil
-progressbar
 pyzmq
+python-dateutil
 geojson
 colander
 
 tblib # still needed for child process exception handling.
 
 netCDF4
-# awesome-slugify>=1.6.5 # required for adios_db
-# regex
-# unidecode>=0.04.19
 pyshp
+progressbar
 
 
 # NOAA maintained packages
-gridded=0.3.0
+gridded=0.3.4
 pynucos
 cell_tree2d
-py_gd>=1
+py_gd=2.*
+# libgd  # this should be brought in by py_gd, but something odd was happening on the CI
 
 
-# required for building
-cython
-
-# needed to run tests
-pytest
-pytest-cov
-pytest-timeout
-testfixtures
-
-# nice to have for development, not required to run
-matplotlib
-ipython
-notebook # this gets you Jupyter notebook without all the QT stuff
-
-# required to build docs
-sphinx
-sphinx_rtd_theme
-nbsphinx
-sphinx-autoapi
 
 

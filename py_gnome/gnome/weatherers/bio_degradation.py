@@ -130,6 +130,7 @@ class Biodegradation(Weatherer):
 
         return mass_biodegradated
 
+    # this will have to be updated, SARA is being refactored out of gnome_oil
     def get_K_comp_rates(self, type_and_bp):
         '''
             Get bio degradation rate coefficient based on component

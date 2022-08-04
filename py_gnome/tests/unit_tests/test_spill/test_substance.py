@@ -1,12 +1,16 @@
 from pathlib import Path
-from gnome.spill.substance import (Substance,
-                                   NonWeatheringSubstance)
+from gnome.spills.substance import (Substance,
+                                    NonWeatheringSubstance,
+                                    SubsurfaceSubstance)
 
-from gnome.spill.initializers import InitWindages
+from gnome.spills.initializers import InitWindages
 
 import pytest
 
 DATA_DIR = Path(__file__).parent / "data_for_tests"
+
+# fixme: There should be tests of the substance "model" API here
+# what does a Substance do? is that working?
 
 
 class TestSubstance:
@@ -15,13 +19,9 @@ class TestSubstance:
     def test_init(self):
         # check default state
         sub1 = Substance()
-        assert len(sub1.initializers) == 1
-        assert isinstance(sub1.initializers[0], InitWindages)
-        initw = sub1.initializers[0]
-        # substance should expose the array types of it's initializers
-        assert all([atype in sub1.array_types for atype in initw.array_types])
-        # in this case, there should only be InitWindages
-        assert list(sub1.array_types.keys()) == list(initw.array_types.keys())
+        assert isinstance(sub1._windage_init, InitWindages)
+        expected_arrays = {'windages', 'windage_range', 'windage_persist', 'density', 'fate_status'}
+        assert sub1.array_types.keys() == expected_arrays
 
     def test_eq(self):
         sub1 = Substance()
@@ -85,3 +85,39 @@ class TestNonWeatheringSubstance(object):
         json_, savefile, refs = test_obj.save(saveloc_)
         test_obj2 = test_obj.__class__.load(savefile)
         assert test_obj == test_obj2
+
+
+class Test_SubsurfaceSubstance:
+    """
+    Tests of Substance that support rise velocity
+
+    Needed for vertical movers :-)
+
+    Fixme: this should test the initilization!
+    """
+
+    @pytest.mark.parametrize('distribution', ['UniformDistribution',
+                                              'NormalDistribution',
+                                              'LogNormalDistribution',
+                                              'WeibullDistribution',
+                                              ])
+    def test_init_with_distribution(self, distribution):
+        """
+        NOTE: this only tests whether the init fails,
+        not whether it does the right thing
+        """
+        subs = SubsurfaceSubstance(distribution=distribution)
+
+        print(subs.array_types.keys())
+        expected_arrays = {'rise_vel',
+                           'droplet_diameter',
+                           'windages',
+                           'windage_range',
+                           'windage_persist',
+                           'density',
+                           'fate_status'}
+
+        assert subs.all_array_types.keys() == expected_arrays
+
+
+

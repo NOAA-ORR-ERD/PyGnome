@@ -66,7 +66,8 @@ class WeatheringOutput(BaseMassBalanceOutputter):
                  output_dir=None,   # default is to not output to file
                  **kwargs):
         '''
-        :param str output_dir='./': output directory for the json files
+        :param str output_dir=None: output directory for the json files.
+                If not directory is provided, files will not be written.
 
         other arguments as defined in the Outputter class
         '''

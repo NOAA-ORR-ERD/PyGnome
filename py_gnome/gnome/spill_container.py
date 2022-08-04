@@ -13,41 +13,24 @@ import numpy as np
 
 from gnome.basic_types import fate as bt_fate
 from gnome.basic_types import oil_status
-from gnome.array_types import (gat,
-                               ArrayType,
-                               default_array_types)
+from gnome.array_types import (default_array_types)
 
 from gnome.utilities.orderedcollection import OrderedCollection
-import gnome.spill
 from gnome import AddLogger
-from gnome.exceptions import GnomeRuntimeError
-from gnome.spill.substance import NonWeatheringSubstance
-
-
-# Organize information about spills per substance
-# 1. substances: list of substances
-# 2. s_id: int ID to label the substance. If more than one type of substance
-#    then 'substance' data_array is labeled using this unique index
-# 3. spills: list of lists spills. Each element are list of spills
-#    corresponding w/ substance
-#
-# if more than one type of substance in multiple spills, then label the
-# substances as index into 'substances' list.
-## no longer needed -- one substance per SpillContainer!
-
-# substances_spills = namedtuple('substances_spills',
-#                                ['substances',
-#                                 's_id',
-#                                 'spills'])
+import gnome.spills.spill
+from gnome.spills.substance import NonWeatheringSubstance
 
 
 class FateDataView(AddLogger):
+    """
+    need a docstring -- what is this for?
+    """
+
     _dicts_ = ('surface_weather', 'subsurf_weather', 'skim', 'burn',
                'disperse', 'non_weather', 'all')
 
     def __init__(self):
         self.reset()
-        # self.substance_id = substance_id
 
     def reset(self):
         for fate_type in self._dicts_:
@@ -384,7 +367,7 @@ class SpillContainer(AddLogger, SpillContainerData):
     """
     def __init__(self, uncertain=False):
         super(SpillContainer, self).__init__(uncertain=uncertain)
-        self.spills = OrderedCollection(dtype=gnome.spill.spill.Spill)
+        self.spills = OrderedCollection(dtype=gnome.spills.spill.Spill)
         self.spills.register_callback(self._spills_changed,
                                       ('add', 'replace', 'remove'))
         self.rewind()
@@ -663,7 +646,7 @@ class SpillContainer(AddLogger, SpillContainerData):
         if self.substance is None:
             return []
         else:
-            #data = self.data_arrays
+            # data = self.data_arrays
             data = self._fate_data_view.get_data(self, array_types, fate_status)
             return [(self.substance, data)]
 
@@ -885,17 +868,15 @@ class SpillContainer(AddLogger, SpillContainerData):
         w_mask = np.logical_and(w_mask, self['mass'] > 0.0)
         return w_mask
 
-    def release_elements(self, time_step, model_time):
+    def release_elements(self, start_time, end_time):
         """
-        Called at the end of a time step
+        :param start_time: -- beginning of the release
+        :param end_time: -- end of the release.
 
         This calls release_elements on all of the contained spills, and adds
         the elements to the data arrays
 
         :returns: total number of particles released
-
-        todo: may need to update the 'mass' array to use a default of 1.0 but
-        will need to define it in particle units or something along those lines
         """
         total_rel = 0
         # substance index - used label elements from same substance
@@ -906,7 +887,7 @@ class SpillContainer(AddLogger, SpillContainerData):
             # only want to include the spills that are turned on.
             if not spill.on:
                 continue
-            num_rel = spill.release_elements(self, model_time, time_step)
+            num_rel = spill.release_elements(self, start_time, end_time)
             if num_rel > 0:
                 # update 'spill_num' ArrayType's initial_value so it
                 # corresponds with spill number for this set of released
@@ -934,7 +915,9 @@ class SpillContainer(AddLogger, SpillContainerData):
                 # currently the same for all spills
                 total_rel += num_rel
 
-            # reset fate_dataview at each step - do it after release elements
+        # reset fate_dataview at each step - do it after release elements
+        # fixme: now that release_elements is called twice -- maybe not
+        #        the place to do it?
         self.reset_fate_dataview()
         return total_rel
 

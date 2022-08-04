@@ -3,32 +3,27 @@ update_from_dict has been giving problems on spills so just add a couple of
 simple tests for spills, and movers orderedcollection
 '''
 
-
-
-
-
-
 import copy
 from datetime import datetime
 
 import pytest
 
 from gnome.model import Model
-from gnome.spill import point_line_release_spill
+from gnome.spills import surface_point_line_spill
 from gnome.movers import SimpleMover
 from gnome.movers import RandomMover
 
 
-l_spills = [point_line_release_spill(10, (0, 0, 0),
+l_spills = [surface_point_line_spill(10, (0, 0, 0),
                                      datetime.now().replace(microsecond=0),
                                      name='sp1'),
-            point_line_release_spill(15, (0, 0, 0),
+            surface_point_line_spill(15, (0, 0, 0),
                                      datetime.now().replace(microsecond=0),
                                      name='sp2'),
-            point_line_release_spill(20, (0, 0, 0),
+            surface_point_line_spill(20, (0, 0, 0),
                                      datetime.now().replace(microsecond=0),
                                      name='sp3'),
-            point_line_release_spill(5, (0, 0, 0),
+            surface_point_line_spill(5, (0, 0, 0),
                                      datetime.now().replace(microsecond=0),
                                      name='sp4')]
 l_mv = [SimpleMover(velocity=(1, 2, 3)), RandomMover()]

@@ -19,26 +19,22 @@ But it's enough to see if the coupling with TAMOC works.
 
 import os
 import numpy as np
-#from pysgrid import SGrid
 from datetime import datetime, timedelta
 
 from gnome import scripting
-#from gnome.spill.elements import plume
 from gnome.utilities.distributions import WeibullDistribution
 from gnome.environment.gridded_objects_base import Variable, Grid_S
 from gnome.environment import IceAwareCurrent, IceConcentration, IceVelocity
 
 from gnome.model import Model
 from gnome.maps.map import GnomeMap
-from gnome.spill import point_line_release_spill
-from gnome.scripting import subsurface_plume_spill
 from gnome.movers import (RandomMover,
                           TamocRiseVelocityMover,
                           RandomMover3D,
                           SimpleMover,
-                          GridCurrentMover,
+                          c_GridCurrentMover,
                           PyCurrentMover,
-                          constant_wind_mover,
+                          constant_point_wind_mover,
                           IceMover)
 
 from gnome.outputters import Renderer
@@ -48,6 +44,7 @@ from gnome.environment.environment_objects import IceAwareCurrent
 
 # define base directory
 base_dir = os.path.dirname(__file__)
+
 
 def make_model(images_dir=os.path.join(base_dir, 'images')):
     print('initializing the model')
@@ -103,7 +100,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     model.movers += PyCurrentMover(current = ic)
     model.movers += SimpleMover(velocity=(0., 0., 0.))
-    model.movers += constant_wind_mover(20, 315, units='knots')
+    model.movers += constant_point_wind_mover(20, 315, units='knots')
 
     # Now to add in the TAMOC "spill"
     print("Adding TAMOC spill")
@@ -117,7 +114,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                                         #TAMOC_interval=None,  # how often to re-run TAMOC
                                         )
 
-    model.spills[0].data_sources['currents'] = ic
+    #model.spills[0].data_sources['currents'] = ic
 
     return model
 

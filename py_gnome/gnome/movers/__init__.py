@@ -8,12 +8,12 @@
 
 from .movers import Mover, Process, CyMover, ProcessSchema, PyMover
 from .simple_mover import SimpleMover, SimpleMoverSchema
-from .wind_movers import (WindMover,
+from .c_wind_movers import (WindMover,
                          WindMoverSchema,
-                         constant_wind_mover,
-                         wind_mover_from_file,
-                         GridWindMover,
-                         GridWindMoverSchema,
+                         constant_point_wind_mover,
+                         point_wind_mover_from_file,
+                         c_GridWindMover,
+                         c_GridWindMoverSchema,
                          IceWindMover,
                          IceWindMoverSchema)
 
@@ -25,12 +25,12 @@ from .random_movers import (RandomMover,
                            RandomMover3D,
                            RandomMover3DSchema)
 
-from .current_movers import (CatsMover,
+from .c_current_movers import (CatsMover,
                             CatsMoverSchema,
                             ComponentMover,
                             ComponentMoverSchema,
-                            GridCurrentMover,
-                            GridCurrentMoverSchema,
+                            c_GridCurrentMover,
+                            c_GridCurrentMoverSchema,
                             IceMover,
                             IceMoverSchema,
                             CurrentCycleMover,
@@ -46,7 +46,7 @@ from .py_current_movers import PyCurrentMover, PyCurrentMoverSchema
 
 mover_schemas = [
     WindMoverSchema,
-    GridWindMoverSchema,
+    c_GridWindMoverSchema,
     IceWindMoverSchema,
     ShipDriftMoverSchema,
     SimpleMoverSchema,
@@ -55,7 +55,7 @@ mover_schemas = [
     RandomMover3DSchema,
     CatsMoverSchema,
     ComponentMoverSchema,
-    GridCurrentMoverSchema,
+    c_GridCurrentMoverSchema,
     IceMoverSchema,
     CurrentCycleMoverSchema,
     RiseVelocityMoverSchema,

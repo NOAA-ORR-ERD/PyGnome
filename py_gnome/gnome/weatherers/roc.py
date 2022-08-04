@@ -3,10 +3,6 @@ oil removal from various cleanup options
 add these as weatherers
 '''
 
-
-
-
-
 import os
 import json
 from datetime import timedelta
@@ -14,11 +10,11 @@ from datetime import timedelta
 
 import numpy as np
 
-import unit_conversion as uc
+import nucos as uc
 
-from colander import (drop, SchemaNode, MappingSchema, OneOf,
-                      SequenceSchema, TupleSchema,
-                      Integer, Float, String, DateTime)
+from gnome.persist import (drop, SchemaNode, MappingSchema, OneOf,
+                           SequenceSchema, TupleSchema,
+                           Int, Float, String, DateTime)
 
 from gnome import _valid_units
 from gnome.basic_types import oil_status, fate as bt_fate
@@ -1653,13 +1649,13 @@ class BurnUnitsSchema(MappingSchema):
 
 class BurnSchema(ResponseSchema):
     offset = SchemaNode(
-        Integer(), save=True, update=True
+        Int(), save=True, update=True
     )
     boom_length = SchemaNode(
-        Integer(), save=True, update=True
+        Int(), save=True, update=True
     )
     boom_draft = SchemaNode(
-        Integer(), save=True, update=True
+        Int(), save=True, update=True
     )
     speed = SchemaNode(
         Float(), save=True, update=True
@@ -1668,7 +1664,7 @@ class BurnSchema(ResponseSchema):
         Float(), save=True, update=True
     )
     burn_efficiency_type = SchemaNode(
-        Integer(), save=True, update=True
+        Int(), save=True, update=True
     )
     units = BurnUnitsSchema(
         save=True, update=True

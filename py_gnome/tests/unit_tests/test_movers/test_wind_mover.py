@@ -1,17 +1,13 @@
 
-
-
-
 from datetime import timedelta, datetime
 
 from pytest import raises
 
 import numpy as np
 import pytest
-import unit_conversion as uc
+import nucos
 
 from gnome.basic_types import datetime_value_2d, ts_format
-
 
 from gnome.utilities.projections import FlatEarthProjection
 from gnome.utilities.time_utils import date_to_sec, sec_to_date
@@ -21,13 +17,13 @@ from gnome.utilities import convert
 
 from gnome.environment import Wind
 
-from gnome.spill import point_line_release_spill
+from gnome.spills import surface_point_line_spill
 from gnome.spill_container import SpillContainer
-from gnome.spill.substance import NonWeatheringSubstance
+from gnome.spills.substance import NonWeatheringSubstance
 
 from gnome.movers import (WindMover,
-                          constant_wind_mover,
-                          wind_mover_from_file)
+                          constant_point_wind_mover,
+                          point_wind_mover_from_file)
 from gnome.exceptions import ReferencedObjectNotSet
 
 from ..conftest import sample_sc_release, testdata
@@ -84,7 +80,7 @@ def test_read_file_init():
     #       but what the heck - do it here too.
 
     wind_ts = wind.get_wind_data(coord_sys=ts_format.uv)
-    cpp_timeseries['value'] = uc.convert('Velocity',
+    cpp_timeseries['value'] = nucos.convert('Velocity',
                                          'meter per second', wind.units,
                                          cpp_timeseries['value'])
 
@@ -507,7 +503,7 @@ def test_windage_index():
     rel_time = datetime(2013, 1, 1, 0, 0)
     timestep = 30
     for i in range(2):
-        spill = point_line_release_spill(num_elements=5,
+        spill = surface_point_line_spill(num_elements=5,
                                          start_position=(0., 0., 0.),
                                          release_time=rel_time + i * timedelta(hours=1),
                                          substance=NonWeatheringSubstance(windage_range=(i * .01 +
@@ -520,7 +516,7 @@ def test_windage_index():
     sc.prepare_for_model_run(array_types=spill.array_types)
     sc.release_elements(timestep, rel_time)
 
-    wm = constant_wind_mover(5, 0)
+    wm = constant_point_wind_mover(5, 0)
     wm.prepare_for_model_step(sc, timestep, rel_time)
     wm.model_step_is_done()  # need this to toggle _windage_is_set_flag
 
@@ -617,16 +613,14 @@ def test_active():
     assert np.all(delta == 0)  # model_time + time_step = active_start
 
 
-def test_constant_wind_mover():
+def test_constant_point_wind_mover():
     """
-    tests the constant_wind_mover utility function
+    tests the constant_point_wind_mover utility function
     """
-    with raises(Exception):
-        # it should raise an InvalidUnitError, but I don't want to have to
-        # import unit_conversion just for that...
-        _wm = constant_wind_mover(10, 45, units='some_random_string')
+    with raises(nucos.InvalidUnitError):
+        _wm = constant_point_wind_mover(10, 45, units='some_random_string')
 
-    wm = constant_wind_mover(10, 45, units='m/s')
+    wm = constant_point_wind_mover(10, 45, units='m/s')
 
     sc = sample_sc_release(1)
 
@@ -640,26 +634,26 @@ def test_constant_wind_mover():
     assert delta[0][0] == delta[0][1]
 
 
-def test_constant_wind_mover_bounds():
-    wm = constant_wind_mover(10, 45, units='knots')
+def test_constant_point_wind_mover_bounds():
+    wm = constant_point_wind_mover(10, 45, units='knots')
 
     assert wm.data_start == wm.data_stop
 
 
-def test_wind_mover_from_file():
-    wm = wind_mover_from_file(file_)
+def test_point_wind_mover_from_file():
+    wm = point_wind_mover_from_file(file_)
     print(wm.wind.filename)
     assert wm.wind.filename == file_
 
 
-def test_wind_mover_from_file_cardinal():
-    wm = wind_mover_from_file(file2_)
+def test_point_wind_mover_from_file_cardinal():
+    wm = point_wind_mover_from_file(file2_)
     print(wm.wind.filename)
     assert wm.wind.filename == file2_
 
 
-def test_wind_mover_from_file_kph_units():
-    wm = wind_mover_from_file(filekph_)
+def test_point_wind_mover_from_file_kph_units():
+    wm = point_wind_mover_from_file(filekph_)
     print(wm.wind.filename)
     assert wm.wind.filename == filekph_
 

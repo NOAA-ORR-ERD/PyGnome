@@ -3,6 +3,9 @@ tests for ROC
 '''
 
 from datetime import datetime, timedelta
+def tds(seconds):
+    return timedelta(seconds=seconds)
+
 from pathlib import Path
 
 import numpy as np
@@ -69,7 +72,7 @@ class ROCTests(object):
         if rel_time is None:
             rel_time = self.sc.spills[0].release_time
 
-        num_rel = self.sc.release_elements(time_step, rel_time)
+        num_rel = self.sc.release_elements(rel_time, rel_time + tds(time_step))
         if num_rel > 0:
             for wd in self.model.weatherers:
                 wd.initialize_data(self.sc, num_rel)

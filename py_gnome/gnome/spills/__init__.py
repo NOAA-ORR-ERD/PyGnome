@@ -1,14 +1,14 @@
 
 from .spill import (Spill,
                     SpillSchema,
-                    point_line_release_spill,
+                    surface_point_line_spill,
                     grid_spill)
 
 from .release import (Release,
                       BaseReleaseSchema,
                       PointLineRelease,
                       PointLineReleaseSchema,
-                      SpatialRelease,
+                      PolygonRelease,
                       GridRelease,
                       VerticalPlumeRelease,
                       InitElemsFromFile)

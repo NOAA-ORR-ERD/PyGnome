@@ -25,7 +25,7 @@ from gnome.environment import Wind, Tide
 from gnome.maps import MapFromBNA
 
 from gnome.model import Model
-from gnome.spill import point_line_release_spill
+from gnome.spills import surface_point_line_spill
 from gnome.movers import RandomMover, WindMover, CatsMover
 
 
@@ -116,7 +116,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     print('adding a spill')
 
     end_time = start_time + timedelta(hours=12)
-    spill = point_line_release_spill(num_elements=1000,
+    spill = surface_point_line_spill(num_elements=1000,
                                      release_time=start_time,
                                      start_position=(-66.16374,
                                                      18.468054, 0.0),

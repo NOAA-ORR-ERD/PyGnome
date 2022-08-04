@@ -21,8 +21,8 @@ from gnome.model import Model
 
 from gnome.maps import MapFromBNA
 from gnome.environment import Wind
-from gnome.spill import point_line_release_spill
-from gnome.movers import RandomMover, constant_wind_mover, GridCurrentMover
+from gnome.spills import surface_point_line_spill
+from gnome.movers import RandomMover, constant_point_wind_mover, c_GridCurrentMover
 
 from gnome.outputters import Renderer
 
@@ -63,7 +63,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # - will need diffusion and rise velocity
     # - wind doesn't act
     # - start_position = (-76.126872, 37.680952, 5.0),
-    spill1 = point_line_release_spill(num_elements=1000,
+    spill1 = surface_point_line_spill(num_elements=1000,
                                       start_position=(-122.625,
                                                       45.609,
                                                       0.0),
@@ -76,7 +76,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     print('adding a wind mover:')
 
-    model.movers += constant_wind_mover(0.5, 0, units='m/s')
+    model.movers += constant_point_wind_mover(0.5, 0, units='m/s')
 
     print('adding a current mover:')
     curr_file = get_datafile(os.path.join(base_dir, 'COOPSu_CREOFS24.nc'))
@@ -84,7 +84,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # uncertain_time_delay in hours
     # vec_field = TriVectorField('COOPSu_CREOFS24.nc')
     # u_mover = UGridCurrentMover(vec_field)
-    c_mover = GridCurrentMover(curr_file)
+    c_mover = c_GridCurrentMover(curr_file)
     # c_mover.uncertain_cross = 0  # default is .25
 
     # model.movers += u_mover

@@ -11,7 +11,7 @@ from gnome import utilities
 
 from gnome.model import Model
 
-from gnome.spill import point_line_release_spill
+from gnome.spills import point_line_release_spill
 from gnome.movers import RandomMover, constant_wind_mover, GridCurrentMover
 
 from gnome.environment import GridCurrent

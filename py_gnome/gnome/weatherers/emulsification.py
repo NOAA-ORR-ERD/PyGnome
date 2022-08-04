@@ -79,6 +79,7 @@ class Emulsification(Weatherer):
             return
 
     # eventually switch this in
+    # this will have to be updated; SARA is being refactored out of gnome_oil
     def weather_elements_lehr(self, sc, time_step, model_time):
         '''
         weather elements over time_step
@@ -402,7 +403,7 @@ class Emulsification(Weatherer):
         '''
 
         ## higher of real or psuedo wind
-        wind_speed = self.waves.get_emulsification_wind(points, model_time)
+        wind_speed = self.waves.get_emulsification_wind(points, model_time).reshape(-1)
 
         # water uptake rate constant - get this from database
         #K0Y = substance.get('k0y')

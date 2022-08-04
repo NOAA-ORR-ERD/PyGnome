@@ -99,6 +99,7 @@ class Release(GnomeId):
                  end_release_time=None,
                  custom_positions=None,
                  release_mass=0,
+                 retain_initial_positions=False,
                  **kwargs):
         """
         Required Arguments:
@@ -125,9 +126,13 @@ class Release(GnomeId):
         :param end_release_time=None: optional -- for a time varying release,
             the end release time. If None, then release is instantaneous
         :type end_release_time: datetime.datetime
-        
+
         :param release_mass=0: optional. This is the mass released in kilograms.
         :type release_mass: integer
+
+        :param retain_initial_positions: Optional. If True, each LE will retain
+            information about it's originally released position
+        :type retain_initial_positions: boolean
         """
         self._num_elements = self._num_per_timestep = None
 
@@ -146,11 +151,14 @@ class Release(GnomeId):
             self.release_time = datetime.now()
         self.release_mass = release_mass
         self.custom_positions = custom_positions
+        self.retain_initial_positions = retain_initial_positions
         self.rewind()
         super(Release, self).__init__(**kwargs)
         self.array_types.update({'positions': gat('positions'),
                                  'mass': gat('mass'),
                                  'init_mass': gat('mass')})
+        if self.retain_initial_positions:
+            self.array_types.update({'init_positions': gat('positions')})
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
@@ -203,7 +211,7 @@ class Release(GnomeId):
 
     @property
     def num_elements(self):
-        return self._num_elements 
+        return self._num_elements
 
     @num_elements.setter
     def num_elements(self, val):
@@ -285,7 +293,7 @@ class Release(GnomeId):
         '''
         Release timeseries describe release behavior as a function of time.
         _release_ts describes the number of LEs that should exist at time T
-        SpatialRelease does not have a _pos_ts because it uses start_positions only
+        PolygonRelease does not have a _pos_ts because it uses start_positions only
         All use TimeseriesData objects.
         '''
         t = None
@@ -310,18 +318,18 @@ class Release(GnomeId):
                                               time=t,
                                               data=np.linspace(0, max_release, num_ts + 1).astype(int))
 
-    def num_elements_after_time(self, current_time, time_step):
+    def num_elements_after_time(self, current_time):
         '''
-        Returns the number of elements expected to exist at current_time+time_step.
+        Returns the number of elements expected to exist at current_time.
         Returns 0 if prepare_for_model_run has not been called.
-        :param ts: integer seconds
-        :param amount: integer kilograms
+        :param current_time: time of release
+        :type current_time: datetime
         '''
         if not self._prepared:
             return 0
         if current_time < self.release_time:
             return 0
-        return int(math.ceil(self._release_ts.at(None, current_time + timedelta(seconds=time_step), extrapolate=True)))
+        return int(math.ceil(self._release_ts.at(None, current_time, extrapolate=True)))
 
     def prepare_for_model_run(self, ts):
         '''
@@ -346,31 +354,33 @@ class Release(GnomeId):
         if self.__class__ is Release:
             self._prepared = True
 
-    def initialize_LEs(self, to_rel, data, current_time, time_step):
+    def initialize_LEs(self, to_rel, data, start_time, end_time):
         """
         set positions for new elements added by the SpillContainer
 
         .. note:: this releases all the elements at their initial positions at
-            the release_time
+            the end_time
         """
         if self.custom_positions is None or len(self.custom_positions) == 0:
             raise ValueError('No positions to release particles from')
         num_locs = len(self.custom_positions)
         if to_rel < num_locs:
-            warnings.warn("{0} is releasing fewer LEs than number of start positions at time: {1}".format(self, current_time))
+            warnings.warn("{0} is releasing fewer LEs than number of start positions at time: {1}".format(self, end_time))
 
         sl = slice(-to_rel, None, 1)
-        qt = to_rel // num_locs #number of times to tile self.start_positions
-        rem = to_rel % num_locs #remaining LES to distribute randomly
+        qt = to_rel // num_locs # number of times to tile self.start_positions
+        rem = to_rel % num_locs # remaining LES to distribute randomly
         qt_pos = np.tile(self.custom_positions, (qt, 1))
-        rem_pos = self.custom_positions[np.random.randint(0,len(self.custom_positions), rem)]
+        rem_pos = self.custom_positions[np.random.randint(0, len(self.custom_positions), rem)]
         pos = np.vstack((qt_pos, rem_pos))
         assert len(pos) == to_rel
+
         data['positions'][sl] = pos
-
-
         data['mass'][sl] = self._mass_per_le
         data['init_mass'][sl] = self._mass_per_le
+        
+        if self.retain_initial_positions:
+            data['init_positions'][sl] = pos
 
 
 
@@ -531,18 +541,22 @@ class PointLineRelease(Release):
         super(PointLineRelease, self).prepare_for_model_run(ts)
         self._prepared = True
 
-    def initialize_LEs(self, to_rel, data, current_time, time_step):
+    def initialize_LEs(self, to_rel, data, start_time, end_time):
         '''
-        Initializes the mass and position for num_released new LEs.
-        current_time = datetime.datetime
-        time_step = integer seconds
+        Initializes the mass and position for to_rel new LEs.
+        :param data: spill container with data arrays
+        :param to_rel: number of elements to initialize
+        :param start_time: initial time of release
+        :param end_time: final time of release
         '''
-        if(time_step == 0):
-            time_step = 1 #to deal with initializing position in instantaneous release case
-
+        # if time_step == 0:
+        #     time_step = 1  # to deal with initializing position in instantaneous release case
+        if start_time == end_time:
+            end_time += timedelta(seconds=1)
         sl = slice(-to_rel, None, 1)
-        start_position = self._pos_ts.at(None, current_time, extrapolate=True)
-        end_position = self._pos_ts.at(None, current_time + timedelta(seconds=time_step), extrapolate=True)
+        # if we have an interpolator -- why use linspace later?
+        start_position = self._pos_ts.at(None, start_time, extrapolate=True)
+        end_position = self._pos_ts.at(None, end_time, extrapolate=True)
         data['positions'][sl, 0] = \
             np.linspace(start_position[0],
                         end_position[0],
@@ -557,23 +571,26 @@ class PointLineRelease(Release):
                         to_rel)
         data['mass'][sl] = self._mass_per_le
         data['init_mass'][sl] = self._mass_per_le
+        
+        if self.retain_initial_positions:
+            data['init_positions'][sl] = data['positions'][sl]
 
-class SpatialReleaseSchema(BaseReleaseSchema):
+class PolygonReleaseSchema(BaseReleaseSchema):
     filename = FilenameSchema(save=False, update=False, test_equal=False, missing=drop)
     features = FeatureCollectionSchema(save=True, update=True, test_equal=True, missing=drop)
 
 
-class SpatialRelease(Release):
+class PolygonRelease(Release):
     """
     A release of elements into a set of provided polygons.
 
-    When X particles are determined to be released, they are into the polygons 
-    randomly. For each LE, pick a polygon, weighted by it's proportional area 
-    and place the LE randomly within it. By default the SpatialRelease uses 
-    simple area for polygon weighting. Other classes (NESDISRelease for example) 
+    When X particles are determined to be released, they are into the polygons
+    randomly. For each LE, pick a polygon, weighted by it's proportional area
+    and place the LE randomly within it. By default the PolygonRelease uses
+    simple area for polygon weighting. Other classes (NESDISRelease for example)
     may use other weighting functions.
     """
-    _schema = SpatialReleaseSchema
+    _schema = PolygonReleaseSchema
 
     def __init__(self,
                  filename=None,
@@ -606,12 +623,12 @@ class SpatialRelease(Release):
 
         :param end_release_time=None: optional -- for a time varying release, the end release time. If None, then release is instantaneous
         :type end_release_time: datetime.datetime
-        
+
         :param release_mass=0: optional. This is the mass released in kilograms.
         :type release_mass: integer
         """
         if filename is not None and features is not None:
-            raise ValueError('Cannot pass both a filename and FeatureCollection to SpatialRelease')
+            raise ValueError('Cannot pass both a filename and FeatureCollection to PolygonRelease')
         if filename is not None:
             file_fc = geo_routines.load_shapefile(filename)
             self.features = file_fc
@@ -622,24 +639,24 @@ class SpatialRelease(Release):
             if polygons is not None:
                 if weights is not None:
                     if thicknesses is not None:
-                        raise ValueError('Cannot use both thicknesses and weights in SpatialRelease')
+                        raise ValueError('Cannot use both thicknesses and weights in PolygonRelease')
                     if len(weights) != len(polygons):
                         raise ValueError('Weights must be equal in length to provided Polygons')
             else:
-                raise ValueError('Must provide polygons to SpatialRelease')
+                raise ValueError('Must provide polygons to PolygonRelease')
             self.features = self.gen_fc_from_kwargs(
                 {'polygons': polygons,
                  'weights': weights,
                  'thicknesses': thicknesses}
             )
-            
+
             #attach the feature_index so webgnomeclient can associate the polygons of a Feature
             #back to the Feature
             for i, feature in enumerate(self.features[:]):
                 if 'feature_index' not in feature.properties:
                     feature.properties['feature_index'] = i
 
-        super(SpatialRelease, self).__init__(
+        super(PolygonRelease, self).__init__(
             **kwargs
         )
 
@@ -678,7 +695,7 @@ class SpatialRelease(Release):
     @property
     def features(self):
         return self._features
-    
+
     @features.setter
     def features(self, fc):
         self._features = fc
@@ -686,10 +703,10 @@ class SpatialRelease(Release):
     @property
     def polygons(self):
         return [shapely.geometry.shape(feat.geometry) for feat in self.features[:]]
-    
+
     @polygons.setter
     def polygons(self, polys):
-        #polygons must be list of shapely or geojson (Multi)Polygon 
+        #polygons must be list of shapely or geojson (Multi)Polygon
         for feat, poly in zip(self.features[:], poly):
             feat.geometry = geojson.loads(geojson.dumps(poly.__geo_interface__))
 
@@ -697,7 +714,7 @@ class SpatialRelease(Release):
     def thicknesses(self):
         rv = [feat.properties.get('thickness', None) for feat in self.features[:]]
         return None if all([r == None for r in rv]) else rv
-    
+
     @thicknesses.setter
     def thicknesses(self, vals):
         if vals is None:
@@ -713,7 +730,7 @@ class SpatialRelease(Release):
     def weights(self):
         rv = [feat.properties.get('weight', None) for feat in self.features[:]]
         return None if all([r == None for r in rv]) else rv
-    
+
     @weights.setter
     def weights(self, vals):
         if vals is None:
@@ -738,7 +755,7 @@ class SpatialRelease(Release):
         #self._pos_ts = None
 
     def get_polys_as_tris(self, polys, weights=None):
-        #decomposes a 
+        #decomposes a
         _tris = []
         _weights = []
         if weights is not None:
@@ -758,7 +775,7 @@ class SpatialRelease(Release):
             #use default weight-by-area-proportion
             _tris = sum([geo_routines.triangulate_poly(p) for p in self.polygons], _tris)
             _weights = geo_routines.poly_area_weight(_tris)
-        
+
         assert np.isclose(sum(_weights), 1.0)
 
         return _tris, _weights
@@ -781,10 +798,10 @@ class SpatialRelease(Release):
         '''
         :param ts: timestep as integer seconds
         '''
-        super(SpatialRelease, self).prepare_for_model_run(ts)
+        super(PolygonRelease, self).prepare_for_model_run(ts)
         #first a sanity check. The release only makes sense if using wgs84 (lon, lat).
         #for example nesdis files come in pseudo-mercator coordinates.
-        
+
         for poly in self.polygons:
             geo_routines.check_valid_polygon(poly)
 
@@ -797,19 +814,22 @@ class SpatialRelease(Release):
 
         self._prepared = True
 
-    def initialize_LEs(self, to_rel, data, current_time, time_step):
+    def initialize_LEs(self, to_rel, data, start_time, end_time):
         """
         set positions for new elements added by the SpillContainer
 
         .. note:: this releases all the elements at their initial positions at
-            the release_time
+            the end_time
         """
 
         sl = slice(-to_rel, None, 1)
         pts = [geo_routines.random_pt_in_tri(s) for s in np.random.choice(self._tris, to_rel, p=self._weights)]
         pts = [np.append(pt, 0) for pt in pts] #add Z coordinate
-        
+
         data['positions'][sl] = pts
+
+        if self.retain_initial_positions:
+            data['init_positions'][sl] = data['positions'][sl]
 
         data['mass'][sl] = self._mass_per_le
         data['init_mass'][sl] = self._mass_per_le
@@ -849,13 +869,13 @@ class SpatialRelease(Release):
     def new_from_dict(cls, dict_):
         if 'filename' in dict_ and 'features' in dict_:
             dict_.pop('filename')
-        return super(SpatialRelease, cls).new_from_dict(dict_)
+        return super(PolygonRelease, cls).new_from_dict(dict_)
 
-PolygonRelease = SpatialRelease
+# PolygonRelease = SpatialRelease
 
 def GridRelease(release_time, bounds, resolution):
     """
-    Utility function that creates a SpatialRelease with a grid of elements.
+    Utility function that creates a release with a grid of elements.
 
     Only 2-d for now
 
@@ -878,7 +898,7 @@ def GridRelease(release_time, bounds, resolution):
                           )
 
 
-class NESDISReleaseSchema(SpatialReleaseSchema):
+class NESDISReleaseSchema(PolygonReleaseSchema):
     thicknesses = SequenceSchema(
         SchemaNode(Float()), save=False
     )
@@ -890,9 +910,9 @@ class NESDISReleaseSchema(SpatialReleaseSchema):
     )
 
 
-class NESDISRelease(SpatialRelease):
+class NESDISRelease(PolygonRelease):
     '''
-    A SpatialRelease subclass that has functions and data specifically for
+    A PolygonRelease subclass that has functions and data specifically for
     representing NESDIS shapefiles within GNOME
     '''
     _schema = NESDISReleaseSchema
@@ -909,7 +929,7 @@ class NESDISRelease(SpatialRelease):
         :type feature: geojson.FeatureCollection
 
         """
-        
+
         for kw in ('thicknesses', 'weights', 'polygons'):
             if kwargs.get(kw):
                 warnings.warn('{} passed to NESDISRelease init are ignored'.format(kw))
@@ -917,7 +937,7 @@ class NESDISRelease(SpatialRelease):
         if filename is not None and features is not None:
             raise ValueError('Cannot pass both a filename and FeatureCollection to NESDISRelease')
         if filename is None and features is None:
-            raise ValueError('''NESDISRelease must be provided a filename 
+            raise ValueError('''NESDISRelease must be provided a filename
                 or FeatureCollection to "filename" or "features" respectively''')
         if filename is not None:
             file_fc = NESDISRelease.load_nesdis(filename, kwargs.get('release_time', None))
@@ -967,13 +987,13 @@ class NESDISRelease(SpatialRelease):
     @property
     def record_areas(self):
         return self.areas
-    
+
     @property
     def oil_types(self):
         return [
             feat.properties.get('OILTYPE') if 'OILTYPE' in feat.properties
             else 'Group_{}'.format(feat.properties.get('feature_index'))
-            for feat in self.features[:] 
+            for feat in self.features[:]
             ]
 
     @oil_types.setter
@@ -993,7 +1013,7 @@ class NESDISRelease(SpatialRelease):
         return dct
 
 
-class ContinuousSpatialRelease(SpatialRelease):
+class ContinuousPolygonRelease(PolygonRelease):
     """
     continuous release of elements from specified positions
     NOTE 3/23/2021: THIS IS NOT FUNCTIONAL
@@ -1024,7 +1044,7 @@ class ContinuousSpatialRelease(SpatialRelease):
         num_elements and release_time passed to base class __init__ using super
         See base :class:`Release` documentation
         """
-        super(self, SpatialRelease).__init__(
+        super(self, PolygonRelease).__init__(
             release_time=release_time,
             num_elements=num_elements,
             end_release_time=end_release_time
