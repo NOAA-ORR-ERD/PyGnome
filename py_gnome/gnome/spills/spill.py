@@ -9,7 +9,7 @@ Element_types -- what the types of the elements are.
 
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import copy
 
 import nucos as uc
@@ -416,7 +416,7 @@ class Spill(BaseSpill):
         '''
         self.release.prepare_for_model_run(timestep)
 
-    def release_elements(self, sc, start_time, end_time):
+    def release_elements(self, sc, start_time, end_time, environment=None):
         """
         Releases and partially initializes new LEs
         """
@@ -439,7 +439,9 @@ class Spill(BaseSpill):
         if 'frac_coverage' in sc:
             sc['frac_coverage'][-to_rel:] = self.frac_coverage
 
-        self.substance.initialize_LEs(to_rel, sc)
+        self.substance.initialize_LEs(to_rel, sc, environment=environment)
+        self.release.initialize_LEs_Area(to_rel, sc, self.substance.standard_density)
+
         return to_rel
 
     def num_elements_to_release(self, current_time, time_step):
@@ -447,7 +449,7 @@ class Spill(BaseSpill):
         Determines the number of elements to be released during:
         current_time + time_step
 
-        It invokes the num_elements_to_release method for the the unerlying
+        It invokes the num_elements_to_release method for the the underlying
         release object: self.release.num_elements_to_release()
 
         :param current_time: current time
