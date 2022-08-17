@@ -42,6 +42,7 @@ def test_normalization_180():
     assert not np.any(lon > 180)
     assert not np.any(lon <= -180)
 
+
 def test_normalization_360():
     lon = convert_longitude(L_0_360, "0--360")
 
@@ -52,4 +53,28 @@ def test_normalization_360():
     assert np.all(np.array(L_0_360[:-1] == lon[:-1]))
     assert not np.any(lon < 0)
     assert not np.any(lon >= 360)
+
+
+def test_round_trip360():
+    """
+    round tripping should result in the same normalized form
+    """
+    norm = convert_longitude(L_0_360, "0--360")
+    lon = convert_longitude(convert_longitude(L_0_360, '-180--180'), "0--360")
+
+    assert np.all(lon == norm)
+
+def test_round_trip360():
+    """
+    round tripping should result in the same normalized form
+    """
+    norm = convert_longitude(L_180_180, '-180--180')
+    lon = convert_longitude(convert_longitude(L_180_180, "0--360"), "-180--180")
+
+    print(L_180_180)
+    print(norm)
+    print(lon)
+    print(lon == norm)
+
+    assert np.allclose(lon, norm, rtol=1e-15, atol=0)
 
