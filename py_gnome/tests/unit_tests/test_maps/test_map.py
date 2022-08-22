@@ -12,11 +12,14 @@ Designed to be run with py.test
 
 
 import os
+import pdb
 
 import pytest
 
 from pprint import pprint
 import numpy as np
+import geojson
+from osgeo import ogr, osr
 
 
 # import gnome.maps.map
@@ -161,8 +164,50 @@ class Test_GnomeMap:
         assert np.all(gmap.map_bounds != json_['map_bounds'])
         gmap.update_from_dict(json_)
         assert np.all(gmap.map_bounds == json_['map_bounds'])
+        
+    def test_to_ogr(self):
+        gmap = GnomeMap()        
+        ogr_geoms = gmap.to_ogr()
+        
+        assert ogr_geoms.GetGeometryName() == 'GEOMETRYCOLLECTION'
+        assert ogr_geoms.GetGeometryCount() == 3
+        
+        assert ogr_geoms.GetGeometryRef(0).GetGeometryName() == 'POLYGON'
+        assert ogr_geoms.GetGeometryRef(0).GetGeometryCount() == 0
 
+        assert ogr_geoms.GetGeometryRef(1).GetGeometryName() == 'POLYGON'
+        assert ogr_geoms.GetGeometryRef(1).GetGeometryCount() == 1
+        
+        assert ogr_geoms.GetGeometryRef(2).GetGeometryName() == 'MULTIPOLYGON'
+        assert ogr_geoms.GetGeometryRef(2).GetGeometryCount() == 0
+        
+        map_bounds_as_geojson = ('{ "type": "Polygon", "coordinates":'
+                                 ' [ [ [ -360.0, -90.0, 0.0 ],'
+                                 ' [ -360.0, 90.0, 0.0 ],'
+                                 ' [ 360.0, 90.0, 0.0 ],'
+                                 ' [ 360.0, -90.0, 0.0 ],'
+                                 ' [ -360.0, -90.0, 0.0 ] ] ] }')
+        ogr_map_bounds = ogr_geoms.GetGeometryRef(1)
+        # pdb.set_trace()
+        assert ogr_map_bounds.ExportToJson() == map_bounds_as_geojson
 
+    def test_write_out(self):
+        gmap = GnomeMap()  
+        gmap.write_out(form='geojson', out_dir = '')
+        assert os.path.isfile('gnome_input.geojson')
+        os.remove('gnome_input.geojson')
+        
+        gmap.write_out(form='shapefile', out_dir = '')
+        assert os.path.isfile('gnome_input.shp')
+        os.remove('gnome_input.shp')
+        os.remove('gnome_input.dbf')
+        os.remove('gnome_input.shx')        
+        os.remove('gnome_input.prj') 
+
+        gmap.write_out(form='geojson', out_dir = '')
+        assert os.path.isfile('gnome_input.geojson')
+        os.remove('gnome_input.geojson')
+        
 class Test_ParamMap:
     '''
     WIP
@@ -188,6 +233,19 @@ class Test_ParamMap:
     def test_land_generation(self):
         pmap1 = ParamMap((0, 0), 10000, 90)
         print(pmap1.land_points)
+        
+    def test_to_ogr(self):
+        pmap = ParamMap((0, 0), 10000, 90)        
+        ogr_geoms = pmap.to_ogr()
+        
+        map_bounds_as_geojson = ('{ "type": "Polygon", "coordinates":'
+                                 ' [ [ [ -1.439884816, -1.439884816, 0.0 ],'
+                                 ' [ -1.439884816, 1.439884816, 0.0 ],'
+                                 ' [ 1.439884816, 1.439884816, 0.0 ],'
+                                 ' [ 1.439884816, -1.439884816, 0.0 ],'
+                                 ' [ -1.439884816, -1.439884816, 0.0 ] ] ] }')
+        ogr_map_bounds = ogr_geoms.GetGeometryRef(1)
+        assert ogr_map_bounds.ExportToJson() == map_bounds_as_geojson
 
     def test_to_geojson(self):
         pmap = ParamMap((0, 0), 10000, 90)
@@ -207,7 +265,7 @@ class Test_ParamMap:
                 assert len(coord_coll[0]) > 1
                 for c in coord_coll[0]:
                     assert len(c) == 2
-
+                    
     def test_serialize_deserialize_param(self):
         """
         test create new ParamMap from deserialized dict
@@ -596,6 +654,57 @@ class Test_MapfromBNA:
                 assert len(coord_coll[0]) > 1
                 for c in coord_coll[0]:
                     assert len(c) == 2
+
+    def test_to_ogr(self): 
+        ogr_geoms = self.bna_map.to_ogr()
+        
+        # spill_as_geojson = ('{ "type": "Polygon", "coordinates":'
+        #                     ' [ [ [ -127.0, 48.1, 0.0 ],'
+        #                     ' [ -126.6, 48.1, 0.0 ],'
+        #                     ' [ -126.3, 47.8, 0.0 ],'
+        #                     ' [ -126.6, 47.6, 0.0 ],'
+        #                     ' [ -127.0, 47.6, 0.0 ],'
+        #                     ' [ -127.25, 47.8, 0.0 ],'
+        #                     ' [ -127.0, 48.1, 0.0 ] ] ] }')
+        # ogr_spill = ogr_geoms.GetGeometryRef(0)
+        # assert ogr_spill.ExportToJson() == spill_as_geojson
+        
+        map_bounds_as_geojson = ('{ "type": "Polygon", "coordinates":'
+                                  ' [ [ [ -127.465333, 48.3294, 0.0 ],'
+                                  ' [ -126.108847, 48.3294, 0.0 ],'
+                                  ' [ -126.108847, 47.44727, 0.0 ],'
+                                  ' [ -127.465333, 47.44727, 0.0 ],'
+                                  ' [ -127.465333, 48.3294, 0.0 ] ] ] }')
+        ogr_map_bounds = ogr_geoms.GetGeometryRef(1)
+        assert ogr_map_bounds.ExportToJson() == map_bounds_as_geojson
+        
+        land_as_geojson = ('{ "type": "MultiPolygon", "coordinates":'
+                           ' [ [ [ [ -126.78709, 48.0, 0.0 ],'
+                           ' [ -126.44218, 47.833333, 0.0 ],'
+                           ' [ -126.78709, 47.666667, 0.0 ],'
+                           ' [ -127.132, 47.833333, 0.0 ],'
+                           ' [ -126.78709, 48.0, 0.0 ] ] ],'
+                           ' [ [ [ -126.88, 47.88, 0.0 ],'
+                           ' [ -126.7, 47.88, 0.0 ],'
+                           ' [ -126.7, 47.8, 0.0 ],'
+                           ' [ -126.88, 47.8, 0.0 ],'
+                           ' [ -126.88, 47.88, 0.0 ] ] ] ] }')
+        ogr_land = ogr_geoms.GetGeometryRef(2)
+        assert ogr_land.ExportToJson() == land_as_geojson
+
+    # def test_to_shapely_polygon(self):
+    #     shapely = self.bna_map.to_shapely_polygon('water')
+        
+    #     assert shapely._is_empty == False
+    #     assert shapely.type == 'Polygon'
+    #     assert len(shapely.exterior.xy[0]) == 7
+        
+    #     shapely = self.bna_map.to_shapely_polygon('land')
+        
+    #     assert shapely._is_empty == False
+    #     assert shapely.type == 'MultiPolygon'
+    #     assert len(shapely.geoms) == 3
+   
 
     def test_serialize_deserialize(self):
         """

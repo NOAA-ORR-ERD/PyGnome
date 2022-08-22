@@ -1,1 +1,8 @@
 output_tideflat_map/*
+*.geojson
+*.kml
+*.shp
+*.shx
+*.dbf
+*.prj
+
