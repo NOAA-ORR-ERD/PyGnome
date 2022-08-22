@@ -257,7 +257,7 @@ _default_values = {'positions': ((3,), world_point_type, 'positions',
                    # It is evenly divided to number of LEs
                    'vol_frac_le_st': ((), np.float64, 'vol_frac_le_st', 0),
                    'max_area_le': ((), np.float64, 'max_area_le', 0),
-                   'release_rate': ((), np.float64, 'release_rate', 0),
+                   'release_rate': ((), np.float64, 'release_rate', np.nan),
                    'bulk_init_volume': ((), np.float64, 'bulk_init_volume', 0,
                                         ArrayTypeDivideOnSplit),
                    'density': ((), np.float64, 'density', 1000),
