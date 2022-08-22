@@ -1183,7 +1183,7 @@ class Model(GnomeId):
         if water:
             env['water'] = water
         else:
-            env['water'] = None         
+            env['water'] = None
         return env
 
     def __iter__(self):
@@ -1648,15 +1648,20 @@ class Model(GnomeId):
             msgs.append('warning: ' + self.__class__.__name__ + ': ' + msg)
             # isValid = False
 
+        # check if movers and map overlap
+        # this is mostly to catch different coordinate systems:
+        #   -180--180 vs 0--360
         map_bounding_box = self.map.get_map_bounding_box()
         for mover in self.movers:
             if not mover.on:
                 continue
             bounds = mover.get_bounds()
             # check longitude is within map bounds
+            # note: there is a BoundingBox class in utilities.geometry with an "overlaps" method.
             if (bounds[1][0] < map_bounding_box[0][0] or bounds[0][0] > map_bounding_box[1][0] or
                 bounds[1][1] < map_bounding_box[0][1] or bounds[0][1] > map_bounding_box[1][1]):
-                msg = ('One of the movers - {0} - is outside of the map bounds. '
+                msg = ('One of the movers - {0} - does not overlap with the map bounds. '
+                       'Check that they are in the same longitude coordinate system'
                         .format(mover.name))
                 self.logger.warning(msg)  # for now make this a warning
                 msgs.append('warning: ' + self.__class__.__name__ + ': ' + msg)
