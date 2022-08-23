@@ -806,7 +806,8 @@ class IceAwareWind(GridWind):
             ice_vel_factor[interp_mask] = ((ice_vel_factor[interp_mask] - 0.2) * 10) / 6
 
             vels = wind_v.copy()
-            vels[ice_mask] = 0
+            vels[ice_mask.reshape(-1)] = 0
+            #vels[vels_mask] = 0
 
             # scale winds from 100-0% depending on ice coverage
             # 100% wind up to 0.2 coverage, 0% wind at >0.8 coverage
