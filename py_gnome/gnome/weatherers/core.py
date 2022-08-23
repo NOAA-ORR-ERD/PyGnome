@@ -109,7 +109,7 @@ class Weatherer(Process):
         '''
             Wrapper for the weatherers so they can get wind speeds
         '''
-        retval = self.wind.at(points, model_time, coord_sys=coord_sys)
+        retval = self.wind.at(points, model_time, coord_sys=coord_sys).reshape(-1)
 
         if isinstance(retval, np.ma.MaskedArray):
             return retval.filled(fill_value)

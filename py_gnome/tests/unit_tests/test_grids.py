@@ -15,8 +15,8 @@ from gnome.environment import Grid
 from gnome.utilities.time_utils import date_to_sec
 from .conftest import testdata
 
-wind_file = testdata['GridWindMover']['wind_curv']
-topology_file = testdata['GridWindMover']['top_curv']
+wind_file = testdata['c_GridWindMover']['wind_curv']
+topology_file = testdata['c_GridWindMover']['top_curv']
 
 
 def test_grid_wind_rect():
@@ -24,7 +24,7 @@ def test_grid_wind_rect():
     check TimeGridWindRect correctly parses data
     '''
     idx = 5
-    file_ = testdata['GridWindMover']['wind_rect']
+    file_ = testdata['c_GridWindMover']['wind_rect']
     with nc.Dataset(file_) as data:
         time = nc.num2date(data.variables['time'][idx],
                            units=data.variables['time'].units)

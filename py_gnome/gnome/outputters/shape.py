@@ -143,14 +143,24 @@ class ShapeOutput(Outputter):
 
         super(ShapeOutput, self).write_output(step_num, islast_step)
 
-        if not self.on or not self._write_step:
+        #if not self.on or not self._write_step:
+        # still need to write file if last step is not included
+        if not self.on:
             return None
 
         for sc in self.cache.load_timestep(step_num).items():
-            self._record_shape_entries(sc)
+            if self._write_step:
+                self._record_shape_entries(sc)
 
             if islast_step:
                 self._save_and_archive_shapefiles(sc)
+
+        if islast_step:
+            if self.uncertain is True:
+                self._zip_output_files()
+
+        if not self._write_step:
+            return None
 
         if self.zip_output is True:
             output_filename = self.filename + '.zip'
@@ -160,9 +170,10 @@ class ShapeOutput(Outputter):
         output_info = {'time_stamp': sc.current_time_stamp.isoformat(),
                        'output_filename': output_filename}
 
-        if islast_step:
-            if self.uncertain is True:
-                self._zip_output_files()
+
+#         if islast_step:
+#             if self.uncertain is True:
+#                 self._zip_output_files()
  
         return output_info
 

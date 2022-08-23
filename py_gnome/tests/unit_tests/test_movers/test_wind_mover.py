@@ -22,8 +22,8 @@ from gnome.spill_container import SpillContainer
 from gnome.spills.substance import NonWeatheringSubstance
 
 from gnome.movers import (WindMover,
-                          constant_wind_mover,
-                          wind_mover_from_file)
+                          constant_point_wind_mover,
+                          point_wind_mover_from_file)
 from gnome.exceptions import ReferencedObjectNotSet
 
 from ..conftest import sample_sc_release, testdata
@@ -516,7 +516,7 @@ def test_windage_index():
     sc.prepare_for_model_run(array_types=spill.array_types)
     sc.release_elements(timestep, rel_time)
 
-    wm = constant_wind_mover(5, 0)
+    wm = constant_point_wind_mover(5, 0)
     wm.prepare_for_model_step(sc, timestep, rel_time)
     wm.model_step_is_done()  # need this to toggle _windage_is_set_flag
 
@@ -613,14 +613,14 @@ def test_active():
     assert np.all(delta == 0)  # model_time + time_step = active_start
 
 
-def test_constant_wind_mover():
+def test_constant_point_wind_mover():
     """
-    tests the constant_wind_mover utility function
+    tests the constant_point_wind_mover utility function
     """
     with raises(nucos.InvalidUnitError):
-        _wm = constant_wind_mover(10, 45, units='some_random_string')
+        _wm = constant_point_wind_mover(10, 45, units='some_random_string')
 
-    wm = constant_wind_mover(10, 45, units='m/s')
+    wm = constant_point_wind_mover(10, 45, units='m/s')
 
     sc = sample_sc_release(1)
 
@@ -634,26 +634,26 @@ def test_constant_wind_mover():
     assert delta[0][0] == delta[0][1]
 
 
-def test_constant_wind_mover_bounds():
-    wm = constant_wind_mover(10, 45, units='knots')
+def test_constant_point_wind_mover_bounds():
+    wm = constant_point_wind_mover(10, 45, units='knots')
 
     assert wm.data_start == wm.data_stop
 
 
-def test_wind_mover_from_file():
-    wm = wind_mover_from_file(file_)
+def test_point_wind_mover_from_file():
+    wm = point_wind_mover_from_file(file_)
     print(wm.wind.filename)
     assert wm.wind.filename == file_
 
 
-def test_wind_mover_from_file_cardinal():
-    wm = wind_mover_from_file(file2_)
+def test_point_wind_mover_from_file_cardinal():
+    wm = point_wind_mover_from_file(file2_)
     print(wm.wind.filename)
     assert wm.wind.filename == file2_
 
 
-def test_wind_mover_from_file_kph_units():
-    wm = wind_mover_from_file(filekph_)
+def test_point_wind_mover_from_file_kph_units():
+    wm = point_wind_mover_from_file(filekph_)
     print(wm.wind.filename)
     assert wm.wind.filename == filekph_
 

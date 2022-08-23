@@ -8,11 +8,49 @@ a few small things here, 'cause why not?
 import sys
 import warnings
 
+import numpy as np
+
 div = {'GB': 1024*1024*1024,
        'MB': 1024*1024,
        'KB': 1024,
        }
 
+def convert_longitude(lon, coord_system='-180--180'):
+    """
+    Convert longitude values to a given coordinate system.
+
+    Options are:
+
+    "-180--180": Negative 180 degrees to 180 degrees
+
+    "0--360": Zero to 360 degrees
+
+    :param lon: numpy array-like of longitude values of float type
+    :param  coord_system='-180--180': options are: {"-180--180", "0--360"}
+
+    NOTE: this function also normalizes so that:
+
+    360 converts to 0
+    -180 converts to 180
+
+    It should be safe to call this on any coords -- if they are already
+    in the expected format, they will not be changes, except for the
+    normalization above.
+    """
+
+    if coord_system not in {"-180--180", "0--360"}:
+        raise TypeError('coord_system must be one of {"-180--180", "0--360"}')
+    lon = np.array(lon)
+
+    if coord_system == "0--360":
+        return (lon + 360) % 360
+    elif coord_system == "-180--180":
+        lon[lon > 180] -= 360
+        lon[lon <= -180] += 360
+        return lon
+
+
+# getting memory usage.
 if sys.platform.startswith('win'):
     """
     Functions for getting memory usage of Windows processes.

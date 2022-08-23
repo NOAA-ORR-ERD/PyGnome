@@ -17,7 +17,7 @@ from gnome.model import Model
 from gnome.maps import MapFromBNA
 from gnome.environment import Environment
 from gnome.spills import surface_point_line_spill
-from gnome.movers import RandomMover, constant_wind_mover, c_GridCurrentMover, IceAwareRandomMover
+from gnome.movers import RandomMover, constant_point_wind_mover, c_GridCurrentMover, IceAwareRandomMover
 
 from gnome.environment import IceAwareCurrent, IceAwareWind, GridCurrent
 from gnome.movers.py_wind_movers import PyWindMover
@@ -70,7 +70,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     print('adding a wind mover:')
 
-#     model.movers += constant_wind_mover(0.5, 0, units='m/s')
+#     model.movers += constant_point_wind_mover(0.5, 0, units='m/s')
 
     print('adding a current mover:')
 

@@ -13,15 +13,15 @@ import numpy as np
 import pytest
 
 from gnome.utilities import time_utils
-from gnome.movers import GridWindMover
+from gnome.movers import c_GridWindMover
 
 from ..conftest import sample_sc_release, testdata
 # default settings are the same for both objects
 from .test_wind_mover import _defaults
 
 
-wind_file = testdata['GridWindMover']['wind_curv']
-topology_file = testdata['GridWindMover']['top_curv']
+wind_file = testdata['c_GridWindMover']['wind_curv']
+topology_file = testdata['c_GridWindMover']['top_curv']
 
 
 num_le = 4
@@ -40,23 +40,23 @@ def test_exceptions():
     """
     with pytest.raises(TypeError):
         # we need to supply at least a filename
-        GridWindMover()
+        c_GridWindMover()
 
     with pytest.raises(ValueError):
         # wind file not found
-        GridWindMover('bogus')
+        c_GridWindMover('bogus')
 
     with pytest.raises(ValueError):
         # topology file not found
-        GridWindMover(wind_file, topology_file='bogus')
+        c_GridWindMover(wind_file, topology_file='bogus')
 
     with pytest.raises(TypeError):
         # topology file needs to be a string filename
-        GridWindMover(wind_file, topology_file=10)
+        c_GridWindMover(wind_file, topology_file=10)
 
 
 def test_init_defaults():
-    gw = GridWindMover(wind_file)
+    gw = c_GridWindMover(wind_file)
 
     assert gw.name == os.path.split(wind_file)[1]
     assert gw.filename == wind_file
@@ -64,7 +64,7 @@ def test_init_defaults():
 
 
 def test_string_repr_no_errors():
-    gw = GridWindMover(wind_file, topology_file)
+    gw = c_GridWindMover(wind_file, topology_file)
     print()
     print('======================')
     print('repr(WindMover): ')
@@ -94,7 +94,7 @@ def test_loop():
                                release_time=rel_time,
                                windage_range=(0.01, 0.01))
 
-    wind = GridWindMover(wind_file, topology_file)
+    wind = c_GridWindMover(wind_file, topology_file)
 
     delta = _certain_loop(pSpill, wind)
     _assert_move(delta)
@@ -114,7 +114,7 @@ def test_uncertain_loop():
 
     pSpill = sample_sc_release(num_le, start_pos, rel_time,
                                uncertain=True)
-    wind = GridWindMover(wind_file, topology_file)
+    wind = c_GridWindMover(wind_file, topology_file)
     u_delta = _certain_loop(pSpill, wind)
 
     _assert_move(u_delta)
@@ -137,7 +137,7 @@ def test_certain_uncertain():
     assert np.all(delta[:, 2] == u_delta[:, 2])
 
 
-w_grid = GridWindMover(wind_file, topology_file)
+w_grid = c_GridWindMover(wind_file, topology_file)
 
 
 def test_default_props():
@@ -208,8 +208,8 @@ def test_serialize_deserialize():
     create a new grid_wind object and make sure it has same properties
     """
 
-    grid_wind = GridWindMover(wind_file, topology_file)
+    grid_wind = c_GridWindMover(wind_file, topology_file)
     serial = grid_wind.serialize()
-    gw2 = GridWindMover.deserialize(serial)
+    gw2 = c_GridWindMover.deserialize(serial)
 
     assert grid_wind == gw2

@@ -820,7 +820,7 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
             return (obj_json, saveloc, refs)
 
     @classmethod
-    def load(cls, saveloc='.', filename=None, refs=None, apply_update_patches=True):
+    def load(cls, saveloc='.', filename=None, refs=None):
         '''
         Load an instance of this class from an archive or folder
 
@@ -848,8 +848,7 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
         if isinstance(saveloc, str):
             if os.path.isdir(saveloc):
                 #run the savefile update system
-                if apply_update_patches:
-                    update_savefile(saveloc)
+                update_savefile(saveloc)
 
                 if filename:
                     fn = os.path.join(saveloc, filename)
@@ -879,9 +878,6 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
                 # extract to a temporary file and retry load
                 tempdir = tempfile.mkdtemp()
                 extract_zipfile(saveloc, tempdir)
-
-                #run the savefile update system
-                update_savefile(tempdir)
                 return cls.load(saveloc=tempdir, filename=filename, refs=refs)
             else:
                 # saveloc is .json file
@@ -899,7 +895,7 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
                                                   refs=refs)
         elif isinstance(saveloc, zipfile.ZipFile):
             # saveloc is an already open zip archive
-            # extract to a temporary file and retry load
+            # extract to a temporary directory and retry load
             tempdir = tempfile.mkdtemp()
             extract_zipfile(saveloc, tempdir)
             return cls.load(saveloc=tempdir, filename=filename, refs=refs)

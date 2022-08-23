@@ -432,7 +432,7 @@ class SpillContainer(AddLogger, SpillContainerData):
             view of the data - it doesn't contain any state that needs to be
             persisted.
         '''
-        substance = False
+        substance = False #if self.substance is None else self.substance
         for spill in self.spills:
             if not spill.on:
                 continue
@@ -442,8 +442,10 @@ class SpillContainer(AddLogger, SpillContainerData):
                 if spill.substance != substance:
                     subs = [spill.substance for spill in self.spills if spill.on]
                     raise ValueError("A spill container can only hold one substance at a time\n"
+                                     "trying to add :{}\n"
                                      "These are the substances in the on spills:\n"
-                                     "{}".format(subs))
+                                     "{}".format(substance, subs))
+                                     
         # set the number of oil components
         # fixme: with only one substance this could be determined elsewhere
         if hasattr(substance, 'num_components'):
@@ -868,7 +870,7 @@ class SpillContainer(AddLogger, SpillContainerData):
         w_mask = np.logical_and(w_mask, self['mass'] > 0.0)
         return w_mask
 
-    def release_elements(self, start_time, end_time):
+    def release_elements(self, start_time, end_time, environment=None):
         """
         :param start_time: -- beginning of the release
         :param end_time: -- end of the release.
@@ -887,7 +889,8 @@ class SpillContainer(AddLogger, SpillContainerData):
             # only want to include the spills that are turned on.
             if not spill.on:
                 continue
-            num_rel = spill.release_elements(self, start_time, end_time)
+
+            num_rel = spill.release_elements(self, start_time, end_time, environment=environment)
             if num_rel > 0:
                 # update 'spill_num' ArrayType's initial_value so it
                 # corresponds with spill number for this set of released

@@ -44,6 +44,11 @@ from gnome.environment.timeseries_objects_base import (TimeseriesData,
                                                        TimeseriesVector)
 from gnome.environment.gridded_objects_base import Time
 
+from gnome.weatherers.spreading import FayGravityViscous
+from gnome.weatherers.spreading import r_time_scale
+from gnome.environment import Water
+from gnome.constants import water_kinematic_viscosity as water_kvis
+from gnome.constants import gravity
 
 class StartPositions(SequenceSchema):
     start_position = WorldPoint()
@@ -99,6 +104,7 @@ class Release(GnomeId):
                  end_release_time=None,
                  custom_positions=None,
                  release_mass=0,
+                 retain_initial_positions=False,
                  **kwargs):
         """
         Required Arguments:
@@ -128,6 +134,10 @@ class Release(GnomeId):
 
         :param release_mass=0: optional. This is the mass released in kilograms.
         :type release_mass: integer
+
+        :param retain_initial_positions: Optional. If True, each LE will retain
+            information about it's originally released position
+        :type retain_initial_positions: boolean
         """
         self._num_elements = self._num_per_timestep = None
 
@@ -146,11 +156,20 @@ class Release(GnomeId):
             self.release_time = datetime.now()
         self.release_mass = release_mass
         self.custom_positions = custom_positions
+        self.retain_initial_positions = retain_initial_positions
         self.rewind()
         super(Release, self).__init__(**kwargs)
         self.array_types.update({'positions': gat('positions'),
                                  'mass': gat('mass'),
-                                 'init_mass': gat('mass')})
+                                 'init_mass': gat('mass'),
+                                 'density': gat('density'),
+                                 'release_rate': gat('release_rate'),
+                                 'bulk_init_volume': gat('bulk_init_volume'),
+                                 'area': gat('area'),
+                                 'fay_area': gat('fay_area'),
+                                 'frac_coverage': gat('frac_coverage'),})
+        if self.retain_initial_positions:
+            self.array_types.update({'init_positions': gat('positions')})
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
@@ -285,7 +304,7 @@ class Release(GnomeId):
         '''
         Release timeseries describe release behavior as a function of time.
         _release_ts describes the number of LEs that should exist at time T
-        SpatialRelease does not have a _pos_ts because it uses start_positions only
+        PolygonRelease does not have a _pos_ts because it uses start_positions only
         All use TimeseriesData objects.
         '''
         t = None
@@ -360,17 +379,26 @@ class Release(GnomeId):
             warnings.warn("{0} is releasing fewer LEs than number of start positions at time: {1}".format(self, end_time))
 
         sl = slice(-to_rel, None, 1)
+        c_p = np.asarray(self.custom_positions)
         qt = to_rel // num_locs # number of times to tile self.start_positions
         rem = to_rel % num_locs # remaining LES to distribute randomly
-        qt_pos = np.tile(self.custom_positions, (qt, 1))
-        rem_pos = self.custom_positions[np.random.randint(0, len(self.custom_positions), rem)]
+        qt_pos = np.tile(c_p, (qt, 1))
+        rem_pos = c_p[np.random.randint(0, len(c_p), rem)]
         pos = np.vstack((qt_pos, rem_pos))
         assert len(pos) == to_rel
+
         data['positions'][sl] = pos
-
-
         data['mass'][sl] = self._mass_per_le
         data['init_mass'][sl] = self._mass_per_le
+
+        if self.retain_initial_positions:
+            data['init_positions'][sl] = pos
+
+    def initialize_LEs_Area(self, to_rel, data, std_density):
+        pass
+
+    def initialize_LEs_Area(self, to_rel, data, std_density):
+        pass
 
 
 
@@ -541,7 +569,8 @@ class PointLineRelease(Release):
         '''
         # if time_step == 0:
         #     time_step = 1  # to deal with initializing position in instantaneous release case
-
+        if start_time == end_time:
+            end_time += timedelta(seconds=1)
         sl = slice(-to_rel, None, 1)
         # if we have an interpolator -- why use linspace later?
         start_position = self._pos_ts.at(None, start_time, extrapolate=True)
@@ -561,22 +590,56 @@ class PointLineRelease(Release):
         data['mass'][sl] = self._mass_per_le
         data['init_mass'][sl] = self._mass_per_le
 
-class SpatialReleaseSchema(BaseReleaseSchema):
+        if self.retain_initial_positions:
+            data['init_positions'][sl] = data['positions'][sl]
+
+        # compute release rate
+        if self.release_duration > 0:
+            data['release_rate'][sl] = sum(data['init_mass'][sl] / data['density'][sl]) / (end_time-start_time).total_seconds()
+        else:
+            data['release_rate'][sl] = np.nan
+        # compute release rate
+
+    def initialize_LEs_Area(self, to_rel, data, std_density):
+
+        # compute initial spreading area
+        sl = slice(-to_rel, None, 1)
+
+        if not np.isnan(data['release_rate'][sl][0]):
+                   data['bulk_init_volume'][sl] = r_time_scale * data['release_rate'][sl]
+        else:
+                   data['bulk_init_volume'][sl] = sum(data['init_mass'][sl] / data['density'][sl])
+
+        data['vol_frac_le_st'][sl] = (data['init_mass'][sl] / data['density'][sl]) / data['bulk_init_volume'][sl]
+
+        self.spread = FayGravityViscous()
+
+        if hasattr(data, 'substance'):
+           self.spread.prepare_for_model_run(data)
+           if data.substance.is_weatherable:
+              self.spread._set_init_relative_buoyancy(data.substance)
+              init_blob_area = self.spread.init_area(water_kvis, self.spread._init_relative_buoyancy, data['bulk_init_volume'][sl][0])
+              data['fay_area'][sl] = init_blob_area * data['vol_frac_le_st'][sl]
+              data['area'][sl] = data['fay_area'][sl]
+        # compute initial spreading area
+
+
+class PolygonReleaseSchema(BaseReleaseSchema):
     filename = FilenameSchema(save=False, update=False, test_equal=False, missing=drop)
     features = FeatureCollectionSchema(save=True, update=True, test_equal=True, missing=drop)
 
 
-class SpatialRelease(Release):
+class PolygonRelease(Release):
     """
     A release of elements into a set of provided polygons.
 
     When X particles are determined to be released, they are into the polygons
     randomly. For each LE, pick a polygon, weighted by it's proportional area
-    and place the LE randomly within it. By default the SpatialRelease uses
+    and place the LE randomly within it. By default the PolygonRelease uses
     simple area for polygon weighting. Other classes (NESDISRelease for example)
     may use other weighting functions.
     """
-    _schema = SpatialReleaseSchema
+    _schema = PolygonReleaseSchema
 
     def __init__(self,
                  filename=None,
@@ -614,7 +677,7 @@ class SpatialRelease(Release):
         :type release_mass: integer
         """
         if filename is not None and features is not None:
-            raise ValueError('Cannot pass both a filename and FeatureCollection to SpatialRelease')
+            raise ValueError('Cannot pass both a filename and FeatureCollection to PolygonRelease')
         if filename is not None:
             file_fc = geo_routines.load_shapefile(filename)
             self.features = file_fc
@@ -625,11 +688,11 @@ class SpatialRelease(Release):
             if polygons is not None:
                 if weights is not None:
                     if thicknesses is not None:
-                        raise ValueError('Cannot use both thicknesses and weights in SpatialRelease')
+                        raise ValueError('Cannot use both thicknesses and weights in PolygonRelease')
                     if len(weights) != len(polygons):
                         raise ValueError('Weights must be equal in length to provided Polygons')
             else:
-                raise ValueError('Must provide polygons to SpatialRelease')
+                raise ValueError('Must provide polygons to PolygonRelease')
             self.features = self.gen_fc_from_kwargs(
                 {'polygons': polygons,
                  'weights': weights,
@@ -642,7 +705,7 @@ class SpatialRelease(Release):
                 if 'feature_index' not in feature.properties:
                     feature.properties['feature_index'] = i
 
-        super(SpatialRelease, self).__init__(
+        super(PolygonRelease, self).__init__(
             **kwargs
         )
 
@@ -784,7 +847,7 @@ class SpatialRelease(Release):
         '''
         :param ts: timestep as integer seconds
         '''
-        super(SpatialRelease, self).prepare_for_model_run(ts)
+        super(PolygonRelease, self).prepare_for_model_run(ts)
         #first a sanity check. The release only makes sense if using wgs84 (lon, lat).
         #for example nesdis files come in pseudo-mercator coordinates.
 
@@ -813,6 +876,9 @@ class SpatialRelease(Release):
         pts = [np.append(pt, 0) for pt in pts] #add Z coordinate
 
         data['positions'][sl] = pts
+
+        if self.retain_initial_positions:
+            data['init_positions'][sl] = data['positions'][sl]
 
         data['mass'][sl] = self._mass_per_le
         data['init_mass'][sl] = self._mass_per_le
@@ -852,13 +918,13 @@ class SpatialRelease(Release):
     def new_from_dict(cls, dict_):
         if 'filename' in dict_ and 'features' in dict_:
             dict_.pop('filename')
-        return super(SpatialRelease, cls).new_from_dict(dict_)
+        return super(PolygonRelease, cls).new_from_dict(dict_)
 
-PolygonRelease = SpatialRelease
+# PolygonRelease = SpatialRelease
 
 def GridRelease(release_time, bounds, resolution):
     """
-    Utility function that creates a SpatialRelease with a grid of elements.
+    Utility function that creates a release with a grid of elements.
 
     Only 2-d for now
 
@@ -881,7 +947,7 @@ def GridRelease(release_time, bounds, resolution):
                           )
 
 
-class NESDISReleaseSchema(SpatialReleaseSchema):
+class NESDISReleaseSchema(PolygonReleaseSchema):
     thicknesses = SequenceSchema(
         SchemaNode(Float()), save=False
     )
@@ -893,9 +959,9 @@ class NESDISReleaseSchema(SpatialReleaseSchema):
     )
 
 
-class NESDISRelease(SpatialRelease):
+class NESDISRelease(PolygonRelease):
     '''
-    A SpatialRelease subclass that has functions and data specifically for
+    A PolygonRelease subclass that has functions and data specifically for
     representing NESDIS shapefiles within GNOME
     '''
     _schema = NESDISReleaseSchema
@@ -996,7 +1062,7 @@ class NESDISRelease(SpatialRelease):
         return dct
 
 
-class ContinuousSpatialRelease(SpatialRelease):
+class ContinuousPolygonRelease(PolygonRelease):
     """
     continuous release of elements from specified positions
     NOTE 3/23/2021: THIS IS NOT FUNCTIONAL
@@ -1027,7 +1093,7 @@ class ContinuousSpatialRelease(SpatialRelease):
         num_elements and release_time passed to base class __init__ using super
         See base :class:`Release` documentation
         """
-        super(self, SpatialRelease).__init__(
+        super(self, PolygonRelease).__init__(
             release_time=release_time,
             num_elements=num_elements,
             end_release_time=end_release_time

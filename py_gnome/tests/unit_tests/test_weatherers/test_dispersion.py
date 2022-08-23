@@ -54,10 +54,10 @@ def test_dispersion(oil, temp, num_elems, on):
     disp.weather_elements(sc, time_step, model_time)
 
     if on:
-        # print "sc.mass_balance['natural_dispersion']"
-        # print sc.mass_balance['natural_dispersion']
-        # print "sc.mass_balance['sedimentation']"
-        # print sc.mass_balance['sedimentation']
+       # print("sc.mass_balance['natural_dispersion']")
+       # print(sc.mass_balance['natural_dispersion'])
+       # print("sc.mass_balance['sedimentation']")
+       # print(sc.mass_balance['sedimentation'])
 
         assert sc.mass_balance['natural_dispersion'] > 0
         assert sc.mass_balance['sedimentation'] > 0

@@ -177,8 +177,8 @@ class TrajectoryGeoJsonOutput(Outputter):
 
         print("output to file")
         print(type(json_content))
-        with open(filename, 'w+') as outfile:
-            dump(json_content, outfile, indent=True)
+        with open(filename, 'w+', encoding='utf-8') as outfile:
+            dump(json_content, outfile, indent=4)
 
         return filename
 

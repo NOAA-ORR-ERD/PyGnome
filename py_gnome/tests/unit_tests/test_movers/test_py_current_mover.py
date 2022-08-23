@@ -23,7 +23,8 @@ from ..conftest import (sample_sc_release,
                         validate_save_json)
 
 
-curr_file = testdata['c_GridCurrentMover']['curr_reg'] #just a regular grid netcdf
+curr_file = testdata['c_GridCurrentMover']['curr_reg'] #just a regular grid netcdf - this fails save_load
+curr_file2 = testdata['c_GridCurrentMover']['curr_tri'] #a triangular grid netcdf
 
 
 def test_exceptions():
@@ -40,6 +41,7 @@ def test_exceptions():
 num_le = 10
 start_pos = (3.549, 51.88, 0)
 rel_time = datetime.datetime(1999, 11, 29, 21)
+#rel_time = datetime.datetime(2004, 12, 31, 13)	# date for curr_file2
 time_step = 15 * 60  # seconds
 model_time = time_utils.sec_to_date(time_utils.date_to_sec(rel_time))
 
@@ -156,7 +158,7 @@ def test_serialize_deserialize():
     """
     test serialize/deserialize/update_from_dict doesn't raise errors
     """
-    py_current = PyCurrentMover(curr_file)
+    py_current = PyCurrentMover(curr_file2)
 
     serial = py_current.serialize()
     assert validate_serialize_json(serial, py_current)
@@ -165,20 +167,20 @@ def test_serialize_deserialize():
 
     deser = PyCurrentMover.deserialize(serial)
 
-    #assert deser == py_current
+    assert deser == py_current
 
 
 def test_save_load():
     """
-    test save/loading with and without tide
+    test save/loading
     """
 
     saveloc = tempfile.mkdtemp()
-    py_current = PyCurrentMover(curr_file)
+    py_current = PyCurrentMover(curr_file2)
     save_json, zipfile_, _refs = py_current.save(saveloc)
 
     assert validate_save_json(save_json, zipfile.ZipFile(zipfile_), py_current)
 
     loaded = PyCurrentMover.load(zipfile_)
 
-    #assert loaded == py_current
+    assert loaded == py_current
