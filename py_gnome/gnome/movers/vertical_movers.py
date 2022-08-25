@@ -15,8 +15,9 @@ from gnome.persist.base_schema import ObjTypeSchema
 
 
 class RiseVelocityMoverSchema(ProcessSchema):
-    water_density = SchemaNode(Float(), save=True, update=True)
-    water_viscosity = SchemaNode(Float(), save=True, update=True)
+    pass
+    #water_density = SchemaNode(Float(), save=True, update=True)
+    #water_viscosity = SchemaNode(Float(), save=True, update=True)
 
 
 class RiseVelocityMover(CyMover):
