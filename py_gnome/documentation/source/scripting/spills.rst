@@ -14,11 +14,13 @@ The :class:`gnome.spill.release.Release` Object specifies the details of the rel
 Some of the subclasses of this include:
 
 * :class:`gnome.spill.release.PointLineRelease` - a release of particles at a point or along a line, either instantaneously or over a time interval
+
 * :class:`gnome.spill.release.SpatialRelease` - an instantaneous release of particles distributed randomly in a specified polygon 
 
 The :class:`gnome.spill.substance.Substance` Object provides information on the type of substance spilled. Although, its possible to add multiple spills to the model, they must all use the same substance object. There are two subclasses that can be used to instantiate substances:
 
 * :class:`gnome.spill.substance.GnomeOil` - used for creating a spill that will include oil weathering processes
+
 * :class:`gnome.spill.substance.NonWeatheringSubstance` - used for running transport simulations with conservative particles (i.e. the particle properties do not change over time).
 
 Here's an example setting up a non-weathering spill. This is the default Substance for a spill so we do not need to create or pass in a Substance object::
@@ -38,18 +40,24 @@ Here's an example setting up a non-weathering spill. This is the default Substan
 
     Specific oils can be downloaded from the |adios_db|. The oil properties are stored in the JSON file format which can be read using any text editor. This file can then be used to instantiate a GnomeOil. In the following examples, we use an Alaska North Slope Crude downloaded from the database. That file can be accessed :download:`here <alaska-north-slope_AD00020.json>` to use in the following examples.
     
-To model a spill of 5000 bbls using a specific oil downloaded from the ADIOS oil database (adios.orr.noaa.gov) we could instantiate the Spill oject like this::
-    
+To model a spill of 5000 bbls using a specific oil downloaded from the `ADIOS Oil Database <https://adios.orr.noaa.gov>`_ we could instantiate the Spill object like this:
+
+.. code-block:: python
+
     import gnome.scripting as gs
-    from datetime import datetime, timedelta
-    start_time = datetime(2015, 1, 1, 0, 0)
+    start_time = "2015-01-01T00:00)
     model = gs.Model(start_time=start_time,
-                  duration=timedelta(days=3),
-                  time_step=60 * 15, #seconds
-                  )
-    release = gs.PointLineRelease(release_time=start_time,start_position=(-144,48.5,0),num_elements=1000)  
+                     duration=gs.days(3),
+                     time_step=60 * 15, #seconds
+                     )
+    release = gs.PointLineRelease(release_time=start_time,
+                                  start_position=(-144,48.5,0),
+                                  num_elements=1000)
     substance = gs.GnomeOil(filename='alaska-north-slope_AD00020.json')
-    spill = gs.Spill(release=release,substance=substance,amount=5000,units='bbls')
+    spill = gs.Spill(release=release,
+                     substance=substance,
+                     amount=5000,
+                     units='bbls')
     model.spills += spill
  
 
@@ -57,24 +65,29 @@ To model a spill of 5000 bbls using a specific oil downloaded from the ADIOS oil
 
     Floating objects experience a drift due to the wind. The default for substances is to have windage values set in the range 1-4% with a persistence of 15 minutes. More detail on the wind drift parameterization can be found in the |gnome_tech_manual|. 
 
+
 Spatial releases
 ----------------
 
-Documentation forthcoming (Nov 2021).
+Documentation forthcoming (Nov 2022).
  
+
 Using helper functions
 ----------------------
 
-Rather than deal with the complexities of the Spill class directly, helper functions in the scripting package 
-can be utilized for a lot of typical use cases. Some examples are include below.
+Rather than deal with the complexities of the Spill class directly, helper functions in the scripting package can be utilized for a lot of typical use cases. Some examples are include below.
+
 
 Surface spill 
-~~~~~~~~~~~~~
+.............
 
-We use the :func:`gnome.scripting.surface_point_line_spill` helper function to inialize a release along a line 
-that occurs over one day. The oil type is specified using the sample oil file provided above with a spill volume 
-of 5000 barrels. Here we change the default windage range to be 1-2% with an infinite persistence (particles keep the same windage value for all time). The helper function creates both the Release and the Substance objects and uses them to create a Spill object.
-::
+We use the :func:`gnome.scripting.surface_point_line_spill` helper function to inialize a release along a line that occurs over one day.
+The oil type is specified using the sample oil file provided above with a spill volume
+of 5000 barrels.\
+Here we change the default windage range to be 1-2% with an infinite persistence (particles keep the same windage value for all time).
+The helper function creates both the Release and the Substance objects and uses them to create a Spill object.
+
+.. code-block:: python
 
     import gnome.scripting as gs
     from datetime import datetime, timedelta
@@ -103,14 +116,18 @@ of 5000 barrels. Here we change the default windage range to be 1-2% with an inf
 .. _subsurface_plume:
 
 Subsurface plume
-~~~~~~~~~~~~~~~~
+................
 
-For initialization of a subsurface plume, we can use the :func:`gnome.scripting.subsurface_plume_spill` 
-helper function.
-Required parameters in this case also include a specification of the droplet size distribution 
-or of the rise velocities. The :mod:`gnome.utilities.distributions` module includes methods for 
-specifying different types of distributions. In this case we specify a uniform distribution of
-droplets ranging from 10-300 microns::
+**NOTE** the subsurface plume class is being rewritten (Oct 2022) -- it may not work as described here.
+
+
+For initialization of a subsurface plume, we can use the :func:`gnome.scripting.subsurface_plume_spill` helper function.
+Required parameters in this case also include a specification of the droplet size distribution or of the rise velocities.
+The :mod:`gnome.utilities.distributions` module includes methods for
+specifying different types of distributions.
+In this case we specify a uniform distribution of droplets ranging from 10-300 microns:
+
+.. code-block:: python
     
     import gnome.scripting as gs
     from gnome.utilities.distributions import UniformDistribution
