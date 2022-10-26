@@ -86,7 +86,12 @@ class BaseSpill(GnomeId):
     A base class for spill, with only what we really need
 
     Note: this should have all the methods that the model needs, to define the interface.
+
+    for now, the real base is specified by Spill, but this gives us something to derive
+    from to make a whole new one, and still be able to add it to the model.
     """
+    pass
+
 
 class Spill(BaseSpill):
     """
@@ -99,7 +104,7 @@ class Spill(BaseSpill):
     # attributes that need to be there for the __setattr__ magic to work
     # release = None  # just to make sure it's there.
     # element_type = None
-    # this is so the properties in teh base classes work -- arrgg!
+    # this is so the properties in the base classes work -- arrgg!
     # _name = 'Spill'
 
     def __init__(self,
@@ -114,7 +119,7 @@ class Spill(BaseSpill):
                  **kwargs):
         """
         Spills used by the gnome model. It contains a release object, which
-        releases elements. It also contains an element_type object which
+        releases elements. It also contains a Substance which
         contains the type of substance spilled and it initializes data arrays
         to non-default values (non-zero).
 
@@ -191,6 +196,7 @@ class Spill(BaseSpill):
     def substance(self):
         return self._substance
 
+    # fixme: this should be obsolete -- hopefully it can be removed!
     @substance.setter
     def substance(self, val):
         '''
@@ -499,7 +505,7 @@ def _setup_spill(release,
     # The defaults are in the Substance base class
     if windage_range is not None:
         spill.substance.windage_range = windage_range
-    if windage_persist is None:
+    if windage_persist is not None:
         spill.substance.windage_persist = windage_persist
 
     return spill
