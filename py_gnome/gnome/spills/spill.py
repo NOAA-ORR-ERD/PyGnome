@@ -5,7 +5,9 @@ A "spill" is essentially a source of elements. These classes combine
 
 Releases: where and when elements are released
 and
-Element_types -- what the types of the elements are.
+Substance -- what the types of the elements are.
+
+(currently there are only two substances: GnomeOIl and NonWeatheringSubstance)
 
 """
 
@@ -493,16 +495,13 @@ def _setup_spill(release,
                   name=name,
                   on=on)
 
-    if substance is None:
-        if windage_range is None:
-            windage_range = (.01, .04)
-        if windage_persist is None:
-            windage_persist = 900
+    # If windages are provided, they override what's in the Substance
+    # The defaults are in the Substance base class
+    if windage_range is not None:
         spill.substance.windage_range = windage_range
+    if windage_persist is None:
         spill.substance.windage_persist = windage_persist
-    elif windage_range is not None or windage_persist is not None:
-        raise TypeError("You can not specify windage values if you specify a substance.\n"
-                        "Set the windage on the substance instead")
+
     return spill
 
 def surface_point_line_spill(num_elements,
@@ -560,10 +559,10 @@ def surface_point_line_spill(num_elements,
     :param name='Surface Point/Line Spill': a name for the spill
     :type name: str
     '''
-    # make positions 3d if they are not already
+    # make positions 3d, with depth = 0 if they are not already
     start_position = *start_position[:2], 0
 
-    end_position = (*end_position[:2], 0) if end_position is not None else end_position
+    end_position = (*end_position[:2], 0) if end_position is not None else None
 
     release = PointLineRelease(release_time=release_time,
                                start_position=start_position,
@@ -579,8 +578,9 @@ def surface_point_line_spill(num_elements,
                          name=name,
                          on=on,
                          windage_range=windage_range,
-                         windage_persist=windage_persist
+                         windage_persist=windage_persist,
                          )
+
 
     return spill
 
