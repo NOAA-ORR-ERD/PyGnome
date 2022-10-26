@@ -22,6 +22,34 @@ class TestSubstance:
         assert isinstance(sub1._windage_init, InitWindages)
         expected_arrays = {'windages', 'windage_range', 'windage_persist', 'density', 'fate_status'}
         assert sub1.array_types.keys() == expected_arrays
+        assert sub1.windage_range == (0.01, 0.04)
+        assert sub1.windage_persist == 900
+
+    def test_init_inf_persist(self):
+        """
+        setting windage_persist to inf should set it to -1
+        """
+        sub1 = Substance(windage_persist=float("Inf"))
+        assert sub1.windage_persist == -1
+
+    def test_inf_persist(self):
+        """
+        setting windage_persist to inf should set it to -1
+        """
+        sub1 = Substance()
+        sub1.windage_persist = float("Inf")
+        assert sub1.windage_persist == -1
+
+    def test_setters(self):
+        """
+        setting windage values after should "take"
+        """
+        sub1 = Substance()
+        sub1.windage_persist = 500
+        sub1.windage_range = (0.0, 0.03)
+
+        assert sub1.windage_persist == 500
+        assert sub1.windage_range == (0.0, 0.03)
 
     def test_eq(self):
         sub1 = Substance()
