@@ -206,7 +206,7 @@ class TestPointLineRelease(object):
             data = LEData()
             ts = 900
             r.prepare_for_model_run(ts)
-            
+
             data.prepare_for_model_run(r.array_types, None)
             data.extend_data_arrays(10)
             #initialize over the time interval 0-10%
@@ -289,14 +289,14 @@ def test_moving_point_line():
     sc = {'positions': np.zeros((num_to_rel, 3)),
           'mass': np.zeros((num_to_rel,)),
           'init_mass': np.zeros((num_to_rel,)),
-          'density': np.zeros((num_to_rel,)),
+          'density': np.ones((num_to_rel,)), # non-zero to avoid divide by zero
           'release_rate': np.zeros((num_to_rel,)),
           'bulk_init_volume': np.zeros((num_to_rel,)),
           'vol_frac_le_st': np.zeros((num_to_rel,)),
           'area': np.zeros((num_to_rel,)),
           'fay_area': np.zeros((num_to_rel,)),
           }
-          
+
     rel.initialize_LEs(num_to_rel, sc, start_time, end_time)
     print(sc['positions'][:,0])
     assert np.array_equal(sc['positions'],
@@ -316,7 +316,7 @@ def test_moving_point_line():
     sc = {'positions': np.zeros((num_to_rel, 3)),
           'mass': np.zeros((num_to_rel,)),
           'init_mass': np.zeros((num_to_rel,)),
-          'density': np.zeros((num_to_rel,)),
+          'density': np.ones((num_to_rel,)),
           'release_rate': np.zeros((num_to_rel,)),
           'bulk_init_volume': np.zeros((num_to_rel,)),
           'vol_frac_le_st': np.zeros((num_to_rel,)),
