@@ -7,6 +7,9 @@ import pytest
 import copy
 
 from uuid import uuid1
+
+import numpy as np
+
 from gnome.gnomeobject import GnomeId, combine_signatures
 from gnome import (environment,
                    movers,
@@ -19,6 +22,9 @@ from gnome.environment import Waves, Wind, Water
 from gnome.weatherers import Evaporation, NaturalDispersion
 from gnome.exceptions import ReferencedObjectNotSet
 
+from gnome.persist import (
+    Boolean, Float, Int, String, SchemaNode,  ObjTypeSchema, GeneralGnomeObjectSchema,
+    TupleSchema, Range, NumpyArraySchema, drop)
 
 def test_exceptions():
     with pytest.raises(AttributeError):
@@ -145,4 +151,278 @@ def test_signature_combination():
     assert paramnames[2] == 'args'
     assert paramnames[3] == 'options'
 
+## tests the __eq__ implimentation
+# note: very hard to make this comprehensive, but it's something.
+
+class ExampleSchema(ObjTypeSchema):
+
+    a_float = SchemaNode(Float(), save=True, update=True)
+    a_int = SchemaNode(Float(), save=True, update=True)
+    a_bool = SchemaNode(Float(), save=True, update=True)
+    a_str = SchemaNode(Float(), save=True, update=True)
+    a_ndarray = SchemaNode(Float(), save=True, update=True)
+
+    # There are more to do -- see extend_colander
+
+class ExampleObject(GnomeId):
+    _schema = ExampleSchema
+
+    def __init__(self,
+                 a_float=1.1,
+                 a_int=12,
+                 a_bool=True,
+                 a_str='a string',
+                 a_ndarray=np.ones((4,))
+                 ):
+        self.a_float = a_float
+        self.a_int = a_int
+        self.a_bool = a_bool
+        self.a_str = a_str
+        self.a_ndarray = a_ndarray
+
+class DummySchema(ObjTypeSchema):
+
+    a_float = SchemaNode(Float(), save=True, update=True)
+    a_int = SchemaNode(Float(), save=True, update=True)
+    # There are more to do -- see extend_colander
+
+
+class DummyObject(GnomeId):
+    _schema = ExampleSchema
+
+    def __init__(self,
+                 a_float=1.1,
+                 a_int=12,
+                 ):
+        self.a_float = a_float
+        self.a_int = a_int
+
+
+def test_different_object_type():
+    o1 = ExampleObject()
+    o2 = DummyObject()
+
+    assert not o1 == o2
+    assert not o2 == o1
+
+    # check diff
+    diff = o1._diff(o2, fail_early=True)
+
+    assert len(diff) == 1
+    assert "Different type:" in diff[0]
+
+
+def test_defaults():
+    """
+    they'd better be equal
+    """
+    o1 = ExampleObject()
+    o2 = ExampleObject()
+
+    assert o1 == o2
+    assert o2 == o1
+
+
+def test_float_different():
+    """
+    these should not match
+    """
+    o1 = ExampleObject(a_float=1.0)
+    o2 = ExampleObject(a_float=2.0)
+
+    assert not o1 == o2
+    assert not o2 == o1
+
+    # check diff
+    diff = o1._diff(o2, fail_early=True)
+
+    assert len(diff) == 1
+    assert "Difference outside tolerance --" in diff[0]
+
+
+def test_float_slightly_different():
+    """
+    they'd should be close enough
+    """
+    o1 = ExampleObject(a_float=1.0)
+    o2 = ExampleObject(a_float=1.000000000001)
+
+    print(o1._diff(o2))
+
+    assert o1 == o2
+    assert o2 == o1
+
+
+def test_huge_float_slightly_different():
+    """
+    they'd should be close enough
+    """
+    o1 = ExampleObject(a_float=1.0e100)
+    o2 = ExampleObject(a_float=1.000000000001e100)
+
+    print(o1._diff(o2))
+
+    assert o1 == o2
+    assert o2 == o1
+
+
+def test_int_different():
+    o1 = ExampleObject(a_int=12345)
+    o2 = ExampleObject(a_int=12346)
+
+    assert not o2 == o1
+    assert not o1 == o2
+
+
+def test_bool_different():
+    o1 = ExampleObject(a_bool=True)
+    o2 = ExampleObject(a_bool=False)
+
+    assert not o1 == o2
+    assert not o2 == o1
+
+
+## playing games with bool that probably don't matter ...
+def test_bool_using_ints_same_true():
+    """These are both Truthy -- but not equal
+       Should that work? Probably not :-)
+    """
+    o1 = ExampleObject(a_bool=34)
+    o2 = ExampleObject(a_bool=12)
+
+    assert not o1 == o2
+    assert not o2 == o1
+
+
+def test_bool_using_ints_same_false():
+    o1 = ExampleObject(a_bool=0)
+    o2 = ExampleObject(a_bool=0)
+
+    assert o1 == o2
+    assert o2 == o1
+
+
+def test_bool_using_ints_diff():
+    o1 = ExampleObject(a_bool=34)
+    o2 = ExampleObject(a_bool=0)
+
+    assert not o1 == o2
+    assert not o2 == o1
+
+
+def test_str_different():
+    o1 = ExampleObject(a_str='a string')
+    o2 = ExampleObject(a_str='A string')
+
+    assert not o1 == o2
+    assert not o2 == o1
+
+    # diff
+    diff = o1._diff(o2, fail_early=True)
+
+    assert len(diff) == 1
+    assert "Values not equal --" in diff[0]
+
+
+## now the array tests -- this is getting more complicated.
+def test_arr_not_equal():
+    o1 = ExampleObject(a_ndarray=np.array([1, 2, 3, 4, 5], dtype=np.float32))
+    o2 = ExampleObject(a_ndarray=np.array([1, 2, 3, 4, 6], dtype=np.float32))
+
+    assert not o1 == o2
+    assert not o2 == o1
+
+
+def test_arr_different_size():
+    o1 = ExampleObject(a_ndarray=np.array([1, 2, 3, 4, 5], dtype=np.float32))
+    o2 = ExampleObject(a_ndarray=np.array([1, 2, 3, 4, 6, 7], dtype=np.float32))
+
+    assert not o1 == o2
+    assert not o2 == o1
+
+    # diff
+    diff = o1._diff(o2, fail_early=True)
+
+    assert len(diff) == 1
+    assert "Arrays are not the same size --" in diff[0]
+
+
+def test_arr_close_enough():
+    o1 = ExampleObject(a_ndarray=np.array([1, 2, 3], dtype=np.float32))
+    o2 = ExampleObject(a_ndarray=np.array([1, 2, 3.00001], dtype=np.float32))
+
+    assert o1 == o2
+    assert o2 == o1
+
+
+def test_arr_not_close_enough():
+    o1 = ExampleObject(a_ndarray=np.array([1, 2, 3], dtype=np.float32))
+    o2 = ExampleObject(a_ndarray=np.array([0.99999, 2, 3.00001], dtype=np.float32))
+
+    assert not o1 == o2
+    assert not o2 == o1
+
+    # diff
+    diff = o1._diff(o2, fail_early=True)
+
+    assert len(diff) == 1
+    assert "Array values are not all close --" in diff[0]
+
+
+
+def test_arr_tuple_close_enough():
+    o1 = ExampleObject(a_ndarray=(1, 2, 3))
+    o2 = ExampleObject(a_ndarray=np.array([1, 2, 3.00001], dtype=np.float32))
+
+    assert o1 == o2
+    assert o2 == o1
+
+
+def test_arr_list_close_enough():
+    o2 = ExampleObject(a_ndarray=[1, 2, 3])
+    o1 = ExampleObject(a_ndarray=np.array([1, 2, 3.00001], dtype=np.float32))
+
+    assert o1 == o2
+    assert o2 == o1
+
+    # diff test:
+    diff = o1._diff(o2, fail_early=False)
+
+    assert len(diff) == 0
+
+
+def test_diff_multiple_differrences():
+    o1 = ExampleObject(a_float=1.1,
+                       a_int=12,
+                       a_bool=True,
+                       a_str='a string',
+                       a_ndarray=np.ones((4, )))
+    o2 = ExampleObject(a_float=3.1,
+                       a_int=22,
+                       a_bool=False,
+                       a_str='another  string',
+                       a_ndarray=np.ones((5, )))
+
+    diffs = o1._diff(o2)
+
+    messages = ['Difference outside tolerance -- a_float',
+                'Values not equal -- a_int:',
+                'Values not equal -- a_bool:',
+                'Values not equal -- a_str:',
+                'Arrays are not the same size --',
+                ]
+
+    print("diffs are:")
+    for diff in diffs:
+        print(diff)
+
+    for msg in messages:
+        for diff in diffs:
+            if msg in diff:
+                break
+        else:
+            raise AssertionError(f'{msg} is mising from diff')
+
+
+# FIXME: there should be a test of weird arrays, like DatetimeValue2dArray
 
