@@ -263,7 +263,13 @@ def GetNextBNAPolygon(f, dtype=np.float64):
     else:
         points = np.zeros((num_points, 2), dtype)
         for i in range(num_points):
-            points[i,:] = [float(j) for j in f.readline().split(',')]
+            line = f.readline()
+            if not line:
+                raise ValueError(f"empty coords line in {header.strip()}. check number of vertices")
+            try:
+                points[i,:] = [float(j) for j in line.split(',')]
+            except ValueError as err:
+                raise ValueError(f"incorrect coords in line: {line} in poly: {header}") from err
 
     if poly_type == 'polygon':  # first and last points are the same in BNA,
                                 # but we don't want the duplicate point.
