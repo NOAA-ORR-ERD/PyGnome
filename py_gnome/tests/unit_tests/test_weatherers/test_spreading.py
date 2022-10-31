@@ -264,7 +264,7 @@ class TestLangmuir(ObjForTests):
 
     vmin, vmax = lang._wind_speed_bound(rel_buoy, thick)
 
-    sc, weatherers = ObjForTests.mk_test_objs(water)
+    sc, weatherers, environment = ObjForTests.mk_test_objs(water)
 
     def test_init(self):
         langmuir = Langmuir(self.water, self.wind)
@@ -323,7 +323,7 @@ class TestLangmuir(ObjForTests):
         # elements
         model_time = self.sc.spills[0].release_time
         time_step = 900.
-        self.release_elements(time_step, model_time)
+        self.release_elements(time_step, model_time, self.environment)
         self.step(langmuir, time_step, model_time)
 
         assert langmuir.active
