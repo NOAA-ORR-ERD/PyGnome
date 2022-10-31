@@ -446,9 +446,10 @@ class Spill(BaseSpill):
 
         if 'frac_coverage' in sc:
             sc['frac_coverage'][-to_rel:] = self.frac_coverage
-
-        self.substance.initialize_LEs(to_rel, sc, environment=environment)
-        self.release.initialize_LEs_Area(to_rel, sc, self.substance.standard_density)
+        
+        self.substance.initialize_LEs(to_rel, sc, environment=environment)  
+        
+        self.release.initialize_LEs_Area(to_rel, sc, start_time, end_time, environment=environment)
 
         return to_rel
 
@@ -735,7 +736,7 @@ def subsurface_plume_spill(num_elements,
                                distribution=distribution,
                                windage_range=windage_range,
                                windage_persist=windage_persist)
-
+    
     spill = _setup_spill(release=release,
                          water=water,
                          substance=substance,

@@ -30,7 +30,9 @@ def weathering_data_arrays(n_arrays,
     defining a model
     '''
     if water is None:
-        water = Water()
+        water = Water(temperature = 300.)
+    environment = {'water': water}  
+    
     rqd_weatherers = [FayGravityViscous(water)]
     arrays = dict()
     arrays.update(weathering_array_types) #always have base weathering array types available
@@ -51,8 +53,9 @@ def weathering_data_arrays(n_arrays,
                            arr_types=arrays,
                            time_step=time_step,
                            units=units,
-                           amount_per_element=amount_per_element
-                           )
+                           amount_per_element=amount_per_element,
+                           environment=environment)
+                           
     for wd in rqd_weatherers:
         wd.prepare_for_model_run(sc)
         wd.initialize_data(sc, sc.num_released)
