@@ -26,6 +26,7 @@ class TestGnomeOil:
         assert oil1.windage_range == (0.05, 0.07)
 
     def test_init_from_oil_dict(self):
+        #breakpoint()
         go = GnomeOil(**sample_oils.oil_bahia)
 
         assert go.pour_point == 310.9278
@@ -73,13 +74,22 @@ class TestGnomeOil:
 
         assert d[oil1] == "yes"
 
+    def test_invalid_oil_name(self):
+        with pytest.raises(ValueError):
+            oil = GnomeOil('non-existant-oil')
+
+    def test_invalid_file_name(self):
+        with pytest.raises(FileNotFoundError) as err:
+            oil = GnomeOil(filename='non-existant-oil')
+
     def test_serialization(self):
         oil1 = GnomeOil('oil_ans_mp', windage_range=(0.05, 0.07))
         ser = oil1.serialize()
         deser = GnomeOil.deserialize(ser)
         assert deser == oil1
         assert deser.initializers[0].windage_range == oil1.windage_range
-        assert deser.standard_density == oil1.standard_density
+        # breakpoint()
+        assert isclose(deser.standard_density, oil1.standard_density, rel_tol=1e-5)
 
     def test_save_load(self, saveloc_):
         '''
@@ -90,7 +100,11 @@ class TestGnomeOil:
         '''
         test_obj = GnomeOil('oil_ans_mp', windage_range=(0.05, 0.07))
         json_, savefile, refs = test_obj.save(saveloc_)
+        # print(f"{json_=}")
+        # print(f"{savefile=}")
+        # print(f"{refs=}")
         test_obj2 = test_obj.__class__.load(savefile)
+        print(f"{test_obj._diff(test_obj2)}")
         assert test_obj == test_obj2
 
     def test_set_emulsification_constants(self):

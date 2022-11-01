@@ -117,7 +117,7 @@ class GnomeOilSchema(SubstanceSchema):
     densities = NumpyArraySchema(missing=drop, save=True, update=True)
     density_ref_temps = NumpyArraySchema(missing=drop, save=True, update=True)
     density_weathering = NumpyArraySchema(missing=drop, save=True, update=True)
-    kvis = NumpyArraySchema(missing=drop, save=True, update=True)
+    kvis = NumpyArraySchema(missing=drop, save=True, update=True, precision=13)
     kvis_ref_temps = NumpyArraySchema(missing=drop, save=True, update=True)
     kvis_weathering = NumpyArraySchema(missing=drop, save=True, update=True)
     mass_fraction = NumpyArraySchema(missing=drop, save=True, update=True)
@@ -134,6 +134,36 @@ class GnomeOilSchema(SubstanceSchema):
 class GnomeOil(Substance):
     _schema = GnomeOilSchema
     _req_refs = ['water']
+
+    @classmethod
+    def new_from_dict(cls, dict_):
+        """
+        creates a new object from dictionary
+
+        This is base implementation and can be over-ridden by classes using
+        this mixin
+        """
+        read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
+
+        [dict_.pop(n, None) for n in read_only_attrs]
+
+        self = cls.__new__(cls)
+
+        oil_name = dict_.pop('oil_name', None)
+        filename = dict_.pop('filename', None)
+        water = dict_.pop('water', None)
+
+        super_kwargs = self._init_from_json(**dict_)
+        super(GnomeOil, self).__init__(**super_kwargs)
+
+        self.filename = filename
+        self.oil_name = oil_name
+        self.water = water
+
+        self._set_up_array_types()
+
+        return self
+
 
     def __init__(self,
                  oil_name=None,
@@ -168,15 +198,17 @@ class GnomeOil(Substance):
         #if oil_name and filename:
             #raise TypeError('Cannot provide both name and filename')
 
-        if oil_name in _sample_oils:
-            # load from sample oil
-            oil_dict = _sample_oils[oil_name]
-            kwargs.update(oil_dict)
-            super_kwargs = self._init_from_json(**kwargs)
+
+        if oil_name is not None:
+            if oil_name in _sample_oils:
+                # load from sample oil
+                oil_dict = _sample_oils[oil_name]
+                kwargs.update(oil_dict)
+                super_kwargs = self._init_from_json(**kwargs)
+            else:
+                raise ValueError(f"{oil_name} not in sample_oils: options are:\n {_sample_oils.keys()} ")
+
         elif filename:
-            if not os.path.exists(filename):
-                raise ValueError(f"File: {filename} does not exist")
-            # load from file using oil database
             try:
                 import adios_db
             except ImportError as err:
@@ -202,6 +234,9 @@ class GnomeOil(Substance):
         self.oil_name = oil_name
         self.water = water
 
+        self._set_up_array_types()
+
+    def _set_up_array_types(self):
         # add the array types that this substance DIRECTLY initializes
         self.array_types.update({'density': gat('density'),
                                  'viscosity': gat('viscosity'),
@@ -505,7 +540,7 @@ class GnomeOil(Substance):
         Standard density is simply the density at 15C, which is the
         default temperature for density_at_temp()
         '''
-        return self.density_at_temp(temperature=288.15)
+        return float(self.density_at_temp(temperature=288.15))
 
     def _get_reference_densities(self, densities, temperature):
         '''
