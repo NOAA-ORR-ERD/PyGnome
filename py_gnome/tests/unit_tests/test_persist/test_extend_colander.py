@@ -4,22 +4,21 @@
 tests for our extensions to colander
 
 Not complete at all!
-
 """
-
-
 
 
 import os
 from datetime import datetime
 import pprint as pp
+import json
+import tempfile
 
 import pytest
-import tempfile
 
 import numpy as np
 
 from gnome.persist import extend_colander
+from gnome.persist.extend_colander import NumpyArraySchema
 from gnome.utilities.time_utils import FixedOffset
 from gnome.environment.gridded_objects_base import Time
 from gnome.environment.timeseries_objects_base import (TimeseriesData,
@@ -228,3 +227,55 @@ class TestObjType(object):
 
         # without context manager
         _json_, _zipfile_, _refs = test_instance.save('Test.zip')
+
+
+class Test_NumpyArraySchema:
+
+    def test_int_tuple(self):
+        sch = NumpyArraySchema()
+
+        val = (1, 2, 3, 4)
+        ser = sch.serialize(val)
+        print(ser)
+        deser = sch.deserialize(ser)
+        print(deser)
+
+        # Should lose no precision with integers
+        assert np.alltrue(deser == val)
+
+    def test_float_list(self):
+        sch = NumpyArraySchema()
+
+        val = (1.1, 2.2, 3.3, 4.4)
+        ser = sch.serialize(val)
+        print(ser)
+        deser = sch.deserialize(ser)
+        print(deser)
+
+        # Should lose no precision low precision floats
+        assert np.alltrue(deser == val)
+
+    def test_float_precision_loss(self):
+        sch = NumpyArraySchema(precision=4)
+
+        val = (1.12345678, -2.2345678e20, 3.3456789e-20)
+        ser = sch.serialize(val)
+        print(ser)
+        deser = sch.deserialize(ser)
+        print(deser)
+
+        # Should lose some precision
+        assert not np.allclose(deser, val, rtol=1e-5, atol=0.0)
+        assert np.allclose(deser, val, rtol=1e-3, atol=0.0)
+
+    def test_float_precision_in_json(self):
+        sch = NumpyArraySchema(precision=4)
+
+        val = (1.12345678, -2.2345678e20, 3.3456789e-20)
+        ser = sch.serialize(val)
+        print(f"{ser=}")
+        jsonstr = json.dumps(ser)
+        print(f"{jsonstr=}")
+
+        assert jsonstr == '[1.123, -2.235e+20, 3.346e-20]'
+

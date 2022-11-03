@@ -117,7 +117,7 @@ class GnomeOilSchema(SubstanceSchema):
     densities = NumpyArraySchema(missing=drop, save=True, update=True)
     density_ref_temps = NumpyArraySchema(missing=drop, save=True, update=True)
     density_weathering = NumpyArraySchema(missing=drop, save=True, update=True)
-    kvis = NumpyArraySchema(missing=drop, save=True, update=True, precision=13)
+    kvis = NumpyArraySchema(missing=drop, save=True, update=True)
     kvis_ref_temps = NumpyArraySchema(missing=drop, save=True, update=True)
     kvis_weathering = NumpyArraySchema(missing=drop, save=True, update=True)
     mass_fraction = NumpyArraySchema(missing=drop, save=True, update=True)
@@ -173,31 +173,38 @@ class GnomeOil(Substance):
         """
         Initialize a GnomeOil:
 
-        GnomeOil can be initialized in three ways:
+        :param oil_name=None: Name of one of the sample oils provided by:
+                              ``gnome.spills.sample_oils``
 
-        1) From a sample oil name : ``GnomeOil("sample_oil_name")`` the oils are available
+
+        :param filename=None: filename (Path) of JSON file in the Adios Oil Database format.
+
+        :param water=None: Water object with environmental conditions -- Deprecated.
+
+        Additional keyword arguments will be passed to Substance: e.g.:
+        ``windage_range``, ``windage_persist=None``,
+
+        A GnomeOil can be initialized in three ways:
+
+        1) From a sample oil name : ``GnomeOil(oil_name="sample_oil_name")`` the oils are available
             in gnome.spills.sample_oils
 
 
-        2) From a file name : ``GnomeOil(filename="adios_oil.json")`` usually oils from the
-            ADIOS oil database
+        2) From a JSON file in the ADIOS Oil Database format:
+           ``GnomeOil(filename="adios_oil.json")`` usually records from the
+            ADIOS Oil Database (https://adios.orr.noaa.gov)
 
-        3) From the json : ``GnomeOil(**json_)`` for loading save files
+        3) From the json : ``GnomeOil.new_from_dict(**json_)`` for loading
+           save files, etc. (this is usually done under the hood)
 
 
         GnomeOil("sample_oil_name")        ---works for test oils from sample_oils only
         GnomeOil(oil_name="sample_oil_name")
-        GnomeOil("oil.json")               ---load from file using OilDB, parse as **json_
-        GnomeOil(filename="oil.json")
-        GnomeOil(**json_)                  ---webgnomeclient, save, new_from_dict API
+        GnomeOil(filename="oil.json")      ---load from file using adios_db
+        GnomeOil.new_from_dict(**json_)    ---webgnomeclient, savefiles, etc.
 
         GnomeOil("invalid_name")           ---ValueError (not in sample oils)
-        GnomeOil("any_name", "valid.json") ---TypeError (no name + filename)
         """
-
-        #if oil_name and filename:
-            #raise TypeError('Cannot provide both name and filename')
-
 
         if oil_name is not None:
             if oil_name in _sample_oils:
