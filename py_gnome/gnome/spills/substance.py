@@ -170,7 +170,7 @@ class Substance(GnomeId):
     def windage_persist(self, windage_persist):
         windage_persist = 900 if windage_persist is None else windage_persist
         windage_persist = -1 if np.isinf(windage_persist) else windage_persist
-\
+
         if self._windage_init:
             if windage_persist == 0:
                 raise ValueError("'windage_persist' cannot be 0. "
