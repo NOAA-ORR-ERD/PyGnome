@@ -44,7 +44,7 @@ def check_dependency_versions():
     If the version is not at least as current as what's defined here
     a warning is displayed
     """
-    libs = [('gridded', '0.3.4', ''),
+    libs = [('gridded', '0.3.6', ''),
             ('nucos', '3.1.1', ''),
             ('py_gd', '2.0.3', ''),
             ('adios_db', '1.0.0', 'Only required to use the ADIOS Database '
