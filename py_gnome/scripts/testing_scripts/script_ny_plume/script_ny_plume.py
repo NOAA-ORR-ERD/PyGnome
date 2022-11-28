@@ -14,7 +14,7 @@ from datetime import datetime
 from gnome import scripting as gs
 
 from gnome.utilities.distributions import WeibullDistribution, UniformDistribution
-
+from gnome.environment import Water
 # define base directory
 base_dir = os.path.dirname(__file__)
 
@@ -61,7 +61,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                              lambda_=.00456,
                              min_=.0002)  # 200 micron min
 
-    spill = gs.subsurface_plume_spill(num_elements=1000,
+    spill = gs.subsurface_spill(num_elements=1000,
                                    start_position=(-74.15,
                                                    40.5,
                                                    7.2),
@@ -75,7 +75,9 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     model.spills += spill
 
-
+    print('adding environment object:')
+    model.environment += [Water(temperature=25.0 + 273.15),] 
+    
     print('adding a RandomMover:')
     model.movers += gs.RandomMover(diffusion_coef=50000)
 

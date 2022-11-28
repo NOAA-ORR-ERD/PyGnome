@@ -64,16 +64,15 @@ def make_model():
                              min_=.0002)  # 200 micron min
     end_time = start_time + timedelta(hours=24)
 
-    spill =  gs.subsurface_plume_spill(num_elements=50,
-                                       start_position=(-76.126872, 37.680952,
-                                                       1700.0),
-                                       release_time=start_time,
-                                       distribution=wd,
-                                       amount=90,  # default volume_units=m^3
-                                       units='m^3',
-                                       end_release_time=end_time,
-                                       substance=NonWeatheringSubstance(standard_density=900),
-                                       )
+    spill = gs.subsurface_spill(num_elements=50,
+                                start_position=(-76.126872, 37.680952, 1700.0),
+                                release_time=start_time,
+                                distribution=wd,
+                                amount=90,  # default volume_units=m^3
+                                units='m^3',
+                                end_release_time=end_time,
+                                substance=NonWeatheringSubstance(standard_density=900),
+                                )
 
     model.spills += spill
 
@@ -81,15 +80,14 @@ def make_model():
                              lambda_=.00456,
                              max_=.0002)  # 200 micron max
 
-    spill = gs.surface_point_line_spill(num_elements=50,
-                                        units='m^3',
-                                        start_position=(-76.126872,
-                                                        37.680952,
-                                                        1800.0),
-                                        release_time=start_time,
-                                        amount=90,
-                                        substance = NonWeatheringSubstance(standard_density=900),
-                                        )
+    spill = gs.subsurface_spill(num_elements=50,
+                                units='m^3',
+                                start_position=(-76.126872, 37.680952, 1800.0),
+                                release_time=start_time,
+                                distribution = wd,
+                                amount=90,
+                                substance = NonWeatheringSubstance(standard_density=900),
+                                )
     model.spills += spill
 
     print('adding a RandomMover:')
@@ -128,4 +126,5 @@ if __name__ == "__main__":
     model = make_model()
     print("about to start running the model")
     for step in model:
-        print(step)
+        print(f"step: {step['step_num']}")
+        #print(step)

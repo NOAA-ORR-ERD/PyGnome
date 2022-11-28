@@ -31,9 +31,11 @@ from .release import (Release,
                       PointLineRelease,
                       GridRelease,
                       PolygonRelease,
+                      SubsurfaceRelease,
                       BaseReleaseSchema,
                       PointLineReleaseSchema,
-                      PolygonReleaseSchema)
+                      PolygonReleaseSchema,
+                      SubsurfaceReleaseSchema)
 
 from .substance import (Substance,
                         SubstanceSchema,
@@ -449,7 +451,7 @@ class Spill(BaseSpill):
         
         self.substance.initialize_LEs(to_rel, sc, environment=environment)  
         
-        self.release.initialize_LEs_Area(to_rel, sc, start_time, end_time, environment=environment)
+        self.release.initialize_LEs_post_substance(to_rel, sc, start_time, end_time, environment=environment)
 
         return to_rel
 
@@ -653,20 +655,20 @@ def grid_spill(bounds,
     return spill
 
 
-def subsurface_plume_spill(num_elements,
-                           start_position,
-                           release_time,
-                           distribution,
-                           distribution_type='droplet_size',
-                           end_release_time=None,
-                           substance=None,
-                           amount=0,
-                           units='kg',
-                           water=None,
-                           on=True,
-                           windage_range=None,
-                           windage_persist=None,
-                           name='Subsurface plume'):
+def subsurface_spill(num_elements,
+                     start_position,
+                     release_time,
+                     distribution,
+                     distribution_type='droplet_size',
+                     end_release_time=None,
+                     substance=None,
+                     amount=0,
+                     units='kg',
+                     water=None,
+                     on=True,
+                     windage_range=None,
+                     windage_persist=None,
+                     name='Subsurface plume'):
     '''
     Helper function returns a Spill object
 
@@ -720,22 +722,15 @@ def subsurface_plume_spill(num_elements,
                                 Use -1 for inifinite, otherwise it is
                                 randomly reset on this time scale.
 
-    :param str name='Surface Point/Line Release': a name for the spill.
+    :param str name='Subsurface Release': a name for the spill.
     '''
 
-    release = PointLineRelease(release_time=release_time,
+    release = SubsurfaceRelease(distribution_type=distribution_type,
+                               distribution=distribution,
+                               release_time=release_time,
                                start_position=start_position,
                                num_elements=num_elements,
                                end_release_time=end_release_time)
-
-    # This helper function is just passing parameters thru to the plume
-    # helper function which will do the work.
-    # But this way user can just specify all parameters for release and
-    # element_type in one go...
-    inits = plume_initializers(distribution_type=distribution_type,
-                               distribution=distribution,
-                               windage_range=windage_range,
-                               windage_persist=windage_persist)
     
     spill = _setup_spill(release=release,
                          water=water,
