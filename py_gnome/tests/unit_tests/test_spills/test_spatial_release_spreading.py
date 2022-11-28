@@ -69,7 +69,7 @@ class TestNESDISRelease:
         
     # step 6 ---- setup model run   
         model.full_run()
-             
+            
     def polygon_spill(self,
                       filename=None,
                       substance=None,

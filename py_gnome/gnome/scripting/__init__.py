@@ -54,7 +54,7 @@ from gnome.spills.spill import Spill
 from gnome.spills.release import PointLineRelease, PolygonRelease
 
 from gnome.spills.spill import (surface_point_line_spill,
-                                subsurface_plume_spill,
+                                subsurface_spill,
                                 grid_spill,
                                 spatial_release_spill,
                                 )
