@@ -1399,7 +1399,8 @@ class ComponentMover(CurrentMoversBase):
         vels_pat1['u'] = vels_pat1['u'] * optimize_pat1
         vels_pat1['v'] = vels_pat1['v'] * optimize_pat1
 
-        if vels_pat2 != 0 and optimize_pat2 != 0:
+        #if vels_pat2 != 0 and optimize_pat2 != 0:
+        if optimize_pat2 != 0:
             vels_pat1['u'] = vels_pat1['u'] + vels_pat2['u'] * optimize_pat2
             vels_pat1['v'] = vels_pat1['v'] + vels_pat2['v'] * optimize_pat2
 
