@@ -1,12 +1,9 @@
-
-import os
 from functools import lru_cache
 
 import numpy as np
 
 from gnome.basic_types import fate, oil_status
 from gnome.array_types import gat
-from gnome.ops.density import init_density
 from gnome.ops.viscosity import init_viscosity
 from .sample_oils import _sample_oils
 from .substance import Substance, SubstanceSchema
@@ -19,9 +16,7 @@ from gnome.persist import (NumpyArraySchema,
                            SchemaNode,
                            drop)
 
-from gnome.environment.water import Water, WaterSchema
-
-# from gnome.spills.sample_oils import _sample_oils
+from gnome.environment.water import WaterSchema
 
 
 class Density(object):
@@ -135,36 +130,6 @@ class GnomeOil(Substance):
     _schema = GnomeOilSchema
     _req_refs = ['water']
 
-    @classmethod
-    def new_from_dict(cls, dict_):
-        """
-        creates a new object from dictionary
-
-        This is base implementation and can be over-ridden by classes using
-        this mixin
-        """
-        read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
-
-        [dict_.pop(n, None) for n in read_only_attrs]
-
-        self = cls.__new__(cls)
-
-        oil_name = dict_.pop('oil_name', None)
-        filename = dict_.pop('filename', None)
-        water = dict_.pop('water', None)
-
-        super_kwargs = self._init_from_json(**dict_)
-        super(GnomeOil, self).__init__(**super_kwargs)
-
-        self.filename = filename
-        self.oil_name = oil_name
-        self.water = water
-
-        self._set_up_array_types()
-
-        return self
-
-
     def __init__(self,
                  oil_name=None,
                  filename=None,
@@ -205,34 +170,19 @@ class GnomeOil(Substance):
 
         GnomeOil("invalid_name")           ---ValueError (not in sample oils)
         """
-
-        if oil_name is not None:
-            if oil_name in _sample_oils:
-                # load from sample oil
-                oil_dict = _sample_oils[oil_name]
-                kwargs.update(oil_dict)
-                super_kwargs = self._init_from_json(**kwargs)
-            else:
-                raise ValueError(f"{oil_name} not in sample_oils: options are:\n {_sample_oils.keys()} ")
-
-        elif filename:
-            try:
-                import adios_db
-            except ImportError as err:
-                msg = "the adios_db package must be installed to use its json format"
-                raise ImportError(msg) from err
-            from adios_db.models.oil.oil import Oil as Oil_db
-            from adios_db.computation.gnome_oil import make_gnome_oil
-            oil_obj = Oil_db.from_file(filename)
-            oil_name = oil_obj.metadata.name
-            try:
-                oil_dict = make_gnome_oil(oil_obj)
-            except Exception as err:
-                raise ValueError("selected oil is not suitable for Gnome") from err
-            oil_dict['name'] = oil_name
-            kwargs.update(oil_dict)
+        try:
             super_kwargs = self._init_from_json(**kwargs)
-        else:
+        except TypeError:
+            if oil_name is not None:
+                if oil_name in _sample_oils:
+                    # load from sample oil
+                    oil_dict = _sample_oils[oil_name]
+                    kwargs.update(oil_dict)
+                else:
+                    raise ValueError(f"{oil_name} not in sample_oils: options are:\n {_sample_oils.keys()} ")
+            elif filename:
+                self.from_adiosdb_file(filename, kwargs)
+
             super_kwargs = self._init_from_json(**kwargs)
 
         super(GnomeOil, self).__init__(**super_kwargs)
@@ -242,6 +192,28 @@ class GnomeOil(Substance):
         self.water = water
 
         self._set_up_array_types()
+
+    def from_adiosdb_file(self, filename, kwargs):
+        try:
+            import adios_db
+        except ImportError as err:
+            msg = "the adios_db package must be installed to use its json format"
+            raise ImportError(msg) from err
+
+        from adios_db.models.oil.oil import Oil as Oil_db
+        from adios_db.computation.gnome_oil import make_gnome_oil
+
+        oil_obj = Oil_db.from_file(filename)
+        oil_name = oil_obj.metadata.name
+
+        try:
+            oil_dict = make_gnome_oil(oil_obj)
+        except Exception as err:
+            raise ValueError("selected oil is not suitable for Gnome") from err
+
+        oil_dict['name'] = oil_name
+        kwargs.update(oil_dict)
+
 
     def _set_up_array_types(self):
         # add the array types that this substance DIRECTLY initializes
@@ -332,6 +304,9 @@ class GnomeOil(Substance):
         """
         return id(self)
 
+    def __deepcopy__(self, memo):
+        return GnomeOil.deserialize(self.serialize())
+
     @classmethod
     def get_GnomeOil(self, oil_info, max_cuts=None):
         '''
@@ -346,14 +321,6 @@ class GnomeOil(Substance):
         json_ = super(GnomeOil, self).to_dict(json_=json_)
 
         return json_
-
-    def __deepcopy__(self, memo):
-        return GnomeOil.deserialize(self.serialize())
-
-#     @classmethod
-#     def new_from_dict(cls, dict_):
-#         substance = cls.get_GnomeOil(dict_)
-#         return substance
 
     def initialize_LEs(self, to_rel, arrs, environment=None):
         '''
@@ -372,12 +339,14 @@ class GnomeOil(Substance):
 
         sl = slice(-to_rel, None, 1)
 
-        fates = np.logical_and(arrs['positions'][sl, 2] == 0, arrs['status_codes'][sl] == oil_status.in_water)
+        fates = np.logical_and(arrs['positions'][sl, 2] == 0,
+                               arrs['status_codes'][sl] == oil_status.in_water)
         if ('fate_status' in arrs):
             arrs['fate_status'][sl] = np.choose(fates, [fate.subsurf_weather, fate.surface_weather])
 
         # initialize mass_components
         arrs['mass_components'][sl] = (np.asarray(self.mass_fraction, dtype=np.float64) * (arrs['mass'][sl].reshape(len(arrs['mass'][sl]), -1)))
+
         super(GnomeOil, self).initialize_LEs(to_rel, arrs)
 
     def _set_pc_values(self, prop, values):
@@ -417,6 +386,7 @@ class GnomeOil(Substance):
 
         return Pi
 
+    @classmethod
     def bounding_temperatures(cls, obj_list, temperature):
         '''
             General Utility Function
@@ -614,6 +584,7 @@ class GnomeOil(Substance):
             return k_rho_t
 
 
+    @classmethod
     def closest_to_temperature(cls, obj_list, temperature, num=1):
         '''
             General Utility Function
@@ -660,17 +631,6 @@ class GnomeOil(Substance):
 
             return closest
 
-
-    def aggregate_kvis(self):
-        kvis_list = [((k.ref_temp_k, k.weathering), (k.m_2_s, False))
-                     for k in self.culled_kvis()]
-
-        agg = dict(kvis_list)
-
-        return list(zip(*[(KVis(m_2_s=k, ref_temp_k=t, weathering=w), e)
-                     for (t, w), (k, e) in sorted(agg.items())]))
-
-
     def kvis_at_temp(self, temp_k=288.15, weathering=0.0):
         """
         Compute the kinematic viscosity of the oil as a function of temperature
@@ -695,8 +655,6 @@ class GnomeOil(Substance):
             self.determine_visc_constants()
 
         return self._visc_A * np.exp(self._k_v2 / temp_k)
-
-
 
     def determine_visc_constants(self):
         '''
@@ -729,7 +687,7 @@ class GnomeOil(Substance):
             # temps = np.array(kvis_ref_temps)
             b = np.log(kvis)
             A = np.c_[np.ones_like(b), 1.0 / np.array(kvis_ref_temps)]
-            x, residuals, rank, s = np.linalg.lstsq(A, b, rcond=None)
+            x, _, _, _ = np.linalg.lstsq(A, b, rcond=None)
             self._k_v2 = x[1]
             self._visc_A = np.exp(x[0])
         return
