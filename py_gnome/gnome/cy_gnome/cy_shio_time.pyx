@@ -14,7 +14,6 @@ from .utils cimport (ShioTimeValue_c,
                     _NewHandle, _GetHandleSize)
 from .cy_ossm_time cimport CyOSSMTime, dynamic_cast_ptr
 from .cy_helpers import filename_as_bytes
-from .cy_helpers cimport to_bytes
 
 
 cdef class CyShioTime(CyOSSMTime):
@@ -39,7 +38,7 @@ cdef class CyShioTime(CyOSSMTime):
             self.shio = NULL
 
     def __init__(self,
-                 unicode filename,
+                 filename,
                  scale_factor=1,
                  daylight_savings_off=False,  # let shio figure out by default
                  yeardata=None):
@@ -48,7 +47,6 @@ cdef class CyShioTime(CyOSSMTime):
         scale_factor. The file_format is always set to 0 since shio is neither
         in 'uv', nor 'r-theta' format and Shio does not use this for data read
         """
-        print(filename)
         super(CyShioTime, self).__init__(filename, 0, scale_factor)
 
         # base class will set file_format to basic_types.ts_format.uv
@@ -81,7 +79,7 @@ cdef class CyShioTime(CyOSSMTime):
 
         # path separator as a bytes object
         cdef bytes bsep = os.sep.encode("ASCII")
-        yeardata_path = to_bytes(unicode(yeardata_path_))
+        yeardata_path = filename_as_bytes(yeardata_path_)
 
         if os.path.exists(yeardata_path):
             if yeardata_path[-1] != bsep:
@@ -100,8 +98,11 @@ cdef class CyShioTime(CyOSSMTime):
         Call Shio's ReadTimeValues which has different signature than base
         class. Also set _file_format to 0 since it isn't in 'uv' or 'r-theta'
         format
+
+        :param filename: path of the file
+        :type filename: PathLike
         '''
-        file_ = filename_as_bytes(filename)
+        cdef bytes file_ = filename_as_bytes(filename)
         err = self.shio.ReadShioValues(file_)
         self._raise_errors(err)
 
@@ -115,7 +116,7 @@ cdef class CyShioTime(CyOSSMTime):
     property yeardata:
         def __get__(self):
             """ get path of yeardata files """
-            return self.shio.fYearDataPath.decode(locale.getpreferredencoding())
+            return os.fsdecode(self.shio.fYearDataPath)
 
         def __set__(self, value):
             """ set path of yeardata files """
@@ -129,7 +130,7 @@ cdef class CyShioTime(CyOSSMTime):
             """
             cdef bytes sType
             sType = self.shio.fStationType
-            return sType.decode(locale.getpreferredencoding())
+            return sType.decode('ascii')
 
     def __repr__(self):
         """

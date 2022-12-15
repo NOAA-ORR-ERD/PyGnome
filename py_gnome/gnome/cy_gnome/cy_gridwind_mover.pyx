@@ -10,7 +10,7 @@ from .movers cimport GridWindMover_c, WindMover_c, Mover_c
 
 from gnome import basic_types
 from .cy_mover cimport CyWindMoverBase
-from gnome.cy_gnome.cy_helpers cimport to_bytes
+from gnome.cy_gnome.cy_helpers import filename_as_bytes
 
 
 cdef extern from *:
@@ -57,14 +57,12 @@ cdef class CyGridWindMover(CyWindMoverBase):
         cdef OSErr err
         cdef bytes time_grid, topology
 
-        time_grid_file = os.path.normpath(time_grid_file)
-        time_grid = to_bytes(unicode(time_grid_file))
+        time_grid = filename_as_bytes(time_grid_file)
 
         if topology_file is None:
             err = self.grid_wind.TextRead(time_grid, '')
         else:
-            topology_file = os.path.normpath(topology_file)
-            topology = to_bytes(unicode(topology_file))
+            topology = filename_as_bytes(topology_file)
             err = self.grid_wind.TextRead(time_grid, topology)
 
         if err != 0:
@@ -80,9 +78,8 @@ cdef class CyGridWindMover(CyWindMoverBase):
 
         """
         cdef OSErr err
-        topology_file = os.path.normpath(topology_file)
-        topology_file = to_bytes(unicode(topology_file))
-        err = self.grid_wind.ExportTopology(topology_file)
+        cdef topology_file_b = filename_as_bytes(topology_file)
+        err = self.grid_wind.ExportTopology(topology_file_b)
         if err != 0:
             """
             For now just raise an OSError - until the types of possible errors

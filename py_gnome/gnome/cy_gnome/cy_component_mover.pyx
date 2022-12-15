@@ -46,7 +46,8 @@ cdef class CyComponentMover(CyCurrentMover):
 
         """
         cdef OSErr err
-
+        cdef bytes f1
+        cdef bytes f2
         f1 = filename_as_bytes(cats_file1)
         if cats_file2:
             f2 = filename_as_bytes(cats_file2)
@@ -268,43 +269,6 @@ cdef class CyComponentMover(CyCurrentMover):
         #self.cats.bTimeFileActive = True   # What is this?
         return True
             
-#     def text_read(self, cats_pattern1, cats_pattern2=None):
-#         """
-#         read the current files
-#         """
-#         cdef OSErr err
-#         cdef bytes path1_
-#         cdef bytes path2_
-#         
-#         fname1 = os.path.normpath(cats_pattern1)
-#         path1_ = to_bytes( unicode(cats_pattern1))
-#         
-#         if os.path.exists(path1_):
-#             self.catsmover1 = new CATSMover_c()
-#             #self.cats_pattern1 = dynamic_cast_ptr(self.catsmover1)
-#             #err = self.cats_pattern1.TextRead(path1_)
-#             err = self.catsmover1.TextRead(path1_)
-#             if err != False:
-#                 raise ValueError("CATSMover.text_read(..) returned an error. OSErr: {0}".format(err))
-#         else:
-#             raise IOError("No such file: " + path1_)
-#         
-#         if os.path.exists(cats_pattern2):
-#             fname2 = os.path.normpath(cats_pattern2)
-#             path2_ = to_bytes( unicode(cats_pattern2))
-#             if os.path.exists(path2_):
-#                 self.catsmover2 = new CATSMover_c()
-#                 #self.cats_pattern2 = dynamic_cast_ptr(self.catsmover2)
-#                 #err = self.cats_pattern2.TextRead(path2_)
-#                 err = self.catsmover2.TextRead(path2_)
-#                 if err != False:
-#                     raise ValueError("CATSMover.text_read(..) returned an error. OSErr: {0}".format(err))
-#             else:
-#                 raise IOError("No such file: " + path2_)
-# 
-#         return True
-
-
     def get_move(self,
                  model_time,
                  step_len,

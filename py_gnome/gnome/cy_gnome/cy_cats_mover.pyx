@@ -235,10 +235,13 @@ cdef class CyCatsMover(CyCurrentMover):
 
     def text_read(self, fname):
         """
+        :param fname: path of the file to be read
+        :type fname: PathLike
+
         read the current file
         """
         cdef OSErr err
-        path_ = filename_as_bytes(fname)
+        cdef bytes  path_ = filename_as_bytes(fname)
 
         err = self.cats.TextRead(path_)
         if err is not False:
