@@ -11,7 +11,7 @@ from gnome import basic_types
 
 from .utils cimport _GetHandleSize
 
-from gnome.cy_gnome.cy_helpers cimport to_bytes
+from gnome.cy_gnome.cy_helpers import filename_as_bytes
 from gnome.cy_gnome.cy_ossm_time cimport CyOSSMTime
 from gnome.cy_gnome.cy_shio_time cimport CyShioTime
 
@@ -42,14 +42,12 @@ cdef class CyCurrentCycleMover(CyMover):
         cdef OSErr err
         cdef bytes time_grid, topology
 
-        time_grid_file = os.path.normpath(time_grid_file)
-        time_grid = to_bytes(unicode(time_grid_file))
+        time_grid = filename_as_bytes(time_grid_file)
 
         if topology_file is None:
             err = self.current_cycle.TextRead(time_grid, '')
         else:
-            topology_file = os.path.normpath(topology_file)
-            topology = to_bytes(unicode(topology_file))
+            topology =  filename_as_bytes(topology_file)
             err = self.current_cycle.TextRead(time_grid, topology)
 
         if err != 0:
@@ -60,23 +58,6 @@ cdef class CyCurrentCycleMover(CyMover):
             raise OSError("{0}.TextRead returned an error."
                           .format(self.__class__.__name__))
 
-#     def export_topology(self, topology_file):
-#         """
-#         .. function::export_topology
-#
-#         """
-#         cdef OSErr err
-#         topology_file = os.path.normpath(topology_file)
-#         topology_file = to_bytes(unicode(topology_file))
-#         err = self.current_cycle.ExportTopology(topology_file)
-#         if err != 0:
-#             """
-#             For now just raise an OSError - until the types of
-#             possible errors are defined and enumerated
-#             """
-#             raise OSError('CurrentCycleMover_c.ExportTopology '
-#                           'returned an error.')
-#
     def __init__(self, current_scale=1,
                  uncertain_duration=24*3600,
                  uncertain_time_delay=0,
