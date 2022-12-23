@@ -27,6 +27,8 @@ These scripts are structured to be run in a batch, so may not reflect how to wri
 
 They also have a few features to make them suitable for testing and using in a git repo, for example, auto-downloading data files.
 
+If you are adapting these for your own use, you will likely want to simplify them -- for instance, you don't need a "make_model" function, and you don't  need to use the ``get_datafile`` function -- that is for auto-downloading test files from NOAA's server.
+
 Each script can be run by itself, e.g. ::
 
 
