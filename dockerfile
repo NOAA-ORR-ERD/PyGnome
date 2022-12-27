@@ -20,10 +20,11 @@ RUN cd pygnome && conda install python=$PYTHON_VER \
 
 RUN conda list
 
-RUN conda update -y libgd
+# this kludge should no longer be required
+# RUN conda update -y libgd
 
 # only because this was giving us problems
-RUN python -c "import py_gd"
+# RUN python -c "import py_gd"
 
 # adios_db requirements should already be there from the deploy_requirements file
 # RUN cd pygnome/oil_database/adios_db && conda install --file conda_requirements.txt
