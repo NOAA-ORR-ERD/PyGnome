@@ -125,7 +125,9 @@ test_pygnome_windows:
     - python -c "import gnome"  # make sure that it imports
 
     - conda install -y --file conda_requirements_test.txt
-    - cd ./py_gnome/tests/unit_tests && pytest --runslow
+    - cd ./py_gnome/tests/unit_tests
+    - pytest --runslow
+    - cd ../../..
 
 build_develop:
   stage: build
