@@ -104,10 +104,13 @@ test_pygnome_windows:
     - windows
     - visual-studio-22
   allow_failure: true
+  before_script:
+    - echo $CWD
+    - dir
+    - echo $CI_PIPELINE_ID
+    - activate ./$CI_PIPELINE_ID
   script:
     - echo "compiling PyGNOME"
-    - echo $CWD
-    - ls -la
 
     # get the adios_db code: needed for tests and requirements
     - git clone --depth 1 -b develop https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.orr.noaa.gov/gnome/oil_database/oil_database.git
