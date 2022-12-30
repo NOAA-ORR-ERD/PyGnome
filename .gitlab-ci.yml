@@ -109,6 +109,7 @@ test_pygnome_windows:
     - dir
     - echo $CI_PIPELINE_ID
     - activate ./$CI_PIPELINE_ID
+    - conda config --get channels
   script:
     - echo "compiling PyGNOME"
 
