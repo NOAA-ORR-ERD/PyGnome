@@ -54,7 +54,7 @@ oil_status_map = {num: name for name, num in oil_status.__members__.items()}
 # we should clean this up! -- on Python3, I think np.compat.long == int
 # can we just decide on a int width for all of these??
 if sys.platform == 'win32':
-    np_long = np.int
+    np_long = np.int32
 elif sys.platform in ('darwin', 'linux2', 'linux'):
     if sys.maxsize > 2147483647:
         np_long = np.compat.long
