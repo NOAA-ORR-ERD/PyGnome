@@ -41,7 +41,7 @@ psutil
 pyzmq
 python-dateutil
 geojson
-colander
+colander=1.8.3
 
 tblib # still needed for child process exception handling.
 
