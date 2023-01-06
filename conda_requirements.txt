@@ -41,7 +41,7 @@ psutil
 pyzmq
 python-dateutil
 geojson
-colander
+colander=1.8.3
 
 tblib # still needed for child process exception handling.
 
@@ -51,7 +51,7 @@ progressbar
 
 
 # NOAA maintained packages
-gridded=0.3.6
+gridded=0.3.9
 pynucos
 cell_tree2d
 py_gd=2.*
