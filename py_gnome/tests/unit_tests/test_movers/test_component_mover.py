@@ -54,7 +54,25 @@ model_time = time_utils.sec_to_date(time_utils.date_to_sec(rel_time))
 # test against.
 # If any of the above setup parameters change, these results will not match!
 
+
 def test_loop():
+    """
+    test one time step with no uncertainty on the spill
+    checks there is non-zero motion.
+    also checks the motion is same for all LEs
+    """
+
+    delta = run_test_loop()
+
+    _assert_move(delta)
+
+    assert np.all(delta[:, 0] == delta[0, 0])  # lat move matches for all LEs
+    assert np.all(delta[:, 1] == delta[0, 1])  # long move matches for all LEs
+    assert np.all(delta[:, 2] == 0)  # 'z' is zeros
+
+
+# fixme -- should this be a fixture?
+def run_test_loop():
     """
     test one time step with no uncertainty on the spill
     checks there is non-zero motion.
@@ -78,7 +96,7 @@ def test_loop():
     return delta
 
 
-def test_uncertain_loop():
+def run_uncertain_loop():
     """
     test one time step with uncertainty on the spill
     checks there is non-zero motion.
@@ -100,8 +118,8 @@ def test_certain_uncertain():
     make sure certain and uncertain loop results in different deltas
     """
 
-    delta = test_loop()
-    u_delta = test_uncertain_loop()
+    delta = run_test_loop()
+    u_delta = run_uncertain_loop()
     print()
     print(delta)
     print(u_delta)
