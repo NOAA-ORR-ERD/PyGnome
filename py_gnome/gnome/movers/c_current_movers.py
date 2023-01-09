@@ -1390,7 +1390,9 @@ class ComponentMover(CurrentMoversBase):
         check if pat2 exists
         """
         vels_pat1 = self.mover._get_velocity_handle(1)
-        vels_pat2 = self.mover._get_velocity_handle(2)
+        vels_pat2 = 0
+        if self.filename2 is not None:
+            vels_pat2 = self.mover._get_velocity_handle(2)
 
         optimize_pat1, optimize_pat2 = self.get_optimize_values(model_time)
 
