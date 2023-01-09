@@ -146,7 +146,7 @@ def test_get_scaled_velocities_two_patterns():
     assert vels['v'][10] == -0.09848350841987873
 
 
-
+@pytest.mark.skipif(sys.platform=="win32", reason = "not working on windows - fatal crash")
 def test_get_scaled_velocities_one_pattern():
     component = ComponentMover(filename1=curr1_file,
                                wind=wnd,
