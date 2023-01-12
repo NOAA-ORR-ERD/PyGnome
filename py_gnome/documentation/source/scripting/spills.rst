@@ -9,18 +9,18 @@ The Spill Class
 Setting up the Spill object can be tricky because it requires both a Release object and a Substance Object.
 Some helper functions are described in the next section that simplify this task. But first, we'll show some detail on creating a spill to help understand the components.
  
-The :class:`gnome.spill.release.Release` Object specifies the details of the release (e.g. where, when, how many elements). 
+The :class:`gnome.spills.release.Release` Object specifies the details of the release (e.g. where, when, how many elements). 
 Some of the subclasses of this include:
 
-* :class:`gnome.spill.release.PointLineRelease` - a release of elements at a point or along a line, either instantaneously or over a time interval
+* :class:`gnome.spills.release.PointLineRelease` - a release of elements at a point or along a line, either instantaneously or over a time interval
 
-* :class:`gnome.spill.release.PolygonRelease` - an instantaneous release of elements distributed randomly in specified polygons.
+* :class:`gnome.spills.release.PolygonRelease` - an instantaneous release of elements distributed randomly in specified polygons.
 
-The :class:`gnome.spill.substance.Substance` Object provides information on the type of substance spilled. It's possible to add multiple spills to the model, they must all use the same Substance object. There are currently two classes that can be used to instantiate substances:
+The :class:`gnome.spills.substance.Substance` Object provides information on the type of substance spilled. It's possible to add multiple spills to the model, they must all use the same Substance object. There are currently two classes that can be used to instantiate substances:
 
-* :class:`gnome.spill.substance.GnomeOil` - used for creating a spill that will include oil weathering processes
+* :class:`gnome.spills.substance.GnomeOil` - used for creating a spill that will include oil weathering processes
 
-* :class:`gnome.spill.substance.NonWeatheringSubstance` - used for running transport simulations with conservative elements (i.e. the element properties do not change over time).
+* :class:`gnome.spills.substance.NonWeatheringSubstance` - used for running transport simulations with conservative elements (i.e. the element properties do not change over time).
 
 Non-weathering Example
 ----------------------
