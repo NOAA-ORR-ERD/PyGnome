@@ -45,17 +45,22 @@ cdef class CyOSSMTime(object):
         if self.time_dep is not NULL:
             del self.time_dep
 
-    def __init__(self, unicode filename, int file_format=0,
+    def __init__(self,
+                 filename,
+                 int file_format=0,
                  scale_factor=1,
                  extrapolation_is_allowed=False):
         """
         Initialize object - takes either file or time value pair to initialize
 
-        :param basestring filename: path to file containing time series data.
+        :param filename: path to file containing time series data.
             It valid user_units are defined in the file, it uses them;
             otherwise, it defaults the user_units to meters_per_sec.
+        :type filename: PathLike
+
         :param int file_format: one of the values defined by enum type,
             gnome.basic_types.ts_format
+
         :param int scale_factor: The timeseries is scaled by this constant
 
         .. note:: This is a wrapper around CyOSSMTime. CyTimeseries in same
@@ -65,16 +70,17 @@ cdef class CyOSSMTime(object):
         if not os.path.exists(filename):
             raise IOError("No such file: " + filename)
 
+        cdef str s_filename = os.fspath(filename)
         self._file_format = file_format
-        self._read_time_values(filename)
-        self._cy_filename = filename
+        self._read_time_values(s_filename)
+        self._cy_filename = s_filename
 
         self.time_dep.fScaleFactor = scale_factor
         self.time_dep.extrapolationIsAllowed = extrapolation_is_allowed
 
     def __reduce__(self):
         return (
-            CyOSSMTime, 
+            CyOSSMTime,
             (
                 self._cy_filename,
                 self._file_format,
@@ -109,7 +115,7 @@ cdef class CyOSSMTime(object):
             derived classes may initialize with timeseries in which case this
             will be '' or None
             '''
-            cdef unicode fname = self.time_dep.fileName.decode(locale.getpreferredencoding())
+            cdef unicode fname = os.fsdecode(self.time_dep.fileName)
             if fname == '':
                 return None
             return fname
@@ -119,9 +125,11 @@ cdef class CyOSSMTime(object):
             '''
             used by repr and pickle
             todo: check if we really need this - if we don't need to pickle
-            then just do away with this code
+            then just do away with this code.
+
+            Note: pickle is used by multiprocessing
             '''
-            cdef unicode fname = self.time_dep.filePath.decode(locale.getpreferredencoding())
+            cdef unicode fname = os.fsdecode(self.time_dep.filePath)
             return (fname, None)[fname == '']
 
     property scale_factor:
@@ -174,8 +182,7 @@ cdef class CyOSSMTime(object):
             sName = self.time_dep.fStationName
             if not sName:   # empty string
                 return None
-
-            return sName.decode(locale.getpreferredencoding())
+            return sName.decode('ascii')
 
     property extrapolation_is_allowed:
         def __get__(self):
@@ -340,14 +347,16 @@ cdef class CyTimeseries(CyOSSMTime):
         else:
             self.time_dep = NULL
 
-    def __init__(self, unicode filename=None, int file_format=0,
+    def __init__(self,
+                 filename=None,
+                 int file_format=0,
                  cnp.ndarray[TimeValuePair, ndim=1] timeseries=None,
                  scale_factor=1,
                  extrapolation_is_allowed=False):
         """
         Initialize object - takes either file or time value pair to initialize
 
-        :param unicode filename: path to file containing time series data.
+        :param PathLike filename: path to file containing time series data.
             It valid user_units are defined in the file, it uses them;
             otherwise, it defaults the user_units to meters_per_sec.
         :param int file_format: one of the values defined by enum type,

@@ -89,6 +89,7 @@ public:
 	//virtual WorldPoint		GetStationLocation (void);
 	
 	virtual	double			GetDeriv (Seconds t1, double val1, Seconds t2, double val2, Seconds theTime);
+			Boolean			InHeightTimeRange(Seconds forTime);
 	virtual	OSErr			GetConvertedHeightValue(Seconds forTime, VelocityRec *value);
 	virtual	OSErr			GetProgressiveWaveValue(const Seconds& current_time, VelocityRec *value);
 	virtual OSErr 			GetLocationInTideCycle(const Seconds& model_time, short *ebbFloodType, float *fraction);

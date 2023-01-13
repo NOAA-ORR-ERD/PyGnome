@@ -11,7 +11,7 @@ from .movers cimport IceWindMover_c, GridWindMover_c, WindMover_c
 
 from gnome import basic_types
 from gnome.cy_gnome.cy_gridwind_mover cimport CyGridWindMover
-from gnome.cy_gnome.cy_helpers cimport to_bytes
+from gnome.cy_gnome.cy_helpers import filename_as_bytes
 
 
 cdef extern from *:
@@ -46,14 +46,12 @@ cdef class CyIceWindMover(CyGridWindMover):
         cdef OSErr err
         cdef bytes time_grid, topology
 
-        time_grid_file = os.path.normpath(time_grid_file)
-        time_grid = to_bytes(unicode(time_grid_file))
+        time_grid = filename_as_bytes(time_grid_file)
 
         if topology_file is None:
             err = self.grid_wind_ice.TextRead(time_grid, '')
         else:
-            topology_file = os.path.normpath(topology_file)
-            topology = to_bytes(unicode(topology_file))
+            topology = filename_as_bytes(topology_file)
             err = self.grid_wind_ice.TextRead(time_grid, topology)
 
         if err != 0:

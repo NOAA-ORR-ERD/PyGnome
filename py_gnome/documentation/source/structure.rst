@@ -15,7 +15,11 @@ Primary Base Classes in ``gnome``
 
 **The Model Object** :mod:`gnome.model.Model`
     The Model Object is used to initialize a scenario and run the simulation. It contains various parameters
+<<<<<<< HEAD
     including model start time, duration, and time step. All other objects are added to the Model. The primary point of the Model is to provide the framework to act on the particles over time -- the model itself does not include any assumptions about what the elements represent or what is acting on them.
+=======
+    including model start time, duration, and time step. All other objects are added to the Model. The primariy point of the model is to act on the particles over time -- the model itself does not include any assumptions about what the elements represent or what is acting on them.
+>>>>>>> 62e446c936a154803b1839f278a952ae703e3d86
 
 **The Map Object** :mod:`gnome.map.GnomeMap`
     The Map Object defines the domain of the model and handles interaction with the boundaries, such as particle beaching.

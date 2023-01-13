@@ -4,7 +4,6 @@ import os
 
 from .type_defs cimport *
 from .grids cimport GridMap_c
-from gnome.cy_gnome.cy_helpers cimport to_bytes
 from gnome.cy_gnome.cy_helpers import filename_as_bytes
 
 #cimport cy_mover
@@ -27,9 +26,9 @@ cdef class CyGridMap:
         
         """
         cdef OSErr err
-        grid_map_file = os.path.normpath(grid_map_file)
-        grid_map_file = to_bytes( unicode(grid_map_file))
-        err = self.map.TextRead(grid_map_file)
+
+        cdef bytes grid_map_file_b = filename_as_bytes(grid_map_file)
+        err = self.map.TextRead(grid_map_file_b)
         if err != 0:
             """
             For now just raise an OSError - until the types of possible errors are defined and enumerated
@@ -47,9 +46,8 @@ cdef class CyGridMap:
         
         """
         cdef OSErr err
-        topology_file = os.path.normpath(topology_file)
-        topology_file = to_bytes( unicode(topology_file))
-        err = self.map.ExportTopology(topology_file)
+        cdef bytes topology_file_b = filename_as_bytes(topology_file)
+        err = self.map.ExportTopology(topology_file_b)
         if err != 0:
             """
             For now just raise an OSError - until the types of possible errors are defined and enumerated

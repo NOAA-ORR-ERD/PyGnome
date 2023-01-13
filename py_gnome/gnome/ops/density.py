@@ -2,6 +2,7 @@ import logging
 import numpy as np
 from gnome.ops import default_constants
 from .aggregated_data import aggregate as agg_func
+from gnome.array_types import gat
 
 logger = logging.getLogger(__name__)
 
@@ -56,49 +57,50 @@ def recalc_density(sc, water=None, aggregate=True):
 
     substance = sc.substance
     water_temp = water_rho = None
-    if substance.is_weatherable:
-        if water is None:
-            water_temp = default_constants.default_water_temperature
-            water_rho = default_constants.default_water_density
-        else:
-            water_temp = water.get('temperature', 'K')
-            water_rho = water.get('density')
+    if substance.is_weatherable: 
+        for substance, data in sc.itersubstancedata(sc.array_types):  
+            if len(data['mass']) == 0:
+                continue    
+                
+            if water is None:
+                water_temp = default_constants.default_water_temperature
+                water_rho = default_constants.default_water_density
+            else:
+                water_temp = water.get('temperature', 'K')
+                water_rho = water.get('density')
 
-        if not substance.is_weatherable or len(sc['density']) == 0:
-            #substance isn't weatherable or no elements are present
-            if aggregate:
-                agg_func(sc, 0)
-            return
+            if not substance.is_weatherable or len(data['density']) == 0:
+                #substance isn't weatherable or no elements are present
+                if aggregate:
+                    agg_func(data, 0)
+                return
+                
+            k_rho = _get_k_rho_weathering_dens_update(substance, water_temp)
+            # sub-select mass_components array by substance.num_components.
+            # Currently, physics for modeling multiple spills with different
+            # substances is not correctly done in the same model. However,
+            # let's put some basic code in place so the data arrays can infact
+            # contain two substances and the code does not raise exceptions.
+            # mass_components are zero padded for substance which has fewer
+            # psuedocomponents. Subselecting mass_components array by
+            # [mask, :substance.num_components] ensures numpy operations work
+            mass_frac = (data['mass_components'][:, :substance.num_components]/data['mass'].reshape(len(data['mass']), -1))
 
-        k_rho = _get_k_rho_weathering_dens_update(substance, water_temp)
+            # check if density becomes > water, set it equal to water in this
+            # case - 'density' is for the oil-water emulsion
+            oil_rho = k_rho*(substance.component_density * mass_frac).sum(1)
 
-        # sub-select mass_components array by substance.num_components.
-        # Currently, physics for modeling multiple spills with different
-        # substances is not correctly done in the same model. However,
-        # let's put some basic code in place so the data arrays can infact
-        # contain two substances and the code does not raise exceptions.
-        # mass_components are zero padded for substance which has fewer
-        # psuedocomponents. Subselecting mass_components array by
-        # [mask, :substance.num_components] ensures numpy operations work
-        mass_frac = \
-            (sc['mass_components'][:, :substance.num_components] /
-                sc['mass'].reshape(len(sc['mass']), -1))
+            # oil/water emulsion density
+            new_rho = (data['frac_water'] * water_rho +
+                        (1 - data['frac_water']) * oil_rho)
 
-        # check if density becomes > water, set it equal to water in this
-        # case - 'density' is for the oil-water emulsion
-        oil_rho = k_rho*(substance.component_density * mass_frac).sum(1)
+            if np.any(new_rho > water_rho):
+                new_rho[new_rho > water_rho] = water_rho
+                logger.info('During density update, density is larger '
+                                    'than water density - set to water density')
 
-        # oil/water emulsion density
-        new_rho = (sc['frac_water'] * water_rho +
-                    (1 - sc['frac_water']) * oil_rho)
-
-        if np.any(new_rho > water_rho):
-            new_rho[new_rho > water_rho] = water_rho
-            logger.info('During density update, density is larger '
-                                'than water density - set to water density')
-
-        sc['density'] = new_rho
-        sc['oil_density'] = oil_rho
+            data['density'] = new_rho
+            data['oil_density'] = oil_rho
 
     sc.update_from_fatedataview(fate_status='all')
 

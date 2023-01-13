@@ -29,9 +29,17 @@ cdef class CyTimeGridVel(object):
         def __set__(self, value):
             self.timegrid.fTimeShift = value
 
-    def load_data(self, basestring datafile, basestring topology=None):
+    def load_data(self, datafile, topology=None):
+        """
+        load the data from files
+
+        :param datafile: PathLike object to load the data from
+
+        :param topology=None: PathLike object to load topology data.
+        """
         cdef OSErr err
         cdef bytes bdatafile
+        cdef bytes btopology
 
         bdatafile = filename_as_bytes(datafile)
 

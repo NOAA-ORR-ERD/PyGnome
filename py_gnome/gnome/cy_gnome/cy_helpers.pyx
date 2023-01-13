@@ -1,6 +1,10 @@
+cimport cython
 from libc cimport stdlib
+from libc.stdio cimport FILE, fopen, fread
+
 import locale
 import os
+import sys
 
 cimport numpy as cnp
 import numpy as np
@@ -51,37 +55,119 @@ def rand():
     return stdlib.rand()
 
 
-cdef bytes to_bytes(unicode ucode):
-    """
-    Encode a string to its unicode type to default file system encoding for
-    the OS.
-    It uses locale.getpreferredencoding() to get the filesystem encoding
-        For the mac it encodes it as utf-8.
-        For windows this appears to be cp1252. (on the systems we tested on)
+# no longer used -- filename_as_bytes is the one to use.
+# cdef bytes to_bytes(unicode ucode):
+#     """
+#     Encode a string to its unicode type to default file system encoding for
+#     the OS.
 
-    The C++ expects char * so  either of these encodings appear to work. If the
-    getpreferredencoding returns a type of encoding that is incompatible with
-    a char * C++ input, then things will fail.
-    """
-    cdef bytes byte_string
+#     This is only a thin wrapper around os.fsencode().
 
-    try:
-        byte_string = ucode.encode(locale.getpreferredencoding())
-    except Exception as err:
-        raise err
+#     The only point is for it to be a cdef function that explicitly takes
+#     a unicode object -- which is to say, a py3 string.
 
-    return byte_string
+#     We could probably deprecate this and just use os.fsencode() directly.
 
+#     os.fsencode takes any PathLike object (e.g. pathlib.Path)
 
-def filename_as_bytes(basestring filename not None):
+#     For the mac and most linuxes, it encodes it as utf-8.
+# cdef bytes to_bytes(unicode ucode):
+#     """
+#     Encode a string to its unicode type to default file system encoding for
+#     the OS.
+
+#     This is only a thin wrapper around os.fsencode().
+
+#     The only point is for it to be a cdef function that explicitly takes
+#     a unicode object -- which is to say, a py3 string.
+
+#     We could probably deprecate this and just use os.fsencode() directly.
+
+#     os.fsencode takes any PathLike object (e.g. pathlib.Path)
+
+#     For the mac and most linuxes, it encodes it as utf-8.
+
+#     For Windows this is usually cp1252, though could be different.
+
+#     This should work for any C/C++ code that uses a char * for filenames.
+#     """
+#     cdef bytes byte_string
+
+#     byte_string = os.fsencode(ucode)
+
+#     For Windows this is usually cp1252, though could be different.
+
+#     This should work for any C/C++ code that uses a char * for filenames.
+#     """
+#     cdef bytes byte_string
+
+#     byte_string = os.fsencode(ucode)
+
+#     return byte_string
+
+cpdef bytes filename_as_bytes(filepath):
     '''
-    filename is a python basestring (either string or unicode).
-    make it a unicode, then call to_bytes to encode correctly and return
-    a byte string
+    filename is any python "pathlike" object
+
+    usually a string or pathlib.Path object
+
+    returns a bytes object, in the local filesystem encoding
+
+    NOTE: this is pretty much just a wrapper around os.fsencode()
+    (it also calls os.path.normpath)
+
+    This *should* work on windows -- but doesn't, so restricting Windows to latin-1
     '''
 
     cdef bytes file_
-    filename = os.path.normpath(filename)
-    file_ = to_bytes(unicode(filename))
+    filepath = os.path.normpath(filepath)
+    # If the file doesn't exist, it doesn't matter if it's encoded properly
+    #   and we want users to get the FileNotFound Error
+    #if os.path.exists(filepath):
+        # This should get removed if we can figure out how to do this right
+        # Windows *should* support all of Unicode
+    if sys.platform.startswith("win"):
+        try:
+            file_ = filepath.encode('cp1252')
+            return file_
+        except UnicodeEncodeError:
+            raise ValueError("gnome only supports latin filenames (cp-1252) on this system:\n"
+                             f"{filepath} not supported")
+    else:
+        try:
+            file_ = os.fsencode(filepath)
+        except UnicodeEncodeError:
+            raise ValueError("Filename: {} is not legal on this system".format(filepath))
 
     return file_
+
+def read_file(path):
+    """
+    reads the ascii text from a file
+
+    only here to test the filename_as_bytes function
+    """
+
+    cdef bytes bpath = filename_as_bytes(path)
+
+    cdef FILE* fp
+    fp = fopen(bpath, "r") # The type of "p" is "FILE*", as returned by fopen().
+
+    if fp is NULL:
+        raise FileNotFoundError("No such file or directory: " + str(path))
+    # else:
+    #     print("file opened:", bpath)
+
+    cdef char buffer[101]
+
+    num_read = fread(buffer, 1, 100, fp)
+
+    # contents = bytearray(100)
+    # for i in range(100):
+    #      contents[i] =  buffer[i]
+    cdef bytes contents = buffer #[:100]
+
+    # return buffer[:100]
+    return contents[:num_read]
+
+

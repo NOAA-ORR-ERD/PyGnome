@@ -213,8 +213,8 @@ class Model(GnomeId):
 
         :param time_step=timedelta(minutes=15): model time step in seconds
                                                 or as a timedelta object. NOTE:
-                                                if you pass in a number,
-                                                it WILL be seconds
+                                                if you pass in a number, it WILL
+                                                be interpreted as seconds
 
         :param start_time=datetime.now(): start time of model, datetime
                                           object. Rounded to the nearest hour.
@@ -1074,8 +1074,10 @@ class Model(GnomeId):
 
     def step(self):
         '''
-        Steps the model forward (or backward) in time. Needs testing for
-        hindcasting.
+        Steps the model forward in time.
+
+        NOTE: in theory, it could also go backward with a negative time step,
+        for hindcasting, but that has not been tested.
         '''
         isValid = True
         for sc in self.spills.items():

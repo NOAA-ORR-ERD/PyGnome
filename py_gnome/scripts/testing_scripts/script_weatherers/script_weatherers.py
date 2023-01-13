@@ -27,8 +27,7 @@ from gnome.weatherers import (Emulsification,
                               NaturalDispersion,
                               ChemicalDispersion,
                               Burn,
-                              Skimmer,
-                              WeatheringData)
+                              Skimmer,)
 
 # define base directory
 base_dir = os.path.dirname(__file__)

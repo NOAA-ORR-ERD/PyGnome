@@ -502,7 +502,7 @@ class FayGravityViscous(Weatherer):
             array inplace. However, the input arrays could be copies so best
             to also return the updates.
         '''
-
+          
         if np.any(age == 0):
             msg = "use init_area for age == 0"
             raise ValueError(msg)
@@ -515,9 +515,10 @@ class FayGravityViscous(Weatherer):
                                            blob_init_vol,
                                            self.spreading_const)
         # once the area computed from previous ts is larger than the max_area_le at current ts area needs to remain
-        mask = np.logical_and(age > t0, area < max_area_le)
+        mask = np.logical_and(age > t0, area * (1.0 + 1.e-4) < max_area_le)
         s_mask = np.logical_and(mask, area > 0.0)
         if len(area[s_mask]) > 0:
+        
             C = (PI *
                  self.spreading_const[2] ** 2 *
                  (blob_init_vol ** 2 *
@@ -621,16 +622,16 @@ class FayGravityViscous(Weatherer):
 
         if not self.on or not sc.substance.is_weatherable:
             return
-
+        
         for substance, data in sc.itersubstancedata(self.array_types):
             
+            if self._init_relative_buoyancy is None:
+                self._set_init_relative_buoyancy(substance)
+                
             if len(data['fay_area']) == 0:
                 # no particles released yet
                 continue
-             
-            if self._init_relative_buoyancy is None:
-                self._set_init_relative_buoyancy(substance)
-     
+            
             mask = data['fay_area'] == 0
             
             # looping through spills, as each spill has a different initial volume
