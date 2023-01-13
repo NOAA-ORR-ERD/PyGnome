@@ -1,7 +1,8 @@
 .. include:: ./links.rst
 
+############
 Introduction
-============
+############
 
 PyGNOME is general particle tracking code written primarily in Python, with some bindings to C++ code for certain functionality. It the core engine of the General NOAA Operational Modeling Environment (GNOME) Suite of tools.
 

@@ -1,8 +1,6 @@
-
-
-############################################################
+************************************************************
 Building / Installing PyGNOME with the conda package manager
-############################################################
+************************************************************
 
 TL;DR
 =====
@@ -13,9 +11,17 @@ Add the conda-forge channel::
 
     > conda config --add channels conda-forge
 
-Create an environment for PyGNOME with all requirements::
+Set the channel prioroty to "strict"::
+
+  > conda config --set channel_priority strict
+
+Create an environment for PyGNOME with all requirements:
+
+If you only need to run PyGNOME::
 
     > conda create -n gnome --file conda_requirements.txt
+
+IF you need to build, etc PyGNOME::
 
     > conda create -n gnome python=3.9 --file conda_requirements.txt --file conda_requirements_build.txt --file conda_requirements_test.txt
 
@@ -173,6 +179,12 @@ It should return something like this::
     --add channels 'conda-forge'   # highest priority
 
 In that order -- the order is important
+
+You need to set the channel prioroty to "strict"::
+
+  > conda config --set channel_priority strict
+
+This will assure that you will get pacakges from conda-forge, even if there are newer ones available in the defaults channel.
 
 conda environments
 ------------------

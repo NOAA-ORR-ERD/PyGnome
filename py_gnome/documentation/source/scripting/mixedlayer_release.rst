@@ -18,7 +18,7 @@ with and without a rise velocity.
     
     import numpy as np
     mod
-    from gnome.spill.elements import plume
+    from gnome.spills.elements import plume
     from gnome.utilities.distributions import UniformDistribution
     
     from gnome.model import Model
