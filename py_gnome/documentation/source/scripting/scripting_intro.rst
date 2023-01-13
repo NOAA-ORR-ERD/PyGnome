@@ -82,7 +82,7 @@ the properties of the substance spilled (e.g. oil chemistry) in a Substance Obje
 to make it easier to initialize various types of spills (for example, at a point or over a spatial 
 area, at the surface or subsurface).
  
-Here we use the :func:`gnome.spill.spill.surface_point_line_spill` function to initialize a simple spill of a conservative substance 
+Here we use the :func:`gnome.spills.spill.surface_point_line_spill` function to initialize a simple spill of a conservative substance 
 (i.e. one with no change in properties over time) at a single point on the ocean surface::
 
 
