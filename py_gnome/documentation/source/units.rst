@@ -1,7 +1,7 @@
 .. _units:
-
+#############################
 Units used in GNOME / PyGNOME
-=================================
+#############################
 
 GNOME is a model of physical processes, and thus most of the things computed are in various physical units.
 

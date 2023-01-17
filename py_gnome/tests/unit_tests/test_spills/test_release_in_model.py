@@ -152,3 +152,106 @@ def test_continuous_unaligned_start(empty_model, cont_spill):
     assert len(data[4]['mass']) == NUM_ELEMENTS / 4 * 3
     assert len(data[5]['mass']) == NUM_ELEMENTS
 
+
+def test_one_element_per_timestep():
+    """
+    Should get exactly one per timestep
+    """
+    model = Model(
+        time_step=gs.hours(1),
+        start_time='2022-12-10T00:00',
+        duration=gs.hours(12),
+    )
+    model.outputters += MemoryOutputter()
+
+    model.spills += surface_point_line_spill(
+        num_elements=10,
+        start_position=(0, 0, 0),
+        release_time=model.start_time,
+        end_release_time=model.start_time + 10 * gs.seconds(model.time_step),
+        )
+    model.full_run()
+    results = model.outputters[0]
+
+    data = results.data_buffer.certain
+
+    # there should be 0 of the Elements at time zero
+    # then one per timestep
+    for i in range(11):
+        assert len(data[i]['mass']) == i
+
+    for i in range(11, 13):
+        assert len(data[i]['mass']) == 10
+
+
+def test_two_elements_per_timestep():
+    """
+    with the half-step release scheme, this should also work.
+    """
+    model = Model(
+        time_step=gs.hours(1),
+        start_time='2022-12-10T00:00',
+        duration=gs.hours(12),
+    )
+    model.outputters += MemoryOutputter()
+
+    model.spills += surface_point_line_spill(
+        num_elements=20,
+        start_position=(0, 0, 0),
+        release_time=model.start_time,
+        end_release_time=model.start_time + 10 * gs.seconds(model.time_step),
+        )
+    model.full_run()
+    results = model.outputters[0]
+
+    data = results.data_buffer.certain
+
+    # there should be 0 of the Elements at time zero
+    # then one per timestep
+    for i in range(11):
+        assert len(data[i]['mass']) == i*2
+
+    # should max out
+    for i in range(11, 13):
+        assert len(data[i]['mass']) == 20
+
+
+@pytest.mark.parametrize("num_per", [0.5, 1.0, 1.5, 2.0, 3.3])
+def test_fractional_elements_per_timestep(num_per):
+    """
+    what happens with 1.5 per timestep?
+    """
+    model = Model(
+        time_step=gs.hours(1),
+        start_time='2022-12-10T00:00',
+        duration=gs.hours(12),
+    )
+    model.outputters += MemoryOutputter()
+
+    model.spills += surface_point_line_spill(
+        num_elements= int(10 * num_per),
+        start_position=(0, 0, 0),
+        release_time=model.start_time,
+        end_release_time=model.start_time + 10 * gs.seconds(model.time_step),
+        )
+    if num_per < 1:  # fewer than one per timestep is not allowed
+        with pytest.raises(ValueError):
+            model.full_run()
+    else:
+        model.full_run()
+        results = model.outputters[0]
+
+        data = results.data_buffer.certain
+
+        # there should be 0 of the Elements at time zero
+        # then one per timestep
+        for i in range(11):
+            print(i, len(data[i]['mass']))
+            assert len(data[i]['mass']) <= i * num_per
+            assert len(data[i]['mass']) >= i * num_per - 1
+
+        # should max out
+        for i in range(11, 13):
+            assert len(data[i]['mass']) == 10 * num_per
+
+

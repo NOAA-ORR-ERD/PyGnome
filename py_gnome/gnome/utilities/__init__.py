@@ -5,14 +5,56 @@ a few small things here, 'cause why not?
 
 """
 
+import math
+import operator
 import sys
 import warnings
+
+import numpy as np
+
+#from .sig_fig_rounding import RoundToSigFigs_fp as round_sf
 
 div = {'GB': 1024*1024*1024,
        'MB': 1024*1024,
        'KB': 1024,
        }
 
+def convert_longitude(lon, coord_system='-180--180'):
+    """
+    Convert longitude values to a given coordinate system.
+
+    Options are:
+
+    "-180--180": Negative 180 degrees to 180 degrees
+
+    "0--360": Zero to 360 degrees
+
+    :param lon: numpy array-like of longitude values of float type
+    :param  coord_system='-180--180': options are: {"-180--180", "0--360"}
+
+    NOTE: this function also normalizes so that:
+
+    360 converts to 0
+    -180 converts to 180
+
+    It should be safe to call this on any coords -- if they are already
+    in the expected format, they will not be changes, except for the
+    normalization above.
+    """
+
+    if coord_system not in {"-180--180", "0--360"}:
+        raise TypeError('coord_system must be one of {"-180--180", "0--360"}')
+    lon = np.array(lon)
+
+    if coord_system == "0--360":
+        return (lon + 360) % 360
+    elif coord_system == "-180--180":
+        lon[lon > 180] -= 360
+        lon[lon <= -180] += 360
+        return lon
+
+
+# getting memory usage.
 if sys.platform.startswith('win'):
     """
     Functions for getting memory usage of Windows processes.
@@ -107,3 +149,66 @@ else:  # for posix systems only tested on OS-X for now
             warnings.warn('memory use reported may not be correct '
                           'on this platform')
         return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / float(d)
+
+
+# NOTE: there is a theoretically robust proper numpy impimentation here:
+#       https://github.com/odysseus9672/SELPythonLibs/blob/master/SigFigRounding.py
+#       but I found it didn't quite work for some values :-(, for example:
+# In [18]: x
+# Out[18]: 3.3456789e-20
+
+# In [19]: sig
+# Out[19]: 4
+
+# In [20]: RoundToSigFigs_fp(x, sig)
+# Out[20]: 3.3459999999999996e-20
+
+def _round_sf_float(x, sigfigs):
+    """
+    round a float to significant figures -- no error checking
+
+    This uses the "g" format specifier -- maybe slow, but robust for
+    the purpose of getting the display what we want.
+    """
+    # doing it with math -- mostly worked, but got an odd issue when passing through arrays
+    # if x == 0:
+    #     return 0.0
+    # if math.isnan(x):
+    #     return math.nan
+    # elif math.isinf(x):
+    #     return x
+    # else:
+    #     result = float(f"{x:}")round(x, sigfigs - int(math.floor(math.log10(abs(x)))) - 1)
+
+    formatter = "{x:.%d}" % sigfigs  # using "old style formatting for the curly bracket"
+    result = float(formatter.format(x=x))
+    return result
+
+
+def round_sf_scalar(x, sigfigs):
+    x = float(x)
+    sigfigs = operator.index(sigfigs)
+    return _round_sf_float(x, sigfigs)
+
+
+def round_sf_array(x, sigfigs):
+    """
+    round to a certain number of significant figures
+
+    should work on floats and numpy arrays
+
+    NOTE: This should be vectorizable, but np.round takes only a scalar value
+          for number of decimals -- you could vectorize the rest of the computation,
+          and then loop for the round, but would that buy anything?
+          (or use np.vectorize)
+    """
+    sigfigs = operator.index(sigfigs)
+    x = np.asarray(x, dtype=np.float64)
+    x = np.asarray(x)
+
+    shape = x.shape
+    result = np.fromiter((_round_sf_float(val, sigfigs) for val in x.flat), dtype=np.float64)
+    result.shape = shape
+    return result
+
+

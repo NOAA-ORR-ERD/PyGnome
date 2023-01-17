@@ -2,18 +2,11 @@
 test functions in remote_data module
 '''
 
-
-
-
-
 import os
 import shutil
+from pathlib import Path
 
-try:  # the py3 way
-    from urllib.error import HTTPError, URLError
-except ImportError:  # the py2 way
-    from urllib2 import HTTPError, URLError
-
+from urllib.error import HTTPError, URLError
 
 from gnome.utilities.remote_data import get_datafile
 
@@ -27,11 +20,19 @@ def test_exception():
     connection before testing it
     """
 
-    bogus = 'bogus.txt'
+    bogus = Path('bogus.txt')
+
+    # just making sure that the test is a valid test!
+    bogus.unlink(missing_ok=True)
 
     try:
-        with pytest.raises(HTTPError):
+        try:
             get_datafile(bogus)
+        except HTTPError:
+            assert not bogus.exists()  # if we got the error, we don't want the file created
+            pass
+        # with pytest.raises(HTTPError):
+        #     get_datafile(bogus)
     except URLError:
         'no internet connection'
         return

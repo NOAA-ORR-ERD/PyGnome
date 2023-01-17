@@ -338,10 +338,10 @@ class PyWindMover(movers.PyMover):
             a_append = np.zeros((num_les-uncertain_list_size,)+self.shape,dtype=np.float64)
             cos_arg = np.zeros((num_les-uncertain_list_size,)+self.shape,dtype=np.float64)
             srt = np.zeros((num_les-uncertain_list_size,)+self.shape,dtype=np.float64)
-            cos_arg = 2. * np.pi * np.random.uniform(0,1, size=(num_les,))
-            srt = np.sqrt(-2. * np.log(np.random.uniform(0.001,.999, size=(num_les,))))
+            cos_arg = 2. * np.pi * np.random.uniform(0,1, size=(num_les-uncertain_list_size,))
+            srt = np.sqrt(-2. * np.log(np.random.uniform(0.001,.999, size=(num_les-uncertain_list_size,))))
             # need a loop to check TermsLessThanMax fabs(self.sigma_theta * sinTerm/rndv2) <= angleMax (60)
-            for i in range(uncertain_list_size,num_les):
+            for i in range(num_les-uncertain_list_size):
                 for j in range(10):
                     if np.abs(self.sigma_theta * srt[i] * np.sin(cos_arg[i])) <= 60.:
                         break

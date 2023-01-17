@@ -14,9 +14,12 @@ cdef class CyTimeGridWindRect(CyTimeGridVel):
             self.timegrid = new TimeGridWindRect_c()
             self.timegridwind = dc_base_to_rect(self.timegrid)
 
-    def __init__(self, basestring datafile, basestring topology=None):
+    def __init__(self, datafile, topology=None):
+        # can we move this to base class?
         '''
-        can we move this to base class?
+        :param datafile: PathLike object to load the data from
+
+        :param topology=None: PathLike object to load topology data.
         '''
         self.load_data(datafile, topology)
 

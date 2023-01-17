@@ -4,7 +4,7 @@ directory, all fixtures are found
 '''
 from gnome.environment import constant_wind, Water, Waves
 
-from gnome.weatherers import WeatheringData, FayGravityViscous
+from gnome.weatherers import FayGravityViscous
 
 from ..conftest import test_oil, sample_sc_release
 
@@ -13,6 +13,7 @@ from ..conftest import test_oil, sample_sc_release
 from ..conftest import sample_model_fcn, sample_model_fcn2
 
 from gnome.spills.gnome_oil import GnomeOil
+from gnome.ops import weathering_array_types
 
 
 def weathering_data_arrays(n_arrays,
@@ -29,9 +30,12 @@ def weathering_data_arrays(n_arrays,
     defining a model
     '''
     if water is None:
-        water = Water()
-    rqd_weatherers = [WeatheringData(water), FayGravityViscous(water)]
+        water = Water(temperature = 300.)
+    environment = {'water': water}  
+    
+    rqd_weatherers = [FayGravityViscous(water)]
     arrays = dict()
+    arrays.update(weathering_array_types) #always have base weathering array types available
     arrays.update(n_arrays)
     for wd in rqd_weatherers:
         arrays.update(wd.array_types)
@@ -49,8 +53,9 @@ def weathering_data_arrays(n_arrays,
                            arr_types=arrays,
                            time_step=time_step,
                            units=units,
-                           amount_per_element=amount_per_element
-                           )
+                           amount_per_element=amount_per_element,
+                           environment=environment)
+                           
     for wd in rqd_weatherers:
         wd.prepare_for_model_run(sc)
         wd.initialize_data(sc, sc.num_released)

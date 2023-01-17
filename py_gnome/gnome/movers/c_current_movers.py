@@ -214,7 +214,7 @@ class CatsMover(CurrentMoversBase):
         :param uncertain_eddy_diffusion: Diffusion coefficient for
                                          eddy diffusion. Default is 0.
         :param uncertain_eddy_v0: Default is .1 (Check that this is still used)
-        
+
         Remaining kwargs are passed onto Mover's __init__ using super.
         See Mover documentation for remaining valid kwargs.
         """
@@ -612,7 +612,7 @@ class c_GridCurrentMover(CurrentMoversBase):
 
     def get_scaled_velocities(self, time):
         """
-        :param model_time=0:
+        :param time=0: model time in integer seconds
         """
         num_tri = self.mover.get_num_triangles()
 
@@ -885,7 +885,7 @@ class IceMover(CurrentMoversBase):
 
     def get_scaled_velocities(self, model_time):
         """
-        :param model_time=0:
+        :param model_time=0: datetime in integer seconds
         """
         num_tri = self.mover.get_num_triangles()
 
@@ -1100,7 +1100,7 @@ class CurrentCycleMover(c_GridCurrentMover):
 
     def get_scaled_velocities(self, time):
         """
-        :param model_time=0:
+        :param time=0: datetime in integer seconds
         """
         num_tri = self.mover.get_num_triangles()
 
@@ -1389,18 +1389,20 @@ class ComponentMover(CurrentMoversBase):
         Get file values scaled to optimized
         check if pat2 exists
         """
-        pat = 1
-        vels_pat1 = self.mover._get_velocity_handle(pat)
-        pat = 2
-        vels_pat2 = self.mover._get_velocity_handle(pat)
+        vels_pat1 = self.mover._get_velocity_handle(1)
+        vels_pat2 = 0
+        if self.filename2 is not None:
+            vels_pat2 = self.mover._get_velocity_handle(2)
 
         optimize_pat1, optimize_pat2 = self.get_optimize_values(model_time)
 
-        vels_pat1['u'] = vels_pat1['u'] * optimize_pat1
-        vels_pat1['v'] = vels_pat1['v'] * optimize_pat1
+        vels_pat1['u'] *= optimize_pat1
+        vels_pat1['v'] *= optimize_pat1
 
-        if vels_pat2 != 0 and optimize_pat2 != 0:
-            vels_pat1['u'] = vels_pat1['u'] + vels_pat2['u'] * optimize_pat2
-            vels_pat1['v'] = vels_pat1['v'] + vels_pat2['v'] * optimize_pat2
+        if optimize_pat2 != 0:
+            vels_pat2['u'] *= optimize_pat2
+            vels_pat2['v'] *= optimize_pat2
+            vels_pat1['u'] += vels_pat2['u']
+            vels_pat1['v'] += vels_pat2['v']
 
         return vels_pat1

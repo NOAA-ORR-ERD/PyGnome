@@ -42,6 +42,11 @@ def test_Temperature_new_units():
     assert np.array_equal(result, np.array([t_c] * 3))
 
 
+def test_unrealistic_temp():
+    with pytest.warns(UserWarning):
+        w = Water(70)
+
+
 def test_Salinity():
     """
     not much to it

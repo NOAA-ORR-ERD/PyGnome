@@ -2,8 +2,6 @@ ARG PYTHON_VER
 
 FROM registry.orr.noaa.gov/erd/centos-conda/centos7-python$PYTHON_VER
 
-RUN yum update -y
-
 RUN yum install -y wget gcc make bzip2 gcc-c++ ca-certificates \
     libglib2.0-0 libxext6 libsm6 libxrender1 \
     git mercurial subversion tar
@@ -20,10 +18,11 @@ RUN cd pygnome && conda install python=$PYTHON_VER \
 
 RUN conda list
 
-RUN conda update -y libgd
+# this kludge should no longer be required
+# RUN conda update -y libgd
 
 # only because this was giving us problems
-RUN python -c "import py_gd"
+# RUN python -c "import py_gd"
 
 # adios_db requirements should already be there from the deploy_requirements file
 # RUN cd pygnome/oil_database/adios_db && conda install --file conda_requirements.txt

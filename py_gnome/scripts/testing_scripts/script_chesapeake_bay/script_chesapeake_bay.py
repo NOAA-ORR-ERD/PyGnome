@@ -1,7 +1,11 @@
 #!/usr/bin/env python
 """
-Script to test GNOME with chesapeake bay data (netCDF 3D triangle grid)
+Script to test GNOME with Chesapeake bay data (netCDF 3D triangle grid)
 Eventually update to use Grid Map rather than BNA
+
+NOTE: This is using the "old" C++ code, wrapped by c_GridCurrentMover
+      The Chesapeake Bay OFS uses and old grid that's not compatible with
+      the newer codebase. In most cases, you will want to use PyCurrentMover
 """
 
 import os

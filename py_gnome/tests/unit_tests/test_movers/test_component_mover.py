@@ -2,10 +2,6 @@
 Test all operations for component mover work
 '''
 
-
-
-
-
 import datetime
 import os
 
@@ -58,7 +54,25 @@ model_time = time_utils.sec_to_date(time_utils.date_to_sec(rel_time))
 # test against.
 # If any of the above setup parameters change, these results will not match!
 
+
 def test_loop():
+    """
+    test one time step with no uncertainty on the spill
+    checks there is non-zero motion.
+    also checks the motion is same for all LEs
+    """
+
+    delta = run_test_loop()
+
+    _assert_move(delta)
+
+    assert np.all(delta[:, 0] == delta[0, 0])  # lat move matches for all LEs
+    assert np.all(delta[:, 1] == delta[0, 1])  # long move matches for all LEs
+    assert np.all(delta[:, 2] == 0)  # 'z' is zeros
+
+
+# fixme -- should this be a fixture?
+def run_test_loop():
     """
     test one time step with no uncertainty on the spill
     checks there is non-zero motion.
@@ -82,7 +96,7 @@ def test_loop():
     return delta
 
 
-def test_uncertain_loop():
+def run_uncertain_loop():
     """
     test one time step with uncertainty on the spill
     checks there is non-zero motion.
@@ -104,8 +118,8 @@ def test_certain_uncertain():
     make sure certain and uncertain loop results in different deltas
     """
 
-    delta = test_loop()
-    u_delta = test_uncertain_loop()
+    delta = run_test_loop()
+    u_delta = run_uncertain_loop()
     print()
     print(delta)
     print(u_delta)
@@ -113,6 +127,44 @@ def test_certain_uncertain():
     assert np.all(delta[:, 2] == u_delta[:, 2])
 
 
+def test_get_scaled_velocities_two_patterns():
+    component = ComponentMover(curr1_file,
+                               curr2_file,
+                               wind=wnd,
+                               scale_refpoint=(-75.262319, 39.142987, 0))
+    vels = component.get_scaled_velocities(time_utils.date_to_sec(rel_time))
+
+    # not much of test -- but at least we're not getting NaNs...
+    assert np.alltrue(np.isfinite(vels['u']))
+    assert np.alltrue(np.isfinite(vels['v']))
+
+    # note: these values were pulled from making this call
+    #       so may not be correct, but this will catch a regression
+    assert vels['u'][1] == -0.23194323751895507
+    assert vels['v'][10] == -0.09848350841987873
+    assert vels['u'][1] == -0.23194323751895507
+    assert vels['v'][10] == -0.09848350841987873
+
+def test_get_scaled_velocities_one_pattern():
+    component = ComponentMover(filename1=curr1_file,
+                               wind=wnd,
+                               scale_refpoint=(-75.262319, 39.142987, 0))
+    vels = component.get_scaled_velocities(time_utils.date_to_sec(rel_time))
+
+    # not much of test -- but at least we're not getting NaNs...
+    assert np.alltrue(np.isfinite(vels['u']))
+    assert np.alltrue(np.isfinite(vels['v']))
+
+    # note: these values were pulled from making this call
+    #       so may not be correct, but this will catch a regression
+    assert vels['u'][1] == 2.34578240814883e-16
+    assert vels['v'][10] == 7.692065313287368e-16
+    assert vels['u'][1] == 2.34578240814883e-16
+    assert vels['v'][10] == 7.692065313287368e-16
+
+
+
+# set one up with only one pattern for the next suite of tests
 c_component = ComponentMover(curr1_file)
 
 
@@ -143,6 +195,7 @@ def test_pat1_speed():
     c_component.pat1_speed = 5
     print(c_component.pat1_speed)
     assert c_component.pat1_speed == 5
+
 
 
 @pytest.mark.parametrize("tgt", [(1, 2, 3), (5, 6)])

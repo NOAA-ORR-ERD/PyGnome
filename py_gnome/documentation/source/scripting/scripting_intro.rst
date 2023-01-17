@@ -4,12 +4,12 @@ Overview
 ========
 
 To run simulations using the ``gnome`` package the first step is to create a model object.
-This model object will have attributes like the model start time and the run duration. Movers, weatherers, spills, 
+This model object will have attributes such as the model start time and the run duration. Movers, weatherers, spills,
 and outputters are then added to the model. Then the model can be run to produce output.
 
 For a first introduction to scripting with ``gnome``, the example below will demonstrate how to set up and run the 
 very simplest model possible. 
-This example does load any external data, but creates a simple map and movers manually. The "spill" will be a conservative
+This example does not load any external data, but creates a simple map and movers manually. The "spill" will be a conservative
 substance, i.e. it will not represent oil which has changing properties over time due to weathering processes.
 
 The scripting module
@@ -41,7 +41,7 @@ Examples in this section will use the scripting module. In the following more de
 
 Initialize the Model
 --------------------
-We initialize the model to begin on New Years Day 2015 and run for 3 days with a model time step of 3 minutes::
+We initialize the model to begin on New Years Day 2015 and run for 3 days with a model time step of 15 minutes::
 
     import gnome.scripting as gs
     start_time = "2015-01-01"
@@ -53,11 +53,10 @@ We initialize the model to begin on New Years Day 2015 and run for 3 days with a
 
 Create and Add a Map
 --------------------
-Create a very simple map whis is all water with a polygon of latitude/longitude
-points to specify the map bounds::
+Create a very simple map which is all water with a polygon of four longitude/latitude points to specify the map bounds::
 
-    model.map = gs.GnomeMap(map_bounds=((-145,48), (-145,49),
-                                        (-143,49), (-143,48))
+    model.map = gs.GnomeMap(map_bounds=((-145, 48), (-145, 49),
+                                        (-143, 49), (-143, 48))
                                         )
 
 Create and Add a Mover
@@ -82,7 +81,7 @@ the properties of the substance spilled (e.g. oil chemistry) in a Substance Obje
 to make it easier to initialize various types of spills (for example, at a point or over a spatial 
 area, at the surface or subsurface).
  
-Here we use the :func:`gnome.spill.spill.surface_point_line_spill` function to initialize a simple spill of a conservative substance 
+Here we use the :func:`gnome.spills.spill.surface_point_line_spill` function to initialize a simple spill of a conservative substance 
 (i.e. one with no change in properties over time) at a single point on the ocean surface::
 
 
@@ -95,8 +94,8 @@ Here we use the :func:`gnome.spill.spill.surface_point_line_spill` function to i
 Create and Add an Outputter
 ---------------------------
 
-Outputters allow us to save our model run results. Options include saving images at specified model time steps
-or saving all the particle information into a netCDF file for further analysis.
+Outputters allow us to save our model run results.
+Options include saving images at specified model time steps or saving all the particle information into a netCDF file for further analysis.
 
 Here we use the :class:`gnome.outputters.Renderer` class to save an image every 6 hours. We specify the bounding box of the rendered map to
 be the same as those specified when we created the map object. The default is to save files into the working directory::
@@ -132,7 +131,7 @@ To see a list of properties associated with particles use::
 
     model.list_spill_properties()
 
-Note, this list will be empty until after the model has been run.
+Note: this list will be empty until after the model has been run.
 
 
 Run the model to completion
@@ -148,19 +147,22 @@ Results will be written to files based on the outputters added to the model.
 View the results
 ----------------
 
-The renderer that we added generates png images every 6 hours.
-Since we did not specify an output directory for these images, they will have been saved in the same directory that the script was executed from.
+The renderer that we added generates a png image every 6 hour of model time.
+They will have been saved in ``output`` dir relative to the directory that the script was executed from, as specified in the Renderer creation.
 The sequence of images should show a cloud of particles moving east and spreading.
 
 Save and reload model setup
 ---------------------------
 
-The ``gnome`` package uses "save files" as a way to save a model setup to use again or to share with another user. The save files are a zip file that contain all the configuration information as JSON files and any needed data files all in one archive. They are usually given the `.gnome` file extension, but they are, in fact, regular zip files.
+The ``gnome`` package uses "save files" as a way to save a model setup to use again or to share with another user.
+The save files are a zip file that contain all the configuration information as JSON files and any needed data files all in one archive.
+They are usually given the `.gnome` file extension but they are, in fact, regular zip files.
 
-Save files are used by the WebGNOME application, so that users can save and reload a model setup that they have created via the interactive GUI interface. For the most part, when you are running ``gnome`` via Python scripts, you don't need to use save files, as your script can rebuild the model when it runs. However, there are use cases, particularly if you want to work on the same model via scripting and WebGNOME.
+Save files are used by the WebGNOME application, so that users can save and reload a model setup that they have created via the interactive GUI interface.
+For the most part, when you are running ``gnome`` via Python scripts, you don't need to use save files, as your script can rebuild the model when it runs.
+However, there are use cases, particularly if you want to work on the same model via scripting and WebGNOME.
 
-A model can be created from a save file via the
-:func:`scripting.load_model()` function:
+A model can be created from a save file via the :func:`scripting.load_model()` function:
 
 .. code-block:: python
 
@@ -172,8 +174,4 @@ You can save out a configured model using the save method:
 .. code-block:: python
 
   model.save("the_savefile.gnome")
-
-
-
-
 

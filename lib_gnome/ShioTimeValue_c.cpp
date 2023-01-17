@@ -432,7 +432,12 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 			else if (this->fStationType == 'P')
 				return GetProgressiveWaveValue(current_time,value);				// minus AH 07/10/2012
 			else if (this->fStationType == 'H')
-				return GetConvertedHeightValue(current_time,value);		// AH 07/10/2012
+			{
+				if (this->InHeightTimeRange(current_time))	// the times in heights array is a subset
+				{
+					return GetConvertedHeightValue(current_time,value);
+				}
+			}
 		}
 		//this->fScaleFactor = 0;	//if we want to ask for a scale factor for each computed range...
 	}
@@ -453,7 +458,7 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 	DateToSeconds(&beginDate, &beginSeconds);
 
 //	SecondsToDate(modelEndTime+24*3600,&endDate);// add one day so that we can truncate to start of the day	// minus AH 07/10/2012
-	SecondsToDate(current_time+48*3600,&endDate); // AH 07/10/2012
+	SecondsToDate(current_time+72*3600,&endDate); // default model duration is now two days
 
 	endDate.hour = 0; // Shio expects this to be the start of the day
 	endDate.minute = 0;
@@ -1179,6 +1184,19 @@ double ShioTimeValue_c::GetDeriv (Seconds t1, double val1, Seconds t2, double va
 	return (3048./3600.) * deriv;	// convert from ft/hr to m/s, added 10^4 fudge factor so scale is O(1)
 }
 
+Boolean ShioTimeValue_c::InHeightTimeRange(Seconds forTime)
+{
+	long numValues = this->GetNumHighLowValues();
+
+	Seconds startTime = INDEXH(fHighLowDataHdl, 0).time;
+	Seconds endTime = INDEXH(fHighLowDataHdl, numValues-1).time;
+
+	if (forTime >= startTime && forTime <= endTime)
+		return true;
+	else
+		return false;
+}
+
 OSErr ShioTimeValue_c::GetConvertedHeightValue(Seconds forTime, VelocityRec *value)
 {
 	long i;
@@ -1188,7 +1206,8 @@ OSErr ShioTimeValue_c::GetConvertedHeightValue(Seconds forTime, VelocityRec *val
 	{
 		startHighLowData = INDEXH(fHighLowDataHdl, i);
 		endHighLowData = INDEXH(fHighLowDataHdl, i+1);
-		if (forTime == startHighLowData.time || forTime == this->GetNumHighLowValues()-1)
+		//if (forTime == startHighLowData.time || forTime == this->GetNumHighLowValues()-1)
+		if (forTime == startHighLowData.time || forTime == INDEXH(fHighLowDataHdl,this->GetNumHighLowValues()-1).time)
 		{
 			(*value).u = 0.;	// derivative is zero at the highs and lows
 			(*value).v = 0.;

@@ -218,6 +218,12 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
     make_default_refs = True
     _name = None  # so that it will always exist
 
+    # tolerances used for equality testing
+    # these could be overridden in a subclass if desired
+    RTOL = 1e-05
+    # ATOL = 1e-08 # this is the default, but assumes values are of Order 1.
+    ATOL = 1e-38 # this will only let tiny float32 values be takes as close to zero.
+
     def __init__(self, name=None, _appearance=None, *args, **kwargs):
         super(GnomeId, self).__init__(*args, **kwargs)
         self.__class__._instance_count += 1
@@ -230,8 +236,12 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
     @property
     def all_array_types(self):
         '''
-        If this object contains or is composed of other gnome objects (Spill->Substance->Initializers for example)
-        then override this function to ensure all array types get presented at the top level. See Spill for an example
+        Returns all the array types required by this object
+
+        If this object contains or is composed of other gnome objects
+        (Spill->Substance->Initializers for example) then override this
+        function to ensure all array types get presented at the top level.
+        See ``Spill`` for an example
         '''
         return self.array_types.copy()
 
@@ -268,12 +278,12 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
 
     def __deepcopy__(self, memo):
         """
-        the deepcopy implementation
+        The deepcopy implementation
 
         We need this, as we don't want the id of spill object and logger
         object copied, but do want everything else.
 
-        got the method from:
+        Got the method from:
             http://stackoverflow.com/questions/3253439/python-copy-how-to-inherit-the-default-copying-behaviour
 
         Despite what that thread says for __copy__, the built-in deepcopy()
@@ -282,7 +292,7 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
         obj_copy = object.__new__(type(self))
 
         if '_log' in self.__dict__:
-            # just set the _log to None since it cannot be deepcopied
+            # just set the _log to None since it cannot be copied
             # since logging.getLogger() is used to get the logger - can leave
             # this as None and the 'logger' property will automatically set
             # this the next time it is used
@@ -399,9 +409,9 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
         py_gnome objects reference other objects like wind, water, waves. These
         may not be defined when object is created so they can be None at
         construction time; however, they should reference valid objects
-        when running model. If make_default_refs is True, then object isvalid
-        because model will set these up at runtime. To raise exception
-        for missing references at runtime, directly call
+        when running in the model. If make_default_refs is True, then object
+        is valid because the model will set these up at runtime. To raise
+        an exception for missing references at runtime, directly call
         validate_refs(level='error')
 
         'wind', 'water', 'waves' attributes also have special meaning. An
@@ -581,70 +591,95 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
         save _state of the object, then recreate a new object with the same
         _state.
 
-        Define a base implementation of __eq__ so an object before persistence
+        Defines a base implementation of __eq__ so an object before persistence
         can be compared with a new object created after it is persisted.
         It can be overridden by the class with which it is mixed.
 
-        It looks at attributes defined in self._state and checks the plain
-        python types match.
+        It looks at attributes defined in self._state and checks that the values match
 
-        It does an allclose() check for numpy arrays using default atol, rtol.
+        It uses allclose() check for floats and numpy arrays, to avoid floating point
+            tolerances: set to:   RTOL=1e-05, ATOL=1e-08
 
-        :param other: object of the same type as self that is used for
-                      comparison in obj1 == other
+        :param other: another GnomeObject used for comparison in obj1 == other
 
         NOTE: super is not used.
+
         """
-        if not self._check_type(other):
-            return False
+        # It turns out that this and _diff are using (or should be) the same
+        # so I have added a fail_early flag to _diff, so it can be used here.
 
-        schema = self._schema()
+        return not bool(self._diff(other, fail_early=True))
 
-        for name in schema.get_nodes_by_attr('all'):
-            subnode = schema.get(name)
+        # Keeping this code here (for now, just in case)
 
-            if ((hasattr(subnode, 'test_equal') and
-                 not subnode.test_equal) or
-                    subnode.name == 'id'):
-                continue
+        # # are these even the same type at all?
+        # if not self._check_type(other):
+        #     return False
 
-            self_attr = getattr(self, name)
-            other_attr = getattr(other, name)
+        # schema = self._schema()
 
-            if not isinstance(self_attr, np.ndarray):
-                if isinstance(self_attr, float):
-                    if abs(self_attr - other_attr) > 1e-10:
-                        return False
-                elif self_attr != other_attr:
-                    return False
-            else:
-                if not isinstance(self_attr, type(other_attr)):
-                    return False
-                try:
-                    if not np.allclose(self_attr, other_attr,
-                                       rtol=1e-4, atol=1e-4):
-                        return False
-                except TypeError:
-                    # compound types (such as old Timeseries) will break
-                    return all(self_attr == other_attr)
+        # for name in schema.get_nodes_by_attr('all'):
+        #     subnode = schema.get(name)
+        #     # skip it if it's marked to not be included
+        #     if ((hasattr(subnode, 'test_equal') and
+        #          not subnode.test_equal) or
+        #             subnode.name == 'id'):
+        #         continue
 
-        return True
+        #     self_attr = getattr(self, name)
+        #     other_attr = getattr(other, name)
 
-    def _diff(self, other):
-        '''
-            returns the differences between this object and another of the
-            same type
-        '''
+        #     if (isinstance(self_attr, np.ndarray)
+        #         or isinstance(other_attr, np.ndarray)):
+        #         # process as an array
+        #         try:
+        #             if not np.allclose(self_attr, other_attr,
+        #                                rtol=self.RTOL, atol=self.ATOL):
+        #                 return False
+        #         except TypeError:
+        #             # compound types (such as old Timeseries) will break
+        #             return np.all(self_attr == other_attr)
+
+        #     elif isinstance(self_attr, float) or isinstance(other_attr, float):
+        #         # process as a float
+        #         # using np.allclose rather than math.isclose for consistency
+        #         if not np.allclose(self_attr, other_attr, rtol=self.RTOL, atol=self.ATOL):
+        #             return False
+        #     else: # generic object
+        #         if self_attr != other_attr:
+        #             return False
+        # # if nothing returned, then they are equal
+        # return True
+
+    def _diff(self, other, fail_early=False):
+        """
+        Returns a list of differences between this GnomeObject and another GnomeObject
+
+        :param other: other object to compare to.
+
+        :param fail_early=False: If true, it will return on the first error
+
+        """
+        # NOTE: if you find a case where this breaks, please add a test to
+        #       test_gnome_object before fixing it.
+
+        # Fixme: perhaps serializing both, and then comparing the serialized version
+        #        would make it more consistent and less tricky with types.
+
         diffs = []
 
+        # are these even the same type at all?
         if not self._check_type(other):
-            diffs.append('Different type: self={}, other={}'
-                         .format(self.__class__, other.__class__))
+            diffs.append(f'Different type: self={self.__class__}, other={other.__class__}')
+            if fail_early:
+                return diffs
 
+        # same type -- check the schema nodes (attributes)
         schema = self._schema()
 
         for name in schema.get_nodes_by_attr('all'):
             subnode = schema.get(name)
+            # don't check the ones that are expected to be different
             if ((hasattr(subnode, 'test_equal') and
                  not subnode.test_equal) or
                     subnode.name == 'id'):
@@ -653,30 +688,48 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
             self_attr = getattr(self, name)
             other_attr = getattr(other, name)
 
-            if not isinstance(self_attr, np.ndarray):
-                if isinstance(self_attr, float):
-                    if abs(self_attr - other_attr) > 1e-10:
-                        diffs.append('Outside tolerance {}: self={}, other={}'
-                                     .format(name, self_attr, other_attr))
-                elif self_attr != other_attr:
-                    diffs.append('!= {}: self={}, other={}'
-                                 .format(name, self_attr, other_attr))
-            else:
-                if not isinstance(self_attr, type(other_attr)):
-                    diffs.append('Different Types {}: self={}, other={}'
-                                 .format(name, self_attr, other_attr))
+            if (isinstance(self_attr, np.ndarray)
+                or isinstance(other_attr, np.ndarray)):
+                # process as an array
+                if np.asarray(self_attr).size != np.asarray(other_attr).size:
+                    diffs.append(f'Arrays are not the same size -- {name!r}: '
+                                 f'self={self_attr!r}, other={other_attr!r}')
+                    if fail_early:
+                        return diffs
+                    continue
                 try:
                     if not np.allclose(self_attr, other_attr,
-                                       rtol=1e-4, atol=1e-4):
-                        diffs.append('Not allclose {}: self={}, other={}'
-                                     .format(name, self_attr, other_attr))
+                                       rtol=self.RTOL, atol=self.ATOL):
+                        diffs.append(f'Array values are not all close -- {name!r}: '
+                                     f'self={self_attr!r}, other={other_attr!r}')
+                        if fail_early:
+                            return diffs
                 except TypeError:
                     # compound types (such as old Timeseries) will break
-                    if not all((self_attr == other_attr).flatten()):
-                        diffs.append('Arrays are not allclose or all == {}: '
-                                     'self={}, other={}'
-                                     .format(name, self_attr, other_attr))
+                    # note: not tests for this!
+                    if not np.all(self_attr == other_attr):
+                        diffs.append(f'Array values are not equal -- {name!r}: '
+                                     f'self={self_attr!r}, other={other_attr!r}')
+                        if fail_early:
+                            return diffs
 
+            elif isinstance(self_attr, float) or isinstance(other_attr, float):
+                # process as a float
+                # using np.allclose rather than math.isclose for consistency
+                if not np.allclose(self_attr, other_attr,
+                                   rtol=self.RTOL, atol=self.ATOL):
+                    diffs.append(f"Difference outside tolerance -- {name}: "
+                                 f"self={self_attr!r}, other= {other_attr!r}")
+                    if fail_early:
+                        return diffs
+            else:  # generic object -- just check equality
+                if self_attr != other_attr:
+                    diffs.append(f"Values not equal -- {name}: "
+                                 f"self={self_attr!r}, other={other_attr!r}")
+                    if fail_early:
+                        return diffs
+
+        # All attributes processed: return all the diffs
         return diffs
 
     def __ne__(self, other):

@@ -9,10 +9,6 @@ Adds some for Python-only use
 
 """
 
-
-
-
-
 import sys
 
 import numpy as np
@@ -42,6 +38,20 @@ oil_status_map = {num: name for name, num in oil_status.__members__.items()}
 # Here we customize what a numpy 'long' type is....
 # We do this because numpy does different things with a long
 # that can mismatch what Cython does with the numpy ctypes.
+# NOTE: This is all so we can create numpy arrays that are compatible
+#       with the structs in the C++ code -- most of which
+#       use the old-style C types, e.g. int, short, long.
+# In particular, long is defined differently on Windows and Linux
+# so we need to make sure that we are using the right type on each platform
+# note: numpy no longer HAS numpy.long or numpy.int
+#       there is a numpy.compat.long, which maps to int (which is the Python int type)
+# however, I *think* that Python uses a C long for int,
+# and numpy figures it out for itself at run time, so I think we can
+# just do that:
+
+np_long = int
+
+# THE REST OF THIS IS OUT OF DATE:
 # on OSX 64:
 # - numpy identifies np.long as int64, which is a Cython ctype 'long'
 # on OSX 32:
@@ -52,17 +62,27 @@ oil_status_map = {num: name for name, num in oil_status.__members__.items()}
 # - unknown what numpy does
 # - Presumably an int64 would be a ctype 'long' ???
 # we should clean this up! -- on Python3, I think np.compat.long == int
-# can we just decide on a int width for all of these??
-if sys.platform == 'win32':
-    np_long = np.int
-elif sys.platform in ('darwin', 'linux2', 'linux'):
-    if sys.maxsize > 2147483647:
-        np_long = np.compat.long
-    else:
-        np_long = int
-else:
-    # untested platforms will just default to 64 bit
-    np_long = np.compat.long
+
+########
+# NOTE: all this below was essentially simply setting np_long to int
+#  on all platforms anyway.
+# IF we have future problems, it might be as simple as:
+# if sys.platform == 'win32':
+#     np_long = np.int32
+# elif sys.platform in ('darwin', 'linux2', 'linux'):
+#     np_long = np.int64
+########
+
+# if sys.platform == 'win32':
+#     np_long = np.int
+# elif sys.platform in ('darwin', 'linux2', 'linux'):
+#     if sys.maxsize > 2147483647:
+#         np_long = np.compat.long
+#     else:
+#         np_long = int
+# else:
+#     # untested platforms will just default to what numpy thinks it is.
+#     np_long = np.compat.long
 
 mover_type = np.float64
 world_point_type = np.float64

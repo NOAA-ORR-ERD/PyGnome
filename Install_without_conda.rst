@@ -1,20 +1,21 @@
+*************************************
 Installation without conda / Anaconda
-=====================================
+*************************************
 
 **WARNING:** These notes are out of date and not tested. All our development work is done using conda and conda-forge -- there are a few too many dependencies not well supported by "pure" pip / PyPi packages at this point.
 
 Note that current PyGNOME is Python 3 (>= 3.8) -- some of these notes are for Python2. But if you do get this working, please consider supplying a Pull Request with updated notes.
 
 Overview:
----------
+=========
 
-PyGNOME has a lot of dependencies -- you can find the full list by looking at the conda_requirements.txt file.
+PyGNOME has a lot of dependencies -- you can find the full list by looking at the ``conda_requirements_*.txt`` file.
 
 Most of them are well maintained 3rd party packages, that can be installed via pip, or by following the package author's instructions.
 
 But a few are maintained by the GNOME team at NOAA. These are all best installed by downloading the source code from the NOAA-ORR-ERD gitHub organization, and building and installing them from that source. These are:
 
-unit_conversion (pynucos): https://github.com/NOAA-ORR-ERD/PyNUCOS
+pynucos: https://github.com/NOAA-ORR-ERD/PyNUCOS
 
 gridded: https://github.com/NOAA-ORR-ERD/gridded
 
@@ -23,11 +24,8 @@ cell_tree2d (required by gridded): https://github.com/NOAA-ORR-ERD/cell_tree2d
 py_gd: https://github.com/NOAA-ORR-ERD/py_gd
 
 
-
-
-
 Building everything by hand / with pip
---------------------------------------
+======================================
 
 Since this is development work, it might be good to create and run this
 in a virtual environment of some sort: virtualenv, pipenv, etc.
@@ -38,14 +36,15 @@ In such a case, you may require a virtualenv in order to freely install python p
 
 You may also want to consider using conda environments -- see above.
 
-There is C++/Cython code that must be built - you will need the correct C compiler and recent setuptools, etc. See "Installing With Anaconda" for more detail (or online for docs on "building C extensions to Python")
+There is C++/Cython code that must be built - you will need the correct C/C++ compiler and recent setuptools, etc. See "Installing With Anaconda" for more detail (or online for docs on "building C extensions to Python")
 
-python.org
-==========
+Python
+------
 
 Most people use Python itself from Python.org:
 
 https://www.python.org/downloads/
+
 
 Linux (Tested in 64-bit, CentOS)
 --------------------------------
@@ -81,7 +80,7 @@ Binaries for
 `Cython <http://packages.ubuntu.com/raring/python/cython>`__
 can be installed using apt-get.
 
-Current binaries for these are sufficiently new: (Numpy >=1.11.0) and (Cython >= 0.24.1).
+Current binaries for these are sufficiently new: (Numpy >=1.16) and (Cython >= 0.29).
 
 If you use virtualenv and apt-get to install these system site packages.
 Remember to use the ``--system-site-packages`` option when creating a
@@ -98,98 +97,51 @@ The remaining dependencies are python packages and can be installed using::
 
    pip install -r requirements.txt
 
+(NOTE: we do not regularly test the requirements.txt file -- it may be incomplete -- PR's accepted)
+
 See `Build PyGnome <#build-pygnome>`__ section below.
 
 
-Windows 7 (64-bit, using VS-2008 express edition)
--------------------------------------------------
+Windows
+-------
 
-For compiling python extensions on Windows, you need the correct version of teh MS compiler:  "Visual Studio 2008". Microsoft has made a versin of this compiler al properly set up for python extensions:
+For compiling python extensions on Windows with python3 it is best to use the Microsoft the Visual Studio 2019 (or later) Build Tools.
+They should be available here:
 
-Microsoft Visual C++ Compiler for Python 2.7:
+https://visualstudio.microsoft.com/downloads/
 
-https://www.microsoft.com/en-us/download/details.aspx?id=44266
+The free "Community" version should be fine.
 
-This compiler should work for both 32 bit and 64 bit Windows.
+Once installed, you will want to use one of the  "Visual Studio Developer Command Prompts" provided to actually build PyGNOME -- it sets up the compiler for you.
+
+Only 64 bit Windows is supported by PyGNOME
 
 Binary Dependencies
 ...................
 
 Download and install the newest Windows executable distribution of
-`Python 2.7 <http://www.python.org/download/>`__ (*note: we are not
-quite ready for Python 3.0*) Make sure the distribution is named
-consistently with the Python environment you desire. For example,
-binaries ending in *win64-py2.7.exe are for Python 2.7.* (64-bit)
+
+`Python 3.9 <http://www.python.org/download/>`_
 
 A number of the packages that GNOME depends on have very complex and
 brittle build processes, and depend on third-party libraries that can be
 a challenge to build.
 
-Fortunately, `Chris Gohlke's
-website <http://www.lfd.uci.edu/~gohlke/pythonlibs/>`__ contains
-pre-compiled binary distributions for many of these packages.
-
-*(The full list of dependent packages and their minimum versions can be
-found* \_in the file GNOME2/py\_\_\ *gnome/requirements.txt)*
-
-There are also more binary wheels available every day -- it's worth checking PyPi
+Fortunately, many of them are available as binary wheels on PyPi
 
 Another option is to use a Python scientific distribution, such as
-`Anaconda <https://store.continuum.io/cshop/anaconda/>`__ or `Enthought
-Canopy <https://www.enthought.com/products/canopy/>`__
+`Anaconda <https://www.anaconda.com/products/distribution>`_ -- in which case, stop and read the ``Installing.rst`` file.
 
-Here are the binary packages required:
 
-1. `setuptools <http://www.lfd.uci.edu/~gohlke/pythonlibs/#setuptools>`__
-2. `pip <http://www.lfd.uci.edu/~gohlke/pythonlibs/#pip>`__
-
-At this point, we should test that pip is installed correctly.
-On command line invoke the following pip commands.
-These should show usage information for 'pip', and then a list of
-installed packages::
-
-    >  pip
-
-    Usage:
-      pip <command> [options]
-
-    Commands:
-      install                     Install packages.
-      download                    Download packages.
-      uninstall                   Uninstall packages.
-
-    > pip list
-    alabaster (0.7.9)
-    appnope (0.1.0)
-    awesome-slugify (1.6.5)
-    ...
-
-3. `numpy-MKL <http://www.lfd.uci.edu/~gohlke/pythonlibs/#numpy>`__
-4. `Cython <http://www.lfd.uci.edu/~gohlke/pythonlibs/#cython>`__
-5. `Pillow <https://pypi.python.org/pypi/Pillow/2.8.1>`__
-6. 64-bit 1.0.6 version of
-   `netCDF4 <http://www.lfd.uci.edu/~gohlke/pythonlibs/#netcdf4>`__
-7. `lxml <http://www.lfd.uci.edu/~gohlke/pythonlibs/#lxml>`__ - required
-   for webgnome
-8. `python-cjson <http://www.lfd.uci.edu/~gohlke/pythonlibs/#python-cjson>`__
-   - required for webgnome
-
-The remaining dependencies are python packages and can be installed using the command::
+Dependencies can be installed using the command::
 
     > pip install -r requirements.txt
 
 See `Build PyGnome <#build-pygnome>`__ section below.
 
-Windows 7 (64-bit, using VS-2008 express edition)
-.................................................
-
-Building GNOME for 64 bit Windows is similar to the 32 bit Windows
-build, and has similar binary dependencies. There are however some extra
-steps you need to perform in order to build py\_gnome.
-
 
 Build PyGnome
--------------
+=============
 
 1. Clone the PyGnome repository::
 
@@ -200,21 +152,40 @@ Build PyGnome
     > cd PyGnome/py_gnome
     > pip install -r requirements.txt
 
-3. Install the Oil Library package. The OilLibary package is under active development along  with py_gnome, so it's best to install that from source as well:
+3. Install the adios_db pacakge -- it is under active development along  with py_gnome, so it's best to install that from source as well:
 
-   https://github.com/NOAA-ORR-ERD/OilLibrary
+   https://github.com/NOAA-ORR-ERD/adios_oil_database/tree/production/adios_db
 
-4. build the ``py_gnome`` module in develop mode first as install mode may
-   still need some testing/work.
+4. build the ``py_gnome`` module in develop or install mode:
 
-   The other option you may need is ``cleanall``, which should clean the development environment -- good to do after puling new code from git.
+   ``> python setup.py build``
+
+   or
+
+   ``> python setup.py install``
+
+   or
+
+   ``> python setup.py develop``
+
+The other option you may need is ``cleanall``, which should clean the development environment -- good to do after puling new code from git::
+
+   > python setup.py cleanall
+
 
 5. If this successfully completes, then run the unit tests::
 
-    > py.test --runslow tests/unit_tests
+    > pytest --runslow tests/unit_tests
 
 Once all of the ``py_gnome`` unit tests pass, PyGnome is now built and
 ready to be put to use. You can use the ``gnome`` module inside your
 python scripts to set up a variety of modeling scenarios.
 
 There are example full scripts in the ``py_gnome/scripts`` directory.
+
+Documentation of PyGNOME can be found at:
+
+https://gnome.orr.noaa.gov/doc/pygnome/index.html
+
+
+

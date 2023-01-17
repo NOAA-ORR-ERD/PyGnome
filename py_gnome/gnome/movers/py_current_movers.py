@@ -89,9 +89,9 @@ class PyCurrentMover(movers.PyMover):
         :param uncertain_cross: Scale for uncertainty perpendicular to the flow
         :param uncertain_along: Scale for uncertainty parallel to the flow
         :param time_offset: Time zone shift if data is in GMT
-        :param num_method: Numerical method for calculating movement delta.
-                           Choices:('Euler', 'RK2', 'RK4')
-                           Default: RK2
+        :param default_num_method: Numerical method for calculating movement delta.
+                                   Choices:('Euler', 'RK2', 'RK4')
+                                   Default: RK2
         """
 
         (super(PyCurrentMover, self).__init__(default_num_method=default_num_method,

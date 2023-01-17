@@ -44,6 +44,13 @@ from gnome.environment.timeseries_objects_base import (TimeseriesData,
                                                        TimeseriesVector)
 from gnome.environment.gridded_objects_base import Time
 
+from gnome.weatherers.spreading import FayGravityViscous
+from gnome.weatherers.spreading import r_time_scale
+from gnome.environment import Water
+from gnome.constants import gravity
+from gnome.exceptions import ReferencedObjectNotSet
+from .initializers import (InitRiseVelFromDropletSizeFromDist,
+                           InitRiseVelFromDist)
 
 class StartPositions(SequenceSchema):
     start_position = WorldPoint()
@@ -156,7 +163,13 @@ class Release(GnomeId):
         super(Release, self).__init__(**kwargs)
         self.array_types.update({'positions': gat('positions'),
                                  'mass': gat('mass'),
-                                 'init_mass': gat('mass')})
+                                 'init_mass': gat('mass'),
+                                 'density': gat('density'),
+                                 'release_rate': gat('release_rate'),
+                                 'bulk_init_volume': gat('bulk_init_volume'),
+                                 'area': gat('area'),
+                                 'fay_area': gat('fay_area'),
+                                 'frac_coverage': gat('frac_coverage'),})
         if self.retain_initial_positions:
             self.array_types.update({'init_positions': gat('positions')})
 
@@ -354,7 +367,7 @@ class Release(GnomeId):
         if self.__class__ is Release:
             self._prepared = True
 
-    def initialize_LEs(self, to_rel, data, start_time, end_time):
+    def initialize_LEs(self, to_rel, sc, start_time, end_time): # change data to soill container (sc) 10/24/2022
         """
         set positions for new elements added by the SpillContainer
 
@@ -368,21 +381,36 @@ class Release(GnomeId):
             warnings.warn("{0} is releasing fewer LEs than number of start positions at time: {1}".format(self, end_time))
 
         sl = slice(-to_rel, None, 1)
+        c_p = np.asarray(self.custom_positions)
         qt = to_rel // num_locs # number of times to tile self.start_positions
         rem = to_rel % num_locs # remaining LES to distribute randomly
-        qt_pos = np.tile(self.custom_positions, (qt, 1))
-        rem_pos = self.custom_positions[np.random.randint(0, len(self.custom_positions), rem)]
+        qt_pos = np.tile(c_p, (qt, 1))
+        rem_pos = c_p[np.random.randint(0, len(c_p), rem)]
         pos = np.vstack((qt_pos, rem_pos))
         assert len(pos) == to_rel
 
-        data['positions'][sl] = pos
-        data['mass'][sl] = self._mass_per_le
-        data['init_mass'][sl] = self._mass_per_le
-        
+        sc['positions'][sl] = pos
+        sc['mass'][sl] = self._mass_per_le
+        sc['init_mass'][sl] = self._mass_per_le
+
         if self.retain_initial_positions:
-            data['init_positions'][sl] = pos
+            sc['init_positions'][sl] = pos
 
-
+    def initialize_LEs_post_substance(self, to_rel, sc, start_time, end_time, environment):
+        # compute initial spreading area based terminal oil thickness 
+        sl = slice(-to_rel, None, 1)
+        
+        if sc.substance.is_weatherable:     
+           if environment['water'] is not None:
+              water = environment['water']
+           else:
+              raise ReferencedObjectNotSet("water object not found in environment collection")           
+           
+           visc = sc.substance.kvis_at_temp(temp_k=water.get('temperature'))
+           thickness_limit = FayGravityViscous.get_thickness_limit(visc)  
+           
+           sc['fay_area'][sl] = (sc['init_mass'][sl] / sc['density'][sl]) / thickness_limit
+           sc['area'][sl] = sc['fay_area'][sl]
 
 class PointLineRelease(Release):
     """
@@ -541,7 +569,7 @@ class PointLineRelease(Release):
         super(PointLineRelease, self).prepare_for_model_run(ts)
         self._prepared = True
 
-    def initialize_LEs(self, to_rel, data, start_time, end_time):
+    def initialize_LEs(self, to_rel, sc, start_time, end_time):
         '''
         Initializes the mass and position for to_rel new LEs.
         :param data: spill container with data arrays
@@ -557,23 +585,62 @@ class PointLineRelease(Release):
         # if we have an interpolator -- why use linspace later?
         start_position = self._pos_ts.at(None, start_time, extrapolate=True)
         end_position = self._pos_ts.at(None, end_time, extrapolate=True)
-        data['positions'][sl, 0] = \
+        sc['positions'][sl, 0] = \
             np.linspace(start_position[0],
                         end_position[0],
                         to_rel)
-        data['positions'][sl, 1] = \
+        sc['positions'][sl, 1] = \
             np.linspace(start_position[1],
                         end_position[1],
                         to_rel)
-        data['positions'][sl, 2] = \
+        sc['positions'][sl, 2] = \
             np.linspace(start_position[2],
                         end_position[2],
                         to_rel)
-        data['mass'][sl] = self._mass_per_le
-        data['init_mass'][sl] = self._mass_per_le
-        
+        sc['mass'][sl] = self._mass_per_le
+        sc['init_mass'][sl] = self._mass_per_le
+
         if self.retain_initial_positions:
-            data['init_positions'][sl] = data['positions'][sl]
+            sc['init_positions'][sl] = sc['positions'][sl]
+
+
+    def initialize_LEs_post_substance(self, to_rel, sc, start_time, end_time, environment):
+
+        # compute initial spreading area based on Fay
+        sl = slice(-to_rel, None, 1)
+        
+        if sc.substance.is_weatherable:
+           if environment['water'] is not None:
+              water = environment['water']
+           else:
+              raise ReferencedObjectNotSet("water object not found in environment collection") 
+          
+           spread = FayGravityViscous(water=water)
+           spread.prepare_for_model_run(sc)        
+           spread._set_init_relative_buoyancy(sc.substance)
+           
+           # compute release rate
+           if self.release_duration > 0:
+            sc['release_rate'][sl] = sum(sc['init_mass'][sl] / sc['density'][sl]) / (end_time-start_time).total_seconds()
+           else:
+            sc['release_rate'][sl] = np.nan
+           # compute release rate
+           
+           if not np.isnan(sc['release_rate'][sl][0]):
+                sc['bulk_init_volume'][sl] = r_time_scale * sc['release_rate'][sl]
+           else:
+                sc['bulk_init_volume'][sl] = sum(sc['init_mass'][sl] / sc['density'][sl])
+        
+           if sc['bulk_init_volume'][sl][0] > 0:
+                sc['vol_frac_le_st'][sl] = (sc['init_mass'][sl] / sc['density'][sl]) / sc['bulk_init_volume'][sl]
+           else:   
+                sc['vol_frac_le_st'][sl] = 0 
+                   
+           init_blob_area = spread.init_area(sc.substance.kvis_at_temp(temp_k=water.get('temperature')), spread._init_relative_buoyancy, sc['bulk_init_volume'][sl][0])
+           sc['fay_area'][sl] = init_blob_area * sc['vol_frac_le_st'][sl]
+           sc['area'][sl] = sc['fay_area'][sl]
+        # compute initial spreading area based on Fay
+
 
 class PolygonReleaseSchema(BaseReleaseSchema):
     filename = FilenameSchema(save=False, update=False, test_equal=False, missing=drop)
@@ -1109,7 +1176,71 @@ class ContinuousPolygonRelease(PolygonRelease):
         data_arrays['positions'][-num_new_particles:, :] = self.coords
 
 
+'''
+Subsurface release draft
+'''
+class SubsurfaceReleaseSchema(BaseReleaseSchema):
+    '''
+    Contains properties required for persistence
+    '''
+    # start_position + end_position are only persisted as WorldPoint() instead
+    # of WorldPointNumpy because setting the properties converts them to Numpy
+    # _next_release_pos is set when loading from 'save' file and this does have
+    # a setter that automatically converts it to Numpy array so use
+    # WorldPointNumpy schema for it.
+    start_position = WorldPoint(
+        save=True, update=True
+    )
+    end_position = WorldPoint(
+        missing=drop, save=True, update=True
+    )
+    description = 'SubsurfaceRelease object schema'
+    
+    
+class SubsurfaceRelease(PointLineRelease):
+    _schema = SubsurfaceReleaseSchema
+     
+    def __init__(self,
+                 distribution = None,
+                 distribution_type = 'droplet_size',
+                 release_time=None,
+                 start_position=None,
+                 num_elements=None,
+                 num_per_timestep=None,
+                 end_release_time=None,
+                 end_position=None,
+                 release_mass=0,
+                 **kwargs):
+        """
+        released as PointLinearRelease with additional features
+        """
 
+        super(SubsurfaceRelease, self).__init__(release_time=release_time,
+                                               end_release_time=end_release_time,
+                                               num_elements=num_elements,
+                                               release_mass = release_mass,
+                                               start_position = start_position,
+                                               end_position = end_position,
+                                               **kwargs)
+        self.distribution = distribution
+        self.distribution_type = distribution_type          
+        
+        # remove plume_initializers method and move stuff here
+        if distribution_type == 'droplet_size':
+               self._init_rise_vel = InitRiseVelFromDropletSizeFromDist(distribution=distribution, **kwargs)
+        elif distribution_type == 'rise_velocity':
+               self._init_rise_vel = InitRiseVelFromDist(distribution=distribution,**kwargs)
+        else:
+               raise TypeError('distribution_type must be either droplet_size or '
+                               'rise_velocity')
+                        
+        self.array_types.update(self._init_rise_vel.array_types)
+      
+    def initialize_LEs_post_substance(self, to_rel, sc, start_time, end_time, environment):
+        sl = slice(-to_rel, None, 1)
+        
+        Release.initialize_LEs_post_substance(self, to_rel, sc, start_time, end_time, environment)
+        self._init_rise_vel.initialize(to_rel, sc, sc.substance)  
 
 class VerticalPlumeRelease(Release):
     '''
