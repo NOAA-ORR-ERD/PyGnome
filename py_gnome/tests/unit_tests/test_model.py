@@ -1262,8 +1262,8 @@ def test_weathering_data_attr():
     model.step()
 
     for sc in model.spills.items():
-        assert len(sc.mass_balance) == 2
-        for key in ('beached', 'off_maps'):
+        assert len(sc.mass_balance) == 7
+        for key in ('floating', 'avg_density', 'avg_viscosity', 'non_weathering', 'amount_released', 'beached', 'off_maps'):
             assert key in sc.mass_balance
 
     model.environment += [Water(), constant_wind(0., 0)]

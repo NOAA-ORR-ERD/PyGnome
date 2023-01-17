@@ -56,14 +56,23 @@ class TestFayGravityViscous(object):
         A0 = (np.pi *
               (k2 ** 4 / k1 ** 2) *
               (((init_vol) ** 5 * g * dbuoy) / (nu_h2o ** 2)) ** (1. / 6.))
-
+ 
+        p_area = A0
+        for i in range(0, int(p_age/default_ts)):
+            C = (np.pi * k_nu ** 2 * (init_vol ** 2 * g * dbuoy / np.sqrt(nu_h2o)) ** (1. / 3.))
+            K = 4 * np.pi * 2 * .033
+            
+            blob_area_fgv = .5 * (C**2 / p_area) * default_ts	
+            blob_area_diffusion = ((7. / 6.) * K * (p_area / K) ** (1. / 7.)) * default_ts
+            p_area = p_area + blob_area_fgv + blob_area_diffusion         
+        '''
         p_area = (np.pi *
                   # correct k_nu, Spreading Law coefficient -- Eq.(6.14), 11/23/2021
                   #k2 ** 2 *
                   k_nu ** 2 *
                   (init_vol ** 2 * g * dbuoy * p_age ** 1.5) ** (1. / 3.) /
                   (nu_h2o ** (1. / 6.)))
-
+        '''
         return (A0, p_area)
 
     def test_exception_init_area(self):
@@ -75,8 +84,7 @@ class TestFayGravityViscous(object):
         with pytest.raises(Err):
             'relative_bouyancy >= 0'
             self.spread.init_area(water_viscosity, -rel_buoy, bulk_init_vol)
-
-
+               
     def test_exception_update_area(self):
         '''
         if relative_bouyancy is < 0, it just raises an exception
@@ -90,8 +98,8 @@ class TestFayGravityViscous(object):
                                     relative_bouyancy,
                                     bulk_init_volume,
                                     age,
-                                    area)
-
+                                    area) 
+                                    
     @pytest.mark.parametrize("num", (1, 10))
     def test_values_same_age(self, num):
         '''
@@ -110,14 +118,21 @@ class TestFayGravityViscous(object):
         (A0, p_area) = self.expected(bulk_init_volume[0], default_ts)
         assert A0 == area.sum()
 
+        vol_frac_le = np.zeros_like(bulk_init_volume)
+        vol_frac_le[:] = 1.0 / num         
+        max_area_le = (bulk_init_volume / self.spread.thickness_limit) * vol_frac_le 
         age[:] = 900
-        self.spread.update_area(water_viscosity,
-                                rel_buoy,
-                                bulk_init_volume,
-                                area,
-                                age)
+        for i in range(0, int(age[0]/default_ts)):
+            area = self.spread.update_area(water_viscosity,
+                                    rel_buoy,
+                                    bulk_init_volume[0],
+                                    area,
+                                    max_area_le,
+                                    default_ts,
+                                    vol_frac_le[0],
+                                    age)
 
-        assert np.isclose(area.sum(), p_area)
+        assert np.isclose(area.sum(), p_area) 
 
     def test_values_vary_age(self):
         '''
@@ -135,15 +150,27 @@ class TestFayGravityViscous(object):
         age[1::2] = 1800
         area[1::2] = a0 / len(area[1::2])  # initialize else divide by 0 error
 
+        vol_frac_le = np.zeros_like(bulk_init_volume)
+        vol_frac_le[0::2] = 1.0 / len(area[0::2])
+        vol_frac_le[1::2] = 1.0 / len(area[1::2])
+        
+        max_area_le = (bulk_init_volume / self.spread.thickness_limit) * vol_frac_le 
         # now invoke update_area
-        area[:] = self.spread.update_area(water_viscosity,
-                                          rel_buoy,
-                                          bulk_init_volume,
-                                          area,
-                                          age)
+        for age_le in np.unique(age):
+            mask = age == age_le
+            for i in range(0, int(age_le/default_ts)):              
+                    area[mask] = self.spread.update_area(water_viscosity,
+                                                rel_buoy,
+                                                bulk_init_volume[0],
+                                                area[mask],
+                                                max_area_le[mask],
+                                                default_ts,
+                                                vol_frac_le[0],
+                                                age[mask])
+                                                 
 
         assert np.isclose(area[0::2].sum(), area_900)
-        assert np.isclose(area[1::2].sum(), area_1800)
+        assert np.isclose(area[1::2].sum(), area_1800)    
 
     def test_values_vary_age_bulk_init_vol(self):
         '''
@@ -161,16 +188,27 @@ class TestFayGravityViscous(object):
         a0, area_1800 = self.expected(bulk_init_volume[1], age[1])
 
         area[1::2] = a0 / len(area[1::2])  # initialize else divide by 0 error
-
+ 
+        vol_frac_le = np.zeros_like(bulk_init_volume)
+        vol_frac_le[0::2] = 1.0 / len(area[0::2])
+        vol_frac_le[1::2] = 1.0 / len(area[1::2])
+        
+        max_area_le = (bulk_init_volume / self.spread.thickness_limit) * vol_frac_le 
         # now invoke update_area
-        area[:] = self.spread.update_area(water_viscosity,
-                                          rel_buoy,
-                                          bulk_init_volume,
-                                          area,
-                                          age)
+        for age_le in np.unique(age):
+            mask = age == age_le
+            for i in range(0, int(age_le/default_ts)):              
+                    area[mask] = self.spread.update_area(water_viscosity,
+                                                rel_buoy,
+                                                bulk_init_volume[mask][0],
+                                                area[mask],
+                                                max_area_le[mask],
+                                                default_ts,
+                                                vol_frac_le[0],
+                                                age[mask])
 
         assert np.isclose(area[0::2].sum(), area_900)
-        assert np.isclose(area[1::2].sum(), area_1800)
+        assert np.isclose(area[1::2].sum(), area_1800)  
 
     def test_minthickness_values(self):
         '''
@@ -194,15 +232,27 @@ class TestFayGravityViscous(object):
 
         age[4:] = 900
 
-        self.spread.update_area(water_viscosity,
-                                rel_buoy,
-                                bulk_init_volume,
-                                area,
-                                age)
+         
+        vol_frac_le = np.zeros_like(bulk_init_volume)
+        vol_frac_le[:4] = 1.0 / len(age[:4])
+        vol_frac_le[4:] = 1.0 / len(age[4:])
+        
+        max_area_le = (bulk_init_volume / self.spread.thickness_limit) * vol_frac_le 
+        # now invoke update_area
+        for age_le in np.unique(age):
+            mask = age == age_le
+            for i in range(0, int(age_le/default_ts)):              
+                    area[mask] = self.spread.update_area(water_viscosity,
+                                                rel_buoy,
+                                                bulk_init_volume[mask][0],
+                                                area[mask],
+                                                max_area_le[mask],
+                                                default_ts,
+                                                vol_frac_le[0],
+                                                age[mask])
 
         assert np.all(area[:4] == i_area)
-        assert np.all(area[4:] < i_area)
-
+        assert np.all(area[4:] < i_area)    
 
 class TestLangmuir(ObjForTests):
     thick = 1e-4
@@ -214,7 +264,7 @@ class TestLangmuir(ObjForTests):
 
     vmin, vmax = lang._wind_speed_bound(rel_buoy, thick)
 
-    sc, weatherers = ObjForTests.mk_test_objs(water)
+    sc, weatherers, environment = ObjForTests.mk_test_objs(water)
 
     def test_init(self):
         langmuir = Langmuir(self.water, self.wind)
@@ -273,9 +323,10 @@ class TestLangmuir(ObjForTests):
         # elements
         model_time = self.sc.spills[0].release_time
         time_step = 900.
-        self.release_elements(time_step, model_time)
+        self.release_elements(time_step, model_time, self.environment)
         self.step(langmuir, time_step, model_time)
 
         assert langmuir.active
         assert np.all(self.sc['area'] < self.sc['fay_area'])
-        assert np.all(self.sc['frac_coverage'] < 1.0)
+        assert np.all(self.sc['frac_coverage'] < 1.0)        
+        

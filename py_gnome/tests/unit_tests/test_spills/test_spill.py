@@ -197,7 +197,7 @@ class TestSpill:
     #         model_time += tsd
 
 def test_surface_point_line_spill():
-    # does the default windage work?
+    # do the defaults windages work?
 
     sp = surface_point_line_spill(100,
                                   (-87.2, 37.5,),
@@ -209,7 +209,7 @@ def test_surface_point_line_spill():
 
 
 def test_surface_point_line_spill_specify_windage():
-    # does the default windage work?
+    # does the default windages of the substance get overwritten?
 
     sp = surface_point_line_spill(100,
                                   (-87.2, 37.5,),
@@ -222,25 +222,34 @@ def test_surface_point_line_spill_specify_windage():
 
 def test_surface_point_line_spill_specify_substance_and_windage():
     """
-    It should raise an error when you set both
+    It should use defaults if not set
+
+    They should override the substance if set
     """
 
-    with pytest.raises(TypeError):
-        sp = surface_point_line_spill(100,
-                                      (-87.2, 37.5,),
-                                      "2022-05-23T12:10:15",
-                                      substance = NonWeatheringSubstance(),
-                                      # windage_range=(0.02, 0.03),
-                                      windage_persist=400,
-                                      )
+    sp = surface_point_line_spill(100,
+                                  (-87.2, 37.5,),
+                                  "2022-05-23T12:10:15",
+                                  substance = NonWeatheringSubstance(),
+                                  # windage_range=(0.02, 0.03),
+                                  windage_persist=400,
+                                  )
+    assert sp.substance.windage_persist == 400
+    # not set, should be the default
+    assert sp.substance.windage_range == NonWeatheringSubstance().windage_range
 
-    with pytest.raises(TypeError):
-        sp = surface_point_line_spill(100,
-                                      (-87.2, 37.5,),
-                                      "2022-05-23T12:10:15",
-                                      substance = NonWeatheringSubstance(),
-                                      windage_range=(0.02, 0.03),
-                                      # windage_persist=400,
-                                      )
+
+def test_surface_point_line_spill_specify_substance_and_windage_range():
+    sp = surface_point_line_spill(100,
+                                  (-87.2, 37.5,),
+                                  "2022-05-23T12:10:15",
+                                  substance = NonWeatheringSubstance(),
+                                  windage_range=(0.02, 0.03),
+                                  # windage_persist=400,
+                                  )
+
+    assert sp.substance.windage_range == (0.02, 0.03)
+    # not set, should be the default
+    assert sp.substance.windage_persist == NonWeatheringSubstance().windage_persist
 
 

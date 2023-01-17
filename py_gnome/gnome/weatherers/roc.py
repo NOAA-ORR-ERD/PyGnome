@@ -77,7 +77,7 @@ class Response(Weatherer):
     def _get_thickness(self, sc):
         oil_thickness = 0.0
         substance = self._get_substance(sc)
-
+        
         if sc['area'].any() > 0:
             volume_emul = ((sc['mass'].mean() / substance.density_at_temp()) /
                            (1.0 - sc['frac_water'].mean()))

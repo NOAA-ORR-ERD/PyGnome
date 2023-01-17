@@ -89,7 +89,6 @@ class Grid(Environment):
         """
         Not sure we need to do anything here
         """
-
         pass
 
     def prepare_for_model_step(self, model_time):
@@ -127,9 +126,4 @@ class Grid(Environment):
 
     @classmethod
     def deserialize(cls, json_):
-
-        schema = cls._schema()
-
-        _to_dict = schema.deserialize(json_)
-
-        return _to_dict
+        return cls._schema().deserialize(json_)

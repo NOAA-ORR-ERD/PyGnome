@@ -198,6 +198,11 @@ class GnomeMap(GnomeId):
         self._map_bounds = np.array(mb)
 
     def get_map_bounding_box(self):
+        """
+        return a bounding box of teh map
+
+        needed because map_bounds can be a polygon
+        """
 
         bounds = self._map_bounds
         longs = bounds[:,0]

@@ -27,7 +27,7 @@ Create an all water map -- if map_bounds is not specified, a spill can be added 
 *Useful options:*
 
 map_bounds
-    A polygon bounding the map, e.g. map_bounds = ((-145,48), (-145,49), (-143,49), (-143,48))
+    A polygon bounding the map, e.g. map_bounds = ((-145, 48), (-145, 49), (-143, 49), (-143, 48))
 
 Load Shoreline from File :class:`gnome.map.MapFromBNA`
 ------------------------------------------------------

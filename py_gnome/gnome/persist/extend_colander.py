@@ -12,8 +12,7 @@ from colander import (Float, DateTime, Sequence, Tuple, List,
                       TupleSchema, SequenceSchema, null, SchemaNode, String, Invalid)
 
 import gnome.basic_types
-from gnome.utilities import inf_datetime
-
+from gnome.utilities import inf_datetime, round_sf_array
 
 class LocalDateTime(DateTime):
     def __init__(self, *args, **kwargs):
@@ -255,12 +254,16 @@ class NumpyArraySchema(SchemaNode):
     with the precision specified before doing so.
 
     It deserializes lists of lists of numbers into a numpy array of dtype
-    specified with dtype length specified, if at all.
+    specified with dtype specified, if at all.
+
+    :param dtype: numpy data type to (de-)serialize to/from
     '''
 
     def __init__(self, *args, **kwargs):
-        self.typ = np.float32
-        self.dtype = kwargs.pop('dtype', np.float32)
+        # fixme: where/how is this used?? -- why not a class attribute?
+        #        and shouldn't it be ndarray, or ???
+        self.typ = np.float64
+        self.dtype = kwargs.pop('dtype', np.float64)
         self.precision = kwargs.pop('precision', 8)
 
     def serialize(self, appstruct):
@@ -270,8 +273,9 @@ class NumpyArraySchema(SchemaNode):
         returns data as a list
         """
         if not isinstance(appstruct, (np.ndarray, list, tuple)):
-            raise ValueError('Cannot serialize: {0} is not a numpy array'.format(appstruct))
-        return np.round(np.array(appstruct).astype(self.dtype), self.precision).tolist()
+            raise ValueError('Cannot serialize: {0} is not a numpy array, list, or tuple'.format(appstruct))
+
+        return round_sf_array(appstruct, self.precision).astype(self.dtype, copy=False).tolist()
 
     def deserialize(self, cstruct):
         """

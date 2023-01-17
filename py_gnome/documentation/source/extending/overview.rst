@@ -11,10 +11,10 @@ The multiple PyGNOME APIs
 The gnome package is designed to work when driven by scripts, as well as the engine behind the WebGNOME system. This means that there are a couple of related APIs for each GnomeObject:
 
 The scripting API
-    This how an object is created / adjusted in python scripts. When making new objects, you can use whatever you like, but it's probably a good idea to make the API similar to other existing objects.
+    This is how an object is created / manipulated in python scripts. When making new objects, you can use whatever you like, but it's probably a good idea to make the API similar to other existing objects.
 
 The model API
-    These are the methods and attributes the object needs to have in order to work with the gnome model system. For the most part, the core methods will be defined in a Base Class (e.g. the ``gnome.movers.mover.Mover`` class), so if you subclass from that, you only need to implement the ones you need.
+    These are the methods and attributes the object needs to have in order to work with the ``gnome.Model`` system. For the most part, the core methods will be defined in a Base Class (e.g. the ``gnome.movers.mover.Mover`` class), so if you subclass from that, you only need to implement the ones you need.
 
 The Web / Save file API
     WebGNOME use a JSON API to configure the PyGNOME system. A very similar JSON format is used to save model configurations in "save files", which are zip files with the model configuration and data required to reproduce a model configuration. You can develop and test your new component without using this system, but if you want your component to be usable with WebGNOME or save files, then This API must be defined. This is done by defining a ``Schema`` that specifies what attributes need to be saved and can be updated for a given object. See: :ref:`serialization_overview` for the details.
@@ -51,9 +51,9 @@ A mover is component that "moves" the elements in the model. PyGNOME supports ha
 
         return delta
 
-Note that `get_move()` doesn't alter the positions of the elements. rather it returns a "delta" -- of the amount that of movement in (longitude., latitude, vertical meters) units) for the provided time step. This is so that the model can apply the "delta" from each mover and the result won't change with the order in which they are applied. Essentially, the delta values from all the movers are added together, and then added to the positions array.
+Note that `get_move()` doesn't alter the positions of the elements. rather it returns a "delta" -- of the amount that of movement in (longitude, latitude, vertical meters) units) for the provided time step. This is so that the model can apply the "delta" from each mover and the result won't change with the order in which they are applied. Essentially, the delta values from all the movers are added together, and then added to the positions array.
 
-``sc`` is a spill_container, it contains all the arrays of data associated with the elements. For the most part, for a mover, the "positions" array is the important one, but if movement is affected by other properties of the elements, that data will be stored in the spill_container.
+``sc`` is a ``SpillContainer``, it contains all the arrays of data associated with the elements. For the most part, for a mover, the "positions" array is the important one, but if movement is affected by other properties of the elements, that data will be stored in the spill_container. The ``SpillContainer`` is a complex object that manges all the data associated with the elements. But it presents a "Mapping" interface (like a Pyton dict) for easy access to the data associated with the elements -- for example: ``sc['postions']`` will return a 3xN numpy array with the positions of the elements. ``sc['mass']`` wil return an array with the mass of each element, etc. Which arrays are assocaed with the elements depends on what components have been added to the model.
 
 the ``get_move()`` method will also have access to the time step length (in seconds), and the model time at the beginning of this time step.
 
@@ -89,7 +89,7 @@ The core method each weatherer needs is:
 
 weatherers update the data arrays in the spill container, ``sc``.
 
-NOTE: this is different than movers -- as each weatherer updates the actual data associated with the elements, the result will be different depending on what order they are run. THis order is controlled by ``sort_order`` in ``gnome/weatherers/__init__.py``
+NOTE: this is different than movers -- as each weatherer updates the actual data associated with the elements, the result will be different depending on what order they are run. This order is controlled by ``sort_order`` in ``gnome/weatherers/__init__.py``
 
 
 Making your own weatherer
@@ -101,15 +101,15 @@ And here's how to do this...
 Map
 ---
 
-The Model has to have a Map at all times. After moving and weathering the elements, the map is responsible for the interaction between the elements and the shoreline, as well as the bottom and water surface. (bottom and water surface are only relevant for 3-d simulations).
+The Model has to have a Map at all times. After moving and weathering the elements, the map is responsible for the interaction between the elements and the shoreline, as well as the ocean bottom and water surface. (bottom and water surface are only relevant for 3-d simulations).
 
 It will determine whether elements have impacted the shoreline, or gone off the map, and can also refloat any elements that were previously beached.
 
 The base map object: :class gnome.GnomeMap: represents a "water world" -- no land anywhere, and unlimited map bounds. But it also provides a base class with the full API. To create another map object, you derive from GnomeMap, an override the methods that you want to implement in a different way. In addition, it should have a few attributes used by the model:
 
 
-Key Attributes
-..............
+Key Attributes of Maps
+......................
 
 ``map_bounds``: The polygon bounding the map if any elements are outside the map bounds, they are removed from the simulation.
 

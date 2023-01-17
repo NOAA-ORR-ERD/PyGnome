@@ -2,12 +2,7 @@
 Test all operations for py_current mover work
 '''
 
-
-
-
 import datetime
-import os
-from os.path import basename
 
 import numpy as np
 import pytest
@@ -46,7 +41,7 @@ time_step = 15 * 60  # seconds
 model_time = time_utils.sec_to_date(time_utils.date_to_sec(rel_time))
 
 
-def test_loop():
+def run_test_loop():
     """
     test one time step with no uncertainty on the spill
     checks there is non-zero motion.
@@ -57,6 +52,20 @@ def test_loop():
     py_current = PyCurrentMover(curr_file)
     delta = _certain_loop(pSpill, py_current)
 
+    return delta
+
+
+def test_loop():
+    """
+    test one time step with no uncertainty on the spill
+    checks there is non-zero motion.
+    also checks the motion is same for all LEs
+    """
+
+    pSpill = sample_sc_release(num_le, start_pos, rel_time)
+    py_current = PyCurrentMover(curr_file)
+    delta = run_test_loop()
+
     _assert_move(delta)
 
     assert np.all(delta[:, 0] == delta[0, 0])  # lat move matches for all LEs
@@ -66,9 +75,9 @@ def test_loop():
     return delta
 
 
-def test_uncertain_loop():
+def run_uncertain_loop():
     """
-    test one time step with uncertainty on the spill
+    runs one time step with uncertainty on the spill
     checks there is non-zero motion.
     """
 
@@ -81,14 +90,27 @@ def test_uncertain_loop():
 
     return u_delta
 
+def test_uncertain_loop():
+    """
+    test one time step with uncertainty on the spill
+    checks there is non-zero motion.
+    """
+
+    pSpill = sample_sc_release(num_le, start_pos, rel_time,
+                               uncertain=True)
+    py_current = PyCurrentMover(curr_file)
+    u_delta = run_uncertain_loop()
+
+    _assert_move(u_delta)
+
 
 def test_certain_uncertain():
     """
     make sure certain and uncertain loop results in different deltas
     """
 
-    delta = test_loop()
-    u_delta = test_uncertain_loop()
+    delta = run_test_loop()
+    u_delta = run_uncertain_loop()
     print()
     print(delta)
     print(u_delta)

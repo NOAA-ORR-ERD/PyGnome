@@ -1,9 +1,14 @@
 '''
-    The Water environment object.
-    The Water object defines the Water conditions for the spill
+The Water environment object.
+The Water object defines the Water conditions for the spill
+
+TEmerature, Salinity, etc.
+
+NOTE: this is simple, constant water conditions -- at some point, we will make it a proper Environment object
 '''
 
 from functools import lru_cache
+import warnings
 
 import numpy as np
 
@@ -242,6 +247,13 @@ class Water(Environment):
         self.Sediment = Sediment(self)
         self.WaveHeight = WaveHeight(self)
 
+        # check for obvious errors:
+        t = self.get('temperature', 'C')
+        if (t > 100) or (t < -10):
+            warnings.warn(f"Temperature of {self.temperature} {self._units['temperature']}"
+                          "is unrealistic: perhaps you need to specify the units")
+
+
     def __repr__(self):
         info = ("{0.__class__.__module__}.{0.__class__.__name__}"
                 "(temperature={0.temperature},"
@@ -308,7 +320,7 @@ class Water(Environment):
         setattr(self, attr, value)
         self.units[attr] = unit
 
-    # has to be a staticmethod, as the type is not hashable foe lru_cache
+    # has to be a staticmethod, as the type is not hashable for lru_cache
     @staticmethod
     @lru_cache(2)
     def _get_density(salinity, temp, temp_units):
@@ -376,4 +388,9 @@ class Water(Environment):
         else:
             return self.sediment * 1000.0
 
+# from gnome.environment.gridded_objects_base import VectorVariable
 
+# class WaterConditions(VectorVariable, Environment):
+#     '''
+#     An aggregated object describing the water conditions.
+#     '''
