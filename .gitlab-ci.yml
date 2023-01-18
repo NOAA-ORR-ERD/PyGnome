@@ -112,6 +112,7 @@ test_pygnome_windows:
     - conda config --add channels defaults
     - conda config --add channels conda-forge
     - conda config --get channels
+    - conda config --set channel_priority strict
   script:
     - echo "compiling PyGNOME"
 
