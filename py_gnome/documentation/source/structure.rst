@@ -7,7 +7,7 @@ The substance (oil or other tracer) is represented as Lagrangian elements (LEs),
 
 Individual elements can move under the influence of ocean currents, direct wind forcing, diffusion, or any other custom "mover". Elements can be transformed over time, including undergoing chemical/physical changes over time (e.g. oil weathering).
 
-Setting up a simulation in PyGNOME involves inputting or loading data to instantiate various objects in the ``gnome`` package wich create, move, or and/or modify the particles.
+Setting up a simulation in PyGNOME involves inputting or loading data to instantiate various objects in the ``gnome`` package which create, move, or and/or modify the particles.
 
 Primary Base Classes in ``gnome``
 ---------------------------------
