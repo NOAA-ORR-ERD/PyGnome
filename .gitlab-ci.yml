@@ -98,42 +98,42 @@ test_pygnome:
 # any windows specific problems.
 # So this job tries to compile PyGnome on Windows and run the pytests.
 #
-test_pygnome_windows:
-  stage: test
-  tags:
-    - windows
-    - visual-studio-22
-  allow_failure: true
-  before_script:
-    - echo $CWD
-    - dir
-    - echo $CI_PIPELINE_ID
-    - activate ./$CI_PIPELINE_ID
-    - conda config --add channels defaults
-    - conda config --add channels conda-forge
-    - conda config --get channels
-  script:
-    - echo "compiling PyGNOME"
+# test_pygnome_windows:
+#   stage: test
+#   tags:
+#     - windows
+#     - visual-studio-22
+#   allow_failure: true
+#   before_script:
+#     - echo $CWD
+#     - dir
+#     - echo $CI_PIPELINE_ID
+#     - activate ./$CI_PIPELINE_ID
+#     - conda config --add channels defaults
+#     - conda config --add channels conda-forge
+#     - conda config --get channels
+#   script:
+#     - echo "compiling PyGNOME"
 
-    # get the adios_db code: needed for tests and requirements
-    - git clone --depth 1 -b develop https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.orr.noaa.gov/gnome/oil_database/oil_database.git
-    - conda install -y python=$PYTHON_VER --file conda_requirements.txt
-                                          --file conda_requirements_build.txt
-                                          --file oil_database/adios_db/conda_requirements.txt
+#     # get the adios_db code: needed for tests and requirements
+#     - git clone --depth 1 -b develop https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.orr.noaa.gov/gnome/oil_database/oil_database.git
+#     - conda install -y python=$PYTHON_VER --file conda_requirements.txt
+#                                           --file conda_requirements_build.txt
+#                                           --file oil_database/adios_db/conda_requirements.txt
 
-    # install adios_db
-    - pip install oil_database/adios_db/
+#     # install adios_db
+#     - pip install oil_database/adios_db/
 
-    - cd ./py_gnome
-    - python setup.py install
+#     - cd ./py_gnome
+#     - python setup.py install
 
-    - cd ../  # make sure that it won't find the source gnome package.
-    - python -c "import gnome"  # make sure that it imports
+#     - cd ../  # make sure that it won't find the source gnome package.
+#     - python -c "import gnome"  # make sure that it imports
 
-    - conda install -y --file conda_requirements_test.txt
-    - cd ./py_gnome/tests/unit_tests
-    - pytest --runslow
-    - cd ../../..
+#     - conda install -y --file conda_requirements_test.txt
+#     - cd ./py_gnome/tests/unit_tests
+#     - pytest --runslow
+#     - cd ../../..
 
 build_develop:
   stage: build
