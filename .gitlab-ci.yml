@@ -119,7 +119,7 @@ test_pygnome_windows:
     # get the adios_db code: needed for tests and requirements
     - git clone --depth 1 -b develop https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.orr.noaa.gov/gnome/oil_database/oil_database.git
 
-    - conda -y install mamba
+    - conda install -y mamba
     - echo "Setting up conda environment"
     - mamba install -y python=$PYTHON_VER --file conda_requirements.txt
                                           --file conda_requirements_build.txt
