@@ -125,16 +125,18 @@ test_pygnome_windows:
     #                                       --file conda_requirements_build.txt
     #                                       --file conda_requirements_test.txt
     #                                       --file oil_database/adios_db/conda_requirements.txt
-    # mamba doesn't appear to handle multiple requirements files at once :-(
     - mamba install -y python=$PYTHON_VER --file conda_requirements.txt
-    - mamba install -y python=$PYTHON_VER --file conda_requirements_build.txt
-    - mamba install -y python=$PYTHON_VER --file conda_requirements_test.txt
-    - mamba install -y python=$PYTHON_VER --file oil_database/adios_db/conda_requirements.txt
+                                          --file conda_requirements_build.txt
+                                          --file conda_requirements_test.txt
+                                          --file oil_database/adios_db/conda_requirements.txt
 
-    # install adios_dbcx
+    # install adios_db
     - pip install oil_database/adios_db/
 
     - echo "Building PyGNOME"
+
+    - echo "Python is running from:"
+    - python -c "import sys; print(sys.executable)"
 
     - cd ./py_gnome
     - python setup.py install
