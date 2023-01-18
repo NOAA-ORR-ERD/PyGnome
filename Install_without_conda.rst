@@ -1,6 +1,6 @@
-#####################################
+*************************************
 Installation without conda / Anaconda
-#####################################
+*************************************
 
 **WARNING:** These notes are out of date and not tested. All our development work is done using conda and conda-forge -- there are a few too many dependencies not well supported by "pure" pip / PyPi packages at this point.
 

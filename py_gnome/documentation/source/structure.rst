@@ -1,5 +1,6 @@
+#################
 PyGNOME Structure
-=================
+#################
 
 PyGNOME is essentially a Lagrangian element (particle tracking) modelling framework. It was developed specifically to support oil spill modeling, but can be used for any number of other particle tracking applications.
 
@@ -14,7 +15,11 @@ Primary Base Classes in ``gnome``
 
 **The Model Object** :mod:`gnome.model.Model`
     The Model Object is used to initialize a scenario and run the simulation. It contains various parameters
+<<<<<<< HEAD
+    including model start time, duration, and time step. All other objects are added to the Model. The primary point of the Model is to provide the framework to act on the particles over time -- the model itself does not include any assumptions about what the elements represent or what is acting on them.
+=======
     including model start time, duration, and time step. All other objects are added to the Model. The primariy point of the model is to act on the particles over time -- the model itself does not include any assumptions about what the elements represent or what is acting on them.
+>>>>>>> 62e446c936a154803b1839f278a952ae703e3d86
 
 **The Map Object** :mod:`gnome.map.GnomeMap`
     The Map Object defines the domain of the model and handles interaction with the boundaries, such as particle beaching.
@@ -33,15 +38,12 @@ Primary Base Classes in ``gnome``
 **Weatherers** :mod:`gnome.weatherers.Weatherer`
     Weatherers represent processes that change the mass or properties of the floating oil or of oil droplets within the water column. These include processes that are traditionally described as "weathering" (e.g. evaporation, dispersion) and response options (e.g. skimming, burning oil). Weatherers utilize oil property data along with environment objects.
 
-**Substance Objects** :mod:`gnome.spill.Substance`
-   A substance object defines the properties of the substance being tracked -- it includes any properties of the subsance that affect how it might move or change in the environment. PyGNOME includes a sophisticated ``GnomeOil`` substance to support full oil weathering modeling, as well as a sinple "NonWeatheringSubstance" that is subject only to movement, and can be used to represent a number of "passive tracers".
-
-**Spill Objects** :mod:`gnome.spill.Spill`
+**Spill Objects** :mod:`gnome.spills.Spill`
     A Spill Object is a composition of two objects:
     
-    * A Release Object contains information on where and when elements are released
-    * A Substance Object contains information about what was spilled.
-
+    * A **Release Object** contains information on where and when elements are released by the model. :mod:`gnome.spills.release.Release`  
+    * A **Substance Object**  defines the properties of the particles that affect how they might move or change in the environment. PyGNOME includes a sophisticated ``GnomeOil`` substance to support full oil weathering modeling, as well as a simple ``NonWeatheringSubstance`` that is subject only to movement, and can be used to represent a number of "passive tracers". :mod:`gnome.spills.substance.Substance`
+    
 **Outputters** :mod:`gnome.outputters.Outputter`
     Outputter Objects handle all aspects of exporting results from the model.
 
