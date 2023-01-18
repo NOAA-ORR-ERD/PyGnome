@@ -93,7 +93,6 @@ test_pygnome:
     - conda install -y --file conda_requirements_test.txt
     - cd ./py_gnome/tests/unit_tests && pytest --runslow
 
-#
 # We will not build a windows docker image, but we do want to know if there are
 # any windows specific problems.
 # So this job tries to compile PyGnome on Windows and run the pytests.
@@ -119,7 +118,7 @@ test_pygnome_windows:
     # get the adios_db code: needed for tests and requirements
     - git clone --depth 1 -b develop https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.orr.noaa.gov/gnome/oil_database/oil_database.git
 
-    - conda install -y mamba
+    - conda install -y python=$PYTHON_VER mamba
     - echo "Setting up conda environment"
     - mamba install -y python=$PYTHON_VER --file conda_requirements.txt
                                           --file conda_requirements_build.txt
