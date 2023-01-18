@@ -149,11 +149,6 @@ build_develop:
     # note -- is should already be there
     - git clone --depth 1 -b develop https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.orr.noaa.gov/gnome/oil_database/oil_database.git
 
-    # build the docs image
-    - docker build -f dockerfile-docs ./py_gnome/documentation/build/html -t registry.orr.noaa.gov/gnome/pygnome/docs
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker push registry.orr.noaa.gov/gnome/pygnome/docs
-
     # build the py_gnome image
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker build . --build-arg PYTHON_VER=$PYTHON_VER -t registry.orr.noaa.gov/gnome/pygnome:develop
@@ -173,6 +168,11 @@ build_main:
     # note -- is should already be there
     - git clone --depth 1 -b production https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.orr.noaa.gov/gnome/oil_database/oil_database.git
 
+    # build the docs image
+    - docker build -f dockerfile-docs ./py_gnome/documentation/build/html -t registry.orr.noaa.gov/gnome/pygnome/docs
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker push registry.orr.noaa.gov/gnome/pygnome/docs
+    
     # build the py_gnome image
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker build . --build-arg PYTHON_VER=$PYTHON_VER -t registry.orr.noaa.gov/gnome/pygnome:main
