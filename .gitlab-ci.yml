@@ -97,6 +97,10 @@ test_pygnome:
 # any windows specific problems.
 # So this job tries to compile PyGnome on Windows and run the pytests.
 #
+# Unfortunately, the Windows GitLab runner is running PowerShell, so it can't
+# really be a true apples-to-apples test of a normal manual install on windows.
+# Oh well, at least we can test the code.
+#
 test_pygnome_windows:
   stage: test
   tags:
@@ -104,7 +108,7 @@ test_pygnome_windows:
     - visual-studio-22
   allow_failure: true
   before_script:
-    - echo %CWD%
+    - Get-Location
     - dir
     - echo $CI_PIPELINE_ID
     - activate ./$CI_PIPELINE_ID
@@ -136,7 +140,7 @@ test_pygnome_windows:
     - echo "Building PyGNOME"
 
     - echo "Our environemt vars:"
-    - set
+    - $Env:Path
 
     - echo "Python is running from:"
     - python -c "import sys; print(sys.executable)"
