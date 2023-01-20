@@ -135,8 +135,8 @@ test_pygnome_windows:
 
     - echo "Building PyGNOME"
 
-    - echo "Our path:"
-    - echo %PATH%
+    - echo "Our environemt vars:"
+    - set
 
     - echo "Python is running from:"
     - python -c "import sys; print(sys.executable)"
