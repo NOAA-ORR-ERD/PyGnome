@@ -104,7 +104,7 @@ test_pygnome_windows:
     - visual-studio-22
   allow_failure: true
   before_script:
-    - echo $CWD
+    - echo %CWD%
     - dir
     - echo $CI_PIPELINE_ID
     - activate ./$CI_PIPELINE_ID
@@ -136,7 +136,7 @@ test_pygnome_windows:
     - echo "Building PyGNOME"
 
     - echo "Our path:"
-    - echo $PATH
+    - echo %PATH%
 
     - echo "Python is running from:"
     - python -c "import sys; print(sys.executable)"
