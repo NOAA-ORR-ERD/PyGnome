@@ -11,7 +11,7 @@ from urllib.error import HTTPError
 from progressbar import (ProgressBar, Percentage, FileTransferSpeed,
                          ETA, Bar)
 
-data_server = 'http://gnome.orr.noaa.gov/py_gnome_testdata/'
+data_server = 'https://gnome.orr.noaa.gov/py_gnome_testdata/'
 
 CHUNKSIZE = 1024 * 1024
 
