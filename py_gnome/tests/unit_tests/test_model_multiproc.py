@@ -26,7 +26,10 @@ from gnome.weatherers import Evaporation, ChemicalDispersion, Burn, Skimmer
 
 from gnome.outputters import WeatheringOutput, TrajectoryGeoJsonOutput
 
-from gnome.multi_model_broadcast import ModelBroadcaster
+try:
+    from gnome.multi_model_broadcast import ModelBroadcaster
+except ImportError:
+    print('Could not import ModelBroadcaster')
 
 from .conftest import testdata, test_oil
 
