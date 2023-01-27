@@ -27,9 +27,12 @@ from gnome.weatherers import Evaporation, ChemicalDispersion, Burn, Skimmer
 from gnome.outputters import WeatheringOutput, TrajectoryGeoJsonOutput
 
 try:
-    from gnome.multi_model_broadcast import ModelBroadcaster
+    import pyzmq
+    import tornado
 except ImportError:
-    print('Could not import ModelBroadcaster')
+    print('Could not import Model Broadcaster -- it needs pyzmq and tornado')
+else:
+    from gnome.multi_model_broadcast import ModelBroadcaster
 
 from .conftest import testdata, test_oil
 

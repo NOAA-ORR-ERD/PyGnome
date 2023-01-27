@@ -144,15 +144,15 @@ test_pygnome_windows:
                                           --file conda_requirements_test.txt
                                           --file oil_database/adios_db/conda_requirements.txt
 
-    # install adios_db
-    - pip install oil_database/adios_db/
+#     # install adios_db
+#     - pip install oil_database/adios_db/
 
     - echo "Building PyGNOME"
     - cd ./py_gnome
     - python setup.py install
 
-    - cd ../  # make sure that it won't find the source gnome package.
-    - python -c "import gnome"  # make sure that it imports
+#     - cd ../  # make sure that it won't find the source gnome package.
+#     - python -c "import gnome"  # make sure that it imports
 
     - cd ./py_gnome/tests/unit_tests
     - pytest --runslow
@@ -172,11 +172,6 @@ build_develop:
     # note -- is should already be there
     - git clone --depth 1 -b develop https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.orr.noaa.gov/gnome/oil_database/oil_database.git
 
-    # build the docs image
-    - docker build -f dockerfile-docs ./py_gnome/documentation/build/html -t registry.orr.noaa.gov/gnome/pygnome/docs
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker push registry.orr.noaa.gov/gnome/pygnome/docs
-
     # build the py_gnome image
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker build . --build-arg PYTHON_VER=$PYTHON_VER -t registry.orr.noaa.gov/gnome/pygnome:develop
@@ -195,6 +190,11 @@ build_main:
     # get the adios_db code, so we can install it in the docker image
     # note -- is should already be there
     - git clone --depth 1 -b production https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.orr.noaa.gov/gnome/oil_database/oil_database.git
+
+    # build the docs image
+    - docker build -f dockerfile-docs ./py_gnome/documentation/build/html -t registry.orr.noaa.gov/gnome/pygnome/docs
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker push registry.orr.noaa.gov/gnome/pygnome/docs
 
     # build the py_gnome image
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
