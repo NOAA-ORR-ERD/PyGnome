@@ -154,7 +154,7 @@ test_pygnome_windows:
 #     - cd ../  # make sure that it won't find the source gnome package.
 #     - python -c "import gnome"  # make sure that it imports
 
-    - cd ./py_gnome/tests/unit_tests
+    - cd ./tests/unit_tests
     - pytest --runslow
     - cd ../../..
 
