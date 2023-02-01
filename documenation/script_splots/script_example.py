@@ -15,7 +15,7 @@ from gnome.utilities.projections import GeoProjection
 
 from gnome.model import Model
 from gnome.environment import Wind
-from gnome.movers import RandomMover, WindMover
+from gnome.movers import RandomMover, PointWindMover
 from gnome.spills import Spill
 from gnome.spills.release import release_from_splot_data
 from gnome.maps import MapFromBNA    # will be used once we have BNA map
@@ -46,7 +46,7 @@ def make_model(images_dir):
 
     # include a wind mover and random diffusion
     print 'adding movers'
-    model.movers += [WindMover(wind), RandomMover()]
+    model.movers += [PointWindMover(wind), RandomMover()]
 
     # add particles
     print 'adding particles'

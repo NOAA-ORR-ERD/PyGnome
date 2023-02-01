@@ -21,7 +21,7 @@ from gnome.persist.extend_colander import LocalDateTime, FilenameSchema
 from gnome.persist.base_schema import GeneralGnomeObjectSchema
 
 
-class PyCurrentMoverSchema(ObjTypeSchema):
+class GridCurrentMoverSchema(ObjTypeSchema):
     current = GeneralGnomeObjectSchema(save=True, update=True,
                                        save_reference=True,
                                        acceptable_schemas=[VectorVariableSchema,
@@ -46,9 +46,9 @@ class PyCurrentMoverSchema(ObjTypeSchema):
         Float(), missing=drop, save=True, update=True
     )
 
-class PyCurrentMover(movers.PyMover):
+class GridCurrentMover(movers.PyMover):
 
-    _schema = PyCurrentMoverSchema
+    _schema = GridCurrentMoverSchema
 
     _ref_as = 'py_current_movers'
 
@@ -69,7 +69,7 @@ class PyCurrentMover(movers.PyMover):
                  **kwargs
                  ):
         """
-        Initialize a PyCurrentMover
+        Initialize a GridCurrentMover
 
         :param filename: absolute or relative path to the data file(s):
                          could be a string or list of strings in the
@@ -94,7 +94,7 @@ class PyCurrentMover(movers.PyMover):
                                    Default: RK2
         """
 
-        (super(PyCurrentMover, self).__init__(default_num_method=default_num_method,
+        (super(GridCurrentMover, self).__init__(default_num_method=default_num_method,
                                               **kwargs))
         self.filename = filename
         self.current = current
@@ -136,7 +136,7 @@ class PyCurrentMover(movers.PyMover):
                     uncertain_cross=.25,
                     **kwargs):
         """
-        Function for specifically creating a PyCurrentMover from a file
+        Function for specifically creating a GridCurrentMover from a file
         """
         current = GridCurrent.from_netCDF(filename, **kwargs)
 
@@ -437,7 +437,7 @@ class PyCurrentMover(movers.PyMover):
         """
         add uncertainty
         """
-        super(PyCurrentMover, self).prepare_for_model_step(sc, time_step,
+        super(GridCurrentMover, self).prepare_for_model_step(sc, time_step,
                                                            model_time_datetime)
 
         if not self.active:

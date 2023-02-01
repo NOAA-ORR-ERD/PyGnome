@@ -23,7 +23,7 @@ def make_model(images_dir=base_dir / 'images'):
     model.map = gs.MapFromBNA(mapfile)
 
     curfile = gs.get_datafile(base_dir / "mareaabril.nc")
-    cur_mover = gs.PyCurrentMover(curfile)
+    cur_mover = gs.GridCurrentMover(curfile)
     model.movers += cur_mover
 
     # model.movers += gs.RandomMover(diffusion_coef=1e5)

@@ -33,7 +33,7 @@ from gnome.movers import (RandomMover,
                           RandomMover3D,
                           SimpleMover,
                           c_GridCurrentMover,
-                          PyCurrentMover,
+                          GridCurrentMover,
                           constant_point_wind_mover,
                           IceMover)
 
@@ -98,7 +98,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     ivel = IceVelocity.from_netCDF(filename=fn_ice, grid = iconc.grid)
     ic = IceAwareCurrent.from_netCDF(ice_concentration = iconc, ice_velocity= ivel, filename=fn)
 
-    model.movers += PyCurrentMover(current = ic)
+    model.movers += GridCurrentMover(current = ic)
     model.movers += SimpleMover(velocity=(0., 0., 0.))
     model.movers += constant_point_wind_mover(20, 315, units='knots')
 

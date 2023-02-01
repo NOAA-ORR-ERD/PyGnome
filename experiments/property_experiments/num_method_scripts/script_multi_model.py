@@ -21,9 +21,9 @@ from gnome.environment import Wind
 from gnome.spills import point_line_release_spill
 from gnome.movers import RandomMover, constant_wind_mover, GridCurrentMover
 
-from gnome.movers.py_wind_movers import PyWindMover
+from gnome.movers.py_wind_movers import GridWindMover
 from gnome.environment.property_classes import GridCurrent
-from gnome.movers.py_current_movers import PyCurrentMover
+from gnome.movers.py_current_movers import GridCurrentMover
 
 from gnome.outputters import Renderer, NetCDFOutput
 from gnome.environment.vector_field import ice_field
@@ -72,7 +72,7 @@ def make_models():
                                          release_time=start_time)
         mod.spills += spill
         mod.movers += RandomMover(diffusion_coef=100)
-        mod.movers += PyCurrentMover(current=curr, default_num_method=method)
+        mod.movers += GridCurrentMover(current=curr, default_num_method=method)
 
         images_dir = method + '-' + str(time_step / 60) + 'min-' + str(num_steps) + 'steps'
         renderer = Renderer(mapfile, images_dir, image_size=(1024, 768))

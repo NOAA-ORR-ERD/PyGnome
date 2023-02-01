@@ -27,7 +27,7 @@ from gnome.persist.base_schema import GeneralGnomeObjectSchema
 from gnome.environment.gridded_objects_base import Grid_U, VectorVariableSchema
 
 
-class PyWindMoverSchema(ObjTypeSchema):
+class GridWindMoverSchema(ObjTypeSchema):
     wind = GeneralGnomeObjectSchema(save=True, update=True,
                                     save_reference=True,
                                     acceptable_schemas=[VectorVariableSchema,
@@ -52,8 +52,8 @@ class PyWindMoverSchema(ObjTypeSchema):
     )
 
 
-class PyWindMover(movers.PyMover):
-    _schema = PyWindMoverSchema
+class GridWindMover(movers.PyMover):
+    _schema = GridWindMoverSchema
 
     _ref_as = 'py_wind_movers'
 
@@ -71,7 +71,7 @@ class PyWindMover(movers.PyMover):
                  default_num_method='RK2',
                  **kwargs):
         """
-        Initialize a PyWindMover
+        Initialize a GridWindMover
 
         :param filename: absolute or relative path to the data file(s):
                          could be a string or list of strings in the
@@ -97,7 +97,7 @@ class PyWindMover(movers.PyMover):
 
         """
 
-        (super(PyWindMover, self).__init__(default_num_method=default_num_method, **kwargs))
+        (super(GridWindMover, self).__init__(default_num_method=default_num_method, **kwargs))
         self.wind = wind
         self.make_default_refs = False
 
@@ -183,7 +183,7 @@ class PyWindMover(movers.PyMover):
         :param time_step: time step in seconds
         :param model_time_datetime: current time of model as a date time object
         """
-        super(PyWindMover, self).prepare_for_model_step(sc, time_step,
+        super(GridWindMover, self).prepare_for_model_step(sc, time_step,
                                                         model_time_datetime)
 
         # if no particles released, then no need for windage

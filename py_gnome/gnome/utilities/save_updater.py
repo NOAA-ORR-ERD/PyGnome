@@ -1,4 +1,5 @@
 # Updates a save loaded using pygnome.Model to the latest version
+# !!!!Update the version number in gnome.gnomeobject to be consistent with versioning here
 
 import json
 import logging
@@ -315,8 +316,8 @@ def v2tov3(messages, errors):
 
 def v3tov4(messages, errors):
     '''
-    Takes a zipfile containing version 2 and up-converts it
-    to 'version 3'.
+    Takes a zipfile containing version 3 and up-converts it
+    to 'version 4'.
 
     This function's purpose is to upgrade save files that have the old
     ``WeatheringData`` object in them
@@ -355,6 +356,63 @@ def v3tov4(messages, errors):
     messages.append('**Update from v3 to v4 successful**')
     return messages, errors
 
+def v4tov5(messages, errors):
+    '''
+    Takes a zipfile containing version 4 and up-converts it
+    to 'version 5'.
+
+    This function's purpose is for compatiblity with savefiles after renaming:
+    PyCurrentMover --> GridCurrentMover
+    PyWindMover --> GridWindMover
+    '''
+
+    # loading json files
+    log.debug('updating save file from v4 to v5 (Renaming)')
+
+    jsonfiles = glob.glob('*.json')
+
+
+    # updating the name of spills
+    movers = []  # PyCurrentMover --> GridCurrentMover
+    wind_movers = []  #PyWindMover --> GridWindMover
+    point_wind_movers = [] #WindMover  --> PointWindMover
+    for fname in jsonfiles:
+        with open(fname, 'r', encoding='utf-8') as fn:
+            json_ = json.load(fn)
+            if 'obj_type' in json_:
+                if 'PyCurrentMover' in json_['obj_type']:
+                    movers.append((fname, json_))
+                if 'PyWindMover' in json_['obj_type']:
+                    wind_movers.append((fname, json_))
+                if 'c_wind_movers.WindMover' in json_['obj_type']:
+                    point_wind_movers.append((fname, json_))
+
+    for fn, mv in movers:
+        mv['obj_type'] = mv['obj_type'].replace('PyCurrentMover',
+                                                'GridCurrentMover')
+        with open(fn, 'w', encoding='utf-8') as fp:
+            json.dump(mv, fp, indent=4)
+
+    for fn, mv in wind_movers:
+        mv['obj_type'] = mv['obj_type'].replace('PyWindMover',
+                                                'GridWindMover')
+        with open(fn, 'w', encoding='utf-8') as fp:
+            json.dump(mv, fp, indent=4)
+            
+    for fn, mv in point_wind_movers:
+        mv['obj_type'] = mv['obj_type'].replace('WindMover',
+                                                'PointWindMover')
+        with open(fn, 'w', encoding='utf-8') as fp:
+            json.dump(mv, fp, indent=4)
+
+    with open('version.txt', 'w', encoding='utf-8') as vers_file:
+        vers_file.write('5\n')
+
+    messages.append('**Update from v4 to v5 successful**')
+    
+    return messages, errors
+    
+    
 def extract_zipfile(zip_file, to_folder='.'):
     def work(zf):
         folders = [name for name in zf.namelist()
@@ -412,4 +470,4 @@ def sanitize_filename(fname):
 
 
 
-all_update_steps = [v0tov1, v1tov2, v2tov3, v3tov4]
+all_update_steps = [v0tov1, v1tov2, v2tov3, v3tov4, v4tov5]

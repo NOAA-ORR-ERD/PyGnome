@@ -21,9 +21,9 @@ from gnome.environment import Wind
 from gnome.spills import point_line_release_spill, continuous_release_spill
 from gnome.movers import RandomMover, constant_wind_mover, GridCurrentMover
 
-from gnome.movers.py_wind_movers import PyWindMover
+from gnome.movers.py_wind_movers import GridWindMover
 from gnome.environment import WindTS, GridCurrent
-from gnome.movers.py_current_movers import PyCurrentMover
+from gnome.movers.py_current_movers import GridCurrentMover
 
 from gnome.outputters import Renderer
 import gnome.utilities.profiledeco as pd
@@ -90,7 +90,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
 #     wind = Wind(timeseries=series, units='knots')
 
-    model.movers += PyWindMover(wind=wind1)
+    model.movers += GridWindMover(wind=wind1)
 
     print 'adding a current mover:'
 
@@ -100,7 +100,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     curr_file = get_datafile('COOPSu_CREOFS24.nc')
     curr = GridCurrent.from_netCDF(name='gc2', filename=curr_file,)
 
-    c_mover = PyCurrentMover(curr, extrapolate=True, default_num_method='Trapezoid')
+    c_mover = GridCurrentMover(curr, extrapolate=True, default_num_method='Trapezoid')
 
 #     renderer.add_grid(curr.grid)
 #     renderer.add_vec_prop(curr)

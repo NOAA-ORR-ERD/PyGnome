@@ -22,7 +22,7 @@ log = logging.getLogger(__name__)
 
 allowzip64 = False
 
-SAVEFILE_VERSION = '2'
+SAVEFILE_VERSION = '5'
 
 
 def class_from_objtype(obj_type):

@@ -198,7 +198,7 @@ class RunningAverage(Environment):
         Make sure we are up to date with the referenced time series
         """
         if self.wind is None:
-            msg = "wind object not defined for WindMover"
+            msg = "wind object not defined for PointWindMover"
             raise ReferencedObjectNotSet(msg)
 
         model_time = date_to_sec(model_time)

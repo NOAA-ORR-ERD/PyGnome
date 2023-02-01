@@ -372,7 +372,7 @@ class CyMover(Mover):
     def get_move(self, sc, time_step, model_time_datetime):
         """
         Base implementation of Cython wrapped C++ movers
-        Override for things like the WindMover since it has a different
+        Override for things like the PointWindMover since it has a different
         implementation
 
         :param sc: spill_container.SpillContainer object

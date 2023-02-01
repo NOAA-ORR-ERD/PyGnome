@@ -22,13 +22,13 @@ from gnome.movers import (constant_point_wind_mover,
                           SimpleMover,
                           RandomMover,
                           RandomMover3D,
-                          WindMover,
+                          PointWindMover,
                           CatsMover,
                           ComponentMover,
                           CurrentCycleMover,
                           c_GridCurrentMover,
-                          PyWindMover,
-                          PyCurrentMover,
+                          GridWindMover,
+                          GridCurrentMover,
                           c_GridWindMover)
 
 from gnome.weatherers import (Evaporation,
@@ -78,8 +78,8 @@ def test_class_from_objtype():
     '''
     test that correct class is returned by class_from_objtype
     '''
-    cls = class_from_objtype('gnome.movers.WindMover')
-    assert cls is WindMover
+    cls = class_from_objtype('gnome.movers.PointWindMover')
+    assert cls is PointWindMover
 
 
 def test_exceptions():
@@ -143,7 +143,7 @@ here and parametrize it by the objects
 base_dir = os.path.dirname(__file__)
 
 
-# For WindMover test_save_load in test_wind_mover
+# For PointWindMover test_save_load in test_wind_mover
 g_objects = (
     GridCurrent.from_netCDF(testdata['c_GridCurrentMover']['curr_tri']),
     Tide(testdata['CatsMover']['tide']),
@@ -161,10 +161,10 @@ g_objects = (
     ComponentMover(testdata['ComponentMover']['curr'],
                    wind=constant_wind(5., 270, 'knots')),
                    # wind=Wind(filename=testdata['ComponentMover']['wind'])),
-     PyWindMover(testdata['c_GridWindMover']['wind_rect']),
-     #PyWindMover(testdata['c_GridWindMover']['wind_curv']), #variable names wrong
-     PyCurrentMover(testdata['c_GridCurrentMover']['curr_tri']),
-     PyCurrentMover(testdata['c_GridCurrentMover']['curr_reg']),
+     GridWindMover(testdata['c_GridWindMover']['wind_rect']),
+     #GridWindMover(testdata['c_GridWindMover']['wind_curv']), #variable names wrong
+     GridCurrentMover(testdata['c_GridCurrentMover']['curr_tri']),
+     GridCurrentMover(testdata['c_GridCurrentMover']['curr_reg']),
     RandomMover3D(),
     SimpleMover(velocity=(10.0, 10.0, 0.0)),
 
