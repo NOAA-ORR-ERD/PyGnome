@@ -1,11 +1,12 @@
-
-
-
-
+'''
+Wind Movers and associated helper functions. This module has no compiled C dependency
+'''
 
 from . import movers
 
 import numpy as np
+import os
+import warnings
 
 from colander import (SchemaNode,
                       Bool, Float, String, Sequence, drop)
@@ -28,12 +29,13 @@ from gnome.environment.gridded_objects_base import Grid_U, VectorVariableSchema
 
 
 class WindMoverSchema(ObjTypeSchema):
+    '''
+    Schema for WindMover object
+    '''
     wind = GeneralGnomeObjectSchema(save=True, update=True,
                                     save_reference=True,
                                     acceptable_schemas=[VectorVariableSchema,
                                                         GridWind._schema])
-    filename = FilenameSchema(save=True, update=False, isdatafile=True, test_equal=False,
-                              missing=drop)
     scale_value = SchemaNode(Float(), save=True, update=True, missing=drop)
     #time_offset = SchemaNode(Float(), save=True, update=True, missing=drop)
     on = SchemaNode(Bool(), save=True, update=True, missing=drop)
@@ -53,6 +55,10 @@ class WindMoverSchema(ObjTypeSchema):
 PyWindMoverSchema = WindMoverSchema
 
 class WindMover(movers.PyMover):
+    '''
+    WindMover implemented in Python. Uses the .wind attribute to move particles.
+    The .at() interface is expected on the .wind attribute
+    '''
     _schema = WindMoverSchema
 
     _ref_as = 'py_wind_movers'
@@ -60,7 +66,6 @@ class WindMover(movers.PyMover):
     _req_refs = {'wind': GridWind}
 
     def __init__(self,
-                 filename=None,
                  wind=None,
                  time_offset=0,
                  uncertain_duration=3.* 3600,
@@ -69,16 +74,14 @@ class WindMover(movers.PyMover):
                  uncertain_angle_scale=0.4,
                  scale_value=1,
                  default_num_method='RK2',
+                 filename=None,
                  **kwargs):
         """
         Initialize a WindMover
-
-        :param filename: absolute or relative path to the data file(s):
-                         could be a string or list of strings in the
-                         case of a multi-file dataset
         :param wind: Environment object representing wind to be
                         used. If this is not specified, a GridWind object
                         will attempt to be instantiated from the file
+        :type wind: Any Wind or Wind-like that implements the .at() function
 
         :param active_range: Range of datetimes for when the mover should be
                              active
@@ -101,14 +104,16 @@ class WindMover(movers.PyMover):
         self.wind = wind
         self.make_default_refs = False
 
-        self.filename = filename
-
         if self.wind is None:
-            if filename is None:
-                raise ValueError("must provide a filename or wind object")
-            else:
-                self.wind = GridWind.from_netCDF(filename=self.filename,
+            raise ValueError("Must provide a wind object")
+        if isinstance(self.wind, (str, os.PathLike)):
+            warnings.warn("""The behavior of providing a filename to a WindMover __init__ is deprecated. 
+            Please pass a wind or use a helper function""", warnings.DeprecationWarning)
+            self.wind = GridWind.from_netCDF(filename=self.wind,
                                                  **kwargs)
+        if filename is not None:
+            warnings.warn("""The behavior of providing a filename to a WindMover __init__ is deprecated. 
+            Please pass a wind or use a helper function""", warnings.DeprecationWarning)
 
         self.uncertain_duration = uncertain_duration
         self.uncertain_time_delay = uncertain_time_delay
@@ -141,6 +146,8 @@ class WindMover(movers.PyMover):
                     uncertain_angle_scale=.4,
                     default_num_method='RK2',
                     **kwargs):
+        warnings.warn("""WindMover.from_netCDF is deprecated. Please create the
+        wind separately or use a helper function""", warnings.DeprecationWarning)
 
         wind = GridWind.from_netCDF(filename, **kwargs)
 
@@ -267,13 +274,12 @@ class WindMover(movers.PyMover):
     def get_bounds(self):
         '''
             Return a bounding box surrounding the grid data.
+            This function exists because it is part of the top level Mover API
         '''
-        longs, lats = self.get_lat_lon_data()
-
-        left, right = longs.min(), longs.max()
-        bottom, top = lats.min(), lats.max()
-
-        return ((left, bottom), (right, top))
+        if hasattr(self.wind, 'get_bounds'):
+            return self.wind.get_bounds
+        else:
+            return super(WindMover, self).get_bounds()
 
     def get_center_points(self):
         if (hasattr(self.wind.grid, 'center_lon') and
@@ -503,3 +509,16 @@ class WindMover(movers.PyMover):
 
         return deltas
 PyWindMover = WindMover
+
+def grid_wind_mover(filename, wind_kwargs=None, *args, **kwargs):
+    '''
+    Helper function to load a gridded wind from a file and create a WindMover
+
+    :param filename: File to create the GridWind object from
+    :type filename: string or Path-like'
+
+    :param wind_kwargs: keyword arguments for the GridWind object. OPTIONAL
+    :type wind_kwargs: dict
+    '''
+    wind = GridWind.from_netCDF(filename=filename, **wind_kwargs)
+    return WindMover(wind=wind, **kwargs)

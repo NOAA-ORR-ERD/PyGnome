@@ -224,10 +224,6 @@ class PyMover(Mover):
                         if k in o._ref_as:
                             setattr(self, k, o)
 
-    @property
-    def is_data_on_cells(self):
-        return self.data.grid.infer_location(self.data.u.data) != 'node'
-
     def delta_method(self, method_name=None):
         '''
             Returns a delta function based on its registered name

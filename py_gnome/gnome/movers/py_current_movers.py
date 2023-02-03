@@ -1,6 +1,8 @@
 from . import movers
 
 import numpy as np
+import os
+import warnings
 
 from colander import (SchemaNode, Bool, Float, drop)
 
@@ -22,13 +24,14 @@ from gnome.persist.base_schema import GeneralGnomeObjectSchema
 
 
 class CurrentMoverSchema(ObjTypeSchema):
+    '''
+    Schema for CurrentMover object
+    '''
     current = GeneralGnomeObjectSchema(save=True, update=True,
                                        save_reference=True,
                                        acceptable_schemas=[VectorVariableSchema,
                                                            GridCurrent._schema]
                                        )
-    filename = FilenameSchema(save=True, update=False, isdatafile=True, test_equal=False,
-                              missing=drop)
     scale_value = SchemaNode(Float(), save=True, update=True,
                                missing=drop)
     on = SchemaNode(Bool(), missing=drop, save=True, update=True)
@@ -47,6 +50,10 @@ class CurrentMoverSchema(ObjTypeSchema):
     )
 PyCurrentMoverSchema = CurrentMoverSchema
 class CurrentMover(movers.PyMover):
+    '''
+    CurrentMover implemented in Python. Uses the .current attribute to move particles.
+    The .at() interface is expected on the .current attribute
+    '''
 
     _schema = CurrentMoverSchema
 
@@ -55,7 +62,6 @@ class CurrentMover(movers.PyMover):
     _req_refs = {'current': GridCurrent}
 
     def __init__(self,
-                 filename=None,
                  current=None,
                  time_offset=0,
                  scale_value=1,
@@ -66,6 +72,7 @@ class CurrentMover(movers.PyMover):
                  uncertain_cross=.25,
                  default_num_method='RK2',
                  grid_topology=None,
+                 filename=None,
                  **kwargs
                  ):
         """
@@ -99,13 +106,18 @@ class CurrentMover(movers.PyMover):
         self.filename = filename
         self.current = current
 
-        if self.current is None:
-            if filename is None:
-                raise ValueError("must provide a filename or current object")
-            else:
-                self.current = GridCurrent.from_netCDF(filename=self.filename,
-                                                       grid_topology=grid_topology,
-                                                       **kwargs)
+
+        if self.wind is None:
+            raise ValueError("Must provide a wind object")
+        if isinstance(self.wind, (str, os.PathLike)):
+            warnings.warn("""The behavior of providing a filename to a WindMover __init__ is deprecated. 
+            Please pass a wind or use a helper function""", warnings.DeprecationWarning)
+            self.wind = GridCurrent.from_netCDF(filename=self.wind,
+                                                 **kwargs)
+        if filename is not None:
+            warnings.warn("""The behavior of providing a filename to a WindMover __init__ is deprecated. 
+            Please pass a wind or use a helper function""", warnings.DeprecationWarning)
+
         self.scale_value = scale_value
 
         self.uncertain_along = uncertain_along
@@ -138,6 +150,8 @@ class CurrentMover(movers.PyMover):
         """
         Function for specifically creating a CurrentMover from a file
         """
+        warnings.warn("""CurrentMover.from_netCDF is deprecated. Please create the
+        current separately or use a helper function""", warnings.DeprecationWarning)
         current = GridCurrent.from_netCDF(filename, **kwargs)
 
         return cls(name=name,
@@ -214,13 +228,12 @@ class CurrentMover(movers.PyMover):
     def get_bounds(self):
         '''
             Return a bounding box surrounding the grid data.
+            This function exists because it is part of the top level Mover API
         '''
-        longs, lats = self.get_lat_lon_data()
-
-        left, right = longs.min(), longs.max()
-        bottom, top = lats.min(), lats.max()
-
-        return ((left, bottom), (right, top))
+        if hasattr(self.current, 'get_bounds'):
+            return self.current.get_bounds
+        else:
+            return super(CurrentMover, self).get_bounds()
 
     def get_center_points(self):
         if (hasattr(self.current.grid, 'center_lon') and
@@ -471,3 +484,16 @@ class CurrentMover(movers.PyMover):
                 #self.uncertainty_list = np.delete(self.uncertainty_list, to_be_removed, axis=0)
                 self.uncertainty_list = np.delete(new_uncertainty, to_be_removed, axis=0)
 PyCurrentMover = CurrentMover
+
+def grid_current_mover(filename, current_kwargs=None, *args, **kwargs):
+    '''
+    Helper function to load a gridded current from a file and create a CurrentMover
+
+    :param filename: File to create the GridCurrent object from
+    :type filename: string or Path-like'
+
+    :param current_kwargs: keyword arguments for the GridCurrent object. OPTIONAL
+    :type current_kwargs: dict
+    '''
+    current = GridCurrent.from_netCDF(filename=filename, **current_kwargs)
+    return CurrentMover(current=current, **kwargs)
