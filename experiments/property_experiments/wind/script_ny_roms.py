@@ -22,11 +22,8 @@ from gnome.spills import point_line_release_spill
 from gnome.movers import RandomMover, constant_wind_mover, GridCurrentMover
 
 from gnome.environment.property_classes import WindTS
-from gnome.movers.py_wind_movers import GridWindMover
 
 from gnome.outputters import Renderer
-from gnome.environment.vector_field import roms_field
-from gnome.movers import UGridCurrentMover, PointWindMover
 import gnome.utilities.profiledeco as pd
 
 # define base directory
@@ -89,7 +86,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     wind = Wind(timeseries=series, units='knots')
 
-    model.movers += GridWindMover(wind=wind2)
+    model.movers += WindMover(wind=wind2)
 #     model.movers += PointWindMover(wind)
 
 #     print 'adding a current mover:'
@@ -104,7 +101,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 #     model.movers += u_mover
 
     # curr_file = get_datafile(os.path.join(base_dir, 'COOPSu_CREOFS24.nc'))
-    # c_mover = GridCurrentMover(curr_file)
+    # c_mover = CurrentMover(curr_file)
     # model.movers += c_mover
 
     return model

@@ -9,7 +9,7 @@ import pytest
 import tempfile
 import zipfile
 
-from gnome.movers import GridCurrentMover
+from gnome.movers import CurrentMover
 from gnome.utilities import time_utils
 
 from ..conftest import (sample_sc_release,
@@ -30,7 +30,7 @@ def test_exceptions():
     #bad_file = os.path.join('./', 'tidesWAC.CURX')
     #bad_file = None
     with pytest.raises(ValueError):
-        GridCurrentMover()
+        CurrentMover()
 
 
 num_le = 10
@@ -49,7 +49,7 @@ def run_test_loop():
     """
 
     pSpill = sample_sc_release(num_le, start_pos, rel_time)
-    py_current = GridCurrentMover(curr_file)
+    py_current = CurrentMover(curr_file)
     delta = _certain_loop(pSpill, py_current)
 
     return delta
@@ -63,7 +63,7 @@ def test_loop():
     """
 
     pSpill = sample_sc_release(num_le, start_pos, rel_time)
-    py_current = GridCurrentMover(curr_file)
+    py_current = CurrentMover(curr_file)
     delta = run_test_loop()
 
     _assert_move(delta)
@@ -83,7 +83,7 @@ def run_uncertain_loop():
 
     pSpill = sample_sc_release(num_le, start_pos, rel_time,
                                uncertain=True)
-    py_current = GridCurrentMover(curr_file)
+    py_current = CurrentMover(curr_file)
     u_delta = _uncertain_loop(pSpill, py_current)
 
     _assert_move(u_delta)
@@ -98,7 +98,7 @@ def test_uncertain_loop():
 
     pSpill = sample_sc_release(num_le, start_pos, rel_time,
                                uncertain=True)
-    py_current = GridCurrentMover(curr_file)
+    py_current = CurrentMover(curr_file)
     u_delta = run_uncertain_loop()
 
     _assert_move(u_delta)
@@ -118,7 +118,7 @@ def test_certain_uncertain():
     assert np.all(delta[:, 2] == u_delta[:, 2])
 
 
-py_cur = GridCurrentMover(curr_file)
+py_cur = CurrentMover(curr_file)
 
 
 def test_default_props():
@@ -180,14 +180,14 @@ def test_serialize_deserialize():
     """
     test serialize/deserialize/update_from_dict doesn't raise errors
     """
-    py_current = GridCurrentMover(curr_file2)
+    py_current = CurrentMover(curr_file2)
 
     serial = py_current.serialize()
     assert validate_serialize_json(serial, py_current)
 
-    # check our GridCurrentMover attributes
+    # check our CurrentMover attributes
 
-    deser = GridCurrentMover.deserialize(serial)
+    deser = CurrentMover.deserialize(serial)
 
     assert deser == py_current
 
@@ -198,11 +198,11 @@ def test_save_load():
     """
 
     saveloc = tempfile.mkdtemp()
-    py_current = GridCurrentMover(curr_file2)
+    py_current = CurrentMover(curr_file2)
     save_json, zipfile_, _refs = py_current.save(saveloc)
 
     assert validate_save_json(save_json, zipfile.ZipFile(zipfile_), py_current)
 
-    loaded = GridCurrentMover.load(zipfile_)
+    loaded = CurrentMover.load(zipfile_)
 
     assert loaded == py_current

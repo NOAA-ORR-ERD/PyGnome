@@ -194,7 +194,7 @@ class PointWindMoverSchema(WindMoversBaseSchema):
     data_stop = SchemaNode(
         LocalDateTime(), validator=convertible_to_seconds, read_only=True
     )
-
+WindMoverSchema = PointWindMoverSchema
 
 class PointWindMover(WindMoversBase):
     """
@@ -276,6 +276,7 @@ class PointWindMover(WindMoversBase):
         if self.on and self.wind is None:
             msg = "wind object not defined for WindMover"
             raise ReferencedObjectNotSet(msg)
+WindMover = PointWindMover
 
 
 def point_wind_mover_from_file(filename, **kwargs):

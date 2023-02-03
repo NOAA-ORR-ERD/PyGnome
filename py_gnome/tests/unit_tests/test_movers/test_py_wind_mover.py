@@ -14,7 +14,7 @@ import pytest
 import tempfile
 import zipfile
 
-from gnome.movers import GridWindMover
+from gnome.movers import WindMover
 from gnome.utilities import time_utils
 
 from ..conftest import (sample_sc_release,
@@ -33,7 +33,7 @@ def test_exceptions():
 
     # needs a file or a wind
     with pytest.raises(ValueError):
-        GridWindMover()
+        WindMover()
 
 
 num_le = 10
@@ -56,7 +56,7 @@ def test_loop():
     """
 
     pSpill = sample_sc_release(num_le, start_pos, rel_time, windage_range=(0.01, 0.01))
-    py_wind = GridWindMover(wind_file)
+    py_wind = WindMover(wind_file)
     delta = _certain_loop(pSpill, py_wind)
 
     _assert_move(delta)
@@ -76,7 +76,7 @@ def test_uncertain_loop():
 
     pSpill = sample_sc_release(num_le, start_pos, rel_time,
                                uncertain=True)
-    py_wind = GridWindMover(wind_file)
+    py_wind = WindMover(wind_file)
     u_delta = _uncertain_loop(pSpill, py_wind)
 
     _assert_move(u_delta)
@@ -98,7 +98,7 @@ def test_certain_uncertain():
     assert np.all(delta[:, 2] == u_delta[:, 2])
 
 
-py_wind = GridWindMover(wind_file)
+py_wind = WindMover(wind_file)
 
 
 def test_default_props():
@@ -161,14 +161,14 @@ def test_serialize_deserialize():
     """
     test serialize/deserialize/update_from_dict doesn't raise errors
     """
-    py_wind = GridWindMover(wind_file)
+    py_wind = WindMover(wind_file)
 
     serial = py_wind.serialize()
     assert validate_serialize_json(serial, py_wind)
 
-    # check our GridWindMover attributes
+    # check our WindMover attributes
 
-    deser = GridWindMover.deserialize(serial)
+    deser = WindMover.deserialize(serial)
 
     assert deser == py_wind
 
@@ -180,11 +180,11 @@ def test_save_load():
     """
 
     saveloc = tempfile.mkdtemp()
-    py_wind = GridWindMover(wind_file)
+    py_wind = WindMover(wind_file)
     save_json, zipfile_, _refs = py_wind.save(saveloc)
 
     assert validate_save_json(save_json, zipfile.ZipFile(zipfile_), py_wind)
 
-    loaded = GridWindMover.load(zipfile_)
+    loaded = WindMover.load(zipfile_)
 
     assert loaded == py_wind

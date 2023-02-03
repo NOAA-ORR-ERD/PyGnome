@@ -40,8 +40,8 @@ from .vertical_movers import (RiseVelocityMover,
                              RiseVelocityMoverSchema,
                              TamocRiseVelocityMover)
 
-from .py_wind_movers import GridWindMover, GridWindMoverSchema
-from .py_current_movers import GridCurrentMover, GridCurrentMoverSchema
+from .py_wind_movers import WindMover, WindMoverSchema
+from .py_current_movers import CurrentMover, CurrentMoverSchema
 
 
 mover_schemas = [
@@ -59,6 +59,6 @@ mover_schemas = [
     IceMoverSchema,
     CurrentCycleMoverSchema,
     RiseVelocityMoverSchema,
-    GridWindMoverSchema,
-    GridCurrentMoverSchema
+    WindMoverSchema,
+    CurrentMoverSchema
 ]

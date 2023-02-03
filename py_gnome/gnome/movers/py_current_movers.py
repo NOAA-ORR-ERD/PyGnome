@@ -21,7 +21,7 @@ from gnome.persist.extend_colander import LocalDateTime, FilenameSchema
 from gnome.persist.base_schema import GeneralGnomeObjectSchema
 
 
-class GridCurrentMoverSchema(ObjTypeSchema):
+class CurrentMoverSchema(ObjTypeSchema):
     current = GeneralGnomeObjectSchema(save=True, update=True,
                                        save_reference=True,
                                        acceptable_schemas=[VectorVariableSchema,
@@ -45,10 +45,10 @@ class GridCurrentMoverSchema(ObjTypeSchema):
     uncertain_cross = SchemaNode(
         Float(), missing=drop, save=True, update=True
     )
+PyCurrentMoverSchema = CurrentMoverSchema
+class CurrentMover(movers.PyMover):
 
-class GridCurrentMover(movers.PyMover):
-
-    _schema = GridCurrentMoverSchema
+    _schema = CurrentMoverSchema
 
     _ref_as = 'py_current_movers'
 
@@ -69,7 +69,7 @@ class GridCurrentMover(movers.PyMover):
                  **kwargs
                  ):
         """
-        Initialize a GridCurrentMover
+        Initialize a CurrentMover
 
         :param filename: absolute or relative path to the data file(s):
                          could be a string or list of strings in the
@@ -94,7 +94,7 @@ class GridCurrentMover(movers.PyMover):
                                    Default: RK2
         """
 
-        (super(GridCurrentMover, self).__init__(default_num_method=default_num_method,
+        (super(CurrentMover, self).__init__(default_num_method=default_num_method,
                                               **kwargs))
         self.filename = filename
         self.current = current
@@ -136,7 +136,7 @@ class GridCurrentMover(movers.PyMover):
                     uncertain_cross=.25,
                     **kwargs):
         """
-        Function for specifically creating a GridCurrentMover from a file
+        Function for specifically creating a CurrentMover from a file
         """
         current = GridCurrent.from_netCDF(filename, **kwargs)
 
@@ -437,7 +437,7 @@ class GridCurrentMover(movers.PyMover):
         """
         add uncertainty
         """
-        super(GridCurrentMover, self).prepare_for_model_step(sc, time_step,
+        super(CurrentMover, self).prepare_for_model_step(sc, time_step,
                                                            model_time_datetime)
 
         if not self.active:
@@ -470,3 +470,4 @@ class GridCurrentMover(movers.PyMover):
                 new_uncertainty = np.copy(self.uncertainty_list)
                 #self.uncertainty_list = np.delete(self.uncertainty_list, to_be_removed, axis=0)
                 self.uncertainty_list = np.delete(new_uncertainty, to_be_removed, axis=0)
+PyCurrentMover = CurrentMover

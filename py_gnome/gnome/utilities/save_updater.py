@@ -265,8 +265,8 @@ def v2tov3(messages, errors):
 
     # updating the name of spills
     spills = []  # things with a "gnome.spill" in the path
-    movers = []  # current_movers, GridCurrentMover
-    wind_movers = []  # wind_movers, GridWindMover
+    movers = []  # current_movers, CurrentMover
+    wind_movers = []  # wind_movers, WindMover
     srs = [] # SpatialRelease
     for fname in jsonfiles:
         with open(fname, 'r', encoding='utf-8') as fn:
@@ -362,8 +362,8 @@ def v4tov5(messages, errors):
     to 'version 5'.
 
     This function's purpose is for compatiblity with savefiles after renaming:
-    PyCurrentMover --> GridCurrentMover
-    PyWindMover --> GridWindMover
+    PyCurrentMover --> CurrentMover
+    PyWindMover --> WindMover
     '''
 
     # loading json files
@@ -373,8 +373,8 @@ def v4tov5(messages, errors):
 
 
     # updating the name of spills
-    movers = []  # PyCurrentMover --> GridCurrentMover
-    wind_movers = []  #PyWindMover --> GridWindMover
+    movers = []  # PyCurrentMover --> CurrentMover
+    wind_movers = []  #PyWindMover --> WindMover
     point_wind_movers = [] #WindMover  --> PointWindMover
     for fname in jsonfiles:
         with open(fname, 'r', encoding='utf-8') as fn:
@@ -389,13 +389,13 @@ def v4tov5(messages, errors):
 
     for fn, mv in movers:
         mv['obj_type'] = mv['obj_type'].replace('PyCurrentMover',
-                                                'GridCurrentMover')
+                                                'CurrentMover')
         with open(fn, 'w', encoding='utf-8') as fp:
             json.dump(mv, fp, indent=4)
 
     for fn, mv in wind_movers:
         mv['obj_type'] = mv['obj_type'].replace('PyWindMover',
-                                                'GridWindMover')
+                                                'WindMover')
         with open(fn, 'w', encoding='utf-8') as fp:
             json.dump(mv, fp, indent=4)
             

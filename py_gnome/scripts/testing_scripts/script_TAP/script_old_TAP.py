@@ -21,9 +21,9 @@ from gnome.environment import Wind
 from gnome.spills import surface_point_line_spill
 from gnome.movers import RandomMover, constant_point_wind_mover, c_GridCurrentMover
 
-from gnome.movers.py_wind_movers import GridWindMover
+from gnome.movers.py_wind_movers import WindMover
 #from gnome.environment.property_classes import WindTS, IceAwareCurrent, IceAwareWind
-from gnome.movers.py_current_movers import GridCurrentMover
+from gnome.movers.py_current_movers import CurrentMover
 
 from gnome.outputters import Renderer, NetCDFOutput
 #from gnome.environment.vector_field import ice_field

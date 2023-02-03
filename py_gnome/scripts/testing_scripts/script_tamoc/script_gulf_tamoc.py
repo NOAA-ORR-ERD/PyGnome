@@ -33,7 +33,7 @@ from gnome.movers import (RandomMover,
                           RandomMover3D,
                           SimpleMover,
                           c_GridCurrentMover,
-                          GridCurrentMover,
+                          CurrentMover,
                           constant_point_wind_mover,
                           PointWindMover)
 
@@ -119,7 +119,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     gc = GridCurrent.from_netCDF(hycom_file)
 
     #model.movers += GridCurrentMover('HYCOM_3d.nc')
-    model.movers += GridCurrentMover(hycom_file)
+    model.movers += CurrentMover(hycom_file)
 #    model.movers += SimpleMover(velocity=(0., 0, 0.))
     model.movers += constant_point_wind_mover(10, 315, units='knots')
 

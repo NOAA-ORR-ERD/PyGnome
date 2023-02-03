@@ -27,8 +27,8 @@ from gnome.movers import (constant_point_wind_mover,
                           ComponentMover,
                           CurrentCycleMover,
                           c_GridCurrentMover,
-                          GridWindMover,
-                          GridCurrentMover,
+                          WindMover,
+                          CurrentMover,
                           c_GridWindMover)
 
 from gnome.weatherers import (Evaporation,
@@ -161,10 +161,10 @@ g_objects = (
     ComponentMover(testdata['ComponentMover']['curr'],
                    wind=constant_wind(5., 270, 'knots')),
                    # wind=Wind(filename=testdata['ComponentMover']['wind'])),
-     GridWindMover(testdata['c_GridWindMover']['wind_rect']),
-     #GridWindMover(testdata['c_GridWindMover']['wind_curv']), #variable names wrong
-     GridCurrentMover(testdata['c_GridCurrentMover']['curr_tri']),
-     GridCurrentMover(testdata['c_GridCurrentMover']['curr_reg']),
+     WindMover(testdata['c_GridWindMover']['wind_rect']),
+     #WindMover(testdata['c_GridWindMover']['wind_curv']), #variable names wrong
+     CurrentMover(testdata['c_GridCurrentMover']['curr_tri']),
+     CurrentMover(testdata['c_GridCurrentMover']['curr_reg']),
     RandomMover3D(),
     SimpleMover(velocity=(10.0, 10.0, 0.0)),
 
