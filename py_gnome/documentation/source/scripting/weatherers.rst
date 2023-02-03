@@ -52,18 +52,24 @@ These JSON files can be loaded when specifying a spill:
 "Standard" Weathering
 ---------------------
 
-If you want to use the usual full suite of weatherers, you can turn them on with one step in your model::
+If you want to use the usual full suite of weatherers, you can turn them on with one step in your model:
 
 .. code-block:: python
 
     model.add_weathering()
 
-This will add:
+This will add::
 
-- Emulsification
-- Evaporation
-- Dispersion
-- Spreading
+-Emulsification
+-Evaporation
+-Dispersion
+-Spreading
+
+If you want to load specific weathering modules (e.g., evaporation and dispersion), you can setup your script as follows:
+
+.. code-block:: python
+
+    model.add_weathering(which=('evaporation', 'dispersion'))
 
 Note that you will need a full set of Environment objects in order for weathering to run -- see below.
 
@@ -101,15 +107,31 @@ Note that the wind is not explicitly required but is needed by the Waves object.
     model.weatherers += Evaporation(wind=wind,water=water)
     model.weatherers += NaturalDispersion
 
+Emulsification
+--------------
+Emulsification requires Wind and Waves objects to be initialized.
+Note that the wind is not explicitly required but is needed by the Waves object. Adding on to our example above:
+
+.. code-block:: python
+
+    from gnome.model import Model
+    from gnome.weatherers import Evaporation, NaturalDispersion
+    from gnome.environment import Water, Wind, Waves
+    model = Model()
+    wind = Wind(filename="path_2_file/mywind.txt")
+    waves = Waves(wind)
+    water = Water(temperature=300.0, salinity=35.0) #temperature in Kelvin, salinity in psu
+    model.weatherers += Evaporation(wind=wind,water=water)
+    model.weatherers += NaturalDispersion
+    model.weatherers += Emulsification(waves)
 
 Dissolution
 -----------
-
-Emulsification
---------------
+This module has been partially implemented in PyGNOME, but it has not been thoroughly validated and tested; therefore, it may not work as expected.
 
 Biodegradation
 --------------
+This module has been partially implemented in PyGNOME, but it has not been thoroughly validated and tested; therefore, it may not work as expected.
 
 Viewing Bulk Weathering Data
 ----------------------------
