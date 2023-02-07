@@ -17,7 +17,7 @@ from gnome.model import Model
 from gnome.maps import MapFromBNA
 from gnome.environment import Wind, Tide
 from gnome.spills import surface_point_line_spill
-from gnome.movers import RandomMover, WindMover, CurrentCycleMover
+from gnome.movers import RandomMover, PointWindMover, CurrentCycleMover
 
 from gnome.outputters import (Renderer,
                               NetCDFOutput,
@@ -75,7 +75,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     series[4] = (start_time + timedelta(hours=54), (5, 225))
 
     wind = Wind(timeseries=series, units='m/s')
-    model.movers += WindMover(wind)
+    model.movers += PointWindMover(wind)
 
     print('adding a current mover:')
     curr_file = get_datafile(os.path.join(base_dir, 'PQBayCur.nc4'))

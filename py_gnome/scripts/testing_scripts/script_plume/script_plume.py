@@ -110,7 +110,7 @@ def make_model():
     # wind = Wind(timeseries=series, units='knot')
     #
     # default is .4 radians
-    # w_mover = gnome.movers.WindMover(wind, uncertain_angle_scale=0)
+    # w_mover = gnome.movers.PointWindMover(wind, uncertain_angle_scale=0)
     #
     # model.movers += w_mover
 

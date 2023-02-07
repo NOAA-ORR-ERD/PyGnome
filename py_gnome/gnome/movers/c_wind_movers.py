@@ -179,7 +179,7 @@ class WindMoversBase(CyMover):
         return info.format(self)
 
 
-class WindMoverSchema(WindMoversBaseSchema):
+class PointWindMoverSchema(WindMoversBaseSchema):
     """
     Contains properties required by UpdateWindMover and CreateWindMover
     """
@@ -194,9 +194,9 @@ class WindMoverSchema(WindMoversBaseSchema):
     data_stop = SchemaNode(
         LocalDateTime(), validator=convertible_to_seconds, read_only=True
     )
+WindMoverSchema = PointWindMoverSchema
 
-
-class WindMover(WindMoversBase):
+class PointWindMover(WindMoversBase):
     """
     Python wrapper around the Cython wind_mover module.
     This class inherits from CyMover and contains CyWindMover
@@ -204,7 +204,7 @@ class WindMover(WindMoversBase):
     The real work is done by the CyWindMover object.  CyMover
     sets everything up that is common to all movers.
     """
-    _schema = WindMoverSchema
+    _schema = PointWindMoverSchema
 
     _ref_as = 'wind_mover'
 
@@ -235,7 +235,7 @@ class WindMover(WindMoversBase):
             kwargs['name'] = kwargs.pop('name', wind.name)
 
         # set optional attributes
-        super(WindMover, self).__init__(**kwargs)
+        super(PointWindMover, self).__init__(**kwargs)
 
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}(\n{1})'
@@ -271,11 +271,12 @@ class WindMover(WindMoversBase):
         '''
         if wind attribute is not set, raise ReferencedObjectNotSet excpetion
         '''
-        super(WindMover, self).prepare_for_model_run()
+        super(PointWindMover, self).prepare_for_model_run()
 
         if self.on and self.wind is None:
             msg = "wind object not defined for WindMover"
             raise ReferencedObjectNotSet(msg)
+WindMover = PointWindMover
 
 
 def point_wind_mover_from_file(filename, **kwargs):
@@ -290,7 +291,7 @@ def point_wind_mover_from_file(filename, **kwargs):
     """
     w = Wind(filename=filename, coord_sys='r-theta')
 
-    return WindMover(w, name=w.name, **kwargs)
+    return PointWindMover(w, name=w.name, **kwargs)
 
 
 def constant_point_wind_mover(speed, direction, units='m/s'):
@@ -309,7 +310,7 @@ def constant_point_wind_mover(speed, direction, units='m/s'):
         The time for a constant wind timeseries is irrelevant.
         This function simply sets it to datetime.now() accurate to hours.
     """
-    return WindMover(constant_wind(speed, direction, units=units))
+    return PointWindMover(constant_wind(speed, direction, units=units))
 
 
 class c_GridWindMoverSchema(WindMoversBaseSchema):

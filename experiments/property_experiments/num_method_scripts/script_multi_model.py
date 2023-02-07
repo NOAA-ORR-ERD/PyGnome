@@ -21,9 +21,9 @@ from gnome.environment import Wind
 from gnome.spills import point_line_release_spill
 from gnome.movers import RandomMover, constant_wind_mover, GridCurrentMover
 
-from gnome.movers.py_wind_movers import PyWindMover
+from gnome.movers.py_wind_movers import WindMover
 from gnome.environment.property_classes import GridCurrent
-from gnome.movers.py_current_movers import PyCurrentMover
+from gnome.movers.py_current_movers import CurrentMover
 
 from gnome.outputters import Renderer, NetCDFOutput
 from gnome.environment.vector_field import ice_field
@@ -35,7 +35,7 @@ base_dir = os.path.dirname(__file__)
 
 
 def make_models():
-    print 'initializing the model'
+    print('initializing the model')
 
     # start_time = datetime(2015, 12, 18, 06, 01)
 
@@ -53,7 +53,7 @@ def make_models():
              ]
 
     mapfile = get_datafile(os.path.join(base_dir, 'long_beach.bna'))
-    print 'gen map'
+    print('gen map')
     map = MapFromBNA(mapfile, refloat_halflife=0.0)  # seconds
     fn = ('00_dir_roms_display.ncml.nc4')
     curr = GridCurrent.from_netCDF(filename=fn)
@@ -72,7 +72,7 @@ def make_models():
                                          release_time=start_time)
         mod.spills += spill
         mod.movers += RandomMover(diffusion_coef=100)
-        mod.movers += PyCurrentMover(current=curr, default_num_method=method)
+        mod.movers += CurrentMover(current=curr, default_num_method=method)
 
         images_dir = method + '-' + str(time_step / 60) + 'min-' + str(num_steps) + 'steps'
         renderer = Renderer(mapfile, images_dir, image_size=(1024, 768))
@@ -85,7 +85,7 @@ def make_models():
         mod.outputters += NetCDFOutput(netCDF_fn, which_data='all')
         models.append(mod)
 
-    print 'returning models'
+    print('returning models')
     return models
 
 
@@ -93,7 +93,7 @@ if __name__ == "__main__":
     models = make_models()
 #     for m in models:
 #         scripting.make_images_dir(m.outputters)
-    print "doing full run"
+    print("doing full run")
 #     field = rend.grids[0]
 #     rend.graticule.set_DMS(True)
     for model in models:
@@ -104,10 +104,10 @@ if __name__ == "__main__":
             if step['step_num'] == 0:
                 rend.set_viewport(((-74.2, 39.75), (-74.05, 39.85)))
 
-            print "step: %.4i -- memuse: %fMB" % (step['step_num'],
-                                                  utilities.get_mem_use())
-        print datetime.now() - startTime
+            print("step: %.4i -- memuse: %fMB" % (step['step_num'],
+                                                  utilities.get_mem_use()))
+        print(datetime.now() - startTime)
         pd.profiler.disable()
         pd.print_stats(0.1)
         pd.clear_stats()
-        print '\n-----------------------------------------------\n'
+        print('\n-----------------------------------------------\n')

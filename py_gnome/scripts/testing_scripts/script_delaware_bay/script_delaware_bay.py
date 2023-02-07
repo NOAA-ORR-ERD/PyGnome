@@ -28,7 +28,7 @@ from gnome.maps import MapFromBNA
 
 from gnome.model import Model
 from gnome.spills import surface_point_line_spill
-from gnome.movers import RandomMover, WindMover, CatsMover, ComponentMover
+from gnome.movers import RandomMover, PointWindMover, CatsMover, ComponentMover
 
 
 from gnome.outputters import Renderer
@@ -80,8 +80,8 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     wind = Wind(timeseries=series, units='m/s')
 
-    # w_mover = WindMover(Wind(timeseries=series, units='knots'))
-    w_mover = WindMover(wind)
+    # w_mover = PointWindMover(Wind(timeseries=series, units='knots'))
+    w_mover = PointWindMover(wind)
     model.movers += w_mover
 
     print('adding a cats shio mover:')

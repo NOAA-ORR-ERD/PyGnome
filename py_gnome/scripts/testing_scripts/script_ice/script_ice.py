@@ -69,8 +69,8 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                                                     grid_topology=gt)
     ice_aware_wind = gs.IceAwareWind.from_netCDF(filename=fn,
                                                  grid=ice_aware_curr.grid,)
-    i_c_mover = gs.PyCurrentMover(current=ice_aware_curr)
-    i_w_mover = gs.PyWindMover(wind=ice_aware_wind)
+    i_c_mover = gs.CurrentMover(current=ice_aware_curr)
+    i_w_mover = gs.WindMover(wind=ice_aware_wind)
 
     # shifting to -360 to 0 longitude
     ice_aware_curr.grid.node_lon = ice_aware_curr.grid.node_lon[:] - 360

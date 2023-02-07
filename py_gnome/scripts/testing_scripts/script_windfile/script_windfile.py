@@ -24,7 +24,7 @@ from gnome.maps import MapFromBNA
 
 from gnome.model import Model
 from gnome.spills import surface_point_line_spill
-from gnome.movers import RandomMover, WindMover
+from gnome.movers import RandomMover, PointWindMover
 # from gnome.movers import CatsMover, ComponentMover
 
 
@@ -80,7 +80,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     series[0] = (start_time, (5, 180))
     series[1] = (start_time + timedelta(hours=18), (5, 180))
     w = Wind(filename=os.path.join(base_dir, '22NM_WNW_PortAngelesWA.nws'))
-    w_mover = WindMover(w)
+    w_mover = PointWindMover(w)
     model.movers += w_mover
     model.environment += w_mover.wind
 

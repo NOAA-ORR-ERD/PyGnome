@@ -93,10 +93,13 @@ test_pygnome:
     - conda install -y --file conda_requirements_test.txt
     - cd ./py_gnome/tests/unit_tests && pytest --runslow
 
-#
 # We will not build a windows docker image, but we do want to know if there are
 # any windows specific problems.
 # So this job tries to compile PyGnome on Windows and run the pytests.
+#
+# Unfortunately, the Windows GitLab runner is running PowerShell, so it can't
+# really be a true apples-to-apples test of a normal manual install on windows.
+# Oh well, at least we can test the code.
 #
 test_pygnome_windows:
   stage: test
@@ -105,33 +108,53 @@ test_pygnome_windows:
     - visual-studio-22
   allow_failure: true
   before_script:
-    - echo $CWD
+    - Get-Location
     - dir
     - echo $CI_PIPELINE_ID
     - activate ./$CI_PIPELINE_ID
     - conda config --add channels defaults
     - conda config --add channels conda-forge
     - conda config --get channels
+    - conda config --set channel_priority strict
   script:
-    - echo "compiling PyGNOME"
+    - echo "Building and testing PyGNOME"
+
+    # make sure our conda package is first in the path
+    - $Env:Path = 'C:\ProgramData\Miniconda3\Library\bin;' + $Env:Path
+    - $Env:Path = 'C:\ProgramData\Miniconda3\;' + $Env:Path
+    - $Env:Path = 'C:\ProgramData\Miniconda3\Scripts;' + $Env:Path
+
+    - echo "Our environemt vars:"
+    - $Env:Path
+
+    - echo "Python is running from:"
+    - python -c "import sys; print(sys.executable)"
 
     # get the adios_db code: needed for tests and requirements
     - git clone --depth 1 -b develop https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.orr.noaa.gov/gnome/oil_database/oil_database.git
-    - conda install -y python=$PYTHON_VER --file conda_requirements.txt
+
+    - conda install -y python=$PYTHON_VER mamba
+    - echo "Setting up conda environment"
+    # - conda install -y python=$PYTHON_VER --file conda_requirements.txt
+    #                                       --file conda_requirements_build.txt
+    #                                       --file conda_requirements_test.txt
+    #                                       --file oil_database/adios_db/conda_requirements.txt
+    - mamba install -y python=$PYTHON_VER --file conda_requirements.txt
                                           --file conda_requirements_build.txt
+                                          --file conda_requirements_test.txt
                                           --file oil_database/adios_db/conda_requirements.txt
 
-    # install adios_db
-    - pip install oil_database/adios_db/
+#     # install adios_db
+#     - pip install oil_database/adios_db/
 
+    - echo "Building PyGNOME"
     - cd ./py_gnome
     - python setup.py install
 
-    - cd ../  # make sure that it won't find the source gnome package.
-    - python -c "import gnome"  # make sure that it imports
+#     - cd ../  # make sure that it won't find the source gnome package.
+#     - python -c "import gnome"  # make sure that it imports
 
-    - conda install -y --file conda_requirements_test.txt
-    - cd ./py_gnome/tests/unit_tests
+    - cd ./tests/unit_tests
     - pytest --runslow
     - cd ../../..
 
@@ -148,11 +171,6 @@ build_develop:
     # get the adios_db code, so we can install it in the docker image
     # note -- is should already be there
     - git clone --depth 1 -b develop https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.orr.noaa.gov/gnome/oil_database/oil_database.git
-
-    # build the docs image
-    - docker build -f dockerfile-docs ./py_gnome/documentation/build/html -t registry.orr.noaa.gov/gnome/pygnome/docs
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker push registry.orr.noaa.gov/gnome/pygnome/docs
 
     # build the py_gnome image
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
@@ -172,6 +190,11 @@ build_main:
     # get the adios_db code, so we can install it in the docker image
     # note -- is should already be there
     - git clone --depth 1 -b production https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.orr.noaa.gov/gnome/oil_database/oil_database.git
+
+    # build the docs image
+    - docker build -f dockerfile-docs ./py_gnome/documentation/build/html -t registry.orr.noaa.gov/gnome/pygnome/docs
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker push registry.orr.noaa.gov/gnome/pygnome/docs
 
     # build the py_gnome image
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY

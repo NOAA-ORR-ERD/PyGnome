@@ -224,10 +224,6 @@ class PyMover(Mover):
                         if k in o._ref_as:
                             setattr(self, k, o)
 
-    @property
-    def is_data_on_cells(self):
-        return self.data.grid.infer_location(self.data.u.data) != 'node'
-
     def delta_method(self, method_name=None):
         '''
             Returns a delta function based on its registered name
@@ -372,7 +368,7 @@ class CyMover(Mover):
     def get_move(self, sc, time_step, model_time_datetime):
         """
         Base implementation of Cython wrapped C++ movers
-        Override for things like the WindMover since it has a different
+        Override for things like the PointWindMover since it has a different
         implementation
 
         :param sc: spill_container.SpillContainer object

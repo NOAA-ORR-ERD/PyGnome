@@ -67,10 +67,10 @@ def test_string_repr_no_errors():
     gw = c_GridWindMover(wind_file, topology_file)
     print()
     print('======================')
-    print('repr(WindMover): ')
+    print('repr(PointWindMover): ')
     print(repr(gw))
     print()
-    print('str(WindMover): ')
+    print('str(PointWindMover): ')
     print(str(gw))
 
     # TODO, FIXME: We need a way of validating this if we really care what

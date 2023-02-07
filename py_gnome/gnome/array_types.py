@@ -6,7 +6,7 @@ movers needs
 ** NOTE: **
     These are global declarations
 
-    For instance: If the WindMover that uses array_types.WindMover updates
+    For instance: If the PointWindMover that uses array_types.PointWindMover updates
     the properties of 'windages' ArrayType, it will change it universally.
 
     The user/mover should not need to change dtype or shape internally. If
