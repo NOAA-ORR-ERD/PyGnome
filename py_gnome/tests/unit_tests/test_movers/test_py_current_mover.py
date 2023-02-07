@@ -123,7 +123,7 @@ def test_certain_uncertain():
     assert np.all(delta[:, 2] == u_delta[:, 2])
 
 
-current = GridCurrent(curr_file)
+current = GridCurrent.from_netCDF(filename=curr_file)
 py_cur = CurrentMover(current=current)
 
 
