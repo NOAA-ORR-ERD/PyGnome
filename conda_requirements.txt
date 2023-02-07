@@ -38,6 +38,7 @@ numpy
 scipy<1.10
 gsw
 psutil
+pyzmq
 python-dateutil
 geojson
 colander=1.8.3
