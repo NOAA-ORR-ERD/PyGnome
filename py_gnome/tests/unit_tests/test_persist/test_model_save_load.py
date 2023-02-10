@@ -25,7 +25,7 @@ from gnome.maps import MapFromBNA
 from gnome.environment import Wind, Tide, Water
 from gnome.model import Model
 from gnome.spills import surface_point_line_spill
-from gnome.movers import RandomMover, WindMover, CatsMover, IceMover
+from gnome.movers import RandomMover, PointWindMover, CatsMover, IceMover
 from gnome.weatherers import Evaporation, Skimmer, Burn
 from gnome.outputters import CurrentJsonOutput, IceJsonOutput
 
@@ -78,7 +78,7 @@ def make_model(uncertain=False, mode='gnome'):
     series[0] = (start_time, (5, 180))
     series[1] = (start_time + timedelta(hours=18), (5, 180))
 
-    w_mover = WindMover(Wind(timeseries=series, units='m/s'))
+    w_mover = PointWindMover(Wind(timeseries=series, units='m/s'))
 
     model.movers += w_mover
     model.environment += w_mover.wind

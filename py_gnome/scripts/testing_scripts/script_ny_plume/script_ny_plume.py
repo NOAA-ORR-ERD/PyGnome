@@ -92,7 +92,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # the url is broken, update and include the following four lines
 #     url = ('http://geoport.whoi.edu/thredds/dodsC/clay/usgs/users/jcwarner/Projects/Sandy/triple_nest/00_dir_NYB05.ncml')
 #     gc = GridCurrent.from_netCDF(url)
-#     u_mover = gs.PyCurrentMover(gc, default_num_method='RK2')
+#     u_mover = gs.GridCurrentMover(gc, default_num_method='RK2')
 #     model.movers += u_mover
 
     print('adding a wind mover:')

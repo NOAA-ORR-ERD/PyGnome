@@ -21,7 +21,7 @@ from gnome.environment import Wind, Water, Waves, Tide
 
 from gnome.spills import surface_point_line_spill
 
-from gnome.movers import RandomMover, WindMover, CatsMover
+from gnome.movers import RandomMover, PointWindMover, CatsMover
 from gnome.weatherers import Evaporation, ChemicalDispersion, Burn, Skimmer
 
 from gnome.outputters import WeatheringOutput, TrajectoryGeoJsonOutput
@@ -85,7 +85,7 @@ def make_model(uncertain=False,
 
     wind = Wind(timeseries=series, units='m/s',
                 speed_uncertainty_scale=0.05)
-    model.movers += WindMover(wind)
+    model.movers += PointWindMover(wind)
 
     print('adding a cats mover:')
     c_mover = CatsMover(testdata["lis"]["cats_curr"],

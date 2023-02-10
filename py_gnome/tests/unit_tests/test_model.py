@@ -26,7 +26,7 @@ from gnome.spills import (Spill,
                          surface_point_line_spill,
                          Release)
 
-from gnome.movers import SimpleMover, RandomMover, WindMover, CatsMover
+from gnome.movers import SimpleMover, RandomMover, PointWindMover, CatsMover
 
 from gnome.weatherers import (HalfLifeWeatherer,
                               Evaporation,
@@ -569,7 +569,7 @@ def test_all_movers(start_time, release_delay, duration):
     # wind mover
     series = np.array((start_time, (10, 45)),
                       dtype=datetime_value_2d).reshape((1, ))
-    model.movers += WindMover(Wind(timeseries=series,
+    model.movers += PointWindMover(Wind(timeseries=series,
                               units='meter per second'))
     assert len(model.movers) == 3
 
@@ -605,10 +605,10 @@ def test_all_movers(start_time, release_delay, duration):
 @pytest.mark.parametrize('wind_persist', [-1, 900, 5])
 def test_linearity_of_wind_movers(wind_persist):
     '''
-    WindMover is defined as a linear operation - defining a model
-    with a single WindMover with 15 knot wind is equivalent to defining
+    PointWindMover is defined as a linear operation - defining a model
+    with a single PointWindMover with 15 knot wind is equivalent to defining
     a model with three WindMovers each with 5 knot wind. Or any number of
-    WindMover's such that the sum of their magnitude is 15knots and the
+    PointWindMover's such that the sum of their magnitude is 15knots and the
     direction of wind is the same for both cases.
 
     Below is an example which defines two models and runs them.
@@ -643,7 +643,7 @@ def test_linearity_of_wind_movers(wind_persist):
     model1.spills += sp
 
 
-    model1.movers += WindMover(Wind(timeseries=series1, units=units),
+    model1.movers += PointWindMover(Wind(timeseries=series1, units=units),
                                make_default_refs=False)
 
     model2 = Model(name='model2')
@@ -656,11 +656,11 @@ def test_linearity_of_wind_movers(wind_persist):
                                               substance=NonWeatheringSubstance(windage_persist=wind_persist))
 
     # todo: CHECK RANDOM SEED
-    # model2.movers += WindMover(Wind(timeseries=series1, units=units))
+    # model2.movers += PointWindMover(Wind(timeseries=series1, units=units))
 
-    model2.movers += WindMover(Wind(timeseries=series2, units=units))
-    model2.movers += WindMover(Wind(timeseries=series2, units=units))
-    model2.movers += WindMover(Wind(timeseries=series3, units=units))
+    model2.movers += PointWindMover(Wind(timeseries=series2, units=units))
+    model2.movers += PointWindMover(Wind(timeseries=series2, units=units))
+    model2.movers += PointWindMover(Wind(timeseries=series3, units=units))
     model2.set_make_default_refs(False)
 
     while True:
@@ -723,7 +723,7 @@ def test_model_release_after_start():
     # Add a Wind mover:
     series = np.array((start_time, (10, 45)),
                       dtype=datetime_value_2d).reshape((1, ))
-    model.movers += WindMover(Wind(timeseries=series, units=units))
+    model.movers += PointWindMover(Wind(timeseries=series, units=units))
 
     for step in model:
         print('running a step')
@@ -828,7 +828,7 @@ def test_callback_add_mover():
     model.movers += SimpleMover(velocity=(1., -1., 0.))
     series = np.array((model.start_time, (10, 45)),
                       dtype=datetime_value_2d).reshape((1, ))
-    model.movers += WindMover(Wind(timeseries=series, units=units))
+    model.movers += PointWindMover(Wind(timeseries=series, units=units))
 
     # this should create a Wind object
     new_wind = Wind(timeseries=series, units=units)

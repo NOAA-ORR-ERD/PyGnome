@@ -22,7 +22,7 @@ from gnome.environment import Wind, Water, Tide
 from gnome.spills import point_line_release_spill
 from gnome.spills.elements import floating_weathering
 
-from gnome.movers import RandomMover, WindMover, CatsMover
+from gnome.movers import RandomMover, PointWindMover, CatsMover
 from gnome.weatherers import Evaporation, Dispersion, Skimmer, Burn
 
 from gnome.outputters import WeatheringOutput
@@ -74,7 +74,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     wind = Wind(timeseries=series, units='m/s',
                 speed_uncertainty_scale=0.5)
-    model.movers += WindMover(wind)
+    model.movers += PointWindMover(wind)
 
     print 'adding a cats mover:'
     curr_file = get_datafile(os.path.join(base_dir, r"./LI_tidesWAC.CUR"))

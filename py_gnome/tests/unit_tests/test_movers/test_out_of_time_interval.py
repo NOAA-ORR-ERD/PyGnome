@@ -15,7 +15,7 @@ import numpy as np
 import pytest
 
 from gnome.environment import wind_from_values
-from gnome.movers import WindMover
+from gnome.movers import PointWindMover
 
 
 # simple fake spill container
@@ -47,7 +47,7 @@ def test_wind_mover():
                              (datetime(2016, 5, 10, 12, 20), 6, 50),
                              (datetime(2016, 5, 10, 12, 40), 7, 55),
                              ])
-    wm = WindMover(wind)
+    wm = PointWindMover(wind)
 
     # within the model's time span, this should work:
     wm.prepare_for_model_step(sc, 600, datetime(2016, 5, 10, 12, 20))
@@ -77,7 +77,7 @@ def test_wind_mover():
         except RuntimeError as err:
             msg = err.args[0]
             assert "No available data" in msg
-            assert "WindMover" in msg
+            assert "PointWindMover" in msg
             assert "2016-05-10 11:50:00" in msg
             assert "2016-05-10 12:00:00" in msg
             assert "2016-05-10 12:40:00" in msg

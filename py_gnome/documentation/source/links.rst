@@ -17,3 +17,8 @@
 
    <a href="https://adios.orr.noaa.gov" target="_blank">
    ADIOS Oil Database</a>
+   
+.. |nesdis_reports| raw:: html
+
+   <a href="https://www.ospo.noaa.gov/Products/ocean/marinepollution/" target="_blank">
+   Marine Pollution Surveillance Reports</a>

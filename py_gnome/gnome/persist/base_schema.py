@@ -779,7 +779,7 @@ class GeneralGnomeObjectSchema(ObjTypeSchema):
     The purpose of this schema is to be a placeholder in situations where you
     need to specify that an attribute may be one of many different types.
 
-    For example, a PyCurrentMover's .current may be a GridCurrent, an
+    For example, a CurrentMover's .current may be a GridCurrent, an
     IceAwareGridCurrent, a TimeseriesCurrent, etc. Alternatively, you may
     be composing an attribute from several types of Gnome object
     '''

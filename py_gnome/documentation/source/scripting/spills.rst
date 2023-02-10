@@ -6,21 +6,23 @@ Spills
 The Spill Class
 ---------------
 
-Setting up the Spill object can be tricky because it requires both a Release object and a Substance Object.
-Some helper functions are described in the next section that simplify this task. But first, we'll show some detail on creating a spill to help understand the components.
+The :class:`gnome.spills.Spill` class is used for creating a Spill object to add to the model. This can be tricky because it requires both a Release object and a Substance object.
+Some helper functions are available that simplify this task. But first, we'll show some detail on creating a spill to help understand the components.
  
-The :class:`gnome.spills.release.Release` Object specifies the details of the release (e.g. where, when, how many elements). 
+The :class:`gnome.spills.release.Release` class is used to create a Release object which specifies the details of the release (e.g. where, when, how many elements). 
 Some of the subclasses of this include:
 
 * :class:`gnome.spills.release.PointLineRelease` - a release of elements at a point or along a line, either instantaneously or over a time interval
 
 * :class:`gnome.spills.release.PolygonRelease` - an instantaneous release of elements distributed randomly in specified polygons.
 
-The :class:`gnome.spills.substance.Substance` Object provides information on the type of substance spilled. It's possible to add multiple spills to the model, they must all use the same Substance object. There are currently two classes that can be used to instantiate substances:
+The :class:`gnome.spills.substance.Substance` class is used to create a Substance object which provides information on the type of substance spilled. It's possible to add multiple spills to the model, they must all use the same Substance object. There are currently two classes that can be used to instantiate substances:
 
 * :class:`gnome.spills.substance.GnomeOil` - used for creating a spill that will include oil weathering processes
 
 * :class:`gnome.spills.substance.NonWeatheringSubstance` - used for running transport simulations with conservative elements (i.e. the element properties do not change over time).
+
+All of these classes are imported into the scripting module for convenience.
 
 Non-weathering Example
 ----------------------
@@ -79,14 +81,14 @@ A spill of 5000 bbls using a specific oil downloaded from the `ADIOS Oil Databas
 Polygon Releases
 ----------------
 
-Documentation forthcoming (Nov 2022).
+The :class:`gnome.spills.release.PolygonRelease` Object releases particles distributed over a polygon or set 
+of polygons. The particles are distributed randomly over the polygons with a simple weighting by polygon area (i.e., geographically larger polygons will be seeded with more particles). The subclass :class:`gnome.spills.release.NESDISRelease` can be used specifically with the |nesdis_reports| operationally produced by NOAA's Office of Satellite and Product Operations. 
  
 
 Using Helper Functions
 ----------------------
 
 Rather than deal with the complexities of the Spill class directly, helper functions in the scripting package can be utilized for a lot of typical use cases. Some examples are include below.
-
 
 Surface spill 
 .............

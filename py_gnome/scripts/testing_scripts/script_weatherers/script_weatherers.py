@@ -113,7 +113,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     # wind2 = gs.Wind(timeseries=series, units='knot')
 
-    w_mover = gs.WindMover(wind)
+    w_mover = gs.PointWindMover(wind)
     model.movers += w_mover
 
     print('adding weatherers and cleanup options:')

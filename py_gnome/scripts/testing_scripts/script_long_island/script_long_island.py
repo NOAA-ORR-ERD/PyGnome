@@ -64,7 +64,7 @@ def make_model(images_dir=base_dir /'images'):
     series[4] = (start_time + gs.hours(54), (10, 225))
 
     wind = gs.Wind(timeseries=series, units='m/s')
-    model.movers += gs.WindMover(wind)
+    model.movers += gs.PointWindMover(wind)
 
     print('adding a cats mover:')
     curr_file = gs.get_datafile(base_dir / 'LI_tidesWAC.CUR')

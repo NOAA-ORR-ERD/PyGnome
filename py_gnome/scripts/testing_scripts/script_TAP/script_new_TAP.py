@@ -20,8 +20,8 @@ from gnome.spills import surface_point_line_spill
 from gnome.movers import RandomMover, constant_point_wind_mover, c_GridCurrentMover, IceAwareRandomMover
 
 from gnome.environment import IceAwareCurrent, IceAwareWind, GridCurrent
-from gnome.movers.py_wind_movers import PyWindMover
-from gnome.movers.py_current_movers import PyCurrentMover
+from gnome.movers.py_wind_movers import WindMover
+from gnome.movers.py_current_movers import CurrentMover
 
 from gnome.outputters import Renderer, NetCDFOutput
 import gnome.utilities.profiledeco as pd
@@ -111,7 +111,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                                                  grid_topology=gt)
 
 #     env1 = get_env_from_netCDF(filename)
-#     mov = PyCurrentMover.from_netCDF(filename)
+#     mov = GridCurrentMover.from_netCDF(filename)
 
     ice_aware_curr.ice_velocity.variables[0].dimension_ordering = ['time', 'x', 'y']
     ice_aware_wind = IceAwareWind.from_netCDF(filename=fn,
@@ -130,11 +130,11 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     print('loading entire wind data')
 
-#     i_c_mover = PyCurrentMover(current=ice_aware_curr)
-#     i_c_mover = PyCurrentMover(current=ice_aware_curr, default_num_method='Euler')
-   # i_c_mover = PyCurrentMover(current=ice_aware_curr, default_num_method=method, extrapolate=True)
-    i_c_mover = PyCurrentMover(current=ice_aware_curr, default_num_method=method)
-    i_w_mover = PyWindMover(wind=ice_aware_wind, default_num_method=wind_method)
+#     i_c_mover = GridCurrentMover(current=ice_aware_curr)
+#     i_c_mover = GridCurrentMover(current=ice_aware_curr, default_num_method='Euler')
+   # i_c_mover = GridCurrentMover(current=ice_aware_curr, default_num_method=method, extrapolate=True)
+    i_c_mover = CurrentMover(current=ice_aware_curr, default_num_method=method)
+    i_w_mover = WindMover(wind=ice_aware_wind, default_num_method=wind_method)
 
     i_c_mover.current.grid.extrapolation_is_allowed = True
 
