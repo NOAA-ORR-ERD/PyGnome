@@ -147,7 +147,7 @@ In this case we specify a uniform distribution of droplets ranging from 10-300 m
               time_step=60 * 15, #seconds
               )
     ud = UniformDistribution(10e-6,300e-6) #droplets in the range 10-300 microns
-    spill = gs.subsurface_plume_spill(num_elements=1000,
+    spill = gs.subsurface_spill(num_elements=1000,
                                       start_position=(-144,48.5, -100.0),
                                       release_time=start_time,
                                       distribution=ud,
