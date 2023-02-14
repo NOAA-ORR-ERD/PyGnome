@@ -101,6 +101,9 @@ from gnome.movers import (RandomMover,
                           SimpleMover,
                           )
 
+from gnome.movers.py_current_movers import PyCurrentMover
+from gnome.movers.py_wind_movers import PyWindMover
+
 from gnome.utilities.remote_data import get_datafile
 
 
