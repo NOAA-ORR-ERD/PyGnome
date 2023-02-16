@@ -1,5 +1,7 @@
-.. _map_formats:
+.. _wind_formats:
 
-MAPS
+Wind
 ====
+
+
 
