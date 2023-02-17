@@ -25,7 +25,7 @@ import nucos as uc
 # just so it will be in the namespace.
 from .gnomeobject import GnomeId, AddLogger
 
-__version__ = '1.1.3'
+__version__ = '1.1.4'
 
 
 # a few imports so that the basic stuff is there
@@ -44,10 +44,18 @@ def check_dependency_versions():
     If the version is not at least as current as what's defined here
     a warning is displayed
     """
-    libs = [('gridded', '0.3.6', ''),
+    def ver_check(required, installed):
+        required = tuple(int(part) for part in required.split(".")[:3])
+        installed = tuple(int(part) for part in installed.split(".")[:3])
+        if installed < required:
+            return False
+        else:
+            return True
+
+    libs = [('gridded', '0.3.10', ''),
             ('nucos', '3.1.1', ''),
             ('py_gd', '2.0.3', ''),
-            ('adios_db', '1.0.0', 'Only required to use the ADIOS Database '
+            ('adios_db', '1.0.3', 'Only required to use the ADIOS Database '
                                   'JSON format for oil data.')
             ]
 
@@ -60,8 +68,8 @@ def check_dependency_versions():
                    "needs to be installed: {}".format(name, version, note))
             warnings.warn(msg)
         else:
-            ver = ".".join(module.__version__.split(".")[:3])
-            if ver < version:
+            ver = tuple(module.__version__.split(".")[:3])
+            if not ver_check(version, module.__version__):
                 msg = ('Version {0} of {1} package is required, '
                        'but actual version in module is {2}:'
                        '{3}'

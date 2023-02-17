@@ -33,9 +33,9 @@ from gnome.movers import (RandomMover,
                           RandomMover3D,
                           SimpleMover,
                           c_GridCurrentMover,
-                          PyCurrentMover,
+                          CurrentMover,
                           constant_point_wind_mover,
-                          WindMover)
+                          PointWindMover)
 
 from gnome.outputters import Renderer
 from gnome.outputters import NetCDFOutput
@@ -118,14 +118,14 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     #gc = GridCurrent.from_netCDF('HYCOM_3d.nc')
     gc = GridCurrent.from_netCDF(hycom_file)
 
-    #model.movers += PyCurrentMover('HYCOM_3d.nc')
-    model.movers += PyCurrentMover(hycom_file)
+    #model.movers += GridCurrentMover('HYCOM_3d.nc')
+    model.movers += CurrentMover(hycom_file)
 #    model.movers += SimpleMover(velocity=(0., 0, 0.))
     model.movers += constant_point_wind_mover(10, 315, units='knots')
 
     # Wind from a buoy
     #w = Wind(filename='KIKT.osm')
-    #model.movers += WindMover(w)
+    #model.movers += PointWindMover(w)
 
 
     # Now to add in the TAMOC "spill"

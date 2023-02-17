@@ -85,7 +85,7 @@ class InitWindages(InitBaseClass):
         """
         Initializes the windages, windage_range, windage_persist data arrays.
         Initial values for windages use infinite persistence. These are updated
-        by the WindMover for particles with non-zero persistence.
+        by the PointWindMover for particles with non-zero persistence.
 
         Optional arguments:
 

@@ -91,15 +91,18 @@ from gnome.environment.environment_objects import IceVelocity,IceConcentration
 
 from gnome.movers import (RandomMover,
                           RandomMover3D,
-                          WindMover,
+                          PointWindMover,
                           CatsMover,
                           ComponentMover,
                           RiseVelocityMover,
-                          PyWindMover,
-                          PyCurrentMover,
+                          WindMover,
+                          CurrentMover,
                           IceAwareRandomMover,
                           SimpleMover,
                           )
+
+from gnome.movers.py_current_movers import PyCurrentMover
+from gnome.movers.py_wind_movers import PyWindMover
 
 from gnome.utilities.remote_data import get_datafile
 

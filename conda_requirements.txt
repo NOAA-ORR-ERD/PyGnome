@@ -43,7 +43,10 @@ python-dateutil
 geojson
 colander=1.8.3
 
-tblib # still needed for child process exception handling.
+# # Needed for multiprocessing, which is currently broken
+# pyzmq
+# tornado
+# tblib
 
 netCDF4
 pyshp

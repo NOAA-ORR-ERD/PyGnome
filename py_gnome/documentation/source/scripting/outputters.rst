@@ -19,9 +19,9 @@ The ``cache`` object is where the outputter will pull its data from -- if not se
 
 ``output_timestep`` specifies when you want the output written -- it defaults to every model timestep, but you may only want output every hour, or every 6 hours, or...
 
-``output_zero_timestep`` specified whether you want the zeroth timestep (before any elements have been moved or altered) output
+``output_zero_timestep`` specifies whether you want the zeroth timestep (before any elements have been moved or altered) output.
 
-``output_last_timestep`` specifies whether you want the final timestep output, regardless of whether it lands on a the specified output_timestep.
+``output_last_timestep`` specifies whether you want the final timestep output, regardless of whether it lands on a specified output_timestep.
 
 See :class:`gnome.outputters.Outputter` for the full API.
 
@@ -67,8 +67,7 @@ To save particle information into a NetCDF file we use the NetCDF outputter. In 
 
 'standard' : the basic stuff most people would want
 
-'most': everything the model is tracking except the internal-use-only
-        arrays
+'most': everything the model is tracking except the internal-use-only arrays
 
 'all': everything tracked by the model (mostly used for diagnostics)
 
@@ -90,7 +89,7 @@ To save particle information into a KMZ file that can be read by Google Earth (a
     model.outputters += gs.KMZOutput('gnome_results.kmz',
                                      output_timestep=timedelta(hours=6))
 
-The KMZ contains a kml file with layers for each output timestep, unceratain and certain elements, ans beached and floating elements, along with icons to render the elements.
+The KMZ file contains a kml file with layers for each output timestep, uncertain and certain elements, and beached and floating elements, along with icons to render the elements.
 
 See :class:`gnome.outputters.KMZOutput` for the full documentation
 
@@ -98,16 +97,39 @@ See :class:`gnome.outputters.KMZOutput` for the full documentation
 Shapefile Output
 ----------------
 
-To save particle information into a Shapefile that can be read by a variety fo GIS aplications, use the  Shape Outputter::
+To save particle information into a Shapefile that can be read by a variety of GIS applications, we use the Shape Outputter::
 
     import gnome.scripting as gs
     model.outputters += ShapeOutput('gnome_results',
                                     zip_output=True,
                                     output_timestep=timedelta(hours=6))
 
-The ShapeOutput crates a set of shapefiles, optionally allin on zip files, that contains points for the elements at each timestep, with attributes that apecify teh elements properties.
+The ShapeOutput creates a set of shapefiles, optionally all in one zip file, that contains points for the elements at each timestep, with attributes that specify the elements properties.
 
 See :class:`gnome.outputters.ShapeOutput` for the full documentation
+
+
+Oil Budget Output
+-----------------
+
+To save weathering information into a CSV file, we use the OilBudget Outputter::
+
+    import gnome.scripting as gs
+    model.outputters += OilBudgetOutput('adios_results',
+                                    output_timestep=timedelta(hours=6))
+
+The OilBudgetOutput creates a CSV file with the oil budget information (amounts in kilograms):
+
+ * model_time
+ * amount_released
+ * evaporated
+ * natural_dispersion
+ * sedimentation
+ * floating
+ * beached
+ * off_maps
+
+See :class:`gnome.outputters.OilBudgetOutput` for the full documentation
 
 
 .. _weathering_data_output:
@@ -146,3 +168,5 @@ up your model (spill substance, weatherers), WeatheringOutput may contain any or
  * sedimentation
  * time_stamp
  * water_content
+
+See :class:`gnome.outputters.WeatheringOutput` for the full documentation

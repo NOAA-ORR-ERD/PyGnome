@@ -21,12 +21,18 @@ from gnome.environment import Wind, Water, Waves, Tide
 
 from gnome.spills import surface_point_line_spill
 
-from gnome.movers import RandomMover, WindMover, CatsMover
+from gnome.movers import RandomMover, PointWindMover, CatsMover
 from gnome.weatherers import Evaporation, ChemicalDispersion, Burn, Skimmer
 
 from gnome.outputters import WeatheringOutput, TrajectoryGeoJsonOutput
 
-from gnome.multi_model_broadcast import ModelBroadcaster
+try:
+    import pyzmq
+    import tornado
+except ImportError:
+    print('Could not import Model Broadcaster -- it needs pyzmq and tornado')
+else:
+    from gnome.multi_model_broadcast import ModelBroadcaster
 
 from .conftest import testdata, test_oil
 
@@ -79,7 +85,7 @@ def make_model(uncertain=False,
 
     wind = Wind(timeseries=series, units='m/s',
                 speed_uncertainty_scale=0.05)
-    model.movers += WindMover(wind)
+    model.movers += PointWindMover(wind)
 
     print('adding a cats mover:')
     c_mover = CatsMover(testdata["lis"]["cats_curr"],

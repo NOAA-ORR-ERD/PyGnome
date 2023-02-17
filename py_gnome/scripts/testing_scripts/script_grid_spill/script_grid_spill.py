@@ -43,12 +43,12 @@ model.map = gs.MapFromBNA(mapfile,
                           refloat_halflife=float("inf")
                           )
 
-# nam = gs.PyWindMover("NAM_5K.nc")
+# nam = gs.WindMover("NAM_5K.nc")
 # nam.active_range = (gs.MinusInfTime(),
 #                     gs.asdatetime("2019-04-19T22:00"))
 # model.movers += nam
 
-# gfs = gs.PyWindMover("GFS_Global_0p5deg-4-18.nc")
+# gfs = gs.WindMover("GFS_Global_0p5deg-4-18.nc")
 # model.movers += gfs
 
 
@@ -63,7 +63,7 @@ model.movers += forecast
 
 currentfile = gs.get_datafile(os.path.join(base_dir, 'CAROMS.nc'))
 
-roms = gs.PyCurrentMover(currentfile)
+roms = gs.CurrentMover(currentfile)
 # extrapolate the currents
 roms.current.extrapolation_is_allowed = True
 # roms.active_range = (gs.MinusInfTime(), gs.asdatetime("2019-04-19T20:00"))
