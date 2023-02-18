@@ -12,7 +12,6 @@ Setting up a simulation in PyGNOME involves configuring a ``Model``, and then in
 
 IN addition, a user can create custom behavior for GNOME by defining their own versions of the core objects in the modeling system. The design goal of GNOME is that each part of the model only needs to conform to the Model's expected API, It should be possible to define a custom process without touching other parts f the model code.
 
-
 Primary Base Classes in ``gnome``
 ---------------------------------
 
