@@ -205,6 +205,11 @@ class Spill(BaseSpill):
         first try to use get_oil_props using 'val'. If this fails, then assume
         user has provided a valid OilProps object and use it as is
         '''
+        # a bit of type checking -- this bit me, and took a while to debug
+        #  e.g. passing in NonWeatheringSubstance instead of NonWeatheringSubstance()
+        if isinstance(val, type):
+            raise TypeError(f"{val} is a class -- it should be an instance of a class")
+
         if val is None:
             self._substance = NonWeatheringSubstance()
             return
@@ -448,9 +453,9 @@ class Spill(BaseSpill):
 
         if 'frac_coverage' in sc:
             sc['frac_coverage'][-to_rel:] = self.frac_coverage
-        
-        self.substance.initialize_LEs(to_rel, sc, environment=environment)  
-        
+
+        self.substance.initialize_LEs(to_rel, sc, environment=environment)
+
         self.release.initialize_LEs_post_substance(to_rel, sc, start_time, end_time, environment=environment)
 
         return to_rel
@@ -731,7 +736,7 @@ def subsurface_spill(num_elements,
                                start_position=start_position,
                                num_elements=num_elements,
                                end_release_time=end_release_time)
-    
+
     spill = _setup_spill(release=release,
                          water=water,
                          substance=substance,

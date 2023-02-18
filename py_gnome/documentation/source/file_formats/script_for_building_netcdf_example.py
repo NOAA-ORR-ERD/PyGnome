@@ -18,7 +18,7 @@ model.spills += gs.surface_point_line_spill(num_elements=10,
                                             start_position=(0.0, 0.0, 0.0),
                                             release_time=model.start_time,
                                             end_release_time=model.start_time + gs.hours(2),
-                                            # substance=gs.NonWeatheringSubstance,
+                                            substance=gs.NonWeatheringSubstance(),
                                             )
 
 outputter = gs.NetCDFOutput(filename="sample_gnome_output.nc",
@@ -27,8 +27,8 @@ outputter = gs.NetCDFOutput(filename="sample_gnome_output.nc",
                             )
 
 # output data can be removed (or added) to the arrays_to_output set.
-outputter.arrays_to_output.discard('density')
-outputter.arrays_to_output.discard('viscosity')
+# outputter.arrays_to_output.discard('density')
+# outputter.arrays_to_output.discard('viscosity')
 
 model.outputters += outputter
 
