@@ -9,5 +9,5 @@ GNOME File Formats
    winds
    netcdf
    noaa_specific_currents
-
-
+   scaling_current_patterns
+   output_formats
