@@ -2,10 +2,6 @@
 Movers using diffusion as the forcing function
 '''
 
-
-
-
-
 import numpy as np
 
 from colander import (SchemaNode, Float, Boolean, drop)
@@ -35,31 +31,38 @@ class RandomMoverSchema(ProcessSchema):
 
 
 class RandomMover(CyMover):
-    """
-    This mover class inherits from CyMover and contains CyRandomMover
+    # This mover class inherits from CyMover and contains CyRandomMover
 
-    The real work is done by CyRandomMover.
-    CyMover sets everything up that is common to all movers.
+    # The real work is done by CyRandomMover.
+    # CyMover sets everything up that is common to all movers.
+    """
+    "Random Walk" diffusion mover
+
+    Moves the elements each time step in a random direction, according to the
+    specified diffusion coefficient.
     """
     _schema = RandomMoverSchema
 
-    def __init__(self, **kwargs):
+    def __init__(self,
+                 diffusion_coef=100000.0,
+                 uncertain_factor=2.0,
+                 **kwargs):
+        # Uses super to invoke CyMover__init__ method.
         """
-        Uses super to invoke base class __init__ method.
-
-        Optional parameters (kwargs)
-
         :param diffusion_coef: Diffusion coefficient for random diffusion.
             Default is 100,000 cm2/sec
-        :param uncertain_factor: Uncertainty factor. Default is 2
+        :type diffusion_coef: float or integer in units of cm^2/s
+
+        :param uncertain_factor: Uncertainty factor. Default is 2.0
 
         Remaining kwargs are passed onto :class:`gnome.movers.Mover` __init__
-        using super.  See Mover documentation for remaining valid kwargs.
-        """
-        diffusion_coeff = kwargs.pop('diffusion_coef', 100000)
-        uncertain_factor = kwargs.pop('uncertain_factor', 2)
 
-        self.mover = CyRandomMover(diffusion_coef=diffusion_coeff,
+        See Mover documentation for remaining valid kwargs.
+        """
+        # diffusion_coeff = kwargs.pop('diffusion_coef', 100000)
+        # uncertain_factor = kwargs.pop('uncertain_factor', 2)
+
+        self.mover = CyRandomMover(diffusion_coef=diffusion_coef,
                                    uncertain_factor=uncertain_factor)
 
         super(RandomMover, self).__init__(**kwargs)
@@ -201,34 +204,42 @@ class RandomMover3D(CyMover):
     """
     _schema = RandomMover3DSchema
 
-    def __init__(self, **kwargs):
-        """
-        Uses super to invoke base class __init__ method.
+    def __init__(self,
+                 vertical_diffusion_coef_above_ml=5,
+                 vertical_diffusion_coef_below_ml=0.11,
+                 horizontal_diffusion_coef_above_ml=100_000,
+                 horizontal_diffusion_coef_below_ml=126,
+                 mixed_layer_depth=10.0,
+                 surface_is_allowed=False,
+                 **kwargs):
 
-        Optional parameters (kwargs)
-        
-        :param vertical_diffusion_coef_above_ml: Vertical diffusion coefficient for random diffusion 
+        # Uses super to invoke base class __init__ method.
+
+        """
+        :param vertical_diffusion_coef_above_ml: Vertical diffusion coefficient for random diffusion
                                                  above the mixed layer. Default is 5 cm2/s
-        :param vertical_diffusion_coef_below_ml: Vertical diffusion coefficient for random diffusion 
+        :param vertical_diffusion_coef_below_ml: Vertical diffusion coefficient for random diffusion
                                                  below the mixed layer. Default is .11 cm2/s
         :param mixed_layer_depth: Mixed layer depth. Default is 10 meters
-        :param horizontal_diffusion_coef_above_ml: Horizontal diffusion coefficient for random diffusion 
+        :param horizontal_diffusion_coef_above_ml: Horizontal diffusion coefficient for random diffusion
                                                    above the mixed layer. Default is 100000 cm2/s
-        :param horizontal_diffusion_coef_below_ml: Horizontal diffusion coefficient for random diffusion 
+        :param horizontal_diffusion_coef_below_ml: Horizontal diffusion coefficient for random diffusion
                                                    below the mixed layer. Default is 126 cm2/s
-        :param surface_is_allowed: Vertical diffusion will ignore surface particles if this is True. Default 
+        :param surface_is_allowed: Vertical diffusion will ignore surface particles if this is True. Default
                                    is False.
 
         Remaining kwargs are passed onto Mover's __init__ using super.
+
         See Mover documentation for remaining valid kwargs.
         """
-        self.mover = CyRandomMover3D(vertical_diffusion_coef_above_ml=kwargs.pop('vertical_diffusion_coef_above_ml', 5),
-                                           vertical_diffusion_coef_below_ml=kwargs.pop('vertical_diffusion_coef_below_ml', .11),
-                                           horizontal_diffusion_coef_above_ml=kwargs.pop('horizontal_diffusion_coef_above_ml', 100000),
-                                           horizontal_diffusion_coef_below_ml=kwargs.pop('horizontal_diffusion_coef_below_ml', 126),
-                                           mixed_layer_depth=kwargs.pop('mixed_layer_depth', 10.),
-                                           surface_is_allowed=kwargs.pop('surface_is_allowed', False))
-        super(RandomMover3D, self).__init__(**kwargs)
+        self.mover = CyRandomMover3D(vertical_diffusion_coef_above_ml=vertical_diffusion_coef_above_ml,
+                                     vertical_diffusion_coef_below_ml=vertical_diffusion_coef_below_ml,
+                                     horizontal_diffusion_coef_above_ml=horizontal_diffusion_coef_above_ml,
+                                     horizontal_diffusion_coef_below_ml=horizontal_diffusion_coef_below_ml,
+                                     mixed_layer_depth=mixed_layer_depth,
+                                     surface_is_allowed=surface_is_allowed,
+                                     )
+        super().__init__(**kwargs)
 
     @property
     def horizontal_diffusion_coef_above_ml(self):
