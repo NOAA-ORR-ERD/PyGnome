@@ -2,11 +2,6 @@
 model dissolution process
 '''
 
-
-
-
-
-
 import copy
 import contextlib
 
@@ -49,6 +44,9 @@ class DissolutionSchema(WeathererSchema):
 
 
 class Dissolution(Weatherer):
+    """
+    Dissolution is still under development and not recommended for use.
+    """
 
     _schema = DissolutionSchema
 
@@ -127,23 +125,36 @@ class Dissolution(Weatherer):
             Here is where we calculate the dissolved oil.
             We will outline the steps as we go along, but off the top of
             my head:
+
             - recalculate the partition coefficient (K_ow)
+
             - droplet distribution per LE should be calculated by the
               natural dispersion process and saved in the data arrays before
               the dissolution weathering process.
+
             - for each LE:
-                (Note: right now the natural dispersion process only
-                       calculates a single average droplet size. But we still
-                       treat it as an iterable.)
+
+                .. note::
+                    right now the natural dispersion process only
+                    calculates a single average droplet size. But we still
+                    treat it as an iterable.
+
                 - for each droplet size category:
+
                     - calculate the water phase transfer velocity (k_w)
+
                     - calculate the mass xfer rate coefficient (beta)
+
                     - calculate the water column time fraction (f_wc)
+
                     - calculate the mass dissolved during refloat period
+
                 - calculate the mass dissolved from the slick during the
                   calm period.
+
             - the mass dissolved in the water column and the slick is summed
               per mass fraction (should only be aromatic fractions)
+
             - the sum of dissolved masses are compared to the existing mass
               fractions and adjusted to make sure we don't dissolve more
               mass than exists in the mass fractions.
@@ -356,32 +367,38 @@ class Dissolution(Weatherer):
                                           ):
         '''
             Here we are implementing something similar to equations
+
             - 1.26: this should estimate the mass xfer rate in kg/s
-                    (Note: For this equation to work, we need to estimate
-                           the total surface area of all droplets, not just
-                           a single one)
-            - 1.27: this should estimate the mass xfer rate per unit area
-                    in kg/(m^2 * s)
+
+                    .. note::
+                        For this equation to work, we need to estimate
+                        the total surface area of all droplets, not just
+                        a single one
+
+            - 1.27: this should estimate the mass xfer rate per unit area in kg/(m^2 * s)
             - 1.28: combines equations 1.26 and 1.27
             - 1.29: estimates the surface area of a single droplet.
 
             We return the mass xfer rate in units (kg/s)
 
-            Note: The Cohen equation (eq. 1.1, 1.27), I believe, is actually
-                  expressed in kg/(m^2 * hr).  So we need to convert our
-                  time units.
+            .. note::
+                The Cohen equation (eq. 1.1, 1.27), I believe, is actually
+                expressed in kg/(m^2 * hr).  So we need to convert our
+                time units.
 
-            Note: for now, we are receiving a single average droplet size,
-                  which we assume will account for 100% of the oil volume.
-                  In the future we will need to work with something like:
-                  [(drop_size, vol_fraction, k_w_drop),
-                   ...
-                   ]
-                  This is because each droplet bin will represent a fraction
-                  of the total oil volume (or mass?), and will have its own
-                  distinct rise velocity.
-                  oil_concentrations and partition coefficients will be the
-                  same regardless of droplet size.
+            .. note::
+                for now, we are receiving a single average droplet size,
+                which we assume will account for 100% of the oil volume.
+                In the future we will need to work with something like::
+                    [(drop_size, vol_fraction, k_w_drop),
+                     ...
+                    ]
+
+                This is because each droplet bin will represent a fraction
+                of the total oil volume (or mass?), and will have its own
+                distinct rise velocity.
+                oil_concentrations and partition coefficients will be the
+                same regardless of droplet size.
         '''
         K_ow = partition_coeffs
         C_dis = oil_concentrations * arom_mask
