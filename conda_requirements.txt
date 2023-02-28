@@ -22,8 +22,9 @@
 # defaults
 # conda-forge
 
-# we should get it working with 3.10 -- but mapbox-earcut not ready :-(
-python>=3.8,<3.11
+# it'll probably work with 3.8, but CI is teseting with 3.9.
+
+python>=3.9,<3.11
 
 # for building
 # cython=0.29.* # see the build requirements
