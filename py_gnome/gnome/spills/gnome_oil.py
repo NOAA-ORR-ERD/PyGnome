@@ -65,7 +65,8 @@ def kvis_at_temp(ref_kvis, ref_temp_k, temp_k, k_v2=2100):
         then we can estimate what its viscosity might be at
         another temperature.
 
-        Note: An analysis of the
+        .. note::
+              An analysis of the
               multi-KVis oils in our oil library suggest that a value of
               2100 would be a good default value for k_v2.
     '''
@@ -73,6 +74,9 @@ def kvis_at_temp(ref_kvis, ref_temp_k, temp_k, k_v2=2100):
 
 
 class GnomeOilSchema(SubstanceSchema):
+    """
+    Schema for Gnome Oil
+    """
     standard_density = SchemaNode(Float(), read_only=True)
     water = WaterSchema(save_reference=True, test_equal=False)
 
@@ -127,6 +131,9 @@ class GnomeOilSchema(SubstanceSchema):
 
 
 class GnomeOil(Substance):
+    """
+    Class to create an oil for use in Gnome
+    """
     _schema = GnomeOilSchema
     _req_refs = ['water']
 
@@ -151,22 +158,24 @@ class GnomeOil(Substance):
 
         A GnomeOil can be initialized in three ways:
 
-        1) From a sample oil name : ``GnomeOil(oil_name="sample_oil_name")`` the oils are available
+         1) From a sample oil name : ``GnomeOil(oil_name="sample_oil_name")`` the oils are available
             in gnome.spills.sample_oils
 
-
-        2) From a JSON file in the ADIOS Oil Database format:
-           ``GnomeOil(filename="adios_oil.json")`` usually records from the
+         2) From a JSON file in the ADIOS Oil Database format:
+            ``GnomeOil(filename="adios_oil.json")`` usually records from the
             ADIOS Oil Database (https://adios.orr.noaa.gov)
 
-        3) From the json : ``GnomeOil.new_from_dict(**json_)`` for loading
-           save files, etc. (this is usually done under the hood)
+         3) From the json : ``GnomeOil.new_from_dict(**json_)`` for loading
+            save files, etc. (this is usually done under the hood)
 
 
         GnomeOil("sample_oil_name")        ---works for test oils from sample_oils only
+
         GnomeOil(oil_name="sample_oil_name")
+
         GnomeOil(filename="oil.json")      ---load from file using adios_db
-        GnomeOil.new_from_dict(**json_)    ---webgnomeclient, savefiles, etc.
+
+        GnomeOil.new_from_dict(**json\_)    ---webgnomeclient, savefiles, etc.
 
         GnomeOil("invalid_name")           ---ValueError (not in sample oils)
         """
@@ -305,6 +314,8 @@ class GnomeOil(Substance):
         return id(self)
 
     def __deepcopy__(self, memo):
+        """
+        """
         return GnomeOil.deserialize(self.serialize())
 
     @classmethod
@@ -327,11 +338,14 @@ class GnomeOil(Substance):
         :param to_rel - number of new LEs to initialize
         :param arrs - dict-like of data arrays representing LEs
 
-        fixme: this shouldn't use water temp -- it should use
+        fixme:
+               this shouldn't use water temp -- it should use
                standard density and STP temp -- and let
                weathering_data set it correctly
-               NOTE: weathering data is currently broken
-                     fir initial setting
+
+               .. note::
+                   weathering data is currently broken
+                   for initial setting
         '''
         water = self._pick_water(environment)
         init_viscosity(arrs, to_rel, water=water, aggregate=False)
@@ -394,14 +408,18 @@ class GnomeOil(Substance):
             From a list of objects containing a ref_temp_k attribute,
             return the object(s) that are closest to the specified
             temperature(s)
-            specifically:
-            - we want the ones that immediately bound our temperature.
-            - if our temperature is high and out of bounds of the temperatures
-              in our obj_list, then we return a range containing only the
-              highest temperature.
-            - if our temperature is low and out of bounds of the temperatures
-              in our obj_list, then we return a range containing only the
-              lowest temperature.
+
+            Specifically:
+
+                - We want the ones that immediately bound our temperature.
+
+                - If our temperature is high and out of bounds of the temperatures
+                  in our obj_list, then we return a range containing only the
+                  highest temperature.
+
+                - If our temperature is low and out of bounds of the temperatures
+                  in our obj_list, then we return a range containing only the
+                  lowest temperature.
 
             We accept only a scalar temperature or a sequence of temperatures
         '''
@@ -431,11 +449,16 @@ class GnomeOil(Substance):
         '''
             return a list of densities for the oil at a specified state
             of weathering.
+
             #fixme: this should not happen here!
+
             We include the API as a density if:
-            - the specified weathering is 0
-            - the culled list of densities does not contain a measurement
-              at 15C
+
+                - the specified weathering is 0
+
+                - the culled list of densities does not contain a measurement
+                  at 15C
+
         '''
         # fixme: why are we doing all this to make the same lists??
         densities = [d for d in self.densities]
@@ -457,23 +480,28 @@ class GnomeOil(Substance):
         '''
             Get the oil density at a temperature or temperatures.
 
-            NOTE: this is all kruft left over from the estimating code
-                  At this point, a GnomeOIl should already have what
+            .. note:: This is all kruft left over from the estimating code.
+                  At this point, a GnomeOil should already have what
                   it needs.
 
-            Note: there is a catch-22 which prevents us from getting
-                  the min_temp in all cases:
-                  - to estimate pour point, we need viscosities
-                  - if we need to convert dynamic viscosities to
-                    kinematic, we need density at 15C
-                  - to estimate density at temp, we need to estimate pour point
-                  - ...and then we recurse
-                  For this case we need to make an exception.
-            Note: If we have a pour point that is higher than one or more
+            .. note:: There is a catch-22 which prevents us from getting
+                  the min_temp in some cases:
+
+                      - To estimate pour point, we need viscosities
+
+                      - If we need to convert dynamic viscosities to
+                        kinematic, we need density at 15C
+
+                      - To estimate density at temp, we need to estimate pour point
+
+                      - ...and then we recurse
+                      For this case we need to make an exception.
+            .. note:: If we have a pour point that is higher than one or more
                   of our reference temperatures, then the lowest reference
                   temperature will become our minimum temperature.
 
-            TODO: We are getting rid of the argument that specifies a
+            TODO:
+                  We are getting rid of the argument that specifies a
                   weathering amount because it is currently implemented
                   in an unusably precise manner.  Robert would like us to
                   implement a means of interpolating density using a
@@ -665,6 +693,7 @@ class GnomeOil(Substance):
         The constants, A and k_v2 are determined from the viscosity data:
 
         If only one data point, a default value for k_vs is used:
+
            2100 K, based on analysis of data in the ADIOS database as of 2018
 
         If two data points, the two constants are directly computed
