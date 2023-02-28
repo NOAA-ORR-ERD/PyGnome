@@ -636,6 +636,19 @@ class Variable(gridded.Variable, GnomeId):
 
         return super(Variable, cls).new_from_dict(dict_)
 
+    @classmethod
+    def constant(cls, value):
+        #Sets a Variable up to represent a constant scalar field. The result
+        #will return a constant value for all times and places.
+        Grid = Grid_S
+        Time = cls._default_component_types['time']
+        _data = np.full((3,3), value)
+        _node_lon = np.array(([-360, 0, 360], [-360, 0, 360], [-360, 0, 360]))
+        _node_lat = np.array(([-89.95, -89.95, -89.95], [0, 0, 0], [89.95, 89.95, 89.95]))
+        _grid = Grid(node_lon=_node_lon, node_lat=_node_lat)
+        _time = Time.constant_time()
+        return cls(grid=_grid, time=_time, data=_data)
+
     @property
     def extrapolation_is_allowed(self):
         if self.time is not None:
