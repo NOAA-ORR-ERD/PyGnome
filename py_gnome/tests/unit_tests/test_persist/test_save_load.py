@@ -53,11 +53,11 @@ from gnome.spills.gnome_oil import GnomeOil
 # following is modified for testing only
 from gnome.persist import save_load
 
-from .conftest import testdata
+from ..conftest import testdata
 
 import pytest
 from testfixtures import LogCapture
-from .conftest import test_oil
+from ..conftest import test_oil
 
 
 def test_warning_logged():
