@@ -24,8 +24,14 @@ The core functionality of an environment object is it’s ‘EnvObject.at(points
 
 For detailed documentation of the API and implemented objects see :mod:`gnome.environment.environment_objects`
 
-Interacting with The Environment Class
---------------------------------------
+.. admonition:: Environment Objects
+
+    An important note, is that environment objects alone do not have any effect on the model simulation. Once they are created, they can be explicitly passed to weatherers and movers. However, if a weatherer is added to the model without explicity specifying the required environment objects, then the first object of the correct type in the environment collection will be used for that weathering process. 
+    For example, if multiple wind time series are created and added to model.environment then the first one added will be used
+    for weathering processes unless explicitly specified.
+
+Wind Object
+-----------
 
 Here's a detailed example to create a simple Wind object (for a constant in time wind). We'll take advantage of the gnome scripting 
 module to avoid having to manually import the necessary classes and functions::
@@ -50,7 +56,13 @@ Alternatively, if we had a properly formatted file (|file_formats_doc|) with a t
 
     wind = gs.Wind(filename='wind_file.txt')
 
+Example of adding a manually adding a wind object to the model enviornment::
 
+    model = gs.Model()
+    model.environment += wind
+
+Gridded Environment Objects
+---------------------------
 
 The models set up with pyGNOME are often driven with data created by other hydrodynamic and atmospheric models, such as ROMS, HYCOM, etc., and typical output from these models is netCDF data files. To create a GridWind environment object from a netCDF file::
 
@@ -58,10 +70,6 @@ The models set up with pyGNOME are often driven with data created by other hydro
 
     fn = ('my_current_file.nc')
     wind = GridWind.from_netCDF(filename = fn)
-
-
-
-
 
 One major advantage to environment objects is re-use of common attributes. For example, in a data file you have a grid, and
 wind and current variables that are associated with the grid. ::
@@ -73,23 +81,27 @@ wind and current variables that are associated with the grid. ::
 In the above example, the current and wind now both share the same grid object, which has numerous performance benefits. This is
 one of the most common cases of sharing between Environment objects.
 
+Ice Aware Objects
+-----------------
+
+For simulations including ice, there are several important environment objects that need to be created. This section is under construction.
+
+:class:`gnome.environment.IceAwareCurrent'
+:class:`gnome.environment.IceAwareWind'
+:class:`gnome.environment.IceConcentration'
+:class:`gnome.environment.IceDrift'
 
 
+Other Environment Objects
+-------------------------
+
+This section is under construction.
+
+:class:`gnome.environment.Water`
+:class:`gnome.environment.Tide` 
+:class:`gnome.environment.Waves` 
 
 
-
-
-.. admonition:: Environment Objects
-
-    An important note, is that environment objects alone do not have any effect on the model simulation. Once they are created, they can be explicitly passed to weatherers and movers. However, if a weatherer is added to the model without explicity specifying the required environment objects, then the first object of the correct type in the environment collection will be used for that weathering process. 
-    For example, if multiple wind time series are created and added to model.environment then the first one added will be used
-    for weathering processes unless explicitly specified.
-
-
-Example of adding a manually adding a wind object to the model enviornment::
-
-    model = gs.Model()
-    model.environment += wind
     
 More examples of the interaction of environment objects with movers and weatherers will be given in the next section.
 
