@@ -37,7 +37,7 @@ Environment Objects
 :mod:`gnome.environment.Environment`
 
 The environmental conditions (e.g. wind, currents) the particles interact with are defined by Environment Objects.
-These objects are designed to represent data flexibly from a large variety of sources and file formats.
+These objects are designed to flexibly represent data from a large variety of sources and file formats.
 Simple scalars, time series data, or full 4D environment data in netCDF format are some examples of what can be used to create
 environment objects.
 
