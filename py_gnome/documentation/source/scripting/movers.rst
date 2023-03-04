@@ -2,182 +2,143 @@ Movers
 ======
 
 Processes that change the position of the particles are termed "movers" in PyGNOME. These can include advection of the particles due to winds and currents, 
-diffusive movement of particles due to unresolved turbulent flow fields, and prescribed behavior of the particles (e.g. rise velocity of oil droplets 
-or larval swimming.)
+diffusive movement of particles due to unresolved (sub-grid scale) turbulent flow fields, and prescribed behavior of the particles (e.g. rise velocity of oil droplets.) Many of the movers derive their data from :doc:`environment` which are described more fully in the previous section. The environment object will be queried for information at the particle location in order to move the particle appropriately. 
 
-Some examples and common use cases are shown here. For complete documentation see :mod:`gnome.movers`
+Some examples and common use cases are shown here. For comprehensive documentation see :mod:`gnome.movers` in the API Reference section.
 
-Wind movers
------------
+Point Wind Movers
+-----------------
 
-Wind movers are tied to a Wind Object in the Environment class which are described
-more fully in :doc:`environment`.
+A :class:`gnome.movers.PointWindMover` will act uniformly on particles anywhere in the domain (i.e. they have no spatial variability). These movers are tied to a Wind Object in the Environment Class 
 
-For example,in that section, we saw how to create a simple constant Wind Object using a helper function in the gnome scripting module::
+For example, in that section, we saw how to create a simple spatially and temporally constant :class:`gnome.environment.Wind` using a helper function in the gnome scripting module::
 
     import gnome.scripting as gs
-    model = gs.Model(start_time="2015-01-01",
-                 duration=gs.days(3),
+    model = gs.Model(start_time="2023-03-03",
+                 duration=gs.days(1),
                  time_step=gs.minutes(15)
                  )
     wind = gs.constant_wind(10,0,'knots')
     
-Now we create a WindMover Object by passing the Wind Object to the Mover Class and adding it to the model::
+Now we create a :class:`gnome.movers.PointWindMover` by passing the Wind Object to the Mover Class and adding it to the model::
 
-    w_mover = gs.WindMover(wind)
+    w_mover = gs.PointWindMover(wind)
     model.movers += w_mover
     
-Some helper functions are available in :mod:`gnome.scripting` for creating wind movers. Many of these helper functions automatically create and add Environment Objects to the model. For example, to create a wind mover from a single point time series in a text file::
+Even though we didn't explicitly add the wind to the model environment, when the mover is added the model, the wind object will also be added. Any weatherers subsequently added to the model will use that wind by default (see next section).
 
-    w_mover = gs.wind_mover_from_file('my_wind_file.txt')
+Some helper functions are available in :mod:`gnome.scripting` for creating wind movers. Many of these helper functions automatically create and add environment objects to the model. For example, to create a wind mover from a single point time series in a text file::
+
+    w_mover = gs.point_wind_mover_from_file('wind_file.txt')
     model.movers += w_mover
     
-The format of the text file is described in the file formats document available `here 
-<http://response.restoration.noaa.gov/sites/default/files/GNOME_DataFormats.pdf>`_.
+The format of the text file is described in the file formats section.
 Briefly, it has 3 header lines, followed by comma seperated data. An example is given here with
 annotations in brackets at the end of the lines:
 
-|   23NM W Cape Mohican AK *(Location name, can be blank)*
-|   60.240000, -168.223000 *(Latitude,longitude, can be blank)*
+|   22NM W Forks WA *(Location name, can be blank)*
+|   47.904000, -124.936000 *(Latitude,longitude, can be blank)*
 |   knots *(Units, eg: knots,mph,kph,mps)*
-|   14, 10, 2015, 10, 0, 16.00, 20 *(day, month, year, hour, minute, speed, direction)*
-|   14, 10, 2015, 11, 0, 16.00, 20
-|   14, 10, 2015, 12, 0, 16.00, 20
-|   14, 10, 2015, 13, 0, 13.00, 20
-|
+|   3, 3, 2023, 12, 0, 14.00, 200 *(day, month, year, hour, minute, speed, direction)*
+|   3, 3, 2023, 13, 0, 16.00, 190
+|   3, 3, 2023, 14, 0, 16.00, 190
 
-
-Gridded wind movers
--------------------
-
-A spatially variable gridded wind can also be used to move particles in GNOME. At present, this functionality 
-does not extend to weathering (i.e. all weathering algorithms use a single point wind time series regardless of
-the particle location. The use of spatially variable winds for weathering processes is currently under development.
-Since the gridded wind effects transport only, a wind object is not added to the model Environment class.
-
-To create a gridded wind mover, we use the GridWindMover class::
-
-    from gnome.movers import GridWindMover
-
-    w_mover = GridWindMover('mygridwind.nc')
-    model.movers += w_mover
-    
-The supported netCDF file formats for gridded winds are described `here 
-<http://response.restoration.noaa.gov/sites/default/files/GNOME_DataFormats.pdf>`_.
-
-Current movers
+Gridded movers
 --------------
 
-An example of implementing a simple current mover with a uniform current was described in 
-the Scripting :doc:`scripting_intro`. More commonly, currents used to move particles in GNOME originate 
-from models on regular, curvilinear, or unstructured (triangular) grids. 
-Regardless of the grid type, we use the GridCurrentMover class::
+An example of implementing a simple current mover with a uniform current was described in the scripting :doc:`scripting_intro`. More commonly, currents used to move particles in GNOME originate 
+from models on regular, curvilinear, or unstructured (triangular) grids. Regardelss of grid type, we use the :class:`gnome.movers.CurrentMover` class.
 
-    from gnome.movers import GridCurrentMover
-    
-    c_mover = GridCurrentMover('mygridcurrent.nc')
-    model.movers += c_mover
-    
-The supported netCDF file formats for gridded currents are described `here 
-<http://response.restoration.noaa.gov/sites/default/files/GNOME_DataFormats.pdf>`_.
+Similarly, winds can be derived from gridded meteorological models using the :class:`gnome.movers.WindMover` class.
 
+These movers are tied to a objects in the :class:`gnome.environment.Environment` which were described
+more fully in the previous section. The primary supported format for gridded winds and currents is NetCDF. See the :doc:`../file_formats/netcdf` section for more information.
+
+Here's an example first building an environment object from a gridded wind::
+
+    fn = 'gridded_wind.nc'
+    wind = gs.GridWind.from_netCDF(filename=fn)
+    wind_mover = gs.WindMover(wind)
+    model.movers += wind_mover
+
+The work flow is identical for adding a current. Alternatively, we could skip explicity creating the environment object as the mover classes also have the "from_netCDF" method. For example::
+
+    fn = 'gridded_current.nc'
+    current_mover = gs.CurrentMover.from_netCDF(filename=fn)
+    model.movers += current_mover
+    
+In both cases, the corresponding environment object is also added to the model.
+
+The default numerical method for the gridded movers is a 2nd-order Runge-Kutta. Other options are available by specifying the "default_num_method" when creating the mover object. For more information, see the :class:`gnome.movers.CurrentMover` api documentation.
+
+.. admonition:: A note on 3D simulations
+
+    If a netCDF file contains currents at all depth levels, the corresponding GridCurrent object will be built to include that information and full 3D simulations can be run. If only one depth level is included, it will be assumed to be the surface and used accordingly. Wind files should ideally only contain surface (assumed 10 m) winds. 
+  
 Random movers
 -------------
 
-Randoms movers can be added to simulate both horizontal and vertical turbulent motions. 
-Diffusion coefficients can be explicity specified or default values will be used. For 
-example::
+Randoms movers can be added to simulate both horizontal and vertical turbulent motions (for 3d simulations). Diffusion coefficients can be explicity specified or default values will be used. For example::
 
-    from gnome.movers import RandomMover, RandomMover3D
-    
-    random_mover = RandomMover(diffusion_coef=10,000) #in cm/s
+    import gnome.scripting as gs
+       
+    random_mover = gs.RandomMover(diffusion_coef=10000) #in cm/s
     model.movers += random_mover
     
-    random_mover_3d = RandomMover3D(vertical_diffusion_coef_above_ml=10,vertical_diffusion_coef_below_ml=0.2,\
-    mixed_layer_depth=10) #diffusion coefficients in cm/s, MLD in meters
+    #Or, for  a 3D simulation
+    random_mover_3d = gs.RandomMover3D(vertical_diffusion_coef_above_ml=10,vertical_diffusion_coef_below_ml=0.2,\
+    mixed_layer_depth=10, horizontal_diffusion_coef_above_ml=10000,\
+    horizontal_diffusion_coef_below_ml=100) #diffusion coefficients in cm/s, MLD in meters
     model.movers += random_mover_3d
 
 Rise velocity movers
 --------------------
 
-The rise velocity mover depends on parameters specified when setting up a subsurface spill. For example, in the 
-:ref:`subsurface_plume` example, we initialized a spill with a droplet size distribution of 10-300 microns. If we add 
-a rise velocity mover, the rise velocities will be calculated based on the droplet size for each particle and the density 
-of the specified oil. Since this information is associated with the spill object, we only need to create and add a rise 
-velocity mover as follows::
+The rise velocity mover depends on parameters specified when setting up a subsurface spill (see :doc:`spills`). For example, the rise velocities can be calculated based on the droplet size for each particle and the density 
+of the specified oil. This information is associated with the spill object, hence creating a :class:`RiseVelocityMover` is relatively simple.::
 
-    from gnome.movers import RiseVelocityMover
+    import gnome.scripting as gs
     
-    rise_vel_mover = RiseVelocityMover
+    rise_vel_mover = gs.RiseVelocityMover
     model.movers += rise_vel_mover
 
-As noted in the :ref:`subsurface_plume` example, a distribution of rise velocities can also be explicitly specified 
-when initializing the subsurface release. To make all particles have the same rise velocity, specify a uniform distribution 
-with the same value for high and low parameters. Here's a complete example where all particles will have a 1 m/s rise velocity::
-    
-    from gnome.model import Model
-    from datetime import datetime, timedelta
-    from gnome.scripting import subsurface_plume_spill
+A distribution of rise velocities can also be explicitly specified -- again this is done when initializing the subsurface release. To make all particles have the same rise velocity, we specify a uniform distribution with the same value for high and low parameters. Various distributions are available in :mod:`gnome.utilities.distributions`. 
+Here's a complete example where all particles will have a 1 m/s rise velocity::
+
+    import gnome.scripting as gs
     from gnome.utilities.distributions import UniformDistribution
-    from gnome.movers import RiseVelocityMover
-    
-    start_time = datetime(2015, 1, 1, 0, 0)
-    model = Model(start_time=start_time,
-              duration=timedelta(days=3),
+
+    start_time = gs.asdatetime("2023-03-03")
+    model = gs.Model(start_time=start_time,
+              duration=gs.days(3),
               time_step=60 * 15, #seconds
               )
     ud = UniformDistribution(1,1)
-    spill = subsurface_plume_spill(num_elements=1000,
-                                   start_position=(-144,48.5, -1000.0),
-                                   release_time=start_time,
-                                   distribution=ud,
-                                   distribution_type='rise_velocity',
-                                   end_release_time = start_time + timedelta(days=1),
-                                   amount=5000,
-                                   substance='ALASKA NORTH SLOPE (MIDDLE PIPELINE)',
-                                   units='bbl',
-                                   windage_range=(0.01,0.02),
-                                   windage_persist=-1,
-                                   name='My spill')
+    spill = gs.subsurface_spill(num_elements=1000,
+                                start_position=(-144,48.5,-1000.0),
+                                release_time=start_time,
+                                distribution=ud,
+                                distribution_type='rise_velocity',
+                                end_release_time = start_time + gs.days(1),
+                                amount=5000,
+                                units='bbl',
+                                name='My spill')
     model.spills += spill
-    
-    rise_vel_mover = RiseVelocityMover()
+
+    rise_vel_mover = gs.RiseVelocityMover()
     model.movers += rise_vel_mover
-    
+
     model.full_run()
 
-PyMovers
-----------
+Ice modified movers
+-------------------
 
-This new type of mover includes the gnome.environment.PyGridCurrentMover and gnome.environment.PyWindMover. They are 
-being developed to work more seamlessly with native model grids (e.g. staggered grids) and will ultimately replace GridCurrentMover and GridWindMover. However, they are still under active development and this documentation may not
-accurately reflect the current state of development.
+The presence of ice modifies the movement of the oil on the water surface. For example, in high ice concentrations, the oil may be encapsulated in the ice, and move with the ice drift velocity. To incorporate the presence of ice requires the creation of environment objects that include the relevant information (e.g., ice concentration and ice velocity along with currents and winds). We term these "IceAware" environment objects (see previous section for more detail). Once the environment objects have been created, movers can be created based on them using the same approach described above. For example::
 
-PyMovers are built to work with the Property objects, and also provide multiple types of numerical methods for moving the particles. ::
+    ice_aware_current = gs.IceAwareCurrent.from_netCDF('file_with_currents_ice.nc')
+    ice_current_mover = gs.CurrentMover(ice_aware_current)
 
-    from gnome.environment.property_classes import GridCurrent
-    from gnome.movers import PyGridCurrentMover
-    fn = 'my_data.nc'
-    current = GridCurrent.from_netCDF(filename=fn)
-    curr_mover = PyGridCurrentMover(current)
+CATS  Movers
+------------
 
-There are three types of numerical methods currently supported.
-
-1. Euler method ('Euler')
-2. Runge-Kutta 2nd order method ('RK2')
-3. Runge-Kutta 4th order method ('RK4')
-
-To use them, set the 'default_num_method' argument when constructing a mover. Alternatively, you may alter the mover as follows: ::
-
-    fn = 'my_data.nc'
-    current = GridCurrent.from_netCDF(filename=fn)
-    curr_mover = PyGridCurrentMover(current, default_num_method = 'RK4')
-    
-    #RK4 is too slow, so lets go to the 2nd order method.
-    curr_mover.default_num_method = 'RK2'
-    
-The get_move function has the same interface as previous movers. You may also pass in a numerical method here and it will use it instead
-of the default. ::
-
-    curr_mover.get_move(sc, time_step, model_time_datetime, num_method = 'Euler')
-    
+CATS is a NOAA/ORR hydrodynamic model that is unlikley to be used by others. Documentation forthcoming.
