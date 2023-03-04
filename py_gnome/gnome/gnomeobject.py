@@ -284,6 +284,7 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
         object copied, but do want everything else.
 
         Got the method from:
+
             http://stackoverflow.com/questions/3253439/python-copy-how-to-inherit-the-default-copying-behaviour
 
         Despite what that thread says for __copy__, the built-in deepcopy()
@@ -539,7 +540,7 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
 
     def _attr_changed(self, current_value, received_value):
         '''
-        Checks if an attribute passed back in a dict_ from client has changed.
+        Checks if an attribute passed back in a ``dict_`` from client has changed.
         Returns True if changed, else False
         '''
         # first, we normalize our left and right args

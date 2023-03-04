@@ -128,8 +128,7 @@ class Spill(BaseSpill):
         :param release: an object defining how elements are to be released
         :type release: derived from :class:`~gnome.spills.release.Release`
 
-        :param substance: an object defining the substance of this spill
-        Defaults to :class:`~gnome.spills.substance.NonWeatheringSubstance
+        :param substance: an object defining the substance of this spill. Defaults to :class:`~gnome.spills.substance.NonWeatheringSubstance`
         :type substance: derived from :class:`~gnome.spills.substance.Substance`
 
         **Optional parameters (kwargs):**

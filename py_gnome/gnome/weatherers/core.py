@@ -99,7 +99,7 @@ class Weatherer(Process):
     def _exp_decay(self, M_0, lambda_, time):
         '''
         Exponential decay: x(t) = exp(lambda_*time)
-        The lambda_ should be 'negative' in order for function to decay
+        The `lambda_` should be 'negative' in order for function to decay
         '''
         mass_remain = M_0 * np.exp(lambda_ * time)
         return mass_remain

@@ -15,10 +15,13 @@ def get_plume_data():
     '''
       Here we will generate plume data that conforms to that of Socolofsky's
       model.
+
       - We will represent the mass flux amounts in kg/s.
+
       - We will probably get these values from a running
         plume model, but for right now, we just return
         an array with some hardcoded values.
+
       - For now, we return data in the format [(depth, mass_flux), ...]
     '''
     plume_mass_flux = np.zeros((10))
@@ -34,20 +37,22 @@ def get_plume_data():
 
 class Plume(object):
     '''
-      Here, we represent the characteristics of the plume
-      as a set of mass fluxes along a vertical stack.
+    Here, we represent the characteristics of the plume
+    as a set of mass fluxes along a vertical stack.
     '''
     def __init__(self, position, plume_data):
         '''
         :param position: location the elements are released
         :type position: 3-tuple of floats (long, lat, z)
-                        (note: we don't really use the z,
-                         since the plume data supplies the
-                         depths)
 
         :param plume_data: data that is supplied by a plume model
         :type plume_data: list of items in the format:
                           [(depth, mass_flux), ...]
+
+        Note:
+            we don't really use the z,
+            since the plume data supplies the
+            depths
         '''
         self.mass_flux = np.array([d[1] for d in plume_data])
         num_points = self.mass_flux.size
@@ -59,8 +64,8 @@ class Plume(object):
 
 class PlumeGenerator(object):
     '''
-      Here we define the method for generating LEs from a 3D plume
-      over a range of time.
+    Here we define the method for generating LEs from a 3D plume
+    over a range of time.
     '''
     def __init__(self,
                  release_time, end_release_time, time_step_delta,
