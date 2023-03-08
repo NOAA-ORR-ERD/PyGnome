@@ -86,10 +86,13 @@ Ice Aware Objects
 
 For simulations including ice, there are several important environment objects that need to be created. This section is under construction.
 
-:class:`gnome.environment.IceAwareCurrent'
-:class:`gnome.environment.IceAwareWind'
-:class:`gnome.environment.IceConcentration'
-:class:`gnome.environment.IceDrift'
+:class:`gnome.environment.IceAwareCurrent`
+
+:class:`gnome.environment.IceAwareWind`
+
+:class:`gnome.environment.IceConcentration`
+
+:class:`gnome.environment.IceDrift`
 
 
 Other Environment Objects
@@ -98,7 +101,9 @@ Other Environment Objects
 This section is under construction.
 
 :class:`gnome.environment.Water`
+
 :class:`gnome.environment.Tide` 
+
 :class:`gnome.environment.Waves` 
 
 
