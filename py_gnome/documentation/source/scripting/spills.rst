@@ -1,5 +1,7 @@
 .. include:: ../links.rst
 
+.. _scripting_spills:
+
 Spills
 ======
 

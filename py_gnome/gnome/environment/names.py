@@ -44,7 +44,7 @@ a netcdf files to one these names, PYGNOME should be able to load the file.
   Default Names: sand_06
 
 
-  CF Standard Names: 
+  CF Standard Names:
 
 
 **ice_concentration**
@@ -166,6 +166,11 @@ nc_names = {
 }
 
 def insert_names_table(table_text):
+    """
+    function to insert the names table into the docstring
+
+    should be run when name mapping is updated.
+    """
     this = __file__
     tempfile = "names.temp.py"
     with open(this) as infile:
@@ -241,6 +246,3 @@ if __name__ == "__main__":
         print("Doing Nothing")
         print('To rebuild the docstring, pass "rebuild" in on the command line:')
         print('    python names.py rebuild')
-
-
-

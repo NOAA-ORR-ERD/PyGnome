@@ -1,0 +1,14 @@
+/* class="docutils literal notranslate"
+*/
+
+@import 'theme.css';       /* for the Read the Docs theme */
+
+/*
+.literal {
+  color: blue;
+}
+*/
+
+code {
+  color: blue;
+}
