@@ -1,20 +1,26 @@
 
 """
-An implementation of the GNOME land-water map.
+GNOME land-water map.
 
-This is a re-write of the C++ raster map approach
+Maps for the GNOME ``Model`` -- maps are responsible for
+determining where / when elements impact the shoreline
 
-Features:
- - Map now handles spillable area and map bounds as polygons
- - raster is the same aspect ratio as the land
- - internally, raster is a numpy array
- - land raster is only as big as the land -- if the map bounds are bigger,
-   extra space is not in the land map
-
-# NOTES:
-#  - Should we just use non-projected coordinates for the raster map?
-#    It makes for a little less computation at every step.
+The module includes a base map that is all water -- no land,
+As well as a few implementations of actual maps
 """
+
+# This is a re-write of the C++ raster map approach
+
+# Features:
+#  - Map now handles spillable area and map bounds as polygons
+#  - raster is the same aspect ratio as the land
+#  - internally, raster is a numpy array
+#  - land raster is only as big as the land -- if the map bounds are bigger,
+#    extra space is not in the land map
+#
+# NOTES:
+#  - Perhaps we just use non-projected coordinates for the raster map?
+#    It makes for a little less computation at every step.
 
 
 import os
@@ -23,7 +29,7 @@ import warnings
 
 import py_gd
 import numpy as np
-from colander import SchemaNode, String, Float, Integer, Boolean, drop
+from gnome.persist import SchemaNode, String, Float, Boolean, drop
 
 from geojson import FeatureCollection, Feature, MultiPolygon
 
@@ -63,7 +69,7 @@ class GnomeMapSchema(base_schema.ObjTypeSchema):
                                                   test_equal=False)
     _appearance = AppearanceSchema(test_equal=False)
     # land_polys = base_schema.PolygonSet(missing=drop)
-    #crosses_dateline = SchemaNode(Boolean(), test_equal=False, read_only=True, save=False),
+    # crosses_dateline = SchemaNode(Boolean(), test_equal=False, read_only=True, save=False),
 
 
 class ParamMapSchema(GnomeMapSchema):
@@ -72,9 +78,11 @@ class ParamMapSchema(GnomeMapSchema):
     bearing = SchemaNode(Int())
     units = SchemaNode(String())
 
+
 # fixme: shouldn't the rasterMap have the raster size? and the raster itself?
 class RasterMapSchema(GnomeMapSchema):
     pass
+
 
 class MapFromBNASchema(RasterMapSchema):
     filename = SchemaNode(
@@ -111,7 +119,7 @@ class GnomeMap(GnomeId):
                  land_polys=None,
                  **kwargs):
         """
-        This __init__ will be different for other implementations
+        The __init__ will be different for other implementations
 
         :param map_bounds: The polygon bounding the map if any elements are
                            outside the map bounds, they are removed from the
@@ -128,7 +136,7 @@ class GnomeMap(GnomeId):
             is a list of points defining a polygon.
 
         Note on 'map_bounds':
-            ( (x1,y1), (x2,y2), (x3,y3),..)
+            ``[(lon, lat), (lon, lat), (lon, lat), ..``
             An NX2 array of points that describe a polygon
             if no map bounds is provided -- the whole world is valid
         """
@@ -186,7 +194,11 @@ class GnomeMap(GnomeId):
 
     @property
     def map_bounds(self):
+        """
+        Bounds of the map -- an NX2 array of float describing a polygon.
 
+        [(lon, lat), (lon, lat), ...]
+        """
         return self._map_bounds
 
     @map_bounds.setter
@@ -194,19 +206,23 @@ class GnomeMap(GnomeId):
         if mb is None:
             mb = np.array(((-360, -90), (-360, 90),
                            (360, 90), (360, -90)),
-                           dtype=np.float64)
+                          dtype=np.float64)
         self._map_bounds = np.array(mb)
 
     def get_map_bounding_box(self):
         """
-        return a bounding box of teh map
+        return a bounding box of the map
 
         needed because map_bounds can be a polygon
+
+        bounding box is a 2x2 tuple:
+
+        ((left, bottom), (right, top))
         """
 
         bounds = self._map_bounds
-        longs = bounds[:,0]
-        lats = bounds[:,1]
+        longs = bounds[:, 0]
+        lats = bounds[:, 1]
         left, right = longs.min(), longs.max()
         bottom, top = lats.min(), lats.max()
 
@@ -214,6 +230,10 @@ class GnomeMap(GnomeId):
 
     @property
     def spillable_area(self):
+        """
+        List of polygons defining the region in which it is
+        legal to set spills
+        """
         return self._spillable_area
 
     @spillable_area.setter
@@ -243,6 +263,10 @@ class GnomeMap(GnomeId):
 
     @property
     def land_polys(self):
+        """
+        Sequence of polygons surrounding land -- mostly used
+        for rendering.
+        """
         return self._land_polys
 
     @land_polys.setter
@@ -264,15 +288,17 @@ class GnomeMap(GnomeId):
 
     def on_map(self, coords):
         """
+        Determine whether points are on the map or not
+
         :param coords: location for test.
-        :type coords: 3-tuple of floats: (long, lat, depth) or a
-                                         NX3 numpy array
+        :type coords: NX3 numpy array of floats: (long, lat, depth) or
+                      something that can be turned into one.
 
         :return: bool array: True if the location is on the map,
                              False otherwise
 
         Note:
-          coord is 3-d, but the concept of "on the map" is 2-d in this context,
+          coords are 3-d, but the concept of "on the map" is 2-d in this context,
           so depth is ignored.
         """
         coords = np.asarray(coords, dtype=world_point_type)
@@ -291,6 +317,8 @@ class GnomeMap(GnomeId):
 
     def in_water(self, coords):
         """
+        Determines if the points are in water (rather than on land)
+
         :param coords: location for test.
         :type coords: 3-tuple of floats: (long, lat, depth)
                       or an Nx3 array
@@ -326,7 +354,7 @@ class GnomeMap(GnomeId):
 
     def _set_off_map_status(self, spill):
         """
-        Determines which LEs moved off the map
+        Determines which elements moved off the map
 
         Called by beach_elements after checking for land-hits
 
