@@ -259,7 +259,7 @@ class InitRiseVelFromDropletSizeFromDist(DistributionBase):
         """
         super(InitRiseVelFromDropletSizeFromDist, self).__init__(**kwargs)
 
-        if distribution and hasattr(distribution,"set_values"):
+        if distribution:
             self.distribution = distribution
         else:
             raise TypeError('InitRiseVelFromDropletSizeFromDist requires a'

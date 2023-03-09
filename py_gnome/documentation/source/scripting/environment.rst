@@ -2,26 +2,9 @@
 Environment Objects
 ===================
 
-As transport and weathering of particles in PyGNOME depend on a variety of environmental conditions (e.g. wind, waves, and water properties),
-initialization of various environment objects is needed before these processes can be added to the model. 
-Environment objects are designed to represent a natural phenomenon and provide an interface that can be queried in time and space. 
+Transport and weathering of particles in GNOME depend on a variety of environmental conditions (e.g. wind, waves, and water properties). Environment objects are used to represent this interface with an interface that can be queried in time and space.
 
-These objects can represent a space-independent time series or gridded, time dependent data.
-They can also represent scalar and (2D) vector phenomena.
-They are the core means for representing natural phenomena in PyGNOME.
-Examples of things that environment objects can represent include: temperature, water velocity, wind speed & direction time series, etc.
-
-An environment object implements an association between a data variable (such as a netCDF Variable, or numpy array) and a
-Grid, Time, and Depth (representing the data dimensions in space and time) and does interpolation across them.  In addition, if possible, the Grid, Time, and Depth may be shared among environment objects, which provides a number of performance and programmatic benefits.
-The core functionality of an environment object is it’s ‘EnvObject.at(points, time)’ function, which provides an interface that allows the environment data to be intepolated to needed times and locations. 
-
-
-..  In some cases, these objects may be automatically created. For    
-    example,when creating a gridded 
-    current mover from a NetCDF file (next section). Sometimes, it is necessary or desirable to manually
-    create these objects. For example, if weatherering and transport processes may be dependent on the 
-    same environmental information (winds) or if you want to enter data manually.
-
+Environnment objects can represent a space-independent time series or gridded, time dependent data. Regardless of the structure of the underlying data, the interface to access the information is identical as illustrated in the examples below.
 
 For detailed documentation of the API and implemented objects see :mod:`gnome.environment.environment_objects`
 
@@ -59,10 +42,13 @@ Alternatively, if we had a properly formatted file (:ref:`wind_formats`) with a 
 
     wind = gs.Wind(filename='wind_file.txt')
 
-Example of adding a manually adding a wind object to the model enviornment::
+Since the environment object does not act on the particles, it is not necessary to add it to the model. Instead, we use this object to create movers and  weatherers that are based on these objects.
 
-    model = gs.Model()
-    model.environment += wind
+Once the object is created, the information contained is accessed using the "at()" method.::
+
+	wind_value = wind.at([-125.5,48,0],datetime.datetime.now())
+
+In this case, the wind was constant in both space and time so I can query it anywhere at any time and get the same constant value of 10 knots. 
 
 Gridded Environment Objects
 ---------------------------
