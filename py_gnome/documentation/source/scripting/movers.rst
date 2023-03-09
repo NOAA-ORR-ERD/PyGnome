@@ -1,11 +1,8 @@
 Movers
 ======
 
-Processes that change the position of the elements are termed "movers" in PyGNOME.
-These can include advection of the elements due to winds and currents,
-diffusive movement of elements due to unresolved (sub-grid scale) turbulent flow fields, and prescribed behavior of the elements (e.g. rise velocity of oil droplets.)
-Most of the movers derive their data from :doc:`environment` objects, which are described more fully in the previous section.
-The environment object will be queried for information at the element location in order to move the element appropriately.
+Processes that change the position of the particles are termed "movers" in PyGNOME. These can include advection of the particles due to winds and currents, 
+diffusive movement of particles due to unresolved (sub-grid scale) turbulent flow fields, and prescribed behavior of the particles (e.g. rise velocity of oil droplets.) Many of the movers derive their data from :doc:`environment` which are described more fully in the previous section. The environment object is queried for information at the particle location in order to move the particle appropriately. 
 
 Some examples and common use cases are shown here. For comprehensive documentation see :mod:`gnome.movers` in the API Reference section.
 
@@ -28,7 +25,7 @@ Now we create a :class:`gnome.movers.PointWindMover` by passing the Wind Object 
     w_mover = gs.PointWindMover(wind)
     model.movers += w_mover
     
-Even though we didn't explicitly add the wind to the model environment, when the mover is added the model, the wind object will also be added. Any weatherers subsequently added to the model will use that wind by default (see next section).
+Even though we didn't explicitly add the wind to the model environment, when the mover is added to the model, the wind object will also be added. Any weatherers subsequently added to the model will use that wind by default (see next section).
 
 Some helper functions are available in :mod:`gnome.scripting` for creating wind movers.
 Many of these helper functions automatically create and add environment objects to the model.
@@ -37,9 +34,8 @@ For example, to create a wind mover from a single point time series in a text fi
     w_mover = gs.point_wind_mover_from_file('wind_file.txt')
     model.movers += w_mover
     
-The format of the text file is described in the file formats section.
-Briefly, it has 3 header lines, followed by comma seperated data.
-An example is given here with annotations in brackets at the end of the lines:
+The format of the text file is described in the :doc:`../file_formats/index` section.
+Briefly, it has 3 header lines, followed by comma seperated data. An example is given here with annotations in brackets at the end of the lines:
 
 .. code-block:: none
 
@@ -60,10 +56,8 @@ Regardless of grid type, we use the :class:`gnome.movers.CurrentMover` class.
 
 Similarly, winds can be derived from gridded meteorological models using the :class:`gnome.movers.WindMover` class.
 
-These movers are tied to a objects in the
-:class:`gnome.environment.Environment` which were described
-more fully in the previous section.
-The primary supported format for gridded winds and currents is NetCDF. See the :ref:`netcdf_formats` section for more information.
+These movers are tied to objects in the :class:`gnome.environment.Environment` which were described
+more fully in the previous section. The primary supported format for gridded winds and currents is NetCDF. See the :doc:`../file_formats/netcdf` section for more information.
 
 Here's an example of first building an environment object from a gridded wind::
 
@@ -84,7 +78,7 @@ The default numerical method for the gridded movers is a 2nd-order Runge-Kutta. 
 
 .. admonition:: A note on 3D simulations
 
-    If a netCDF file contains currents at all depth levels, the corresponding GridCurrent object will be built to include that information and full 3D simulations can be run. If only one depth level is included, it will be assumed to be the surface and used accordingly. Wind files should ideally only contain surface (assumed 10 m) winds. 
+    If a netCDF file contains currents at multiple depth levels along with 3-d grid information, the corresponding GridCurrent object will be built to include that information and full 3D simulations can be run. If only one depth level is included, it will be assumed to be the surface and used accordingly. Wind files should ideally only contain surface (assumed 10 m) winds. 
   
 Random movers
 -------------
@@ -105,12 +99,12 @@ Randoms movers can be added to simulate both horizontal and vertical turbulent m
 Rise velocity movers
 --------------------
 
-The rise velocity mover depends on parameters specified when setting up a subsurface spill (see :ref:`scripting_spills`). For example, the rise velocities can be calculated based on the droplet size for each element and the density of the specified oil.
+The rise velocity mover depends on parameters specified when setting up a subsurface spill (see :doc:`spills`). For example, the rise velocities can be calculated based on the droplet size for each element and the density of the specified oil.
 This information is associated with the spill object, hence creating a :class:`RiseVelocityMover` is relatively simple.::
 
     import gnome.scripting as gs
     
-    rise_vel_mover = gs.RiseVelocityMover
+    rise_vel_mover = gs.RiseVelocityMover()
     model.movers += rise_vel_mover
 
 A distribution of rise velocities can also be explicitly specified -- again this is done when initializing the subsurface release. To make all elements have the same rise velocity, we specify a uniform distribution with the same value for high and low parameters. Various distributions are available in :mod:`gnome.utilities.distributions`.

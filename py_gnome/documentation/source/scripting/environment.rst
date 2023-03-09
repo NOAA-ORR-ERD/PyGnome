@@ -105,11 +105,10 @@ This section is under construction.
 
 :class:`gnome.environment.Water`
 
-:class:`gnome.environment.Tide` 
+:class:`gnome.environment.Tide`
 
-:class:`gnome.environment.Waves` 
+:class:`gnome.environment.Waves`
 
-    
 More examples of the interaction of environment objects with movers and weatherers will be given in the next section.
 
 
