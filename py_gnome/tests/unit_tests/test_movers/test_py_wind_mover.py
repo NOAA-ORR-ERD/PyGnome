@@ -2,9 +2,6 @@
 Test all operations for py_wind mover work
 '''
 
-
-
-
 import datetime
 import os
 from os.path import basename
@@ -15,6 +12,7 @@ import tempfile
 import zipfile
 
 from gnome.movers import WindMover
+from gnome.environment.wind import constant_wind
 from gnome.environment.environment_objects import GridWind
 from gnome.utilities import time_utils
 
@@ -24,7 +22,7 @@ from ..conftest import (sample_sc_release,
                         validate_save_json)
 
 
-wind_file = testdata['c_GridWindMover']['wind_rect'] #just a regular grid netcdf 
+wind_file = testdata['c_GridWindMover']['wind_rect'] #just a regular grid netcdf
 
 
 def test_exceptions():
@@ -129,6 +127,32 @@ def test_scale_value():
     assert py_wind.scale_value == 0
 
 
+def test_with_PointWind():
+    """
+    test that it works right with a PointWind
+
+    (using constant wind to kick it off)
+    """
+    wind = constant_wind(10, 45)
+    wm = WindMover(wind=wind)
+
+    # # mocked up spill container
+    # sc = {'positions': [(0, 0, 0),(1, 1, 1)],
+    #       'status_codes': [(0), (0)]}
+    # sc.uncertain = "False"
+    sc = sample_sc_release(2,
+                           (0, 0, 0),
+                           rel_time,
+                           windage_range=(0.1, 0.1))
+    delta = wm.get_move(sc, 3600, datetime.datetime.now())
+    print("Delta:", delta)
+    # I'm too lazy to check the projection math magnitude ;-)
+    assert np.array_equal(delta[0], delta[1])
+    assert delta[0][0] < 0
+    assert delta[0][1] < 0
+    assert delta[0][1] == delta[0][0]
+
+
 # Helper functions for tests
 
 def _assert_move(delta):
@@ -183,7 +207,6 @@ def test_save_load():
     """
     test save/loading
     """
-
     saveloc = tempfile.mkdtemp()
     wind = GridWind.from_netCDF(wind_file)
     py_wind = WindMover(wind=wind)
@@ -194,3 +217,4 @@ def test_save_load():
     loaded = WindMover.load(zipfile_)
 
     assert loaded == py_wind
+
