@@ -380,6 +380,35 @@ def test_read_data_exception(model):
         NetCDFOutput.read_data(o_put.filename)
 
 
+#@pytest.mark.slow
+def test_single_time(model):
+    """
+    tests the option to output only a single time step with output_timestep = 0
+
+    sets output_zero_step and output_last_step to False.
+
+    read_data will give an error if there is more than one time in the file
+    when neither a time nor an index is specified
+    """
+    model.rewind()
+
+    o_put = [model.outputters[outputter.id] for outputter in
+             model.outputters if isinstance(outputter, NetCDFOutput)][0]
+    o_put.output_timestep = timedelta(seconds=0)
+    curr_time = model.start_time + timedelta(seconds=900)
+    o_put.output_start_time = curr_time
+    o_put.output_zero_step = False
+    o_put.output_last_step = False
+    _run_model(model)
+
+    file_ = o_put.filename
+
+    (nc_data, weathering_data) = NetCDFOutput.read_data(file_, curr_time)
+    assert curr_time == nc_data['current_time_stamp'].item()
+    (nc_data, weathering_data) = NetCDFOutput.read_data(file_)
+    assert curr_time == nc_data['current_time_stamp'].item()
+
+
 @pytest.mark.slow
 @pytest.mark.parametrize(("output_ts_factor", "use_time"),
                          [(1, True), (1, False),
