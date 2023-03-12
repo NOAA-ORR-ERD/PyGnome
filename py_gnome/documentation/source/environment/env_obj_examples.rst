@@ -31,21 +31,24 @@ Again, this time specifying variable names as well.::
                                       varnames=['water_u', 'water_v']
                                       )
 
-One major advantage to environment objects is re-use of common attributes. For example, in a data file you have a grid, and
-wind and current variables that are associated with the grid. ::
 
-    current = GridCurrent.from_netCDF(filename = fn)
-    wind = GridWind.from_netCDF(filename = fn,
-                                grid = current.grid)
+.. ## included in pygnome docs )Mar 2023)
+.. One major advantage to environment objects is re-use of common attributes. For example, in a data file you have a grid, and
+.. wind and current variables that are associated with the grid. ::
 
-In the above example, the current and wind now both share the same grid object, which has numerous performance benefits. This is
-one of the most common cases of sharing between Environment objects.
+..     current = GridCurrent.from_netCDF(filename = fn)
+..     wind = GridWind.from_netCDF(filename = fn,
+..                                 grid = current.grid)
 
-You can create an environment out of an already open dataset as well. This may help alleviate 'too many files' problems when working
-with large numbers of files::
+.. In the above example, the current and wind now both share the same grid object, which has numerous performance benefits. This is
+.. one of the most common cases of sharing between Environment objects.
 
-    df = netCDF4.Dataset(fn)
-    current = GridCurrent.from_netCDF(dataset=df)
+.. You can create an environment out of an already open dataset as well. This may help alleviate 'too many files' problems when working
+.. with large numbers of files::
+
+..     df = netCDF4.Dataset(fn)
+..     current = GridCurrent.from_netCDF(dataset=df)
+
 
 You can also set up an environment object from scratch, which can be very useful when mocking up a situation. The following code creates
 a GridCurrent representing circular currents around the origin.::
