@@ -28,11 +28,11 @@ This is equivalent to::
     import gnome
     model = gnome.model.Model()
 
-.. admonition:: Working with dates and times
+.. note:: Working with dates and times
 
-    Internally, ``gnome`` uses the python standard library ``datetime`` and ``timedelta`` functions. In most cases, you can pass objects of these types into ``gnome`` . But for scripting convience, most places that take a datetime object will also accept a ISO 8601 string, such as: "2015-01-01T12:15:00"
+    Internally, ``GNOME`` uses the python standard library ``datetime`` and ``timedelta`` functions. In most cases, you can pass objects of these types into ``GNOME``. But for scripting convience, most places that take a datetime object will also accept a ISO 8601 string, such as: "2015-01-01T12:15:00"
 
-The gnome.scripting module also provides a number of shortcuts for creating ``timedelta`` objects: ``seconds, minutes, hours, days``. You can use them like so::
+The ``gnome.scripting`` module also provides a number of shortcuts for creating ``timedelta`` objects: ``seconds, minutes, hours, days``. You can use them like so::
 
     gs.hours(3)  # for 3 hours
     gs.days(2)  # for two days
@@ -65,7 +65,7 @@ Now we will create some simple movers and add them to the model.
 We use the :class:`gnome.movers.SimpleMover` class to specify a 0.2 m/s eastward current and
 also the :class:`gnome.movers.RandomMover` class to simulate spreading due to turbulent motions::
 
-    velocity = (.2, 0, 0) #(u, v, w) in m/s
+    velocity = (.2, 0, 0) # (u, v, w) in m/s
     uniform_vel_mover = gs.SimpleMover(velocity)
     #  random walk diffusion -- diffusion_coef in units of cm^2/s
     random_mover = gs.RandomMover(diffusion_coef=2e4)
@@ -76,13 +76,11 @@ also the :class:`gnome.movers.RandomMover` class to simulate spreading due to tu
 
 Create and Add a Spill
 ----------------------
-Spills in ``gnome`` contain information about the release (where, when, how much) in a Release Object and information about 
-the properties of the substance spilled (e.g. oil chemistry) in a Substance Object. There are a number of "helper" functions 
-to make it easier to initialize various types of spills (for example, at a point or over a spatial 
-area, at the surface or subsurface).
+Spills in ``gnome`` contain information about the release (where, when, how much) in a Release Object and information about the properties of the substance spilled (e.g. oil chemistry) in a ``Substance`` Object.
+There are a number of "helper" functions to make it easier to initialize various types of spills (for example, at a point or over a spatial area, at the surface or subsurface).
  
 Here we use the :func:`gnome.spills.spill.surface_point_line_spill` function to initialize a simple spill of a conservative substance 
-(i.e. one with no change in properties over time) at a single point on the ocean surface::
+(i.e. one with no change in properties over time, the default substance) at a single point on the ocean surface::
 
 
     spill = gs.surface_point_line_spill(release_time=start_time,
@@ -95,7 +93,7 @@ Create and Add an Outputter
 ---------------------------
 
 Outputters allow us to save our model run results.
-Options include saving images at specified model time steps or saving all the particle information into a netCDF file for further analysis.
+Options include saving images at specified model time steps or saving all the element information into a netCDF file for further analysis.
 
 Here we use the :class:`gnome.outputters.Renderer` class to save an image every 6 hours. We specify the bounding box of the rendered map to
 be the same as those specified when we created the map object. The default is to save files into the working directory::
@@ -109,16 +107,16 @@ be the same as those specified when we created the map object. The default is to
     model.outputters += renderer
 
 
-Step through the model and view data
-------------------------------------
+Step through the model and view results
+---------------------------------------
 
 Once the model is all set up, we are ready to run the simulation.
-Sometimes we want to do this iteratively step-by-step to view data
+Sometimes we want to do this iteratively step-by-step to view results
 along the way without outputting to a file.
-There are some helper utilities to extract data associated with the particles.
+There are some helper utilities to extract data associated with the elements.
 These data include properties such as mass, age, and position or weathering information such as the mass of oil evaporated (if the simulation has specified an oil type rather than a conservative substance as in this example).
 
-For example, if we want to extract the particle positions as a function of time, we can use the :func:`gnome.model.get_spill_property` convenience function, as shown below::
+For example, if we want to extract the element positions as a function of time, we can use the :func:`gnome.model.get_spill_property` convenience function, as shown below::
 
     x=[]
     y=[]
@@ -127,11 +125,11 @@ For example, if we want to extract the particle positions as a function of time,
         x.append(positions[:,0])
         y.append(positions[:,1])
 
-To see a list of properties associated with particles use::
+To see a list of properties associated with elements use::
 
     model.list_spill_properties()
 
-Note: this list will be empty until after the model has been run.
+Note: this list will be empty until after the model has been run for at least one timestep.
 
 
 Run the model to completion
@@ -147,9 +145,9 @@ Results will be written to files based on the outputters added to the model.
 View the results
 ----------------
 
-The renderer that we added generates a png image every 6 hour of model time.
-They will have been saved in ``output`` dir relative to the directory that the script was executed from, as specified in the Renderer creation.
-The sequence of images should show a cloud of particles moving east and spreading.
+The renderer that we added generates a png image every 6 hours of model time.
+They will have been saved in ``output`` dir relative to the directory that the script was executed from, as specified in the ``Renderer`` creation.
+The sequence of images should show a cloud of elements moving east and spreading.
 
 Save and reload model setup
 ---------------------------
@@ -160,7 +158,7 @@ They are usually given the `.gnome` file extension but they are, in fact, regula
 
 Save files are used by the WebGNOME application, so that users can save and reload a model setup that they have created via the interactive GUI interface.
 For the most part, when you are running ``gnome`` via Python scripts, you don't need to use save files, as your script can rebuild the model when it runs.
-However, there are use cases, particularly if you want to work on the same model via scripting and WebGNOME.
+However, there are use cases for save files with scripting, particularly if you want to work on the same model via scripting and WebGNOME.
 
 A model can be created from a save file via the :func:`scripting.load_model()` function:
 
@@ -174,4 +172,6 @@ You can save out a configured model using the save method:
 .. code-block:: python
 
   model.save("the_savefile.gnome")
+
+The resuting file can be laoded into WebGNOME, or a PyGNOME script.
 
