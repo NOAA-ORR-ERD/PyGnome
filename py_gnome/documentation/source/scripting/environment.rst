@@ -48,7 +48,7 @@ Once the object is created, the information contained is accessed using the "at(
 
 	wind_value = wind.at([-125.5,48,0],datetime.datetime.now())
 
-In this case, the wind was constant in both space and time so I can query it anywhere at any time and get the same constant value of 10 knots. 
+In this case, the wind was constant in both space and time so we can query it anywhere at any time and get the same constant value of 10 knots. 
 
 Gridded Environment Objects
 ---------------------------
@@ -57,11 +57,11 @@ The models set up with PyGNOME are often driven with data created by hydrodynami
 
     import gnome.scripting as gs
 
-    fn = 'my_current_file.nc'
+    fn = 'my_data_file.nc'
     wind = gs.GridWind.from_netCDF(filename=fn)
 
-One major advantage to environment objects is re-use of common attributes. For example, in a data file you have a grid, and
-wind and current variables that are associated with the grid. ::
+One major advantage to environment objects is re-use of common attributes. For example, if you have a data file with 
+wind and current variables that are associated with the same grid. ::
 
     current = gs.GridCurrent.from_netCDF(filename=fn)
     wind = gs.GridWind.from_netCDF(filename=fn,
@@ -70,14 +70,45 @@ wind and current variables that are associated with the grid. ::
 In the above example, the current and wind now both share the same grid object, which has numerous performance benefits. This is
 one of the most common cases of sharing between Environment objects.
 
+You can also create an environment out of an already open dataset. This may help alleviate 'too many files' problems when working
+with large numbers of files::
+
+    df = netCDF4.Dataset(fn)
+    current = GridCurrent.from_netCDF(dataset=df)
+
 Ice Aware Objects
 -----------------
 
-For simulations including ice, there are several important environment objects that need to be created. This section is under construction.
+For simulations including ice, there are several important environment objects that need to be created. An IceAwareCurrent and IceAwareWind  a GridCurrent/GridWind instances that modulate the usual water velocity field
+depending on ice velocity and concentration information.
 
-:class:`gnome.environment.IceAwareCurrent`
+For an :class:`gnome.environment.IceAwareCurrent`::
 
-:class:`gnome.environment.IceAwareWind`
+    * While under 20% ice coverage, queries will return water velocity.
+    * Between 20% and 80% coverage, queries will interpolate linearly between water and ice velocity
+    * Above 80% coverage, queries will return the ice velocity.
+
+For an :class:`gnome.environment.IceAwareWind`::
+    
+    * While under 20% ice coverage, queries will return the wind velocity.
+    * Between 20% and 80% coverage, queries will interpolate linearly between wind magnitude and zero.
+    * Above 80% coverage, queries will return a wind magnitude of 0.
+
+Calls to set up ice aware current and wind environment objects look like:: 
+
+    fcurr = 'current_ice_file.nc'
+    fwind = 'wind_ice_file.nc'
+    ice_aware_curr = gs.IceAwareCurrent.from_netCDF(filename=fcurr)
+    ice_aware_wind = gs.IceAwareCurrent.from_netCDF(filename=fwind)
+
+If, as is common, the ice concentration and velocity data are only present in the currents netCDF file, to set-up an IceAwareWind object we will need information from the IceAwareCurrent object::
+
+
+    ice_aware_wind = gs.IceAwareWind.from_netCDF(filename=fwind,
+                            ice_concentration=ice_aware_curr.ice_concentration,
+                            ice_velocity=ice_aware_curr.ice_velocity
+                            )    
+
 
 :class:`gnome.environment.IceConcentration`
 
