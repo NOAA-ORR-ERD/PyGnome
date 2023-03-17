@@ -28,7 +28,7 @@ This is equivalent to::
     import gnome
     model = gnome.model.Model()
 
-.. note:: Working with dates and times
+.. admonition:: Working with dates and times
 
     Internally, ``GNOME`` uses the python standard library ``datetime`` and ``timedelta`` functions. In most cases, you can pass objects of these types into ``GNOME``. But for scripting convience, most places that take a datetime object will also accept a ISO 8601 string, such as: "2015-01-01T12:15:00"
 

@@ -46,7 +46,7 @@ Here's an example setting up a non-weathering spill. This is the default Substan
     spill = gs.Spill(release=release)
     model.spills += spill
 
-.. note:: Creating spills with oil data from the ADIOS database
+.. admonition:: Creating spills with oil data from the ADIOS database
 
     Specific oils can be downloaded from the |adios_db|. The oil properties are stored in the JSON file format which can be read using any text editor. This file can then be used to instantiate a ``GnomeOil``. In the following examples, we use an Alaska North Slope Crude downloaded from the database. That file can be accessed :download:`here <alaska-north-slope_AD00020.json>` to use in the following examples.
     
@@ -72,7 +72,7 @@ A spill of 5000 bbls using a specific oil downloaded from the `ADIOS Oil Databas
     model.spills += spill
  
 
-.. note:: A note on "Windage"
+.. admonition:: A note on "Windage"
 
     Floating objects experience a drift due to the wind. The default for substances is to have windage values set in the range 1-4% with a persistence (``  windage_persist``) of 15 minutes (900 seconds).
     This means that each element gets a random value in the range specified, and that value gets reset to a new random value every 15 minutes.
