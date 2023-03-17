@@ -59,8 +59,17 @@ def test_loop():
     assert np.all(delta[:, 1] == delta[0, 1])  # long move matches for all LEs
     assert np.all(delta[:, 2] == 0)  # 'z' is zeros
 
-    return delta
+def run_loop():
+    """
+    test one time step with no uncertainty on the spill
+    checks there is non-zero motion.
+    also checks the motion is same for all LEs
+    """
+    pSpill = sample_sc_release(num_le, start_pos, rel_time)
+    curr = c_GridCurrentMover(curr_file, topology_file)
+    delta = _certain_loop(pSpill, curr)
 
+    return delta
 
 def test_uncertain_loop(uncertain_time_delay=0):
     """
@@ -76,23 +85,34 @@ def test_uncertain_loop(uncertain_time_delay=0):
 
     _assert_move(u_delta)
 
-    return u_delta
+def run_uncertain_loop(uncertain_time_delay=0):
+    """
+    test one time step with uncertainty on the spill
+    checks there is non-zero motion.
+    """
 
+    pSpill = sample_sc_release(num_le, start_pos, rel_time,
+                               uncertain=True)
+    curr = c_GridCurrentMover(curr_file, topology_file)
+    curr.uncertain_time_delay = uncertain_time_delay
+    u_delta = _uncertain_loop(pSpill, curr)
+
+    return u_delta
 
 def test_certain_uncertain():
     """
     make sure certain and uncertain loop results in different deltas
     """
 
-    delta = test_loop()
-    u_delta = test_uncertain_loop()
+    delta = run_loop()
+    u_delta = run_uncertain_loop()
     print()
     print(delta)
     print(u_delta)
     assert np.all(delta[:, :2] != u_delta[:, :2])
     assert np.all(delta[:, 2] == u_delta[:, 2])
     uncertain_time_delay = 3
-    u_delta = test_uncertain_loop(uncertain_time_delay)
+    u_delta = run_uncertain_loop(uncertain_time_delay)
     print(u_delta)
     assert np.all(delta[:, :2] == u_delta[:, :2])
 
