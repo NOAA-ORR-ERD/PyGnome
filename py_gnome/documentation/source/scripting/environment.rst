@@ -8,7 +8,7 @@ Environnment objects can represent a space-independent time series or gridded, t
 
 For detailed documentation of the API and implemented objects see :mod:`gnome.environment.environment_objects`
 
-.. note:: Environment Objects
+.. note:: 
 
     An important note is that environment objects alone do not have any effect on the model simulation. Once they are created, they can be explicitly passed to weatherers and movers. However, if a weatherer is added to the model without explicity specifying the required environment objects, then the first object of the correct type in the environment collection will be used for that weathering process.
     For example, if multiple wind time series are created and added to
@@ -38,7 +38,7 @@ This is still rather complicated. Much more simply, we can use the helper functi
 
     wind = gs.constant_wind(10,0,'knots')
 
-Alternatively, if we had a properly formatted file (:ref:`wind_formats`) with a timeseries of wind data at a single point, we could use that to create a Wind Object using the Wind Class that is imported into the scripting module for convenience::
+Alternatively, if we had a properly formatted file (see: :ref:`wind_formats`) with a timeseries of wind data at a single point, we could use that to create a Wind Object using the Wind Class that is imported into the scripting module for convenience::
 
     wind = gs.Wind(filename='wind_file.txt')
 
@@ -48,26 +48,26 @@ Once the object is created, the information contained is accessed using the "at(
 
 	wind_value = wind.at([-125.5,48,0],datetime.datetime.now())
 
-In this case, the wind was constant in both space and time so we can query it anywhere at any time and get the same constant value of 10 knots. 
+In the first case above, the wind was constant in both space and time so we can query it anywhere at any time and get the same constant value of 10 knots. In the time dependent case, the value will be interpolated to the time asked for but again be constant spatially.
 
 Gridded Environment Objects
 ---------------------------
 
-The models set up with PyGNOME are often driven with data created by hydrodynamic and atmospheric models, such as ROMS, HYCOM, etc. Typically output from these models is netCDF data files. To create a GridWind environment object from a netCDF file::
+The models set up with PyGNOME are often driven with data created by hydrodynamic and atmospheric models, such as ROMS, HYCOM, etc. The most common output format from these models is the NetCDF file format. To create a :mod:`gnome.environment.GridWind` environment object from a NetCDF file::
 
     import gnome.scripting as gs
 
     fn = 'my_data_file.nc'
     wind = gs.GridWind.from_netCDF(filename=fn)
 
-One major advantage to environment objects is re-use of common attributes. For example, if you have a data file with 
+One major advantage of environment objects is re-use of common attributes. For example, if you have a data file with 
 wind and current variables that are associated with the same grid. ::
 
     current = gs.GridCurrent.from_netCDF(filename=fn)
     wind = gs.GridWind.from_netCDF(filename=fn,
                                    grid=current.grid)
 
-In the above example, the current and wind now both share the same grid object, which has numerous performance benefits. This is
+In the above example, the current and wind both share the same grid object, which has numerous performance benefits. This is
 one of the most common cases of sharing between Environment objects.
 
 You can also create an environment out of an already open dataset. This may help alleviate 'too many files' problems when working
@@ -79,14 +79,13 @@ with large numbers of files::
 Ice Aware Objects
 -----------------
 
-For simulations including ice, there are several important environment objects that need to be created. An IceAwareCurrent and IceAwareWind  a GridCurrent/GridWind instances that modulate the usual water velocity field
-depending on ice velocity and concentration information.
+For simulations including ice, there are several important environment objects that need to be created. These objects require that the model output include ice concentration and ice drift velocity. The :mod:`IceAwareCurrent` and :mod:`IceAwareWind` are GridCurrent/GridWind instances that modulate the usual water velocity field depending on ice concentration. 
 
 For an :class:`gnome.environment.IceAwareCurrent`::
 
-    * While under 20% ice coverage, queries will return water velocity.
-    * Between 20% and 80% coverage, queries will interpolate linearly between water and ice velocity
-    * Above 80% coverage, queries will return the ice velocity.
+    * While under 20% ice coverage, queries will return water velocity as in the non ice case.
+    * Between 20% and 80% coverage, queries will interpolate linearly between water and ice drift velocity
+    * Above 80% coverage, queries will return the ice drift velocity.
 
 For an :class:`gnome.environment.IceAwareWind`::
     
@@ -94,7 +93,7 @@ For an :class:`gnome.environment.IceAwareWind`::
     * Between 20% and 80% coverage, queries will interpolate linearly between wind magnitude and zero.
     * Above 80% coverage, queries will return a wind magnitude of 0.
 
-Calls to set up ice aware current and wind environment objects look like:: 
+The following example shows how to create "ice aware" current and wind environment objects:: 
 
     fcurr = 'current_ice_file.nc'
     fwind = 'wind_ice_file.nc'
@@ -102,7 +101,6 @@ Calls to set up ice aware current and wind environment objects look like::
     ice_aware_wind = gs.IceAwareCurrent.from_netCDF(filename=fwind)
 
 If, as is common, the ice concentration and velocity data are only present in the currents netCDF file, to set-up an IceAwareWind object we will need information from the IceAwareCurrent object::
-
 
     ice_aware_wind = gs.IceAwareWind.from_netCDF(filename=fwind,
                             ice_concentration=ice_aware_curr.ice_concentration,
