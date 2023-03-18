@@ -65,8 +65,24 @@ def test_loop():
     assert np.all(delta[:, 1] == delta[0, 1])  # long move matches for all LEs
     assert np.all(delta[:, 2] == 0)  # 'z' is zeros
 
-    return delta
+def run_loop():
+    """
+    test one time step with no uncertainty on the spill
+    - checks there is non-zero motion.
+    - also checks the motion is same for all LEs
 
+    - Uncertainty needs to be off.
+    - Windage needs to be set to not vary or each particle will have a
+      different position,  This is done by setting the windage range to have
+      all the same values (min == max).
+    """
+
+    pSpill = sample_sc_release(num_le, start_pos, rel_time, windage_range=(0.01, 0.01))
+    wind = GridWind.from_netCDF(wind_file)
+    py_wind = WindMover(wind=wind)
+    delta = _certain_loop(pSpill, py_wind)
+
+    return delta
 
 def test_uncertain_loop():
     """
@@ -82,16 +98,27 @@ def test_uncertain_loop():
 
     _assert_move(u_delta)
 
-    return u_delta
+def run_uncertain_loop():
+    """
+    test one time step with uncertainty on the spill
+    checks there is non-zero motion.
+    """
 
+    pSpill = sample_sc_release(num_le, start_pos, rel_time,
+                               uncertain=True)
+    wind = GridWind.from_netCDF(wind_file)
+    py_wind = WindMover(wind=wind)
+    u_delta = _uncertain_loop(pSpill, py_wind)
+
+    return u_delta
 
 def test_certain_uncertain():
     """
     make sure certain and uncertain loop results in different deltas
     """
 
-    delta = test_loop()
-    u_delta = test_uncertain_loop()
+    delta = run_loop()
+    u_delta = run_uncertain_loop()
     print()
     print(delta)
     print(u_delta)

@@ -46,7 +46,7 @@ Here's an example setting up a non-weathering spill. This is the default Substan
     spill = gs.Spill(release=release)
     model.spills += spill
 
-.. note:: Creating spills with oil data from the ADIOS database
+.. admonition:: Creating spills with oil data from the ADIOS database
 
     Specific oils can be downloaded from the |adios_db|. The oil properties are stored in the JSON file format which can be read using any text editor. This file can then be used to instantiate a ``GnomeOil``. In the following examples, we use an Alaska North Slope Crude downloaded from the database. That file can be accessed :download:`here <alaska-north-slope_AD00020.json>` to use in the following examples.
 
@@ -70,7 +70,6 @@ A spill of 5000 bbls using a specific oil downloaded from the `ADIOS Oil Databas
                      amount=5000,
                      units='bbls')
     model.spills += spill
-
 
 .. admonition:: A note on "Windage"
 

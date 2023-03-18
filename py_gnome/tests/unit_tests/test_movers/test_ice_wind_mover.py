@@ -67,9 +67,6 @@ def test_loop():
     # 'z' is zeros
     assert np.all(delta[:, 2] == 0)
 
-    return delta
-
-
 def test_loop_gridwind():
     """
     test one time step with no uncertainty on the spill
@@ -88,9 +85,6 @@ def test_loop_gridwind():
     assert np.all(delta[:, 0] == delta[0, 0])  # lat move matches for all LEs
     assert np.all(delta[:, 1] == delta[0, 1])  # long move matches for all LEs
     assert np.all(delta[:, 2] == 0)  # 'z' is zeros
-
-    return delta
-
 
 def test_ice_fields():
     """

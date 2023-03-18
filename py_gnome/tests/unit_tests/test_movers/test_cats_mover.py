@@ -81,8 +81,18 @@ def test_loop():
     assert np.all(delta[:, 1] == delta[0, 1])  # long move matches for all LEs
     assert np.all(delta[:, 2] == 0)  # 'z' is zeros
 
-    return delta
+def run_loop():
+    """
+    test one time step with no uncertainty on the spill
+    checks there is non-zero motion.
+    also checks the motion is same for all LEs
+    """
 
+    pSpill = sample_sc_release(num_le, start_pos, rel_time)
+    cats = CatsMover(curr_file, tide=td)
+    delta = _certain_loop(pSpill, cats)
+
+    return delta
 
 def test_uncertain_loop():
     """
@@ -97,16 +107,26 @@ def test_uncertain_loop():
 
     _assert_move(u_delta)
 
-    return u_delta
+def run_uncertain_loop():
+    """
+    test one time step with uncertainty on the spill
+    checks there is non-zero motion.
+    """
 
+    pSpill = sample_sc_release(num_le, start_pos, rel_time,
+                               uncertain=True)
+    cats = CatsMover(curr_file, tide=td)
+    u_delta = _uncertain_loop(pSpill, cats)
+
+    return u_delta
 
 def test_certain_uncertain():
     """
     make sure certain and uncertain loop results in different deltas
     """
 
-    delta = test_loop()
-    u_delta = test_uncertain_loop()
+    delta = run_loop()
+    u_delta = run_uncertain_loop()
     print()
     print(delta)
     print(u_delta)
