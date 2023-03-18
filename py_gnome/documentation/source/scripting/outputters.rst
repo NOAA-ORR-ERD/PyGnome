@@ -1,7 +1,10 @@
+.. _scripting_outputters:
+
+
 Outputters
 ==========
 
-Outputters allow us to save our model run results. Options include saving images, netcdf, kml/kmz, shapefile, and geoJSON formats.
+Outputters allow you to save the model results. Options include saving images, netcdf, kml/kmz, shapefile, and geoJSON formats.
 
 The Outputter API
 -----------------

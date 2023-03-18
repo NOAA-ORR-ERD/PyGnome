@@ -2,14 +2,18 @@ Movers
 ======
 
 Processes that change the position of the particles are termed "movers" in PyGNOME. These can include advection of the particles due to winds and currents, 
-diffusive movement of particles due to unresolved (sub-grid scale) turbulent flow fields, and prescribed behavior of the particles (e.g. rise velocity of oil droplets.) Many of the movers derive their data from :doc:`environment` which are described more fully in the previous section. The environment object is queried for information at the particle location in order to move the particle appropriately. 
+diffusive movement of particles due to unresolved (sub-grid scale) turbulent flow fields, and prescribed behavior of the particles (e.g. rise velocity of oil droplets).
+Many of the movers derive their data from :ref:`scripting_environment`, which represent the environment in which the model is running.
+The environment objects are queried for information (winds, currents) at the particle location in order to move the particle appropriately.
 
 Some examples and common use cases are shown here. For comprehensive documentation see :mod:`gnome.movers` in the API Reference section.
 
-Point Wind
-----------
+Point Wind Mover
+----------------
 
-A :class:`gnome.movers.PointWindMover` will act uniformly on elements anywhere in the domain (i.e. they have no spatial variability). These movers are tied to a Wind Object in the Environment Class
+.. todo:: We should have a PointWind object which can be used with the regular Wind Mover, and then, maybe a PointWindMover that uses that.
+
+A :class:`gnome.movers.PointWindMover` will act uniformly on elements anywhere in the domain (i.e. they have no spatial variability). These movers are tied to a Wind Object in the Environment Class.
 
 For example, in that section, we saw how to create a simple spatially and temporally constant :class:`gnome.environment.Wind` using a helper function in the gnome scripting module::
 

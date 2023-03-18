@@ -1,4 +1,7 @@
 .. include:: ../links.rst
+
+.. _scripting_environment:
+
 Environment Objects
 ===================
 
@@ -10,45 +13,78 @@ For detailed documentation of the API and implemented objects see :mod:`gnome.en
 
 .. note:: 
 
-    An important note is that environment objects alone do not have any effect on the model simulation. Once they are created, they can be explicitly passed to weatherers and movers. However, if a weatherer is added to the model without explicity specifying the required environment objects, then the first object of the correct type in the environment collection will be used for that weathering process.
+    An important note is that environment objects alone do not have any effect on the model simulation.
+    Once they are created, they can be explicitly passed to weatherers and movers. However, if a weatherer is added to the model without explicity specifying the required environment objects, then the first object of the correct type in the environment collection will be used for that weathering process.
     For example, if multiple wind time series are created and added to
     ``model.environment`` then the first one added will be used
     for weathering processes unless explicitly specified.
 
-Wind Object
------------
+Wind Objects
+------------
 
-Here's a detailed example to create a simple Wind object (for a constant in time wind). We'll take advantage of the gnome scripting 
-module to avoid having to manually import the necessary classes and functions::
+``Wind`` objects represent the surface wind that affects the elements in the model: moving them via "windage", and influencing the evaporation and dispersion processes.
+
+PyGNOME includes two types of ``Wind`` environment objects:
+:class:`gnome.environment.wind.PointWind` and
+:class:`gnome.environment.wind.environment_objects.GridWind`
+
+``PointWind`` represents a time series of wind at a point, such as a single met station or forecast location. The same value is applied over all locations.
+
+``GridWind`` provides gridded surface wind data, such as from a meteorological model, which can vary over time and space.
+
+PointWind
+.........
+
+A ``PointWind`` can be created from a timeseries of wind data, or, more commonly, from a file in the "OSSM" format (see: :ref:`wind_formats`)::
+
+    wind = gs.PointWind(filename='wind_file.txt')
+
+Even more simply, there is utility function for creating a constant wind::
+
+    wind = gs.constant_wind(10, 45, 'knots')
+
+Which creates a constant wind with a speed of 10 knots, and a direction of 34 degrees -- from the northeast.
+
+In order to create a wind time series from raw data, you can create a TimeSeries object first, and create the PointWind from that::
 
     import gnome.scripting as gs
     import numpy as np
     from datetime import datetime
     from gnome.basic_types import datetime_value_2d
-    model = gs.Model(start_time="2015-01-01",
-             duration=gs.days(3),
-             time_step=gs.minutes(15)
-             )
-    # Make a wind time series (one value for wind constant in time)
-    series = np.zeros((1, ), dtype=datetime_value_2d)
+    # Make a wind time series -- three values -- a short forecast
+    series = np.zeros((3, ), dtype=datetime_value_2d)
     series[0] = (datetime(2015, 1, 1, 0), (10, 0))
-    wind = gs.Wind(timeseries=series, units='knots')
+    series[1] = (datetime(2015, 1, 1, 1), (12, 10))
+    series[2] = (datetime(2015, 1, 1, 2), (15, 25))
+    wind = gs.PointWind(timeseries=series, units='knots')
 
-This is still rather complicated. Much more simply, we can use the helper function for creating a constant wind::
+.. todo:: If we want to do that, we should probably make utility function to makme it easier.
 
-    wind = gs.constant_wind(10,0,'knots')
+Note: this Environment object represents the wind itself, it does not act on the elements. This object can be used as a "driver" for  movers and weatherers that affect the elements.
 
-Alternatively, if we had a properly formatted file (see: :ref:`wind_formats`) with a timeseries of wind data at a single point, we could use that to create a Wind Object using the Wind Class that is imported into the scripting module for convenience::
+Once the PointWind object is created, the information contained is accessed using the "at()" method.::
 
-    wind = gs.Wind(filename='wind_file.txt')
+	wind_value = wind.at([-125.5,48,0], datetime(2015, 1, 1, 1, 30))
 
-Since the environment object does not act on the particles, it is not necessary to add it to the model. Instead, we use this object to create movers and  weatherers that are based on these objects.
+The wind is constant in time so it will return the same value for any location. IN time, the value is interpolated to the time asked for. If queried outside the time series provided, it will raise an Error.
 
-Once the object is created, the information contained is accessed using the "at()" method.::
+Extrapolation:
+..............
 
-	wind_value = wind.at([-125.5,48,0],datetime.datetime.now())
+By default, the PointWind object will not extrapolate beyond teh specified time series::
 
-In the first case above, the wind was constant in both space and time so we can query it anywhere at any time and get the same constant value of 10 knots. In the time dependent case, the value will be interpolated to the time asked for but again be constant spatially.
+    In [13]: wind.extrapolation_is_allowed
+    Out[13]: False
+
+But you can set that to True, and then it will return the end value when extrapolated:
+
+    In [15]: wind.extrapolation_is_allowed = True
+
+    In [17]: wind_value = wind.at([-125.5,48,0], datetime.now())
+
+    In [18]: wind_value
+    Out[18]: array([[-3.26120144, -6.99366905,  0.        ]])
+
 
 Gridded Environment Objects
 ---------------------------

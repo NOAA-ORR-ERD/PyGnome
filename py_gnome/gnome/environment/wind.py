@@ -630,6 +630,13 @@ class Wind(Timeseries, Environment):
 
         return (msgs, True)
 
+class PointWind(Wind):
+    """
+    Wind at a single point
+    """
+    # currently an alias for Wind -- but we should probably swap those and
+    # make this the real class, and the `Wind` be the alias.
+    pass
 
 def constant_wind(speed, direction, units='m/s'):
     """
@@ -653,7 +660,7 @@ def constant_wind(speed, direction, units='m/s'):
                                                           minute=0)
     wind_vel['value'][0] = (speed, direction)
 
-    return Wind(timeseries=wind_vel, coord_sys='r-theta', units=units)
+    return PointWind(timeseries=wind_vel, coord_sys='r-theta', units=units)
 
 
 def wind_from_values(values, units='m/s'):

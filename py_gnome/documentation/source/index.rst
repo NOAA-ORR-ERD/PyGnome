@@ -13,6 +13,7 @@ Welcome to PyGNOME's documentation!
    scripting/index
    extending/index
    file_formats/index
+   autoapi/index
    units
    tech_notes
 

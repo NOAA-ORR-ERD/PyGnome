@@ -1,4 +1,5 @@
 .. _units:
+
 #############################
 Units used in GNOME / PyGNOME
 #############################
@@ -10,11 +11,11 @@ To keep things clean, the internal computational code is all handled in a consis
 Conversion is done on I/O or occasionally within a class (i.e the class may store data in the units the user gave, but return values in the standard unit to other parts of the code) So unless otherwise noted, pass data into methods in the following standard units:
 
 Time
-    Time is expressed in integer seconds -- stored in a C ``unsigned long``
+    In most places, time is represented by Python `datetime` and `timedelta` objects.
 
-    Date-times are in seconds since 1904 (1904-01-01T00:00) -- stored in a C ``unsigned long``
+    In a few cases (model timestep for instance) time is expressed in integer seconds
 
-    (NOTE: much of the Python code uses ``datetime.datetime`` objects and/or numpy ``datetime64`` objects, but the internal C++ code uses integer seconds)
+    IN the C / C++ code, time is stored as seconds in a C ``unsigned long``, and datetimes are in seconds since 1904 (1904-01-01T00:00) -- stored in a C ``unsigned long``
 
 Length
     Lengths are in meters
