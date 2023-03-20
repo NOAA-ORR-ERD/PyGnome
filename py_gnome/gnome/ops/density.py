@@ -57,6 +57,7 @@ def recalc_density(sc, water=None, aggregate=True):
 
     substance = sc.substance
     water_temp = water_rho = None
+
     if substance.is_weatherable: 
         for substance, data in sc.itersubstancedata(sc.array_types):  
             if len(data['mass']) == 0:
