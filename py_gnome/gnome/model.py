@@ -1104,6 +1104,7 @@ class Model(GnomeId):
                 sc.current_time_stamp = model_time
             # this will only release an instantaneous release
             self.release_elements(model_time, model_time)
+
             # step 0 output
             output_info = self.output_step(isValid)
 
@@ -1128,7 +1129,6 @@ class Model(GnomeId):
             self.step_is_done()
             self.current_time_step += 1
             for sc in self.spills.items():
-                # could this be set in the current_time_step setter?
                 sc.current_time_stamp = self.model_time
             # Release the remaining half of the LEs in this time interval
             self.release_elements(self.model_time - half_step,
