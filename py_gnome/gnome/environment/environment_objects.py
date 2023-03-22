@@ -118,6 +118,40 @@ class VelocityGrid(VectorVariable):
         super(VelocityGrid, self).__init__(**kwargs)
 
 
+    def get_data_vectors(self):
+        '''
+        return array of shape (2, time_slices, len_linearized_data)
+        first is magnitude, second is direction
+        '''
+
+        if(hasattr(self, 'angle') and self.angle):
+
+            raw_uv = super(VelocityGrid, self).get_data_vectors()
+            lin_u = raw_uv[0,:,:]
+            lin_v = raw_uv[1,:,:]
+
+            raw_ang = self.angle.data[:]
+            angle_padding_slice = self.grid.get_padding_slices(self.grid.center_padding)
+            raw_ang = raw_ang[angle_padding_slice]
+
+            if 'degree' in self.angle.units:
+                raw_ang = raw_ang * np.pi/180.
+
+            ctr_mask = gridded.utilities.gen_celltree_mask_from_center_mask(self.grid.center_mask, angle_padding_slice)
+            ang = raw_ang.reshape(-1)
+            ang = np.ma.MaskedArray(ang, mask = ctr_mask.reshape(-1))
+            ang = ang.compressed()
+
+            x = lin_u[:] * np.cos(ang) - lin_v[:] * np.sin(ang)
+            y = lin_u[:] * np.sin(ang) + lin_v[:] * np.cos(ang)
+            r = np.concatenate((x[None,:], y[None,:]))
+            return np.ascontiguousarray(r.astype(np.float32)) # r.compressed().astype(np.float32)
+            # return np.ascontiguousarray(r.filled(0), np.float32)
+
+        else:
+            return super(VelocityGrid, self).get_data_vectors()
+
+
 class WindTS(VelocityTS, Environment):
 
     _ref_as = 'wind'
@@ -389,39 +423,6 @@ class GridCurrent(VelocityGrid, Environment):
                                  self._result_memo, _hash=_hash)
 
         return value
-
-    def get_data_vectors(self):
-        '''
-        return array of shape (2, time_slices, len_linearized_data)
-        first is magnitude, second is direction
-        '''
-
-        if(hasattr(self, 'angle') and self.angle):
-
-            raw_uv = super(GridCurrent, self).get_data_vectors()
-            lin_u = raw_uv[0,:,:]
-            lin_v = raw_uv[1,:,:]
-
-            raw_ang = self.angle.data[:]
-            angle_padding_slice = self.grid.get_padding_slices(self.grid.center_padding)
-            raw_ang = raw_ang[angle_padding_slice]
-
-            if 'degree' in self.angle.units:
-                raw_ang = raw_ang * np.pi/180.
-
-            ctr_mask = gridded.utilities.gen_celltree_mask_from_center_mask(self.grid.center_mask, angle_padding_slice)
-            ang = raw_ang.reshape(-1)
-            ang = np.ma.MaskedArray(ang, mask = ctr_mask.reshape(-1))
-            ang = ang.compressed()
-
-            x = lin_u[:] * np.cos(ang) - lin_v[:] * np.sin(ang)
-            y = lin_u[:] * np.sin(ang) + lin_v[:] * np.cos(ang)
-            r = np.concatenate((x[None,:], y[None,:]))
-            return np.ascontiguousarray(r.astype(np.float32)) # r.compressed().astype(np.float32)
-            # return np.ascontiguousarray(r.filled(0), np.float32)
-
-        else:
-            return super(GridCurrent, self).get_data_vectors()
 
 
 class GridWind(VelocityGrid, Environment):
