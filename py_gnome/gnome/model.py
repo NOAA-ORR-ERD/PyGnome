@@ -1755,6 +1755,7 @@ class Model(GnomeId):
         Convenience method to list properties of a spill that
         can be retrieved using get_spill_property
 
+        :return: list of spill simulation attributes
         '''
 
         return list(self.spills.items())[0].data_arrays.keys()
@@ -1763,6 +1764,7 @@ class Model(GnomeId):
         '''
         Convenience method to allow user to look up properties of a spill.
         User can specify ucert as 'ucert' or 1
+        :return: list
         '''
         ucert = 1 if ucert == 'ucert' else 0
         return list(self.spills.items())[ucert][prop_name]
