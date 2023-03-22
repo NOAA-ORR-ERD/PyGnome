@@ -337,19 +337,18 @@ class GridCurrent(VelocityGrid, Environment):
         Find the value of the property at positions P at time T
 
         :param points: Coordinates to be queried (P)
+        :type points: Nx2 or Nx3 array of double
         :param time: The time at which to query these points (T)
-        :param depth: Specifies the depth level of the variable
-        :param units: units the values will be returned in (or converted to)
-        :param extrapolate: if True, extrapolation will be supported
-        :type points: Nx2 array of double
         :type time: datetime.datetime object
-        :type depth: integer
+        :param units: units the values will be returned in (or converted to)
         :type units: string such as ('m/s', 'knots', etc)
+        :param extrapolate: if True, extrapolation will be supported
         :type extrapolate: boolean (True or False)
+        
         :return: returns a Nx2 array of interpolated values
         :rtype: double
         '''
-        mem = kwargs['memoize'] if 'memoize' in kwargs else True
+        _mem = kwargs['_mem'] if '_mem' in kwargs else True
         _hash = kwargs['_hash'] if '_hash' in kwargs else None
 
         if _hash is None:
@@ -357,7 +356,7 @@ class GridCurrent(VelocityGrid, Environment):
             if '_hash' not in kwargs:
                 kwargs['_hash'] = _hash
 
-        if mem:
+        if _mem:
             res = self._get_memoed(points, time,
                                    self._result_memo, _hash=_hash)
             if res is not None:
@@ -385,7 +384,7 @@ class GridCurrent(VelocityGrid, Environment):
 
         value[:, 2][points[:, 2] == 0.0] = 0
 
-        if mem:
+        if _mem:
             self._memoize_result(points, time, value,
                                  self._result_memo, _hash=_hash)
 
