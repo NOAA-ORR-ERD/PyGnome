@@ -492,7 +492,7 @@ class GridWind(VelocityGrid, Environment):
         value = None
         has_depth = pts.shape[1] > 2
 
-        mem = kwargs['memoize'] if 'memoize' in kwargs else True
+        mem = kwargs['_mem'] if '_mem' in kwargs else True
         _hash = kwargs['_hash'] if '_hash' in kwargs else None
 
         if _hash is None:
@@ -512,7 +512,6 @@ class GridWind(VelocityGrid, Environment):
 
         if value is None:
             extrapolate = self.extrapolation_is_allowed
-
             value = super(GridWind, self).at(pts, time,
                                              extrapolate=extrapolate,
                                              _auto_align=False, **kwargs)

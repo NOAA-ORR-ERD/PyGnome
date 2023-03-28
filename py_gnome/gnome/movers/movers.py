@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 
 import numpy as np
 
-from colander import (SchemaNode, TupleSchema, Bool, drop)
+from colander import (SchemaNode, TupleSchema, Bool, drop, String)
 
 from gnome.basic_types import (world_point,
                                world_point_type,
@@ -37,6 +37,9 @@ class ProcessSchema(ObjTypeSchema):
     #flag for client weatherer management system
     _automanaged = SchemaNode(Bool(), missing=drop, save=True, update=True)
 
+
+class PyMoverSchema(ProcessSchema):
+    default_num_method = SchemaNode(String(), missing=drop, save=True, update=True)
 
 class Process(GnomeId):
     """
@@ -208,6 +211,9 @@ class Mover(Process):
 
 
 class PyMover(Mover):
+
+    _schema = PyMoverSchema
+
     def __init__(self, default_num_method='RK2',
                  **kwargs):
         super(PyMover, self).__init__(**kwargs)
