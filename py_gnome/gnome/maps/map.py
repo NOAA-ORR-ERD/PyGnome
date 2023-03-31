@@ -345,10 +345,10 @@ class GnomeMap(GnomeId):
         """
         if self.spillable_area is not None:
             for poly in self.spillable_area:
-                if points_in_poly(poly.points, coord):
+                if point_in_poly(poly.points, coord):
                     return True
         else:
-            if points_in_poly(self.map_bounds, coord):
+            if point_in_poly(self.map_bounds, coord):
                 return True
         return False
 
