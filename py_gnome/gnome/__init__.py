@@ -7,7 +7,6 @@ initialize_console_log(level='debug')
 
   set up the logger to dump to console.
 
-
 """
 
 from itertools import chain
@@ -25,7 +24,7 @@ import nucos as uc
 # just so it will be in the namespace.
 from .gnomeobject import GnomeId, AddLogger
 
-__version__ = '1.1.4'
+__version__ = '1.1.5'
 
 
 # a few imports so that the basic stuff is there
