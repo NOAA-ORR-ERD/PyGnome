@@ -7,6 +7,7 @@ initialize_console_log(level='debug')
 
   set up the logger to dump to console.
 
+
 """
 
 from itertools import chain
@@ -24,7 +25,7 @@ import nucos as uc
 # just so it will be in the namespace.
 from .gnomeobject import GnomeId, AddLogger
 
-__version__ = '1.1.5'
+__version__ = '1.1.4'
 
 
 # a few imports so that the basic stuff is there
@@ -53,7 +54,7 @@ def check_dependency_versions():
 
     libs = [('gridded', '0.3.10', ''),
             ('nucos', '3.1.1', ''),
-            ('py_gd', '2.0.3', ''),
+            ('py_gd', '2.1.0', ''),
             ('adios_db', '1.0.3', 'Only required to use the ADIOS Database '
                                   'JSON format for oil data.')
             ]
