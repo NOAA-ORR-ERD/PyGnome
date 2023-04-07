@@ -441,13 +441,13 @@ class Spill(BaseSpill):
         actual_num_release = self._num_released
         to_rel = expected_num_release - actual_num_release
         if to_rel <= 0:
-            return 0 #nothing to release, so end early
+            return 0  # nothing to release, so end early
         sc._append_data_arrays(to_rel)
         self._num_released += to_rel
 
         sc['spill_num'][-to_rel:] = idx
 
-        #Partial initialization from various objects
+        # Partial initialization from various objects
         self.release.initialize_LEs(to_rel, sc, start_time, end_time)
 
         if 'frac_coverage' in sc:
@@ -455,7 +455,9 @@ class Spill(BaseSpill):
 
         self.substance.initialize_LEs(to_rel, sc, environment=environment)
 
-        self.release.initialize_LEs_post_substance(to_rel, sc, start_time, end_time, environment=environment)
+        self.release.initialize_LEs_post_substance(to_rel, sc,
+                                                   start_time, end_time,
+                                                   environment=environment)
 
         return to_rel
 
