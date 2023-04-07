@@ -100,8 +100,8 @@ class TestFayGravityViscous(object):
                                     relative_bouyancy,
                                     bulk_init_volume,
                                     age,
-                                    area) 
-                                    
+                                    area)
+
     @pytest.mark.parametrize("num", (1, 10))
     def test_values_same_age(self, num):
         '''
@@ -172,7 +172,7 @@ class TestFayGravityViscous(object):
 
 
         assert np.isclose(area[0::2].sum(), area_900)
-        assert np.isclose(area[1::2].sum(), area_1800)    
+        assert np.isclose(area[1::2].sum(), area_1800)
 
     def test_values_vary_age_bulk_init_vol(self):
         '''
@@ -210,7 +210,7 @@ class TestFayGravityViscous(object):
                                                 age[mask])
 
         assert np.isclose(area[0::2].sum(), area_900)
-        assert np.isclose(area[1::2].sum(), area_1800)  
+        assert np.isclose(area[1::2].sum(), area_1800)
 
     def test_minthickness_values(self):
         '''
@@ -420,5 +420,4 @@ class TestLangmuir(ObjForTests):
 
         assert langmuir.active
         assert np.all(self.sc['area'] < self.sc['fay_area'])
-        assert np.all(self.sc['frac_coverage'] < 1.0)        
-        
+        assert np.all(self.sc['frac_coverage'] < 1.0)

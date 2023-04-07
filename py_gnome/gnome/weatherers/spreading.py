@@ -539,8 +539,6 @@ class FayGravityViscous(Weatherer):
 
             area[s_mask] = np.minimum(new_le_area, max_area_le[s_mask])
 
-            area[s_mask] = np.minimum(new_le_area, max_area_le[s_mask])
-# numpy arrays -- faster
         return area
 
     @staticmethod
@@ -619,14 +617,14 @@ class FayGravityViscous(Weatherer):
 
         If on is False, then arrays should not be included - dont' initialize
         '''
-        
+
         # do this once in case there are any unit conversions, it only needs to
         # happen once - for efficiency
 
 
         if not self.on or not sc.substance.is_weatherable:
             return
-        
+
         for substance, data in sc.itersubstancedata(self.array_types):
 
             if self._init_relative_buoyancy is None:
@@ -664,7 +662,7 @@ class FayGravityViscous(Weatherer):
                 data['fay_area'][s_mask] = \
                     self.update_area(water_kvis,
                                      self._init_relative_buoyancy,
-                                     data['bulk_init_volume'][s_mask][0],
+                                     data['bulk_init_volume'][s_mask],
                                      data['fay_area'][s_mask],
                                      data['max_area_le'][s_mask],
                                      time_step,
@@ -685,7 +683,7 @@ class FayGravityViscous(Weatherer):
     #                                      data['age'][s_mask] + time_step)
 
                 data['area'][s_mask] = data['fay_area'][s_mask]
-                
+
         sc.update_from_fatedataview()
 
 
