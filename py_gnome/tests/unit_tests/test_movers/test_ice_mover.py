@@ -71,9 +71,6 @@ def test_loop():
     assert np.all(delta[:, 1] == delta[0, 1])  # long move matches for all LEs
     assert np.all(delta[:, 2] == 0)  # 'z' is zeros
 
-    return delta
-
-
 def test_loop_gridcurrent():
     """
     test one time step with no uncertainty on the spill
@@ -90,8 +87,6 @@ def test_loop_gridcurrent():
     assert np.all(delta[:, 0] == delta[0, 0])  # lat move matches for all LEs
     assert np.all(delta[:, 1] == delta[0, 1])  # long move matches for all LEs
     assert np.all(delta[:, 2] == 0)  # 'z' is zeros
-
-    return delta
 
 @pytest.mark.skip
 def test_ice_fields():

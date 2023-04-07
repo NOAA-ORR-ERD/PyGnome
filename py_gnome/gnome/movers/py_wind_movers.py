@@ -1,5 +1,6 @@
 '''
-Wind Movers and associated helper functions. This module has no compiled C dependency
+Wind Movers and associated helper functions.
+This module has no compiled C dependency
 '''
 
 from . import movers
@@ -106,11 +107,13 @@ class WindMover(movers.PyMover):
         if self.wind is None:
             raise ValueError("Must provide a wind object")
         if isinstance(self.wind, (str, os.PathLike)):
-            warnings.warn("The behavior of providing a filename to a WindMover __init__ is deprecated. Please pass a wind or use a helper function", DeprecationWarning)
+            warnings.warn("The behavior of providing a filename to a WindMover __init__ is deprecated. "
+                          "Please pass a wind or use a helper function", DeprecationWarning)
             self.wind = GridWind.from_netCDF(filename=self.wind,
                                                  **kwargs)
         if filename is not None:
-            warnings.warn("The behavior of providing a filename to a WindMover __init__ is deprecated. Please pass a wind or use a helper function", DeprecationWarning)
+            warnings.warn("The behavior of providing a filename to a WindMover __init__ is deprecated. "
+                          "Please pass a wind or use a helper function", DeprecationWarning)
 
         self.uncertain_duration = uncertain_duration
         self.uncertain_time_delay = uncertain_time_delay
@@ -143,8 +146,8 @@ class WindMover(movers.PyMover):
                     uncertain_angle_scale=.4,
                     default_num_method='RK2',
                     **kwargs):
-        warnings.warn("""WindMover.from_netCDF is deprecated. Please create the
-        wind separately or use a helper function""", DeprecationWarning)
+        warnings.warn("WindMover.from_netCDF is deprecated. "
+                      "Please create the wind separately or use a helper function", DeprecationWarning)
 
         wind = GridWind.from_netCDF(filename, **kwargs)
 
@@ -236,7 +239,7 @@ class WindMover(movers.PyMover):
             return self.wind.get_bounds
         else:
             return super(WindMover, self).get_bounds()
-            
+
     def update_uncertainty(self, num_les, elapsed_time):
         """
         update uncertainty
@@ -294,7 +297,7 @@ class WindMover(movers.PyMover):
         self.sigma2 = self.sigma2 * self.sigma2 / 2.
 
         self.sigma_theta = self.uncertain_angle_scale * 2.73 * np.sqrt(np.sqrt(elapsed_time - self.uncertain_time_delay))
-	
+
         if need_to_reinit:
             self.allocate_uncertainty(num_les)
             self.update_uncertainty_values(elapsed_time)
@@ -385,7 +388,7 @@ class WindMover(movers.PyMover):
 
             # Rotate velocity by dtheta
             deltas[:,0] = (u * cos_theta - v * sin_theta) * time_step
-            deltas[:,1] = (v * cos_theta + u * sin_theta) * time_step	
+            deltas[:,1] = (v * cos_theta + u * sin_theta) * time_step
 
             for i in range(0,num_les):
                 if norm[i] < 1:

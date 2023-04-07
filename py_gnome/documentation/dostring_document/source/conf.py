@@ -22,18 +22,7 @@ copyright = 'Public Domain'
 author = 'NOAA Emergency Response Division'
 
 # reading version from the gnome.__init__ without importing
-with open('../../gnome/__init__.py') as init_file:
-    for line in init_file:
-        parts = line.strip().split()
-        try:
-            if parts[1] == '=' and parts[0] == "__version__":
-                release = parts[2].strip("'")
-                break
-        except:
-            pass
-    else:
-        raise ValueError("Could not extract version from the gnome.__init__")
-
+release = 'test'
 # -- General configuration ---------------------------------------------------
 
 # Add any Sphinx extension module names here, as strings. They can be
@@ -58,7 +47,7 @@ extensions = [#'nbsphinx',
 extensions.append('autoapi.extension')
 
 autoapi_type = 'python'
-autoapi_dirs = ['../../gnome/']
+autoapi_dirs = ['../../../gnome/maps']
 autoapi_python_class_content = 'both'
 autoapi_keep_files = True
 
@@ -112,6 +101,8 @@ import sphinx_rtd_theme
 html_theme = "sphinx_rtd_theme"
 html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
+html_style = 'css/custom.css'
+
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
 html_logo = "_static/GNOME_logo_225px-wide.png"
@@ -121,6 +112,13 @@ html_favicon = "_static/GNOME_favicon_32x32.png"
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
+
+# These paths are either relative to html_static_path
+# or fully qualified paths (eg. https://...)
+# html_css_files = [
+#     'css/custom.css',
+# ]
+
 
 # If true, "(C) Copyright ..." is shown in the HTML footer. Default is True.
 html_show_copyright = False

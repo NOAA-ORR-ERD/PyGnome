@@ -83,6 +83,7 @@ class Outputter(GnomeId):
         :param output_timestep: default is None in which case every time the
             write_output is called, output is written. If set, then output is
             written every output_timestep starting from model_start_time.
+            If set to zero only a single time is output, the output_start_time.
         :type output_timestep: timedelta object
 
         :param output_zero_step: default is True. If True then output for
@@ -113,7 +114,7 @@ class Outputter(GnomeId):
 
         # flag to keep track of _state of the object - is True after calling
         # prepare_for_model_run
-        ## fixme -- why should this be initilaizable???
+        ## fixme -- why should this be initializable???
         # self._middle_of_run = kwargs.pop('_middle_of_run', False)
         self._middle_of_run = False
 
@@ -124,7 +125,8 @@ class Outputter(GnomeId):
         self.output_zero_step = output_zero_step
         self.output_last_step = output_last_step
 
-        if output_timestep:
+        #if output_timestep: # allow for output_timestep = 0
+        if output_timestep is not None:
             self._output_timestep = int(output_timestep.total_seconds())
         else:
             self._output_timestep = None
@@ -274,6 +276,8 @@ class Outputter(GnomeId):
 
         if self._output_timestep is not None:
             self._write_step = False
+            if self._output_timestep == 0:
+                return
             self._dt_since_lastoutput += time_step
 
             if self._dt_since_lastoutput >= self._output_timestep:

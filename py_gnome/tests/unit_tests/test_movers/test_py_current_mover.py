@@ -75,7 +75,7 @@ def test_loop():
     assert np.all(delta[:, 1] == delta[0, 1])  # long move matches for all LEs
     assert np.all(delta[:, 2] == 0)  # 'z' is zeros
 
-    return delta
+    #return delta
 
 
 def run_uncertain_loop():

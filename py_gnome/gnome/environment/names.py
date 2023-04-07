@@ -44,7 +44,7 @@ a netcdf files to one these names, PYGNOME should be able to load the file.
   Default Names: sand_06
 
 
-  CF Standard Names: 
+  CF Standard Names:
 
 
 **ice_concentration**
@@ -81,9 +81,9 @@ a netcdf files to one these names, PYGNOME should be able to load the file.
 
 **grid_wind**
 
- Default Names for u: air_u, Air_U, air_ucmp, wind_u, u-component_of_wind_height_above_ground
+ Default Names for u: air_u, Air_U, air_ucmp, wind_u, u-component_of_wind_height_above_ground, UWind
 
- Default Names for v: air_v, Air_V, air_vcmp, wind_v, v-component_of_wind_height_above_ground
+ Default Names for v: air_v, Air_V, air_vcmp, wind_v, v-component_of_wind_height_above_ground, VWind
 
 
  CF Standard Names for u: eastward_wind, eastward wind
@@ -145,8 +145,8 @@ nc_names = {
     },
     'grid_wind': {
         'default_names': {
-            'u': ['air_u', 'Air_U', 'air_ucmp', 'wind_u','u-component_of_wind_height_above_ground' ],
-            'v': ['air_v', 'Air_V', 'air_vcmp', 'wind_v','v-component_of_wind_height_above_ground']
+            'u': ['air_u', 'Air_U', 'air_ucmp', 'wind_u','u-component_of_wind_height_above_ground','Uwind'],
+            'v': ['air_v', 'Air_V', 'air_vcmp', 'wind_v','v-component_of_wind_height_above_ground','Vwind']
         },
         'cf_names': {
             'u': ['eastward_wind', 'eastward wind'],
@@ -166,6 +166,11 @@ nc_names = {
 }
 
 def insert_names_table(table_text):
+    """
+    function to insert the names table into the docstring
+
+    should be run when name mapping is updated.
+    """
     this = __file__
     tempfile = "names.temp.py"
     with open(this) as infile:
@@ -241,6 +246,3 @@ if __name__ == "__main__":
         print("Doing Nothing")
         print('To rebuild the docstring, pass "rebuild" in on the command line:')
         print('    python names.py rebuild')
-
-
-

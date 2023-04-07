@@ -1,7 +1,7 @@
 Environment Objects
 ===================
 
-Environment objects are designed to accomplish the following objectives:
+Environment objects are  designed to accomplish the following objectives:
  - Provide easy-to-create representations of compatible data
  - Allow a reasonably Python-literate PyGNOME user to create a PyGNOME-compatible representation of
    non-standard gridded data without having to resort to reformatting their data source.
@@ -25,7 +25,8 @@ For documentation of the API and implemented objects see :mod:`gnome.environment
 Background
 ----------
 
-The environmental models in GNOME are often driven with data created by other models, such as ROMS, HYCOM, etc. In the past, the output from
+The environmental models in GNOME are often driven with data created by other models, such as ROMS, HYCOM, etc. 
+In the past, the output from
 these models were processed by renaming and regridding to conform to GNOME's expectations before use. Regridding every new dataset is inconvenient,
 and also immediately introduces inaccuracies into the representation of reality.
 

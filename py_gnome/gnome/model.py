@@ -1104,6 +1104,7 @@ class Model(GnomeId):
                 sc.current_time_stamp = model_time
             # this will only release an instantaneous release
             self.release_elements(model_time, model_time)
+
             # step 0 output
             output_info = self.output_step(isValid)
 
@@ -1128,7 +1129,6 @@ class Model(GnomeId):
             self.step_is_done()
             self.current_time_step += 1
             for sc in self.spills.items():
-                # could this be set in the current_time_step setter?
                 sc.current_time_stamp = self.model_time
             # Release the remaining half of the LEs in this time interval
             self.release_elements(self.model_time - half_step,
@@ -1755,6 +1755,7 @@ class Model(GnomeId):
         Convenience method to list properties of a spill that
         can be retrieved using get_spill_property
 
+        :return: list of spill simulation attributes
         '''
 
         return list(self.spills.items())[0].data_arrays.keys()
@@ -1763,6 +1764,7 @@ class Model(GnomeId):
         '''
         Convenience method to allow user to look up properties of a spill.
         User can specify ucert as 'ucert' or 1
+        :return: list
         '''
         ucert = 1 if ucert == 'ucert' else 0
         return list(self.spills.items())[ucert][prop_name]
