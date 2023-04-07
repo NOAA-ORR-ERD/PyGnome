@@ -636,6 +636,19 @@ class Variable(gridded.Variable, GnomeId):
 
         return super(Variable, cls).new_from_dict(dict_)
 
+    @classmethod
+    def constant(cls, value):
+        #Sets a Variable up to represent a constant scalar field. The result
+        #will return a constant value for all times and places.
+        Grid = Grid_S
+        Time = cls._default_component_types['time']
+        _data = np.full((3,3), value)
+        _node_lon = np.array(([-360, 0, 360], [-360, 0, 360], [-360, 0, 360]))
+        _node_lat = np.array(([-89.95, -89.95, -89.95], [0, 0, 0], [89.95, 89.95, 89.95]))
+        _grid = Grid(node_lon=_node_lon, node_lat=_node_lat)
+        _time = Time.constant_time()
+        return cls(grid=_grid, time=_time, data=_data, fill_value=value)
+
     @property
     def extrapolation_is_allowed(self):
         if self.time is not None:
@@ -900,6 +913,32 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
         else:
             return super(VectorVariable, cls).new_from_dict(dict_, **kwargs)
 
+
+    @classmethod
+    def constant(cls,
+                 values,
+                 name=None,
+                 units=None):
+        '''
+        Sets a VectorVariable up to represent a constant vector field. The result
+        will return a constant value for all times and places.
+
+        :param values: vector of values
+        :type values: array-like
+        '''
+        
+        Grid = Grid_S
+        Time = cls._default_component_types['time']
+        _node_lon = np.array(([-360, 0, 360], [-360, 0, 360], [-360, 0, 360]))
+        _node_lat = np.array(([-89.95, -89.95, -89.95], [0, 0, 0], [89.95, 89.95, 89.95]))
+        _grid = Grid(node_lon=_node_lon, node_lat=_node_lat)
+        _time = Time.constant_time()
+        if isinstance(units, str):
+            units = [units,]
+        _datas = [np.full((3,3), v) for v in values]
+        _vars = [Variable(grid=_grid, units=units[i], time=_time, data=d) for i, d in enumerate(_datas)]
+        return cls(name=name, grid=_grid, time=_time, variables=_vars)
+
     def at(self, points, time, units=None, *args, **kwargs):
         units = units if units else self._gnome_unit #no need to convert here, its handled in the subcomponents
         value = super(VectorVariable, self).at(points, time, units=units, *args, **kwargs)
@@ -938,6 +977,11 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
             xt = x.shape[0]
             y = raw_v[:]
             yt = y.shape[0]
+            if raw_u.shape[-2:] == raw_v.shape[-2:] and raw_u.shape[-2:] == self.grid.center_mask.shape: 
+                #raw u/v are same shape and on center
+                #need to padding_slice the variable since they are not interpolated from u/v
+                x = x[(np.s_[:],) + ctr_padding_slice]
+                y = y[(np.s_[:],) + ctr_padding_slice]
             x = x.reshape(xt, -1)
             y = y.reshape(yt, -1)
             ctr_mask = gridded.utilities.gen_celltree_mask_from_center_mask(self.grid.center_mask, ctr_padding_slice)

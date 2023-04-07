@@ -3,14 +3,10 @@
 Overview
 ========
 
-To run simulations using the ``gnome`` package the first step is to create a model object.
-This model object will have attributes such as the model start time and the run duration. Movers, weatherers, spills,
-and outputters are then added to the model. Then the model can be run to produce output.
+PyGNOME is a complex package, however, it is fairly straightforward to write scripts to run the model for a variety of simulations.
 
-For a first introduction to scripting with ``gnome``, the example below will demonstrate how to set up and run the 
-very simplest model possible. 
-This example does not load any external data, but creates a simple map and movers manually. The "spill" will be a conservative
-substance, i.e. it will not represent oil which has changing properties over time due to weathering processes.
+Simulations with the ``gnome`` package are performed via a ``Model`` object. A model has model-level attributes such as the start time, run duration, and time step. It can be configured with a variety of  ``Mover``s, ``Weatherers``, and ``Spills`` to drive the model, and ``Outputters`` can output the model results in a number of formats.
+
 
 The scripting module
 --------------------
@@ -30,18 +26,32 @@ This is equivalent to::
 
 .. admonition:: Working with dates and times
 
-    Internally, ``gnome`` uses the python standard library ``datetime`` and ``timedelta`` functions. In most cases, you can pass objects of these types into ``gnome`` . But for scripting convience, most places that take a datetime object will also accept a ISO 8601 string, such as: "2015-01-01T12:15:00"
+    Internally, ``GNOME`` uses the python standard library ``datetime`` and ``timedelta`` functions.
+    In most cases, you can pass objects of these types into ``GNOME``.
+    But for scripting convience, most places that take a datetime object will also accept a ISO 8601 string, such as: "2015-01-01T12:15:00"
 
-The gnome.scripting module also provides a number of shortcuts for creating ``timedelta`` objects: ``seconds, minutes, hours, days``. You can use them like so::
+The ``gnome.scripting`` module also provides a number of shortcuts for creating ``timedelta`` objects: ``seconds, minutes, hours, days``. You can use them like so::
 
     gs.hours(3)  # for 3 hours
     gs.days(2)  # for two days
 
 Examples in this section will use the scripting module. In the following more detailed sections about specific object types, we may sometimes also show the full import path for clarity.
 
+Simplest Example
+----------------
+
+For a first introduction to scripting with ``gnome``,
+the example below will demonstrate how to set up and run the very simplest model possible.
+This example does not load any external data, but creates a simple map and movers manually.
+The "spill" is a conservative substance, i.e. a "passive tracer"
+
+This example is in the PyGNOME source under "scripts/example_scripts", or can be downloaded here:
+.. this download link is getting rendered oddly -- and why do I need so many ../?
+:download:`simple_script.py <../../../../../scripts/example_scripts/simple_script.py`
+
 Initialize the Model
 --------------------
-We initialize the model to begin on New Years Day 2015 and run for 3 days with a model time step of 15 minutes::
+The model is initialized to begin on New Years Day 2015 and run for 3 days with a model time step of 15 minutes::
 
     import gnome.scripting as gs
     start_time = "2015-01-01"
@@ -53,125 +63,91 @@ We initialize the model to begin on New Years Day 2015 and run for 3 days with a
 
 Create and Add a Map
 --------------------
-Create a very simple map which is all water with a polygon of four longitude/latitude points to specify the map bounds::
+Create a very simple map which is all water with a rectangle defined by four longitude/latitude points to specify boundary of the model::
 
     model.map = gs.GnomeMap(map_bounds=((-145, 48), (-145, 49),
                                         (-143, 49), (-143, 48))
                                         )
 
-Create and Add a Mover
-----------------------
-Now we will create some simple movers and add them to the model.
-We use the :class:`gnome.movers.SimpleMover` class to specify a 0.2 m/s eastward current and
-also the :class:`gnome.movers.RandomMover` class to simulate spreading due to turbulent motions::
+Create and Add Movers
+---------------------
+THe model needs one or more "Movers" to move the elements. In this case, a steady uniform current and random walk diffusion are demonstrated.
 
-    velocity = (.2, 0, 0) #(u, v, w) in m/s
+The `SimpleMover` class is used to specify a 0.2 m/s eastward current.
+
+The `RandomMover` class simulates spreading due to turbulent motion via a random walk algorithm:
+
+.. code-block:: python
+
+    velocity = (.2, 0, 0)  # (u, v, w) in m/s
     uniform_vel_mover = gs.SimpleMover(velocity)
     #  random walk diffusion -- diffusion_coef in units of cm^2/s
     random_mover = gs.RandomMover(diffusion_coef=2e4)
 
+    # the movers are added to the model
     model.movers += uniform_vel_mover
     model.movers += random_mover
 
 
 Create and Add a Spill
 ----------------------
-Spills in ``gnome`` contain information about the release (where, when, how much) in a Release Object and information about 
-the properties of the substance spilled (e.g. oil chemistry) in a Substance Object. There are a number of "helper" functions 
-to make it easier to initialize various types of spills (for example, at a point or over a spatial 
-area, at the surface or subsurface).
+
+Spills in ``gnome`` specify what, when, where, and how many elements are released into the model. The properties of the substance spilled (e.g. oil chemistry) are provided by a ``Substance`` Object. PYGNOME currently has two Substances available: ``NonWeatheringSubstance`` representing passive drifters, and ``GnomeOil``, representing petroleum products with all the properties required for the oil weathering algorithms supplied with GNOME.
+
+There are a number of "helper" functions and classes that can initialize various types of spills (for example, at a point or over a spatial area, at the surface or subsurface). See: :ref:`scripting_spills` for more details.
  
-Here we use the :func:`gnome.spills.spill.surface_point_line_spill` function to initialize a simple spill of a conservative substance 
-(i.e. one with no change in properties over time) at a single point on the ocean surface::
+A common spill type is created by the `surface_point_line_spill`. To set up a instanatious release of a conservative substance at a point, it can be called with most of the defaults::
 
 
     spill = gs.surface_point_line_spill(release_time=start_time,
-                                        start_position=(-144, 48.5, 0),
-                                        num_elements=1000)
+                                        start_position=(-144, 48.5),
+                                        num_elements=500)
     model.spills += spill
 
+* The release time is set to the start_time previous defined to start the model.
+* The release location (start_position) is set to a (longitude, latitude) position.
+* The number of Lagrangian elements (particles) can be defined (defaults to 1000)
 
-Create and Add an Outputter
----------------------------
+Create and Add an ``Outputter``
+-------------------------------
 
-Outputters allow us to save our model run results.
-Options include saving images at specified model time steps or saving all the particle information into a netCDF file for further analysis.
+Outputters save the model results in a variety of formats.
+Options include PNG images and saving the element information into netCDF files, shapefiles, or KML for further visualization and analysis. See :ref:`scripting_outputters`
 
-Here we use the :class:`gnome.outputters.Renderer` class to save an image every 6 hours. We specify the bounding box of the rendered map to
-be the same as those specified when we created the map object. The default is to save files into the working directory::
+In this example, the ``Renderer`` class is used to save to an animated gif every 3 hours::
 
-
-    renderer = gs.Renderer(output_dir='./output',
-                           output_timestep=gs.hours(6),
-                           map_BB=((-145,48), (-145,49),
-                                   (-143,49), (-143,48)))
+    renderer = gs.Renderer(output_dir='./output/',
+                           output_timestep=gs.hours(2),
+                           # bounding box for the output images
+                           map_BB=((-145, 48), (-145, 49),
+                                   (-143, 49), (-143, 48)),
+                           formats=['gif']
+                           )
 
     model.outputters += renderer
 
+* The time step for output is set to 2 hours.
 
-Step through the model and view data
-------------------------------------
+* The bounding box of the rendered map is set to be the same as those specified for the map object.
 
-Once the model is all set up, we are ready to run the simulation.
-Sometimes we want to do this iteratively step-by-step to view data
-along the way without outputting to a file.
-There are some helper utilities to extract data associated with the particles.
-These data include properties such as mass, age, and position or weathering information such as the mass of oil evaporated (if the simulation has specified an oil type rather than a conservative substance as in this example).
-
-For example, if we want to extract the particle positions as a function of time, we can use the :func:`gnome.model.get_spill_property` convenience function, as shown below::
-
-    x=[]
-    y=[]
-    for step in model:
-        positions = model.get_spill_property('positions')
-        x.append(positions[:,0])
-        y.append(positions[:,1])
-
-To see a list of properties associated with particles use::
-
-    model.list_spill_properties()
-
-Note: this list will be empty until after the model has been run.
+* ``Renderer`` supports 'bmp', 'jpg', 'jpeg', 'png' and 'gif' -- 'gif' will save out a single animated GIF file - the rest will output one image per output timestep.
 
 
-Run the model to completion
----------------------------
+Run the Model
+-------------
 
-Alternatively, to just run the model for the entire duration use::
+Once the model is all set up, the simulation can be run.
+
+To run the model for the entire duration::
 
     model.full_run()
 
-Results will be written to files based on the outputters added to the model.
-
+Results will be written to files based on the outputters added to the model -- in this case, an animated GIF named ``anim.gif``.
 
 View the results
 ----------------
 
-The renderer that we added generates a png image every 6 hour of model time.
-They will have been saved in ``output`` dir relative to the directory that the script was executed from, as specified in the Renderer creation.
-The sequence of images should show a cloud of particles moving east and spreading.
+The renderer added to the model generates an animated GIF with a frame every 8 hours as specified in its creation.
 
-Save and reload model setup
----------------------------
-
-The ``gnome`` package uses "save files" as a way to save a model setup to use again or to share with another user.
-The save files are a zip file that contain all the configuration information as JSON files and any needed data files all in one archive.
-They are usually given the `.gnome` file extension but they are, in fact, regular zip files.
-
-Save files are used by the WebGNOME application, so that users can save and reload a model setup that they have created via the interactive GUI interface.
-For the most part, when you are running ``gnome`` via Python scripts, you don't need to use save files, as your script can rebuild the model when it runs.
-However, there are use cases, particularly if you want to work on the same model via scripting and WebGNOME.
-
-A model can be created from a save file via the :func:`scripting.load_model()` function:
-
-.. code-block:: python
-
-  import gnome.scripting as gs
-  model = gs.load_model("the_savefile.gnome")
-
-You can save out a configured model using the save method:
-
-.. code-block:: python
-
-  model.save("the_savefile.gnome")
-
+It will have been saved in ``output`` dir relative to the directory that the script was executed from, as specified in the ``Renderer`` creation.
+The animation should show a cloud of elements moving east and spreading.

@@ -17,6 +17,8 @@ from gnome import constants
 from gnome.environment import constant_wind, Water
 from gnome.weatherers import FayGravityViscous, Langmuir
 from .test_cleanup import ObjForTests
+from gnome import scripting as gs
+from .conftest import test_oil
 
 # scalar inputs - for testing
 rel_buoy = 0.2  # relative_buoyancy of oil
@@ -56,15 +58,15 @@ class TestFayGravityViscous(object):
         A0 = (np.pi *
               (k2 ** 4 / k1 ** 2) *
               (((init_vol) ** 5 * g * dbuoy) / (nu_h2o ** 2)) ** (1. / 6.))
- 
+
         p_area = A0
         for i in range(0, int(p_age/default_ts)):
             C = (np.pi * k_nu ** 2 * (init_vol ** 2 * g * dbuoy / np.sqrt(nu_h2o)) ** (1. / 3.))
             K = 4 * np.pi * 2 * .033
-            
-            blob_area_fgv = .5 * (C**2 / p_area) * default_ts	
+
+            blob_area_fgv = .5 * (C**2 / p_area) * default_ts
             blob_area_diffusion = ((7. / 6.) * K * (p_area / K) ** (1. / 7.)) * default_ts
-            p_area = p_area + blob_area_fgv + blob_area_diffusion         
+            p_area = p_area + blob_area_fgv + blob_area_diffusion
         '''
         p_area = (np.pi *
                   # correct k_nu, Spreading Law coefficient -- Eq.(6.14), 11/23/2021
@@ -83,8 +85,8 @@ class TestFayGravityViscous(object):
         Err = ValueError if sys.version_info.major == 2 else TypeError
         with pytest.raises(Err):
             'relative_bouyancy >= 0'
-            self.spread.init_area(water_viscosity, -rel_buoy, bulk_init_vol)
-               
+            self.spread.init_area(water_viscosity, -rel_buoy, data_arrays(num=1))
+
     def test_exception_update_area(self):
         '''
         if relative_bouyancy is < 0, it just raises an exception
@@ -119,20 +121,20 @@ class TestFayGravityViscous(object):
         assert A0 == area.sum()
 
         vol_frac_le = np.zeros_like(bulk_init_volume)
-        vol_frac_le[:] = 1.0 / num         
-        max_area_le = (bulk_init_volume / self.spread.thickness_limit) * vol_frac_le 
+        vol_frac_le[:] = 1.0 / num
+        max_area_le = (bulk_init_volume / self.spread.thickness_limit) * vol_frac_le
         age[:] = 900
         for i in range(0, int(age[0]/default_ts)):
             area = self.spread.update_area(water_viscosity,
                                     rel_buoy,
-                                    bulk_init_volume[0],
+                                    bulk_init_volume, #[0],
                                     area,
                                     max_area_le,
                                     default_ts,
-                                    vol_frac_le[0],
+                                    vol_frac_le, #[0],
                                     age)
 
-        assert np.isclose(area.sum(), p_area) 
+        assert np.isclose(area.sum(), p_area)
 
     def test_values_vary_age(self):
         '''
@@ -153,21 +155,21 @@ class TestFayGravityViscous(object):
         vol_frac_le = np.zeros_like(bulk_init_volume)
         vol_frac_le[0::2] = 1.0 / len(area[0::2])
         vol_frac_le[1::2] = 1.0 / len(area[1::2])
-        
-        max_area_le = (bulk_init_volume / self.spread.thickness_limit) * vol_frac_le 
+
+        max_area_le = (bulk_init_volume / self.spread.thickness_limit) * vol_frac_le
         # now invoke update_area
         for age_le in np.unique(age):
             mask = age == age_le
-            for i in range(0, int(age_le/default_ts)):              
+            for i in range(0, int(age_le/default_ts)):
                     area[mask] = self.spread.update_area(water_viscosity,
                                                 rel_buoy,
-                                                bulk_init_volume[0],
+                                                bulk_init_volume[mask],
                                                 area[mask],
                                                 max_area_le[mask],
                                                 default_ts,
-                                                vol_frac_le[0],
+                                                vol_frac_le[mask],
                                                 age[mask])
-                                                 
+
 
         assert np.isclose(area[0::2].sum(), area_900)
         assert np.isclose(area[1::2].sum(), area_1800)    
@@ -188,23 +190,23 @@ class TestFayGravityViscous(object):
         a0, area_1800 = self.expected(bulk_init_volume[1], age[1])
 
         area[1::2] = a0 / len(area[1::2])  # initialize else divide by 0 error
- 
+
         vol_frac_le = np.zeros_like(bulk_init_volume)
         vol_frac_le[0::2] = 1.0 / len(area[0::2])
         vol_frac_le[1::2] = 1.0 / len(area[1::2])
-        
-        max_area_le = (bulk_init_volume / self.spread.thickness_limit) * vol_frac_le 
+
+        max_area_le = (bulk_init_volume / self.spread.thickness_limit) * vol_frac_le
         # now invoke update_area
         for age_le in np.unique(age):
             mask = age == age_le
-            for i in range(0, int(age_le/default_ts)):              
+            for i in range(0, int(age_le/default_ts)):
                     area[mask] = self.spread.update_area(water_viscosity,
                                                 rel_buoy,
-                                                bulk_init_volume[mask][0],
+                                                bulk_init_volume[mask],
                                                 area[mask],
                                                 max_area_le[mask],
                                                 default_ts,
-                                                vol_frac_le[0],
+                                                vol_frac_le[mask],
                                                 age[mask])
 
         assert np.isclose(area[0::2].sum(), area_900)
@@ -232,27 +234,117 @@ class TestFayGravityViscous(object):
 
         age[4:] = 900
 
-         
         vol_frac_le = np.zeros_like(bulk_init_volume)
         vol_frac_le[:4] = 1.0 / len(age[:4])
         vol_frac_le[4:] = 1.0 / len(age[4:])
-        
-        max_area_le = (bulk_init_volume / self.spread.thickness_limit) * vol_frac_le 
+
+        max_area_le = (bulk_init_volume / self.spread.thickness_limit) * vol_frac_le
+
         # now invoke update_area
         for age_le in np.unique(age):
             mask = age == age_le
-            for i in range(0, int(age_le/default_ts)):              
+            for i in range(0, int(age_le/default_ts)):
                     area[mask] = self.spread.update_area(water_viscosity,
                                                 rel_buoy,
-                                                bulk_init_volume[mask][0],
+                                                bulk_init_volume[mask],
                                                 area[mask],
                                                 max_area_le[mask],
                                                 default_ts,
-                                                vol_frac_le[0],
+                                                vol_frac_le[mask],
                                                 age[mask])
 
         assert np.all(area[:4] == i_area)
-        assert np.all(area[4:] < i_area)    
+        assert np.all(area[4:] < i_area)
+
+    def test_two_spills(self):
+        start_time = gs.asdatetime("2015-05-14")
+
+        model_two_spills = gs.Model(start_time=start_time,
+                     duration=gs.days(10.0),
+                     time_step=15 * 60,
+                     uncertain=False)
+
+        model_one_spill1 = gs.Model(start_time=start_time,
+                     duration=gs.days(10.0),
+                     time_step=15 * 60,
+                     uncertain=False)
+
+        model_one_spill2 = gs.Model(start_time=start_time,
+                     duration=gs.days(10.0),
+                     time_step=15 * 60,
+                     uncertain=False)
+
+        spill_0 = gs.surface_point_line_spill(num_elements=16,
+                                        start_position=(-164.791878561,
+                                                        69.6252597267, 0.0),
+                                        release_time=start_time,
+                                        end_release_time=start_time + gs.hours(1.0),
+                                        amount=100,
+                                        substance=test_oil,
+                                        units='bbl')
+
+        spill_1 = gs.surface_point_line_spill(num_elements=16,
+                                        start_position=(-164.791878561,
+                                                        69.6252597267, 0.0),
+                                        release_time=start_time,
+                                        end_release_time=start_time + gs.hours(1.0),
+                                        amount=200,
+                                        substance=test_oil,
+                                        units='bbl')
+
+        spill_2 = gs.surface_point_line_spill(num_elements=16,
+                                        start_position=(-164.791878561,
+                                                        69.6252597267, 0.0),
+                                        release_time=start_time,
+                                        end_release_time=start_time + gs.hours(1.0),
+                                        amount=100,
+                                        substance=test_oil,
+                                        units='bbl')
+
+        spill_3 = gs.surface_point_line_spill(num_elements=16,
+                                        start_position=(-164.791878561,
+                                                        69.6252597267, 0.0),
+                                        release_time=start_time,
+                                        end_release_time=start_time + gs.hours(1.0),
+                                        amount=200,
+                                        substance=test_oil,
+                                        units='bbl')
+
+        model_two_spills.spills += spill_0
+        model_two_spills.spills += spill_1
+
+        model_two_spills.environment += constant_wind(5., 0, 'm/s')
+        model_two_spills.weatherers += FayGravityViscous(Water(273.15 + 20.0))
+
+        model_one_spill1.spills += spill_2
+
+        model_one_spill1.environment += constant_wind(5., 0, 'm/s')
+        model_one_spill1.weatherers += FayGravityViscous(Water(273.15 + 20.0))
+
+        model_one_spill2.spills += spill_3
+
+        model_one_spill2.environment += constant_wind(5., 0, 'm/s')
+        model_one_spill2.weatherers += FayGravityViscous(Water(273.15 + 20.0))
+
+        for i in range(0,10):
+            next(model_two_spills)
+            next(model_one_spill1)
+            next(model_one_spill2)
+
+        s_mask = model_two_spills.spills._spill_container['spill_num'] == 0
+        area_0 = sum(model_two_spills.spills._spill_container['area'][s_mask])
+
+        s_mask = model_two_spills.spills._spill_container['spill_num'] == 1
+        area_1 = sum(model_two_spills.spills._spill_container['area'][s_mask])
+
+        s_mask = model_one_spill1.spills._spill_container['spill_num'] == 0
+        area_2 = sum(model_one_spill1.spills._spill_container['area'][s_mask])
+
+        s_mask = model_one_spill2.spills._spill_container['spill_num'] == 0
+        area_3 = sum(model_one_spill2.spills._spill_container['area'][s_mask])
+
+        assert area_0 == area_2
+        assert area_1 == area_3
 
 class TestLangmuir(ObjForTests):
     thick = 1e-4

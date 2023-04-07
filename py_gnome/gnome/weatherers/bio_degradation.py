@@ -84,8 +84,11 @@ class Biodegradation(Weatherer):
     def prepare_for_model_run(self, sc):
         '''
             Add biodegradation key to mass_balance if it doesn't exist.
+
             - Assumes all spills have the same type of oil
+
             - let's only define this the first time
+
         '''
         if self.on:
             super(Biodegradation, self).prepare_for_model_run(sc)
@@ -115,12 +118,19 @@ class Biodegradation(Weatherer):
     def bio_degradate_oil(self, K, data, yield_factor):
         '''
             Calculate oil bio degradation
+
               K - biodegradation rate coefficients are calculated for
-                  temperate or arctic emvironment conditions
+
+                  temperate or arctic environment conditions
+
               yield_factor - specific surface value (sq meter per kg)
+
                   yield_factor = 1 / ( d * ro) where
+
                   d - droplet diameter
+
                   ro - droplet density
+
               data['mass_components'] - mass of pseudocomponents
          '''
 

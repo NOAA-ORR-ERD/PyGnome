@@ -12,10 +12,10 @@ from gnome import utilities
 from gnome.model import Model
 
 from gnome.spills import point_line_release_spill
-from gnome.movers import RandomMover, constant_wind_mover, GridCurrentMover
+from gnome.movers import RandomMover
 
 from gnome.environment import GridCurrent
-from gnome.movers.py_current_movers import PyCurrentMover
+from gnome.movers.py_current_movers import CurrentMover
 
 from gnome.outputters import Renderer, NetCDFOutput
 
@@ -54,7 +54,7 @@ vels_x = Variable(name='v_x', units='m/s', time=[t], grid=g, data=vx)
 vels_y = Variable(name='v_y', units='m/s', time=[t], grid=g, data=vy)
 vg = GridCurrent(variables=[vels_y, vels_x], time=[t], grid=g, units='m/s')
 point = np.zeros((1, 2))
-print vg.at(point, t)
+print(vg.at(point, t))
 
 # define base directory
 base_dir = os.path.dirname(__file__)
@@ -88,7 +88,7 @@ def make_model():
     renderer.graticule.set_max_lines(max_lines=0)
     mod.outputters += renderer
 
-    mod.movers += PyCurrentMover(current=vg, default_num_method=method, extrapolate=True)
+    mod.movers += CurrentMover(current=vg, default_num_method=method, extrapolate=True)
     mod.movers += RandomMover(diffusion_coef=10)
 
     netCDF_fn = os.path.join(base_dir, images_dir + '.nc')
@@ -99,7 +99,7 @@ def make_model():
 if __name__ == "__main__":
     scripting.make_images_dir()
     model = make_model()
-    print "doing full run"
+    print("doing full run")
     rend = model.outputters[0]
 #     rend.graticule.set_DMS(True)
     startTime = datetime.now()
@@ -108,6 +108,6 @@ if __name__ == "__main__":
             rend.set_viewport(((-10, -10), (10, 10)))
 #         if step['step_num'] == 0:
 #             rend.set_viewport(((-175, 65), (-160, 70)))
-        print "step: %.4i -- memuse: %fMB" % (step['step_num'],
-                                              utilities.get_mem_use())
-    print datetime.now() - startTime
+        print("step: %.4i -- memuse: %fMB" % (step['step_num'],
+                                              utilities.get_mem_use()))
+    print(datetime.now() - startTime)

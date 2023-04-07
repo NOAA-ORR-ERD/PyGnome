@@ -9,7 +9,8 @@ import pytest
 import tempfile
 import zipfile
 
-from gnome.movers import PyCurrentMover
+from gnome.movers import CurrentMover
+from gnome.environment.environment_objects import GridCurrent
 from gnome.utilities import time_utils
 
 from ..conftest import (sample_sc_release,
@@ -30,7 +31,7 @@ def test_exceptions():
     #bad_file = os.path.join('./', 'tidesWAC.CURX')
     #bad_file = None
     with pytest.raises(ValueError):
-        PyCurrentMover()
+        CurrentMover()
 
 
 num_le = 10
@@ -49,7 +50,8 @@ def run_test_loop():
     """
 
     pSpill = sample_sc_release(num_le, start_pos, rel_time)
-    py_current = PyCurrentMover(curr_file)
+    current = GridCurrent.from_netCDF(curr_file)
+    py_current = CurrentMover(current=current)
     delta = _certain_loop(pSpill, py_current)
 
     return delta
@@ -63,7 +65,8 @@ def test_loop():
     """
 
     pSpill = sample_sc_release(num_le, start_pos, rel_time)
-    py_current = PyCurrentMover(curr_file)
+    current = GridCurrent.from_netCDF(curr_file)
+    py_current = CurrentMover(current=current)
     delta = run_test_loop()
 
     _assert_move(delta)
@@ -72,7 +75,7 @@ def test_loop():
     assert np.all(delta[:, 1] == delta[0, 1])  # long move matches for all LEs
     assert np.all(delta[:, 2] == 0)  # 'z' is zeros
 
-    return delta
+    #return delta
 
 
 def run_uncertain_loop():
@@ -83,7 +86,8 @@ def run_uncertain_loop():
 
     pSpill = sample_sc_release(num_le, start_pos, rel_time,
                                uncertain=True)
-    py_current = PyCurrentMover(curr_file)
+    current = GridCurrent.from_netCDF(curr_file)
+    py_current = CurrentMover(current=current)
     u_delta = _uncertain_loop(pSpill, py_current)
 
     _assert_move(u_delta)
@@ -98,7 +102,8 @@ def test_uncertain_loop():
 
     pSpill = sample_sc_release(num_le, start_pos, rel_time,
                                uncertain=True)
-    py_current = PyCurrentMover(curr_file)
+    current = GridCurrent.from_netCDF(curr_file)
+    py_current = CurrentMover(current=current)
     u_delta = run_uncertain_loop()
 
     _assert_move(u_delta)
@@ -118,7 +123,8 @@ def test_certain_uncertain():
     assert np.all(delta[:, 2] == u_delta[:, 2])
 
 
-py_cur = PyCurrentMover(curr_file)
+current = GridCurrent.from_netCDF(filename=curr_file)
+py_cur = CurrentMover(current=current)
 
 
 def test_default_props():
@@ -180,14 +186,15 @@ def test_serialize_deserialize():
     """
     test serialize/deserialize/update_from_dict doesn't raise errors
     """
-    py_current = PyCurrentMover(curr_file2)
+    current = GridCurrent.from_netCDF(curr_file2)
+    py_current = CurrentMover(current=current)
 
     serial = py_current.serialize()
     assert validate_serialize_json(serial, py_current)
 
-    # check our PyCurrentMover attributes
+    # check our CurrentMover attributes
 
-    deser = PyCurrentMover.deserialize(serial)
+    deser = CurrentMover.deserialize(serial)
 
     assert deser == py_current
 
@@ -198,11 +205,12 @@ def test_save_load():
     """
 
     saveloc = tempfile.mkdtemp()
-    py_current = PyCurrentMover(curr_file2)
+    current = GridCurrent.from_netCDF(curr_file2)
+    py_current = CurrentMover(current=current)
     save_json, zipfile_, _refs = py_current.save(saveloc)
 
     assert validate_save_json(save_json, zipfile.ZipFile(zipfile_), py_current)
 
-    loaded = PyCurrentMover.load(zipfile_)
+    loaded = CurrentMover.load(zipfile_)
 
     assert loaded == py_current

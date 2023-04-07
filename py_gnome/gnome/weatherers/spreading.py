@@ -25,9 +25,7 @@ from gnome.ops import default_constants
 
 PI = np.pi
 PISQUARED = np.pi ** 2
-# import release duration here to control init_oil_volume for continue release 12-06-2021
-r_time_scale = 15.0*60.0
-        
+
 class FayGravityViscousSchema(WeathererSchema):
     thickness_limit = SchemaNode(Float(), missing=drop, save=True, update=True)
     water = WaterSchema(save=True, update=True)
@@ -35,12 +33,12 @@ class FayGravityViscousSchema(WeathererSchema):
 
 class FayGravityViscous(Weatherer):
     '''
-    Model the FayGravityViscous spreading of the oil. This assumes all LEs
-    released together spread as a blob. The blob can be partitioned into 'N'
-    LEs and the assumption is that the thickness and initial volume of the
-    blob applies to all LEs in it. As such, instead of computing area, lets
-    compute thickness - whether 1 or 10 LEs is used to model the blob, the
-    thickness remains the same.
+    Model the FayGravityViscous spreading of the oil. For instantaneous release,
+    this assumes all LEs released together spread as a blob following Fay (1971).
+    The blob can be partitioned into 'N' LEs and the assumption is that the thickness
+    and initial volume of the blob applies to all LEs in it. For continuous release,
+    the spreading algorithm is similar to Dodge et al., (1983), where blob volume is
+    consided as the cumulative volume of oil varying with time during the release period
     '''
     _schema = FayGravityViscousSchema
 
@@ -75,7 +73,7 @@ class FayGravityViscous(Weatherer):
         self._init_relative_buoyancy = None
         self.thickness_limit = thickness_limit
         # self.is_first_step = True
-
+        self.use_langmuir_correction = True
     @staticmethod
     @lru_cache(10)
     def _gravity_spreading_t0(water_viscosity,
@@ -130,10 +128,12 @@ class FayGravityViscous(Weatherer):
         :type relative_buoyancy: float
 
         Equation for gravity spreading:
+
         ::
+
             A0 = PI*(k2**4/k1**2)*((V0**5*g*dbuoy)/(nu_h2o**2))**(1./6.)
         '''
-# import release duration here to control init_oil_volume for continue release 12-06-2021     
+# import release duration here to control init_oil_volume for continue release 12-06-2021
         a0 = (PI *
              (self.spreading_const[1] ** 4 / self.spreading_const[0] ** 2) *
              (((blob_init_vol) ** 5 * gravity * relative_buoyancy) /
@@ -150,19 +150,17 @@ class FayGravityViscous(Weatherer):
 
         return a0
 
-    def _update_blob_area(self, water_viscosity, relative_buoyancy,
-                          blob_init_volume, age):
-        area = (PI *
-# correct k_nu, Spreading Law coefficient -- Eq.(6.14), 11/23/2021
-#               self.spreading_const[1] ** 2 *
-                self.spreading_const[2] ** 2 *
-                (blob_init_volume ** 2 *
-                 constants.gravity *
-                 relative_buoyancy /
-                 np.sqrt(water_viscosity)) ** (1. / 3.) *
-                np.sqrt(age))
+    # def _update_blob_area(self, water_viscosity, relative_buoyancy,
+                          # blob_init_volume, age):
+        # area = (PI *
+                # self.spreading_const[2] ** 2 *
+                # (blob_init_volume ** 2 *
+                 # constants.gravity *
+                 # relative_buoyancy /
+                 # np.sqrt(water_viscosity)) ** (1. / 3.) *
+                # np.sqrt(age))
 
-        return area
+        # return area
 
     # def update_area(self,
     #                 water_viscosity,
@@ -477,7 +475,8 @@ class FayGravityViscous(Weatherer):
         :type relative_buoyancy: float
         :param blob_init_volume: numpy array of floats containing initial
             release volume of blob. This is the same for all LEs released
-            together.
+            together. Note that for continuous release, the blob_init_vol
+            will be updated as cumulative volume within the release duration.
         :type blob_init_volume: numpy array
         :param area: numpy array of floats containing area of each LE. Assume
             The LEs with same age belong to the same blob. Sum these up to
@@ -486,63 +485,70 @@ class FayGravityViscous(Weatherer):
             Equally divide updated_blob_area into the number of LEs used to
             model the blob.
         :type area: numpy array
+        :param max_area_le: bool array. If a LE area reaches max_area_le beyond
+            which it will not spread, toggle the LEs associated with that LE
+            to True. Max spreading is based on min thickness based on initial
+            viscosity of oil. This is used by Langmuir since the process acts
+            on particles after spreading completes.
+        :type max_area_le: numpy array of bools
+        :param time_step: time step of simulation, which is in seconds.
+        :type max_area_le: float
+        :param vol_frac_le_st: numpy array the same size as area.
+            This is the volume fraction of each LE. It is used to convert the
+            computation into element-based.
+        :type vol_frac_le_st: numpy array of int32
         :param age: numpy array the same size as area and blob_init_volume.
             This is the age of each LE. The LEs with the same age belong to
             the same blob. Age is in seconds.
         :type age: numpy array of int32
-        :param at_max_area: bool array. If a blob reaches max_area beyond
-            which it will not spread, toggle the LEs associated with that blob
-            to True. Max spreading is based on min thickness based on initial
-            viscosity of oil. This is used by Langmuir since the process acts
-            on particles after spreading completes.
-        :type at_max_area: numpy array of bools
 
         :returns: (updated 'area' array, updated 'at_max_area' array).
             It also changes the input 'area' array and the 'at_max_area' bool
             array inplace. However, the input arrays could be copies so best
             to also return the updates.
         '''
-          
+
         if np.any(age == 0):
             msg = "use init_area for age == 0"
             raise ValueError(msg)
 
-# update area for each blob of LEs
-#       for b_age in np.unique(age):
-# numpy arrays -- faster
         t0 = self._gravity_spreading_t0(water_viscosity,
                                            relative_buoyancy,
-                                           blob_init_vol,
+                                           blob_init_vol[0],
                                            self.spreading_const)
         # once the area computed from previous ts is larger than the max_area_le at current ts area needs to remain
-        mask = np.logical_and(age > t0, area * (1.0 + 1.e-4) < max_area_le)
+        #mask = np.logical_and(age > t0, area * (1.0 + 1.e-14) < max_area_le)
+        mask = np.logical_and(age > t0, area < max_area_le)
         s_mask = np.logical_and(mask, area > 0.0)
         if len(area[s_mask]) > 0:
-        
+
             C = (PI *
                  self.spreading_const[2] ** 2 *
-                 (blob_init_vol ** 2 *
+                 (blob_init_vol[s_mask] ** 2 *
                  constants.gravity *
                  relative_buoyancy /
                  np.sqrt(water_viscosity)) ** (1. / 3.))
 
             K = 4 * PI * 2 * .033
 
-            blob_area_fgv = .5 * (C**2 / (area[s_mask] / vol_frac_le_st)) * time_step	# make sure area > 0
+            blob_area_fgv = .5 * (C**2 / (area[s_mask] / vol_frac_le_st[s_mask])) * time_step	# make sure area > 0
 
-            blob_area_diffusion = ((7. / 6.) * K * ((area[s_mask] / vol_frac_le_st) / K) ** (1. / 7.)) * time_step
+            blob_area_diffusion = ((7. / 6.) * K * ((area[s_mask] / vol_frac_le_st[s_mask]) / K) ** (1. / 7.)) * time_step
 
-            new_le_area = area[s_mask] + vol_frac_le_st * (blob_area_fgv + blob_area_diffusion)
+            new_le_area = area[s_mask] + vol_frac_le_st[s_mask] * (blob_area_fgv + blob_area_diffusion)
+
+            area[s_mask] = np.minimum(new_le_area, max_area_le[s_mask])
 
             area[s_mask] = np.minimum(new_le_area, max_area_le[s_mask])
 # numpy arrays -- faster
         return area
-    
+
     @staticmethod
-    def get_thickness_limit(vo): 
+    def get_thickness_limit(vo):
         '''
         return the spreading thickness limit based on viscosity
         todo: documented in langmiur docs
+
             1. vo >= 1e-4;           limit = 1e-4 m
             2. 1e-4 > vo >= 1e-6;    limit = 1e-5 + 0.9091*(vo - 1e-6) m
             3. 1e-6 > vo;            limit = 1e-5 m
@@ -570,8 +576,8 @@ class FayGravityViscous(Weatherer):
         '''
         subs = sc.get_substances(False)
         if len(subs) > 0 and subs[0].is_weatherable:
-           if self.water is None: 
-              vo = subs[0].kvis_at_temp(default_constants.default_water_temperature)              
+           if self.water is None:
+              vo = subs[0].kvis_at_temp(default_constants.default_water_temperature)
            else:
               vo = subs[0].kvis_at_temp(self.water.get('temperature'))
             # set thickness_limit
@@ -596,7 +602,7 @@ class FayGravityViscous(Weatherer):
         else:
            rho_h2o = self.water.get('density')
            rho_oil = substance.standard_density #density_at_temp(self.water.get('temperature'))
-        
+
         # maybe weathering_data should catch error below?
         # todo: write and raise appropriate exception
         if np.any(rho_h2o < rho_oil):
@@ -608,10 +614,8 @@ class FayGravityViscous(Weatherer):
 
     def initialize_data(self, sc, num_released):
         '''
-        initialize  'bulk_init_volume', 'area', 'fay_area' and 'area'
-        Currently, carrying both 'fay_area' and 'area', but should drop
-        'fay_area' eventually. 'area' gets initialized and updated the same
-        as 'fay_area'; however, Langmuir updates 'area'.
+        initialize  'relative_buoyancy'. Note that initialization of spreading area for LEs
+        is done in release object.
 
         If on is False, then arrays should not be included - dont' initialize
         '''
@@ -624,54 +628,27 @@ class FayGravityViscous(Weatherer):
             return
         
         for substance, data in sc.itersubstancedata(self.array_types):
-            
+
             if self._init_relative_buoyancy is None:
                 self._set_init_relative_buoyancy(substance)
-                
+
             if len(data['fay_area']) == 0:
                 # no particles released yet
                 continue
-            
-            mask = data['fay_area'] == 0
-            
-            # looping through spills, as each spill has a different initial volume
-            for s_num in np.unique(data['spill_num'][mask]):
-                
-                s_mask = np.logical_and(mask, data['spill_num'] == s_num)
-            # change the jugement based on release_rate: infinity --> instantaneous release; otherwise --> continuous release
-                if not np.isnan(data['release_rate'][s_mask][0]):
-                   data['bulk_init_volume'][s_mask] = r_time_scale * data['release_rate'][s_mask]
-                else:
-                   data['bulk_init_volume'][s_mask] = (data['init_mass'][s_mask][0] /
-                                                    data['density'][s_mask][0]
-                                                    ) * s_mask.sum()
-                                                      
-                if data['bulk_init_volume'][s_mask][0] > 0:
-                   data['vol_frac_le_st'][s_mask] = (data['init_mass'][s_mask] / data['density'][s_mask]) / data['bulk_init_volume'][s_mask]
-                else:   
-                   data['vol_frac_le_st'][s_mask] = 0
-                    
-                init_blob_area = self.init_area(water_kvis,
-                                                self._init_relative_buoyancy,
-                                                data['bulk_init_volume'][s_mask][0])
-
-                # fixme: these are the same, yes???
-                data['fay_area'][s_mask] = init_blob_area * data['vol_frac_le_st'][s_mask]
-                data['area'][s_mask] = data['fay_area'][s_mask] #init_blob_area * data['vol_frac_le_st'][s_mask]
-          
         sc.update_from_fatedataview()
 
     def weather_elements(self, sc, time_step, model_time):
         '''
         Update 'area', 'fay_area' for previously released particles
         The updated 'area', 'fay_area' is associated with age of particles at:
+
             model_time + time_step
         '''
         if not self.active or not sc.substance.is_weatherable:
             return
-        
+
         for substance, data in sc.itersubstancedata(self.array_types):
-       
+
             if len(data['fay_area']) == 0:
                 continue
 
@@ -691,7 +668,7 @@ class FayGravityViscous(Weatherer):
                                      data['fay_area'][s_mask],
                                      data['max_area_le'][s_mask],
                                      time_step,
-                                     data['vol_frac_le_st'][s_mask][0],
+                                     data['vol_frac_le_st'][s_mask],
                                      data['age'][s_mask] + time_step)
 # import release duration here to control init_oil_volume for continue release 12-14-2021
     #                     self.update_area2(water_kvis,
@@ -810,10 +787,12 @@ class Langmuir(Weatherer):
 
         Frac coverage bounds are constants. If computed frac_coverge is outside
         the bounds of (0.1, or 1.0), then limit it to:
+
             0.1 <= frac_cov <= 1.0
         '''
         # fixme: sometimes get v_max of zero
         #        probably shouldn't
+        # explore v to be dependent of particle locations
         v_max = np.max(self.get_wind_speed(points, model_time) * .005)
 
         # cr_k = (v_max ** 2 *
@@ -830,11 +809,16 @@ class Langmuir(Weatherer):
         #        this gets caught in the next line, but the warnings
         #        are kind of annoying -- can we catch this sooner?
         #        and is this doing the right thing for a "sinking" oil?
-        frac_cov = (v_max ** 2 *
-                    4 *
-                    PISQUARED /
-                    (thickness * rel_buoy * gravity)) ** (-0.3333333333333333)
+        #old_settings = np.seterr(divide='ignore')
+        with np.errstate(divide='ignore'):
+            frac_cov = (v_max ** 2 *
+                        4 *
+                        PISQUARED /
+                        (thickness * rel_buoy * gravity)) ** (-0.3333333333333333)
         # due to oil density > water density
+        # np.seterr(**old_settings)
+        # with np.errstate(invalid='raise') :
+
         frac_cov[np.isnan(frac_cov)] = 0.1
 
         # clip takes care of inf
@@ -846,6 +830,7 @@ class Langmuir(Weatherer):
         '''
         return min/max wind speed for given rel_buoy, thickness such that
         Langmuir effect is within bounds:
+
             0.1 <= frac_coverage <= 1.0
         '''
         v_min = np.sqrt(1.0 * thickness * rel_buoy * gravity /

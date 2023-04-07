@@ -19,7 +19,7 @@ from gnome.model import Model
 from gnome.maps import MapFromBNA
 from gnome.environment import Wind, Tide
 from gnome.spills import surface_point_line_spill
-from gnome.movers import RandomMover, WindMover, CatsMover
+from gnome.movers import RandomMover, PointWindMover, CatsMover
 
 from gnome.outputters import Renderer
 from gnome.outputters import NetCDFOutput
@@ -73,7 +73,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     series[3] = (start_time + timedelta(hours=48), (5, 0))
 
     wind = Wind(timeseries=series, units='knot')
-    w_mover = gs.WindMover(wind)
+    w_mover = gs.PointWindMover(wind)
     model.movers += w_mover
     model.environment += w_mover.wind
 

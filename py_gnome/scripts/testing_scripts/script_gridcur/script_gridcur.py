@@ -25,7 +25,7 @@ def make_model(images_dir=base_dir / "images"):
 
     current = gs.FileGridCurrent(base_dir / "example_gridcur_on_nodes.cur")
 
-    mover = gs.PyCurrentMover(current=current)
+    mover = gs.CurrentMover(current=current)
 
     model.movers += mover
 

@@ -67,10 +67,10 @@ def test_string_repr_no_errors():
     gw = c_GridWindMover(wind_file, topology_file)
     print()
     print('======================')
-    print('repr(WindMover): ')
+    print('repr(PointWindMover): ')
     print(repr(gw))
     print()
-    print('str(WindMover): ')
+    print('str(PointWindMover): ')
     print(str(gw))
 
     # TODO, FIXME: We need a way of validating this if we really care what
@@ -102,9 +102,28 @@ def test_loop():
     assert np.all(delta[:, 0] == delta[0, 0])  # lat move matches for all LEs
     assert np.all(delta[:, 1] == delta[0, 1])  # long move matches for all LEs
 
+def run_loop():
+    """
+    test one time step with no uncertainty on the spill
+    - checks there is non-zero motion.
+    - also checks the motion is same for all LEs
+
+    - Uncertainty needs to be off.
+    - Windage needs to be set to not vary or each particle will have a
+      different position,  This is done by setting the windage range to have
+      all the same values (min == max).
+    """
+    pSpill = sample_sc_release(num_elements=num_le,
+                               start_pos=start_pos,
+                               release_time=rel_time,
+                               windage_range=(0.01, 0.01))
+
+    wind = c_GridWindMover(wind_file, topology_file)
+
+    delta = _certain_loop(pSpill, wind)
+
     # returned delta is used in test_certain_uncertain test
     return delta
-
 
 def test_uncertain_loop():
     """
@@ -119,17 +138,27 @@ def test_uncertain_loop():
 
     _assert_move(u_delta)
 
+def run_uncertain_loop():
+    """
+    test one time step with uncertainty on the spill
+    checks there is non-zero motion.
+    """
+
+    pSpill = sample_sc_release(num_le, start_pos, rel_time,
+                               uncertain=True)
+    wind = c_GridWindMover(wind_file, topology_file)
+    u_delta = _certain_loop(pSpill, wind)
+
     # returned delta is used in test_certain_uncertain test
     return u_delta
-
 
 def test_certain_uncertain():
     """
     make sure certain and uncertain loop results in different deltas
     """
 
-    delta = test_loop()
-    u_delta = test_uncertain_loop()
+    delta = run_loop()
+    u_delta = run_uncertain_loop()
     print()
     print(delta)
     print(u_delta)

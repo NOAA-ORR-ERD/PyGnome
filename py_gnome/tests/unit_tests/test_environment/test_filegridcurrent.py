@@ -82,7 +82,7 @@ def test_nonexistant_filename_nc():
 def test_gridcur_in_model():
 
     current = FileGridCurrent(test_data_dir / NODE_EXAMPLE)
-    mover = gs.PyCurrentMover(current=current)
+    mover = gs.CurrentMover(current=current)
 
     start_time = "2020-07-14T12:00"
     model = gs.Model(time_step=gs.hours(1),
@@ -161,7 +161,7 @@ def test_netcdf_in_model():
     """
     # Single timestep, so time doesn't matter.
     current = FileGridCurrent(str(test_data_dir / 'tri_ring.nc'))
-    mover = gs.PyCurrentMover(current=current)
+    mover = gs.CurrentMover(current=current)
 
     start_time = "2020-07-14T12:00"
     model = gs.Model(time_step=gs.hours(1),

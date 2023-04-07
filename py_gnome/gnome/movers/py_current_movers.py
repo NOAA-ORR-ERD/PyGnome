@@ -1,6 +1,8 @@
 from . import movers
 
 import numpy as np
+import os
+import warnings
 
 from colander import (SchemaNode, Bool, Float, drop)
 
@@ -21,14 +23,15 @@ from gnome.persist.extend_colander import LocalDateTime, FilenameSchema
 from gnome.persist.base_schema import GeneralGnomeObjectSchema
 
 
-class PyCurrentMoverSchema(ObjTypeSchema):
+class CurrentMoverSchema(ObjTypeSchema):
+    '''
+    Schema for CurrentMover object
+    '''
     current = GeneralGnomeObjectSchema(save=True, update=True,
                                        save_reference=True,
                                        acceptable_schemas=[VectorVariableSchema,
                                                            GridCurrent._schema]
                                        )
-    filename = FilenameSchema(save=True, update=False, isdatafile=True, test_equal=False,
-                              missing=drop)
     scale_value = SchemaNode(Float(), save=True, update=True,
                                missing=drop)
     on = SchemaNode(Bool(), missing=drop, save=True, update=True)
@@ -45,17 +48,20 @@ class PyCurrentMoverSchema(ObjTypeSchema):
     uncertain_cross = SchemaNode(
         Float(), missing=drop, save=True, update=True
     )
+PyCurrentMoverSchema = CurrentMoverSchema
+class CurrentMover(movers.PyMover):
+    '''
+    CurrentMover implemented in Python. Uses the .current attribute to move particles.
+    The .at() interface is expected on the .current attribute
+    '''
 
-class PyCurrentMover(movers.PyMover):
-
-    _schema = PyCurrentMoverSchema
+    _schema = CurrentMoverSchema
 
     _ref_as = 'py_current_movers'
 
     _req_refs = {'current': GridCurrent}
 
     def __init__(self,
-                 filename=None,
                  current=None,
                  time_offset=0,
                  scale_value=1,
@@ -65,18 +71,15 @@ class PyCurrentMover(movers.PyMover):
                  #uncertain_across=.25,
                  uncertain_cross=.25,
                  default_num_method='RK2',
-                 grid_topology=None,
+                 filename=None,
                  **kwargs
                  ):
         """
-        Initialize a PyCurrentMover
+        Initialize a CurrentMover
 
-        :param filename: absolute or relative path to the data file(s):
-                         could be a string or list of strings in the
-                         case of a multi-file dataset
-        :param current: Environment object representing currents to be
-                        used. If this is not specified, a GridCurrent object
-                        will attempt to be instantiated from the file
+        :param current: Environment object representing ocean currents to be
+                        used.
+        :type current: Any Current or Current-like that implements the .at() function
 
         :param active_range: Range of datetimes for when the mover should be
                              active
@@ -94,18 +97,21 @@ class PyCurrentMover(movers.PyMover):
                                    Default: RK2
         """
 
-        (super(PyCurrentMover, self).__init__(default_num_method=default_num_method,
+        (super(CurrentMover, self).__init__(default_num_method=default_num_method,
                                               **kwargs))
         self.filename = filename
         self.current = current
 
+
         if self.current is None:
-            if filename is None:
-                raise ValueError("must provide a filename or current object")
-            else:
-                self.current = GridCurrent.from_netCDF(filename=self.filename,
-                                                       grid_topology=grid_topology,
-                                                       **kwargs)
+            raise ValueError("Must provide a current object")
+        if isinstance(self.current, (str, os.PathLike)):
+            warnings.warn("The behavior of providing a filename to a CurrentMover __init__ is deprecated. Please pass a current or use a helper function", DeprecationWarning)
+            self.current = GridCurrent.from_netCDF(filename=self.current,
+                                                 **kwargs)
+        if filename is not None:
+            warnings.warn("The behavior of providing a filename to a CurrentMover __init__ is deprecated. Please pass a current or use a helper function", DeprecationWarning)
+
         self.scale_value = scale_value
 
         self.uncertain_along = uncertain_along
@@ -136,8 +142,9 @@ class PyCurrentMover(movers.PyMover):
                     uncertain_cross=.25,
                     **kwargs):
         """
-        Function for specifically creating a PyCurrentMover from a file
+        Function for specifically creating a CurrentMover from a file
         """
+        warnings.warn("CurrentMover.from_netCDF is deprecated. Please create the current separately or use a helper function", DeprecationWarning)
         current = GridCurrent.from_netCDF(filename, **kwargs)
 
         return cls(name=name,
@@ -172,99 +179,15 @@ class PyCurrentMover(movers.PyMover):
     def data_stop(self):
         return self.current.data_stop
 
-    @property
-    def is_data_on_cells(self):
-        return self.current.grid.infer_location(self.current.u.data) != 'node'
-
-
-    def get_grid_data(self):
-        """
-            The main function for getting grid data from the mover
-        """
-        if isinstance(self.current.grid, Grid_U):
-            return self.current.grid.nodes[self.current.grid.faces[:]]
-        else:
-            lons = self.current.grid.node_lon
-            lats = self.current.grid.node_lat
-
-            return np.column_stack((lons.reshape(-1), lats.reshape(-1)))
-
-    def get_lat_lon_data(self):
-        """
-            function for getting lat lon data from the mover
-        """
-        if isinstance(self.current.grid, Grid_U):
-            grid_data = self.current.grid.nodes[self.current.grid.faces[:]]
-            dtype = grid_data.dtype.descr
-            unstructured_type = dtype[0][1]
-            lons = (grid_data
-                    .view(dtype=unstructured_type)
-                    .reshape(-1, len(dtype))[0::2, 0])
-            lats = (grid_data
-                    .view(dtype=unstructured_type)
-                    .reshape(-1, len(dtype))[1::2, 0])
-
-            return lons, lats
-        else:
-            lons = self.current.grid.node_lon[:]
-            lats = self.current.grid.node_lat[:]
-
-            return lons.reshape(-1), lats.reshape(-1)
-
     def get_bounds(self):
         '''
             Return a bounding box surrounding the grid data.
+            This function exists because it is part of the top level Mover API
         '''
-        longs, lats = self.get_lat_lon_data()
-
-        left, right = longs.min(), longs.max()
-        bottom, top = lats.min(), lats.max()
-
-        return ((left, bottom), (right, top))
-
-    def get_center_points(self):
-        if (hasattr(self.current.grid, 'center_lon') and
-                self.current.grid.center_lon is not None):
-            lons = self.current.grid.center_lon
-            lats = self.current.grid.center_lat
-
-            return np.column_stack((lons.reshape(-1), lats.reshape(-1)))
+        if hasattr(self.current, 'get_bounds'):
+            return self.current.get_bounds
         else:
-            lons = self.current.grid.node_lon
-            lats = self.current.grid.node_lat
-
-            if len(lons.shape) == 1:
-                # we are ugrid
-                triangles = self.current.grid.nodes[self.current.grid.faces[:]]
-                centroids = np.zeros((self.current.grid.faces.shape[0], 2))
-                centroids[:, 0] = np.sum(triangles[:, :, 0], axis=1) / 3
-                centroids[:, 1] = np.sum(triangles[:, :, 1], axis=1) / 3
-
-            else:
-                c_lons = (lons[0:-1, :] + lons[1:, :]) / 2
-                c_lats = (lats[:, 0:-1] + lats[:, 1:]) / 2
-                centroids = np.column_stack((c_lons.reshape(-1),
-                                             c_lats.reshape(-1)))
-
-            return centroids
-
-    def get_scaled_velocities(self, time):
-        """
-        :param model_time=0:
-        """
-        current = self.current
-        lons = current.grid.node_lon
-        lats = current.grid.node_lat
-
-        # GridCurrent.at needs Nx3 points [lon, lat, z] and a time T
-        points = np.column_stack((lons.reshape(-1),
-                                  lats.reshape(-1),
-                                  np.zeros_like(current.grid.node_lon
-                                                .reshape(-1))
-                                  ))
-        vels = current.at(points, time)
-
-        return vels
+            return super(CurrentMover, self).get_bounds()
 
     def get_move(self, sc, time_step, model_time_datetime, num_method=None):
         """
@@ -437,7 +360,7 @@ class PyCurrentMover(movers.PyMover):
         """
         add uncertainty
         """
-        super(PyCurrentMover, self).prepare_for_model_step(sc, time_step,
+        super(CurrentMover, self).prepare_for_model_step(sc, time_step,
                                                            model_time_datetime)
 
         if not self.active:
@@ -470,3 +393,17 @@ class PyCurrentMover(movers.PyMover):
                 new_uncertainty = np.copy(self.uncertainty_list)
                 #self.uncertainty_list = np.delete(self.uncertainty_list, to_be_removed, axis=0)
                 self.uncertainty_list = np.delete(new_uncertainty, to_be_removed, axis=0)
+PyCurrentMover = CurrentMover
+
+def grid_current_mover(filename, current_kwargs=None, *args, **kwargs):
+    '''
+    Helper function to load a gridded current from a file and create a CurrentMover
+
+    :param filename: File to create the GridCurrent object from
+    :type filename: string or Path-like'
+
+    :param current_kwargs: keyword arguments for the GridCurrent object. OPTIONAL
+    :type current_kwargs: dict
+    '''
+    current = GridCurrent.from_netCDF(filename=filename, **current_kwargs)
+    return CurrentMover(current=current, **kwargs)

@@ -52,10 +52,10 @@ class Timeseries(GnomeId):
         is desired.
 
         .. note:: For the Wind datafiles, the units will get read from the
-        file. These are stored in ossm.user_units. It would be ideal to remove
-        units and unit conversion from here, but can't completely do away with
-        it since C++ file reading uses/sets it. But, managing units is
-        responsibility of derived objects.
+           file. These are stored in ossm.user_units. It would be ideal to remove
+           units and unit conversion from here, but can't completely do away with
+           it since C++ file reading uses/sets it. But, managing units is
+           responsibility of derived objects.
 
         All other keywords are optional
 
@@ -111,10 +111,15 @@ class Timeseries(GnomeId):
     def _check_timeseries(self, timeseries):
         """
         Run some checks to make sure timeseries is valid.
+
         - We accept numpy arrays
-        - We will also accept a list of timeseries values of the form
+
+        - We accept a list of timeseries values of the form
+
           (datetime(...), (N, N))
-        - we will also accept a constant single timeseries  value.
+
+        - We also accept a constant single timeseries value.
+
         """
         if not isinstance(timeseries, np.ndarray):
             if self._is_timeseries_value(timeseries):
@@ -143,6 +148,8 @@ class Timeseries(GnomeId):
         return self.ossm.get_num_values()
 
     def __eq__(self, o):
+        """
+        """
         t1 = super(Timeseries, self).__eq__(o)
         return t1 and hasattr(self, 'ossm') and np.all(self.ossm.timeseries == o.ossm.timeseries)
 

@@ -85,7 +85,7 @@ class InitWindages(InitBaseClass):
         """
         Initializes the windages, windage_range, windage_persist data arrays.
         Initial values for windages use infinite persistence. These are updated
-        by the WindMover for particles with non-zero persistence.
+        by the PointWindMover for particles with non-zero persistence.
 
         Optional arguments:
 
@@ -208,8 +208,8 @@ class InitRiseVelFromDist(DistributionBase):
          the array in some way)
         """
         super(InitRiseVelFromDist, self).__init__(**kwargs)
-
-        if distribution and isinstance(distribution, ):
+        
+        if distribution and hasattr(distribution,"set_values"): 
             self.distribution = distribution
         else:
             raise TypeError('InitRiseVelFromDist requires a distribution for '

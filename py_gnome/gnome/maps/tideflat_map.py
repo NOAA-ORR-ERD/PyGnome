@@ -5,7 +5,7 @@ tideflat_map.py
 
 A map that handles tide flats:
 
-It sets the oil_status code to "on_tideflat" when particles are on a tideflat.
+It sets the oil_status code to "on_tideflat" when particles are on a tide flat.
 
 Then the movers will not move the particles while that flag is set.
 
@@ -13,20 +13,13 @@ It is set back to in_water when the water depth indicates the tide flat
 is no longer a tide flat.
 """
 
-
-
-
-
 import numpy as np
 
 from gnome.gnomeobject import GnomeId
-# from gnome.maps import GnomeMap
 from gnome.basic_types import oil_status
 from gnome.utilities.time_utils import asdatetime
 
 from gnome.utilities.geometry import (points_in_poly,
-                                      # point_in_poly,
-                                      # is_clockwise,
                                       )
 
 
@@ -35,7 +28,7 @@ class TideflatMap(GnomeId):
     Checks for tidal flats, and sets and unsets the on_tidalflat
     oil_status code appropriately.
 
-    Not subclassed from a GnomeMap, as it delgates to the passed-in map
+    Not sub-classed from a GnomeMap, as it delegates to the passed-in map
     instead
     """
 
@@ -115,14 +108,14 @@ class TideflatBase(GnomeId):
     """
     Base class for a Tideflat object to be used with TideflatBase
 
-    Subclasses should overide the is_dry() method.
+    Subclasses should override the ``is_dry()`` method.
     """
     pass
 
     def is_dry(self, points, time):
         """
         :param points: locations for testing if the locations are dry.are
-        :type points: Nx3 numpy array or equivelent.
+        :type points: Nx3 numpy array or equivalent.
 
         :param time: time at which to check for wet/dry
 
@@ -141,18 +134,17 @@ class TideflatBase(GnomeId):
 
 class SimpleTideflat(TideflatBase):
     """
-    Simple Tideflat implimentation for testing and demo
+    Simple Tideflat implementation for testing and demo
 
     For a real case, a subclass of TideflatBase should be
-    made that impliments these methods in a meaningful way
+    made that implements these methods in a meaningful way
 
     This provides a single polygon describing a tidal flat
 
     The flat is initially wet, then dry at a given time,
     then wet again after that.
 
-    Just enough for testing,
-
+    Just enough for testing.
     """
 
     def __init__(self, bounds, dry_start, dry_end):
@@ -170,8 +162,8 @@ class SimpleTideflat(TideflatBase):
 
     def is_dry(self, points, model_time):
         """
-        :param points: locations for testing if the locations are dry.are
-        :type points: Nx3 numpy array or equivelent.
+        :param points: locations for testing if the locations are dry.
+        :type points: Nx3 numpy array or equivalent.
 
         :param time: time at which to check for wet/dry
 

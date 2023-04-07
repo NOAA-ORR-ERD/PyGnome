@@ -14,7 +14,7 @@ def init_density(sc, num_released, water=None, substance=None, aggregate=True):
     :param sc: spill container
     :param num_rel: int
     :param water: Water object to use. If None, uses default values
-    :param substance: gnome.spill.substance.Substance or subclass thereof
+    :param substance: gnome.spills.substance.Substance or subclass thereof
     :param aggregate: Flag for whether to trigger mass balance updates in spill container
     '''
     substance = sc.substance if substance is None else substance
@@ -57,6 +57,7 @@ def recalc_density(sc, water=None, aggregate=True):
 
     substance = sc.substance
     water_temp = water_rho = None
+
     if substance.is_weatherable: 
         for substance, data in sc.itersubstancedata(sc.array_types):  
             if len(data['mass']) == 0:

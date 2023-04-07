@@ -183,7 +183,7 @@ def make_model():
     model.movers += uniform_current
 
     # Add a wind mover
-    wind_mover = gs.WindMover(wind)
+    wind_mover = gs.PointWindMover(wind)
     model.movers += wind_mover
 
     # Add particle diffusion...note, units are in cm^2/s

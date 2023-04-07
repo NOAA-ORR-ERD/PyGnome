@@ -128,8 +128,7 @@ class Spill(BaseSpill):
         :param release: an object defining how elements are to be released
         :type release: derived from :class:`~gnome.spills.release.Release`
 
-        :param substance: an object defining the substance of this spill
-        Defaults to :class:`~gnome.spills.substance.NonWeatheringSubstance
+        :param substance: an object defining the substance of this spill. Defaults to :class:`~gnome.spills.substance.NonWeatheringSubstance`
         :type substance: derived from :class:`~gnome.spills.substance.Substance`
 
         **Optional parameters (kwargs):**
@@ -205,6 +204,11 @@ class Spill(BaseSpill):
         first try to use get_oil_props using 'val'. If this fails, then assume
         user has provided a valid OilProps object and use it as is
         '''
+        # a bit of type checking -- this bit me, and took a while to debug
+        #  e.g. passing in NonWeatheringSubstance instead of NonWeatheringSubstance()
+        if isinstance(val, type):
+            raise TypeError(f"{val} is a class -- it should be an instance of a class")
+
         if val is None:
             self._substance = NonWeatheringSubstance()
             return
@@ -453,6 +457,10 @@ class Spill(BaseSpill):
         
         self.release.initialize_LEs_post_substance(to_rel, sc, start_time, end_time, environment=environment)
 
+        self.substance.initialize_LEs(to_rel, sc, environment=environment)
+
+        self.release.initialize_LEs_post_substance(to_rel, sc, start_time, end_time, environment=environment)
+
         return to_rel
 
     def num_elements_to_release(self, current_time, time_step):
@@ -598,7 +606,7 @@ def grid_spill(bounds,
                resolution,
                release_time,
                substance=None,
-               amount=0,
+               amount=1.,
                units='kg',
                on=True,
                water=None,
@@ -731,7 +739,7 @@ def subsurface_spill(num_elements,
                                start_position=start_position,
                                num_elements=num_elements,
                                end_release_time=end_release_time)
-    
+
     spill = _setup_spill(release=release,
                          water=water,
                          substance=substance,

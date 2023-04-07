@@ -120,17 +120,23 @@ class CleanUpBase(RemoveMass, Weatherer):
 
     @property
     def efficiency(self):
+        '''
+        - Efficiency can be None since it indicates that we use wind
+          to compute efficiency.
+        - If efficiency is not None, it must be a number greater than
+          or equal to 0.0 and less than or equal to 1.0.
+        '''
         return self._efficiency
 
     @efficiency.setter
     def efficiency(self, value):
         '''
-            Update efficiency.
+        Update efficiency.
 
-            - Efficiency can be None since it indicates that we use wind
-              to compute efficiency.
-            - If efficiency is not None, it must be a number greater than
-              or equal to 0.0 and less than or equal to 1.0.
+        - Efficiency can be None since it indicates that we use wind
+          to compute efficiency.
+        - If efficiency is not None, it must be a number greater than
+          or equal to 0.0 and less than or equal to 1.0.
         '''
         if value is None:
             self._efficiency = value
@@ -152,20 +158,26 @@ class CleanUpBase(RemoveMass, Weatherer):
         water_frac:
 
             volume = sc['mass']/API_density
+
             (1 - sc['frac_water']) * oil_water_vol = volume
+
             oil_water_vol = volume / (1 - sc['frac_water'])
 
         Now, do a cumsum of oil_water_mass and find where
+
             np.cumsum(oil_water_vol) >= vol_to_remove
         and change the status_codes of these LEs. Can just as easily multiple
         everything by API_density to get
+
             np.cumsum(oil_water_mass) >= mass_to_remove
+
             mass_to_remove = sc['mass'] / (1 - sc['frac_water'])
         This is why the input is 'mass_to_remove' instead of 'vol_to_remove'
         - less computation
 
-        Note: For ChemicalDispersion, the mass_to_remove is not the mass of the
-            oil/water mixture, but the mass of the oil. Use the oilwater_mix
+        Note:
+            For ChemicalDispersion, the mass_to_remove is not the mass of
+            the oil/water mixture, but the mass of the oil. Use the oilwater_mix
             flag to indicate this is the case.
         '''
         arrays = {'fate_status', 'mass', 'frac_water'}

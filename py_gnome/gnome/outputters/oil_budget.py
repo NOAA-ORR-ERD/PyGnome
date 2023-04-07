@@ -1,13 +1,9 @@
 """
-Outputter for dumping teh oil budget as a CSV file
+Outputter for dumping the oil budget as a CSV file
 
 (Or maybe other formats in the future)
 
 """
-
-
-
-
 
 import csv
 

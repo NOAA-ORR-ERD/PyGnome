@@ -62,6 +62,19 @@ autoapi_dirs = ['../../gnome/']
 autoapi_python_class_content = 'both'
 autoapi_keep_files = True
 
+
+def skip_schema_classes(app, what, name, obj, skip, options):
+    """
+    Have auto-api skip all the Schema classes
+    """
+    if what == "class" and "Schema" in name:
+        skip = True
+    return skip
+
+
+def setup(sphinx):
+    sphinx.connect("autoapi-skip-member", skip_schema_classes)
+
 # This still is generating errors in the gnome.persist modules
 # Though it doesn't write the html ?!?
 # def skip_schema_docs(app, what, name, obj, skip, options):

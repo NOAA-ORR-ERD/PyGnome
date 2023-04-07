@@ -22,53 +22,85 @@ a netcdf files to one these names, PYGNOME should be able to load the file.
 **Name Mapping:**
 
 
+
 **grid_temperature**
 
-  Default Names: water_t,temp
+  Default Names: water_t, temp
 
-  CF Standard Names: sea_water_temperature,sea_surface_temperature
+
+  CF Standard Names: sea_water_temperature, sea_surface_temperature
+
 
 **grid_salinity**
 
   Default Names: salt
 
-  CF Standard Names: sea_water_salinity,sea_surface_salinity
+
+  CF Standard Names: sea_water_salinity, sea_surface_salinity
+
 
 **grid_sediment**
 
   Default Names: sand_06
 
-  CF Standard Names: 
+
+  CF Standard Names:
+
 
 **ice_concentration**
 
-  Default Names: ice_fraction,aice
+  Default Names: ice_fraction, aice
+
 
   CF Standard Names: sea_ice_area_fraction
+
 
 **bathymetry**
 
   Default Names: h
 
+
   CF Standard Names: depth
+
 
 **grid_current**
 
-  Default Names: u,v,w
+ Default Names for u: u, U, water_u, curr_ucmp, u_surface, u_sur
 
-  CF Standard Names: u,v,w
+ Default Names for v: v, V, water_v, curr_vcmp, v_surface, v_sur
+
+ Default Names for w: w, W
+
+
+ CF Standard Names for u: eastward_sea_water_velocity, surface_eastward_sea_water_velocity
+
+ CF Standard Names for v: northward_sea_water_velocity, surface_northward_sea_water_velocity
+
+ CF Standard Names for w: upward_sea_water_velocity
+
 
 **grid_wind**
 
-  Default Names: u,v
+ Default Names for u: air_u, Air_U, air_ucmp, wind_u, u-component_of_wind_height_above_ground, UWind
 
-  CF Standard Names: u,v
+ Default Names for v: air_v, Air_V, air_vcmp, wind_v, v-component_of_wind_height_above_ground, VWind
+
+
+ CF Standard Names for u: eastward_wind, eastward wind
+
+ CF Standard Names for v: northward_wind, northward wind
+
 
 **ice_velocity**
 
-  Default Names: u,v
+ Default Names for u: ice_u, uice
 
-  CF Standard Names: u,v
+ Default Names for v: ice_v, vice
+
+
+ CF Standard Names for u: eastward_sea_ice_velocity
+
+ CF Standard Names for v: northward_sea_ice_velocity
 
 """
 
@@ -113,8 +145,8 @@ nc_names = {
     },
     'grid_wind': {
         'default_names': {
-            'u': ['air_u', 'Air_U', 'air_ucmp', 'wind_u','u-component_of_wind_height_above_ground' ],
-            'v': ['air_v', 'Air_V', 'air_vcmp', 'wind_v','v-component_of_wind_height_above_ground']
+            'u': ['air_u', 'Air_U', 'air_ucmp', 'wind_u','u-component_of_wind_height_above_ground','Uwind'],
+            'v': ['air_v', 'Air_V', 'air_vcmp', 'wind_v','v-component_of_wind_height_above_ground','Vwind']
         },
         'cf_names': {
             'u': ['eastward_wind', 'eastward wind'],
@@ -133,23 +165,12 @@ nc_names = {
     },
 }
 
-def build_table_for_docstring():
-    """
-    builds a table of names for the dicstring of this module
-
-    this should be run eny time the names dict changes
-
-    To run:
-
-    set the working dir to this directory
-
-    python names.py build
-
-    The docstring for this module should be changed in place
-    """
-    pass
-
 def insert_names_table(table_text):
+    """
+    function to insert the names table into the docstring
+
+    should be run when name mapping is updated.
+    """
     this = __file__
     tempfile = "names.temp.py"
     with open(this) as infile:
@@ -176,15 +197,43 @@ def insert_names_table(table_text):
 
 
 def build_names_table():
+    """
+    This builds the table of names for the docstring (and the docs)
+
+    NOTE: it could use some fancier rst formatting ...
+    """
     table = []
     for env_obj, names in nc_names.items():
-        table.append(f"\n**{env_obj:}**\n")
-        table.append(f"\n  Default Names: {','.join(names['default_names'])}\n")
-        table.append(f"\n  CF Standard Names: {','.join(names['cf_names'])}\n")
+        table.append(f"\n\n**{env_obj:}**\n")
+        try:  # some are dicts, some are lists ...
+            for var, var_names in names['default_names'].items():
+                table.append(f"\n Default Names for {var}: {', '.join(var_names)}\n")
+        except AttributeError:
+            table.append(f"\n  Default Names: {', '.join(names['default_names'])}\n")
+        table.append('\n')
+        try:  # some are dicts, some are lists ...
+            for var, var_names in names['cf_names'].items():
+                table.append(f"\n CF Standard Names for {var}: {', '.join(var_names)}\n")
+        except AttributeError:
+            table.append(f"\n  CF Standard Names: {', '.join(names['cf_names'])}\n")
     return ''.join(table)
 
 
 if __name__ == "__main__":
+
+    """
+    when run as a script, builds a table of names for the docstring of this module
+
+    this should be run any time the names dict changes
+
+    To run:
+
+    set the working dir to this directory
+
+    python names.py build
+
+    The docstring for this module should be changed in place
+    """
 
     import os
     import sys
@@ -192,13 +241,8 @@ if __name__ == "__main__":
 
     if "rebuild" in sys.argv:
         print("rebuilding docstring")
-        #table_text = build_table_for_docstring()
-
         insert_names_table(build_names_table())
     else:
         print("Doing Nothing")
         print('To rebuild the docstring, pass "rebuild" in on the command line:')
         print('    python names.py rebuild')
-
-
-

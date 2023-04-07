@@ -43,9 +43,9 @@ class Refs(dict):
 
 class References(object):
     '''
-    PyGnome objects like the WindMover contain other objects, eg Wind object.
-    When persisting a Model, the Wind object is not created by the WindMover,
-    it is merely referenced by the WindMover. When persisting a Model, the
+    PyGnome objects like the PointWindMover contain other objects, eg Wind object.
+    When persisting a Model, the Wind object is not created by the PointWindMover,
+    it is merely referenced by the PointWindMover. When persisting a Model, the
     referenced objects are saved in their own file and a reference is stored
     for it. This class manages these references.
     '''

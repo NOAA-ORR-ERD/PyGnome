@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 
 import numpy as np
 
-from colander import (SchemaNode, TupleSchema, Bool, drop)
+from colander import (SchemaNode, TupleSchema, Bool, drop, String)
 
 from gnome.basic_types import (world_point,
                                world_point_type,
@@ -37,6 +37,9 @@ class ProcessSchema(ObjTypeSchema):
     #flag for client weatherer management system
     _automanaged = SchemaNode(Bool(), missing=drop, save=True, update=True)
 
+
+class PyMoverSchema(ProcessSchema):
+    default_num_method = SchemaNode(String(), missing=drop, save=True, update=True)
 
 class Process(GnomeId):
     """
@@ -208,6 +211,9 @@ class Mover(Process):
 
 
 class PyMover(Mover):
+
+    _schema = PyMoverSchema
+
     def __init__(self, default_num_method='RK2',
                  **kwargs):
         super(PyMover, self).__init__(**kwargs)
@@ -223,10 +229,6 @@ class PyMover(Mover):
                     for o in kwargs['env']:
                         if k in o._ref_as:
                             setattr(self, k, o)
-
-    @property
-    def is_data_on_cells(self):
-        return self.data.grid.infer_location(self.data.u.data) != 'node'
 
     def delta_method(self, method_name=None):
         '''
@@ -372,7 +374,7 @@ class CyMover(Mover):
     def get_move(self, sc, time_step, model_time_datetime):
         """
         Base implementation of Cython wrapped C++ movers
-        Override for things like the WindMover since it has a different
+        Override for things like the PointWindMover since it has a different
         implementation
 
         :param sc: spill_container.SpillContainer object

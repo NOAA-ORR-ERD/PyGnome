@@ -6,6 +6,7 @@ Scripting PyGNOME
    :maxdepth: 2
 
    scripting_intro
+   model
    maps
    spills
    environment

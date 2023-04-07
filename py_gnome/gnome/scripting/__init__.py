@@ -62,7 +62,7 @@ from gnome.spills.spill import (surface_point_line_spill,
 from gnome.spills.substance import NonWeatheringSubstance
 from gnome.spills.gnome_oil import GnomeOil
 
-from gnome.environment.wind import Wind, constant_wind
+from gnome.environment.wind import PointWind, Wind, constant_wind
 from gnome.movers.c_wind_movers import (constant_point_wind_mover,
                                       point_wind_mover_from_file,
                                       )
@@ -91,15 +91,18 @@ from gnome.environment.environment_objects import IceVelocity,IceConcentration
 
 from gnome.movers import (RandomMover,
                           RandomMover3D,
-                          WindMover,
+                          PointWindMover,
                           CatsMover,
                           ComponentMover,
                           RiseVelocityMover,
-                          PyWindMover,
-                          PyCurrentMover,
+                          WindMover,
+                          CurrentMover,
                           IceAwareRandomMover,
                           SimpleMover,
                           )
+
+from gnome.movers.py_current_movers import PyCurrentMover
+from gnome.movers.py_wind_movers import PyWindMover
 
 from gnome.utilities.remote_data import get_datafile
 

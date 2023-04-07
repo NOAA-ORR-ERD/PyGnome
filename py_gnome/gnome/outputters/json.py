@@ -16,7 +16,7 @@ from gnome.persist.base_schema import GeneralGnomeObjectSchema
 from gnome.movers.c_current_movers import CatsMoverSchema,\
     ComponentMoverSchema, c_GridCurrentMoverSchema, CurrentCycleMoverSchema,\
     IceMoverSchema
-from gnome.movers.c_wind_movers import WindMoverSchema
+from gnome.movers.c_wind_movers import PointWindMoverSchema
 
 
 class SpillJsonSchema(BaseOutputterSchema):
@@ -138,7 +138,7 @@ class CurrentJsonSchema(BaseOutputterSchema):
                                 ComponentMoverSchema,
                                 c_GridCurrentMoverSchema,
                                 CurrentCycleMoverSchema,
-                                WindMoverSchema]
+                                PointWindMoverSchema]
         ),
         save=True, update=True, save_reference=True
     )

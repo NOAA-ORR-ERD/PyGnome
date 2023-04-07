@@ -9,7 +9,7 @@ import numpy as np
 #     mol_wt = 92.1
 #     density = 866.0
 #     k_ow = 1000.0
-# 
+#
 
 class BanerjeeHuibers(object):
     '''
@@ -19,11 +19,15 @@ class BanerjeeHuibers(object):
         with its partition coefficient.
 
             rho_arom = density of aromatic
+
             mol_wt = molecular weight
+
             s = solubility
 
             s = Huibers(rho_arom, mol_wt)
+
             k_ow = Banerjee(s)
+
                  = Banerjee(Huibers(rho_arom, mol_wt))
 
     '''
