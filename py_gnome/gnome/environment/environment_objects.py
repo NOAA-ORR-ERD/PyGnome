@@ -378,7 +378,7 @@ class GridCurrent(VelocityGrid, Environment):
         :type units: string such as ('m/s', 'knots', etc)
         :param extrapolate: if True, extrapolation will be supported
         :type extrapolate: boolean (True or False)
-        
+
         :return: returns a Nx2 array of interpolated values
         :rtype: double
         '''
@@ -726,7 +726,7 @@ class IceAwareCurrent(GridCurrent):
         cctn = (self.ice_concentration.at(points, time,
                                             extrapolate=extrapolate, **kwargs)
                   .copy())
-        assert len(cctn.shape) == 2
+        #assert len(cctn.shape) == 2
 
         water_v = super(IceAwareCurrent, self).at(points,
                                                   time,
@@ -745,7 +745,7 @@ class IceAwareCurrent(GridCurrent):
 
             vels = water_v.copy()
             ice_v = self.ice_velocity.at(points, time, extrapolate=extrapolate, *args, **kwargs).copy()
-            assert len(vels.shape) == 2
+            #assert len(vels.shape) == 2
 
             #deals with the >0.8 concentration case
             vels[:] = vels[:] + (ice_v - water_v) * ice_vel_factor
@@ -787,12 +787,13 @@ class IceAwareWind(GridWind):
                              ice_velocity=ice_velocity,
                              **kwargs))
 
-    def at(self, points, time, *args, **kwargs):
+    def at(self, points, time, min_val=0, *args, **kwargs):
         extrapolate = self.extrapolation_is_allowed
 
         cctn = self.ice_concentration.at(points, time, extrapolate=extrapolate, *args, **kwargs)
         wind_v = super(IceAwareWind, self).at(points, time, *args, **kwargs)
-        assert len(cctn.shape) == 2
+        wind_v[wind_v < min_val] = min_val
+        #assert len(cctn.shape) == 2
 
         if np.any(cctn >= 0.2):
             ice_mask = cctn >= 0.8
