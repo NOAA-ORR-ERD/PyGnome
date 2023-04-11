@@ -38,7 +38,7 @@ class FayGravityViscous(Weatherer):
     The blob can be partitioned into 'N' LEs and the assumption is that the thickness
     and initial volume of the blob applies to all LEs in it. For continuous release,
     the spreading algorithm is similar to Dodge et al., (1983), where blob volume is
-    consided as the cumulative volume of oil varying with time during the release period
+    considered as the cumulative volume of oil varying with time during the release period
     '''
     _schema = FayGravityViscousSchema
 
@@ -793,6 +793,7 @@ class Langmuir(Weatherer):
         # explore v to be dependent of particle locations
         v_max = np.max(self.get_wind_speed(points, model_time) * .005)
 
+        # typo in equation, 4 should be in denominator
         # cr_k = (v_max ** 2 *
         #         4 *
         #         PI ** 2 /
@@ -810,9 +811,9 @@ class Langmuir(Weatherer):
         #old_settings = np.seterr(divide='ignore')
         with np.errstate(divide='ignore'):
             frac_cov = (v_max ** 2 *
-                        4 *
+#                        4 *
                         PISQUARED /
-                        (thickness * rel_buoy * gravity)) ** (-0.3333333333333333)
+                        (4 * thickness * rel_buoy * gravity)) ** (-0.3333333333333333)
         # due to oil density > water density
         # np.seterr(**old_settings)
         # with np.errstate(invalid='raise') :
