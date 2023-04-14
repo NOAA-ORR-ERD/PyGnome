@@ -30,18 +30,23 @@ class ModelConsumer(mp.Process):
         This is a consumer process that makes the model available
         upon process creation so that registered commands can act upon
         the model.
+
         Program flow:
-        - Read a command from the task queue
-        - if there is a None command, we exit the process.
-        - Parse the data received in the format:
-            ('registeredcommand', {arg1: val1,
-                                   arg2: val2,
-                                   ...
-                                   },
-             )
-        - Attempt to perform the registered command.  Registered commands
-          are defined as private methods of this class.
-        - Returns the results in a results queue
+
+            - Read a command from the task queue
+            - if there is a None command, we exit the process.
+
+            - Parse the data received in the format::
+
+                ('registeredcommand', {arg1: val1,
+                                       arg2: val2,
+                                       ...
+                                       },
+                 )
+
+            - Attempt to perform the registered command.  Registered commands
+              are defined as private methods of this class.
+            - Returns the results in a results queue
 
     '''
     def __init__(self, task_port, model,
@@ -246,16 +251,16 @@ class ModelBroadcaster(GnomeId):
             :param uncertainty_values: A set of values describing the
                                        uncertainty configuration of a
                                        particular subprocess
-            :type uncertainty_values: A tuple of enumerated values that are
-                                      defined at time of construction.
-                                      (Note: Right now the values supported are
+
+                                       .. note:: The values supported are
                                              {'down', 'normal', 'up'}.
                                              These are the only values that the
-                                             weatherers understand)
-                                      (Note: right now the tuple size is 2,
+                                             weatherers understand
+                                       .. note:: Right now the tuple size is 2,
                                              but could be expanded as more
-                                             uncertainty dimensions are added)
-
+                                             uncertainty dimensions are added
+            :type uncertainty_values: A tuple of enumerated values that are
+                                      defined at time of construction.
             :param int idx: The numeric index of a particular subprocess
                             If an index is passed in, the uncertainty values
                             will be ignored.
