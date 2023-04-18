@@ -832,10 +832,10 @@ class Langmuir(Weatherer):
 
             0.1 <= frac_coverage <= 1.0
         '''
-        v_min = np.sqrt(1.0 * thickness * rel_buoy * gravity /
-                        (4 * PISQUARED)) / 0.005
-        v_max = np.sqrt((1. / 0.1) ** 3 * thickness * rel_buoy * gravity /
-                        (4 * PISQUARED)) / 0.005
+        v_min = np.sqrt(4.0 * thickness * rel_buoy * gravity /
+                        (PISQUARED)) / 0.005
+        v_max = np.sqrt((1. / 0.1) ** 3 * 4 * thickness * rel_buoy * gravity /
+                        (PISQUARED)) / 0.005
 
         return (v_min, v_max)
 

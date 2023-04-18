@@ -102,8 +102,11 @@ def test_dispersion_not_active(oil, temp, num_elems):
 # Note: test values appear to be reasonable as Feb-13-2023
 # Note: this test may change if any other weathering algorithms change
 @pytest.mark.parametrize(('oil', 'temp', 'dispersed'),
-                         [('oil_bahia', 288.7, 264.076),
-                          ('oil_ans_mp', 288.7, 404.244),
+#                          [('oil_bahia', 288.7, 264.076),
+#                           ('oil_ans_mp', 288.7, 404.244),
+#                           ]
+                         [('oil_bahia', 288.7, 400.753),
+                          ('oil_ans_mp', 288.7, 697.214),
                           ]
                          )
 def test_full_run_DS1988(sample_model_fcn2, oil, temp, dispersed):
@@ -139,8 +142,11 @@ def test_full_run_DS1988(sample_model_fcn2, oil, temp, dispersed):
                       atol=0.001)
 
 @pytest.mark.parametrize(('oil', 'temp', 'dispersed'),
-                         [('oil_bahia', 288.7, 4131.36),
-                          ('oil_ans_mp', 288.7, 8158.10),
+#                          [('oil_bahia', 288.7, 4131.36),
+#                           ('oil_ans_mp', 288.7, 8158.10),
+#                           ]
+                         [('oil_bahia', 288.7, 3399.69),
+                          ('oil_ans_mp', 288.7, 7875.77),
                           ]
                          )
 def test_full_run_Li2017(sample_model_fcn2, oil, temp, dispersed):
