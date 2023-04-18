@@ -3,8 +3,10 @@
 A MatPlotLib graphing class.
 Here we encapsulate the built-in API of MatPlotLib and pyplot into a class
 that is hopefully easier to use.
-(Note: there is a rich graphing package called seaborn that piggybacks on
-       top of MatPlotLib which we may eventually want to use.)
+
+.. note::
+    There is a rich graphing package called seaborn that piggybacks on
+    top of MatPlotLib which we may eventually want to use.
 
 One very important reason for making this class, besides ease of use, is that
 MatPlotLib objects can not be directly persisted into a formatted file.
@@ -19,6 +21,7 @@ from cache, as well as serialize and deserialize them.
 
 This is meant to be a usable base class that behaves in a general manner.
 But it is also intended to be easily customizable through sub-classing.
+
 """
 
 import numpy
@@ -79,21 +82,21 @@ class Graph(GnomeId):
     def __init__(self, points, labels='', formats=None, title='Title',
                  **kwargs):
         '''
-           :param points: A sequence of data points for us to graph.
-           :type points:  Sequence of data point items in the form:
-                          ((X1, X2, X3, ... XN),
-                           (S1(1), S1(2), S1(3), ... S1(N))
-                           ...
-                           (SN(1), SN(2), SN(3), ... SN(N))
-                           )
-                          where the first item contains the X axis we will use,
-                          followed by 1 or more sequences of series data to be
-                          plotted on the Y axis.
-           :param labels: A list of labels to be used with our series
-                          data sets.  If labels are not given, then we
-                          use default labels.
-           :param formats: An optional list of pyplot format strings to be used
-                           with our series data sets.
+        :param points: A sequence of data points for us to graph
+        :type points:  Sequence of data point items in the form::
+                        ((X1, X2, X3, ... XN),
+                        (S1(1), S1(2), S1(3), ... S1(N))
+                        ...
+                        (SN(1), SN(2), SN(3), ... SN(N))
+                        )
+                        where the first item contains the X axis we will use,
+                        followed by 1 or more sequences of series data to be
+                        plotted on the Y axis.
+        :param labels: A list of labels to be used with our series
+                        data sets.  If labels are not given, then we
+                        use default labels.
+        :param formats: An optional list of pyplot format strings to be used
+                        with our series data sets.
         '''
         self.points = points
         self.labels = labels

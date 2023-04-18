@@ -48,7 +48,7 @@ class InitBaseClass(GnomeId):
 
     def initialize(self, num_new_particles, spill, data_arrays, substance):
         """
-        all classes that derive from Base class must implement an
+        all classes that derive from Base class must implement an initialize
         method.
 
         This method should initialize the appropriate data in
@@ -89,12 +89,12 @@ class InitWindages(InitBaseClass):
 
         Optional arguments:
 
-        :param windage_range=(0.01, 0.04): the windage range of the elements
-            default is (0.01, 0.04) from 1% to 4%.
+        :param windage_range: the windage range of the elements.
+            Default is (0.01, 0.04) from 1% to 4%.
         :type windage_range: tuple: (min, max)
 
-        :param windage_persist=-1: Default is 900s, so windage is updated every
-            900 sec. -1 means the persistence is infinite so it is only set at
+        :param windage_persist: Default is 900s, so windage is updated every
+            900 seconds. -1 means the persistence is infinite so it is only set at
             the beginning of the run.
         :type windage_persist: integer seconds
         """
@@ -196,20 +196,21 @@ class InitRiseVelFromDist(DistributionBase):
         See gnome.utilities.distribution for details
 
         Right now, we have:
+
           * UniformDistribution
           * NormalDistribution
           * LogNormalDistribution
           * WeibullDistribution
 
-        New distribution classes could be made.  The only
+        New distribution classes could be made. The only
         requirement is they need to have a set_values()
         method which accepts a NumPy array.
         (presumably, this function will also modify
-         the array in some way)
+        the array in some way)
         """
         super(InitRiseVelFromDist, self).__init__(**kwargs)
-        
-        if distribution and hasattr(distribution,"set_values"): 
+
+        if distribution and hasattr(distribution,"set_values"):
             self.distribution = distribution
         else:
             raise TypeError('InitRiseVelFromDist requires a distribution for '
@@ -242,16 +243,20 @@ class InitRiseVelFromDropletSizeFromDist(DistributionBase):
         :param distribution: An object capable of generating a probability
                              distribution.
         :type distribution:
+
         Right now, we have:
+
          * UniformDistribution
          * NormalDistribution
          * LogNormalDistribution
          * WeibullDistribution
-        New distribution classes could be made.  The only
+
+        New distribution classes could be made. The only
         requirement is they need to have a set_values()
         method which accepts a NumPy array.
         (presumably, this function will also modify
-         the array in some way)
+        the array in some way)
+
         :param water_density: 1020.0 [kg/m3]
         :type water_density: float
         :param water_viscosity: 1.0e-6 [m^2/s]
@@ -262,7 +267,7 @@ class InitRiseVelFromDropletSizeFromDist(DistributionBase):
         if distribution:
             self.distribution = distribution
         else:
-            raise TypeError('InitRiseVelFromDropletSizeFromDist requires a'
+            raise TypeError('InitRiseVelFromDropletSizeFromDist requires a '
                             'distribution for droplet sizes')
 
         self.water_viscosity = water_viscosity
@@ -336,37 +341,38 @@ def plume_initializers(distribution_type='droplet_size',
     Helper function returns an ElementType object containing 'rise_vel'
     and 'windages' initialized with user specified parameters for distribution.
 
-    :param str distribution_type='droplet_size': type of distribution
+    :param str distribution_type: type of distribution, 'droplet_size' or 'rise_velocity'
 
     :param gnome.utilities.distributions distribution=None:
 
-    :param windage_range=(.01, .04): minimum and maximum windage
+    :param windage_range: minimum and maximum windage
     :type windage_range: tuple-of-floats
 
-    :param int windage_persist=900: persistance of windage in seconds
+    :param int windage_persist: persistence of windage in seconds
 
     :param str substance_name=None:
 
-    :param float density = None:
+    :param float density=None:
 
     :param str density_units='kg/m^3':
 
-    Distribution type Available options:
+    Distribution type available options:
 
-    * 'droplet_size': Droplet size is sampled from the specified distribution.
-                      No droplet size is computed.
-    * 'rise_velocity': Rise velocity is directly sampled from the specified
-                       distribution.  Rise velocity is calculated.
+     * 'droplet_size': Droplet size is sampled from the specified distribution.
+                       No droplet size is computed.
+     * 'rise_velocity': Rise velocity is directly sampled from the specified
+                        distribution.  Rise velocity is calculated.
 
     Distributions - An object capable of generating a probability distribution.
+
     Right now, we have:
 
-    * UniformDistribution
-    * NormalDistribution
-    * LogNormalDistribution
-    * WeibullDistribution
+     * UniformDistribution
+     * NormalDistribution
+     * LogNormalDistribution
+     * WeibullDistribution
 
-    New distribution classes could be made.  The only requirement is they
+    New distribution classes could be made. The only requirement is they
     need to have a ``set_values()`` method which accepts a NumPy array.
     (presumably, this function will also modify the array in some way)
 
