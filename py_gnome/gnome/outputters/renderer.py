@@ -95,6 +95,7 @@ class Renderer(Outputter, MapCanvas):
                  output_timestep=None,
                  output_zero_step=True,
                  output_last_step=True,
+                 output_single_step=False,
                  output_start_time=None,
                  on=True,
                  timestamp_attrib={},
@@ -183,6 +184,7 @@ class Renderer(Outputter, MapCanvas):
                            output_timestep,
                            output_zero_step,
                            output_last_step,
+                           output_single_step,
                            output_start_time,
                            output_dir,
                            **kwargs)
@@ -388,7 +390,7 @@ class Renderer(Outputter, MapCanvas):
                                         self.foreground_filename_glob))
         files += glob.glob(os.path.join(self.output_dir,
                                         self.anim_filename) + "*")
-        
+
         for name in files:
             os.remove(name)
 
