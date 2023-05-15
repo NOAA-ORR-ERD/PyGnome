@@ -133,27 +133,28 @@ class Waves(Environment):
         """
         # make sure are we are up to date with water object
         wave_height = self.water.get('wave_height')
-        
+
         if wave_height is None:
             # only need velocity
             U = self.get_wind_speed(points, time)
             H = self.compute_H(U)
-# add only for test - add only for test - add only for test - add only for test 
-#            H = np.full_like(U, 0.438) 
-# add only for test - add only for test - add only for test - add only for test 
+# add only for test - add only for test - add only for test - add only for test
+#            H = np.full_like(U, 0.438)
+# add only for test - add only for test - add only for test - add only for test
         else:
             # user specified a wave height
             U = self.get_wind_speed(points, time)
             H = np.full_like(U, wave_height)
             #H = wave_height
             U = self.pseudo_wind(H)	#significant wave height used for pseudo wind
+            H = np.array(H).reshape(-1)
             H = .707 * H	#Hrms
-            
+
         Wf = self.whitecap_fraction(U)
         T = self.mean_wave_period(U)
 
         De = self.dissipative_wave_energy(H)
-        
+
         return H, T, Wf, De
 
     def get_wind_speed(self, points, model_time,
