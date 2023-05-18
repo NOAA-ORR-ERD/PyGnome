@@ -6,9 +6,8 @@ module to hold all the map rendering code.
 This one used the new map_canvas, which uses the gd rendering lib.
 
 """
-
 import os
-from os.path import basename
+
 import glob
 
 import numpy as np
@@ -104,8 +103,8 @@ class Renderer(Outputter, MapCanvas):
         """
         Init the image renderer.
 
-        :param str map_filename=None: name of file for basemap (BNA)
-        :type map_filename: str
+        :param map_filename=None: GnomeMap or name of file for basemap (BNA)
+        :type map_filename: GnomeMap or PathLike (str or Path)
 
         :param str output_dir='./': directory to output the images
 
@@ -118,6 +117,7 @@ class Renderer(Outputter, MapCanvas):
         :param viewport: viewport of map -- what gets drawn and on what scale.
                          Default is full globe: (((-180, -90), (180, 90)))
                          If not specifies, it will be set to the map's bounds.
+
         :type viewport: pair of (lon, lat) tuples ( lower_left, upper right )
 
         :param map_BB=None: bounding box of map if None, it will use the
@@ -164,11 +164,17 @@ class Renderer(Outputter, MapCanvas):
                       else projection)
 
         # set up the canvas
-        self.map_filename = map_filename
+        # self.map_filename = map_filename
         self.output_dir = output_dir
 
+        self.map_filename = map_filename
         if map_filename is not None and land_polygons is None:
-            self.land_polygons = haz_files.ReadBNA(map_filename, 'PolygonSet')
+            try:
+                # check to see if this is a map object
+                self.land_polygons = map_filename.get_polygons()['land_polys']
+                self.map_filename = map_filename.filename
+            except AttributeError: # assume it's a filename
+                self.land_polygons = haz_files.ReadBNA(map_filename, 'PolygonSet')
         elif land_polygons is not None:
             self.land_polygons = land_polygons
         else:
@@ -198,6 +204,7 @@ class Renderer(Outputter, MapCanvas):
         self.map_BB = map_BB
 
         viewport = self.map_BB if viewport is None else viewport
+
         MapCanvas.__init__(self, image_size, projection=projection,
                            viewport=viewport)
 
@@ -250,7 +257,7 @@ class Renderer(Outputter, MapCanvas):
 
     @property
     def map_filename(self):
-        return basename(self._filename) if self._filename is not None else None
+        return os.path.basename(self._filename) if self._filename is not None else None
 
     @map_filename.setter
     def map_filename(self, name):

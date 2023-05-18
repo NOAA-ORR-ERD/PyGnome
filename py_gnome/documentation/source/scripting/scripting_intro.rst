@@ -5,7 +5,7 @@ Overview
 
 PyGNOME is a complex package, however, it is fairly straightforward to write scripts to run the model for a variety of simulations.
 
-Simulations with the ``gnome`` package are performed via a ``Model`` object. A model has model-level attributes such as the start time, run duration, and time step. It can be configured with a variety of  ``Mover``s, ``Weatherers``, and ``Spills`` to drive the model, and ``Outputters`` can output the model results in a number of formats.
+Simulations with the ``gnome`` package are performed via a ``Model`` object. A model has model-level attributes such as the start time, run duration, and time step. It can be configured with a variety of  ``Mover``s, ``Weatherers``, and ``Spill``s to drive the model, and ``Outputter``s can output the model results in a number of formats.
 
 
 The scripting module
@@ -28,7 +28,7 @@ This is equivalent to::
 
     Internally, ``GNOME`` uses the python standard library ``datetime`` and ``timedelta`` functions.
     In most cases, you can pass objects of these types into ``GNOME``.
-    But for scripting convience, most places that take a datetime object will also accept a ISO 8601 string, such as: "2015-01-01T12:15:00"
+    But for scripting convenience, most places that take a datetime object will also accept a ISO 8601 string, such as: "2015-01-01T12:15:00"
 
 The ``gnome.scripting`` module also provides a number of shortcuts for creating ``timedelta`` objects: ``seconds, minutes, hours, days``. You can use them like so::
 
@@ -119,8 +119,8 @@ In this example, the ``Renderer`` class is used to save to an animated gif every
     renderer = gs.Renderer(output_dir='./output/',
                            output_timestep=gs.hours(2),
                            # bounding box for the output images
-                           map_BB=((-145, 48), (-145, 49),
-                                   (-143, 49), (-143, 48)),
+                           viewport=((-145, 48), (-145, 49),
+                                     (-143, 49), (-143, 48)),
                            formats=['gif']
                            )
 
@@ -128,7 +128,7 @@ In this example, the ``Renderer`` class is used to save to an animated gif every
 
 * The time step for output is set to 2 hours.
 
-* The bounding box of the rendered map is set to be the same as those specified for the map object.
+* The bounding box (viewport) of the rendered map is set to be the same as those specified for the map object.
 
 * ``Renderer`` supports 'bmp', 'jpg', 'jpeg', 'png' and 'gif' -- 'gif' will save out a single animated GIF file - the rest will output one image per output timestep.
 
