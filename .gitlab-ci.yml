@@ -66,24 +66,8 @@ compile_pygnome:
       - ./py_gnome/documentation/build/html
       - ./deploy_requirements.txt
 
-# test_pygnome_develop:
-#   stage: test
-#   except:
-#     - master
-#     - production
-#   tags:
-#     - docker
-#     - linux
-#   allow_failure: true
-#   image: registry.orr.noaa.gov/erd/centos-conda/centos7-python$PYTHON_VER
-#   script:
-#     - conda install -y --file conda_requirements_test.txt
-#     - cd ./py_gnome/tests/unit_tests && pytest --runslow
-
 test_pygnome:
   stage: test
-  # except:
-  #   - develop
   tags:
     - docker
     - linux
@@ -92,6 +76,20 @@ test_pygnome:
   script:
     - conda install -y --file conda_requirements_test.txt
     - cd ./py_gnome/tests/unit_tests && pytest --runslow
+
+# Ideally, all the scripts in "testing_scripts" should run without errors,
+# but once in a while we refactor something that breaks something.
+# So it would be good to get a warning from the CI.
+# This shouldn't be a "it has to pass" job.
+test_pygnome_scripts:
+  stage: test
+  tags:
+    - docker
+    - linux
+  allow_failure: true
+  image: registry.orr.noaa.gov/erd/centos-conda/centos7-python$PYTHON_VER
+  script:
+    - cd ./py_gnome/scripts/testing_scripts && python run_all.py
 
 # We will not build a windows docker image, but we do want to know if there are
 # any windows specific problems.
@@ -135,24 +133,19 @@ test_pygnome_windows:
 
     - conda install -y python=$PYTHON_VER mamba
     - echo "Setting up conda environment"
-    # - conda install -y python=$PYTHON_VER --file conda_requirements.txt
-    #                                       --file conda_requirements_build.txt
-    #                                       --file conda_requirements_test.txt
-    #                                       --file oil_database/adios_db/conda_requirements.txt
     - mamba install -y python=$PYTHON_VER --file conda_requirements.txt
                                           --file conda_requirements_build.txt
                                           --file conda_requirements_test.txt
                                           --file oil_database/adios_db/conda_requirements.txt
 
-#     # install adios_db
-#     - pip install oil_database/adios_db/
-
     - echo "Building PyGNOME"
     - cd ./py_gnome
     - python setup.py install
 
-#     - cd ../  # make sure that it won't find the source gnome package.
-#     - python -c "import gnome"  # make sure that it imports
+    # Make sure that it imports from some folder other than the
+    # gnome package folder.
+    # - cd ../
+    # - python -c "import gnome"
 
     - cd ./tests/unit_tests
     - pytest --runslow
