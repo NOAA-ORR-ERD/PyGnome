@@ -36,7 +36,7 @@ pyproj
 mapbox_earcut
 
 numpy
-scipy<1.10
+scipy
 gsw
 psutil
 pyzmq
