@@ -89,7 +89,7 @@ test_pygnome_scripts:
   allow_failure: true
   image: registry.orr.noaa.gov/erd/centos-conda/centos7-python$PYTHON_VER
   script:
-    - cd ./py_gnome/scripts/testing_scripts && python run_all.py
+    - cd ./py_gnome/scripts/testing_scripts && python run_all.py 2<&1
 
 # We will not build a windows docker image, but we do want to know if there are
 # any windows specific problems.
