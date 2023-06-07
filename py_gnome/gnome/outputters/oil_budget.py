@@ -21,6 +21,9 @@ class OilBudgetOutputSchema(BaseOutputterSchema):
     output_last_step = SchemaNode(
         Boolean(), save=False, update=False
     )
+    output_single_step = SchemaNode(
+        Boolean(), save=False, update=False
+    )
 
 class OilBudgetOutput(BaseMassBalanceOutputter, OutputterFilenameMixin):
     """
@@ -75,6 +78,7 @@ class OilBudgetOutput(BaseMassBalanceOutputter, OutputterFilenameMixin):
                                               # outputter
                                               output_zero_step=True,
                                               output_last_step=True,
+                                              output_single_step=False,
                                               output_start_time=None,
                                               surface_conc=None,
                                               *args,

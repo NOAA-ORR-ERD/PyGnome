@@ -43,10 +43,7 @@ def clean_up_cache(dir_name=_cache_dir):
     """
     try:
         shutil.rmtree(dir_name)
-    except OSError:
-        # This would happen if the dir is already deleted
-        # note: should be smarter and check the error code in
-        #       the Exception to make sure that it's a "file not there"
+    except FileNotFoundError:
         pass
     except Exception as excp:
         # something else went wrong

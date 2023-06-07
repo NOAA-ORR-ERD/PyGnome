@@ -6,6 +6,7 @@ See: https://gitlab.orr.noaa.gov/gnome/pygnome/-/issues/75
 """
 
 import pytest
+
 from datetime import datetime
 
 from gnome.model import Model
@@ -74,6 +75,17 @@ def cont_spill():
         )
 
     return spill
+
+
+def test_above_surface_warning(empty_model, inst_spill):
+    """
+    Spill above the surface
+    """
+    model = empty_model
+    inst_spill.release.start_position[2]=-1
+    model.spills += inst_spill
+    with pytest.warns(UserWarning,match='Depth of spill is negative'):
+        model.check_inputs()
 
 
 def test_instantaneous(empty_model, inst_spill):

@@ -138,12 +138,16 @@ class Waves(Environment):
             # only need velocity
             U = self.get_wind_speed(points, time)
             H = self.compute_H(U)
+# add only for test - add only for test - add only for test - add only for test
+#            H = np.full_like(U, 0.438)
+# add only for test - add only for test - add only for test - add only for test
         else:
             # user specified a wave height
             U = self.get_wind_speed(points, time)
             H = np.full_like(U, wave_height)
             #H = wave_height
             U = self.pseudo_wind(H)	#significant wave height used for pseudo wind
+            H = np.array(H).reshape(-1)
             H = .707 * H	#Hrms
 
         Wf = self.whitecap_fraction(U)

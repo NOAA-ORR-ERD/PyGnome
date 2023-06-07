@@ -38,6 +38,7 @@ from datetime import datetime, timedelta
 import zipfile
 from pprint import pformat
 import copy
+import warnings
 
 import numpy as np
 
@@ -633,9 +634,11 @@ class Model(GnomeId):
         for item in collection:
             if isinstance(item, obj):
                 if not ret_all:
-                    return obj
+                    #return obj
+                    return item
                 else:
-                    all_objs.append(obj)
+                    #all_objs.append(obj)
+                    all_objs.append(item)
 
         if len(all_objs) == 0:
             return None
@@ -1560,7 +1563,14 @@ class Model(GnomeId):
                 num_spills_on += 1
 
                 start_pos = copy.deepcopy(spill.start_position)
-                if not np.all(self.map.on_map(start_pos)):
+                if not start_pos[2] >= 0:
+                    msg = ('Depth of spill is negative, spill is above the surface: {0}'.
+                           format(start_pos))
+                    self.logger.warning(msg)
+                    msgs.append(self._warn_pre + msg)
+                    warnings.warn('warning: ' + msg)
+
+                if not np.all(self.map.on_map(start_pos)) :
                     msg = ('{0} has start position outside of map bounds'.
                            format(spill.name))
                     self.logger.warning(msg)

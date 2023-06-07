@@ -20,16 +20,15 @@ from gnome.utilities.projections import FlatEarthProjection
 
 from gnome.environment import GridWind
 
-from gnome.movers.movers import TimeRangeSchema
+from gnome.movers.movers import TimeRangeSchema, PyMoverSchema
 
-from gnome.persist.base_schema import ObjTypeSchema
 from gnome.persist.validators import convertible_to_seconds
 from gnome.persist.extend_colander import LocalDateTime, FilenameSchema
 from gnome.persist.base_schema import GeneralGnomeObjectSchema
 from gnome.environment.gridded_objects_base import Grid_U, VectorVariableSchema
 
 
-class WindMoverSchema(ObjTypeSchema):
+class WindMoverSchema(PyMoverSchema):
     '''
     Schema for WindMover object
     '''
@@ -39,8 +38,6 @@ class WindMoverSchema(ObjTypeSchema):
                                                         GridWind._schema])
     scale_value = SchemaNode(Float(), save=True, update=True, missing=drop)
     #time_offset = SchemaNode(Float(), save=True, update=True, missing=drop)
-    on = SchemaNode(Bool(), save=True, update=True, missing=drop)
-    active_range = TimeRangeSchema()
     data_start = SchemaNode(LocalDateTime(), read_only=True,
                             validator=convertible_to_seconds)
     data_stop = SchemaNode(LocalDateTime(), read_only=True,
