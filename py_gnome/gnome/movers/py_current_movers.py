@@ -15,15 +15,14 @@ from gnome.utilities.projections import FlatEarthProjection
 from gnome.environment import GridCurrent
 from gnome.environment.gridded_objects_base import Grid_U, VectorVariableSchema
 
-from gnome.movers.movers import TimeRangeSchema
+from gnome.movers.movers import TimeRangeSchema, PyMoverSchema
 
-from gnome.persist.base_schema import ObjTypeSchema
 from gnome.persist.validators import convertible_to_seconds
 from gnome.persist.extend_colander import LocalDateTime, FilenameSchema
 from gnome.persist.base_schema import GeneralGnomeObjectSchema
 
 
-class CurrentMoverSchema(ObjTypeSchema):
+class CurrentMoverSchema(PyMoverSchema):
     '''
     Schema for CurrentMover object
     '''
@@ -34,8 +33,6 @@ class CurrentMoverSchema(ObjTypeSchema):
                                        )
     scale_value = SchemaNode(Float(), save=True, update=True,
                                missing=drop)
-    on = SchemaNode(Bool(), missing=drop, save=True, update=True)
-    active_range = TimeRangeSchema()
     data_start = SchemaNode(LocalDateTime(), read_only=True,
                             validator=convertible_to_seconds)
     data_stop = SchemaNode(LocalDateTime(), read_only=True,

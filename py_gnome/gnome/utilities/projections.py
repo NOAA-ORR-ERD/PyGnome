@@ -632,7 +632,8 @@ class RectangularGridProjection(NoProjection):
                       so you can have fractional pixels
         """
         coords = to_2d_coords(coords)
-
+        # All computation in floats -- convert to int if asked for
+        coords = np.asarray(coords, dtype=np.float64)
         pixel_coords = np.zeros_like(coords, dtype=np.float64)
 
         np.putmask(coords,

@@ -383,7 +383,7 @@ def test_read_data_exception(model):
 #@pytest.mark.slow
 def test_single_time(model):
     """
-    tests the option to output only a single time step with output_timestep = 0
+    tests the option to output only a single time step with output_single_step = True
 
     sets output_zero_step and output_last_step to False.
 
@@ -394,7 +394,9 @@ def test_single_time(model):
 
     o_put = [model.outputters[outputter.id] for outputter in
              model.outputters if isinstance(outputter, NetCDFOutput)][0]
-    o_put.output_timestep = timedelta(seconds=0)
+    #o_put.output_timestep = timedelta(seconds=0) # previous method set time step to zero
+    o_put.output_timestep = timedelta(seconds=900)
+    o_put.output_single_step = True
     curr_time = model.start_time + timedelta(seconds=900)
     o_put.output_start_time = curr_time
     o_put.output_zero_step = False

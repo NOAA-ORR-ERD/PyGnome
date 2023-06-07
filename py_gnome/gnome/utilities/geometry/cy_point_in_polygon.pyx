@@ -63,18 +63,20 @@ def points_in_poly(cnp.ndarray[double, ndim=2, mode="c"] pgon, points):
 
     :returns: a boolean array the same length as points
               if the input is a single point, the result is a
-              scalr python boolean
+              scalar python boolean
 
-    Note: this version takes a 3-d point, even though the third coord
+    Note: this version takes 3-d points, even though the third coord
           is ignored.
     """
 
     np_points = np.ascontiguousarray(points, dtype=np.float64)
-    scalar = (np_points.shape == (3,))
-    np_points.shape = (-1, 3)
+    orig_shape = np_points.shape
+    scalar = (orig_shape == (3,))
+    np_points = np_points.reshape(-1, 3)
 
     cdef double [:, :] a_points
     a_points = np_points
+    np_points.shape = orig_shape
 
     ## fixme -- proper way to get np.bool?
     cdef cnp.ndarray[char, ndim = 1, mode = "c"] result = np.zeros((a_points.shape[0],), dtype=np.uint8)
@@ -86,11 +88,13 @@ def points_in_poly(cnp.ndarray[double, ndim=2, mode="c"] pgon, points):
 
     for i in range(npoints):
         result[i] = c_point_in_poly1(nvert, &pgon[0, 0], &a_points[i, 0])
+
     if scalar:
         return bool(result[0])  # to make it a regular python bool
     else:
         return result.view(dtype=np.bool_)  # make it a np.bool array
-    
+
+
 def points_in_polys(cnp.ndarray[double,ndim=3, mode="c"] pgons, cnp.ndarray[double,ndim=2,mode="c"] points):
     """
     Determine if a list of points is inside a list of polygons, in a one-to-one fashion.
@@ -106,15 +110,15 @@ def points_in_polys(cnp.ndarray[double,ndim=3, mode="c"] pgons, cnp.ndarray[doub
     Note: this version takes a 3-d point, even though the third coord
           is ignored.
     """
-    
+
     cdef cnp.ndarray[char,ndim=1,mode="c"] result = np.zeros((points.shape[0],), dtype=np.uint8)
     cdef unsigned int i, N, M
     M = pgons.shape[1]
     N = pgons.shape[0]
-    
+
     for i in range(N):
         result[i] = c_point_in_poly1(M, &pgons[i,0,0], &points[i,0])
     return result.view(dtype=np.bool_)
-    
-    
-    
+
+
+
