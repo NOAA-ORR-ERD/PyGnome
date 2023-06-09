@@ -46,12 +46,13 @@ model.spills += spill
 renderer = gs.Renderer(output_dir='./output/',
                        output_timestep=gs.hours(2),
                        # bounding box for the output images
-                       map_BB=((-145, 48), (-145, 49),
-                               (-143, 49), (-143, 48)),
+                       viewport=((-145, 48), (-145, 49),
+                                 (-143, 49), (-143, 48)),
                        formats=['gif']
                        )
 
 model.outputters += renderer
 
+print("running the model: see output in the output dir")
 # run the model
 model.full_run()

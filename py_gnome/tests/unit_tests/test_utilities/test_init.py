@@ -123,7 +123,7 @@ def test_round_sf_array():
 
     print(f"{expected=}")
     print(f"{result=}")
-    print(f"{expected - result=}")
+    # print(f"{(expected - result)=}")
     nans = np.isnan(expected)
     assert np.allclose(result[~nans], expected[~nans], rtol=1e-15, atol=0.0)
     # assert np.all(result[~nans] == expected[~nans])
