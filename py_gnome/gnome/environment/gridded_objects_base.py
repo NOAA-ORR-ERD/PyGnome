@@ -940,6 +940,10 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
         return cls(name=name, grid=_grid, time=_time, variables=_vars)
 
     def at(self, points, time, units=None, *args, **kwargs):
+        if ('extrapolate' not in kwargs):
+            kwargs['extrapolate'] = False
+        if ('unmask' not in kwargs):
+            kwargs['unmask'] = True
         units = units if units else self._gnome_unit #no need to convert here, its handled in the subcomponents
         value = super(VectorVariable, self).at(points, time, units=units, *args, **kwargs)
 

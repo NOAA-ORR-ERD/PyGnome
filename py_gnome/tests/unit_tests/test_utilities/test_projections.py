@@ -4,10 +4,6 @@
 tests of the gnome.utilities.projections module
 """
 
-
-
-
-
 import pytest
 import numpy as np
 

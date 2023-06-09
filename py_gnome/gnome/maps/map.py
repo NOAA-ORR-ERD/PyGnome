@@ -160,18 +160,20 @@ class GnomeMap(GnomeId):
         polys['land_polys'] = self.land_polys
         return polys
 
-    def _polygon_set_from_points(self, poly):
-        # fixme: is this not in the geometry module??
-        #.       but maybe should get rid of the PolygonSet object anyway
-        '''
-        create PolygonSet() object from list of polygons which in turn is a
-        list of points
-        :returns: PolygonSet() object
-        '''
-        x = PolygonSet()
-        for p in poly:
-            x.append(p)
-        return x
+
+    # def _polygon_set_from_points(self, poly):
+    #     # hmm -- this doesn't seem to be used at all
+    #     # fixme: is this not in the geometry module??
+    #     #.       but maybe should get rid of the PolygonSet object anyway
+    #     '''
+    #     create PolygonSet() object from list of polygons which in turn is a
+    #     list of points
+    #     :returns: PolygonSet() object
+    #     '''
+    #     x = PolygonSet()
+    #     for p in poly:
+    #         x.append(p)
+    #     return x
 
     # does not seem to be used anywhere
     # def _attr_array_to_dict(self, np_array):

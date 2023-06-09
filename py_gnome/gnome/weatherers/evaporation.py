@@ -91,10 +91,12 @@ class Evaporation(Weatherer):
         If K is expressed in m/sec, then Buchanan and Hurford set c = 0.0025
         U is wind_speed 10m above the surface
 
-        .. note:: wind speed is at least 1 m/s.
+        .. note:: wind speed is at least 1 m/s, unless there is an ice aware wind.
+
+        .. note:: ice aware wind enforces minimum speed before applying coverage factor.
         '''
-        wind_speed = self.get_wind_speed(points, model_time, fill_value=1.0)
-        wind_speed[wind_speed < 1.0] = 1.0
+        wind_speed = self.get_wind_speed(points, model_time, min_val = 1, fill_value=1.0)
+        #wind_speed[wind_speed < 1.0] = 1.0  # this is handled by get_wind_speed now
         c_evap = 0.0048     # if wind_speed in m/s
         return c_evap * wind_speed ** 0.78
 #         return np.where(wind_speed <= 10.0,
@@ -116,16 +118,16 @@ class Evaporation(Weatherer):
         #mw = substance.molecular_weight
         # evaporation expects mw in kg/mol, database is in g/mol
         mw = substance.molecular_weight / 1000.
-        
+
         sum_mi_mw = (data['mass_components'][:, :len(vp)] / mw).sum(axis=1)
 
-# term for Schmidt number         
+# term for Schmidt number
 #        air_visc = 14.8e-6
 #        D_water = 2.4e-5
 #        (air_visc / D_water) ** (-2. / 3.) = 1.380277
-        
+
         Schmidt = 1.380277 * (0.018 / mw) ** (1. / 3.)
-# term for Schmidt number         
+# term for Schmidt number
         # d_numer = -1/rho * f_diff.reshape(-1, 1) * K * vp
         # d_denom = (data['thickness'] * constants.gas_constant *
         #            water_temp * sum_frac_mw).reshape(-1, 1)

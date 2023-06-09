@@ -145,8 +145,8 @@ nc_names = {
     },
     'grid_wind': {
         'default_names': {
-            'u': ['air_u', 'Air_U', 'air_ucmp', 'wind_u','u-component_of_wind_height_above_ground','Uwind'],
-            'v': ['air_v', 'Air_V', 'air_vcmp', 'wind_v','v-component_of_wind_height_above_ground','Vwind']
+            'u': ['air_u', 'Air_U', 'air_ucmp', 'wind_u','u-component_of_wind_height_above_ground','Uwind','u10'],
+            'v': ['air_v', 'Air_V', 'air_vcmp', 'wind_v','v-component_of_wind_height_above_ground','Vwind','v10']
         },
         'cf_names': {
             'u': ['eastward_wind', 'eastward wind'],
