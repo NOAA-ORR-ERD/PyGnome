@@ -43,10 +43,8 @@ class TideSchema(base_schema.ObjTypeSchema):
         Float(), missing=drop, save=True, update=True
     )
     extrapolation_is_allowed = SchemaNode(Boolean(), missing=drop, read_only=True)
-    data_start = SchemaNode(LocalDateTime(), read_only=True,
-                            validator=convertible_to_seconds)
-    data_stop = SchemaNode(LocalDateTime(), read_only=True,
-                           validator=convertible_to_seconds)
+    data_start = SchemaNode(LocalDateTime(), read_only=True)
+    data_stop = SchemaNode(LocalDateTime(), read_only=True)
 
 
 class Tide(Environment):

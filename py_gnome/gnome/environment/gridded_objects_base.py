@@ -78,10 +78,8 @@ class VariableSchemaBase(base_schema.ObjTypeSchema):
         isdatafile=True, test_equal=False, update=False
     )
     extrapolation_is_allowed = SchemaNode(Boolean())
-    data_start = SchemaNode(LocalDateTime(), read_only=True,
-                            validator=convertible_to_seconds)
-    data_stop = SchemaNode(LocalDateTime(), read_only=True,
-                           validator=convertible_to_seconds)
+    data_start = SchemaNode(LocalDateTime(), read_only=True)
+    data_stop = SchemaNode(LocalDateTime(), read_only=True)
 
 
 class VariableSchema(VariableSchemaBase):

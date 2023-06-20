@@ -825,10 +825,8 @@ class FileGridCurrentSchema(ObjTypeSchema):
     )
     extrapolation_is_allowed = SchemaNode(Boolean())
 
-    data_start = SchemaNode(LocalDateTime(), read_only=True,
-                            validator=convertible_to_seconds)
-    data_stop = SchemaNode(LocalDateTime(), read_only=True,
-                           validator=convertible_to_seconds)
+    data_start = SchemaNode(LocalDateTime(), read_only=True)
+    data_stop = SchemaNode(LocalDateTime(), read_only=True)
 
 
 

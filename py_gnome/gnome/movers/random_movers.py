@@ -24,10 +24,8 @@ class RandomMoverSchema(ProcessSchema):
     diffusion_coef = SchemaNode(Float(), save=True, update=True, missing=drop)
     uncertain_factor = SchemaNode(Float(), save=True, update=True,
                                   missing=drop)
-    data_start = SchemaNode(LocalDateTime(), validator=convertible_to_seconds,
-                            read_only=True)
-    data_stop = SchemaNode(LocalDateTime(), validator=convertible_to_seconds,
-                           read_only=True)
+    data_start = SchemaNode(LocalDateTime(), read_only=True)
+    data_stop = SchemaNode(LocalDateTime(), read_only=True)
 
 
 class RandomMover(CyMover):

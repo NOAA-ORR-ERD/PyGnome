@@ -38,10 +38,8 @@ class WindMoverSchema(PyMoverSchema):
                                                         GridWind._schema])
     scale_value = SchemaNode(Float(), save=True, update=True, missing=drop)
     #time_offset = SchemaNode(Float(), save=True, update=True, missing=drop)
-    data_start = SchemaNode(LocalDateTime(), read_only=True,
-                            validator=convertible_to_seconds)
-    data_stop = SchemaNode(LocalDateTime(), read_only=True,
-                           validator=convertible_to_seconds)
+    data_start = SchemaNode(LocalDateTime(), read_only=True)
+    data_stop = SchemaNode(LocalDateTime(), read_only=True)
     uncertain_duration = SchemaNode(Float())
     uncertain_time_delay = SchemaNode(Float())
     uncertain_speed_scale = SchemaNode(

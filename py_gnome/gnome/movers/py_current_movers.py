@@ -33,10 +33,8 @@ class CurrentMoverSchema(PyMoverSchema):
                                        )
     scale_value = SchemaNode(Float(), save=True, update=True,
                                missing=drop)
-    data_start = SchemaNode(LocalDateTime(), read_only=True,
-                            validator=convertible_to_seconds)
-    data_stop = SchemaNode(LocalDateTime(), read_only=True,
-                           validator=convertible_to_seconds)
+    data_start = SchemaNode(LocalDateTime(), read_only=True)
+    data_stop = SchemaNode(LocalDateTime(), read_only=True)
     uncertain_duration = SchemaNode(Float())
     uncertain_time_delay = SchemaNode(Float())
     uncertain_along = SchemaNode(
@@ -186,6 +184,7 @@ class CurrentMover(movers.PyMover):
         else:
             return super(CurrentMover, self).get_bounds()
 
+    @pd.profile
     def get_move(self, sc, time_step, model_time_datetime, num_method=None):
         """
         Compute the move in (long,lat,z) space. It returns the delta move

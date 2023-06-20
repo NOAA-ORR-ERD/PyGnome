@@ -57,12 +57,9 @@ class StartPositions(SequenceSchema):
     start_position = WorldPoint()
 
 class BaseReleaseSchema(ObjTypeSchema):
-    release_time = SchemaNode(
-        LocalDateTime(), validator=convertible_to_seconds,
-    )
+    release_time = SchemaNode(LocalDateTime())
     end_release_time = SchemaNode(
         LocalDateTime(), missing=drop,
-        validator=convertible_to_seconds,
         save=True, update=True
     )
     num_elements = SchemaNode(Int(), missing=drop)
