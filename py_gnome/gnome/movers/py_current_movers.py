@@ -184,7 +184,6 @@ class CurrentMover(movers.PyMover):
         else:
             return super(CurrentMover, self).get_bounds()
 
-    @pd.profile
     def get_move(self, sc, time_step, model_time_datetime, num_method=None):
         """
         Compute the move in (long,lat,z) space. It returns the delta move
