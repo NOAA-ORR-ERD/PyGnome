@@ -12,7 +12,6 @@ from colander import SchemaNode, Float, drop, Boolean
 
 import gnome
 from gnome.utilities.time_utils import sec_to_datetime
-from gnome.persist.validators import convertible_to_seconds
 from gnome.persist.extend_colander import LocalDateTime
 
 from .environment import Environment
