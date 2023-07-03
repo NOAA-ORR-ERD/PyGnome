@@ -1,17 +1,22 @@
 '''
 update_from_dict has been giving problems on spills so just add a couple of
-simple tests for spills, and movers orderedcollection
+simple tests for spills, and movers ordered collection
 '''
 
 import copy
 from datetime import datetime
 
 import pytest
+import numpy as np
 
 from gnome.model import Model
 from gnome.spills import surface_point_line_spill
 from gnome.movers import SimpleMover
 from gnome.movers import RandomMover
+
+from gnome.gnomeobject import GnomeId
+from gnome.utilities.orderedcollection import OrderedCollection
+
 
 
 l_spills = [surface_point_line_spill(10, (0, 0, 0),
@@ -27,6 +32,47 @@ l_spills = [surface_point_line_spill(10, (0, 0, 0),
                                      datetime.now().replace(microsecond=0),
                                      name='sp4')]
 l_mv = [SimpleMover(velocity=(1, 2, 3)), RandomMover()]
+
+
+# Some unit tests of the utilities
+# _attr_changed tests
+@pytest.mark.parametrize('val1, val2', [(3, 3),
+                                        ('a string', 'a string'),
+                                        ([1, 2, 3, 4], [1, 2, 3, 4]),
+                                        (np.array([1, 2, 3, 4]), np.array([1, 2, 3, 4])),
+                                        # OrderedCollection required the same objects
+                                        # ints are interned, so this works.
+                                        (OrderedCollection([1, 2, 3, 4]),
+                                         OrderedCollection([1, 2, 3, 4])),
+                                        ])
+def test_attr_changed_not(val1, val2):
+    assert not GnomeId._attr_changed(val1, val2)
+
+
+@pytest.mark.parametrize('val1, val2', [(3, 4),
+                                        ('a string', 'a different string'),
+                                        ([1, 2, 3, 4], [1, 2, 4, 4]),
+                                        (np.array([1, 2, 3, 4]), np.array([1, 2, 4, 4])),
+                                        (np.array([1, 2, 3, 4]), np.array([1, 2, 3])),
+                                        (np.array([1, 2, 3, 4]), np.array([])),
+                                        # two different GnomeId object should not be "same"
+                                        (GnomeId(), GnomeId()),
+                                        # lists are unique, so this should fail
+                                        (OrderedCollection([[1.0], [2.0], [3.0], [4.0]]),
+                                         OrderedCollection([[1.0], [2.0], [3.0], [4.0]])),
+                                        (OrderedCollection([1.0, 2.0, 3.0, 4.0]),
+                                         OrderedCollection([1.0, 2.0, 4.0, 4.0])),
+                                        # order matters (d'uh!)
+                                        (OrderedCollection([1.0, 2.0, 4.0, 3.0]),
+                                         OrderedCollection([1.0, 2.0, 3.0, 4.0])),
+                                        # length matters (d'uh!)
+                                        (OrderedCollection([1.0, 2.0, 3.0]),
+                                         OrderedCollection([1.0, 2.0, 3.0, 4.0])),
+                                        ])
+def test_attr_changed_yes(val1, val2):
+    assert GnomeId._attr_changed(val1, val2) is True
+
+
 
 
 

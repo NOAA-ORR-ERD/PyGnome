@@ -10,10 +10,11 @@ from uuid import uuid1
 
 import numpy as np
 
-from gnome.gnomeobject import GnomeId, combine_signatures
+from gnome.gnomeobject import GnomeId, combine_signatures, AddLogger
 from gnome import (environment,
                    movers,
                    outputters,
+                   gnomeobject
                    )
 from gnome.spills.spill import Spill
 from gnome.spills.release import Release
@@ -31,6 +32,44 @@ def test_exceptions():
         go = GnomeId()
         print('\n id exists: {0}'.format(go.id))  # calls getter, assigns an id
         go.id = uuid1()
+
+
+def test_class_from_objtype_good():
+    obj = gnomeobject.class_from_objtype('gnome.movers.RandomMover')
+
+    assert obj is movers.RandomMover
+
+def test_class_from_objtype_good():
+
+    with pytest.raises(AttributeError):
+        obj = gnomeobject.class_from_objtype('gnome.movers.StupidMover')
+
+
+class Test_check_type:
+
+    class C1(GnomeId):
+        pass
+
+    class C2(GnomeId):
+        pass
+
+    def test_check_type_same_obj(self):
+        obj1 = self.C1()
+        obj2 = obj1
+        assert obj1._check_type(obj2)
+
+    def test_check_type_same_type(self):
+        obj1 = self.C1()
+        obj2 = self.C1()
+
+        assert obj1 is not obj2  # just to make sure
+        assert obj1._check_type(obj2)
+
+    def test_check_type_not_same_type(self):
+        obj1 = self.C1()
+        obj2 = self.C2()
+
+        assert not obj1._check_type(obj2)
 
 
 def test_copy():
@@ -423,6 +462,16 @@ def test_diff_multiple_differrences():
         else:
             raise AssertionError(f'{msg} is mising from diff')
 
-
 # FIXME: there should be a test of weird arrays, like DatetimeValue2dArray
+
+
+def test_AddLogger_bad_kwargs():
+    """
+    AddLogger should barf if you pass bad kwargs
+    """
+    with pytest.raises(TypeError) as excinfo:
+        al = AddLogger(bad_kwarg=32)
+
+    assert "bad_kwarg" in str(excinfo.value)
+
 
