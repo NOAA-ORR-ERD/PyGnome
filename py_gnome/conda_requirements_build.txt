@@ -4,3 +4,5 @@
 cython=0.29.*
 setuptools>=62  # older versions uses different build dirs
 gitpython
+python-build
+

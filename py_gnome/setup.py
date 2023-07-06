@@ -12,42 +12,45 @@ It needs to be imported before any other extensions
 (which happens in the gnome.__init__.py file)
 """
 
-import os
-import sys
-import sysconfig
+import datetime
 import importlib
 import glob
+import os
+from pathlib import Path
+import platform
 import shutil
-import datetime
+import sys
+import sysconfig
+
 
 # to support "develop" mode:
 import setuptools
-from setuptools import setup, find_packages
+from setuptools import setup
+
 from distutils.command.clean import clean
 
 from distutils.extension import Extension
 from Cython.Distutils import build_ext
 
-import platform
 from git import Repo
 
 import numpy as np
 
-# could run setup from anywhere
+# could run setup from anywhere (though not really??)
 SETUP_PATH = os.path.dirname(os.path.abspath(__file__))
+#SETUP_PATH = Path(__file__).parent
 
 # the extension used for compiled modules
-# # why is this so ugly?!? on py2?
+# does this not work ??
 # comp_modules_ext = sysconfig.get_config_var('EXT_SUFFIX')
 # if comp_modules_ext is None:
 #     comp_modules_ext = '.lib' if 'win' in sys.platform else ".so"
-if sys.version_info.major == 3:
+if sys.version_info.major < 3 or sys.version_info.minor < 9:
+    raise NotImplementedError("PyGNOME can only be built with Python 3.9 or above")
+else:
     py_impl = ['.'] + [c.lower() for c in platform.python_implementation() if c.isupper()]
     py_impl = py_impl + sysconfig.get_python_version().split('.') + ['-'] + [sysconfig.get_platform().replace('-','_')]
     win_comp_modules_ext = ''.join(py_impl) + '.lib'
-else:
-    win_comp_modules_ext = '.lib'
-
 
 # cd to SETUP_PATH, run develop or install, then cd back
 CWD = os.getcwd()
@@ -355,9 +358,13 @@ cpp_files = ['RectGridVeL_c.cpp',
              ]
 
 
-cpp_code_dir = os.path.join('..', 'lib_gnome')
+# cpp_code_dir = (SETUP_PATH / 'lib_gnome').relative_to(SETUP_PATH)
+# cpp_files = [str(cpp_code_dir / f) for f in cpp_files]
+cpp_code_dir = os.path.join('.', 'lib_gnome')
+# cpp_code_dir = './lib_gnome'
 cpp_files = [os.path.join(cpp_code_dir, f) for f in cpp_files]
 
+print(cpp_files)
 
 # setting the "pyGNOME" define so that conditional compilation
 # in the cpp files is done right.

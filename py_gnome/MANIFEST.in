@@ -1,0 +1,5 @@
+# include of of lib_gnome in the source dist
+graft lib_gnome
+include gnome/cy_gnome/*.pyx
+include gnome/cy_gnome/*.pxd
+
