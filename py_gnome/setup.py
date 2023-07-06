@@ -588,53 +588,54 @@ if sys.version_info.major == 2:
                                 language="c",
                                 ))
 
-def get_version():
-    """
-    return the version number from the __init__
-    """
-    for line in open("gnome/__init__.py"):
-        if line.startswith("__version__"):
-            version = line.strip().split('=')[1].strip().strip("'").strip('"')
-            return version
-    raise ValueError("can't find version string in __init__")
+# def get_version():
+#     """
+#     return the version number from the __init__
+#     """
+#     for line in open("gnome/__init__.py"):
+#         if line.startswith("__version__"):
+#             version = line.strip().split('=')[1].strip().strip("'").strip('"')
+#             return version
+#     raise ValueError("can't find version string in __init__")
 
 
 for e in extensions:
     e.cython_directives = {'language_level': "3"}  # all are Python-3
 
-setup(name='pyGnome',
-      version=get_version(),
-      ext_modules=extensions,
-      packages=find_packages(),
-      package_dir={'gnome': 'gnome'},
-      package_data={'gnome': ['data/yeardata/*',
-                              'outputters/sample.b64',
-                              'weatherers/platforms.json'
-                              ]},
+# setup(name='pyGnome',
+      # version=get_version(),
+
+setup(ext_modules=extensions,
+      # packages=find_packages(),
+      # package_dir={'gnome': 'gnome'},
+      # package_data={'gnome': ['data/yeardata/*',
+      #                         'outputters/sample.b64',
+      #                         'weatherers/platforms.json'
+      #                         ]},
       # you are not going to be able to "pip install" this anyway
       # -- no need for requirements
-      requires=[],   # want other packages here?
+#     requires=[],   # want other packages here?
       cmdclass={'build_ext': build_ext,
                 'cleanall': cleanall},
 
       # scripts,
 
       # metadata for upload to PyPI
-      author="Gnome team at NOAA/ORR/ERD",
-      author_email="orr.gnome@noaa.gov",
-      description=("GNOME (General NOAA Operational Modeling Environment) "
-                   "is the modeling tool the Office of Response and "
-                   "Restoration's (OR&R) Emergency Response Division uses to "
-                   "predict the possible route, or trajectory, a pollutant "
-                   "might follow in or on a body of water, such as in an "
-                   "oil spill.  "
-                   "It can also be used as a customizable general particle "
-                   "tracking code. "
-                   "Branch: {} "
-                   "LastUpdate: {}"
-                   .format(branch_name, last_update)),
-      license="Public Domain",
-      keywords="oilspill modeling particle_tracking",
+      # author="Gnome team at NOAA/ORR/ERD",
+      # author_email="orr.gnome@noaa.gov",
+      # description=("GNOME (General NOAA Operational Modeling Environment) "
+      #              "is the modeling tool the Office of Response and "
+      #              "Restoration's (OR&R) Emergency Response Division uses to "
+      #              "predict the possible route, or trajectory, a pollutant "
+      #              "might follow in or on a body of water, such as in an "
+      #              "oil spill.  "
+      #              "It can also be used as a customizable general particle "
+      #              "tracking code. "
+      #              "Branch: {} "
+      #              "LastUpdate: {}"
+      #              .format(branch_name, last_update)),
+      # license="Public Domain",
+      # keywords="oilspill modeling particle_tracking",
       url="https://github.com/NOAA-ORR-ERD/PyGnome"
       )
 
