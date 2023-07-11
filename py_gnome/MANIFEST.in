@@ -1,18 +1,1 @@
-# include all of lib_gnome in the source dist
-graft lib_gnome
-
-# all the Cython files
-include gnome/cy_gnome/*.pyx
-include gnome/cy_gnome/*.pxd
-
-# conda requirements
-conda_requirements.txt
-conda_requirements_build.txt
-conda_requirements_docs.txt
-
-# tests and scripts
-graft tests
-graft scripts
-
-# documentation
-graft documentation
+prune utility_scripts
