@@ -42,21 +42,21 @@ compile_pygnome:
 
     # get the adios_db code: needed for tests and requirements
     - git clone --depth 1 -b develop https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.orr.noaa.gov/gnome/oil_database/oil_database.git
+    - cd ./py_gnome
     - conda install -y python=$PYTHON_VER --file conda_requirements.txt
                                           --file conda_requirements_build.txt
                                           --file oil_database/adios_db/conda_requirements.txt
 
     # install adios_db
-    - pip install oil_database/adios_db/
+    - pip install ../oil_database/adios_db/
 
-    - cd ./py_gnome
     - pip install --no-build-isolation ./
 
     - cd ../  # make sure that it won't find the source gnome package.
     - python -c "import gnome"  # make sure that it imports
 
     # need extra requirements for the docs
-    - conda install -y --file conda_requirements_docs.txt
+    - conda install -y --file py_gnome/conda_requirements_docs.txt
     - cd py_gnome/documentation && make html  # build the docs
   artifacts:
     when: always
@@ -74,7 +74,7 @@ test_pygnome:
   allow_failure: false
   image: registry.orr.noaa.gov/erd/centos-conda/centos7-python$PYTHON_VER
   script:
-    - conda install -y --file conda_requirements_test.txt
+    - conda install -y --file py_gnome/conda_requirements_test.txt
     - cd ./py_gnome/tests/unit_tests && pytest --runslow
 
     # save the package list if tests pass
@@ -135,14 +135,14 @@ test_pygnome_windows:
     - git clone --depth 1 -b develop https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.orr.noaa.gov/gnome/oil_database/oil_database.git
 
     - conda install -y python=$PYTHON_VER mamba
+    - cd ./py_gnome
     - echo "Setting up conda environment"
     - mamba install -y python=$PYTHON_VER --file conda_requirements.txt
                                           --file conda_requirements_build.txt
                                           --file conda_requirements_test.txt
-                                          --file oil_database/adios_db/conda_requirements.txt
+                                          --file ../oil_database/adios_db/conda_requirements.txt
 
     - echo "Building PyGNOME"
-    - cd ./py_gnome
     - python setup.py install
 
     # Make sure that it imports from some folder other than the
