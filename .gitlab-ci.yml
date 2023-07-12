@@ -45,7 +45,7 @@ compile_pygnome:
     - cd ./py_gnome
     - conda install -y python=$PYTHON_VER --file conda_requirements.txt
                                           --file conda_requirements_build.txt
-                                          --file oil_database/adios_db/conda_requirements.txt
+                                          --file ../oil_database/adios_db/conda_requirements.txt
 
     # install adios_db
     - pip install ../oil_database/adios_db/
