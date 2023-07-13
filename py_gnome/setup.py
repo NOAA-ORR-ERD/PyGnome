@@ -364,7 +364,6 @@ cpp_code_dir = os.path.join('.', 'lib_gnome')
 # cpp_code_dir = './lib_gnome'
 cpp_files = [os.path.join(cpp_code_dir, f) for f in cpp_files]
 
-print(cpp_files)
 
 # setting the "pyGNOME" define so that conditional compilation
 # in the cpp files is done right.
