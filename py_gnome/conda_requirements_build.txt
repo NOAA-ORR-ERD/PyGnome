@@ -6,4 +6,6 @@ setuptools>=62  # older versions uses different build dirs
 setuptools-scm>=6.2
 gitpython
 python-build
+cmake
+ninja
 

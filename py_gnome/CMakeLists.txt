@@ -106,9 +106,18 @@ foreach(ext IN LISTS EXT_NAMES)
 
     target_link_libraries(${ext} PRIVATE gnome Python::NumPy)
 
+
+    #if(APPLE)
+      set_target_properties(${ext} PROPERTIES INSTALL_RPATH "@loader_path/.")
+    #elseif(UNIX)
+    #  set_target_properties(${ext} PROPERTIES INSTALL_RPATH "$ORIGIN/.")
+    #endif()
+
     install(TARGETS ${ext} DESTINATION gnome/cy_gnome)
+
 
 endforeach()
 
 install(TARGETS gnome DESTINATION gnome/cy_gnome)
+
 
