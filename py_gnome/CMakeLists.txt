@@ -15,7 +15,8 @@ find_package(
 
 find_program(CYTHON "cython")
 
-set (EXT_NAMES cy_mover
+set (EXT_NAMES cy_basic_types
+                   cy_mover
                    cy_helpers
                    cy_wind_mover
                    cy_current_mover
@@ -107,11 +108,11 @@ foreach(ext IN LISTS EXT_NAMES)
     target_link_libraries(${ext} PRIVATE gnome Python::NumPy)
 
 
-    #if(APPLE)
+    if(APPLE)
       set_target_properties(${ext} PROPERTIES INSTALL_RPATH "@loader_path/.")
-    #elseif(UNIX)
-    #  set_target_properties(${ext} PROPERTIES INSTALL_RPATH "$ORIGIN/.")
-    #endif()
+    elseif(UNIX)
+      set_target_properties(${ext} PROPERTIES INSTALL_RPATH "$ORIGIN/.")
+    endif()
 
     install(TARGETS ${ext} DESTINATION gnome/cy_gnome)
 
