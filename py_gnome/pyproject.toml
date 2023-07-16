@@ -2,11 +2,11 @@
 [build-system]
 # note: using setuptools_scm for file finding, not versioning
 #       we should probably do versioning later, but it requires tagging the git repo properly
-requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2"]
-build-backend = "setuptools.build_meta"
+requires = ["scikit-build-core", "cython", "numpy"]
+build-backend = "scikit_build_core.build"
 
 [project]
-name = "pyGNOME"
+name = "gnome"
 authors = [
     {name = "Gnome team at NOAA/ORR/ERD", email = "orr.gnome@noaa.gov"},
 ]
@@ -28,7 +28,10 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Oceanography",
 ]
 
-dynamic = ["version", "readme"]
+version = "1.1.7dev"
+readme = "README.rst"
+
+# dynamic = ["version", "readme"]
 
 # really hard to do with conda compatibility :-)
 # dependencies = [
@@ -49,9 +52,5 @@ include = ["gnome*"]  # package names should match these glob patterns (["*"] by
 # exclude = ["my_package.tests*"]  # exclude packages matching these glob patterns (empty by default)
 namespaces = false  # to disable scanning PEP 420 namespaces (true by default)
 
-
-[tool.setuptools.dynamic]
-version = {attr = "gnome.__version__"}
-readme = {file = ["README.rst"]}
 
 # [project.optional-dependencies]
