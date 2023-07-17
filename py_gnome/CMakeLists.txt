@@ -1,9 +1,7 @@
-# to jcfr@github henryiii
-
-
 cmake_minimum_required(VERSION 3.15...3.26)
-project(${SKBUILD_PROJECT_NAME} LANGUAGES CXX)
+project(${SKBUILD_PROJECT_NAME} LANGUAGES CXX C)
 
+# to find the netcdf finder
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 find_package(NetCDF REQUIRED MODULE)
@@ -16,70 +14,70 @@ find_package(
 find_program(CYTHON "cython")
 
 set (EXT_NAMES cy_basic_types
-                   cy_mover
-                   cy_helpers
-                   cy_wind_mover
-                   cy_current_mover
-                   cy_cats_mover
-                   cy_component_mover
-                   cy_gridcurrent_mover
-                   cy_gridwind_mover
-                   cy_ice_mover
-                   cy_ice_wind_mover
-                   cy_currentcycle_mover
-                   cy_ossm_time
-                   cy_random_mover
-                   cy_random_mover_3d
-                   cy_rise_velocity_mover
-                   cy_land_check
-                   cy_grid_map
-                   cy_shio_time
-                   cy_grid
-                   cy_grid_rect
-                   cy_grid_curv
-                   cy_weatherers
-                   )
+               cy_mover
+               cy_helpers
+               cy_wind_mover
+               cy_current_mover
+               cy_cats_mover
+               cy_component_mover
+               cy_gridcurrent_mover
+               cy_gridwind_mover
+               cy_ice_mover
+               cy_ice_wind_mover
+               cy_currentcycle_mover
+               cy_ossm_time
+               cy_random_mover
+               cy_random_mover_3d
+               cy_rise_velocity_mover
+               cy_land_check
+               cy_grid_map
+               cy_shio_time
+               cy_grid
+               cy_grid_rect
+               cy_grid_curv
+               cy_weatherers
+               )
 
 set( CPP_FILES RectGridVeL_c.cpp
-             MemUtils.cpp
-             Mover_c.cpp
-             Replacements.cpp
-             ClassID_c.cpp
-             Random_c.cpp
-             TimeValuesIO.cpp
-             GEOMETRY.cpp
-             OSSMTimeValue_c.cpp
-             TimeValue_c.cpp
-             RectUtils.cpp
-             WindMover_c.cpp
-             CompFunctions.cpp
-             StringFunctions.cpp
-             OUTILS.cpp
-             CATSMover_c.cpp
-             CurrentMover_c.cpp
-             ComponentMover_c.cpp
-             ShioTimeValue_c.cpp
-             ShioHeight.cpp
-             TriGridVel_c.cpp
-             DagTree.cpp
-             DagTreeIO.cpp
-             ShioCurrent1.cpp
-             ShioCurrent2.cpp
-             GridCurrentMover_c.cpp
-             GridWindMover_c.cpp
-             IceMover_c.cpp
-             IceWindMover_c.cpp
-             CurrentCycleMover_c.cpp
-             TimeGridVel_c.cpp
-             TimeGridWind_c.cpp
-             MakeTriangles.cpp
-             MakeDagTree.cpp
-             GridMap_c.cpp
-             GridMapUtils.cpp
-             RandomVertical_c.cpp
-             RiseVelocity_c.cpp
-             Weatherers_c.cpp
-             )
+               MemUtils.cpp
+               Mover_c.cpp
+               Replacements.cpp
+               ClassID_c.cpp
+               Random_c.cpp
+               TimeValuesIO.cpp
+               GEOMETRY.cpp
+               OSSMTimeValue_c.cpp
+               TimeValue_c.cpp
+               RectUtils.cpp
+               WindMover_c.cpp
+               CompFunctions.cpp
+               StringFunctions.cpp
+               OUTILS.cpp
+               CATSMover_c.cpp
+               CurrentMover_c.cpp
+               ComponentMover_c.cpp
+               ShioTimeValue_c.cpp
+               ShioHeight.cpp
+               TriGridVel_c.cpp
+               DagTree.cpp
+               DagTreeIO.cpp
+               ShioCurrent1.cpp
+               ShioCurrent2.cpp
+               GridCurrentMover_c.cpp
+               GridWindMover_c.cpp
+               IceMover_c.cpp
+               IceWindMover_c.cpp
+               CurrentCycleMover_c.cpp
+               TimeGridVel_c.cpp
+               TimeGridWind_c.cpp
+               MakeTriangles.cpp
+               MakeDagTree.cpp
+               GridMap_c.cpp
+               GridMapUtils.cpp
+               RandomVertical_c.cpp
+               RiseVelocity_c.cpp
+               Weatherers_c.cpp
+               )
 
 list(TRANSFORM CPP_FILES PREPEND "lib_gnome/")
 
@@ -87,13 +85,15 @@ add_library(gnome SHARED ${CPP_FILES})
 
 target_link_libraries(gnome PRIVATE NetCDF::NetCDF)
 
+# set macros for lib_gnome code
 target_compile_definitions(gnome PUBLIC pyGNOME=1)
 
 target_include_directories(gnome PUBLIC lib_gnome)
 
+
 foreach(ext IN LISTS EXT_NAMES)
 
-    add_custom_command(
+  add_custom_command(
       OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/gnome/cy_gnome/${ext}.cpp"
       DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/gnome/cy_gnome/${ext}.pyx"
       VERBATIM
@@ -102,23 +102,55 @@ foreach(ext IN LISTS EXT_NAMES)
               --output-file
               "${CMAKE_CURRENT_BINARY_DIR}/gnome/cy_gnome/${ext}.cpp")
     
-    python_add_library(${ext} MODULE "${CMAKE_CURRENT_BINARY_DIR}/gnome/cy_gnome/${ext}.cpp"
-                   WITH_SOABI)
+  python_add_library(${ext}
+                     MODULE
+                     "${CMAKE_CURRENT_BINARY_DIR}/gnome/cy_gnome/${ext}.cpp"
+                     WITH_SOABI)
 
-    target_link_libraries(${ext} PRIVATE gnome Python::NumPy)
+  target_link_libraries(${ext} PRIVATE gnome Python::NumPy)
 
+  if(APPLE)
+    set_target_properties(${ext} PROPERTIES INSTALL_RPATH "@loader_path/.")
+  elseif(UNIX)
+    set_target_properties(${ext} PROPERTIES INSTALL_RPATH "$ORIGIN/.")
+  endif()
 
-    if(APPLE)
-      set_target_properties(${ext} PROPERTIES INSTALL_RPATH "@loader_path/.")
-    elseif(UNIX)
-      set_target_properties(${ext} PROPERTIES INSTALL_RPATH "$ORIGIN/.")
-    endif()
-
-    install(TARGETS ${ext} DESTINATION gnome/cy_gnome)
-
+  install(TARGETS ${ext} DESTINATION gnome/cy_gnome)
 
 endforeach()
 
 install(TARGETS gnome DESTINATION gnome/cy_gnome)
 
+# set rpath so libgnome can be found
+if(APPLE)
+  set_target_properties(${ext} PROPERTIES INSTALL_RPATH "@loader_path/.")
+elseif(UNIX)
+  set_target_properties(${ext} PROPERTIES INSTALL_RPATH "$ORIGIN/.")
+endif()
 
+install(TARGETS ${ext} DESTINATION)
+
+# geometry extension
+#   gnome.utilities.geometry.cy_point_in_polygon
+
+add_custom_command(
+  OUTPUT  "${CMAKE_CURRENT_BINARY_DIR}/gnome/utilities/geometry/cy_point_in_polygon.c"
+  DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/gnome/utilities/geometry/cy_point_in_polygon.pyx";
+          "${CMAKE_CURRENT_SOURCE_DIR}/gnome/utilities/geometry/c_point_in_polygon.c"
+  VERBATIM
+  COMMAND "${CYTHON}" -3
+          "${CMAKE_CURRENT_SOURCE_DIR}/gnome/utilities/geometry/cy_point_in_polygon.pyx"
+          --output-file
+          "${CMAKE_CURRENT_BINARY_DIR}/gnome/utilities/geometry/cy_point_in_polygon.c")
+
+# how do I build the c file (c_point_in_polygon) built into the extension
+python_add_library(cy_point_in_polygon
+                   MODULE
+                   "${CMAKE_CURRENT_BINARY_DIR}/gnome/utilities/geometry/cy_point_in_polygon.c"
+                   "${CMAKE_CURRENT_BINARY_DIR}/gnome/utilities/geometry/c_point_in_polygon.c"
+                   WITH_SOABI)
+
+
+target_link_libraries(cy_point_in_polygon PRIVATE Python::NumPy)
+
+install(TARGETS cy_point_in_polygon DESTINATION gnome/utilities/geometry)
