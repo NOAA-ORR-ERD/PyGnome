@@ -22,8 +22,8 @@ from gnome.persist.extend_colander import LocalDateTime
 
 
 class TimeRangeSchema(TupleSchema):
-    start = SchemaNode(LocalDateTime())
-    stop = SchemaNode(LocalDateTime())
+    start = SchemaNode(LocalDateTime(), validator=convertible_to_seconds)
+    stop = SchemaNode(LocalDateTime(), validator=convertible_to_seconds)
 
 
 class ProcessSchema(ObjTypeSchema):

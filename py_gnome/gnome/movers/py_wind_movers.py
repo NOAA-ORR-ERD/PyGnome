@@ -22,7 +22,6 @@ from gnome.environment import GridWind
 
 from gnome.movers.movers import TimeRangeSchema, PyMoverSchema
 
-from gnome.persist.validators import convertible_to_seconds
 from gnome.persist.extend_colander import LocalDateTime, FilenameSchema
 from gnome.persist.base_schema import GeneralGnomeObjectSchema
 from gnome.environment.gridded_objects_base import Grid_U, VectorVariableSchema

@@ -15,7 +15,6 @@ from gnome.environment.gridded_objects_base import PyGrid
 from gnome.environment.gridded_objects_base import VariableSchema
 
 from gnome.movers import CyMover, ProcessSchema
-from gnome.persist.validators import convertible_to_seconds
 from gnome.persist.extend_colander import LocalDateTime
 from gnome.utilities.inf_datetime import InfTime, MinusInfTime
 

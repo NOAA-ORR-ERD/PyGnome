@@ -12,42 +12,45 @@ It needs to be imported before any other extensions
 (which happens in the gnome.__init__.py file)
 """
 
-import os
-import sys
-import sysconfig
+import datetime
 import importlib
 import glob
+import os
+from pathlib import Path
+import platform
 import shutil
-import datetime
+import sys
+import sysconfig
+
 
 # to support "develop" mode:
 import setuptools
-from setuptools import setup, find_packages
+from setuptools import setup
+
 from distutils.command.clean import clean
 
 from distutils.extension import Extension
 from Cython.Distutils import build_ext
 
-import platform
 from git import Repo
 
 import numpy as np
 
-# could run setup from anywhere
+# could run setup from anywhere (though not really??)
 SETUP_PATH = os.path.dirname(os.path.abspath(__file__))
+#SETUP_PATH = Path(__file__).parent
 
 # the extension used for compiled modules
-# # why is this so ugly?!? on py2?
+# does this not work ??
 # comp_modules_ext = sysconfig.get_config_var('EXT_SUFFIX')
 # if comp_modules_ext is None:
 #     comp_modules_ext = '.lib' if 'win' in sys.platform else ".so"
-if sys.version_info.major == 3:
+if sys.version_info.major < 3 or sys.version_info.minor < 9:
+    raise NotImplementedError("PyGNOME can only be built with Python 3.9 or above")
+else:
     py_impl = ['.'] + [c.lower() for c in platform.python_implementation() if c.isupper()]
     py_impl = py_impl + sysconfig.get_python_version().split('.') + ['-'] + [sysconfig.get_platform().replace('-','_')]
     win_comp_modules_ext = ''.join(py_impl) + '.lib'
-else:
-    win_comp_modules_ext = '.lib'
-
 
 # cd to SETUP_PATH, run develop or install, then cd back
 CWD = os.getcwd()
@@ -355,7 +358,10 @@ cpp_files = ['RectGridVeL_c.cpp',
              ]
 
 
-cpp_code_dir = os.path.join('..', 'lib_gnome')
+# cpp_code_dir = (SETUP_PATH / 'lib_gnome').relative_to(SETUP_PATH)
+# cpp_files = [str(cpp_code_dir / f) for f in cpp_files]
+cpp_code_dir = os.path.join('.', 'lib_gnome')
+# cpp_code_dir = './lib_gnome'
 cpp_files = [os.path.join(cpp_code_dir, f) for f in cpp_files]
 
 
@@ -588,53 +594,54 @@ if sys.version_info.major == 2:
                                 language="c",
                                 ))
 
-def get_version():
-    """
-    return the version number from the __init__
-    """
-    for line in open("gnome/__init__.py"):
-        if line.startswith("__version__"):
-            version = line.strip().split('=')[1].strip().strip("'").strip('"')
-            return version
-    raise ValueError("can't find version string in __init__")
+# def get_version():
+#     """
+#     return the version number from the __init__
+#     """
+#     for line in open("gnome/__init__.py"):
+#         if line.startswith("__version__"):
+#             version = line.strip().split('=')[1].strip().strip("'").strip('"')
+#             return version
+#     raise ValueError("can't find version string in __init__")
 
 
 for e in extensions:
     e.cython_directives = {'language_level': "3"}  # all are Python-3
 
-setup(name='pyGnome',
-      version=get_version(),
-      ext_modules=extensions,
-      packages=find_packages(),
-      package_dir={'gnome': 'gnome'},
-      package_data={'gnome': ['data/yeardata/*',
-                              'outputters/sample.b64',
-                              'weatherers/platforms.json'
-                              ]},
+# setup(name='pyGnome',
+      # version=get_version(),
+
+setup(ext_modules=extensions,
+      # packages=find_packages(),
+      # package_dir={'gnome': 'gnome'},
+      # package_data={'gnome': ['data/yeardata/*',
+      #                         'outputters/sample.b64',
+      #                         'weatherers/platforms.json'
+      #                         ]},
       # you are not going to be able to "pip install" this anyway
       # -- no need for requirements
-      requires=[],   # want other packages here?
+#     requires=[],   # want other packages here?
       cmdclass={'build_ext': build_ext,
                 'cleanall': cleanall},
 
       # scripts,
 
       # metadata for upload to PyPI
-      author="Gnome team at NOAA/ORR/ERD",
-      author_email="orr.gnome@noaa.gov",
-      description=("GNOME (General NOAA Operational Modeling Environment) "
-                   "is the modeling tool the Office of Response and "
-                   "Restoration's (OR&R) Emergency Response Division uses to "
-                   "predict the possible route, or trajectory, a pollutant "
-                   "might follow in or on a body of water, such as in an "
-                   "oil spill.  "
-                   "It can also be used as a customizable general particle "
-                   "tracking code. "
-                   "Branch: {} "
-                   "LastUpdate: {}"
-                   .format(branch_name, last_update)),
-      license="Public Domain",
-      keywords="oilspill modeling particle_tracking",
+      # author="Gnome team at NOAA/ORR/ERD",
+      # author_email="orr.gnome@noaa.gov",
+      # description=("GNOME (General NOAA Operational Modeling Environment) "
+      #              "is the modeling tool the Office of Response and "
+      #              "Restoration's (OR&R) Emergency Response Division uses to "
+      #              "predict the possible route, or trajectory, a pollutant "
+      #              "might follow in or on a body of water, such as in an "
+      #              "oil spill.  "
+      #              "It can also be used as a customizable general particle "
+      #              "tracking code. "
+      #              "Branch: {} "
+      #              "LastUpdate: {}"
+      #              .format(branch_name, last_update)),
+      # license="Public Domain",
+      # keywords="oilspill modeling particle_tracking",
       url="https://github.com/NOAA-ORR-ERD/PyGnome"
       )
 

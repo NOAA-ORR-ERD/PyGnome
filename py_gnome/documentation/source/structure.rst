@@ -69,7 +69,19 @@ Release Object :mod:`gnome.spills.release.Release`:
 Substance Object :mod:`gnome.spills.substance.Substance`:
   Defines the properties of the elements that affect how they might move or change in the environment.
 
-  PyGNOME includes a sophisticated ``GnomeOil`` substance to support full oil weathering modeling, as well as a simple ``NonWeatheringSubstance`` that is subject only to movement, and can be used to represent a number of "passive tracers".
+  The :class:`gnome.spills.substance.Substance` base class includes everything that the model is expecting to always be there. It is usually not used on its own, but it can be subclasses to support substances with different behavior.
+
+
+Included Substances
+,,,,,,,,,,,,,,,,,,,
+
+PyGNOME includes two built in Substances:
+
+``NonWeatheringSubstance``:
+  This is used for various types of passive tracers -- it includes the basics, and a "windage" parameter to allow it to be used to model things on the surface that can be moved by the wind. This can be oil that is not changing it time (weathering), but it can  also be used to model anything else that doesn't change in time: Marine debris, fish larvae, Buoys, etc. It can be used for a wide variety of tracers by manipulating its properties
+
+``GnomeOil``:
+  This  substance has all the attributes to support the full suite of oil weathering functionality n PyGNOME. It is most easily created with a oil record from the `ADIOS Oil Database <https://adios.orr.noaa.gov>`_
 
 .. _outputters:
 

@@ -32,7 +32,6 @@ from colander import (String, SchemaNode, SequenceSchema, drop, Int, Float,
 
 from gnome.persist.base_schema import ObjTypeSchema, WorldPoint, FeatureCollectionSchema
 from gnome.persist.extend_colander import LocalDateTime, FilenameSchema
-from gnome.persist.validators import convertible_to_seconds
 
 from gnome.basic_types import world_point_type
 from gnome.array_types import gat

@@ -48,7 +48,6 @@ class BaseOutputterSchema(ObjTypeSchema):
     )
     output_start_time = SchemaNode(
         LocalDateTime(),
-        validator=validators.convertible_to_seconds,
         missing=drop, save=True, update=True
     )
     surface_conc = SchemaNode(
