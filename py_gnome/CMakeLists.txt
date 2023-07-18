@@ -15,7 +15,8 @@ find_package(
 
 find_program(CYTHON "cython")
 
-set (EXT_NAMES cy_mover
+set (EXT_NAMES cy_basic_types
+                   cy_mover
                    cy_helpers
                    cy_wind_mover
                    cy_current_mover
