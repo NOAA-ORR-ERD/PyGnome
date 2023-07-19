@@ -431,7 +431,61 @@ def test_animation_in_model(output_dir):
 
     model.full_run()
 
-#    assert False
+def test_particle_color_with_depth(output_dir):
+    """
+    render the basemap
+    """
+    r = Renderer(bna_star,
+                 output_dir,
+                 image_size=(600, 600),
+                 draw_back_to_fore=True,
+                 formats=['png'],
+                 depth_colors='inferno')
 
-# # if __name__ == '__main__':
-# #     test_set_viewport()
+    r.draw_background()
+
+    BB = r.map_BB
+    (min_lon, min_lat) = BB[0]
+    (max_lon, max_lat) = BB[1]
+
+    N = 100
+    # create some random particle positions:
+    lon = random.uniform(min_lon, max_lon, (N, ))
+    lat = random.uniform(min_lat, max_lat, (N, ))
+    depth = np.linspace(0,100,N)
+    # create a sc
+    sc = sample_sc_release(num_elements=N)
+    sc['positions'][:, 0] = lon
+    sc['positions'][:, 1] = lat
+    sc['positions'][:, 2] = depth
+
+    r.cache = FakeCache(sc)
+
+    r.write_output(0)
+    r.save_foreground(os.path.join(output_dir, 'map_and_elements.png'))
+
+    r.draw_back_to_fore = False
+    r.clear_foreground()
+    r.write_output(1)
+    r.save_foreground(os.path.join(output_dir, 'elements_with_depth.png'))
+
+
+def test_particle_color_with_depth(output_dir):
+    """
+    render the basemap
+    """
+    r1 = Renderer(bna_star,
+                 output_dir,
+                 image_size=(600, 600),
+                 draw_back_to_fore=True,
+                 formats=['png'],
+                 depth_colors='inferno') #'rainbow')
+
+    r2 = Renderer(bna_star,
+                 output_dir,
+                 image_size=(600, 600),
+                 draw_back_to_fore=True,
+                 formats=['png'],
+                 depth_colors='inferno')
+
+    assert np.alltrue(r1._color_ramp.color_index == r2._color_ramp.color_index)
