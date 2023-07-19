@@ -17,6 +17,7 @@ import bisect
 import numpy as np
 
 import py_gd
+import py_gd.color_ramp
 
 import nucos as uc
 
@@ -201,6 +202,25 @@ class MapCanvas(object):
         """
         self.fore_image.add_colors(color_list)
         self.back_image.add_colors(color_list)
+
+    def add_color_ramp(self, color_scheme, min_val, max_val):
+        """
+        generate depth colors to the gd images
+        :param color_scheme: color scheme to render images
+        type: 'magma', 'inferno', 'plasma', 'viridis', 'cividis', 'twilight', 'twilight_shifted', 'turbo'
+        :param min_val: value to map to the first color in the scheme
+        :param max_val: value to map to the last color in the scheme
+        """
+        existing_colors = self.fore_image.get_color_names()
+
+        # print(existing_colors)
+
+        cr = py_gd.color_ramp.ColorRamp(color_scheme, min_val, max_val, base_colorscheme=len(existing_colors))
+
+        self.fore_image.add_colors(cr.colorlist)
+        self.back_image.add_colors(cr.colorlist)
+
+        self._color_ramp=cr
 
     def get_color_names(self):
         """

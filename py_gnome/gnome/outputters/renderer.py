@@ -98,6 +98,10 @@ class Renderer(Outputter, MapCanvas):
                  output_start_time=None,
                  on=True,
                  timestamp_attrib={},
+                 point_size=2,
+                 depth_colors=None,
+                 min_color_depth=0,
+                 max_color_depth=100,
                  **kwargs
                  ):
         """
@@ -155,8 +159,21 @@ class Renderer(Outputter, MapCanvas):
             final step is written regardless of output_timestep
         :type output_last_step: boolean
 
-        Remaining kwargs are passed onto baseclass's __init__ with a direct
-        call: Outputter.__init__(..)
+        :param point_size=2: size to draw elements, in pixels
+
+        :param depth_colors=None: colorscheme to use to color elements according
+                                  to their depth for 3D modeling. Any scheme that
+                                  py_gd provides can be used:: `py_gd.colorschemes.keys()`
+                                  Currently: 'cividis', 'inferno', 'magma', 'plasma',
+                                  'turbo', 'twilight', 'viridis' (borrowed from matplotlib)
+
+                                  If None, elements will not be colored by depth
+
+        :param min_color_depth=0: depth to map the first color in the scheme (m)
+
+        :param max_color_depth=100: depth to map the last color in the scheme (m)
+
+        Remaining kwargs are passed onto Outputter.__init__(...)
 
         """
         projection = (projections.FlatEarthProjection()
@@ -183,6 +200,7 @@ class Renderer(Outputter, MapCanvas):
         self.last_filename = ''
         self.draw_ontop = draw_ontop
         self.draw_back_to_fore = draw_back_to_fore
+        self.point_size = point_size
 
         Outputter.__init__(self,
                            cache,
@@ -218,6 +236,9 @@ class Renderer(Outputter, MapCanvas):
 
         # initilize the images:
         self.add_colors(self.map_colors)
+        if depth_colors is not None:
+            self.add_color_ramp(depth_colors, min_color_depth, max_color_depth)
+
         self.background_color = 'background'
 
         if self.map_filename is not None:
@@ -238,6 +259,8 @@ class Renderer(Outputter, MapCanvas):
 
         self.grids = []
         self.props = []
+
+        self.depth_colors = depth_colors
 
     @property
     def delay(self):
@@ -403,7 +426,7 @@ class Renderer(Outputter, MapCanvas):
 
     def draw_background(self):
         """
-        Draws the background image -- just land for now
+        Draws the background image -- land and optional graticule
 
         This should be called whenever the scale changes
         """
@@ -506,17 +529,20 @@ class Renderer(Outputter, MapCanvas):
 
             positions = sc['positions']
 
-            # which ones are on land?
+            # Draw the Beached Points
             on_land = sc['status_codes'] == oil_status.on_land
             self.draw_points(positions[on_land],
-                             diameter=2,
-                             color='black',
-                             # color=color,
+                             diameter=self.point_size,
+                             color=color,
                              shape="x")
             # draw the four pixels for the elements not on land and
             # not off the map
+            points_in_water=positions[~on_land]
+            if self.depth_colors is not None:
+                color = self._color_ramp.get_color_indices(points_in_water[:,2])
+
             self.draw_points(positions[~on_land],
-                             diameter=2,
+                             diameter=self.point_size,
                              color=color,
                              shape="round")
 
@@ -674,7 +700,6 @@ class Renderer(Outputter, MapCanvas):
         if json_ == 'save':
             dict_['output_dir'] = os.path.join('./', dict_['output_dir'])
         return dict_
-
 
 class GridVisLayer(object):
     def __init__(self, grid, projection, on=True,

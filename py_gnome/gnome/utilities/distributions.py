@@ -187,15 +187,22 @@ class LogNormalDistribution(DistributionBase):
 class WeibullDistribution(DistributionBase):
     _schema = WeibullDistributionSchema
 
-    'Log Normal Probability Distribution'
+    """
+    Weibull Probability Distribution, also known as
+    Rosin Rammler distribution
+    """
+
     def __init__(self, alpha=None, lambda_=1.0, min_=None, max_=None, **kwargs):
         '''
         :param alpha: The shape parameter 'alpha' - labeled as 'a' in
                       numpy.random.weibull distribution
         :param lambda_: The scale parameter for the distribution - required for
                         2-parameter weibull distribution (Rosin-Rammler).
+
+        NOTE: underscore names because `min`, `max`, and `lambda` are Python
+              builtins
         '''
-        super(WeibullDistribution, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.alpha = alpha
         self.lambda_ = lambda_
         self.min_ = min_
@@ -228,7 +235,7 @@ class WeibullDistribution(DistributionBase):
 
             if self.max_ < 0.00005:
                 raise ValueError('Weibull distribution requires '
-                                 'maximum > .000025 (25 microns)')
+                                 'maximum > .00005 (50 microns)')
 
     def _weibull(self, np_array):
         np_array[:] = self.lambda_ * np.random.weibull(self.alpha,

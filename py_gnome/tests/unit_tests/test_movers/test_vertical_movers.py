@@ -76,5 +76,28 @@ def test_one_move(test_sc):
     r_vel.model_step_is_done()
     print("\ndelta_pos: ")
     print(delta_pos)
+
     assert np.all(delta_pos[:, :2] == 0)
     assert np.all(delta_pos[:, 2] != 0)
+
+def test_calc_rise_velocity():
+
+    substance = SubsurfaceSubstance(distribution=UniformDistribution(low=0.001, high=0.001))
+
+    sc = sample_sc_release(1, (3., 6., 100.),
+                       datetime(2012, 8, 20, 13),
+                       uncertain=False,
+                       arr_types={'rise_vel': gat('rise_vel')},
+                       substance=substance)
+
+    r_vel = RiseVelocityMover()
+    r_vel.prepare_for_model_run()
+
+    r_vel.prepare_for_model_step(sc, time_step, model_time)
+
+    delta_pos = r_vel.get_move(sc, time_step, model_time)
+    r_vel.model_step_is_done()
+
+    assert sc['rise_vel'][0] * time_step == -1. * delta_pos[0][2]
+
+
