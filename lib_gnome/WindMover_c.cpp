@@ -57,7 +57,7 @@ void WindMover_c::Init()
 	fMaxAngle = 60; //degrees
 
 	fSigma2 =0;
-	fSigmaTheta =  0; 
+	fSigmaTheta =  0;
 	fGamma = 1.;
 
 	fUncertaintyDiffusion = 0;
@@ -72,7 +72,7 @@ void WindMover_c::Init()
 
 	bShowWindBarb = true;
 
-	memset(&fWindBarbRect, 0, sizeof(fWindBarbRect)); 
+	memset(&fWindBarbRect, 0, sizeof(fWindBarbRect));
 }
 
 
@@ -86,7 +86,7 @@ void WindMover_c::Dispose()
 	DeleteTimeDep ();
 #endif
 	this->DisposeUncertainty();
-	
+
 	Mover_c::Dispose ();
 }
 
@@ -95,7 +95,7 @@ void rndv(float *rndv1,float *rndv2)
 {
 	float cosArg = 2 * PI * GetRandomFloat(0.0, 1.0);
 	float srt = sqrt(-2 * log(GetRandomFloat(.001, .999)));
-	
+
 	*rndv1 = srt * cos(cosArg);
 	*rndv2 = srt * sin(cosArg);
 }
@@ -115,12 +115,12 @@ static Boolean TermsLessThanMax(float cosTerm, float sinTerm,
 void WindMover_c::DisposeUncertainty()
 {
 	fTimeUncertaintyWasSet = 0;
-	
+
 	if (fWindUncertaintyList) {
 		DisposeHandle ((Handle) fWindUncertaintyList);
 		fWindUncertaintyList = nil;
 	}
-	
+
 	if (fLESetSizes) {
 		DisposeHandle ((Handle) fLESetSizes);
 		fLESetSizes = 0;
@@ -148,7 +148,7 @@ void WindMover_c::UpdateUncertaintyValues(Seconds elapsedTime)
 
 			rndv(&cosTerm,&sinTerm);
 		}
-		
+
 		(*fWindUncertaintyList)[i].randCos = cosTerm;
 		(*fWindUncertaintyList)[i].randSin = sinTerm;
 	}
@@ -194,7 +194,7 @@ OSErr WindMover_c::ReallocateUncertainty(int numLEs, short* statusCodes)
 		//(*fLESetSizes)[0] = numrec;
 		//(*fLESetSizes)[0] = 0;	// index into array, should never change
 		_SetHandleSize((Handle)fWindUncertaintyList,
-		               numrec * sizeof(LEWindUncertainRec)); 
+		               numrec * sizeof(LEWindUncertainRec));
 	}
 
 	return noErr;
@@ -221,7 +221,7 @@ OSErr WindMover_c::AllocateUncertainty(int numLESets, int* LESetsSizesList)
         numrec += LESetsSizesList[i];
 	}
 
-	if(!(fWindUncertaintyList = 
+	if(!(fWindUncertaintyList =
 		 (LEWindUncertainRecH)_NewHandle(sizeof(LEWindUncertainRec)*numrec))) goto errHandler;
 
 	return noErr;
@@ -284,13 +284,13 @@ OSErr WindMover_c::UpdateUncertainty(const Seconds& elapsedTime,
 				numrec += LESetsSizesList[i];
 			}
 
-			uncertListSize = _GetHandleSize((Handle)fWindUncertaintyList) / sizeof(LEWindUncertainRec); 
+			uncertListSize = _GetHandleSize((Handle)fWindUncertaintyList) / sizeof(LEWindUncertainRec);
 			if (numrec != uncertListSize) {
 			    // this should not happen for gui gnome
 #ifdef pyGNOME
 				if (numrec > uncertListSize)
 					needToReAllocate = true;
-				else 
+				else
 					needToReInit = true;
 #else
 				needToReInit = true;
@@ -300,7 +300,7 @@ OSErr WindMover_c::UpdateUncertainty(const Seconds& elapsedTime,
 		}
 
 		if (needToReAllocate) {
-			// move to separate function, and probably should combine with 
+			// move to separate function, and probably should combine with
 			float cosTerm, sinTerm;
 
 			_SetHandleSize((Handle)fWindUncertaintyList, numrec * sizeof(LEWindUncertainRec));
@@ -327,20 +327,20 @@ OSErr WindMover_c::UpdateUncertainty(const Seconds& elapsedTime,
 
 					rndv(&cosTerm, &sinTerm);
 				}
-				
+
 				(*fWindUncertaintyList)[i].randCos = cosTerm;
 				(*fWindUncertaintyList)[i].randSin = sinTerm;
 			}
 		}
 	}
-	
+
 	// question JLM, should fSigma2 change only when the duration value is exceeded ??
 	// or every step as it does now ??
 	fSigma2 = fSpeedScale * .315 * pow(elapsedTime - fUncertainStartTime, .147);
 	fSigma2 = fSigma2 * fSigma2 / 2;
 
 	fSigmaTheta = fAngleScale * 2.73 * sqrt(sqrt(double(elapsedTime - fUncertainStartTime)));
-	
+
 	if (needToReInit) {
 		err = this->AllocateUncertainty(numLESets, LESetsSizesList);
 
@@ -369,7 +369,7 @@ OSErr WindMover_c::AddUncertainty(long setIndex, long leIndex,
 	VelocityRec tempV = *patVel;
 	LEWindUncertainRec unrec;
 
-	if (!fWindUncertaintyList || !fLESetSizes) 
+	if (!fWindUncertaintyList || !fLESetSizes)
 		return 0; // this is our clue to not add uncertainty
 
 	norm = sqrt(tempV.v * tempV.v + tempV.u * tempV.u);
@@ -390,7 +390,7 @@ OSErr WindMover_c::AddUncertainty(long setIndex, long leIndex,
 
 	if (s > 0) {
 		sqs = sqrt(s);
-		m = sqrt(sqs); 
+		m = sqrt(sqs);
 	}
 	else {
 		sqs = 0;
@@ -420,9 +420,9 @@ OSErr WindMover_c::AddUncertainty(long setIndex, long leIndex,
 }
 
 
-void WindMover_c::ClearWindValues() 
+void WindMover_c::ClearWindValues()
 {
- 	// have timedep throw away its list 
+ 	// have timedep throw away its list
 	// but don't delete timeDep
 	if (timeDep) {
 		timeDep->Dispose();
@@ -433,7 +433,7 @@ void WindMover_c::ClearWindValues()
 }
 
 
-void WindMover_c::DeleteTimeDep() 
+void WindMover_c::DeleteTimeDep()
 {
 	if (timeDep) {
 		timeDep->Dispose();
@@ -466,7 +466,7 @@ OSErr WindMover_c::PrepareForModelStep(const Seconds& model_time,
 	if (uncertain) {
         	// so uncertainty starts at time zero + uncertain_time_delay,
         	// rather than a time step later
-        Seconds elapsed_time = model_time + time_step - fModelStartTime;
+        Seconds elapsed_time = abs(model_time + time_step - fModelStartTime);
 
 		double eddyDiffusion = 1000000;
 
@@ -474,10 +474,10 @@ OSErr WindMover_c::PrepareForModelStep(const Seconds& model_time,
 
         // in m/s, note: DIVIDED by timestep because this is later multiplied
         // by the timestep
-		fUncertaintyDiffusion = sqrt(6 * (eddyDiffusion / 10000) / time_step);
+		fUncertaintyDiffusion = sqrt(6 * (eddyDiffusion / 10000) / abs(time_step));
 	}
 
-	err = this->GetTimeValue(model_time, &this->current_time_value);	
+	err = this->GetTimeValue(model_time, &this->current_time_value);
 #ifndef pyGNOME
 	if (err) printError("An error occurred in TWindMover::PrepareForModelStep");
 #endif
@@ -532,7 +532,7 @@ OSErr WindMover_c::CheckStartTime (Seconds time)
 }
 
 
-// JS 10/8/12: Updated so the input arguments are not char * 
+// JS 10/8/12: Updated so the input arguments are not char *
 // NOTE: Some of the input arrays (ref, windages) should be const since you don't want the method to change them;
 // however, haven't gotten const to work well with cython yet so just be careful when changing the input data
 OSErr WindMover_c::get_move(int n, Seconds model_time, Seconds step_len,
@@ -593,7 +593,7 @@ WorldPoint3D WindMover_c::GetMove(const Seconds& model_time, Seconds timeStep,
 
 	VelocityRec	timeValue = { 0, 0 };
 	WorldPoint3D	deltaPoint ={{0,0},0.};
-	WorldPoint refPoint = (*theLE).p;	
+	WorldPoint refPoint = (*theLE).p;
 
 	if ((*theLE).z > 0) return deltaPoint; // wind doesn't act below surface
 
@@ -619,8 +619,8 @@ WorldPoint3D WindMover_c::GetMove(const Seconds& model_time, Seconds timeStep,
 }
 
 
-void WindMover_c::SetTimeDep (TOSSMTimeValue *newTimeDep) 
-{ 
+void WindMover_c::SetTimeDep (TOSSMTimeValue *newTimeDep)
+{
 	timeDep = newTimeDep;
 }
 

@@ -200,10 +200,10 @@ class WindMover(movers.PyMover):
                 self.model_start_time = seconds	#check units on this
 
             if sc.uncertain:
-                elapsed_time = seconds - self.model_start_time
+                elapsed_time = abs(seconds - self.model_start_time)
                 eddy_diffusion = 1000000.	#this is fixed, should it be an input?
                 self.update_uncertainty(sc.num_released, elapsed_time)
-                self.uncertain_diffusion = np.sqrt(6 * (eddy_diffusion / 10000.) / time_step)
+                self.uncertain_diffusion = np.sqrt(6 * (eddy_diffusion / 10000.) / abs(time_step))
 
         return
 

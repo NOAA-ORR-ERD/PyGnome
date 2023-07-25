@@ -28,8 +28,8 @@ extern TModel *model;
 
 using namespace std;
 
-CATSMover_c::CATSMover_c () : CurrentMover_c() { 
-	
+CATSMover_c::CATSMover_c () : CurrentMover_c() {
+
 	fDuration = 48 * 3600; //48 hrs as seconds
 	fTimeUncertaintyWasSet = 0;
 	fLESetSizesH = 0;
@@ -79,7 +79,7 @@ void CATSMover_c::Dispose()
 		fGrid = 0;
 	}
 
-	//For pyGnome, let python/cython manage memory for this object.	
+	//For pyGnome, let python/cython manage memory for this object.
 #ifndef pyGNOME
 	DeleteTimeDep ();
 #endif
@@ -128,7 +128,7 @@ OSErr CATSMover_c::ComputeVelocityScale(const Seconds& model_time)
 				return -2;	// to flag a ref pt error for pygnome
 			}
 
-			this->refScale = scaleValue / length; 
+			this->refScale = scaleValue / length;
 			return noErr;
 #ifndef pyGNOME
 		case SCALE_OTHERGRID:
@@ -155,12 +155,12 @@ OSErr CATSMover_c::ComputeVelocityScale(const Seconds& model_time)
 
 						theirLengthSq = (theirVelocity.u * theirVelocity.u + theirVelocity.v * theirVelocity.v);
 
-						// JLM, we need to adjust the movers pattern 
+						// JLM, we need to adjust the movers pattern
 						myVelocity = GetPatValue(this->refPt3D);
 						myLengthSq = (myVelocity.u * myVelocity.u + myVelocity.v * myVelocity.v);
 
-						// next problem is that the scale 
-						// can be negative, we would have to look at the angle between 
+						// next problem is that the scale
+						// can be negative, we would have to look at the angle between
 						// these guys
 
 						///////////////////////
@@ -173,7 +173,7 @@ OSErr CATSMover_c::ComputeVelocityScale(const Seconds& model_time)
 						// code goes here
 						// ask about the proper method
 						///////////////////////
-						
+
 						// JLM,  check for really small lengths
 						if (theirLengthSq > myLengthSq * MAXREFSCALE * MAXREFSCALE ||
 							myLengthSq <  MIN_UNSCALED_REF_LENGTH * MIN_UNSCALED_REF_LENGTH)
@@ -182,7 +182,7 @@ OSErr CATSMover_c::ComputeVelocityScale(const Seconds& model_time)
 							this->refScale = 0;
 							return -1;
 						}
-						
+
 						dotProduct = myVelocity.u * theirVelocity.u + myVelocity.v * theirVelocity.v;
 						this->refScale = sqrt(theirLengthSq / myLengthSq);
 
@@ -242,19 +242,19 @@ OSErr CATSMover_c::AddUncertainty(long setIndex, long leIndex,
 		if (!this->fOptimize.isOptimizedForStep) {
 			// - in m/s
 			// - note: DIVIDED by timestep because this is later multiplied by the timestep
-			this->fOptimize.value = sqrt(6 * (fEddyDiffusion / 10000) / timeStep);
+			this->fOptimize.value = sqrt(6 * (fEddyDiffusion / 10000) / abs(timeStep));
 		}
-		
+
 		v0 = this->fEddyV0; //meters /second
 
 		if (lengthS > 1e-6) {
 			if (useEddyUncertainty)
 				gammaScale = this->fOptimize.value * v0 / (lengthS * (v0 + lengthS));
 			else  gammaScale = 0.0;
-			
+
 			alpha = unrec.downStream + gammaScale * rand1;
 			beta = unrec.crossStream + gammaScale * rand2;
-			
+
 			patVelocity->u = u * (1 + alpha) + v * beta;
 			patVelocity->v = v * (1 + alpha) - u * beta;
 		}
@@ -301,13 +301,13 @@ OSErr CATSMover_c::PrepareForModelStep(const Seconds &model_time,
 		return noErr;
 
 	err = this->ComputeVelocityScale(model_time);
-	if (err) 
+	if (err)
 		printError("An error occurred in TCATSMover::PrepareForModelStep");
 
 	// in m/s
 	//note: DIVIDED by timestep because this is later multiplied by the timestep
 	this->fOptimize.isOptimizedForStep = true;
-	this->fOptimize.value = sqrt(6 * (fEddyDiffusion / 10000) / time_step);
+	this->fOptimize.value = sqrt(6 * (fEddyDiffusion / 10000) / abs(time_step));
 
 	// check if tide data is in range
 	if (timeDep && bTimeFileActive) {
@@ -379,7 +379,7 @@ OSErr CATSMover_c::get_move(int n, Seconds model_time, Seconds step_len,
 WorldPoint3D CATSMover_c::GetMove(const Seconds &model_time, Seconds timeStep,
 								  long setIndex, long leIndex, LERec *theLE, LETYPE leType)
 {
-	Boolean useEddyUncertainty = false;	
+	Boolean useEddyUncertainty = false;
 	double dLong, dLat;
 
 	WorldPoint3D deltaPoint = { {0, 0}, 0.};
@@ -418,7 +418,7 @@ VelocityRec CATSMover_c::GetScaledPatValue(const Seconds &model_time,
 		// we need to update refScale
 		err = this->ComputeVelocityScale(model_time);
 	}
-	
+
 	// get and apply our time file scale factor
 	if (timeDep && bTimeFileActive) {
 		// VelocityRec errVelocity={1,1};
@@ -433,8 +433,8 @@ VelocityRec CATSMover_c::GetScaledPatValue(const Seconds &model_time,
 	}
 
 	patVelocity = GetPatValue(p);
-	patVelocity.u *= refScale; 
-	patVelocity.v *= refScale; 
+	patVelocity.u *= refScale;
+	patVelocity.v *= refScale;
 
 	if (useEddyUncertainty) {
 		// if they gave us a pointer to a boolean fill it in, otherwise don't
@@ -513,7 +513,7 @@ Boolean CATSMover_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr)
 }
 
 
-void CATSMover_c::DeleteTimeDep () 
+void CATSMover_c::DeleteTimeDep ()
 {
 	if (timeDep) {
 		timeDep -> Dispose ();
@@ -549,12 +549,12 @@ OSErr CATSMover_c::TextRead(vector<string> &linesInFile)
 	errmsg[0] = 0;
 
 	MySpinCursor();
-	
-	if (IsTriGridFile(linesInFile)) 
+
+	if (IsTriGridFile(linesInFile))
 	{
 		//= new TTriGridVel;
 	}
-	else 
+	else
 	{
 		cerr << "File type is not supported" << endl;
 		err = -1;

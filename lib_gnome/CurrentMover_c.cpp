@@ -21,21 +21,21 @@
 CurrentMover_c::CurrentMover_c (TMap *owner, char *name) : Mover_c(owner, name)
 {
 	// set fields of our base class
-	fDuration=48*3600; //48 hrs as seconds 
+	fDuration=48*3600; //48 hrs as seconds
 	fUncertainStartTime = 0;
 	fTimeUncertaintyWasSet = 0;
-	
+
 	fDownCurUncertainty = -.3;  // 30%
-	fUpCurUncertainty = .3; 	
+	fUpCurUncertainty = .3;
 	fRightCurUncertainty = .1;  // 10%
-	fLeftCurUncertainty= -.1; 
-	
+	fLeftCurUncertainty= -.1;
+
 	fLESetSizesH = 0;
 	fUncertaintyListH = 0;
-	
+
 	bIAmPartOfACompoundMover = false;
 	bIAmA3DMover = false;
-	
+
 	bIsFirstStep = false;
 	fModelStartTime = 0;
 }
@@ -43,21 +43,21 @@ CurrentMover_c::CurrentMover_c (TMap *owner, char *name) : Mover_c(owner, name)
 CurrentMover_c::CurrentMover_c () : Mover_c()
 {
 	// set fields of our base class
-	fDuration=48*3600; //48 hrs as seconds 
+	fDuration=48*3600; //48 hrs as seconds
 	fUncertainStartTime = 0;
 	fTimeUncertaintyWasSet = 0;
-	
+
 	fDownCurUncertainty = -.3;  // 30%
-	fUpCurUncertainty = .3; 	
+	fUpCurUncertainty = .3;
 	fRightCurUncertainty = .1;  // 10%
-	fLeftCurUncertainty= -.1; 
-	
+	fLeftCurUncertainty= -.1;
+
 	fLESetSizesH = 0;
 	fUncertaintyListH = 0;
-	
+
 	bIAmPartOfACompoundMover = false;
 	bIAmA3DMover = false;
-	
+
 	bIsFirstStep = false;
 	fModelStartTime = 0;
 }
@@ -65,69 +65,69 @@ CurrentMover_c::CurrentMover_c () : Mover_c()
 
 void CurrentMover_c::Dispose ()
 {
-	
+
 	this->DisposeUncertainty();
-	
+
 	Mover_c::Dispose ();
 }
 
 void CurrentMover_c::UpdateUncertaintyValues(Seconds elapsedTime)
 {
 	long i,n;
-	
+
 	fTimeUncertaintyWasSet = elapsedTime;
-	
+
 	if(!fUncertaintyListH) return;
-	
+
 	n = _GetHandleSize((Handle)fUncertaintyListH)/sizeof(**fUncertaintyListH);
-	
-	
+
+
 	for(i=0;i<n;i++)
 	{
 		LEUncertainRec localCopy;
 		memset(&localCopy,0,sizeof(LEUncertainRec));
-		
+
 		if(fDownCurUncertainty<fUpCurUncertainty)
 		{
-			localCopy.downStream = 
+			localCopy.downStream =
 			GetRandomFloat(fDownCurUncertainty,fUpCurUncertainty);
 		}
 		else
 		{
-			localCopy.downStream = 
+			localCopy.downStream =
 			GetRandomFloat(fUpCurUncertainty,fDownCurUncertainty);
 		}
 		if(fLeftCurUncertainty<fRightCurUncertainty)
 		{
-			localCopy.crossStream = 
+			localCopy.crossStream =
 			GetRandomFloat(fLeftCurUncertainty,fRightCurUncertainty);
 		}
 		else
 		{
-			localCopy.crossStream = 
+			localCopy.crossStream =
 			GetRandomFloat(fRightCurUncertainty,fLeftCurUncertainty);
 		}
 		INDEXH(fUncertaintyListH,i) = localCopy;
-		
-	}	
+
+	}
 }
 
 OSErr CurrentMover_c::ReallocateUncertainty(int numLEs, short* statusCodes)	// remove off map LEs
 {
 	long i,numrec=0,uncertListSize,numLESetsStored;
 	//OSErr err=0;
-	
+
 	if (numLEs == 0 || ! statusCodes) return -1;	// shouldn't happen
-	
+
 	if(!fUncertaintyListH || !fLESetSizesH) return 0;	// assume uncertainty is not on
 
 	// check that (*fLESetSizesH)[0]==numLEs and size of fLESetSizesH == 1
 	uncertListSize = _GetHandleSize((Handle)fUncertaintyListH)/sizeof(LEUncertainRec);
 	numLESetsStored = _GetHandleSize((Handle)fLESetSizesH)/sizeof(long);
-	
+
 	if (uncertListSize != numLEs) return -1;
 	if (numLESetsStored != 1) return -1;
-	
+
 	for (i = 0; i < numLEs ; i++) {
 		if( statusCodes[i] == OILSTAT_TO_BE_REMOVED)	// for OFF_MAPS, EVAPORATED, etc
 		{
@@ -138,20 +138,20 @@ OSErr CurrentMover_c::ReallocateUncertainty(int numLEs, short* statusCodes)	// r
 			numrec++;
 		}
 	}
-	
+
 	if (numrec == 0)
-	{	
+	{
 		this->DisposeUncertainty();
 		return noErr;
 	}
-	
+
 	if (numrec < uncertListSize)
 	{
 		//(*fLESetSizesH)[0] = numrec;
 		//(*fLESetSizesH)[0] = 0;	// index into array, should never change
-		_SetHandleSize((Handle)fUncertaintyListH,numrec*sizeof(LEUncertainRec)); 
+		_SetHandleSize((Handle)fUncertaintyListH,numrec*sizeof(LEUncertainRec));
 	}
-	
+
 	return noErr;
 }
 
@@ -159,20 +159,20 @@ OSErr CurrentMover_c::AllocateUncertainty(int numLESets, int* LESetsSizesList)	/
 {
 	long i, numrec=0;
 	//OSErr err=0;
-	
+
 	this->DisposeUncertainty(); // get rid of any old values
-	
+
 	//if (numLESets == 0) return -1;	// shouldn't happen - if we get here there should be an uncertainty set - unless there is no spill...
-	
+
 	if(!(fLESetSizesH = (LONGH)_NewHandle(sizeof(long)*numLESets)))goto errHandler;
-	
+
 	for (i = 0,numrec=0; i < numLESets ; i++) {
 		(*fLESetSizesH)[i]=numrec;
 		numrec += LESetsSizesList[i];
 	}
-	if(!(fUncertaintyListH = 
+	if(!(fUncertaintyListH =
 		 (LEUncertainRecH)_NewHandle(sizeof(LEUncertainRec)*numrec)))goto errHandler;
-	
+
 	return noErr;
 errHandler:
 	this->DisposeUncertainty(); // get rid of any values allocated
@@ -185,26 +185,26 @@ OSErr CurrentMover_c::UpdateUncertainty(const Seconds& elapsedTime, int numLESet
 	OSErr err = noErr;
 	long i;
 	Boolean needToReInit = false, needToReAllocate = false;
-	
+
 	//Boolean bAddUncertainty = (elapsedTime >= fUncertainStartTime) && model->IsUncertain();
 	Boolean bAddUncertainty = (elapsedTime >= fUncertainStartTime);
 	// JLM, this is elapsedTime >= fUncertainStartTime because elapsedTime is the value at the start of the step
-	
+
 	if(!bAddUncertainty)
 	{	// we will not be adding uncertainty
 		// make sure fWindUncertaintyList  && fLESetSizesH are unallocated
 		if(fUncertaintyListH) this->DisposeUncertainty();
 		return 0;
 	}
-	
+
 	if(!fUncertaintyListH || !fLESetSizesH)
 		needToReInit = true;
-	
-	if(elapsedTime < fTimeUncertaintyWasSet) 
+
+	if(elapsedTime < fTimeUncertaintyWasSet)
 	{	// the model reset the time without telling us
 		needToReInit = true;
 	}
-	
+
 	if(fLESetSizesH)
 	{	// check the LE sets are still the same, JLM 9/18/98
 		//TLEList *list;
@@ -221,13 +221,13 @@ OSErr CurrentMover_c::UpdateUncertainty(const Seconds& elapsedTime, int numLESet
 				}
 				numrec += LESetsSizesList[i];
 			}
-			uncertListSize = _GetHandleSize((Handle)fUncertaintyListH)/sizeof(LEUncertainRec); 
+			uncertListSize = _GetHandleSize((Handle)fUncertaintyListH)/sizeof(LEUncertainRec);
 			if (numrec != uncertListSize)// this should not happen for gui gnome
 			{
 #ifdef pyGNOME
 				if (numrec > uncertListSize)
 					needToReAllocate = true;
-				else 
+				else
 					needToReInit = true;
 #else
 				needToReInit = true;
@@ -235,9 +235,9 @@ OSErr CurrentMover_c::UpdateUncertainty(const Seconds& elapsedTime, int numLESet
 				//break;
 			}// need to check
 		}
-		
+
 		if (needToReAllocate)
-		{	// move to separate function, and probably should combine with 
+		{	// move to separate function, and probably should combine with
 			//char errmsg[256] = "";
 			_SetHandleSize((Handle)fUncertaintyListH, numrec*sizeof(LEUncertainRec));
 			//sprintf(errmsg,"Num LEs to Allocate = %ld, previous Size = %ld\n",numrec,uncertListSize);
@@ -252,33 +252,33 @@ OSErr CurrentMover_c::UpdateUncertainty(const Seconds& elapsedTime, int numLESet
 			{
 				LEUncertainRec localCopy;
 				memset(&localCopy,0,sizeof(LEUncertainRec));
-				
+
 				if(fDownCurUncertainty<fUpCurUncertainty)
 				{
-					localCopy.downStream = 
+					localCopy.downStream =
 					GetRandomFloat(fDownCurUncertainty,fUpCurUncertainty);
 				}
 				else
 				{
-					localCopy.downStream = 
+					localCopy.downStream =
 					GetRandomFloat(fUpCurUncertainty,fDownCurUncertainty);
 				}
 				if(fLeftCurUncertainty<fRightCurUncertainty)
 				{
-					localCopy.crossStream = 
+					localCopy.crossStream =
 					GetRandomFloat(fLeftCurUncertainty,fRightCurUncertainty);
 				}
 				else
 				{
-					localCopy.crossStream = 
+					localCopy.crossStream =
 					GetRandomFloat(fRightCurUncertainty,fLeftCurUncertainty);
 				}
 				INDEXH(fUncertaintyListH,i) = localCopy;
-				
-			}	
+
+			}
 		}
 	}
-	
+
 	if(needToReInit)
 	{
 		err = this->AllocateUncertainty(numLESets,LESetsSizesList);
@@ -286,10 +286,10 @@ OSErr CurrentMover_c::UpdateUncertainty(const Seconds& elapsedTime, int numLESet
 		if(err) return err;
 	}
 	else if(elapsedTime >= fTimeUncertaintyWasSet + fDuration) // we exceeded the persistance, time to update
-	{	
+	{
 		this->UpdateUncertaintyValues(elapsedTime);
 	}
-	
+
 	return err;
 }
 
@@ -307,7 +307,7 @@ OSErr CurrentMover_c::PrepareForModelStep(const Seconds& model_time, const Secon
 		fModelStartTime = model_time;
 	if (uncertain)
 	{
-		Seconds elapsed_time = model_time - fModelStartTime;	// code goes here, how to set start time
+		Seconds elapsed_time = abs(model_time - fModelStartTime);	// code goes here, how to set start time
 		err = this->UpdateUncertainty(elapsed_time, numLESets, LESetsSizesList);
 	}
 	if (err) printError("An error occurred in TCurrentMover::PrepareForModelStep");
@@ -318,13 +318,13 @@ OSErr CurrentMover_c::PrepareForModelStep(const Seconds& model_time, const Secon
 void CurrentMover_c::DisposeUncertainty()
 {
 	fTimeUncertaintyWasSet = 0;
-	
+
 	if (fUncertaintyListH)
 	{
 		DisposeHandle ((Handle) fUncertaintyListH);
 		fUncertaintyListH = nil;
 	}
-	
+
 	if (fLESetSizesH)
 	{
 		DisposeHandle ((Handle) fLESetSizesH);
