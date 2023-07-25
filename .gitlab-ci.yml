@@ -141,7 +141,8 @@ test_pygnome_windows:
 
     - echo "Building PyGNOME"
     - cd ./py_gnome
-    - python setup.py install
+    # - python setup.py install
+    - python setup.py develop
 
     # Make sure that it imports from some folder other than the
     # gnome package folder.
