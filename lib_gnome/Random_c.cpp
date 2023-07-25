@@ -46,8 +46,8 @@ OSErr Random_c::PrepareForModelRun()
 OSErr Random_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, int* LESetsSizesList)
 {
 	this -> fOptimize.isOptimizedForStep = true;
-	this -> fOptimize.value = sqrt(6.*(fDiffusionCoefficient/10000.)*abs(time_step))/METERSPERDEGREELAT; // in deg lat
-	this -> fOptimize.uncertaintyValue = sqrt(fUncertaintyFactor*6.*(fDiffusionCoefficient/10000.)*abs(time_step))/METERSPERDEGREELAT; // in deg lat
+	this -> fOptimize.value = sqrt(6.*(fDiffusionCoefficient/10000.)*fabs(time_step))/METERSPERDEGREELAT; // in deg lat
+	this -> fOptimize.uncertaintyValue = sqrt(fUncertaintyFactor*6.*(fDiffusionCoefficient/10000.)*fabs(time_step))/METERSPERDEGREELAT; // in deg lat
 	//this -> fOptimize.isFirstStep = (model_time == start_time);
 	return noErr;
 }
@@ -133,8 +133,8 @@ WorldPoint3D Random_c::GetMove (const Seconds& model_time, Seconds timeStep,long
 			localDiffusionCoefficient = pow(10.,factor);
 		else
 			localDiffusionCoefficient = 0;
-		this -> fOptimize.value =  sqrt(6.*(localDiffusionCoefficient/10000.)*abs(timeStep))/METERSPERDEGREELAT; // in deg lat
-		this -> fOptimize.uncertaintyValue =  sqrt(fUncertaintyFactor*6.*(localDiffusionCoefficient/10000.)*abs(timeStep))/METERSPERDEGREELAT; // in deg lat
+		this -> fOptimize.value =  sqrt(6.*(localDiffusionCoefficient/10000.)*fabs(timeStep))/METERSPERDEGREELAT; // in deg lat
+		this -> fOptimize.uncertaintyValue =  sqrt(fUncertaintyFactor*6.*(localDiffusionCoefficient/10000.)*fabs(timeStep))/METERSPERDEGREELAT; // in deg lat
 		/*if (depth<20)
 		 {
 		 localDiffusionCoefficient = 0;
@@ -153,8 +153,8 @@ WorldPoint3D Random_c::GetMove (const Seconds& model_time, Seconds timeStep,long
 	}
 	if(!this->fOptimize.isOptimizedForStep && !bUseDepthDependent)
 	{
-		this -> fOptimize.value =  sqrt(6.*(fDiffusionCoefficient/10000.)*abs(timeStep))/METERSPERDEGREELAT; // in deg lat
-		this -> fOptimize.uncertaintyValue =  sqrt(fUncertaintyFactor*6.*(fDiffusionCoefficient/10000.)*abs(timeStep))/METERSPERDEGREELAT; // in deg lat
+		this -> fOptimize.value =  sqrt(6.*(fDiffusionCoefficient/10000.)*fabs(timeStep))/METERSPERDEGREELAT; // in deg lat
+		this -> fOptimize.uncertaintyValue =  sqrt(fUncertaintyFactor*6.*(fDiffusionCoefficient/10000.)*fabs(timeStep))/METERSPERDEGREELAT; // in deg lat
 	}
 
 	if (leType == UNCERTAINTY_LE)

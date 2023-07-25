@@ -242,7 +242,7 @@ OSErr CATSMover_c::AddUncertainty(long setIndex, long leIndex,
 		if (!this->fOptimize.isOptimizedForStep) {
 			// - in m/s
 			// - note: DIVIDED by timestep because this is later multiplied by the timestep
-			this->fOptimize.value = sqrt(6 * (fEddyDiffusion / 10000) / abs(timeStep));
+			this->fOptimize.value = sqrt(6 * (fEddyDiffusion / 10000) / fabs(timeStep));
 		}
 
 		v0 = this->fEddyV0; //meters /second
@@ -307,7 +307,7 @@ OSErr CATSMover_c::PrepareForModelStep(const Seconds &model_time,
 	// in m/s
 	//note: DIVIDED by timestep because this is later multiplied by the timestep
 	this->fOptimize.isOptimizedForStep = true;
-	this->fOptimize.value = sqrt(6 * (fEddyDiffusion / 10000) / abs(time_step));
+	this->fOptimize.value = sqrt(6 * (fEddyDiffusion / 10000) / fabs(time_step));
 
 	// check if tide data is in range
 	if (timeDep && bTimeFileActive) {

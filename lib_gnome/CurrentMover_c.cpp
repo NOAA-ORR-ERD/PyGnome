@@ -307,7 +307,7 @@ OSErr CurrentMover_c::PrepareForModelStep(const Seconds& model_time, const Secon
 		fModelStartTime = model_time;
 	if (uncertain)
 	{
-		Seconds elapsed_time = abs(model_time - fModelStartTime);	// code goes here, how to set start time
+		Seconds elapsed_time = fabs(model_time - fModelStartTime);	// code goes here, how to set start time
 		err = this->UpdateUncertainty(elapsed_time, numLESets, LESetsSizesList);
 	}
 	if (err) printError("An error occurred in TCurrentMover::PrepareForModelStep");

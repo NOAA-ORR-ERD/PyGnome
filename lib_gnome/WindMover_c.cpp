@@ -466,7 +466,7 @@ OSErr WindMover_c::PrepareForModelStep(const Seconds& model_time,
 	if (uncertain) {
         	// so uncertainty starts at time zero + uncertain_time_delay,
         	// rather than a time step later
-        Seconds elapsed_time = abs(model_time + time_step - fModelStartTime);
+        Seconds elapsed_time = fabs(model_time + time_step - fModelStartTime);
 
 		double eddyDiffusion = 1000000;
 
@@ -474,7 +474,7 @@ OSErr WindMover_c::PrepareForModelStep(const Seconds& model_time,
 
         // in m/s, note: DIVIDED by timestep because this is later multiplied
         // by the timestep
-		fUncertaintyDiffusion = sqrt(6 * (eddyDiffusion / 10000) / abs(time_step));
+		fUncertaintyDiffusion = sqrt(6 * (eddyDiffusion / 10000) / fabs(time_step));
 	}
 
 	err = this->GetTimeValue(model_time, &this->current_time_value);
