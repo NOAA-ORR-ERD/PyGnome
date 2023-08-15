@@ -46,7 +46,10 @@ def check_dependency_versions():
     """
     def ver_check(required, installed):
         required = tuple(int(part) for part in required.split(".")[:3])
-        installed = tuple(int(part) for part in installed.split(".")[:3])
+        try:
+            installed = tuple(int(part) for part in installed.split(".")[:3])
+        except ValueError: # something is odd -- dev version, or ??
+            return False
         if installed < required:
             return False
         else:

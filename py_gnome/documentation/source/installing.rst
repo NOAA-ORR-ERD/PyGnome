@@ -2,6 +2,17 @@
 Installing
 ##########
 
+As PyGNOME is under active development, it is usually best to install it from the source code. This also provides access to the code for examples, and to examine it in order to better understand it and potentially customize it.
+
+The source can be found on gitHub here:
+
+https://github.com/NOAA-ORR-ERD/PyGnome
+
+You can either "clone" the repository with git (recommended), or download a zip file of the source code.
+
+Installing from Source:
+#######################
+
 PyGNOME consists of compiled C++ code (`libgnome`), compiled Cython code (`*.pyx` files), and compiled Python extensions.
 It can be installed either from source, in which case you'll need an appropriate compiler, or from binaries provided by NOAA. However, note that at this time, NOAA is not maintaining current binaries.
 
