@@ -2,17 +2,17 @@
 
 .. _scripting_model:
 
-.. note:: This section is curretnly incomplete -- see the API reference for details.
+.. note:: This section is currently incomplete -- see the API reference for details.
 
 The PyGNOME Model
 =================
 
-The :class:`gnome.model.Model` class in the overall interface to the gnome system -- it manages all the elements, movers, outputters, etc used to drive the model. When writting scripts, a ``Model`` instance is used to mange how the overall model is run.
+The :class:`gnome.model.Model` class in the overall interface to the gnome system -- it manages all the elements, movers, outputters, etc used to drive the model. When writting scripts, a ``Model`` instance is used to manage how the overall model is run.
 
 Initialization
 --------------
 
-Most of the model parameters can be set after creating a ``Model`` object. But there are the common one to set for the usual cases.
+Most of the model parameters can be set after creating a ``Model`` object. But there are common ones to set for the usual cases.
 
 The common parameters set when creating a model instance are::
 
@@ -22,7 +22,15 @@ The common parameters set when creating a model instance are::
     duration=datetime.timedelta(days=1),
     uncertain=False,
 
+The start_time defaults to the current time, which will usually need to be adjusted. The other defaults
+may work, but it is helpful to include them in the initialization to make it easier to adjust them.
 
+By default the model uncertainty is off. To run with uncertainty included set uncertain=True.
+Wind, currents, and diffusion all have uncertainty parameters with default values.
+You can set the coefficients that control the size and distribution of the uncertainty on the individual movers.
+The uncertainty only applies to the model transport. Uncertainty for weathering is under development.
+
+To run the model backwards, set both the time_step and the duration to negative values
 
 Configuring the Model
 ---------------------

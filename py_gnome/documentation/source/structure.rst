@@ -4,13 +4,13 @@ PyGNOME Structure
 
 PyGNOME is a Lagrangian element (particle tracking) modeling framework. It was developed specifically to support oil spill modeling, but can be used for any number of other particle tracking applications.
 
-The substance (oil or other tracer) is represented as Lagrangian elements (LEs), or particles, with their movement and properties tracked over time. As PyGNOME was originally developed to support oil spill modeling (and is used as the primary operational tool for NOAA's support of oil spills in US Waters), it comes built in with many features for oil spill modeling. But is also been used by NOAA and others for oceanic drift modeling for fish larvae, marine debris, marine mamel drift, HAB movement, etc.
+The substance (oil or other tracer) is represented as Lagrangian elements (LEs), or particles, with their movement and properties tracked over time. As PyGNOME was originally developed to support oil spill modeling (and is used as the primary operational tool for NOAA's support of oil spills in US Waters), it comes with many features built in for oil spill modeling. But is also been used by NOAA and others for oceanic drift modeling for fish larvae, marine debris, marine mammal drift, HAB movement, etc.
 
-Individual elements can move under the influence of ocean currents, direct wind forcing, diffusion, or any other custom "mover". Elements can be transformed over time, including undergoing chemical/physical changes over time (e.g. oil weathering).
+Individual elements can move under the influence of ocean currents, direct wind forcing, diffusion, or any other custom "mover". Elements can be transformed over time, including undergoing chemical/physical changes (e.g. oil weathering).
 
-Setting up a simulation in PyGNOME involves configuring a ``Model``, and then inputting or loading data to instantiate various objects in the ``gnome`` package wich create, move, or and/or modify the elements.
+Setting up a simulation in PyGNOME involves configuring a ``Model``, and then inputting or loading data to instantiate various objects in the ``gnome`` package which create, move, or and/or modify the elements.
 
-IN addition, a user can create custom behavior for GNOME by defining their own versions of the core objects in the modeling system. The design goal of GNOME is that each part of the model only needs to conform to the Model's expected API, It should be possible to define a custom process without touching other parts f the model code.
+In addition, a user can create custom behavior for GNOME by defining their own versions of the core objects in the modeling system. The design goal of GNOME is that each part of the model only needs to conform to the Model's expected API. It should be possible to define a custom process without touching other parts of the model code.
 
 Primary Base Classes in ``gnome``
 ---------------------------------
@@ -61,7 +61,7 @@ Spill Objects
 
 :mod:`gnome.spills.Spill`
 
-The Spill objects' role is to introduce new elements into the model. It presents a single API to the `Model`, but in practice is usually a composition of two distict objects, so as to make it easier to build spills of different substances and different release scenarios.
+The Spill objects' role is to introduce new elements into the model. It presents a single API to the `Model`, but in practice is usually a composition of two distinct objects, so as to make it easier to build spills of different substances and different release scenarios.
 
 Release Object :mod:`gnome.spills.release.Release`:
   Manages where and when elements are released by the model.
@@ -90,7 +90,7 @@ Outputters
 
 :mod:`gnome.outputters.Outputter`
 
-Outputter Objects handle all aspects of exporting results from the model these include the element positions, as well as the properties associated with those elements. Each outputter has different options, but most can be configured to output different amounts of data associated with the elements.
+Outputter Objects handle all aspects of exporting results from the model. These include the element positions, as well as the properties associated with those elements. Each outputter has different options, but most can be configured to output different amounts of data associated with the elements.
 
 The ``Renderer`` outputter renders an animated GIF or a separate image for each timestep.
 

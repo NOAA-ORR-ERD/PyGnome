@@ -366,7 +366,7 @@ class CurrentMover(movers.PyMover):
             self.model_start_time = seconds	#check units on this
 
         if sc.uncertain:
-            elapsed_time = seconds - self.model_start_time
+            elapsed_time = abs(seconds - self.model_start_time)
             self.update_uncertainty(sc.num_released, elapsed_time)
 
         return

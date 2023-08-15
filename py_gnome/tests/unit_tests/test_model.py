@@ -40,7 +40,28 @@ from gnome.outputters import Renderer, TrajectoryGeoJsonOutput
 from .conftest import sample_model_weathering, testdata, test_oil
 from gnome.spills.substance import NonWeatheringSubstance
 
-from gnome.exceptions import ReferencedObjectNotSet
+from gnome.exceptions import ReferencedObjectNotSet, GnomeRuntimeError
+
+
+def test_exceptions():
+    """
+    Test GnomeRuntimeError exception thrown if setup has errors
+    time_step < 0 with duration > 0
+    weathering on for backwards run (time_step < 0, duration < 0)
+    """
+    model = Model()
+    model.time_step = -900
+    with raises(GnomeRuntimeError):
+        model.check_inputs()
+
+    model.duration = -timedelta(days=1)
+    model.check_inputs()
+
+    wind = constant_wind(10, 270, units='knots')
+    water = Water()
+    model.weatherers += Evaporation(water, wind)
+    with raises(GnomeRuntimeError):
+        model.check_inputs()
 
 
 @pytest.fixture(scope='function')
@@ -302,6 +323,52 @@ def test_simple_run_rewind():
 
     assert np.all(model.spills.LE('positions') == pos)
 
+
+def test_simple_run_backward_rewind():
+    '''
+    Pretty much all this tests is that the model will run
+    and the seed is set during first run, then set correctly
+    after it is rewound and run again
+    '''
+
+    start_time = datetime(2012, 9, 15, 12, 0)
+
+    model = Model(time_step = -900, duration = -timedelta(days=1))
+
+    model.map = GnomeMap()
+    a_mover = SimpleMover(velocity=(1., 2., 0.))
+
+    model.movers += a_mover
+    assert len(model.movers) == 1
+
+    spill = surface_point_line_spill(num_elements=10,
+                                     start_position=(0., 0., 0.),
+                                     release_time=start_time)
+
+    model.spills += spill
+    assert len(model.spills) == 1
+
+    # model.add_spill(spill)
+
+    model.start_time = spill.release.release_time
+
+    # test iterator
+    for step in model:
+        print('just ran time step: %s' % model.current_time_step)
+        assert step['step_num'] == model.current_time_step
+
+    pos = np.copy(model.spills.LE('positions'))
+
+    # rewind and run again:
+    print('rewinding')
+    model.rewind()
+
+    # test iterator is repeatable
+    for step in model:
+        print('just ran time step: %s' % model.current_time_step)
+        assert step['step_num'] == model.current_time_step
+
+    assert np.all(model.spills.LE('positions') == pos)
 
 def test_simple_run_with_map():
     '''
