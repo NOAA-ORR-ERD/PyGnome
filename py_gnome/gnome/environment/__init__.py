@@ -13,7 +13,9 @@ from .environment_objects import (WindTS,
                                   IceAwareWind,
                                   TemperatureTS,
                                   FileGridCurrent,
+                                  SteadyUniformCurrent,
                                   )
+
 from .gridcur import from_gridcur
 from .water import Water, WaterSchema
 from .waves import Waves, WavesSchema
@@ -50,13 +52,14 @@ helper_functions = [env_from_netCDF,
                     wind_from_values,
                     ]
 
-#These are the operational environment objects
+# These are the operational environment objects
 env_objs = [Water,
             Waves,
             Tide,
             Wind,
             RunningAverage,
             GridCurrent,
+            SteadyUniformCurrent,
             GridWind,
             IceConcentration,
             IceAwareCurrent,

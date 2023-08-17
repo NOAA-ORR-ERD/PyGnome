@@ -1,12 +1,16 @@
 
 import copy
 from datetime import datetime
+import math
 
 import netCDF4 as nc4
 import numpy as np
 
+from gnome.utilities.inf_datetime import MinusInfTime, InfTime
+
 from gnome.persist import (drop,
                            Boolean,
+                           Float,
                            SchemaNode,
                            ObjTypeSchema,
                            FilenameSchema,
@@ -32,6 +36,110 @@ from gnome.persist.validators import convertible_to_seconds
 from .gridcur import init_from_gridcur, GridCurReadError
 
 from .names import nc_names
+
+
+class SteadyUniformCurrentSchema(ObjTypeSchema):
+    # note: units is not in the schema
+    #        only m/s is supported via serialization
+    #   It's a bit tricky to keep things in sync otherwise
+    speed = SchemaNode(Float(), save=True, update=True)
+    direction = SchemaNode(Float(), save=True, update=True)
+    data_start = SchemaNode(LocalDateTime(), read_only=True)
+    data_stop = SchemaNode(LocalDateTime(), read_only=True)
+
+
+class SteadyUniformCurrent(Environment):
+    """
+    Simple current: the same at all time and places
+    """
+    _ref_as = 'current'
+    _schema = SteadyUniformCurrentSchema
+
+    data_start =  MinusInfTime
+    data_stop =  InfTime
+
+    def __init__(self,
+                 speed,
+                 direction,
+                 units='m/s',
+                 name = "Steady Uniform Current"):
+        """
+        Create a steady, uniform current (same at all time and places)
+
+        :param speed: speed of the current
+
+        :param direction: direction of the current (direction to, not from), in degrees from north
+
+        :param units="m/s": units of speed: defaults to "m/s"
+
+        :param name="Steady Uniform Current": optional name for the current
+        """
+        super().__init__(self, name=name)
+        if units != 'm/s':
+            speed = uc.convert(units, 'm/s', speed)
+        self.units = 'm/s'
+        self._speed = speed
+        self._direction = direction
+        self._set_uv()
+
+    def __repr__(self):
+        return (f"{self.__class__.__name__}(speed={self.speed}, "
+                f"direction={self.direction}, units='m/s', name={self.name!r})")
+
+    def _set_uv(self):
+        dir = math.radians(self._direction)
+        # rounding so that, e.g. cos(90 degrees) == 0.0
+        self._u = self._speed * round(math.sin(dir), 15)
+        self._v = self._speed * round(math.cos(dir), 15)
+
+    @property
+    def speed(self):
+        return self._speed
+
+    @speed.setter
+    def speed(self, speed):
+        self._speed = speed
+        self._set_uv()
+
+    @property
+    def direction(self):
+        return self._direction
+
+    @direction.setter
+    def direction(self, direction):
+        self._direction = direction
+        self._set_uv()
+
+
+    @property
+    def u(self):
+        return self._u
+
+    @property
+    def v(self):
+        return self._v
+
+
+    def at(self, points, time, units=None):
+        """
+        Find the value of the property at positions of points at time T
+
+        :param points: will be ignored
+
+        :param time: will be ignored
+
+        :param units='m/s': units the values will be returned in (or converted to)
+                            if None, the default units for the environment type will be used.
+        :type units: string such as ('m/s', 'knots', etc)
+
+        :return: returns an Nx2 arrary is points is Nx2, Nx3 is points is Nx3
+        """
+        dimensionality = len(points[0])
+        vel = np.zeros((len(points), dimensionality), dtype=np.float64)
+        vel[:, 0] = self.u
+        vel[:, 1] = self.v
+        return vel
+
 
 @combine_signatures
 class VelocityTS(TimeseriesVector):

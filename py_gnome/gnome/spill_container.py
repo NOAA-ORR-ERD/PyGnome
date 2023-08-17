@@ -432,11 +432,11 @@ class SpillContainer(AddLogger, SpillContainerData):
             view of the data - it doesn't contain any state that needs to be
             persisted.
         '''
-        substance = False #if self.substance is None else self.substance
+        substance = False # if self.substance is None else self.substance
         for spill in self.spills:
             if not spill.on:
                 continue
-            if substance is False:  #can't use None, as that means non-weathering
+            if substance is False:  # can't use None, as that means non-weathering
                 substance = spill.substance
             else:
                 if spill.substance != substance:
@@ -831,6 +831,7 @@ class SpillContainer(AddLogger, SpillContainerData):
         # _set_substancespills() is invoked
         self._set_substancespills()
         self.initialize_data_arrays()
+        self.mass_balance['standard_density'] = self.substance.standard_density
 
         # todo: maybe better to let map do this, but it does not have a
         # prepare_for_model_run() yet so can't do it there
