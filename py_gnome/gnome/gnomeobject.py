@@ -833,7 +833,9 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
                                        allowZip64=allowzip64)
 
         elif os.path.isdir(saveloc):
-            n = gnome.persist.base_schema.sanitize_string(self.name)
+            # n = gnome.persist.base_schema.sanitize_string(self.name)
+            # this is a filename, so we should be using this -- even though they are similar
+            n = gnome.utilities.save_updater.sanitize_filename(self.name)
             saveloc = os.path.join(saveloc, n + '.gnome')
 
             if os.path.exists(saveloc):
