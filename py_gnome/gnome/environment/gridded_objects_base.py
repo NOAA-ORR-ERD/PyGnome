@@ -421,8 +421,16 @@ class Variable(gridded.Variable, GnomeId):
 
     # fixme: shouldn't extrapolation_is_allowed be
     #        in Environment only?
-    def __init__(self, extrapolation_is_allowed=False, *args, **kwargs):
-        super(Variable, self).__init__(*args, **kwargs)
+    def __init__(self,
+                 extrapolation_is_allowed=False,
+                 surface_boundary_condition='extrapolate',
+                 bottom_boundary_condition='mask',
+                 *args,
+                 **kwargs):
+        super(Variable, self).__init__(*args,
+                                       surface_boundary_condition=surface_boundary_condition,
+                                       bottom_boundary_condition=bottom_boundary_condition,
+                                       **kwargs)
         self.extrapolation_is_allowed = extrapolation_is_allowed
 
     def __repr__(self):
