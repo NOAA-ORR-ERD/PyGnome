@@ -31,7 +31,6 @@ from .gridded_objects_base import (Time,
                                    VectorVariableSchema,
                                    LocalDateTime,
                                    )
-from gnome.persist.validators import convertible_to_seconds
 
 from .gridcur import init_from_gridcur, GridCurReadError
 
