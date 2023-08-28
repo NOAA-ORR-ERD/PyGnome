@@ -55,7 +55,7 @@ progressbar
 
 
 # NOAA maintained packages
-gridded=0.5.6
+gridded=0.5.7
 pynucos
 cell_tree2d
 py_gd>=2.2
