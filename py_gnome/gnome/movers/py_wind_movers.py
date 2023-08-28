@@ -274,12 +274,23 @@ class WindMover(movers.PyMover):
             cos_arg = 2. * np.pi * np.random.uniform(0,1, size=(num_les-uncertain_list_size,))
             srt = np.sqrt(-2. * np.log(np.random.uniform(0.001,.999, size=(num_les-uncertain_list_size,))))
             # need a loop to check TermsLessThanMax fabs(self.sigma_theta * sinTerm/rndv2) <= angleMax (60)
-            for i in range(num_les-uncertain_list_size):
-                for j in range(10):
-                    if np.abs(self.sigma_theta * srt[i] * np.sin(cos_arg[i])) <= 60.:
-                        break
-                        cos_arg[i] = 2. * np.pi * np.random.uniform(0,1)
-                        srt[i] = np.sqrt(-2. * np.log(np.random.uniform(0.001,.999)))
+#             for i in range(num_les-uncertain_list_size):
+#                 for j in range(10):
+#                     if np.abs(self.sigma_theta * srt[i] * np.sin(cos_arg[i])) <= 60.:
+#                         break
+#                     cos_arg[i] = 2. * np.pi * np.random.uniform(0,1)
+#                     srt[i] = np.sqrt(-2. * np.log(np.random.uniform(0.001,.999)))
+#
+            bad_values = np.where(np.abs(self.sigma_theta * srt * np.sin(cos_arg)) > 60.)
+            if len(bad_values[0]) > 0:
+                for i in bad_values:
+                    for j in range(10):
+                        c = 2. * np.pi * np.random.uniform(0, 1)
+                        s = np.sqrt(-2. * np.log(np.random.uniform(0.001, .999)))
+                        if np.abs(self.sigma_theta * s * np.sin(c)) <= 60.:
+                            cos_arg[i] = c
+                            srt[i] = s
+                            break
 
             a_append[:,0] = srt * np.cos(cos_arg) #cos term
             a_append[:,1] = srt * np.sin(cos_arg) #sin term
@@ -317,16 +328,31 @@ class WindMover(movers.PyMover):
         cos_arg = 2. * np.pi * np.random.uniform(0,1, size=(num_les,))
         srt = np.sqrt(-2. * np.log(np.random.uniform(0.001,.999, size=(num_les,))))
         # need a loop to check TermsLessThanMax: fabs(self.sigma_theta * sinTerm/rndv2) <= angleMax (60)
-        for i in range(0,num_les):
-            for j in range(10):
-                if np.abs(self.sigma_theta * srt[i] * np.sin(cos_arg[i])) <= 60.:
-                    break
-                    cos_arg[i] = 2. * np.pi * np.random.uniform(0,1)
-                    srt[i] = np.sqrt(-2. * np.log(np.random.uniform(0.001,.999)))
+#         for i in range(0,num_les):
+#             for j in range(10):
+#                 if np.abs(self.sigma_theta * srt[i] * np.sin(cos_arg[i])) <= 60.:
+#                     print("values clean",i,j)
+#                     break
+#                 cos_arg[i] = 2. * np.pi * np.random.uniform(0,1)
+#                 srt[i] = np.sqrt(-2. * np.log(np.random.uniform(0.001,.999)))
+#
+#             #self.uncertainty_list[i,0] = srt * np.cos(cos_arg[i]) #cos term
+#             #self.uncertainty_list[i,1] = srt * np.sin(cos_arg[i]) #sin term
+#         self.uncertainty_list[:,0] = srt * np.cos(cos_arg) #cos term
+#         self.uncertainty_list[:,1] = srt * np.sin(cos_arg) #sin term
+        bad_values = np.where(np.abs(self.sigma_theta * srt * np.sin(cos_arg)) > 60.)
+        if len(bad_values[0]) > 0:
+            for i in bad_values:
+                for j in range(10):
+                    c = 2. * np.pi * np.random.uniform(0, 1)
+                    s = np.sqrt(-2. * np.log(np.random.uniform(0.001, .999)))
+                    if np.abs(self.sigma_theta * s * np.sin(c)) <= 60.:
+                        cos_arg[i] = c
+                        srt[i] = s
+                        break
 
         self.uncertainty_list[:,0] = srt * np.cos(cos_arg) #cos term
         self.uncertainty_list[:,1] = srt * np.sin(cos_arg) #sin term
-
 
     def allocate_uncertainty(self, num_les):
         """
