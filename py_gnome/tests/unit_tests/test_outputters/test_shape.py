@@ -56,13 +56,14 @@ def test_init_filenname_exceptions():
     '''
     test exceptions raised during __init__
     '''
-    with pytest.raises(ValueError):
-        # must be filename, not dir name
-        ShapeOutput(os.path.abspath(os.path.dirname(__file__)))
-
-    with pytest.raises(ValueError):
-        # path must exist
-        ShapeOutput('invalid_path_to_file/file.zip')
+	# check_filename now happens in prepare_for_model_run
+#     with pytest.raises(ValueError):
+#         # must be filename, not dir name
+#         ShapeOutput(os.path.abspath(os.path.dirname(__file__)))
+#
+#     with pytest.raises(ValueError):
+#         # path must exist
+#         ShapeOutput('invalid_path_to_file/file.zip')
 
     with pytest.raises(ValueError):
         "can't have a dot in the middle of the filename"
@@ -76,6 +77,16 @@ def test_exceptions(output_filename):
     # begin tests
     shp = ShapeOutput(output_filename)
     shp.rewind()  # delete temporary files
+
+    with pytest.raises(ValueError):
+        # must be filename, not dir name
+        file_path = os.path.abspath(os.path.dirname(__file__))
+        ShapeOutput(file_path).prepare_for_model_run(datetime.now(), spill_pair)
+
+    with pytest.raises(ValueError):
+        # path must exist
+        file_path = 'invalid_path_to_file/file.zip'
+        ShapeOutput(file_path).prepare_for_model_run(datetime.now(), spill_pair)
 
     with raises(TypeError):
         # need to pass in model start time

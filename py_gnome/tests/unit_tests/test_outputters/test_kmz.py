@@ -57,16 +57,17 @@ def test_init(output_dir):
     'simple initialization passes'
     kmz = KMZOutput(os.path.join(output_dir, 'test.kmz'))
 
-def test_init_exceptions():
-    '''
-    test exceptions raised during __init__
-    '''
-    with pytest.raises(ValueError):
-        # must be filename, not dir name
-        KMZOutput(os.path.abspath(os.path.dirname(__file__)))
-
-    with pytest.raises(ValueError):
-        KMZOutput('invalid_path_to_file/file.kmz')
+# check_filename now happens in prepare_for_model_run
+# def test_init_exceptions():
+#     '''
+#     test exceptions raised during __init__
+#     '''
+#     with pytest.raises(ValueError):
+#         # must be filename, not dir name
+#         KMZOutput(os.path.abspath(os.path.dirname(__file__)))
+#
+#     with pytest.raises(ValueError):
+#         KMZOutput('invalid_path_to_file/file.kmz')
 
 def test_exceptions(output_filename):
     spill_pair = SpillContainerPair()
@@ -74,6 +75,16 @@ def test_exceptions(output_filename):
     # begin tests
     kmz = KMZOutput(output_filename)
     kmz.rewind()  # delete temporary files
+
+#     this test is now moot since kmz extension is added to the filename on init
+#     with raises(ValueError):
+#         # must be filename, not dir name
+#         file_path = os.path.abspath(os.path.dirname(__file__))
+#         KMZOutput(file_path).prepare_for_model_run(datetime.now(), spill_pair)
+
+    with raises(ValueError):
+        file_path = 'invalid_path_to_file/file.kmz'
+        KMZOutput(file_path).prepare_for_model_run(datetime.now(), spill_pair)
 
     with raises(TypeError):
         # need to pass in model start time

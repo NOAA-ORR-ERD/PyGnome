@@ -222,6 +222,8 @@ class Outputter(GnomeId):
         if model_start_time is None:
             raise TypeError("model_start_time is a required parameter")
 
+        if hasattr(self, 'filename'):
+            self._check_filename(self.filename)
         self.clean_output_files()
 
         self._model_start_time = model_start_time
@@ -261,6 +263,9 @@ class Outputter(GnomeId):
            update the _dt_since_lastoutput variable
 
         """
+
+        if not self.on:
+            return
 
         self._surf_conc_computed = False
 
@@ -498,7 +503,8 @@ class OutputterFilenameMixin(object):
             raise AttributeError('This attribute cannot be changed in the '
                                  'middle of a run')
         else:
-            self._check_filename(new_name)
+            # move to prepare for model run so save files with outputters can be loaded
+            #self._check_filename(new_name)
             self._filename = new_name
 
     def clean_output_files(self):
