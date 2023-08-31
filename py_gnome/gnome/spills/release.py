@@ -930,7 +930,7 @@ class PolygonRelease(Release):
         rt = []
         for p, w, t in zip(self.polygons, weights, thicknesses):
             if isinstance(p, shapely.geometry.MultiPolygon):
-                for subp in p:
+                for subp in p.geoms:
                     rw.append(w)
                     rt.append(t)
             else:
