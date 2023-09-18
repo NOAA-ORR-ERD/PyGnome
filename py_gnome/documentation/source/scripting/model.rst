@@ -7,7 +7,7 @@
 The PyGNOME Model
 =================
 
-The :class:`gnome.model.Model` class in the overall interface to the gnome system -- it manages all the elements, movers, outputters, etc used to drive the model. When writting scripts, a ``Model`` instance is used to manage how the overall model is run.
+The :class:`gnome.model.Model` class is the overall interface to the gnome system -- it manages all the elements, movers, outputters, etc used to drive the model. When writing scripts, a ``Model`` instance is used to manage how the overall model is run.
 
 Initialization
 --------------
@@ -72,9 +72,9 @@ Save and Reload a Model Setup
 
 .. todo:: Create a new page to talk about Save Files?
 
-The PyGNOME uses "save files" as a way to save a model setup to use again or to share with another user.
-The save files are a zip file that contain all the configuration information as JSON files and any needed data files all in one archive.
-They are usually given the `.gnome` file extension but they are, in fact, regular zip files.
+PyGNOME uses "save files" as a way to save a model setup to use again or to share with another user.
+A save file is a zip file that contains all the configuration information as JSON files and any needed data files all in one archive.
+Save files are usually given the `.gnome` file extension but they are, in fact, regular zip files.
 
 Save files are used by the WebGNOME application, so that users can save and reload a model setup that they have created via the interactive GUI interface.
 For the most part, when you are running ``gnome`` via Python scripts, you don't need to use save files, as your script can rebuild the model when it runs.

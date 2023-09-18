@@ -1,7 +1,5 @@
 .. _tutorial-2:
 
-:orphan:
-
 CATS currents
 ==============
 

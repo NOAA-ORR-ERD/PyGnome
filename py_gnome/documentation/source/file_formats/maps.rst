@@ -76,7 +76,7 @@ These special polygons are most commonly used in Location Files to help users av
 Map Bounds
 ..........
 
-The map bounds define a polygon with a format similar to that shown above, but with the identifier: Map Bounds". This polygon should be the first or one of the last polygons in the map file.
+The map bounds define a polygon with a format similar to that shown above, but with the identifier: "Map Bounds". This polygon should be the first or one of the last polygons in the map file.
 
 .. code-block:: none
 

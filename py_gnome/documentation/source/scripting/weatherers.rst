@@ -138,8 +138,8 @@ Viewing Bulk Weathering Data
 
 Since the total oil volume spilled is divided among multiple particles, bulk oil budget properties (e.g. percent of oil volume evaporated) are computed and stored in addition to the individual particle data.
 
-These data are available through a specialized Outputter named WeatheringOutput,
-see :ref:`weathering_data_output`
+These data are available through a specialized Outputter named WeatheringOutput.
+See :ref:`weathering_data_output` for the details.
 
 
 
