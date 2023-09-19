@@ -19,7 +19,6 @@ from gnome.persist import (
     drop,
     String,
     ObjTypeSchema,
-    validators,
     TimeDelta,
     LocalDateTime,
 )
@@ -99,8 +98,10 @@ class Outputter(GnomeId):
             potentially an extra output, not aligne withe the output_timestep.
         :type output_last_step: boolean
 
-        :param output_single_step: default is False. If True then output is written
-            for only one step, the output_start_time, regardless of output_timestep.
+        :param output_single_step: default is False. If True then output is
+                                   written for only one step, the
+                                   output_start_time, regardless of
+                                   output_timestep.
         :type output_last_step: boolean
 
         :param output_start_time: default is None in which case it is set to
@@ -121,7 +122,7 @@ class Outputter(GnomeId):
 
         # flag to keep track of _state of the object - is True after calling
         # prepare_for_model_run
-        ## fixme -- why should this be initializable???
+        # # fixme -- why should this be initializable???
         # self._middle_of_run = kwargs.pop('_middle_of_run', False)
         self._middle_of_run = False
 
@@ -133,8 +134,8 @@ class Outputter(GnomeId):
         self.output_last_step = output_last_step
         self.output_single_step = output_single_step
 
+        # if output_timestep is not None: # allow for output_timestep = 0
         if output_timestep:
-        #if output_timestep is not None: # allow for output_timestep = 0
             self._output_timestep = int(output_timestep.total_seconds())
         else:
             self._output_timestep = None
@@ -240,7 +241,6 @@ class Outputter(GnomeId):
 
         self._dt_since_lastoutput = 0
         self._middle_of_run = True
-
 
     def prepare_for_model_step(self, time_step, model_time):
         """
@@ -348,8 +348,8 @@ class Outputter(GnomeId):
         # this updates the most recent one in the cache
 
         if (self._write_step
-            and self.surface_conc is not None
-            and not self._surf_conc_computed):
+                and self.surface_conc is not None
+                and not self._surf_conc_computed):
             # compute the surface concentration and put it in the cache
             try:
                 sc = self.cache.recent[step_num][0]  # only the certain one
@@ -487,9 +487,7 @@ class OutputterFilenameMixin(object):
     """
     mixin for outputter that output to a single file
     """
-
     def __init__(self, filename, *args, **kwargs):
-
         super(OutputterFilenameMixin, self).__init__(**kwargs)
         self.filename = filename
 
@@ -503,8 +501,9 @@ class OutputterFilenameMixin(object):
             raise AttributeError('This attribute cannot be changed in the '
                                  'middle of a run')
         else:
-            # move to prepare for model run so save files with outputters can be loaded
-            #self._check_filename(new_name)
+            # move to prepare for model run so save files with outputters
+            # can be loaded
+            # self._check_filename(new_name)
             self._filename = new_name
 
     def clean_output_files(self):
@@ -520,7 +519,3 @@ class OutputterFilenameMixin(object):
             os.remove(self.filename)
         except OSError:
             pass  # it must not be there
-
-
-
-

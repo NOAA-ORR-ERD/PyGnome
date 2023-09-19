@@ -31,7 +31,6 @@ from gnome.persist.extend_colander import FilenameSchema
 from . import Outputter, BaseOutputterSchema
 
 
-
 class RendererSchema(BaseOutputterSchema):
     # not sure if bounding box needs defintion separate from LongLatBounds
     viewport = base_schema.LongLatBounds(save=True, update=True)
@@ -40,7 +39,7 @@ class RendererSchema(BaseOutputterSchema):
     # so missing=drop
     map_filename = FilenameSchema(save=True, update=True,
                                   isdatafile=True, test_equal=False,
-                                  missing=drop,)
+                                  missing=drop)
 
     projection = ProjectionSchema(save=True, update=True, missing=drop)
     image_size = base_schema.ImageSize(save=True, update=False, missing=drop)
@@ -161,17 +160,22 @@ class Renderer(Outputter, MapCanvas):
 
         :param point_size=2: size to draw elements, in pixels
 
-        :param depth_colors=None: colorscheme to use to color elements according
-                                  to their depth for 3D modeling. Any scheme that
-                                  py_gd provides can be used:: `py_gd.colorschemes.keys()`
-                                  Currently: 'cividis', 'inferno', 'magma', 'plasma',
-                                  'turbo', 'twilight', 'viridis' (borrowed from matplotlib)
+        :param depth_colors=None: colorscheme to use to color elements
+                                  according to their depth for 3D modeling.
+                                  Any scheme that py_gd provides can be used::
+                                  `py_gd.colorschemes.keys()`
+                                  Currently: 'cividis', 'inferno', 'magma',
+                                  'plasma', 'turbo', 'twilight', 'viridis'
+                                  (borrowed from matplotlib)
 
-                                  If None, elements will not be colored by depth
+                                  If None, elements will not be colored by
+                                  depth
 
-        :param min_color_depth=0: depth to map the first color in the scheme (m)
+        :param min_color_depth=0: depth to map the first color in the scheme
+                                  (m)
 
-        :param max_color_depth=100: depth to map the last color in the scheme (m)
+        :param max_color_depth=100: depth to map the last color in the scheme
+                                  (m)
 
         Remaining kwargs are passed onto Outputter.__init__(...)
 
@@ -190,8 +194,9 @@ class Renderer(Outputter, MapCanvas):
                 # check to see if this is a map object
                 self.land_polygons = map_filename.get_polygons()['land_polys']
                 self.map_filename = map_filename.filename
-            except AttributeError: # assume it's a filename
-                self.land_polygons = haz_files.ReadBNA(map_filename, 'PolygonSet')
+            except AttributeError:  # assume it's a filename
+                self.land_polygons = haz_files.ReadBNA(map_filename,
+                                                       'PolygonSet')
         elif land_polygons is not None:
             self.land_polygons = land_polygons
         else:
@@ -341,9 +346,10 @@ class Renderer(Outputter, MapCanvas):
             if ftype == 'gif':
                 self.start_animation(self.anim_filename)
             else:
-                self.save_background(os.path.join(self.output_dir,
-                                                  self.background_map_name + ftype),
-                                     file_type=ftype)
+                self.save_background(os.path.join(
+                    self.output_dir,
+                    self.background_map_name + ftype
+                ), file_type=ftype)
 
     def set_timestamp_attrib(self, **kwargs):
         """
@@ -537,9 +543,9 @@ class Renderer(Outputter, MapCanvas):
                              shape="x")
             # draw the four pixels for the elements not on land and
             # not off the map
-            points_in_water=positions[~on_land]
+            points_in_water = positions[~on_land]
             if self.depth_colors is not None:
-                color = self._color_ramp.get_color_indices(points_in_water[:,2])
+                color = self._color_ramp.get_color_indices(points_in_water[:, 2])
 
             self.draw_points(positions[~on_land],
                              diameter=self.point_size,
@@ -618,8 +624,10 @@ class Renderer(Outputter, MapCanvas):
         if not self._write_step:
             return None
 
-        image_filename = os.path.join(self.output_dir,
-                                      self.foreground_filename_format.format(step_num))
+        image_filename = os.path.join(
+            self.output_dir,
+            self.foreground_filename_format.format(step_num)
+        )
 
         self.clear_foreground()
 
@@ -700,6 +708,7 @@ class Renderer(Outputter, MapCanvas):
         if json_ == 'save':
             dict_['output_dir'] = os.path.join('./', dict_['output_dir'])
         return dict_
+
 
 class GridVisLayer(object):
     def __init__(self, grid, projection, on=True,
