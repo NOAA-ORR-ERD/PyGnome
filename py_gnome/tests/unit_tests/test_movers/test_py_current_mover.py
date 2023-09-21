@@ -10,17 +10,17 @@ import tempfile
 import zipfile
 
 from gnome.movers import CurrentMover
-from gnome.environment.environment_objects import GridCurrent
+from gnome.environment.environment_objects import GridCurrent, SteadyUniformCurrent
 from gnome.utilities import time_utils
+import gnome.scripting as gs
 
-from ..conftest import (sample_sc_release,
-                        testdata,
-                        validate_serialize_json,
+from ..conftest import (sample_sc_release, testdata, validate_serialize_json,
                         validate_save_json)
 
-
-curr_file = testdata['c_GridCurrentMover']['curr_reg'] #just a regular grid netcdf - this fails save_load
-curr_file2 = testdata['c_GridCurrentMover']['curr_tri'] #a triangular grid netcdf
+curr_file = testdata['c_GridCurrentMover'][
+    'curr_reg']  #just a regular grid netcdf - this fails save_load
+curr_file2 = testdata['c_GridCurrentMover'][
+    'curr_tri']  #a triangular grid netcdf
 
 
 def test_exceptions():
@@ -37,7 +37,7 @@ def test_exceptions():
 num_le = 10
 start_pos = (3.549, 51.88, 0)
 rel_time = datetime.datetime(1999, 11, 29, 21)
-#rel_time = datetime.datetime(2004, 12, 31, 13)	# date for curr_file2
+#rel_time = datetime.datetime(2004, 12, 31, 13) # date for curr_file2
 time_step = 15 * 60  # seconds
 model_time = time_utils.sec_to_date(time_utils.date_to_sec(rel_time))
 
@@ -84,8 +84,7 @@ def run_uncertain_loop():
     checks there is non-zero motion.
     """
 
-    pSpill = sample_sc_release(num_le, start_pos, rel_time,
-                               uncertain=True)
+    pSpill = sample_sc_release(num_le, start_pos, rel_time, uncertain=True)
     current = GridCurrent.from_netCDF(curr_file)
     py_current = CurrentMover(current=current)
     u_delta = _uncertain_loop(pSpill, py_current)
@@ -94,14 +93,14 @@ def run_uncertain_loop():
 
     return u_delta
 
+
 def test_uncertain_loop():
     """
     test one time step with uncertainty on the spill
     checks there is non-zero motion.
     """
 
-    pSpill = sample_sc_release(num_le, start_pos, rel_time,
-                               uncertain=True)
+    pSpill = sample_sc_release(num_le, start_pos, rel_time, uncertain=True)
     current = GridCurrent.from_netCDF(curr_file)
     py_current = CurrentMover(current=current)
     u_delta = run_uncertain_loop()
@@ -123,14 +122,13 @@ def test_certain_uncertain():
     assert np.all(delta[:, 2] == u_delta[:, 2])
 
 
-current = GridCurrent.from_netCDF(filename=curr_file)
-py_cur = CurrentMover(current=current)
-
-
 def test_default_props():
     """
     test default properties
     """
+    current = GridCurrent.from_netCDF(filename=curr_file)
+    py_cur = CurrentMover(current=current)
+
     assert py_cur.uncertain_duration == 24 * 3600
     assert py_cur.uncertain_time_delay == 0
     assert py_cur.uncertain_along == 0.5
@@ -141,10 +139,175 @@ def test_default_props():
     #assert py_cur.grid_topology == None
 
 
+def test_non_default_props():
+    """
+    test default properties
+    """
+    current = GridCurrent.from_netCDF(filename=curr_file)
+    py_cur = CurrentMover(current=current,
+                          uncertain_duration=2 * 3600,
+                          uncertain_time_delay=12 * 3600,
+                          uncertain_along=0.3,
+                          uncertain_cross=0.15,
+                          scale_value=1.2,
+                          default_num_method='Euler')
+
+    assert py_cur.uncertain_duration == 2 * 3600
+    assert py_cur.uncertain_time_delay == 12 * 3600
+    assert py_cur.uncertain_along == 0.3
+    assert py_cur.uncertain_cross == 0.15
+    assert py_cur.scale_value == 1.2
+    assert py_cur.default_num_method == 'Euler'
+
+
+def test_update_uncertainty():
+    """
+    this is doing a fair bit, but need to test somehow
+    """
+    curr = SteadyUniformCurrent(speed=1, direction=45, units='m/s')
+    mov = CurrentMover(
+        current=curr,
+        uncertain_duration=24 * 3600,
+        uncertain_time_delay=0,
+        uncertain_along=.5,
+        uncertain_cross=.25,
+    )
+
+    print(mov._uncertainty_list)
+    # should start out empty
+    assert len(mov._uncertainty_list) == 0
+
+    mov._update_uncertainty(
+        num_les=50, elapsed_time=3600)  # time in seconds -- should it be?
+    # should be 50 now
+    assert len(mov._uncertainty_list) == 50
+
+    mov._update_uncertainty(
+        num_les=75, elapsed_time=3600)  # time in seconds -- should it be?
+    # should be 75 now
+    assert len(mov._uncertainty_list) == 75
+
+    uncertainty_list = mov._uncertainty_list
+    assert np.all((uncertainty_list[:, 0] >= -0.5)
+                  & (uncertainty_list[:, 0] <= 0.5))
+    assert np.all((uncertainty_list[:, 1] >= -0.25)
+                  & (uncertainty_list[:, 1] <= 0.25))
+
+    # what else to check?
+
+
+def test_add_uncertainty():
+    curr = SteadyUniformCurrent(speed=1, direction=45, units='m/s')
+    # note: current isn't used for this test, but we need one to create the mover
+    mov = CurrentMover(current=curr)
+
+    # should be the same length as the deltas
+    mov._uncertainty_list = np.array([
+        (.2, .1),
+        (.2, .1),
+        (.2, .1),
+        (.2, .1),
+        (.2, .1),
+        (.2, .1),
+        (.2, .1),
+        (.2, .1),
+    ],
+                                     dtype=np.float64)
+    # some deltas to test (units? hopefully meters)
+    deltas = np.array([
+        (10, 0, 0),
+        (0, 10, 0),
+        (-10, 0, 0),
+        (0, -10, 0),
+        (10, 10, 0),
+        (10, -10, 0),
+        (-10, -10, 0),
+        (-10, 10, 0),
+    ],
+                      dtype=np.float64)
+
+    new_deltas = mov._add_uncertainty(deltas)
+
+    print(repr(new_deltas))
+
+    # NOTE: this seems to be rotating left or right, depending on the
+    #       quadrant -- which is probably OK, given that the uncertainty
+    #       should be symmetric.
+
+    correct = np.array([
+        [12., -1.2, 0.],
+        [1., 11.9, 0.],
+        [-12., 1.2, 0.],
+        [-1., -11.9, 0.],
+        [13., 10.7, 0.],
+        [11., -13.1, 0.],
+        [-13., -10.7, 0.],
+        [-11., 13.1, 0.],
+    ],
+                       dtype=np.float64)
+
+    assert np.allclose(new_deltas, correct)
+
+
+def test_uncertainty_deltas():
+    """
+    test if the actual deltas resulting from uncertainty is correct
+    """
+    curr = SteadyUniformCurrent(speed=1.0, direction=0, units='m/s')
+    mov = CurrentMover(current=curr)
+
+    sc = sample_sc_release(
+        num_elements=2,
+        start_pos=(-78.0, 48.0, 0.0),
+        release_time=datetime.datetime(2000, 1, 1, 1),
+        uncertain=True,
+    )
+
+    # hack to reset the positions -- so we can test deltas at different latitudes
+    sc['positions'] = np.array([
+        [-78., 0., 0.],
+        [-78., 45., 0.],
+    ])
+
+    # should be the same length as the deltas
+    mov._uncertainty_list = np.array(
+        [
+            (.2, .1),
+            (.2, .1),
+        ],
+        dtype=np.float64)
+
+    deltas = mov.get_move(
+        sc,
+        time_step=100,
+        model_time_datetime=datetime.datetime.now(),
+        num_method='Euler',
+    )
+
+    # the deltas should be the same for both points, when adjusted for latitude:
+
+    lat = sc['positions'][:, 1]
+    # approx conversion to meters
+    deltas[:, 0] = deltas[:, 0] * np.cos(np.deg2rad(lat))
+    deltas *= 111120
+
+    # think this is right, but I'm still a bit confused about the details
+    # D = 100 * 1  # 1 m/s * 100s
+    # correct = (D * 0.1, D * 1.2, 0) # not quite right
+    correct = (10., 119., 0.)  # from the code
+
+    assert np.all(deltas[0, :] == deltas[1, :])
+    assert np.allclose(deltas, correct, rtol=1e-8)
+
+
 def test_scale_value():
     """
     test setting / getting properties
+
+    but does it work?
     """
+    current = GridCurrent.from_netCDF(filename=curr_file)
+    py_cur = CurrentMover(current=current)
 
     py_cur.scale_value = 0
     print(py_cur.scale_value)
@@ -152,6 +315,7 @@ def test_scale_value():
 
 
 # Helper functions for tests
+
 
 def _assert_move(delta):
     """

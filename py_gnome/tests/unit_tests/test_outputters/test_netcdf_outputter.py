@@ -58,16 +58,17 @@ def model(sample_model_fcn, output_filename):
     return model
 
 
-def test_init_exceptions():
-    '''
-    test exceptions raised during __init__
-    '''
-    with raises(ValueError):
-        # must be filename, not dir name
-        NetCDFOutput(os.path.abspath(os.path.dirname(__file__)))
-
-    with raises(ValueError):
-        NetCDFOutput('invalid_path_to_file/file.nc')
+# check_filename now happens in prepare_for_model_run
+# def test_init_exceptions():
+#     '''
+#     test exceptions raised during __init__
+#     '''
+#     with raises(ValueError):
+#         # must be filename, not dir name
+#         NetCDFOutput(os.path.abspath(os.path.dirname(__file__)))
+#
+#     with raises(ValueError):
+#         NetCDFOutput('invalid_path_to_file/file.nc')
 
 
 def test_exceptions(output_filename):
@@ -77,6 +78,15 @@ def test_exceptions(output_filename):
     # begin tests
     netcdf = NetCDFOutput(output_filename, which_data='all')
     netcdf.rewind()  # delete temporary files
+
+    with raises(ValueError):
+        # must be filename, not dir name
+        file_path = os.path.abspath(os.path.dirname(__file__))
+        NetCDFOutput(file_path).prepare_for_model_run(datetime.now(), spill_pair)
+
+    with raises(ValueError):
+        file_path = 'invalid_path_to_file/file.nc'
+        NetCDFOutput(file_path).prepare_for_model_run(datetime.now(), spill_pair)
 
     with raises(TypeError):
         # need to pass in model start time

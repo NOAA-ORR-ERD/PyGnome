@@ -65,24 +65,25 @@ class Substance(GnomeId):
     _ref_as = 'substance'
 
     def __init__(self,
-                 # windage_range=(.01, .04),
-                 # windage_persist=900,
+                 # defaults are in InitWindages -- probably a bad idea, but for now...
                  windage_range=None,
                  windage_persist=None,
                  standard_density=1000.0,
                  *args,
                  **kwargs):
         """
-        :param windage_range=(.01, .04): range of windages for the substance (leeway)
+
+        :param windage_range: Range of windages for the substance (leeway).
+                              Default: (.01, .04)
         :type windage_range: tuple of values between 0 and 1
 
-        :param windage_persist=900: persistence of windage settings  in seconds. -1
+        :param windage_persist=900: persistence of windage settings in seconds. -1
                                     or Inf means infinite.
         :type windage_persist: integer seconds.
 
         :param standard_density=1000.0: The density of the substance, used to convert
                                         mass to/from volume
-        :type standard_density: Floating point decimal value
+        :type standard_density: float in units of kg/m^3
 
         """
         super(Substance, self).__init__(*args, **kwargs)

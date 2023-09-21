@@ -21,7 +21,7 @@ If you only need to run PyGNOME::
 
     > conda create -n gnome --file conda_requirements.txt
 
-IF you need to build, etc PyGNOME::
+If you need to build, etc PyGNOME::
 
     > conda create -n gnome python=3.9 --file conda_requirements.txt --file conda_requirements_build.txt --file conda_requirements_test.txt
 
@@ -450,11 +450,13 @@ changes to take effect.
 There are a number of options for building:
 
 ::
+
     > python setup.py develop
 
 builds and installs the ``gnome`` package in "development" (editable) mode.
 
 ::
+
     > python setup.py install
 
 builds and installs the ``gnome`` package into your Python install.
@@ -469,7 +471,7 @@ gitHub repo -- particularly if strange errors are occurring.
 
 You will need to re-run ``develop`` or ``install`` after running ``cleanall``
 
-NOTE: PyGNOME is not currently configured to be build with pip -- you need to call ``setup.py`` directly.
+NOTE: PyGNOME is not currently configured to be built with pip -- you need to call ``setup.py`` directly.
 
 
 Testing PyGNOME
@@ -501,7 +503,7 @@ What if some tests fail?
 We do our best to keep all tests passing on release versions of the package. But sometimes tests will fail due to the setup of the machine they are being run on -- package versions, etc. So the first thing to do is to make sure you have installed the dependencies as specified.
 
 But ``gnome`` is large package -- hardly anyone is going to use all of it. So while we'd like all tests to pass, a given test failure may not be an issue for any given use case.
-It's a bit hard to know whether a given test failure will affect your use case, but if you look at the name of the tests that fail, you might get a hint. For example, if any of the tests fail under ``test_weathering``, and you are not doing and oil weathering modeling, you don't need to worry about it.
+It's a bit hard to know whether a given test failure will affect your use case, but if you look at the name of the tests that fail, you might get a hint. For example, if any of the tests fail under ``test_weathering``, and you are not doing any oil weathering modeling, you don't need to worry about it.
 
 In any case, you can try to run your use case, and see what happens.
 

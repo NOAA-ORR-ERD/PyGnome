@@ -433,6 +433,7 @@ class Spill(BaseSpill):
     def release_elements(self, sc, start_time, end_time, environment=None):
         """
         Releases and partially initializes new LEs
+        Note: this will have to be updated if we allow backwards runs for continuous spills
         """
         if not self.on:
             return 0
