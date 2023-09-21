@@ -32,7 +32,7 @@ Random_c::Random_c (TMap *owner, char *name) : Mover_c (owner, name)
 // Initialize local variables the same way for all constructors
 void Random_c::Init()
 {
-	fDiffusionCoefficient = 100000; //  cm**2/sec 
+	fDiffusionCoefficient = 100000; //  cm**2/sec
 	memset(&fOptimize,0,sizeof(fOptimize));
 	fUncertaintyFactor = 2;		// default uncertainty mult-factor
 	bUseDepthDependent = false;
@@ -46,8 +46,8 @@ OSErr Random_c::PrepareForModelRun()
 OSErr Random_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, int* LESetsSizesList)
 {
 	this -> fOptimize.isOptimizedForStep = true;
-	this -> fOptimize.value = sqrt(6.*(fDiffusionCoefficient/10000.)*time_step)/METERSPERDEGREELAT; // in deg lat
-	this -> fOptimize.uncertaintyValue = sqrt(fUncertaintyFactor*6.*(fDiffusionCoefficient/10000.)*time_step)/METERSPERDEGREELAT; // in deg lat
+	this -> fOptimize.value = sqrt(6.*(fDiffusionCoefficient/10000.)*fabs(time_step))/METERSPERDEGREELAT; // in deg lat
+	this -> fOptimize.uncertaintyValue = sqrt(fUncertaintyFactor*6.*(fDiffusionCoefficient/10000.)*fabs(time_step))/METERSPERDEGREELAT; // in deg lat
 	//this -> fOptimize.isFirstStep = (model_time == start_time);
 	return noErr;
 }
@@ -60,24 +60,24 @@ void Random_c::ModelStepIsDone()
 
 
 OSErr Random_c::get_move(int n, Seconds model_time, Seconds step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spill_ID) {
-	
+
 	// JS Ques: Is this required? Could cy/python invoke this method without well defined numpy arrays?
 	if(!delta || !ref) {
 		//cout << "worldpoints arrays not provided! returning.\n";
 		return 1;
 	}
-	
+
 	// For LEType spillType, check to make sure it is within the valid values
 	if( spillType < FORECAST_LE || spillType > UNCERTAINTY_LE)
 	{
 		// cout << "Invalid spillType.\n";
 		return 2;
 	}
-	
+
 	LERec* prec;
 	LERec rec;
 	prec = &rec;
-	
+
 	WorldPoint3D zero_delta ={{0,0},0.};
 
 	for (int i = 0; i < n; i++) {
@@ -89,17 +89,17 @@ OSErr Random_c::get_move(int n, Seconds model_time, Seconds step_len, WorldPoint
 		}
 		rec.p = ref[i].p;
 		rec.z = ref[i].z;
-		
+
 		// let's do the multiply by 1000000 here - this is what gnome expects
 		rec.p.pLat *= 1000000;	// really only need this for the latitude
 		//rec.p.pLong*= 1000000;
-		
+
 		delta[i] = this->GetMove(model_time, step_len, spill_ID, i, prec, spillType);
-		
+
 		delta[i].p.pLat /= 1000000;
 		delta[i].p.pLong /= 1000000;
 	}
-	
+
 	return noErr;
 }
 
@@ -107,10 +107,10 @@ WorldPoint3D Random_c::GetMove (const Seconds& model_time, Seconds timeStep,long
 {
 	double		dLong, dLat;
 	WorldPoint3D	deltaPoint = {{0,0},0.};
-	WorldPoint refPoint = (*theLE).p;	
+	WorldPoint refPoint = (*theLE).p;
 	float rand1,rand2;
 	double 	diffusionCoefficient;
-	
+
 #ifdef pyGNOME
 	// for pyGNOME we will handle subsurface diffusion with vertical diffusion
 	if ((*theLE).z > 0) return deltaPoint;	// only use for surface LEs ?
@@ -123,7 +123,7 @@ WorldPoint3D Random_c::GetMove (const Seconds& model_time, Seconds timeStep,long
 		VectorMap_c* vMap = GetNthVectorMap(0);	// get first vector map
 		if (vMap) depth = vMap->DepthAtPoint(refPoint);
 #endif
-		// logD = 1+exp(1-1/.1H) 
+		// logD = 1+exp(1-1/.1H)
 		if (depth==0)	// couldn't find the point in dagtree, maybe a different default?
 			factor = 1;
 		else
@@ -133,8 +133,8 @@ WorldPoint3D Random_c::GetMove (const Seconds& model_time, Seconds timeStep,long
 			localDiffusionCoefficient = pow(10.,factor);
 		else
 			localDiffusionCoefficient = 0;
-		this -> fOptimize.value =  sqrt(6.*(localDiffusionCoefficient/10000.)*timeStep)/METERSPERDEGREELAT; // in deg lat
-		this -> fOptimize.uncertaintyValue =  sqrt(fUncertaintyFactor*6.*(localDiffusionCoefficient/10000.)*timeStep)/METERSPERDEGREELAT; // in deg lat
+		this -> fOptimize.value =  sqrt(6.*(localDiffusionCoefficient/10000.)*fabs(timeStep))/METERSPERDEGREELAT; // in deg lat
+		this -> fOptimize.uncertaintyValue =  sqrt(fUncertaintyFactor*6.*(localDiffusionCoefficient/10000.)*fabs(timeStep))/METERSPERDEGREELAT; // in deg lat
 		/*if (depth<20)
 		 {
 		 localDiffusionCoefficient = 0;
@@ -151,17 +151,17 @@ WorldPoint3D Random_c::GetMove (const Seconds& model_time, Seconds timeStep,long
 		// need to get the bathymetry then set diffusion based on > 20 O(1000), < 20 O(100)
 		// figure out where LE is, interpolate to get depth (units?)
 	}
-	if(!this->fOptimize.isOptimizedForStep && !bUseDepthDependent)  
+	if(!this->fOptimize.isOptimizedForStep && !bUseDepthDependent)
 	{
-		this -> fOptimize.value =  sqrt(6.*(fDiffusionCoefficient/10000.)*timeStep)/METERSPERDEGREELAT; // in deg lat
-		this -> fOptimize.uncertaintyValue =  sqrt(fUncertaintyFactor*6.*(fDiffusionCoefficient/10000.)*timeStep)/METERSPERDEGREELAT; // in deg lat
+		this -> fOptimize.value =  sqrt(6.*(fDiffusionCoefficient/10000.)*fabs(timeStep))/METERSPERDEGREELAT; // in deg lat
+		this -> fOptimize.uncertaintyValue =  sqrt(fUncertaintyFactor*6.*(fDiffusionCoefficient/10000.)*fabs(timeStep))/METERSPERDEGREELAT; // in deg lat
 	}
-	
+
 	if (leType == UNCERTAINTY_LE)
 		diffusionCoefficient = this -> fOptimize.uncertaintyValue;
 	else
 		diffusionCoefficient = this -> fOptimize.value;
-	
+
 	if(this -> fOptimize.isFirstStep)
 	{
 		GetRandomVectorInUnitCircle(&rand1,&rand2);
@@ -171,16 +171,16 @@ WorldPoint3D Random_c::GetMove (const Seconds& model_time, Seconds timeStep,long
 		rand1 = GetRandomFloat(-1.0, 1.0);
 		rand2 = GetRandomFloat(-1.0, 1.0);
 	}
-	
+
 	dLong = (rand1 * diffusionCoefficient )/ LongToLatRatio3 (refPoint.pLat);
 	dLat  = rand2 * diffusionCoefficient;
-	
+
 	// code goes here
 	// note: could add code to make it a circle the first step
-	
+
 	deltaPoint.p.pLong = dLong * 1000000;
 	deltaPoint.p.pLat  = dLat  * 1000000;
-	
+
 	return deltaPoint;
 }
 

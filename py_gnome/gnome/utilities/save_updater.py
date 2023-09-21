@@ -465,8 +465,15 @@ def extract_zipfile(zip_file, to_folder='.'):
 def sanitize_filename(fname):
     '''
     make filename legal on all systems (windows is pickier)
+
+    NOTE: this looks a lot like html sanitization
+          do we need to remove "<" and ">" from filenames?
+
+          and/or should we replace with a placeholder, rather than simply remove?
+    Also -- maybe replace spaces with underscores ...
     '''
     return re.sub(r'[\\\\/*?:"<>|]', "", fname)
+    # return re.sub(r'[\\\\/*?:"<>|]', "", fname).replace(" ", "_")
 
 
 

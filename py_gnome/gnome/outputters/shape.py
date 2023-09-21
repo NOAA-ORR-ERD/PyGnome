@@ -47,7 +47,8 @@ class ShapeOutput(Outputter):
 
         '''
         # a little check:
-        self._check_filename(filename)
+        # move check to prepare_for_model_run so don't get error loading save files
+        #self._check_filename(filename)
 
         filename = filename.split(".zip")[0].split(".shp")[0]
 
@@ -174,7 +175,7 @@ class ShapeOutput(Outputter):
 #         if islast_step:
 #             if self.uncertain is True:
 #                 self._zip_output_files()
- 
+
         return output_info
 
     def _record_shape_entries(self, sc):

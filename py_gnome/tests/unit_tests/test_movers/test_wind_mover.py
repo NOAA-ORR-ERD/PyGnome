@@ -463,6 +463,37 @@ class TestWindMover(object):
 
         self.wm.model_step_is_done()
 
+    def test_get_move_backwards(self):
+        """
+        Test the backward get_move(...) results in PointWindMover match the expected delta
+        """
+        self.time_step = -self.time_step
+        for ix in range(2):
+            curr_time = sec_to_date(date_to_sec(self.model_time) +
+                                    self.time_step * ix)
+            self.wm.prepare_for_model_step(self.sc, self.time_step, curr_time)
+
+            delta = self.wm.get_move(self.sc, self.time_step, curr_time)
+            actual = self._expected_move()
+
+            # the results should be independent of model time
+            tol = 1e-8
+
+            msg = ('{0} is not within a tolerance of '
+                   '{1}'.format('PointWindMover.get_move()', tol))
+            np.testing.assert_allclose(delta, actual, tol, tol, msg, 0)
+
+            assert self.wm.active
+
+            ts = date_to_sec(curr_time) - date_to_sec(self.model_time)
+            print(('Time step [sec]:\t{0}'
+                   'C++ delta-move:\n{1}'
+                   'Expected delta-move:\n{2}'
+                   ''.format(ts, delta, actual)))
+
+        self.wm.model_step_is_done()
+        self.time_step = -self.time_step
+
     def test_get_move_exceptions(self):
         curr_time = sec_to_date(date_to_sec(self.model_time) + self.time_step)
         tmp_windages = self.sc._data_arrays['windages']

@@ -17,6 +17,7 @@ class BaseMassBalanceOutputter(Outputter):
 
     i.e. averaged properties of the LEs
     """
+    # Note: don't know that this is being used
     units = {'default': 'kg',
              'avg_density': 'kg/m^3',
              'avg_viscosity': 'm^2/s'}

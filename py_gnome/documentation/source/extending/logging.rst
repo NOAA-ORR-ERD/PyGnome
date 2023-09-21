@@ -17,7 +17,7 @@ The logger can be initialized and configured in the usual way with the python ``
 
 Initializes the logger to simply log everything to the console (stdout). Likely what you want for scripting use.
 
-you can set the logging level to the level you want your log to show. options are, in order of importance: "debug", "info", "warning", "error", "critical"
+You can set the logging level to the level you want your log to show. Options are, in order of importance: "debug", "info", "warning", "error", "critical"
 
 You will only get the logging messages at or above the level you set.
 

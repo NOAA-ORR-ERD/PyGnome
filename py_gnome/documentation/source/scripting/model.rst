@@ -2,17 +2,17 @@
 
 .. _scripting_model:
 
-.. note:: This section is curretnly incomplete -- see the API reference for details.
+.. note:: This section is currently incomplete -- see the API reference for details.
 
 The PyGNOME Model
 =================
 
-The :class:`gnome.model.Model` class in the overall interface to the gnome system -- it manages all the elements, movers, outputters, etc used to drive the model. When writting scripts, a ``Model`` instance is used to mange how the overall model is run.
+The :class:`gnome.model.Model` class is the overall interface to the gnome system -- it manages all the elements, movers, outputters, etc used to drive the model. When writing scripts, a ``Model`` instance is used to manage how the overall model is run.
 
 Initialization
 --------------
 
-Most of the model parameters can be set after creating a ``Model`` object. But there are the common one to set for the usual cases.
+Most of the model parameters can be set after creating a ``Model`` object. But there are common ones to set for the usual cases.
 
 The common parameters set when creating a model instance are::
 
@@ -22,7 +22,15 @@ The common parameters set when creating a model instance are::
     duration=datetime.timedelta(days=1),
     uncertain=False,
 
+The start_time defaults to the current time, which will usually need to be adjusted. The other defaults
+may work, but it is helpful to include them in the initialization to make it easier to adjust them.
 
+By default the model uncertainty is off. To run with uncertainty included set uncertain=True.
+Wind, currents, and diffusion all have uncertainty parameters with default values.
+You can set the coefficients that control the size and distribution of the uncertainty on the individual movers.
+The uncertainty only applies to the model transport. Uncertainty for weathering is under development.
+
+To run the model backwards, set both the time_step and the duration to negative values
 
 Configuring the Model
 ---------------------
@@ -64,9 +72,9 @@ Save and Reload a Model Setup
 
 .. todo:: Create a new page to talk about Save Files?
 
-The PyGNOME uses "save files" as a way to save a model setup to use again or to share with another user.
-The save files are a zip file that contain all the configuration information as JSON files and any needed data files all in one archive.
-They are usually given the `.gnome` file extension but they are, in fact, regular zip files.
+PyGNOME uses "save files" as a way to save a model setup to use again or to share with another user.
+A save file is a zip file that contains all the configuration information as JSON files and any needed data files all in one archive.
+Save files are usually given the `.gnome` file extension but they are, in fact, regular zip files.
 
 Save files are used by the WebGNOME application, so that users can save and reload a model setup that they have created via the interactive GUI interface.
 For the most part, when you are running ``gnome`` via Python scripts, you don't need to use save files, as your script can rebuild the model when it runs.

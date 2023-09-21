@@ -16,7 +16,7 @@ This is to prevent the user from accidentally loading a wind as a current, and v
 Winds: Single Point, Time Series [OSSM]
 ---------------------------------------
 
-If you input an On-Scene Spill Model (OSSM) format wind file into GNOME, you can specify the units when the file is loaded, or there is an optional header –
+If you input an On-Scene Spill Model (OSSM) format wind file into GNOME, a header including the units is required –
 
  * The first line lists the station name.
  * The second line lists the station position.

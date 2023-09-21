@@ -94,7 +94,7 @@ def random_with_persistance(
         u_mask = (persistence > 0) & (persistence <= 900) # update mask for values to be changed
 
         if np.any(u_mask):
-            if np.any(persistence[u_mask] != time_step):
+            if np.any(persistence[u_mask] != abs(time_step)):
                 """
                 only need to do the following for persistence values !=
                 time_step. For persistence == time_step, the newly computed
@@ -104,7 +104,7 @@ def random_with_persistance(
                 readable.
                 """
                 orig = high[u_mask] - low[u_mask]
-                l__range = orig * np.sqrt(persistence[u_mask] / float(time_step))
+                l__range = orig * np.sqrt(persistence[u_mask] / float(abs(time_step)))
                 mean = (high[u_mask] + low[u_mask]) / 2.
 
                 # update the bounds for generating the random number

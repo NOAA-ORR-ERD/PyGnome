@@ -6,7 +6,7 @@ For example, evaporation reduces the mass of LEs that remain floating on the wat
 while increasing their density and viscosity.
 
 Weathering processes modeled in GNOME include: evaporation, dispersion, dissolution,
-sedimentation, emulsification, and biodegredation. (Note: as of October 2022 many
+sedimentation, emulsification, and biodegradation. (Note: as of August 2023 many
 of these algorithms are still being implemented and refined -- please contact PyGNOME developers for current status).
 
 Some examples and common use cases are shown here. For complete documentation see :mod:`gnome.weatherers` and
@@ -26,7 +26,7 @@ It is well commented.
 Oil Definitions
 ---------------
 
-In order to model weathing processes, a ``GnomeOil`` must be defined. PyGNOME comes with a small set of test oils, which can be found in: ``gnome.spills.sample_oils``. However, for most use, you will want to use a specific oil. Oil records compatible with PyGNOME's JSON format can be downloaded from:
+In order to model weathering processes, a ``GnomeOil`` must be defined. PyGNOME comes with a small set of test oils, which can be found in: ``gnome.spills.sample_oils``. However, for most use, you will want to use a specific oil. Oil records compatible with PyGNOME's JSON format can be downloaded from:
 
 https://adios.orr.noaa.gov
 
@@ -105,7 +105,7 @@ Note that the wind is not explicitly required but is needed by the Waves object.
     waves = Waves(wind)
     water = Water(temperature=300.0, salinity=35.0) #temperature in Kelvin, salinity in psu
     model.weatherers += Evaporation(wind=wind,water=water)
-    model.weatherers += NaturalDispersion
+    model.weatherers += NaturalDispersion(waves=waves,water=water)
 
 Emulsification
 --------------
@@ -122,7 +122,7 @@ Note that the wind is not explicitly required but is needed by the Waves object.
     waves = Waves(wind)
     water = Water(temperature=300.0, salinity=35.0) #temperature in Kelvin, salinity in psu
     model.weatherers += Evaporation(wind=wind,water=water)
-    model.weatherers += NaturalDispersion
+    model.weatherers += NaturalDispersion(waves=waves,water=water)
     model.weatherers += Emulsification(waves)
 
 Dissolution
@@ -138,8 +138,8 @@ Viewing Bulk Weathering Data
 
 Since the total oil volume spilled is divided among multiple particles, bulk oil budget properties (e.g. percent of oil volume evaporated) are computed and stored in addition to the individual particle data.
 
-These data are available through a specialized Outputter named WeatheringOutput,
-see :ref:`weathering_data_output`
+These data are available through a specialized Outputter named WeatheringOutput.
+See :ref:`weathering_data_output` for the details.
 
 
 

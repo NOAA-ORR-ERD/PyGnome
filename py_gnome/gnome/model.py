@@ -507,6 +507,10 @@ class Model(GnomeId):
                      if isinstance(w, Wind)])))
 
     @property
+    def has_weathering(self):
+        return any([w.on for w in self.weatherers])
+
+    @property
     def start_time(self):
         '''
         Start time of the simulation
@@ -981,6 +985,10 @@ class Model(GnomeId):
         '''
         if len(self.weatherers) == 0:
             # if no weatherers then mass_components array may not be defined
+            return
+
+        if self._time_step < 0:
+            # if backward run, don't try to weather
             return
 
         for sc in self.spills.items():
@@ -1615,13 +1623,21 @@ class Model(GnomeId):
                     msgs.append(self._warn_pre + msg)
 
                 elif spill.release_time < self.start_time:
-                    msg = ('{0} has release time before model start time'
-                           .format(spill.name))
+                    msg = ('{0} has release time before model start time: rt = {1}, st = {2}'
+                           .format(spill.name, spill.release_time, self.start_time))
                     self.logger.error(msg)
 
                     msgs.append('error: {}: {}'
                                 .format(self.__class__.__name__, msg))
                     isValid = False
+
+                # note this is never triggered because end_rt < start_rt causes error on init
+                if (spill.release_time != spill.end_release_time) and self.time_step < 0:
+                    msg = ('Backwards run is not valid for continuous releases. '
+                       'Use an instantaneous release or run forwards.')
+                    isValid = False
+                    raise GnomeRuntimeError(msg)
+
 
                 if spill.substance.is_weatherable:
                     pour_point = spill.substance.pour_point
@@ -1677,6 +1693,32 @@ class Model(GnomeId):
                         .format(mover.name))
                 self.logger.warning(msg)  # for now make this a warning
                 msgs.append('warning: ' + self.__class__.__name__ + ': ' + msg)
+
+        # check if backwards run has weathering on
+        if self.time_step < 0:
+            if self.duration.total_seconds() > 0:
+                msg = ('Time step and duration must have the same sign: time step = {0} duration = {1} '
+                       'To run backwards they must both be negative.'
+                        .format(self.time_step,self.duration.total_seconds()))
+                #self.logger.warning(msg)  # for now make this a warning
+                #msgs.append('warning: ' + self.__class__.__name__ + ': ' + msg)
+                isValid = False
+                raise GnomeRuntimeError(msg)
+            if self.duration.total_seconds() > 0:
+                msg = ('Time step and duration must have the same sign: time step = {0} duration = {1} '
+                       'To run backwards they must both be negative.'
+                        .format(self.time_step,self.duration.total_seconds()))
+                #self.logger.warning(msg)  # for now make this a warning
+                #msgs.append('warning: ' + self.__class__.__name__ + ': ' + msg)
+                isValid = False
+            if self.has_weathering:
+                msg = ('Backwards run is not valid for weathering. '
+                       'Turn off weathering to model a backwards trajectory.')
+                #self.logger.warning(msg)  # for now make this a warning
+                #msgs.append('warning: ' + self.__class__.__name__ + ': ' + msg)
+                isValid = False
+                raise GnomeRuntimeError(msg)
+
 
         return (msgs, isValid)
 
