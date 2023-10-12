@@ -28,10 +28,9 @@ def test_basic_move():
 
     # expected = np.zeros_like(delta)
 
-    expected = proj.meters_to_lonlat((100.0, 1000.0, 0.0), (0.0, 0.0,
-            0.0))
+    expected = proj.meters_to_lonlat((100.0, 1000.0, 0.0), (0.0, 0.0, 0.0))
 
-    assert np.alltrue(delta == expected)
+    assert np.all(delta == expected)
 
 
 def test_basic_move_backward():
@@ -49,7 +48,7 @@ def test_basic_move_backward():
     expected = proj.meters_to_lonlat((-100.0, -1000.0, 0.0), (0.0, 0.0,
             0.0))
 
-    assert np.alltrue(delta == expected)
+    assert np.all(delta == expected)
 
 
 def test_north():
@@ -63,7 +62,7 @@ def test_north():
 
     expected = proj.meters_to_lonlat((0.0, 1000.0, 0.0), (0.0, 0.0,
             0.0))
-    assert np.alltrue(delta == expected)
+    assert np.all(delta == expected)
 
 
 def test_uncertainty():
@@ -83,11 +82,11 @@ def test_uncertainty():
     expected = proj.meters_to_lonlat((1000.0, 1000.0, 0.0), (0.0, 0.0,
             0.0))
 
-    assert np.alltrue(delta == expected)
+    assert np.all(delta == expected)
 
     # but uncertain spills should be different:
 
-    assert not np.alltrue(u_delta == expected)
+    assert not np.all(u_delta == expected)
 
     # the mean should be close:
     # this is the smallest tolerance that consistently passed -- good enough?
@@ -113,11 +112,11 @@ def test_uncertainty_backward():
     expected = proj.meters_to_lonlat((-1000.0, -1000.0, 0.0), (0.0, 0.0,
             0.0))
 
-    assert np.alltrue(delta == expected)
+    assert np.all(delta == expected)
 
     # but uncertain spills should be different:
 
-    assert not np.alltrue(u_delta == expected)
+    assert not np.all(u_delta == expected)
 
     # the mean should be close:
 

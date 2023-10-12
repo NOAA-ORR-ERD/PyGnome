@@ -475,17 +475,17 @@ def test_particle_color_with_depth(output_dir):
     render the basemap
     """
     r1 = Renderer(bna_star,
-                 output_dir,
-                 image_size=(600, 600),
-                 draw_back_to_fore=True,
-                 formats=['png'],
-                 depth_colors='inferno') #'rainbow')
+                  output_dir,
+                  image_size=(600, 600),
+                  draw_back_to_fore=True,
+                  formats=['png'],
+                  depth_colors='inferno') #'rainbow')
 
     r2 = Renderer(bna_star,
-                 output_dir,
-                 image_size=(600, 600),
-                 draw_back_to_fore=True,
-                 formats=['png'],
-                 depth_colors='inferno')
+                  output_dir,
+                  image_size=(600, 600),
+                  draw_back_to_fore=True,
+                  formats=['png'],
+                  depth_colors='inferno')
 
-    assert np.alltrue(r1._color_ramp.color_index == r2._color_ramp.color_index)
+    assert np.all(r1._color_ramp.color_index == r2._color_ramp.color_index)
