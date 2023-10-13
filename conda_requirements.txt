@@ -22,7 +22,7 @@
 # defaults
 # conda-forge
 
-# it'll probably work with 3.8, but CI is teseting with 3.9.
+# it'll probably work with 3.8, but CI is testing with 3.9.
 
 python>=3.9,<3.11
 

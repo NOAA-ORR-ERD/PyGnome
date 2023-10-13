@@ -28,10 +28,10 @@ Example:
 Will create and environment called "gnome" with everything needed to
 build, run and test PyGNOME
 
-NOTE: currently hard-coded for Python 3.11 -- see variable at the top of the script.
+NOTE: currently hard-coded for Python 3.9 -- see variable at the top of the script.
 """
 
-PYTHON="3.11"
+PYTHON="3.9"
 
 if __name__ == "__main__":
     try:

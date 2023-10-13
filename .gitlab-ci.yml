@@ -1,5 +1,5 @@
 variables:
-  PYTHON_VER: "3.11"
+  PYTHON_VER: "3.9"
 
 stages:
   - compile
