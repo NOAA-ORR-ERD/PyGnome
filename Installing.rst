@@ -11,7 +11,7 @@ Add the conda-forge channel::
 
     > conda config --add channels conda-forge
 
-Set the channel prioroty to "strict"::
+Set the channel priority to "strict"::
 
   > conda config --set channel_priority strict
 
@@ -21,7 +21,7 @@ If you only need to run PyGNOME::
 
     > conda create -n gnome --file conda_requirements.txt
 
-If you need to build, etc PyGNOME::
+If you need to build, etc. PyGNOME::
 
     > conda create -n gnome python=3.9 --file conda_requirements.txt --file conda_requirements_build.txt --file conda_requirements_test.txt
 
@@ -53,18 +53,20 @@ GNOME on your own system. "conda" is the packaging manager used to manage the sy
 
 PyGNOME CAN be used with any Python distribution, but you will need to find or build a number of packages that are not easy to manage. If you are familiar with complex python packaging, then you can probably make it work. But conda makes it much easier, and that's what we use ourselves, and support that use.
 
-Anaconda vs miniconda:
-----------------------
+Anaconda vs miniconda vs miniforge:
+-----------------------------------
 
 `Anaconda <https://store.continuum.io/cshop/anaconda/>`__ provides a fairly complete python system for computational programming -- it is a large install, but comes with a lot of nice stuff pre-packaged that all works together.
 
 `miniconda <http://conda.pydata.org/miniconda.html>`__ is a much smaller install -- it provides only Python and the conda package management system. You can install miniconda, and then install only the packages you need to run PyGNOME.
 
-Either will work fine with PyGNOME.
+`miniforge <https://github.com/conda-forge/miniforge>`__ is similar to miniconda, but designed to work primarily with the conda-forge pacakges. As everything required for PyGNOME is available via conda-forge, and many are not available anywhere else, miniforge is the easiest way to get PyGNOME up and running. You can install miniforge, and then install only the packages you need to run PyGNOME.
+
+Either of these should work fine with PyGNOME, as long as you create an independent environment for it.
 
 **NOTES:**
 
-PyGNOME requires Python version 3.8 or greater (currently 3.9 is used operationally)
+PyGNOME requires Python version 3.9 or greater (currently 3.9 is used operationally)
 
 Anaconda (and miniconda) can be installed in either single-user or multi-user mode:
 
@@ -75,7 +77,7 @@ We (and Anaconda) recommend single-user mode (Select an install for â€œJust Meâ€
 Windows:
 ........
 
-You want the Windows 64 bit Python 3 version. Installing with the
+You need the Windows 64 bit Python 3 version. Installing with the
 defaults works fine. You probably want to let it set the PATH for you --
 that's a pain to do by hand.
 
