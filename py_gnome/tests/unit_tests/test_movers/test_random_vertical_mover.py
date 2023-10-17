@@ -4,10 +4,6 @@
 tests for the RandomMover3D in random_movers.py
 """
 
-
-
-
-
 import datetime
 import numpy as np
 import pytest
@@ -61,7 +57,7 @@ def test_horizontal_zero():
 
     print(delta)
 
-    assert np.alltrue(delta[:, 0:2] == 0.0)
+    assert np.all(delta[:, 0:2] == 0.0)
 
 
 @pytest.mark.skipif(True, reason="changed algorithm, needs update")
@@ -91,7 +87,7 @@ def test_vertical_zero():
 
     print(delta)
 
-    assert not np.alltrue(delta[:, 2] == 0.0)
+    assert not np.all(delta[:, 2] == 0.0)
 
 
 def test_bottom_layer():

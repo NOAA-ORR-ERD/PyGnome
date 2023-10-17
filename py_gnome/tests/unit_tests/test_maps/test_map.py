@@ -7,10 +7,6 @@ Tests of the map code.
 Designed to be run with py.test
 """
 
-
-
-
-
 import os
 
 import pytest
@@ -742,7 +738,7 @@ class Test_full_move:
                               ((9.0, 5.0, 0.), (11.0, 5.0, 0.),
                                (9.0, 4.0, 0.), (11.0, 4.0, 0.)))
 
-        assert np.alltrue(spill['status_codes'] == oil_status.on_land)
+        assert np.all(spill['status_codes'] == oil_status.on_land)
 
     def test_some_cross_array(self):
         """
