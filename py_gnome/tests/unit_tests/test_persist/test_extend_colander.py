@@ -6,7 +6,6 @@ tests for our extensions to colander
 Not complete at all!
 """
 
-
 import os
 from datetime import datetime
 import pprint as pp
@@ -241,7 +240,7 @@ class Test_NumpyArraySchema:
         print(deser)
 
         # Should lose no precision with integers
-        assert np.alltrue(deser == val)
+        assert np.all(deser == val)
 
     def test_float_list(self):
         sch = NumpyArraySchema()
@@ -253,7 +252,7 @@ class Test_NumpyArraySchema:
         print(deser)
 
         # Should lose no precision low precision floats
-        assert np.alltrue(deser == val)
+        assert np.all(deser == val)
 
     def test_float_precision_loss(self):
         sch = NumpyArraySchema(precision=4)

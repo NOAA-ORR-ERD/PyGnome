@@ -4,11 +4,6 @@ unittests for random mover
 designed to be run with py.test
 """
 
-
-
-
-
-
 import copy
 import pickle
 import datetime
@@ -56,8 +51,7 @@ def test_deepcopy():
                            )
     # model_time = sec_to_date(date_to_sec(rel_time) + 1)
     delta = rm2.get_move(sc, 900, model_time)
-    np.alltrue(delta[:, :2] != 0.0)
-
+    np.all(delta[:, :2] != 0.0)
 
 
 def test_pickle():
@@ -133,7 +127,7 @@ class TestRandomMover(object):
 
         print(delta)
 
-        assert np.alltrue(delta[:, :] == 0.0)
+        assert np.all(delta[:, :] == 0.0)
 
     def test_prepare_for_model_step(self):
         """

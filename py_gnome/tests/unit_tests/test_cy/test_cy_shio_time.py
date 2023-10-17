@@ -6,10 +6,6 @@ Does some basic testing of properties.
 todo: still need to add tests for functions that get the data from C++ code
 """
 
-
-
-
-
 import os
 from datetime import datetime
 
@@ -111,7 +107,14 @@ def test_eq():
     shio = CyShioTime(shio_file)
 
     other_shio = CyShioTime(shio_file)
+
+    # print("in test_eq")
+    # print(type(shio)
+    # print(type(other_shio))
+
     assert shio == other_shio
+
+#    assert False
 
     other_shio = CyShioTime(shio_file)
     other_shio.daylight_savings_off = True
