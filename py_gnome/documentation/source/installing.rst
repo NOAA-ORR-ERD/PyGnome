@@ -10,9 +10,6 @@ https://github.com/NOAA-ORR-ERD/PyGnome
 
 You can either "clone" the repository with git (recommended), or download a zip file of the source code.
 
-You will want to use the "production" branch, unless you need the very latest, untested, version of the code.
-
-
 Installing from Source:
 #######################
 

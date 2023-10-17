@@ -21,7 +21,7 @@ If you only need to run PyGNOME::
 
     > conda create -n gnome --file conda_requirements.txt
 
-If you need to build, etc. PyGNOME::
+If you need to build, etc PyGNOME::
 
     > conda create -n gnome python=3.9 --file conda_requirements.txt --file conda_requirements_build.txt --file conda_requirements_test.txt
 
