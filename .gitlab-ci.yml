@@ -1,5 +1,7 @@
 variables:
   PYTHON_VER: "3.9"
+  IMAGE_NAME: "miniforge-python"
+  GIT_DEPTH: 2
 
 stages:
   - compile
@@ -20,7 +22,7 @@ configure_env:
   tags:
     - docker
     - linux
-  image: registry.orr.noaa.gov/erd/centos-conda/miniforge-python$PYTHON_VER
+  image: registry.orr.noaa.gov/erd/centos-conda/$IMAGE_NAME$PYTHON_VER
   before_script:
     - echo '' # manual override of before_script because we're on runner 12.3 and inherit options are only 12.9+
   script:
@@ -35,7 +37,7 @@ compile_pygnome:
   tags:
     - docker
     - linux
-  image: registry.orr.noaa.gov/erd/centos-conda/miniforge-python$PYTHON_VER
+  image: registry.orr.noaa.gov/erd/centos-conda/$IMAGE_NAME$PYTHON_VER
   script:
     - echo "compiling PyGNOME"
     - yum install gcc gcc-c++ make libXext libSM libXrender -y
@@ -72,7 +74,7 @@ test_pygnome:
     - docker
     - linux
   allow_failure: false
-  image: registry.orr.noaa.gov/erd/centos-conda/miniforge-python$PYTHON_VER
+  image: registry.orr.noaa.gov/erd/centos-conda/$IMAGE_NAME$PYTHON_VER
   script:
     - conda install -y --file conda_requirements_test.txt
     - cd ./py_gnome/tests/unit_tests && pytest --runslow
@@ -92,33 +94,6 @@ test_pygnome_scripts:
   script:
     - cd ./py_gnome/scripts/testing_scripts && python run_all.py 2<&1
 
-# Ideally, all the scripts in "testing_scripts" should run without errors,
-# but once in a while we refactor something that breaks something.
-# So it would be good to get a warning from the CI.
-# This shouldn't be a "it has to pass" job.
-test_pygnome_scripts:
-  stage: test
-  tags:
-    - docker
-    - linux
-  allow_failure: true
-  image: registry.orr.noaa.gov/erd/centos-conda/miniforge-python$PYTHON_VER
-  script:
-    - cd ./py_gnome/scripts/testing_scripts && python run_all.py 2<&1
-
-# Ideally, all the scripts in "testing_scripts" should run without errors,
-# but once in a while we refactor something that breaks something.
-# So it would be good to get a warning from the CI.
-# This shouldn't be a "it has to pass" job.
-test_pygnome_scripts:
-  stage: test
-  tags:
-    - docker
-    - linux
-  allow_failure: true
-  image: registry.orr.noaa.gov/erd/centos-conda/miniforge-python$PYTHON_VER
-  script:
-    - cd ./py_gnome/scripts/testing_scripts && python run_all.py 2<&1
 
 # We will not build a windows docker image, but we do want to know if there are
 # any windows specific problems.
@@ -127,7 +102,7 @@ test_pygnome_scripts:
 # Unfortunately, the Windows GitLab runner is running PowerShell, so it can't
 # really be a true apples-to-apples test of a normal manual install on windows.
 # Oh well, at least we can test the code.
-#
+
 test_pygnome_windows:
   stage: test
   tags:
