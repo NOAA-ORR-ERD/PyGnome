@@ -22,12 +22,10 @@
 # defaults
 # conda-forge
 
-# it'll probably work with 3.8, but CI is testing with 3.9.
+# it'll probably work with 3.9 or 3.10, but CI is testing with 3.11
 
-python>=3.9,<3.11
+python>=3.9,<3.12
 
-# for building
-# cython=0.29.* # see the build requirements
 
 # for SpatialRelease
 trimesh
@@ -42,7 +40,7 @@ psutil
 pyzmq
 python-dateutil
 geojson
-colander=1.8.3
+colander <2
 
 # # Needed for multiprocessing, which is currently broken
 # pyzmq
@@ -55,11 +53,11 @@ progressbar
 
 
 # NOAA maintained packages
-gridded=0.5.7
+gridded>=0.5.7
 pynucos
 cell_tree2d
 py_gd>=2.2
-adios_db>=1.0.4
+adios_db>=1.1
 
 
 
