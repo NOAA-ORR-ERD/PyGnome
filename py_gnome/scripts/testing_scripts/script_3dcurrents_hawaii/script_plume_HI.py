@@ -38,7 +38,7 @@ def make_model():
     model.map = gs.MapFromBNA(mapfile, refloat_halflife=0.0)
 
     print('adding outputters')
-    renderer = gs.Renderer(map_filename='coast_HI.bna',
+    renderer = gs.Renderer(mapfile,
                            output_dir=images_dir,
                            image_size=(800, 600),
                            output_timestep=timedelta(hours=1),
@@ -93,5 +93,4 @@ if __name__ == "__main__":
     print("about to start running the model")
     for step in model:
         print(f"step: {step['step_num']}")
-        print 
         #print(step)
