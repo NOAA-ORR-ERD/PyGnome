@@ -23,7 +23,7 @@ If you only need to run PyGNOME::
 
 If you need to build, etc PyGNOME::
 
-    > conda create -n gnome python=3.9 --file conda_requirements.txt --file conda_requirements_build.txt --file conda_requirements_test.txt
+    > conda create -n gnome python=3.10 --file conda_requirements.txt --file conda_requirements_build.txt --file conda_requirements_test.txt
 
 Activate the gnome environment::
 
@@ -66,7 +66,7 @@ Either of these should work fine with PyGNOME, as long as you create an independ
 
 **NOTES:**
 
-PyGNOME requires Python version 3.9 or greater (currently 3.9 is used operationally)
+PyGNOME requires Python version 3.9 or greater (currently 3.10 is used operationally)
 
 Anaconda (and miniconda) can be installed in either single-user or multi-user mode:
 
@@ -93,7 +93,7 @@ the \*nix command line.
 Linux:
 ......
 
-The Linux 64bit-python3.9 is the one to use.
+The Linux 64bit-python3.10 is the one to use.
 
 We do not support 32 bit on any platform.
 
@@ -206,7 +206,7 @@ However, pyGNOME needs a number of specific package versions, so it is best to k
 
 Create an environment for PyGNOME::
 
-    > conda create -n gnome python=3.9 --file conda_requirements.txt --file conda_requirements_build.txt --file conda_requirements_test.txt
+    > conda create -n gnome python=3.10 --file conda_requirements.txt --file conda_requirements_build.txt --file conda_requirements_test.txt
 
 This will create an environment called "gnome" with Python itself and everything that it needs to be built, run, and tested -- it will be quite a bit, so may take a while.
 

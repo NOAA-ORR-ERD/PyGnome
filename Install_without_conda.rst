@@ -4,7 +4,6 @@ Installation without conda / Anaconda
 
 **WARNING:** These notes are out of date and not tested. All our development work is done using conda and conda-forge -- there are a few too many dependencies not well supported by "pure" pip / PyPi packages at this point.
 
-Note that current PyGNOME is Python 3 (>= 3.8) -- some of these notes are for Python2. But if you do get this working, please consider supplying a Pull Request with updated notes.
 
 Overview:
 =========
@@ -27,10 +26,9 @@ py_gd: https://github.com/NOAA-ORR-ERD/py_gd
 Building everything by hand / with pip
 ======================================
 
-Since this is development work, it might be good to create and run this
-in a virtual environment of some sort: virtualenv, pipenv, etc.
+It is always good practice to create and run a complex system like this in a virtual environment of some sort: virtualenv, pipenv, etc.
 
-A virtual environment is **not required** to run PyGnome.
+A virtual environment is **not required** to run PyGNOME.
 But you may be working in an environment (on a corporate network, for example) that restricts your access to the system files on your computer.
 In such a case, you may require a virtualenv in order to freely install python packages in python's site-packages dir. (site-packages is the standard place where python installers will put packages after building them)
 
@@ -70,8 +68,8 @@ Binary Dependencies
 
    libnetcdf-dev
 
-4. The following python packages, documented in PyGnome's
-   requirements.txt, may need to be manually installed.
+4. The following python packages, documented in PyGNOME's
+   conda_requirements.txt, may need to be manually installed.
 
 Binaries for
 
@@ -80,7 +78,7 @@ Binaries for
 `Cython <http://packages.ubuntu.com/raring/python/cython>`__
 can be installed using apt-get.
 
-Current binaries for these are sufficiently new: (Numpy >=1.16) and (Cython >= 0.29).
+Current binaries for these are sufficiently new: (Numpy >=1.20) and (Cython >= 3.0).
 
 If you use virtualenv and apt-get to install these system site packages.
 Remember to use the ``--system-site-packages`` option when creating a
@@ -99,7 +97,7 @@ The remaining dependencies are python packages and can be installed using::
 
 (NOTE: we do not regularly test the requirements.txt file -- it may be incomplete -- PR's accepted)
 
-See `Build PyGnome <#build-pygnome>`__ section below.
+See `Build PyGNOME <#build-PyGNOME>`__ section below.
 
 
 Windows
@@ -121,7 +119,9 @@ Binary Dependencies
 
 Download and install the newest Windows executable distribution of
 
-`Python 3.9 <http://www.python.org/download/>`_
+`Python 3.10 <http://www.python.org/download/>`_
+
+(3.9 -- 3.11 shoule work)
 
 A number of the packages that GNOME depends on have very complex and
 brittle build processes, and depend on third-party libraries that can be
@@ -137,19 +137,19 @@ Dependencies can be installed using the command::
 
     > pip install -r requirements.txt
 
-See `Build PyGnome <#build-pygnome>`__ section below.
+See `Build PyGNOME <#build-PyGNOME>`__ section below.
 
 
-Build PyGnome
+Build PyGNOME
 =============
 
-1. Clone the PyGnome repository::
+1. Clone the PyGNOME repository::
 
-    > git clone https://github.com/NOAA-ORR-ERD/PyGnome.git
+    > git clone https://github.com/NOAA-ORR-ERD/PyGNOME.git
 
 2. pip install all of GNOME's python package dependencies::
 
-    > cd PyGnome/py_gnome
+    > cd PyGNOME/py_gnome
     > pip install -r requirements.txt
 
 3. Install the adios_db pacakge -- it is under active development along  with py_gnome, so it's best to install that from source as well:
@@ -177,7 +177,7 @@ The other option you may need is ``cleanall``, which should clean the developmen
 
     > pytest --runslow tests/unit_tests
 
-Once all of the ``py_gnome`` unit tests pass, PyGnome is now built and
+Once all of the ``py_gnome`` unit tests pass, PyGNOME is now built and
 ready to be put to use. You can use the ``gnome`` module inside your
 python scripts to set up a variety of modeling scenarios.
 
@@ -185,7 +185,7 @@ There are example full scripts in the ``py_gnome/scripts`` directory.
 
 Documentation of PyGNOME can be found at:
 
-https://gnome.orr.noaa.gov/doc/pygnome/index.html
+https://gnome.orr.noaa.gov/doc/PyGNOME/index.html
 
 
 

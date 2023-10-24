@@ -13,13 +13,13 @@ This is simply making a point source with a given distribution of droplet sizes
 
 import os
 from datetime import datetime, timedelta
-import gnome
 import gnome.scripting as gs
+
 from gnome.utilities.distributions import WeibullDistribution
 from gnome.utilities.distributions import UniformDistribution
 
 from gnome.spills.substance import NonWeatheringSubstance
-from gnome.environment.environment_objects import GridCurrent
+
 
 # define base directory
 base_dir = os.path.dirname(__file__)
