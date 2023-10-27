@@ -78,6 +78,21 @@ The work flow is identical for adding a current. Alternatively, we could skip ex
 
 In both cases, the corresponding environment object is also added to the model.
 
+To use a current or wind in multiple files pass in a Python list with the file names::
+ 
+    file_list = ['day1.nc',
+                 'day2.nc',
+                 'day3.nc',
+                 'day4.nc',
+                 'day5.nc',
+                 'day6.nc',
+                 ]
+    current = gs.GridCurrent.from_netCDF(file_list)
+    current_mover = gs.CurrentMover(current=current)
+    model.movers += current_mover
+
+The files must be in order and in netcdf3 format. 
+
 The default numerical method for the gridded movers is a 2nd-order Runge-Kutta. Other options are available by specifying the "default_num_method" when creating the mover object. For more information, see the :class:`gnome.movers.CurrentMover` api documentation.
 
 .. admonition:: A note on 3D simulations
