@@ -21,6 +21,11 @@ curr_file = testdata['c_GridCurrentMover'][
     'curr_reg']  #just a regular grid netcdf - this fails save_load
 curr_file2 = testdata['c_GridCurrentMover'][
     'curr_tri']  #a triangular grid netcdf
+file_list = [testdata['c_GridCurrentMover'][
+    'series_file1'],
+	testdata['c_GridCurrentMover'][
+    'series_file2'],
+    ]
 
 
 def test_exceptions():
@@ -298,6 +303,23 @@ def test_uncertainty_deltas():
 
     assert np.all(deltas[0, :] == deltas[1, :])
     assert np.allclose(deltas, correct, rtol=1e-8)
+
+
+def test_file_list():
+    pSpill = sample_sc_release(num_le, start_pos, rel_time)
+    current = GridCurrent.from_netCDF(file_list)
+    py_current = CurrentMover(current=current)
+    delta = _certain_loop(pSpill, py_current)
+
+    _assert_move(delta)
+
+    new_time = datetime.datetime(1999, 11, 30, 21) # second file
+
+    py_current.prepare_for_model_step(pSpill, time_step, new_time)
+    delta = py_current.get_move(pSpill, time_step, new_time)
+    py_current.model_step_is_done(pSpill)
+
+    _assert_move(delta)
 
 
 def test_scale_value():
