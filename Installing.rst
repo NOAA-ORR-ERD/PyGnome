@@ -60,7 +60,7 @@ Anaconda vs miniconda vs miniforge:
 
 `miniconda <http://conda.pydata.org/miniconda.html>`__ is a much smaller install -- it provides only Python and the conda package management system. You can install miniconda, and then install only the packages you need to run PyGNOME.
 
-`miniforge <https://github.com/conda-forge/miniforge>`__ is similar to miniconda, but designed to work primarily with the conda-forge pacakges. As everything required for PyGNOME is available via conda-forge, and many are not available anywhere else, miniforge is the easiest way to get PyGNOME up and running. You can install miniforge, and then install only the packages you need to run PyGNOME.
+`miniforge <https://github.com/conda-forge/miniforge>`__ is similar to miniconda, but designed to work primarily with the conda-forge packages. As everything required for PyGNOME is available via conda-forge, and many are not available anywhere else, miniforge is the easiest way to get PyGNOME up and running. You can install miniforge, and then install only the packages you need to run PyGNOME.
 
 Either of these should work fine with PyGNOME, as long as you create an independent environment for it.
 
@@ -120,15 +120,15 @@ Setting up
 Install: `Anaconda <https://www.continuum.io/downloads>`__
 
 or alternatively: `Miniconda <http://conda.pydata.org/miniconda.html>`__
+or `Miniforge <https://github.com/conda-forge/miniforge>`_
 
-Once you have either Anaconda or Miniconda installed, the rest of the
-instructions should be the same.
+Once you have Anaconda, Miniconda, or Miniforge installed, the rest of the instructions should be the same.
 
 
 Update your (new) system
 ........................
 
-Once you have Anaconda or miniconda installed, you should start by
+Once you have a conda system installed, you should start by
 getting everything up to date, as sometimes packages have been updated
 since the installer was built.
 
@@ -141,10 +141,8 @@ Enter the following on the command-line::
 Setting up anaconda.org channels
 ................................
 
-`anaconda.org <http://anaconda.org>`__ is a web service for hosting conda packages for download. The way this is done is through
-anaconda "channels", which can be thought of simply as places on
-``anaconda.org`` where collections of packages are bundled together by the
-people hosting them.
+`anaconda.org <http://anaconda.org>`__ is a web service for hosting conda packages for download.
+The way this is done is through anaconda "channels", which can be thought of simply as places on ``anaconda.org`` where collections of packages are bundled together by the people hosting them.
 
 Many of the dependencies that PyGNOME requires come out of the box
 with Anaconda (or the conda "defaults" channel), but a few important
@@ -186,7 +184,7 @@ You need to set the channel prioroty to "strict"::
 
   > conda config --set channel_priority strict
 
-This will assure that you will get pacakges from conda-forge, even if there are newer ones available in the defaults channel.
+This will assure that you will get packages from conda-forge, even if there are newer ones available in the defaults channel.
 
 conda environments
 ------------------
@@ -200,7 +198,7 @@ http://conda.pydata.org/docs/using/envs.html
 NOTE: We highly recommend that you use a conda environment for GNOME.
 
 If you are only going to use Python / conda for PyGNOME, then you could use the base environment.
-However, pyGNOME needs a number of specific package versions, so it is best to keep it separate from any other work you are doing.
+However, PyGNOME needs a number of specific package versions, so it is best to keep it separate from any other work you are doing.
 
 (NOTE: you can do these steps with the Anaconda Navigator GUI if you have that installed)
 
@@ -208,7 +206,7 @@ Create an environment for PyGNOME::
 
     > conda create -n gnome python=3.10 --file conda_requirements.txt --file conda_requirements_build.txt --file conda_requirements_test.txt
 
-This will create an environment called "gnome" with Python itself and everything that it needs to be built, run, and tested -- it will be quite a bit, so may take a while.
+This will create an environment called "gnome" with Python itself and everything that it needs to be built, run, and tested -- it will be quite a bit, so it may take a while.
 
 To use that environment, you activate it with::
 
@@ -237,7 +235,7 @@ Once you have a conda environment set up, you can compile and install PyGNOME.
 You will need the files from the PyGNOME sources. If you
 have not downloaded it yet, it is available here:
 
-https://github.com/NOAA-ORR-ERD/PyGnome
+https://github.com/NOAA-ORR-ERD/PyGNOME
 
 You can either download a zip file of all the sources and unpack it, or
 you can "clone" the git repository. If you clone the repository, you will
@@ -248,11 +246,11 @@ rather than having to re-download the whole package.
 Downloading a single release
 ----------------------------
 
-zip and tar archives of the PyGnome source code can be found here:
+zip and tar archives of the PyGNOME source code can be found here:
 
-https://github.com/NOAA-ORR-ERD/PyGnome/releases
+https://github.com/NOAA-ORR-ERD/PyGNOME/releases
 
-This will get you the entire source archive of a given release, which is a fine way to work with PyGnome. However, if you want to be able to quickly include changes as we update the code, you may want to work with a git "clone" of the source code instead.
+This will get you the entire source archive of a given release, which is a fine way to work with PyGNOME. However, if you want to be able to quickly include changes as we update the code, you may want to work with a git "clone" of the source code instead.
 
 Cloning the PyGNOME git repository
 ----------------------------------
@@ -281,9 +279,9 @@ Windows:
 
 Once you have the client, it's as easy as::
 
-  > git clone https://github.com/NOAA-ORR-ERD/PyGnome.git
+  > git clone https://github.com/NOAA-ORR-ERD/PyGNOME.git
 
-This will create a PyGnome directory with all the code in it.
+This will create a PyGNOME directory with all the code in it.
 
 git branches:
   git supports a number of different "branches" or versions of the code. You will most likley want to use the "main" branch (the default) unless you specifically want to experiment with a new feature.
@@ -306,7 +304,7 @@ If you don't want to create an environment (or already have one), you can instal
 
 ::
 
-    > cd PyGnome  # or wherever you put the PyGnome project
+    > cd PyGNOME  # or wherever you put the PyGNOME project
     > conda install --file conda_requirements.txt --file conda_requirements_build.txt --file conda_requirements_test.txt
 
 NOTE: PyGNOME has a lot of specific dependencies -- it can be very hard for conda to resolve them with an large installed package base. If you have trouble, it's easiest to make a new environment just for PyGNOME.
@@ -316,8 +314,8 @@ This should install all the packages required by PyGNOME.
 (make sure you are in the correct conda environment, and you have the
 conda-forge channel enabled)
 
-If installing the requirements.txt fails:
-.........................................
+If installing the conda_requirements.txt fails:
+...............................................
 
 If you get an error about a particular package not being able to be installed, then conda will not install ANY of the packages in the file. We try hard to make sure everything is available on conda-forge. If however, a package of that particular version is missing, you can try:
 
@@ -350,7 +348,9 @@ This will allow you to use the JSON oil data format downloadable from NOAA's ADI
 
 https://adios.orr.noaa.gov/
 
-The ``adios_db`` package is under active development along with PyGNOME, so you are best off downloading the sources from gitHub and installing it from source -- similar to PyGNOME.
+The ``adios_db`` package is available on conda-forge, and should have been installed by the process above.
+
+However, the adios_db package is also under active development along with PyGNOME, so if you are working with the develop branch of PyGNOME, you may need the latest version of adios_db as well. In which case, you are best off downloading the sources from GitHub and installing it from source -- similar to PyGNOME.
 
 The latest releases (of the same branch) of each should be compatible.
 
@@ -374,7 +374,7 @@ Testing the adios_db install.
 
 If you run the PyGNOME tests after having installed ``adios_db``, it will run a few additional tests that require the ``adios_db``. It should not need independent testing.
 
-But if you want to test it, you will need additional requirements::
+But if you want to test it directly, you will need additional requirements::
 
   > conda install --file conda_requirements_test.txt
 
@@ -408,9 +408,7 @@ PyGNOME as described below.
 Windows
 .......
 
-For compiling python extensions on Windows with python3 it is best to use the
-
-Microsoft the Visual Studio 2019 (or later) Build Tools. They should be available here:
+For compiling python extensions on Windows with python3 it is best to use the Microsoft the Visual Studio 2019 (or later) Build Tools. They should be available here:
 
 https://visualstudio.microsoft.com/downloads/
 
@@ -436,7 +434,6 @@ Building PyGNOME
 
 At this point you should have all the necessary third-party
 tools in place.
-
 
 And it is probably best to build the "develop" target for your PyGNOME package if you plan on developing or debugging the PyGNOME source code
 (or updating the source code from GitHub).
@@ -544,7 +541,7 @@ In the ``testing_scripts`` dir, there is a ``run_all.py`` script that will run a
 
 For further documentation of PyGNOME, see:
 
-https://gnome.orr.noaa.gov/doc/pygnome/index.html
+https://gnome.orr.noaa.gov/doc/PyGNOME/index.html
 
 
 
