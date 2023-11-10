@@ -155,8 +155,8 @@ nc_names = {
     },
     'ice_velocity': {
         'default_names': {
-            'u': ['ice_u', 'uice'],
-            'v': ['ice_v', 'vice']
+            'u': ['ice_u', 'uice', 'uuice'],
+            'v': ['ice_v', 'vice', 'vvice']
         },
         'cf_names': {
             'u': ['eastward_sea_ice_velocity'],
