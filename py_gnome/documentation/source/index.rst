@@ -5,7 +5,7 @@ Welcome to PyGNOME's documentation!
 
 PyGNOME is general Lagrangian Element (particle tracking) code written primarily in Python, with some bindings to C++ code for certain functionality. It is the core engine of the General NOAA Operational Modeling Environment (GNOME) Suite of tools.
 
-This document provides guidance on using the PyGNOME package to solve problems, as well as details about its internals taht can be used to extend PyGNOME's functionality.
+This document provides guidance on using the PyGNOME package to solve problems, as well as details about its internals that can be used to extend PyGNOME's functionality.
 
 The PyGNOME source code can be found on GitHub Here:
 

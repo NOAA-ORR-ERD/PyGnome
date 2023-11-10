@@ -691,9 +691,6 @@ class DepthBase(gridded.depth.DepthBase, GnomeId):
         rv = cls.from_netCDF(**dict_)
         return rv
 
-    def interpolation_alphas(self, points, time, data_shape, _hash=None, **kwargs):
-        return (None, None)
-
 
 class L_Depth(gridded.depth.L_Depth, GnomeId):
     _schema = DepthSchema

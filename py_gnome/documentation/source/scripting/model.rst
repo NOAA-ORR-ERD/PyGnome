@@ -4,8 +4,8 @@
 
 .. note:: This section is currently incomplete -- see the API reference for details.
 
-The PyGNOME Model
-=================
+The Model
+=========
 
 The :class:`gnome.model.Model` class is the overall interface to the gnome system -- it manages all the elements, movers, outputters, etc used to drive the model. When writing scripts, a ``Model`` instance is used to manage how the overall model is run.
 
@@ -32,8 +32,13 @@ The uncertainty only applies to the model transport. Uncertainty for weathering 
 
 To run the model backwards, set both the time_step and the duration to negative values
 
+
 Configuring the Model
 ---------------------
+
+To set up your simulation, you need to add various items to teh model: maps, movers, weatherers, ...
+
+.. note: This is where we add note
 
 
 Running the Model
@@ -63,9 +68,24 @@ To see a list of properties associated with elements use::
 
 Note: this list will be empty until after the model has been run for at least one timestep.
 
+.. note: Add section about getting weathering (oil_budget) data -- here's an example::
+
+.. code-block:: python
+
+    # do you need a weathering outputter?:
+    # maybe just turn on weathering.
+    model.outputters += gs.WeatheringOutput()
+
+    for step in model:
+        print "Percent evaporated is:"
+        print step['WeatheringOutput']['evaporated']/step['WeatheringOutput']['amount_released'] * 100
+
 
 Examining the Results
 ---------------------
+
+Quick pointer in here to the Outputters section.
+
 
 Save and Reload a Model Setup
 -----------------------------
