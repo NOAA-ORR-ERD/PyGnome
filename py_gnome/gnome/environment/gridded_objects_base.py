@@ -20,7 +20,6 @@ from gnome.persist import base_schema
 from gnome.gnomeobject import GnomeId
 from gnome.persist import (GeneralGnomeObjectSchema, SchemaNode, SequenceSchema,
                            String, Boolean, DateTime, drop, FilenameSchema)
-from gnome.persist.validators import convertible_to_seconds
 from gnome.persist.extend_colander import LocalDateTime
 from gnome.utilities.inf_datetime import InfDateTime
 
@@ -78,10 +77,8 @@ class VariableSchemaBase(base_schema.ObjTypeSchema):
         isdatafile=True, test_equal=False, update=False
     )
     extrapolation_is_allowed = SchemaNode(Boolean())
-    data_start = SchemaNode(LocalDateTime(), read_only=True,
-                            validator=convertible_to_seconds)
-    data_stop = SchemaNode(LocalDateTime(), read_only=True,
-                           validator=convertible_to_seconds)
+    data_start = SchemaNode(LocalDateTime(), read_only=True)
+    data_stop = SchemaNode(LocalDateTime(), read_only=True)
 
 
 class VariableSchema(VariableSchemaBase):
@@ -424,8 +421,16 @@ class Variable(gridded.Variable, GnomeId):
 
     # fixme: shouldn't extrapolation_is_allowed be
     #        in Environment only?
-    def __init__(self, extrapolation_is_allowed=False, *args, **kwargs):
-        super(Variable, self).__init__(*args, **kwargs)
+    def __init__(self,
+                 extrapolation_is_allowed=False,
+                 surface_boundary_condition='extrapolate',
+                 bottom_boundary_condition='mask',
+                 *args,
+                 **kwargs):
+        super(Variable, self).__init__(*args,
+                                       surface_boundary_condition=surface_boundary_condition,
+                                       bottom_boundary_condition=bottom_boundary_condition,
+                                       **kwargs)
         self.extrapolation_is_allowed = extrapolation_is_allowed
 
     def __repr__(self):
@@ -685,9 +690,6 @@ class DepthBase(gridded.depth.DepthBase, GnomeId):
     def new_from_dict(cls, dict_):
         rv = cls.from_netCDF(**dict_)
         return rv
-
-    def interpolation_alphas(self, points, time, data_shape, _hash=None, **kwargs):
-        return (None, None)
 
 
 class L_Depth(gridded.depth.L_Depth, GnomeId):

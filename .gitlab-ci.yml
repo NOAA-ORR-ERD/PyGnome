@@ -1,5 +1,7 @@
 variables:
-  PYTHON_VER: "3.9"
+  PYTHON_VER: "3.10"
+  IMAGE_NAME: "miniforge-python"
+  GIT_DEPTH: 2
 
 stages:
   - compile
@@ -20,7 +22,7 @@ configure_env:
   tags:
     - docker
     - linux
-  image: registry.orr.noaa.gov/erd/centos-conda/centos7-python$PYTHON_VER
+  image: registry.orr.noaa.gov/erd/centos-conda/$IMAGE_NAME$PYTHON_VER
   before_script:
     - echo '' # manual override of before_script because we're on runner 12.3 and inherit options are only 12.9+
   script:
@@ -35,7 +37,7 @@ compile_pygnome:
   tags:
     - docker
     - linux
-  image: registry.orr.noaa.gov/erd/centos-conda/centos7-python$PYTHON_VER
+  image: registry.orr.noaa.gov/erd/centos-conda/$IMAGE_NAME$PYTHON_VER
   script:
     - echo "compiling PyGNOME"
     - yum install gcc gcc-c++ make libXext libSM libXrender -y
@@ -64,7 +66,7 @@ compile_pygnome:
     paths:
       - ./$CI_PIPELINE_ID
       - ./py_gnome/documentation/build/html
-      - ./deploy_requirements.txt
+      - ./conda_packages.txt
 
 test_pygnome:
   stage: test
@@ -72,10 +74,26 @@ test_pygnome:
     - docker
     - linux
   allow_failure: false
-  image: registry.orr.noaa.gov/erd/centos-conda/centos7-python$PYTHON_VER
+  image: registry.orr.noaa.gov/erd/centos-conda/$IMAGE_NAME$PYTHON_VER
   script:
     - conda install -y --file conda_requirements_test.txt
     - cd ./py_gnome/tests/unit_tests && pytest --runslow
+    - conda list > conda_packages.txt
+
+# Ideally, all the scripts in "testing_scripts" should run without errors,
+# but once in a while we refactor something that breaks something.
+# So it would be good to get a warning from the CI.
+# This shouldn't be a "it has to pass" job.
+test_pygnome_scripts:
+  stage: test
+  tags:
+    - docker
+    - linux
+  allow_failure: true
+  image: registry.orr.noaa.gov/erd/centos-conda/centos7-python$PYTHON_VER
+  script:
+    - cd ./py_gnome/scripts/testing_scripts && python run_all.py 2<&1
+
 
 # Ideally, all the scripts in "testing_scripts" should run without errors,
 # but once in a while we refactor something that breaks something.
@@ -98,7 +116,7 @@ test_pygnome_scripts:
 # Unfortunately, the Windows GitLab runner is running PowerShell, so it can't
 # really be a true apples-to-apples test of a normal manual install on windows.
 # Oh well, at least we can test the code.
-#
+
 test_pygnome_windows:
   stage: test
   tags:
@@ -140,7 +158,8 @@ test_pygnome_windows:
 
     - echo "Building PyGNOME"
     - cd ./py_gnome
-    - python setup.py install
+    # - python setup.py install
+    - python setup.py develop
 
     # Make sure that it imports from some folder other than the
     # gnome package folder.
@@ -168,6 +187,7 @@ build_develop:
     # build the py_gnome image
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker build . --build-arg PYTHON_VER=$PYTHON_VER -t registry.orr.noaa.gov/gnome/pygnome:develop
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker push registry.orr.noaa.gov/gnome/pygnome:develop
 
 build_main:
@@ -192,6 +212,7 @@ build_main:
     # build the py_gnome image
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker build . --build-arg PYTHON_VER=$PYTHON_VER -t registry.orr.noaa.gov/gnome/pygnome:main
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker push registry.orr.noaa.gov/gnome/pygnome:main
     
 build_production:
@@ -209,4 +230,5 @@ build_production:
 
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker build . --build-arg PYTHON_VER=$PYTHON_VER -t registry.orr.noaa.gov/gnome/pygnome:production
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker push registry.orr.noaa.gov/gnome/pygnome:production

@@ -7,11 +7,11 @@ Environment Objects
 
 Transport and weathering of particles in GNOME depend on a variety of environmental conditions (e.g. wind, waves, and water properties). Environment objects are used to represent this interface with an interface that can be queried in time and space.
 
-Environnment objects can represent a space-independent time series or gridded, time dependent data. Regardless of the structure of the underlying data, the interface to access the information is identical as illustrated in the examples below.
+Environment objects can represent a space-independent time series or gridded, time dependent data. Regardless of the structure of the underlying data, the interface to access the information is identical as illustrated in the examples below.
 
 For detailed documentation of the API and implemented objects see :mod:`gnome.environment.environment_objects`
 
-.. note:: 
+.. note::
 
     An important note is that environment objects alone do not have any effect on the model simulation.
     Once they are created, they can be explicitly passed to weatherers and movers. However, if a weatherer is added to the model without explicity specifying the required environment objects, then the first object of the correct type in the environment collection will be used for that weathering process.
@@ -43,7 +43,7 @@ Even more simply, there is utility function for creating a constant wind::
 
     wind = gs.constant_wind(10, 45, 'knots')
 
-Which creates a constant wind with a speed of 10 knots, and a direction of 34 degrees -- from the northeast.
+Which creates a constant wind with a speed of 10 knots, and a direction of 45 degrees -- from the northeast.
 
 In order to create a wind time series from raw data, you can create a TimeSeries object first, and create the PointWind from that::
 
@@ -66,12 +66,12 @@ Once the PointWind object is created, the information contained is accessed usin
 
 	wind_value = wind.at([-125.5,48,0], datetime(2015, 1, 1, 1, 30))
 
-The wind is constant in time so it will return the same value for any location. IN time, the value is interpolated to the time asked for. If queried outside the time series provided, it will raise an Error.
+The wind is constant in time so it will return the same value for any location. In time, the value is interpolated to the time asked for. If queried outside the time series provided, it will raise an Error.
 
 Extrapolation:
 ..............
 
-By default, the PointWind object will not extrapolate beyond teh specified time series::
+By default, the PointWind object will not extrapolate beyond the specified time series::
 
     In [13]: wind.extrapolation_is_allowed
     Out[13]: False
@@ -96,7 +96,7 @@ The models set up with PyGNOME are often driven with data created by hydrodynami
     fn = 'my_data_file.nc'
     wind = gs.GridWind.from_netCDF(filename=fn)
 
-One major advantage of environment objects is re-use of common attributes. For example, if you have a data file with 
+One major advantage of environment objects is re-use of common attributes. For example, if you have a data file with
 wind and current variables that are associated with the same grid. ::
 
     current = gs.GridCurrent.from_netCDF(filename=fn)
@@ -115,7 +115,7 @@ with large numbers of files::
 Ice Aware Objects
 -----------------
 
-For simulations including ice, there are several important environment objects that need to be created. These objects require that the model output include ice concentration and ice drift velocity. The :mod:`IceAwareCurrent` and :mod:`IceAwareWind` are GridCurrent/GridWind instances that modulate the usual water velocity field depending on ice concentration. 
+For simulations including ice, there are several important environment objects that need to be created. These objects require that the model output include ice concentration and ice drift velocity. The :mod:`IceAwareCurrent` and :mod:`IceAwareWind` are GridCurrent/GridWind instances that modulate the usual water velocity field depending on ice concentration.
 
 For an :class:`gnome.environment.IceAwareCurrent`::
 
@@ -124,12 +124,12 @@ For an :class:`gnome.environment.IceAwareCurrent`::
     * Above 80% coverage, queries will return the ice drift velocity.
 
 For an :class:`gnome.environment.IceAwareWind`::
-    
+
     * While under 20% ice coverage, queries will return the wind velocity.
     * Between 20% and 80% coverage, queries will interpolate linearly between wind magnitude and zero.
     * Above 80% coverage, queries will return a wind magnitude of 0.
 
-The following example shows how to create "ice aware" current and wind environment objects:: 
+The following example shows how to create "ice aware" current and wind environment objects::
 
     fcurr = 'current_ice_file.nc'
     fwind = 'wind_ice_file.nc'
@@ -141,7 +141,7 @@ If, as is common, the ice concentration and velocity data are only present in th
     ice_aware_wind = gs.IceAwareWind.from_netCDF(filename=fwind,
                             ice_concentration=ice_aware_curr.ice_concentration,
                             ice_velocity=ice_aware_curr.ice_velocity
-                            )    
+                            )
 
 
 :class:`gnome.environment.IceConcentration`
@@ -161,6 +161,9 @@ This section is under construction.
 :class:`gnome.environment.Waves`
 
 More examples of the interaction of environment objects with movers and weatherers will be given in the next section.
+
+Advanced Initialization
+-----------------------
 
 
 

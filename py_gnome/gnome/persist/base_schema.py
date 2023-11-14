@@ -8,9 +8,10 @@ import tempfile
 import geojson
 import re
 
-from colander import (SchemaNode, deferred, drop, required, Invalid, UnsupportedFields,
-                      SequenceSchema, TupleSchema, MappingSchema, Mapping,
-                      String, Float, Int, SchemaType, Sequence, Tuple, Positional, null)
+from colander import (SchemaNode, SequenceSchema, TupleSchema, MappingSchema,
+                      String, Float, Int, SchemaType, Sequence, Tuple, Mapping,
+                      Positional, Invalid, UnsupportedFields,
+                      deferred, drop, required, null)
 
 from .extend_colander import NumpyFixedLenSchema
 
@@ -30,16 +31,15 @@ def now(node, kw):
     """
     return datetime.datetime.now().replace(microsecond=0)
 
-class ObjType(SchemaType):
 
+class ObjType(SchemaType):
     def __init__(self, unknown='ignore'):
         self.unknown = unknown
 
     def _set_unknown(self, value):
-        if not value in ('ignore', 'raise', 'preserve'):
-            raise ValueError(
-                'unknown attribute must be one of "ignore", "raise", '
-                'or "preserve"')
+        if value not in ('ignore', 'raise', 'preserve'):
+            raise ValueError('unknown attribute must be one of '
+                             '"ignore", "raise", or "preserve"')
         self._unknown = value
 
     def _get_unknown(self):
@@ -70,7 +70,7 @@ class ObjType(SchemaType):
         error = None
         result = {}
 
-        for num, subnode in enumerate(node.children):
+        for _num, subnode in enumerate(node.children):
             name = subnode.name
             subval = None
 
@@ -78,25 +78,17 @@ class ObjType(SchemaType):
                 subval = value.get(name, None)
             else:
                 subval = value.pop(name, None)
-            if subval is None: #deserialization
+            if subval is None:  # deserialization
                 if subnode.missing == drop:
                     continue
                 sub_result = subnode.missing
-            elif subval is null: #serialization
+            elif subval is null:  # serialization
                 if subnode.default == drop:
                     continue
                 sub_result = subnode.default if subnode.default is not null else None
             else:
-                sub_result = callback(subnode,subval)
-#             try:
-#             except Invalid as e:
-#                 raise e
-#                 if error is None:
-#                     error = Invalid(node)
-#                 error.add(e, num)
-#             else:
-            #if sub_result is None:
-            #    continue
+                sub_result = callback(subnode, subval)
+
             result[name] = sub_result
 
         if self.unknown == 'raise':
@@ -148,8 +140,8 @@ class ObjType(SchemaType):
         return self._impl(node, value, callback)
 
     def _deser(self, node, value, refs):
-        # value in this case would be 
-#         try:
+        # value in this case would be
+        # try:
             if value is None:
                 return None
             if isinstance(value, dict) and 'obj_type' in value:
@@ -158,32 +150,36 @@ class ObjType(SchemaType):
                     # object does not exist in refs already
                     obj_type = class_from_objtype(value['obj_type'])
                     obj = obj_type.new_from_dict(value)
-                    log.info('Created new {0} object {1}'.format(obj.obj_type, obj.name))
+                    log.info(f'Created new {obj.obj_type} object {obj.name}')
                     node.register_refs(node, obj, refs)
                     if id_ is None:
                         id_ = obj.id
                     refs[id_] = obj
                 return refs[id_]
             else:
-                raise TypeError('{0} is not dictionary, or does not have an obj_type'.format(value))
-#         except Exception as e:
-#             raise e
-#             raise Invalid(node, '{0}" does not implement GnomeObj functionality: {1}'.format(value, e))
+                raise TypeError(f'{value} is not dictionary, '
+                                'or does not have an obj_type')
+        # except Exception as e:
+        #     raise e
+        #     raise Invalid(node,
+        #                   f'{value}" does not implement '
+        #                   f'GnomeObj functionality: {e}')
 
     def deserialize(self, node, cstruct, refs):
         if cstruct is None:
             return None
 
         def callback(subnode, subcstruct):
-            #This callback implements the branching recursion in deserialization
+            # This callback implements the branching recursion
+            # in deserialization
             if subnode.typ.__class__ is ObjType:
-                #All GNOME object types
+                # All GNOME object types
                 return subnode.deserialize(subcstruct, refs)
             else:
                 # This needs to become more flexible! It needs to detect
                 # subclasses of Sequence!
-                if (isinstance(subnode.typ, (Sequence, OrderedCollectionType)) and
-                        isinstance(subnode.children[0], ObjTypeSchema)):
+                if (isinstance(subnode.typ, (Sequence, OrderedCollectionType))
+                        and isinstance(subnode.children[0], ObjTypeSchema)):
                     # To deal with iterable schemas that do not have
                     # a deserialize with refs function
                     # Lists
@@ -193,17 +189,17 @@ class ObjType(SchemaType):
                     return subnode.typ._impl(subnode, subcstruct, callback,
                                              scalar)
                 elif (subnode.schema_type is Tuple):
-                    #Tuples
+                    # Tuples
                     return subnode.typ._impl(subnode, subcstruct, callback)
                 else:
-                    #Strings, dates, numbers, etc
+                    # Strings, dates, numbers, etc
                     return subnode.deserialize(subcstruct)
 
         if 'id' in cstruct and cstruct['id'] in refs:
-            #future appstruct already exists in refs
-            #however cstruct may hold updates that should be applied to object in refs
-            #In this case the object should be 'update_from_dict' and the result
-            #be the newly updated object
+            # future appstruct already exists in refs
+            # however cstruct may hold updates that should be applied
+            # to object in refs,  In this case the object should be
+            # 'update_from_dict' and the result be the newly updated object
             id_ = cstruct['id']
             try:
                 log.info(refs[id_].name)
@@ -214,7 +210,6 @@ class ObjType(SchemaType):
                 log.info('Updated object {0} from json'.format(refs[id_].name))
             return refs[id_]
         else:
-            #
             result = self._impl(node, cstruct, callback)
 
         return self._deser(node, result, refs)
@@ -262,10 +257,10 @@ class ObjType(SchemaType):
         return appstruct[path]
 
     def _prepare_save(self, node, raw_object, saveloc, refs):
-        #Gets the json for the object, as if this were being serialized
+        # Gets the json for the object, as if this were being serialized
         if hasattr(raw_object, 'to_dict'):
-            # Passing the 'save' in case a class wants to do some special stuff on
-            # saving specifically.
+            # Passing the 'save' in case a class wants to do some special stuff
+            # on saving specifically.
             dict_ = raw_object.to_dict('save')
             for k in dict_.keys():
                 if dict_[k] is None:
@@ -282,35 +277,37 @@ class ObjType(SchemaType):
             fname = gen_unique_filename(fname, zipfile_)
 
             refs[json_['id']] = fname
-        # strips out any entries that do not need saving. They're still in refs,
-        # but that shouldn't do any harm.
+        # strips out any entries that do not need saving.
+        # They're still in refs, but that shouldn't do any harm.
         savable_attrs = node.get_nodes_by_attr('save')
         for k in list(json_.keys()):
             subnode = node.get(k)
 
             # Need to exclude lists from this culling,
             # unless explicitly set save=false
-            #t1 = not isinstance(subnode, (SequenceSchema, TupleSchema))
+            # t1 = not isinstance(subnode, (SequenceSchema, TupleSchema))
             t2 = hasattr(subnode, 'save') and subnode.save is False
             t3 = k not in savable_attrs
-            #if (t1 and t2 and t3 and k in json_):
+            # if (t1 and t2 and t3 and k in json_):
             if (t2 and t3 and k in json_):
                 json_.pop(k)
 
-        #replace all save_reference json with just the json filename containing said object
+        # replace all save_reference json with just the json filename
+        # containing said object
         refd_names = node.get_nodes_by_attr('save_reference')
         for n in refd_names:
-            if n in json_: #if a 'save_reference' attr is None, it will hit this
+            if n in json_:  # if a 'save_reference' attr is None, it will hit this
                 if json_[n] is None:
                     continue
                 elif isinstance(json_[n], list):
-                    #this is a SequenceSchema or TupleSchema tagged with save_reference
+                    # this is a SequenceSchema or TupleSchema tagged with
+                    # save_reference
                     for i, subjson in enumerate(json_[n]):
                         refname = subjson['name'] + '.json'
                         if subjson['id'] in refs:
-                            #this name has already been added somewhere else,
-                            #and MAY have a different name if there was a naming
-                            #conflict
+                            # this name has already been added somewhere else,
+                            # and MAY have a different name if there was a
+                            # naming conflict
                             refname = refs[subjson['id']]
                         json_[n][i] = refname
                 else:
@@ -350,8 +347,8 @@ class ObjType(SchemaType):
             if not hasattr(subnode, '_save'):
                 # This happens when it goes into non-gnome object attributes
                 # (Strings, Numbers, etc)
-                if (isinstance(subnode.typ, (Sequence, OrderedCollectionType)) and
-                        isinstance(subnode.children[0], ObjTypeSchema)):
+                if (isinstance(subnode.typ, (Sequence, OrderedCollectionType))
+                        and isinstance(subnode.children[0], ObjTypeSchema)):
                     # To be able to continue saving inside iterables,
                     # whose schema does not contain a save function,
                     # call the subnode typ _impl with this function as callback
@@ -365,8 +362,8 @@ class ObjType(SchemaType):
                 elif (subnode.schema_type is Tuple):
                     return subnode.typ._impl(subnode, subappstruct, callback)
                 else:
-                    #Not an iterable containing Gnome objects, so simply return
-                    #the serialization of this non-GNOME object.
+                    # Not an iterable containing Gnome objects, so simply
+                    # return the serialization of this non-GNOME object.
                     return subnode.serialize(subappstruct)
             else:
                 # This is the path for Gnome objects
@@ -377,12 +374,12 @@ class ObjType(SchemaType):
                 else:
                     logging.info('skipped {0}'.format(subnode))
 
-        #gets the dictionary representation of the object, 'save' is passed
+        # gets the dictionary representation of the object, 'save' is passed
         dict_ = self._prepare_save(node, appstruct, zipfile_, refs)
-        #Recursively serializes each node, producing the object's json
+        # Recursively serializes each node, producing the object's json
         preprocessed_json = self._impl(node, dict_, callback)
-        #Processes references, adds supporting files to the zipfile, and writes
-        #the json to the zip, and returns the json of the object.
+        # Processes references, adds supporting files to the zipfile,
+        # and writes the json to the zip, and returns the json of the object.
         return self._save(node, preprocessed_json, zipfile_, refs)
 
     def _process_supporting_file(self, raw_path, zipfile_):
@@ -403,8 +400,8 @@ class ObjType(SchemaType):
         def callback(subnode, subcstruct):
             if not hasattr(subnode, 'load'):
                 # This is the path for non-gnome attributes
-                if (isinstance(subnode.typ, (Sequence, OrderedCollectionType)) and
-                        isinstance(subnode.children[0], ObjTypeSchema)):
+                if (isinstance(subnode.typ, (Sequence, OrderedCollectionType))
+                        and isinstance(subnode.children[0], ObjTypeSchema)):
                     # To deal with iterable schemas that do not have a
                     # load function
                     scalar = (hasattr(subnode.typ, 'accept_scalar') and
@@ -417,16 +414,16 @@ class ObjType(SchemaType):
                 else:
                     return subnode.deserialize(subcstruct)
             else:
-                #this is the path for Gnome attributes
+                # this is the path for Gnome attributes
                 return subnode.load(subcstruct, saveloc=saveloc, refs=refs)
 
-        #takes the obj_json with references and replaces the references
-        #with the un-hydrated obj_json from each file.
+        # takes the obj_json with references and replaces the references
+        # with the un-hydrated obj_json from each file.
         hydrated_json = self.hydrate_json(node, cstruct, saveloc, refs)
-        #Recursively loads each node. After this, the hydrated json is
-        #an object dict
+        # Recursively loads each node. After this, the hydrated json is
+        # an object dict
         dict_ = self._impl(node, hydrated_json, callback)
-        #instantiates the object exactly as deserialize would do
+        # instantiates the object exactly as deserialize would do
         return self._deser(node, dict_, refs)
 
     def hydrate_json(self, node, cstruct, saveloc, refs):
@@ -504,10 +501,10 @@ class ObjType(SchemaType):
         filename is the name of the file in the zip
         saveloc can be a folder or open zipfile.ZipFile object
         if saveloc is a folder and the filename exists inside,
-        this does not return an altered name, nor does it extract to the temporary directory.
-        An altered filename is returned if it cannot find the filename directly
-        or if saveloc is an open zipfile
-        in a temporary directory
+        this does not return an altered name, nor does it extract to the
+        temporary directory.  An altered filename is returned if it cannot
+        find the filename directly or if saveloc is an open zipfile in a
+        temporary directory
         '''
         if filename is None:
             return
@@ -553,29 +550,29 @@ class ObjTypeSchema(MappingSchema):
     Put them in your schema declaration if an override is desired.
     '''
 
-    save=True               #Attr will appear in save files
-    update=True             #Attr is updatable through .update
-    read_only=False         #Attr is read only. This supersedes update
-    test_equal=True         #Attr will be ignored in == tests
-    isdatafile = False      #Attr references filenames to be added to save files
-    save_reference = True   #Attr is a link to another GnomeId and should be
-                            #saved as a reference in save files
-    default = null          #(Colander) Set default = drop to skip this attribute
-                            #if it is None during serialization
-    missing = drop            #(Colander) If not present in cstruct, ignore. This
-                            #attribute is NOT required for correct deserialization
-                            #set missing=required for all attributes that ARE
-                            #required for object init.
+    save = True             # Attr will appear in save files
+    update = True           # Attr is updatable through .update
+    read_only = False       # Attr is read only. This supersedes update
+    test_equal = True       # Attr will be ignored in == tests
+    isdatafile = False      # Attr references filenames to be added to save files
+    save_reference = True   # Attr is a link to another GnomeId and should be
+                            # saved as a reference in save files
+    default = null          # (Colander) Set default = drop to skip this attribute
+                            # if it is None during serialization
+    missing = drop          # (Colander) If not present in cstruct, ignore. This
+                            # attribute is NOT required for correct deserialization
+                            # set missing=required for all attributes that ARE
+                            # required for object init.
 
-    #These are the defaults automatically applied to children of this node
-    #if not defined already
-    _colander_defaults = {'save':save,
-                          'update':update,
-                          'read_only':read_only,
-                          'test_equal':test_equal,
-                          'isdatafile':isdatafile,
-                          'missing':missing,
-                          'default':default
+    # These are the defaults automatically applied to children of this node
+    # if not defined already
+    _colander_defaults = {'save': save,
+                          'update': update,
+                          'read_only': read_only,
+                          'test_equal': test_equal,
+                          'isdatafile': isdatafile,
+                          'missing': missing,
+                          'default': default
                           }
 
     # Attr will appear in save files
@@ -637,12 +634,14 @@ class ObjTypeSchema(MappingSchema):
             for k, v in self._colander_defaults.items():
                 if not hasattr(c, k):
                     setattr(c, k, v)
-                elif hasattr(c, k) and hasattr(c.__class__, k) and getattr(c, k) is getattr(c.__class__, k):
-                    #things like missing, which by default are 'required' on the class
-                    #if overridden, it will be on the instance instead
+                elif (hasattr(c, k) and hasattr(c.__class__, k) and
+                        getattr(c, k) is getattr(c.__class__, k)):
+                    # things like missing, which by default are 'required'
+                    # on the class if overridden, it will be on the instance
+                    # instead
                     setattr(c, k, v)
             if c.read_only and c.update:
-                c.update=False
+                c.update = False
 
     def serialize(self, appstruct=None, options={}):
 
@@ -672,10 +671,12 @@ class ObjTypeSchema(MappingSchema):
         if obj is None:
             raise ValueError(self.__class__.__name__ + ': Cannot save a None')
         if obj._schema is not self.__class__:
-            raise TypeError('A {0} cannot save a {1}'.format(self.__class__.__name__, obj.__class__.__name__))
+            raise TypeError(f'A {self.__class__.__name__} '
+                            f'cannot save a {obj.__class__.__name__}')
 
         if zipfile is None:
-            raise ValueError('Must pass an open zipfile.Zipfile in append mode to zipfile_')
+            raise ValueError('Must pass an open zipfile.Zipfile '
+                             'in append mode to zipfile_')
         if refs is None:
             refs = Refs()
 
@@ -687,48 +688,58 @@ class ObjTypeSchema(MappingSchema):
             raise ValueError(self.__class__.__name__ + ': Cannot load a None')
         cls = class_from_objtype(obj_json['obj_type'])
         if cls._schema is not self.__class__:
-            raise TypeError('A {0} cannot save a {1}'.format(self.__class__.__name__, cls.__name__))
+            raise TypeError(f'A {self.__class__.__name__} '
+                            f'cannot save a {cls.__name__}')
         if zipfile is None:
-            raise ValueError('Must pass an open zipfile.Zipfile in append mode to saveloc')
+            raise ValueError('Must pass an open zipfile.Zipfile '
+                             'in append mode to saveloc')
 
         obj = self.typ.load(self, obj_json, saveloc, refs)
         return obj
 
     def get_nodes_by_attr(self, attr):
         '''
-        Returns a list of child node names that have the specified attr set on them
-        This replaces the State and Field mechanisms from the old serialization paradigm
-        Now such attributes are on the schema directly
+        Returns a list of child node names that have the specified attr
+        set on them.  This replaces the State and Field mechanisms
+        from the old serialization paradigm.  Now such attributes are
+        on the schema directly
 
         If attr is 'all' it just returns a list of all child node names
         '''
         if attr == 'all':
             return [n.name for n in self.children]
         else:
-            names = [n.name for n in [c for c in self.children if hasattr(c, attr) and getattr(c, attr)]]
-            #sequences need to be taken into account. If present they will
-            #considered to always have 'save' and 'update' as true, read as false,
+            names = [n.name
+                     for n in [c for c in self.children
+                               if hasattr(c, attr) and getattr(c, attr)]]
+            # sequences need to be taken into account. If present they will
+            # considered to always have 'save' and 'update' as true,
+            # read as false,
             return names
 
     @staticmethod
     def register_refs(node, subappstruct, refs):
-        if ((node.schema_type is Sequence or
-             node.schema_type is OrderedCollectionType) and
-             isinstance(node.children[0], ObjTypeSchema)):
-            [subitem._schema.register_refs(subitem._schema(), subitem, refs) for subitem in subappstruct]
+        if (node.schema_type in (Sequence, OrderedCollectionType) and
+                isinstance(node.children[0], ObjTypeSchema)):
+            [subitem._schema.register_refs(subitem._schema(), subitem, refs)
+             for subitem in subappstruct]
         if not isinstance(node, ObjTypeSchema) or subappstruct is None:
             return
         if subappstruct.id not in refs:
             refs[subappstruct.id] = subappstruct
         names = node.get_nodes_by_attr('all')
         for n in names:
-            subappstruct._schema.register_refs(subappstruct._schema().get(n), getattr(subappstruct, n), refs)
+            subappstruct._schema.register_refs(subappstruct._schema().get(n),
+                                               getattr(subappstruct, n), refs)
 
     @staticmethod
-    def process_subnode(subnode, appstruct, subappstruct, subname, cstruct, subcstruct, refs):
+    def process_subnode(subnode, appstruct, subappstruct, subname,
+                        cstruct, subcstruct, refs):
         '''
-        The recursive function that a schema uses to process it's child attributes.
-        returns the value of what subappstruct should become, based on the incoming subcstruct
+        The recursive function that a schema uses to process it's
+        child attributes.
+        returns the value of what subappstruct should become, based on the
+        incoming subcstruct
         '''
         if subnode.schema_type is ObjType:
             if subcstruct is None:
@@ -750,25 +761,42 @@ class ObjTypeSchema(MappingSchema):
                 return r
         elif (subnode.schema_type is Sequence and
               isinstance(subnode.children[0], ObjTypeSchema)):
-            #subnode is a list of Gnome objects
+            # subnode is a list of Gnome objects
             if subappstruct is None:
                 subappstruct = []
             else:
                 del subappstruct[:]
 
             for subitem in subcstruct:
-                subappstruct.append(ObjTypeSchema.process_subnode(subnode.children[0], appstruct, subappstruct, subname, cstruct, subitem, refs))
+                subappstruct.append(ObjTypeSchema.process_subnode(
+                    subnode.children[0],
+                    appstruct,
+                    subappstruct,
+                    subname,
+                    cstruct,
+                    subitem,
+                    refs
+                ))
+
             return subappstruct
         elif (subnode.schema_type is OrderedCollectionType and
-                    isinstance(subnode.children[0], ObjTypeSchema)):
+                isinstance(subnode.children[0], ObjTypeSchema)):
             if subappstruct is not None:
                 subappstruct.clear()
             else:
                 raise ValueError('process_subnode(): '
-                                 'why is orderedcollection subappstruct None????')
+                                 'why is orderedcollection subappstruct None?')
 
             for subitem in subcstruct:
-                subappstruct.add(ObjTypeSchema.process_subnode(subnode.children[0],appstruct, subappstruct, subname, cstruct, subitem, refs))
+                subappstruct.add(ObjTypeSchema.process_subnode(
+                    subnode.children[0],
+                    appstruct,
+                    subappstruct,
+                    subname,
+                    cstruct,
+                    subitem,
+                    refs
+                ))
             return subappstruct
         else:
             return subnode.deserialize(subcstruct)
@@ -817,25 +845,29 @@ class GeneralGnomeObjectSchema(ObjTypeSchema):
 
     def serialize(self, appstruct=None, options=None):
         substitute_schema = self.validate_input_schema(appstruct)
-        return substitute_schema.typ.serialize(substitute_schema, appstruct, options=options)
+        return substitute_schema.typ.serialize(substitute_schema, appstruct,
+                                               options=options)
 
     def deserialize(self, cstruct=None, refs=None):
         if refs is None:
             refs = Refs()
         substitute_schema = self.validate_input_schema(cstruct)
-        return substitute_schema.typ.deserialize(substitute_schema, cstruct, refs=refs)
+        return substitute_schema.typ.deserialize(substitute_schema, cstruct,
+                                                 refs=refs)
 
     def _save(self, obj, zipfile_=None, refs=None):
         if refs is None:
             refs = Refs()
         substitute_schema = self.validate_input_schema(obj)
-        return substitute_schema.typ.save(substitute_schema, obj, zipfile_=zipfile_, refs=refs)
+        return substitute_schema.typ.save(substitute_schema, obj,
+                                          zipfile_=zipfile_, refs=refs)
 
     def load(self, obj_json, saveloc=None, refs=None):
         if refs is None:
             refs = Refs()
         substitute_schema = self.validate_input_schema(obj_json)
-        return substitute_schema.typ.load(substitute_schema, obj_json, saveloc=saveloc, refs=refs)
+        return substitute_schema.typ.load(substitute_schema, obj_json,
+                                          saveloc=saveloc, refs=refs)
 
 
 class CollectionItemMap(MappingSchema):
@@ -863,6 +895,7 @@ class LongLatBounds(SequenceSchema):
 
 Polygon = LongLatBounds
 
+
 class FeatureCollectionSchema(MappingSchema):
     '''
     geojson.FeatureCollection -> String via __geo_interface__ attribute
@@ -870,12 +903,13 @@ class FeatureCollectionSchema(MappingSchema):
     def serialize(self, appstruct):
         assert isinstance(appstruct, geojson.FeatureCollection)
         return appstruct.__geo_interface__
+
     def deserialize(self, cstruct):
         if isinstance(cstruct, str):
             return geojson.loads(cstruct)
         else:
             return geojson.loads(geojson.dumps(cstruct))
-        
+
 
 class FeatureSchema(MappingSchema):
     '''
@@ -884,6 +918,7 @@ class FeatureSchema(MappingSchema):
     def serialize(self, appstruct):
         assert isinstance(appstruct, geojson.Feature)
         return appstruct.__geo_interface__
+
     def deserialize(self, cstruct):
         assert isinstance(cstruct, str)
         return geojson.loads(cstruct)
@@ -906,7 +941,8 @@ class PolygonSetSchema(SequenceSchema):
                 return None
             # fixme: is there any need to for a PolygonSet here?
             #        a list of lists would work fine.
-            #        a PolygonSet is created in the spillable_area.setter anyway.
+            #        a PolygonSet is created in the spillable_area.setter
+            #        anyway.
             ps = PolygonSet()
             for poly in appstruct:
                 ps.append(poly)
@@ -969,5 +1005,3 @@ def gen_unique_filename(filename_in, zipfile_):
             new_fn = fmtstring.format(' (' + str(i) + ')')
 
     raise ValueError('Same file name used too many times')
-
-

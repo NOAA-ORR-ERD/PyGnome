@@ -20,7 +20,7 @@ The `Unstructured grid (UGRID) conventions <http://ugrid-conventions.github.io/u
 The `Staggered (SGRID) conventions <http://sgrid.github.io/sgrid/>`_
   These specify additions to the CF conventions for model results on  quadrilateral curvilinear grids (e.g. `Arakawa grids <https://en.wikipedia.org/wiki/Arakawa_grids>`_) used in many finite difference and hybrid models.
 
-If your input file conform to these conventions, and use the standard names that GNOME is expecting, they should "just work". In particular, GNOME has known to work with the output from the following models:
+If your input files conform to these conventions, and use the standard names that GNOME is expecting, they should "just work". In particular, GNOME has been known to work with the output from the following models:
 
 - ROMS
 - POM
@@ -105,9 +105,9 @@ Name Mapping:
 
 **grid_wind**
 
- Default Names for u: air_u, Air_U, air_ucmp, wind_u, u-component_of_wind_height_above_ground
+ Default Names for u: air_u, Air_U, air_ucmp, wind_u, u-component_of_wind_height_above_ground, u10
 
- Default Names for v: air_v, Air_V, air_vcmp, wind_v, v-component_of_wind_height_above_ground
+ Default Names for v: air_v, Air_V, air_vcmp, wind_v, v-component_of_wind_height_above_ground, v10
 
 
  CF Standard Names for u: eastward_wind, eastward wind
@@ -336,7 +336,7 @@ The NetCDF header description for finite element model:
       789   388 2   0
     …               next island, etc.
     2.  Only the first sigma level is used, although GNOME is currently being extended to handle 3-D currents.
-     
+
     1.2.2.3.2   Example – Triangular Grid Format with Velocities on the Triangles
     Following is an example of the triangular grid format for NetCDF files with velocities on the triangles. The global attribute grid_type = TRIANGULAR is required (the default is grid_type = REGULAR). The first depth value is used. Time units can be hours, minutes, seconds, or days. A map will be created using the boundary data. The topology must be included in the file.
     netcdf FVCOM_example {

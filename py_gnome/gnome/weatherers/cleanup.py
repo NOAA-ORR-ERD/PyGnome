@@ -23,8 +23,6 @@ from gnome.environment.water import WaterSchema
 from gnome.environment.gridded_objects_base import VectorVariableSchema
 from gnome.environment.waves import WavesSchema
 
-from gnome.persist.validators import convertible_to_seconds
-
 from gnome.utilities.inf_datetime import InfDateTime
 
 

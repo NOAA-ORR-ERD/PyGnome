@@ -34,10 +34,8 @@ from gnome.persist.extend_colander import FilenameSchema
 class CurrentMoversBaseSchema(ProcessSchema):
     uncertain_duration = SchemaNode(Float())
     uncertain_time_delay = SchemaNode(Float())
-    data_start = SchemaNode(LocalDateTime(), read_only=True,
-                            validator=convertible_to_seconds)
-    data_stop = SchemaNode(LocalDateTime(), read_only=True,
-                           validator=convertible_to_seconds)
+    data_start = SchemaNode(LocalDateTime(), read_only=True)
+    data_stop = SchemaNode(LocalDateTime(), read_only=True)
 
 
 class CurrentMoversBase(CyMover):
@@ -172,10 +170,8 @@ class CatsMoverSchema(CurrentMoversBaseSchema):
     tide = TideSchema(
         missing=drop, save=True, update=True, save_reference=True
     )
-    data_start = SchemaNode(LocalDateTime(), read_only=True,
-                            validator=convertible_to_seconds)
-    data_stop = SchemaNode(LocalDateTime(), read_only=True,
-                           validator=convertible_to_seconds)
+    data_start = SchemaNode(LocalDateTime(), read_only=True)
+    data_stop = SchemaNode(LocalDateTime(), read_only=True)
 
 
 class CatsMover(CurrentMoversBase):
@@ -973,10 +969,8 @@ class CurrentCycleMoverSchema(c_GridCurrentMoverSchema):
     tide = TideSchema(
         missing=drop, save=True, update=True, save_reference=True
     )
-    data_start = SchemaNode(LocalDateTime(), read_only=True,
-                            validator=convertible_to_seconds)
-    data_stop = SchemaNode(LocalDateTime(), read_only=True,
-                           validator=convertible_to_seconds)
+    data_start = SchemaNode(LocalDateTime(), read_only=True)
+    data_stop = SchemaNode(LocalDateTime(), read_only=True)
 
 
 class CurrentCycleMover(c_GridCurrentMover):
@@ -1166,10 +1160,8 @@ class ComponentMoverSchema(ProcessSchema):
     wind = WindSchema(
         missing=drop, save=True, update=True, save_reference=True
     )
-    data_start = SchemaNode(LocalDateTime(), read_only=True,
-                            validator=convertible_to_seconds)
-    data_stop = SchemaNode(LocalDateTime(), read_only=True,
-                           validator=convertible_to_seconds)
+    data_start = SchemaNode(LocalDateTime(), read_only=True)
+    data_stop = SchemaNode(LocalDateTime(), read_only=True)
 
 
 class ComponentMover(CurrentMoversBase):

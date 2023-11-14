@@ -303,6 +303,8 @@ def get_testdata():
                                                    'acnfs_topo.dat')),
          'ptCur': get_datafile(os.path.join(curr_dir, 'ptCurNoMap.cur')),
          'grid_ts': get_datafile(os.path.join(curr_dir, 'gridcur_ts.cur')),
+         'series_file1': get_datafile(os.path.join(curr_dir,  'file_series', 'day1.nc')),
+         'series_file2': get_datafile(os.path.join(curr_dir,  'file_series', 'day2.nc')),
          'series_gridCur': get_datafile(os.path.join(curr_dir,
                                                      'gridcur_ts_hdr2.cur')),
          'series_curv': get_datafile(os.path.join(curr_dir, 'file_series',

@@ -2,10 +2,6 @@
 Test Langmuir() - very simple object with only one method
 '''
 
-
-
-
-
 import sys
 
 from datetime import datetime
@@ -15,7 +11,7 @@ import pytest
 
 from gnome import constants
 from gnome.environment import constant_wind, Water
-from gnome.weatherers import FayGravityViscous, Langmuir
+from gnome.weatherers import FayGravityViscous, Langmuir, ConstantArea
 from .test_cleanup import ObjForTests
 from gnome import scripting as gs
 from .conftest import test_oil
@@ -345,6 +341,38 @@ class TestFayGravityViscous(object):
 
         assert area_0 == area_2
         assert area_1 == area_3
+
+    @pytest.mark.parametrize("area", (0, 10))
+    def test_constant_area(self, area):
+        start_time = gs.asdatetime("2015-05-14")
+        num_elements=16
+        wind = constant_wind(5., 0, 'm/s')
+        water = Water(273.15 + 20.0)
+
+        model = gs.Model(start_time=start_time,
+                duration=gs.days(10.0),
+                time_step=15 * 60,
+                uncertain=False)
+
+        spill =   gs.surface_point_line_spill(num_elements=num_elements,
+                                        start_position=(-164.791878561,
+                                                        69.6252597267, 0.0),
+                                        release_time=start_time,
+                                        end_release_time=start_time + gs.hours(1.0),
+                                        amount=100,
+                                        substance=test_oil,
+                                        units='bbl')
+        model.spills += spill
+        model.environment += wind
+        model.weatherers += Langmuir(water, wind)
+        model.weatherers += ConstantArea(area=area)
+
+        for i in range(0,10):
+            next(model)
+        # s_mask = model_two_spills.spills._spill_container['spill_num'] == 0
+        fay_area = sum(model.spills._spill_container['fay_area'])
+
+        assert fay_area == area * num_elements
 
 class TestLangmuir(ObjForTests):
     thick = 1e-4

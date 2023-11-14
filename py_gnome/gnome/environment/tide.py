@@ -12,7 +12,6 @@ from colander import SchemaNode, Float, drop, Boolean
 
 import gnome
 from gnome.utilities.time_utils import sec_to_datetime
-from gnome.persist.validators import convertible_to_seconds
 from gnome.persist.extend_colander import LocalDateTime
 
 from .environment import Environment
@@ -43,10 +42,8 @@ class TideSchema(base_schema.ObjTypeSchema):
         Float(), missing=drop, save=True, update=True
     )
     extrapolation_is_allowed = SchemaNode(Boolean(), missing=drop, read_only=True)
-    data_start = SchemaNode(LocalDateTime(), read_only=True,
-                            validator=convertible_to_seconds)
-    data_stop = SchemaNode(LocalDateTime(), read_only=True,
-                           validator=convertible_to_seconds)
+    data_start = SchemaNode(LocalDateTime(), read_only=True)
+    data_stop = SchemaNode(LocalDateTime(), read_only=True)
 
 
 class Tide(Environment):

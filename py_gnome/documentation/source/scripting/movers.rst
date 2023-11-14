@@ -1,7 +1,7 @@
 Movers
 ======
 
-Processes that change the position of the particles are termed "movers" in PyGNOME. These can include advection of the particles due to winds and currents, 
+Processes that change the position of the particles are termed "movers" in PyGNOME. These can include advection of the particles due to winds and currents,
 diffusive movement of particles due to unresolved (sub-grid scale) turbulent flow fields, and prescribed behavior of the particles (e.g. rise velocity of oil droplets).
 Many of the movers derive their data from :ref:`scripting_environment`, which represent the environment in which the model is running.
 The environment objects are queried for information (winds, currents) at the particle location in order to move the particle appropriately.
@@ -23,12 +23,12 @@ For example, in that section, we saw how to create a simple spatially and tempor
                      time_step=gs.minutes(15)
                      )
     wind = gs.constant_wind(10, 0, 'knots')
-    
+
 Now we create a :class:`gnome.movers.PointWindMover` by passing the Wind Object to the Mover Class and adding it to the model::
 
     w_mover = gs.PointWindMover(wind)
     model.movers += w_mover
-    
+
 Even though we didn't explicitly add the wind to the model environment, when the mover is added to the model, the wind object will also be added. Any weatherers subsequently added to the model will use that wind by default (see next section).
 
 Some helper functions are available in :mod:`gnome.scripting` for creating wind movers.
@@ -37,9 +37,9 @@ For example, to create a wind mover from a single point time series in a text fi
 
     w_mover = gs.point_wind_mover_from_file('wind_file.txt')
     model.movers += w_mover
-    
+
 The format of the text file is described in the :doc:`../file_formats/index` section.
-Briefly, it has 3 header lines, followed by comma seperated data. An example is given here with annotations in brackets at the end of the lines:
+Briefly, it has 3 header lines, followed by comma separated data. An example is given here with annotations in brackets at the end of the lines:
 
 .. code-block:: none
 
@@ -75,25 +75,40 @@ The work flow is identical for adding a current. Alternatively, we could skip ex
     fn = 'gridded_current.nc'
     current_mover = gs.CurrentMover.from_netCDF(filename=fn)
     model.movers += current_mover
-    
+
 In both cases, the corresponding environment object is also added to the model.
+
+To use a current or wind in multiple files pass in a Python list with the file names::
+ 
+    file_list = ['day1.nc',
+                 'day2.nc',
+                 'day3.nc',
+                 'day4.nc',
+                 'day5.nc',
+                 'day6.nc',
+                 ]
+    current = gs.GridCurrent.from_netCDF(file_list)
+    current_mover = gs.CurrentMover(current=current)
+    model.movers += current_mover
+
+The files must be in order and in netcdf3 format. 
 
 The default numerical method for the gridded movers is a 2nd-order Runge-Kutta. Other options are available by specifying the "default_num_method" when creating the mover object. For more information, see the :class:`gnome.movers.CurrentMover` api documentation.
 
 .. admonition:: A note on 3D simulations
 
-    If a netCDF file contains currents at multiple depth levels along with 3-d grid information, the corresponding GridCurrent object will be built to include that information and full 3D simulations can be run. If only one depth level is included, it will be assumed to be the surface and used accordingly. Wind files should ideally only contain surface (assumed 10 m) winds. 
-  
+    If a netCDF file contains currents at multiple depth levels along with 3-d grid information, the corresponding GridCurrent object will be built to include that information and full 3D simulations can be run. If only one depth level is included, it will be assumed to be the surface and used accordingly. Wind files should ideally only contain surface (assumed 10 m) winds.
+
 Random movers
 -------------
 
 Randoms movers can be added to simulate both horizontal and vertical turbulent motions (for 3d simulations). Diffusion coefficients can be explicitly specified or default values will be used. For example::
 
     import gnome.scripting as gs
-       
+
     random_mover = gs.RandomMover(diffusion_coef=10000) #in cm/s
     model.movers += random_mover
-    
+
     #Or, for  a 3D simulation
     random_mover_3d = gs.RandomMover3D(vertical_diffusion_coef_above_ml=10,vertical_diffusion_coef_below_ml=0.2,\
     mixed_layer_depth=10, horizontal_diffusion_coef_above_ml=10000,\
@@ -107,7 +122,7 @@ The rise velocity mover depends on parameters specified when setting up a subsur
 This information is associated with the spill object, hence creating a :class:`RiseVelocityMover` is relatively simple.::
 
     import gnome.scripting as gs
-    
+
     rise_vel_mover = gs.RiseVelocityMover()
     model.movers += rise_vel_mover
 
@@ -152,3 +167,4 @@ CATS  Movers
 ------------
 
 CATS is a NOAA/ORR hydrodynamic model that is unlikley to be used by others. Documentation forthcoming.
+To see some examples for how to use CATS movers in a script see :ref:`tutorial-2`.

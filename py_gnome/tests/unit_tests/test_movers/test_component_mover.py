@@ -135,8 +135,8 @@ def test_get_scaled_velocities_two_patterns():
     vels = component.get_scaled_velocities(time_utils.date_to_sec(rel_time))
 
     # not much of test -- but at least we're not getting NaNs...
-    assert np.alltrue(np.isfinite(vels['u']))
-    assert np.alltrue(np.isfinite(vels['v']))
+    assert np.all(np.isfinite(vels['u']))
+    assert np.all(np.isfinite(vels['v']))
 
     # note: these values were pulled from making this call
     #       so may not be correct, but this will catch a regression
@@ -152,8 +152,8 @@ def test_get_scaled_velocities_one_pattern():
     vels = component.get_scaled_velocities(time_utils.date_to_sec(rel_time))
 
     # not much of test -- but at least we're not getting NaNs...
-    assert np.alltrue(np.isfinite(vels['u']))
-    assert np.alltrue(np.isfinite(vels['v']))
+    assert np.all(np.isfinite(vels['u']))
+    assert np.all(np.isfinite(vels['v']))
 
     # note: these values were pulled from making this call
     #       so may not be correct, but this will catch a regression
