@@ -538,14 +538,15 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
     def update(self, *args, **kwargs):  # name alias only, do not override!
         return self.update_from_dict(*args, **kwargs)
 
-    def _attr_changed(self, current_value, received_value):
+    @staticmethod
+    def _attr_changed(current_value, received_value):
         '''
         Checks if an attribute passed back in a ``dict_`` from client has changed.
         Returns True if changed, else False
         '''
         # first, we normalize our left and right args
-        if (isinstance(current_value, np.ndarray) and
-                isinstance(received_value, (list, tuple))):
+        if (isinstance(current_value, np.ndarray)
+            and isinstance(received_value, (list, tuple))):
             received_value = np.asarray(received_value)
 
         # For a nested object, check if it data contains a new object. If
@@ -556,13 +557,16 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
             if current_value is not received_value:
                 return True
 
+        # Ordered Collections need to hold the SAME objects.
         elif isinstance(current_value, OrderedCollection):
             if len(current_value) != len(received_value):
                 return True
-
-            for ix, item in enumerate(current_value):
-                if item is not received_value[ix]:
+            for current, received in zip(current_value, received_value):
+                if current is not received:
                     return True
+            # for ix, item in enumerate(current_value):
+            #     if item is not received_value[ix]:
+            #         return True
         else:
             try:
                 if current_value != received_value:
@@ -571,18 +575,15 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
                 # maybe an iterable - checking for
                 # isinstance(current_value, collections.Iterable) fails for
                 # string so just do a try/except
-                if np.any(np.array(current_value) != np.array(received_value)):
-                    return True
+                return not np.array_equal(current_value, received_value)
+                # if np.any(np.array(current_value) != np.array(received_value)):
+                #     return True
+
+        return False
 
     def _check_type(self, other):
         'check basic type equality'
-        if self is other:
-            return True
-
-        if type(self) == type(other):
-            return True
-
-        return False
+        return self is other or type(self) is type(other)
 
     def __eq__(self, other):
         """
@@ -832,7 +833,9 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
                                        allowZip64=allowzip64)
 
         elif os.path.isdir(saveloc):
-            n = gnome.persist.base_schema.sanitize_string(self.name)
+            # n = gnome.persist.base_schema.sanitize_string(self.name)
+            # this is a filename, so we should be using this -- even though they are similar
+            n = gnome.utilities.save_updater.sanitize_filename(self.name)
             saveloc = os.path.join(saveloc, n + '.gnome')
 
             if os.path.exists(saveloc):

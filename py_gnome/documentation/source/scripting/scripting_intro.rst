@@ -5,7 +5,7 @@ Overview
 
 PyGNOME is a complex package, however, it is fairly straightforward to write scripts to run the model for a variety of simulations.
 
-Simulations with the ``gnome`` package are performed via a ``Model`` object. A model has model-level attributes such as the start time, run duration, and time step. It can be configured with a variety of  ``Mover``s, ``Weatherers``, and ``Spill``s to drive the model, and ``Outputter``s can output the model results in a number of formats.
+Simulations with the ``gnome`` package are performed via a ``Model`` object. A model has model-level attributes such as the start time, run duration, and time step. It can be configured with a variety of  ``Movers``, ``Weatherers``, and ``Spills`` to drive the model, and ``Outputters`` can output the model results in a number of formats.
 
 
 The scripting module
@@ -18,9 +18,9 @@ The ``gnome`` package contains a large hierarchy of subpackages and modules that
 And then you can use most of the common objects needed for the model. For example::
 
     model = gs.Model()
-    
+
 This is equivalent to::
-    
+
     import gnome
     model = gnome.model.Model()
 
@@ -43,7 +43,7 @@ Simplest Example
 For a first introduction to scripting with ``gnome``,
 the example below will demonstrate how to set up and run the very simplest model possible.
 This example does not load any external data, but creates a simple map and movers manually.
-The "spill" is a conservative substance, i.e. a "passive tracer"
+The "spill" is a conservative substance, i.e. a "passive tracer."
 
 This example is in the PyGNOME source under "scripts/example_scripts", or can be downloaded here:
 .. this download link is getting rendered oddly -- and why do I need so many ../?
@@ -63,7 +63,7 @@ The model is initialized to begin on New Years Day 2015 and run for 3 days with 
 
 Create and Add a Map
 --------------------
-Create a very simple map which is all water with a rectangle defined by four longitude/latitude points to specify boundary of the model::
+Create a very simple map which is all water with a rectangle defined by four longitude/latitude points to specify the boundary of the model::
 
     model.map = gs.GnomeMap(map_bounds=((-145, 48), (-145, 49),
                                         (-143, 49), (-143, 48))
@@ -71,7 +71,7 @@ Create a very simple map which is all water with a rectangle defined by four lon
 
 Create and Add Movers
 ---------------------
-THe model needs one or more "Movers" to move the elements. In this case, a steady uniform current and random walk diffusion are demonstrated.
+The model needs one or more "Movers" to move the elements. In this case, a steady uniform current and random walk diffusion are demonstrated.
 
 The `SimpleMover` class is used to specify a 0.2 m/s eastward current.
 
@@ -92,11 +92,11 @@ The `RandomMover` class simulates spreading due to turbulent motion via a random
 Create and Add a Spill
 ----------------------
 
-Spills in ``gnome`` specify what, when, where, and how many elements are released into the model. The properties of the substance spilled (e.g. oil chemistry) are provided by a ``Substance`` Object. PYGNOME currently has two Substances available: ``NonWeatheringSubstance`` representing passive drifters, and ``GnomeOil``, representing petroleum products with all the properties required for the oil weathering algorithms supplied with GNOME.
+Spills in ``gnome`` specify what, when, where, and how many elements are released into the model. The properties of the substance spilled (e.g. oil chemistry) are provided by a ``Substance`` Object. PyGNOME currently has two Substances available: ``NonWeatheringSubstance`` representing passive drifters, and ``GnomeOil``, representing petroleum products with all the properties required for the oil weathering algorithms supplied with GNOME.
 
 There are a number of "helper" functions and classes that can initialize various types of spills (for example, at a point or over a spatial area, at the surface or subsurface). See: :ref:`scripting_spills` for more details.
- 
-A common spill type is created by the `surface_point_line_spill`. To set up a instanatious release of a conservative substance at a point, it can be called with most of the defaults::
+
+A common spill type is created by the `surface_point_line_spill`. To set up an instantaneous release of a conservative substance at a point, it can be called with most of the defaults::
 
 
     spill = gs.surface_point_line_spill(release_time=start_time,
@@ -104,17 +104,17 @@ A common spill type is created by the `surface_point_line_spill`. To set up a in
                                         num_elements=500)
     model.spills += spill
 
-* The release time is set to the start_time previous defined to start the model.
+* The release time is set to the start_time previously defined to start the model.
 * The release location (start_position) is set to a (longitude, latitude) position.
-* The number of Lagrangian elements (particles) can be defined (defaults to 1000)
+* The number of Lagrangian elements (particles) can be defined (defaults to 1000).
 
-Create and Add an ``Outputter``
--------------------------------
+Create and Add an Outputter
+---------------------------
 
 Outputters save the model results in a variety of formats.
-Options include PNG images and saving the element information into netCDF files, shapefiles, or KML for further visualization and analysis. See :ref:`scripting_outputters`
+Options include PNG images and saving the element information into netCDF files, shapefiles, or KML for further visualization and analysis. See :ref:`scripting_outputters` for more details.
 
-In this example, the ``Renderer`` class is used to save to an animated gif every 3 hours::
+In this example, the ``Renderer`` class is used to save to an animated gif every 2 hours::
 
     renderer = gs.Renderer(output_dir='./output/',
                            output_timestep=gs.hours(2),

@@ -79,6 +79,7 @@ from gnome.maps.map import MapFromBNA, GnomeMap
 
 from gnome.environment import (FileGridCurrent,
                                GridCurrent,
+                               SteadyUniformCurrent,
                                GridWind,
                                IceAwareCurrent,
                                IceAwareWind,

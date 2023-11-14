@@ -65,7 +65,7 @@ def mixed_polys_to_polygon(polys):
     for p in polys:
         p = shapely.geometry.shape(p) #to handle geojson.(Multi)Polygon objects
         if isinstance(p, shapely.geometry.MultiPolygon):
-            for subp in p:
+            for subp in p.geoms:
                 rv.append(subp)
         else:
             rv.append(p)

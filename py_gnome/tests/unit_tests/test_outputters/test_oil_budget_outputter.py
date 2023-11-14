@@ -1,5 +1,7 @@
 '''
 tests for oil budget outputter
+
+WARNING: not well tested! doesn't actually test the output -- hopefully that's being tested elsewhere!
 '''
 
 import os
@@ -134,7 +136,6 @@ def test_model_full_run_output_short_interval(model, output_dir):
     model.outputters += OilBudgetOutput(outfilename,
                                         output_timestep=gs.minutes(30))
 
-    print(OilBudgetOutput.clean_output_files)
 
     model.rewind()
 
@@ -149,11 +150,6 @@ def test_model_full_run_output_short_interval(model, output_dir):
     # read the file in and test a couple things
     csv_file = open(out_filename).readlines()
 
-    print("file is:", end=' ')
-    print(csv_file)
-
-    print(len(csv_file))
-
     assert len(csv_file) == 50
 
     assert csv_file[0].split(",")[0] == "Model Time"
@@ -161,43 +157,10 @@ def test_model_full_run_output_short_interval(model, output_dir):
     assert csv_file[1].split(",")[0].strip() == "2012-09-15 12:00"
     assert csv_file[2].split(",")[0].strip() == "2012-09-15 12:30"
 
-    print(csv_file[-1])
     assert csv_file[-1].split(",")[0].strip() == "2012-09-16 12:00"
 
-    # # floating mass at beginning of step - though tests will only pass for
-    # # nominal values
-    # for step in model:
-    #     assert 'WeatheringOutput' in step  # this isn't really where this
-    #     sum_mass = 0.0
-    #     for key in step['WeatheringOutput']:
-    #         if not isinstance(step['WeatheringOutput'][key], dict):
-    #             continue
+    # for line in csv_file:
+    #     print(line)
+    #     print()
 
-    #         for process in ('evaporated', 'burned', 'skimmed', 'dispersed'):
-    #             assert (process in step['WeatheringOutput'][key])
-    #             sum_mass += step['WeatheringOutput'][key][process]
-
-    #         assert (step['WeatheringOutput'][key]['floating'] <=
-    #                 step['WeatheringOutput'][key]['amount_released'])
-    #         # For nominal, sum up all mass and ensure it equals the mass at
-    #         # step initialization - ignore step 0
-    #         sum_mass += step['WeatheringOutput'][key]['floating']
-    #         np.isclose(sum_mass,
-    #                    step['WeatheringOutput'][key]['amount_released'])
-
-    #     print 'Completed step: ', step['step_num']
-
-    # # removed last test and do the assertion here itself instead of writing to
-    # # file again which takes awhile!
-    # if output_dir is not None:
-    #     files = glob(os.path.join(output_dir, '*.json'))
-    #     assert len(files) == model.num_time_steps
-
-
-# def test_rewind(model, output_dir):
-#     """
-#     test that everything gets properly reset when rewound
-#     """
-#     assert False
-
-
+    # assert False

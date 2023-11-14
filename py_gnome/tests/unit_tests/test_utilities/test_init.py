@@ -127,7 +127,7 @@ def test_round_sf_array():
     nans = np.isnan(expected)
     assert np.allclose(result[~nans], expected[~nans], rtol=1e-15, atol=0.0)
     # assert np.all(result[~nans] == expected[~nans])
-    assert np.alltrue(np.isnan(result[nans]))
+    assert np.all(np.isnan(result[nans]))
 
 
 

@@ -4,11 +4,11 @@
 NOAA specific file formats for currents
 =======================================
 
-GNOME supports a set of fjile formats specific to the the NOAA tools.
+GNOME supports a set of file formats specific to the the NOAA tools.
 
 This is primarily for steady-state circulation models that produce “current patterns”, such as those produced by the NOAA CATS model.
 
-With time-dependent models, the data can be contained in a single file or broken into smaller files. THe NOAA ASCII formats support:
+With time-dependent models, the data can be contained in a single file or broken into smaller files. The NOAA ASCII formats support:
 
 Finite Element / Finite Volume - Velocities on Triangles::
   Steady State [CATS].

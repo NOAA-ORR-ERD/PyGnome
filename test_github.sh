@@ -37,19 +37,13 @@ conda install -y --file conda_requirements.txt
 cd ./py_gnome
 python setup.py install
 
-# install the oil_library with pip
-pip install git+https://github.com/NOAA-ORR-ERD/OilLibrary.git
-
-# test the oil_library
-pytest --pyargs oil_library
-
 # test pygnome!
 pytest --runslow
 
 # build the docs -- why not?
-cd documentation
+# cd documentation
 
-./build_gh_pages.sh
+# ./build_gh_pages.sh
 
 # And done!
 

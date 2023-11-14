@@ -15,7 +15,7 @@ Introduction
 developed by the National Oceanic and Atmospheric Administration (**NOAA**),
 Office of Response and Restoration (**ORR**), Emergency Response Division.
 
-It is designed to support oil and other hazardous material spills in the coastal environment, and is also a ful featured, flexible particle tracking system, that can be used for other oceangraphic transport applications, such as fish larvae, maringe debris, etc.
+It is designed to support oil and other hazardous material spills in the coastal environment, and is also a full featured, flexible particle tracking system, that can be used for other oceanographic transport applications, such as fish larvae, marine debris, etc.
 
 PyGNOME is a python package that encapsulates GNOME's functionality.
 
@@ -52,7 +52,7 @@ The "tricky" part is installing the dependencies: details in the following:
 `Install using conda <./Installing.rst>`_
 
 The conda package manager is built primarily for scientific, engineering,
-and math applications it is the easiest way to get set up to use ``PyGNOME``, and it what is used in our development and testing process.
+and math applications it is the easiest way to get set up to use ``PyGNOME``, and it is used in our development and testing process.
 
 If you don't want to / can't use conda -- here are some notes on that:
 
@@ -62,7 +62,7 @@ If you don't want to / can't use conda -- here are some notes on that:
 The WebGNOME Interface:
 =======================
 
-Scripting is the most featureful way to access PyGNOME's capabilities.
+Scripting is the most featurefull way to access PyGNOME's capabilities.
 However we have developed a system that allows a user to create and run PyGNOME models from a web browser.
 
 There is a publicly available instance of WebGNOME at:
@@ -79,6 +79,3 @@ If you want to run your own instance of WebGNOME, the code is in the following p
 **Fair Warning:**
 
 The WebGNOME system is under active development, and by its very nature does not expose the full capabilities of PyGNOME.
-
-
-

@@ -44,7 +44,8 @@ class KMZOutput(OutputterFilenameMixin, Outputter):
         uses super to pass optional ``**kwargs`` to base class ``__init__`` method
         '''
         # a little check:
-        self._check_filename(filename)
+        # move check to prepare_for_model_run so don't get error loading save files
+        #self._check_filename(filename)
 
         # strip off the .kml or .kmz
         filename = filename[:-4] if filename.endswith(".kml") else filename
