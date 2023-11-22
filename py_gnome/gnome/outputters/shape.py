@@ -2,10 +2,6 @@
 shapefile  outputter
 """
 
-
-
-
-
 import os
 import zipfile
 
@@ -132,12 +128,13 @@ class ShapeOutput(Outputter):
             w.autobalance = 1
 
             w.field('Time', 'C')
-            w.field('LE id', 'N')
-            w.field('Depth', 'N')
-            w.field('Mass', 'N')
-            w.field('Age', 'N')
+            w.field('Spill_ID', 'N', decimal=0)
+            w.field('LE_id', 'N', decimal=0)
+            w.field('Depth', 'F', decimal=5)
+            w.field('Mass', 'F', decimal=5)
+            w.field('Age', 'F', decimal=5)
             w.field('Surf_Conc', 'F', decimal=5)
-            w.field('Status_Code', 'N')
+            w.field('Status_Code', 'N', decimal=0)
 
     def write_output(self, step_num, islast_step=False):
         """dump a timestep's data into the shape file"""
@@ -187,6 +184,7 @@ class ShapeOutput(Outputter):
 
             if sc.uncertain:
                 writer.record(curr_time.strftime('%Y-%m-%dT%H:%M:%S'),
+                              sc['spill_num'][k],
                               sc['id'][k],
                               p[2],
                               sc['mass'][k],
@@ -195,6 +193,7 @@ class ShapeOutput(Outputter):
                               sc['status_codes'][k])
             else:
                 writer.record(curr_time.strftime('%Y-%m-%dT%H:%M:%S'),
+                              sc['spill_num'][k],
                               sc['id'][k],
                               p[2],
                               sc['mass'][k],
