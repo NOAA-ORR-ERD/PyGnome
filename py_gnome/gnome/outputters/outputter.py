@@ -455,12 +455,18 @@ class Outputter(GnomeId):
     # Some utilities for checking valid filenames, etc...
     def _check_filename(self, filename):
         'basic checks to make sure the filename is valid'
-        if os.path.isdir(filename):
-            raise ValueError('filename must be a file not a directory.')
+        # path.isdir causes problems for shapefile; outputters call as needed
+        #if os.path.isdir(filename):
+            #raise ValueError('filename must be a file not a directory.')
 
         if not os.path.exists(os.path.realpath(os.path.dirname(filename))):
             raise ValueError('{0} does not appear to be a valid path'
                              .format(os.path.dirname(filename)))
+
+    def _check_is_dir(self, filename):
+        'split this out - causes problems for shape and most outputters dont need it'
+        if os.path.isdir(filename):
+            raise ValueError('filename must be a file not a directory.')
 
     def _file_exists_error(self, file_):
         """
