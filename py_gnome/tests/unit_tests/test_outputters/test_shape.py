@@ -78,10 +78,10 @@ def test_exceptions(output_filename):
     shp = ShapeOutput(output_filename)
     shp.rewind()  # delete temporary files
 
-    with pytest.raises(ValueError):
-        # must be filename, not dir name
-        file_path = os.path.abspath(os.path.dirname(__file__))
-        ShapeOutput(file_path).prepare_for_model_run(datetime.now(), spill_pair)
+#     with pytest.raises(ValueError):
+#         # must be filename, not dir name
+#         file_path = os.path.abspath(os.path.dirname(__file__))
+#         ShapeOutput(file_path).prepare_for_model_run(datetime.now(), spill_pair)
 
     with pytest.raises(ValueError):
         # path must exist

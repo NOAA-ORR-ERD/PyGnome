@@ -562,6 +562,7 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
 
         self.uncertain = uncertain
 
+        self._check_is_dir(self.filename)
         self._update_var_attributes(spills)
 
         for sc in self.sc_pair.items():
@@ -828,7 +829,7 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
 
         :param netcdf_file: Name of the NetCDF file from which to read the data
 
-        :param time: 
+        :param time:
                 timestamp at which the data is desired. Looks in
                 the netcdf data's 'time' array and finds the
                 closest time to this and outputs this data.
@@ -849,7 +850,7 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
 
         :return: A dict containing standard data closest to the indicated
                 'time'.
-        
+
 
         Standard data is defined as follows:
 

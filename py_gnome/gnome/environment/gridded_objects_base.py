@@ -618,7 +618,7 @@ class Variable(gridded.Variable, GnomeId):
         value = super(Variable, self).at(points, time, *args, **kwargs)
 
         data_units = self.units if self.units else self._gnome_unit
-        req_units = units if units else data_units
+        req_units = units if units else self._gnome_unit
         if data_units is not None and data_units != req_units:
             try:
                 value = uc.convert(data_units, req_units, value)
