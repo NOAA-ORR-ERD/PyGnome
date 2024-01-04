@@ -395,6 +395,9 @@ class GnomeMap(GnomeId):
         self.resurface_airborne_elements(sc)
         self._set_off_map_status(sc)
 
+        sc.mass_balance['off_maps'] += \
+            sc['mass'][sc['status_codes'] == oil_status.off_maps].sum()
+
     def refloat_elements(self, spill_container, time_step, model_time=None):
         """
         This method performs the re-float logic -- changing the element
