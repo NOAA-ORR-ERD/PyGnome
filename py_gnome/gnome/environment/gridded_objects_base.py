@@ -387,24 +387,6 @@ class PyGrid(gridded.grids.Grid):
         return gridded.grids.Grid._get_grid_type(*args, **kwargs)
 
 
-class Depth(gridded.depth.Depth):
-    @staticmethod
-    def from_netCDF(*args, **kwargs):
-        kwargs['_default_types'] = (('level', L_Depth),
-                                    ('sigma', S_Depth),
-                                    ('surface', DepthBase))
-
-        return gridded.depth.Depth.from_netCDF(*args, **kwargs)
-
-    @staticmethod
-    def _get_depth_type(*args, **kwargs):
-        kwargs['_default_types'] = (('level', L_Depth),
-                                    ('sigma', S_Depth),
-                                    ('surface', DepthBase))
-
-        return gridded.depth.Depth._get_depth_type(*args, **kwargs)
-
-
 class Variable(gridded.Variable, GnomeId):
     _schema = VariableSchema
 
@@ -568,8 +550,7 @@ class Variable(gridded.Variable, GnomeId):
         if depth is None:
             if (isinstance(grid, (Grid_S, Grid_R)) and len(data.shape) == 4 or
                     isinstance(grid, Grid_U) and len(data.shape) == 3):
-                depth = Depth.from_netCDF(dataset=dg,
-                                          data_file=data_file,
+                depth = Depth.from_netCDF(data_file=data_file,
                                           grid_file=grid_file,
                                           grid=grid,
                                           time=time,
@@ -711,25 +692,37 @@ class L_Depth(gridded.depth.L_Depth, GnomeId):
         return rv
 
 
-class S_Depth(gridded.depth.S_Depth, GnomeId):
+class ROMS_Depth(gridded.depth.ROMS_Depth, GnomeId):
+
+    _schema = S_DepthSchema
+
+    _default_component_types = copy.deepcopy(gridded.depth.ROMS_Depth
+                                             ._default_component_types)
+    _default_component_types.update({'time': Time,
+                                     'grid': PyGrid,
+                                     'variable': Variable})
+
+    @classmethod
+    def new_from_dict(cls, dict_):
+        rv = cls.from_netCDF(**dict_)
+        return rv
+
+class FVCOM_Depth(gridded.depth.FVCOM_Depth, GnomeId):
 
     _schema = S_DepthSchema
 
     _default_component_types = copy.deepcopy(gridded.depth.S_Depth
                                              ._default_component_types)
     _default_component_types.update({'time': Time,
-                                     'grid': PyGrid,
+                                     'grid': Grid_U,
                                      'variable': Variable})
 
-    def __init__(self,
-                 zero_ref = 'surface',
-                 **kwargs):
-        return super(S_Depth, self).__init__(zero_ref=zero_ref, **kwargs)
 
-    @classmethod
-    def new_from_dict(cls, dict_):
-        rv = cls.from_netCDF(**dict_)
-        return rv
+class Depth(gridded.depth.Depth):
+    ld_types = [L_Depth]
+    sd_types = [ROMS_Depth, FVCOM_Depth]
+    surf_types = [DepthBase]
+
 
 class VectorVariable(gridded.VectorVariable, GnomeId):
 
