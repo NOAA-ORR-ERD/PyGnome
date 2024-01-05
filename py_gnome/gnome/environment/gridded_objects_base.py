@@ -568,8 +568,12 @@ class Variable(gridded.Variable, GnomeId):
         if depth is None:
             if (isinstance(grid, (Grid_S, Grid_R)) and len(data.shape) == 4 or
                     isinstance(grid, Grid_U) and len(data.shape) == 3):
-                depth = Depth.from_netCDF(grid_file,
-                                          dataset=dg,
+                depth = Depth.from_netCDF(dataset=dg,
+                                          data_file=data_file,
+                                          grid_file=grid_file,
+                                          grid=grid,
+                                          time=time,
+                                          grid_topology=grid_topology,
                                           )
         if location is None:
             if hasattr(data, 'location'):
@@ -619,7 +623,7 @@ class Variable(gridded.Variable, GnomeId):
 
         data_units = self.units if self.units else self._gnome_unit
         req_units = units if units else self._gnome_unit
-        if data_units is not None and data_units != req_units:
+        if data_units is not None and req_units is not None and data_units != req_units:
             try:
                 value = uc.convert(data_units, req_units, value)
             except uc.NotSupportedUnitError:
@@ -642,7 +646,7 @@ class Variable(gridded.Variable, GnomeId):
         return super(Variable, cls).new_from_dict(dict_)
 
     @classmethod
-    def constant(cls, value):
+    def constant(cls, value, **kwargs):
         #Sets a Variable up to represent a constant scalar field. The result
         #will return a constant value for all times and places.
         Grid = Grid_S
@@ -652,7 +656,7 @@ class Variable(gridded.Variable, GnomeId):
         _node_lat = np.array(([-89.95, -89.95, -89.95], [0, 0, 0], [89.95, 89.95, 89.95]))
         _grid = Grid(node_lon=_node_lon, node_lat=_node_lat)
         _time = Time.constant_time()
-        return cls(grid=_grid, time=_time, data=_data, fill_value=value)
+        return cls(grid=_grid, time=_time, data=_data, fill_value=value, **kwargs)
 
     @property
     def extrapolation_is_allowed(self):

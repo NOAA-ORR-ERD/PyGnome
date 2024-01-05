@@ -213,10 +213,10 @@ class VelocityGrid(VectorVariable):
             if df is not None and 'angle' in df.variables.keys():
                 # Unrotated ROMS Grid!
                 self.angle = Variable(name='angle',
-                                      units='radians',
                                       time=Time.constant_time(),
                                       grid=kwargs['grid'],
                                       data=df['angle'])
+                self.angle._gnome_unit = 'radians'
             else:
                 self.angle = None
         else:
