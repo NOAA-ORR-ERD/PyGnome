@@ -568,7 +568,8 @@ class Variable(gridded.Variable, GnomeId):
         if depth is None:
             if (isinstance(grid, (Grid_S, Grid_R)) and len(data.shape) == 4 or
                     isinstance(grid, Grid_U) and len(data.shape) == 3):
-                depth = Depth.from_netCDF(data_file=data_file,
+                depth = Depth.from_netCDF(dataset=dg,
+                                          data_file=data_file,
                                           grid_file=grid_file,
                                           grid=grid,
                                           time=time,
