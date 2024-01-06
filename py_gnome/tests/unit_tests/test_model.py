@@ -1620,10 +1620,41 @@ class Test_add_weathering(object):
             model.full_run()
 
 
-if __name__ == '__main__':
+def test_get_spill_property():
+    model = Model()
+    model.spills += gs.surface_point_line_spill(num_elements=10,
+                                                start_position=(0.0, 0.0),
+                                                release_time=model.start_time,
+                                                )
+    with pytest.raises(ValueError):
+        # nothing there before the model is run
+        props = model.get_spill_property('positions')
+
+    model.step()
+    prop = model.get_spill_property('positions')
+
+    assert np.array_equal(prop, np.zeros((10, 3)))
+
+    with pytest.raises(ValueError):
+        # non-existant property
+        props = model.get_spill_property('position')
+
+    # can't get uncertainty if not on in the model
+    with pytest.raises(IndexError):
+        prop = model.get_spill_property('mass', ucert=True)
+
+    # uncertainty should work now
+    model.uncertain = True
+    model.rewind()
+    model.step()
+    prop = model.get_spill_property('mass', ucert=True)
+    print(repr(prop))
+    assert np.array_equal(prop, [0., 0., 0., 0., 0., 0., 0., 0., 0., 0.])
+
+# if __name__ == '__main__':
 
     # test_all_movers()
     # test_release_at_right_time()
     # test_simple_run_with_image_output()
 
-    test_simple_run_with_image_output_uncertainty()
+    # test_simple_run_with_image_output_uncertainty()

@@ -751,9 +751,10 @@ class Model(GnomeId):
         6. Conduct miscellaneous prep items. See section in code for details.
         '''
 
-        '''Step 1: Set up special objects'''
+        # Step 1: Set up special objects
         weather_data = dict()
 
+        # FIXME: this should not be handled explicitly by the model
         spread = None
         langmuir = None
         for item in self.weatherers:
@@ -764,14 +765,16 @@ class Model(GnomeId):
                 if item._ref_as == 'spreading':
                     item.on = False
                     spread = item
+                # langmuir should be called from spreading -- not on its own.
                 if item._ref_as == 'langmuir':
                     item.on = False
                     langmuir = item
             except AttributeError:
                 pass
 
-# if a weatherer is using 'area' array, make sure it is being set.
+        # if a weatherer is using 'area' array, make sure it is being set.
         # Objects that set 'area' are referenced as 'spreading'
+        # fixme: another detail that should not be handles here!
         if 'area' in weather_data:
             if spread is None:
                 self.weatherers += FayGravityViscous()
@@ -785,20 +788,21 @@ class Model(GnomeId):
                 # turn langmuir back on
                 langmuir.on = True
 
-        '''Step 2: Remake and reorganize collections'''
+        # Step 2: Remake and reorganize collections
         for oc in [self.movers, self.weatherers,
                    self.outputters, self.environment]:
             oc.remake()
         self._order_weatherers()
 
-        '''Step 3: Compile array_types and run setup on spills'''
+        # Step 3: Compile array_types and run setup on spills
         array_types = dict()
-        #setup basic array types. non_weathering is subset of weathering
+
+        # setup basic array types. non_weathering is subset of weathering
         array_types.update(non_weathering_array_types)
         for sp in self.spills:
             if sp.substance and sp.substance.is_weatherable:
                 array_types.update(weathering_array_types)
-        #Go through all subcomponents to see what array types they need
+        # Go through all subcomponents to see what array types they need
         for oc in [self.movers,
                    self.outputters,
                    self.environment,
@@ -808,22 +812,28 @@ class Model(GnomeId):
                 if (hasattr(item, 'array_types')):
                     array_types.update(item.all_array_types)
 
-        #self.logger.debug(array_types)
+        # self.logger.debug(array_types)
 
         for sc in self.spills.items():
             sc.prepare_for_model_run(array_types, self.time_step)
 
-        '''Step 4: Attach default references'''
+        # Step 4: Attach default references
         ref_dict = {}
         self._attach_default_refs(ref_dict)
 
-        '''Step 5: Setup mass balance'''
+        # Step 5: Setup mass balance
+        # fixme: why is this here -- it has some of the keys required for
+        #        weathering, but not all ???
+        #        we should create the whole thing in one place, or have the parts
+        #        that need it create it.
         for sc in self.spills.items():
-            for key in ('avg_density', 'floating', 'amount_released', 'non_weathering',
-                        'avg_viscosity'):
-                sc.mass_balance[key] = 0.0
+            sc.mass_balance.update({key: 0.0 for key in ('avg_density',
+                                                         'floating',
+                                                         'amount_released',
+                                                         'non_weathering',
+                                                         'avg_viscosity')})
 
-        '''Step 6: Call prepare_for_model_run and misc setup'''
+        # Step 6: Call prepare_for_model_run and misc setup
         transport = False
         for mover in self.movers:
             if mover.on:
@@ -966,7 +976,6 @@ class Model(GnomeId):
                     nw_mask = sc['spill_num'] == i
                     sc['fate_status'][nw_mask] = fate.non_weather
 
-
     def weather_elements(self):
         '''
         Weathers elements:
@@ -1000,9 +1009,9 @@ class Model(GnomeId):
                 for model_time, time_step in self._split_into_substeps():
                     # change 'mass_components' in weatherer
                     w.weather_elements(sc, time_step, model_time)
-                    #self.logger.info('density after {0}: {1}'.format(w.name, sc['density'][-5:]))
+                    # self.logger.info('density after {0}: {1}'.format(w.name, sc['density'][-5:]))
 
-        #self.logger.info('density after weather_elements: {0}'.format(sc['density'][-5:]))
+        # self.logger.info('density after weather_elements: {0}'.format(sc['density'][-5:]))
 
     def _split_into_substeps(self):
         '''
@@ -1037,8 +1046,7 @@ class Model(GnomeId):
 
         Output data
         '''
-
-        #run ops and aggregation step for mass_balance
+        # run ops and aggregation step for mass_balance
         env = self.compile_env()
         for sc in self.spills.items():
             recalc_density(sc, env['water'])
@@ -1057,12 +1065,10 @@ class Model(GnomeId):
             outputter.model_step_is_done()
 
         for sc in self.spills.items():
-            '''
-            removes elements with oil_status.to_be_removed
-            '''
+            # removes elements with oil_status.to_be_removed
             sc.model_step_is_done()
-
             # age remaining particles
+            # fixme: why not sc['age'] += self.time_step
             sc['age'][:] = sc['age'][:] + self.time_step
 
     def write_output(self, valid, messages=None):
@@ -1070,7 +1076,7 @@ class Model(GnomeId):
 
         for outputter in self.outputters:
             if self.current_time_step == self.num_time_steps - 1:
-                output = outputter.write_output(self.current_time_step, True)
+                output = outputter.write_output(self.current_time_step, islast_step=True)
             else:
                 output = outputter.write_output(self.current_time_step)
 
@@ -1255,6 +1261,11 @@ class Model(GnomeId):
         todo: maybe we don't want to do this - revisit this requirement
         JAH 9/22/2021: We sort of need this now because a lot of script behavior expects
         it. A lamentable state of affairs indeed.
+
+        CHB: maybe this could be more standardized though
+             -- pity to have hard coded what all the possible environment types are.
+
+             perhaps all objects could have a "need_env_objects" attribute?
         '''
         if hasattr(obj_added, 'wind') and obj_added.wind is not None:
             if obj_added.wind not in self.environment:
@@ -1812,14 +1823,25 @@ class Model(GnomeId):
 
         return list(self.spills.items())[0].data_arrays.keys()
 
-    def get_spill_property(self, prop_name, ucert=0):
-        '''
+    def get_spill_property(self, prop_name, ucert=False):
+        """
         Convenience method to allow user to look up properties of a spill.
-        User can specify ucert as 'ucert' or 1
-        :return: list
-        '''
-        ucert = 1 if ucert == 'ucert' else 0
-        return list(self.spills.items())[ucert][prop_name]
+
+        :param prop_name: name of property: use `model.list_properties()` to see all the options.
+        :type prop_name: str
+
+        :param ucert: whether to get it from the uncertainty spill
+        :type ucert: bool
+
+        :returns: np.array
+        """
+        ucert = 1 if ucert else 0
+        try:
+            return self.spills.items()[ucert][prop_name]
+        except KeyError:
+            raise ValueError(f"'{prop_name}' doesn't exist. Options are:"
+                             f"{self.list_spill_properties()}")
+
 
     def get_spill_data(self, target_properties, conditions, ucert=0):
         """
