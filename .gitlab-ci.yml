@@ -113,7 +113,7 @@ test_pygnome_windows:
     - Get-Location
     - dir
     - echo $CI_PIPELINE_ID
-    - activate ./$CI_PIPELINE_ID
+    - conda activate ./$CI_PIPELINE_ID
     - conda config --add channels defaults
     - conda config --add channels conda-forge
     - conda config --get channels
