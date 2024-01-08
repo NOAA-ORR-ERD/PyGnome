@@ -212,7 +212,9 @@ class VelocityGrid(VectorVariable):
 
             if df is not None and 'angle' in df.variables.keys():
                 # Unrotated ROMS Grid!
+                units = df['angle'].units if hasattr(df['angle'], 'units') else 'radians'
                 self.angle = Variable(name='angle',
+                                      units=units,
                                       time=Time.constant_time(),
                                       grid=kwargs['grid'],
                                       data=df['angle'])
@@ -510,12 +512,9 @@ class GridCurrent(VelocityGrid, Environment):
                                             **kwargs)
 
         if self.angle is not None:
-            angs = (self.angle.at(points, time, extrapolate=extrapolate,
+            angs = (self.angle.at(points, time, units='radians', extrapolate=extrapolate,
                                   **kwargs)
                     .reshape(-1))
-
-            if 'degree' in self.angle.units:
-                angs = angs * np.pi/180.
 
             x = value[:, 0] * np.cos(angs) - value[:, 1] * np.sin(angs)
             y = value[:, 0] * np.sin(angs) + value[:, 1] * np.cos(angs)
