@@ -354,23 +354,29 @@ class GnomeMap(GnomeId):
                 return True
         return False
 
-    def _set_off_map_status(self, spill):
+    def _set_off_map_status(self, sc):
         """
         Determines which elements moved off the map
 
         Called by beach_elements after checking for land-hits
 
-        :param spill: current SpillContainer
-        :type spill:  :class:`gnome.spill_container.SpillContainer`
+        :param sc: current SpillContainer
+        :type sc:  :class:`gnome.spill_container.SpillContainer`
         """
-        next_positions = spill['next_positions']
-        status_codes = spill['status_codes']
+        next_positions = sc['next_positions']
+        status_codes = sc['status_codes']
         off_map = np.logical_not(self.on_map(next_positions))
         if len(next_positions) != 0 and np.all(off_map):
             self.logger.warning("All particles left the map this timestep.")
 
         # let model decide if we want to remove elements marked as off-map
         status_codes[off_map] = oil_status.off_maps
+
+        sc.mass_balance['beached'] = \
+            sc['mass'][sc['status_codes'] == oil_status.on_land].sum()
+        sc.mass_balance['off_maps'] += \
+            sc['mass'][sc['status_codes'] == oil_status.off_maps].sum()
+
 
     def beach_elements(self, sc, model_time=None):
         """
@@ -379,16 +385,16 @@ class GnomeMap(GnomeId):
 
         Called by the model in the main time loop, after all movers have acted.
 
-        :param spill: current SpillContainer
-        :type spill:  :class:`gnome.spill_container.SpillContainer`
+        :param sc: current SpillContainer
+        :type sc:  :class:`gnome.spill_container.SpillContainer`
 
         This map class has no land, so only the map check and
         resurface_airborn elements is done: noting else changes.
 
         subclasses that override this probably want to make sure that:
 
-        self.resurface_airborne_elements(spill)
-        self._set_off_map_status(spill)
+        self.resurface_airborne_elements(sc)
+        self._set_off_map_status(sc)
 
         are called.
         """
@@ -584,21 +590,22 @@ class ParamMap(GnomeMap):
             # that this map was built with
             return False
 
-    def _set_off_map_status(self, spill):
-        """
-        Determines which LEs moved off the map
+    # This was re-defined from the base class
+    # def _set_off_map_status(self, spill):
+    #     """
+    #     Determines which LEs moved off the map
 
-        Called by beach_elements after checking for land-hits
+    #     Called by beach_elements after checking for land-hits
 
-        :param spill: current SpillContainer
-        :type spill:  :class:`gnome.spill_container.SpillContainer`
-        """
-        next_positions = spill['next_positions']
-        status_codes = spill['status_codes']
-        off_map = np.logical_not(self.on_map(next_positions))
+    #     :param spill: current SpillContainer
+    #     :type spill:  :class:`gnome.spill_container.SpillContainer`
+    #     """
+    #     next_positions = spill['next_positions']
+    #     status_codes = spill['status_codes']
+    #     off_map = np.logical_not(self.on_map(next_positions))
 
-        # let model decide if we want to remove elements marked as off-map
-        status_codes[off_map] = oil_status.off_maps
+    #     # let model decide if we want to remove elements marked as off-map
+    #     status_codes[off_map] = oil_status.off_maps
 
     def find_last_water_pos(self, starts, ends):
         return starts + (ends - starts) * 0.000001
@@ -634,6 +641,8 @@ class ParamMap(GnomeMap):
         # todo: need a prepare_for_model_run() so map adds these keys to
         #     mass_balance as opposed to SpillContainer
         # update 'off_maps'/'beached' in mass_balance
+        # note: this requires that the elements get removed before the
+        #       next timestep, or it would get double counted.
         sc.mass_balance['beached'] = \
             sc['mass'][sc['status_codes'] == oil_status.on_land].sum()
         sc.mass_balance['off_maps'] += \
@@ -1020,13 +1029,14 @@ class RasterMap(GnomeMap):
 
         self._set_off_map_status(sc)
 
-        # todo: need a prepare_for_model_run() so map adds these keys to
-        #     mass_balance as opposed to SpillContainer
-        # update 'off_maps'/'beached' in mass_balance
-        sc.mass_balance['beached'] = \
-            sc['mass'][sc['status_codes'] == oil_status.on_land].sum()
-        sc.mass_balance['off_maps'] += \
-            sc['mass'][sc['status_codes'] == oil_status.off_maps].sum()
+        # # todo: need a prepare_for_model_run() so map adds these keys to
+        # #     mass_balance as opposed to SpillContainer
+        # # update 'off_maps'/'beached' in mass_balance
+        # this is done in _set_off_map_status
+        # sc.mass_balance['beached'] = \
+        #     sc['mass'][sc['status_codes'] == oil_status.on_land].sum()
+        # sc.mass_balance['off_maps'] += \
+        #     sc['mass'][sc['status_codes'] == oil_status.off_maps].sum()
 
     def refloat_elements(self, spill_container, time_step, model_time=None):
         """
