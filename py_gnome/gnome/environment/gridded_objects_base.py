@@ -57,7 +57,6 @@ class DepthSchema(base_schema.ObjTypeSchema):
 
 class S_DepthSchema(DepthSchema):
     vtransform = SchemaNode(Int())
-    zero_ref = SchemaNode(String())
 
 
 class VariableSchemaBase(base_schema.ObjTypeSchema):
