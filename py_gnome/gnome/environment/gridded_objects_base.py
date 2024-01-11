@@ -397,7 +397,7 @@ class Variable(gridded.Variable, GnomeId):
                                              ._default_component_types)
     _default_component_types.update({'time': Time,
                                      'grid': PyGrid,
-                                     'depth': Depth})
+                                     'depth': None}) #set after Depth defined below
 
     _gnome_unit = None #Default assumption for unit type
 
@@ -715,14 +715,20 @@ class FVCOM_Depth(gridded.depth.FVCOM_Depth, GnomeId):
                                              ._default_component_types)
     _default_component_types.update({'time': Time,
                                      'grid': Grid_U,
-                                     'variable': Variable})
+                                     'bathymetry': Variable,
+                                     'zeta': Variable})
 
+    @classmethod
+    def new_from_dict(cls, dict_):
+        rv = cls.from_netCDF(**dict_)
+        return rv
 
 class Depth(gridded.depth.Depth):
     ld_types = [L_Depth]
     sd_types = [ROMS_Depth, FVCOM_Depth]
     surf_types = [DepthBase]
 
+Variable._default_component_types['depth'] = Depth
 
 class VectorVariable(gridded.VectorVariable, GnomeId):
 
@@ -743,6 +749,19 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
                  **kwargs):
         super(VectorVariable, self).__init__(*args, **kwargs)
         self.extrapolation_is_allowed = extrapolation_is_allowed
+        
+        #Adding this so unit conversion happens properly in the components
+        #I really don't think we will be doing mixed units in one of these
+        #anytime soon.
+        for var in self.variables:
+            if hasattr(self, '_gnome_unit'):
+                if hasattr(var, '_gnome_unit') and var._gnome_unit is not None:
+                    if self._gnome_unit != var._gnome_unit:
+                        warnings.warn("Variable {0} has units {1} which are not the same as the VectorVariable {2} units {3}.".format(var.name, var._gnome_unit, self.name, self._gnome_unit))
+                else:
+                    var._gnome_unit = self._gnome_unit
+                
+            
 
     def __repr__(self):
         try:
@@ -945,6 +964,22 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
             kwargs['unmask'] = True
         units = units if units else self._gnome_unit #no need to convert here, its handled in the subcomponents
         value = super(VectorVariable, self).at(points, time, units=units, *args, **kwargs)
+
+        data_units = self.units if self.units else self._gnome_unit
+        req_units = units if units else self._gnome_unit
+        if data_units is not None and req_units is not None and data_units != req_units:
+            try:
+                value = uc.convert(data_units, req_units, value)
+            except uc.NotSupportedUnitError:
+                if (not uc.is_supported(data_units)):
+                    warnings.warn("{0} units is not supported: {1}"
+                                  "Using them unconverted as {2}"
+                                  .format(self.name, data_units, req_units))
+                elif (not uc.is_supported(req_units)):
+                    warnings.warn("Requested unit is not supported: {1}".format(req_units))
+                else:
+                    raise
+        return value
 
         return value
 
