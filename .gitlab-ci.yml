@@ -109,6 +109,7 @@ test_pygnome_scripts:
   script:
     - cd ./py_gnome/scripts/testing_scripts && python run_all.py 2<&1
 
+
 # We will not build a windows docker image, but we do want to know if there are
 # any windows specific problems.
 # So this job tries to compile PyGnome on Windows and run the pytests.
@@ -126,8 +127,16 @@ test_pygnome_windows:
   before_script:
     - Get-Location
     - dir
+    # make sure conda is on the path first in the path
+    - $Env:Path = 'C:\ProgramData\Miniconda3\Library\bin;' + $Env:Path
+    - $Env:Path = 'C:\ProgramData\Miniconda3\;' + $Env:Path
+    - $Env:Path = 'C:\ProgramData\Miniconda3\Scripts;' + $Env:Path
+
+    - echo "Our environemt vars:"
+    - $Env:Path
+
     - echo $CI_PIPELINE_ID
-    - activate ./$CI_PIPELINE_ID
+    - conda activate ./$CI_PIPELINE_ID
     - conda config --add channels defaults
     - conda config --add channels conda-forge
     - conda config --get channels
@@ -135,10 +144,10 @@ test_pygnome_windows:
   script:
     - echo "Building and testing PyGNOME"
 
-    # make sure our conda package is first in the path
-    - $Env:Path = 'C:\ProgramData\Miniconda3\Library\bin;' + $Env:Path
-    - $Env:Path = 'C:\ProgramData\Miniconda3\;' + $Env:Path
-    - $Env:Path = 'C:\ProgramData\Miniconda3\Scripts;' + $Env:Path
+    # # make sure our conda package is first in the path
+    # - $Env:Path = 'C:\ProgramData\Miniconda3\Library\bin;' + $Env:Path
+    # - $Env:Path = 'C:\ProgramData\Miniconda3\;' + $Env:Path
+    # - $Env:Path = 'C:\ProgramData\Miniconda3\Scripts;' + $Env:Path
 
     - echo "Our environemt vars:"
     - $Env:Path
@@ -214,7 +223,7 @@ build_main:
     - docker build . --build-arg PYTHON_VER=$PYTHON_VER -t registry.orr.noaa.gov/gnome/pygnome:main
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker push registry.orr.noaa.gov/gnome/pygnome:main
-    
+
 build_production:
   stage: build
   only:

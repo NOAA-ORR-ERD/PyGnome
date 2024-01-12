@@ -62,7 +62,8 @@ class Renderer(Outputter, MapCanvas):
                   ('land', (255, 204, 153)),  # brown
                   ('LE', (0, 0, 0)),  # black
                   ('uncert_LE', (255, 0, 0)),  # red
-                  ('map_bounds', (175, 175, 175)),  # grey
+                  # ('map_bounds', (175, 175, 175)),  # grey
+                  ('map_bounds', (0, 0, 139)),  # dark blue
                   ('spillable_area', (255, 0, 0)),  # red
                   ('raster_map', (51, 102, 0)),  # dark green
                   ('raster_map_outline', (0, 0, 0)),  # black
@@ -495,7 +496,7 @@ class Renderer(Outputter, MapCanvas):
                     self.draw_polygon(poly,
                                       line_color='map_bounds',
                                       fill_color=None,
-                                      line_width=2,
+                                      line_width=3,
                                       background=True)
             elif metadata[1].strip().lower().replace(' ', '') == 'spillablearea':
                 if self.draw_spillable_area:

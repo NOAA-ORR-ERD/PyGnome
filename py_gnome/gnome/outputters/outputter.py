@@ -80,50 +80,45 @@ class Outputter(GnomeId):
         Sets attributes for all outputters, like output_timestep, cache, etc.
 
         :param cache: sets the cache object from which to read data. The model
-            will automatically set this param
+                      will automatically set this parameter.
 
-        :param output_timestep: default is None in which case every time the
-            write_output is called, output is written. If set, then output is
-            written every output_timestep starting from model_start_time.
-            If set to zero only a single time is output, the output_start_time.
+        :param output_timestep=None: If ``None`` output will be written every time step.
+                                     If set, then output is written every output_timestep
+                                     starting from the model start time. If set to zero
+                                     only a single time is output at ``output_start_time``.
         :type output_timestep: timedelta object
 
-        :param output_zero_step: default is True. If True then output for
-            initial step (showing initial release conditions) is written
-            regardless of output_timestep
-        :type output_zero_step: boolean
+        :param output_zero_step=True: If True then output for initial step (showing initial
+                                      release conditions) is written regardless of
+                                      ``output_timestep``
+        :type output_zero_step: bool
 
-        :param output_last_step: default is True. If True then output for
-            final step is written regardless of output_timestep. This is
-            potentially an extra output, not aligne withe the output_timestep.
-        :type output_last_step: boolean
+        :param output_last_step=True: If True then output for final step is written
+                                      regardless of output_timestep. This is potentially
+                                      an extra output, if not aligned with ``output_timestep``.
+        :type output_last_step: bool
 
-        :param output_single_step: default is False. If True then output is
-                                   written for only one step, the
-                                   output_start_time, regardless of
-                                   output_timestep.
-        :type output_last_step: boolean
+        :param output_single_step=False: If ``True`` then output is written for only one
+                                         step, the output_start_time, regardless of ``output_timestep``.
+                                         ``output_zero_step`` and ``output_last_step`` are still
+                                         respected, set these to False if you want only one time step.
+        :type output_single_step: boolean
 
-        :param output_start_time: default is None in which case it is set to
-            the model time
+        :param output_start_time=None: If None it is set to the model start time
         :type output_start_time: datetime object
 
-        :param output_dir=None: directory to dump ouput in, if it needs to
+        :param output_dir=None: Directory to dump output in, if it needs to
                                 do this.
-        :type output_dir: string (path)
+        :type output_dir: PathLike
 
-        :param surface_conc = None: Compute surface concentration
-                                  Any non-zero string will compute (and output)
+        :param surface_conc=None: Compute surface concentration
+                                  Any non-empty string will compute (and output)
                                   the surface concentration the contents of the
                                   string determine the algorithm used. "kde" is
                                   currently the only working option.
-        :type surface_conc: string or None
+        :type surface_conc: str or None
         """
 
-        # flag to keep track of _state of the object - is True after calling
-        # prepare_for_model_run
-        # # fixme -- why should this be initializable???
-        # self._middle_of_run = kwargs.pop('_middle_of_run', False)
         self._middle_of_run = False
 
         super(Outputter, self).__init__(*args, **kwargs)
@@ -460,12 +455,18 @@ class Outputter(GnomeId):
     # Some utilities for checking valid filenames, etc...
     def _check_filename(self, filename):
         'basic checks to make sure the filename is valid'
-        if os.path.isdir(filename):
-            raise ValueError('filename must be a file not a directory.')
+        # path.isdir causes problems for shapefile; outputters call as needed
+        #if os.path.isdir(filename):
+            #raise ValueError('filename must be a file not a directory.')
 
         if not os.path.exists(os.path.realpath(os.path.dirname(filename))):
             raise ValueError('{0} does not appear to be a valid path'
                              .format(os.path.dirname(filename)))
+
+    def _check_is_dir(self, filename):
+        'split this out - causes problems for shape and most outputters dont need it'
+        if os.path.isdir(filename):
+            raise ValueError('filename must be a file not a directory.')
 
     def _file_exists_error(self, file_):
         """
