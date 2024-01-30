@@ -49,8 +49,7 @@ compile_pygnome:
 
     # install adios_db
     - pip install ../oil_database/adios_db/
-
-    - pip install --no-build-isolation ./
+    - pip install ./
 
     - cd ../  # make sure that it won't find the source gnome package.
     - python -c "import gnome"  # make sure that it imports
