@@ -8,6 +8,7 @@ GNOME File Formats
    maps
    winds
    netcdf
+   WCOFS_netcdf
    noaa_specific_currents
    scaling_current_patterns
    output_formats
