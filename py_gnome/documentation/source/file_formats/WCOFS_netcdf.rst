@@ -27,12 +27,16 @@ ROMS output requirements by purpose/utility
 
 **Advection/transport (optional)**
 
-  wet/dry masks (this will affect code in ways that are a bit "off-roading")
+  wet/dry 
+  
+  masks (this will affect code in ways that are a bit "off-roading")
+  
   vertical diffusivities (vertical random mover)
 
 **Advection/transport (required for 3D cases)**
 
   w (vertical mover)
+
   stretching params:
        		1. Cs_r,
     		2. Cs_w,
@@ -46,58 +50,87 @@ ROMS output requirements by purpose/utility
 **Weathering**
 
   temp
+
   salt
+
   u10, eastward_wind, or wind_u
+
   v10, westward_wind, or wind_v
+
   [**future**] zeta (for 3D applications but not currently used)
+
   [**future**] sediment
 
 **Visualization**
 
   lon-rho, -u, -v, -psi
-  lat-rho, -u, -v, -psi
-  mask-rho, -u, -v, -psi
 
+  lat-rho, -u, -v, -psi
+
+  mask-rho, -u, -v, -psi
 
 2D case WCOFS output requirements 
 -------------
 
 **Current transport file**
+
   ocean_time
+
   u 
+
   v
+
   horizontal diffusivities (random movers)
+
   temp
+
   salt
 
 **The following 4 list items can be in a separate grid file or included in the current transport file**
+
   lon-rho, -u, -v, -psi (only psi required to run model.  The rest are for graphical display)
+
   lat-rho, -u, -v, -psi
+
   mask-rho, -u, -v, -psi
+
   angle (necessary unless grid perfectly aligned with N/S, E/W).  No error is thrown but the results won't be right. 
 
 **wind forcing file**
+
   u10, eastward_wind, or wind_u
+
   v10, westward_wind, or wind_v
 
 3D case WCOFS output requirements
 -------------
 
 **Current transport file**
+
   ocean_time
+
   u 
+
   v
+
   w (vertical mover)
+
   vertical/horizontal diffusivities (random movers)
+
   temp
+
   salt
 
 **The following 5 list items (through all stretching params) can be in a separate grid file or together with current transport file**
   
   lon-rho, -u, -v, -psi (only psi required to run model.  The rest are for graphical display)
+
   lat-rho, -u, -v, -psi
+
   mask-rho, -u, -v, -psi
-  angle (necessary unless grid perfectly aligned with N/S, E/W).  No error is thrown but the results won't be right. 
+
+  angle (necessary unless grid perfectly aligned with N/S, E/W).  No error is thrown but the results won't be right.
+
   stretching params:
    1. Cs_r,
    2. Cs_w,
@@ -109,11 +142,10 @@ ROMS output requirements by purpose/utility
    8. h
 
 **winds forcing file**
+
   u10, eastward_wind, or wind_u
+
   v10, westward_wind, or wind_v
-
-
-
 
 .. NOTE: this was auto-built into the docstring of the:
 ..       gnome/environment/names.py file -- it would be
