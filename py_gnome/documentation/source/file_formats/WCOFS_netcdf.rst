@@ -14,10 +14,15 @@ ROMS output requirements by purpose/utility
 **Advection/transport (required for all cases)**
 
   lon-psi
+
   lat-psi
+  
   angle (necessary unless grid perfectly aligned with N/S, E/W).  No error is thrown but the results won't be right. 
+  
   u (horizontal movers)
+  
   v
+  
   ocean_time
 
 **Advection/transport (optional)**
