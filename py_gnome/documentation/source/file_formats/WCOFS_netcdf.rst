@@ -9,7 +9,7 @@ This document provides information on the ROMS output variables required and/or 
 - 3D applications
 
 ROMS output requirements by purpose/utility
--------------
+-------------------------------------------
 
 **Advection/transport (required for all cases)**
 
@@ -70,7 +70,7 @@ ROMS output requirements by purpose/utility
   mask-rho, -u, -v, -psi
 
 2D case WCOFS output requirements 
--------------
+---------------------------------
 
 **Current transport file**
 
@@ -103,7 +103,7 @@ ROMS output requirements by purpose/utility
   v10, westward_wind, or wind_v
 
 3D case WCOFS output requirements
--------------
+---------------------------------
 
 **Current transport file**
 
