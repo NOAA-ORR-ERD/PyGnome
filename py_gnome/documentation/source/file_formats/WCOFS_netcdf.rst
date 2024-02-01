@@ -1,17 +1,65 @@
-.. _WCOFS_netcdf:
+.. _ROMS_netcdf:
 
-WCOFS NetCDF formats
-======================
+ROMS Model: NetCDF output
+=========================
 
 This document provides information on the ROMS output variables required and/or used in 2D and 3D GNOME model applications.  It's organized in three sections to highlight the required outputs for:
 - different purposes (e.g. advection and weathering)
 - 2D applications
 - 3D applications
 
+
 ROMS output requirements by purpose/utility
 -------------------------------------------
 
-**Advection/transport (required for all cases)**
+ROMS uses a "Staggered Grid", and PYGNOME seeks to be compliant with the SGRID conversion:
+
+https://sgrid.github.io/sgrid/
+
+However, many ROMS output files are not compliant with that convension,
+so PyGNOME is designed to read ROMS specific files.
+But the concepts are helpful, so ROMS has been described in that context here.
+
+Grid definition
+...............
+
+ROMS is an Arakawa C-grid model -- the full grid definition is required in order to properly interpret the results.
+
+**Required grid variables:**
+
+
+.. +------------------------+------------+----------+----------+
+.. | Header row, column 1   | Header 2   | Header 3 | Header 4 |
+.. | (header rows optional) |            |          |          |
+.. +========================+============+==========+==========+
+.. | body row 1, column 1   | column 2   | column 3 | column 4 |
+.. +------------------------+------------+----------+----------+
+.. | body row 2             | ...        | ...      |          |
+.. +------------------------+------------+----------+----------+
+
++-----------------------+----------------+---------------------------------------+
+| CF/SGRID concept      | ROMS name      | Usual ROMS Variables                  |
++=======================+================+=======================================+
+| node_coordinates      | psi points     | ``lon_psi``, ``lat_psi``, ``mask_psi``|
++-----------------------+----------------+---------------------------------------+
+| face_coordinate       | rho points     | ``lon_rho``, ``lat_rho``, ``mask_rho``|
++-----------------------+----------------+---------------------------------------+
+|          time         |  time          |         ``time`` or ``ocean_time``    |
++-----------------------+----------------+---------------------------------------+
+| **Three dimensions**  |                |                                       |
++-----------------------+----------------+---------------------------------------+
+|           depth       |      ???       |                                       |
++-----------------------+----------------+---------------------------------------+
+|                       |                |                                       |
++-----------------------+----------------+---------------------------------------+
+|                       |                |                                       |
++-----------------------+----------------+---------------------------------------+
+
+
+.. note:: ROMS output often includes the 'u' and 'v' locations: the cneters of the cell edges. These are not used by PyGNOME **IS THIS TRUE??**
+
+
+**Advection/transport**
 
   lon-psi
 
