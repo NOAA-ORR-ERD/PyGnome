@@ -19,7 +19,7 @@ Create an environment for PyGNOME with all requirements:
 
 If you only need to run PyGNOME::
 
-    > conda create -n gnome --file conda_requirements.txt
+    > conda create -n gnome --file python=3.10 conda_requirements.txt
 
 If you need to build, etc PyGNOME::
 
@@ -34,6 +34,8 @@ Build the gnome package::
     > cd py_gnome
     > python setup.py develop
 
+.. warning:: when you run this command, you will get a warning from ``setuptools`` that running ``setup.py`` directly is deprecated. That is expected, and the build system will be updated before it stops working altogether.
+
 You now should be good to go, but to make sure:
 
 Run the tests::
@@ -41,7 +43,7 @@ Run the tests::
     > cd tests/unit_tests
     > pytest --runslow
 
-NOTE: the "runslow" tests requiring downloading data for the tests -- you can elimate that flag to get most of the tests to run faster.
+NOTE: the "runslow" tests requiring downloading data for the tests -- you can eliminate that flag to get most of the tests to run without that delay.
 
 All the details
 ===============
@@ -66,7 +68,7 @@ Either of these should work fine with PyGNOME, as long as you create an independ
 
 **NOTES:**
 
-PyGNOME requires Python version 3.9 or greater (currently 3.10 is used operationally)
+PyGNOME requires Python version 3.9 or greater (currently 3.10 is currently used operationally -- 3.11 should work, but it not well tested)
 
 Anaconda (and miniconda) can be installed in either single-user or multi-user mode:
 
@@ -290,7 +292,7 @@ git branches:
 Setting up conda
 ----------------
 
-If you have not already created an environment in which to run PyGNOME, follow the isntructions above.
+If you have not already created an environment in which to run PyGNOME, follow the instructions above.
 
 To use the gnome environment you created, it needs to be activated with::
 
@@ -348,7 +350,9 @@ This will allow you to use the JSON oil data format downloadable from NOAA's ADI
 
 https://adios.orr.noaa.gov/
 
-The ``adios_db`` package is available on conda-forge, and should have been installed by the process above.
+The ``adios_db`` package is available on conda-forge, and should have been installed by the process above. If not, it can be installed with ::
+
+  > conda install adios_db
 
 However, the adios_db package is also under active development along with PyGNOME, so if you are working with the develop branch of PyGNOME, you may need the latest version of adios_db as well. In which case, you are best off downloading the sources from GitHub and installing it from source -- similar to PyGNOME.
 
@@ -415,6 +419,11 @@ https://visualstudio.microsoft.com/downloads/
 The free "Community" version should be fine.
 
 Once installed, you will want to use one of the  "Visual Studio Developer Command Prompts" provided to actually build PyGNOME -- it sets up the compiler for you.
+
+.. warning:: On some locked down systems, such as those at NOAA, the standard way to use the MS compiler will not work for a user that does not have administration privileges.
+  If you get errors about not being able to run the ``vcvarsall.bat`` script, then the compiler must be run as an administrator.
+  If you have access to the NOAA/ORR GitLab server, a work around is supplied here: `Building Python extensions on Windows <https://gitlab.orr.noaa.gov/erd/programmers/-/blob/main/tech_notes/compiling_py3_C_extensions.md?ref_type=heads>`_.
+  If you have this issue and are not from NOAA, ask for help on Python fora or as an issue in the PyGNOME gitHub project.
 
 
 Linux

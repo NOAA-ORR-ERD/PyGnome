@@ -112,8 +112,16 @@ test_pygnome_windows:
   before_script:
     - Get-Location
     - dir
+    # make sure conda is on the path first in the path
+    - $Env:Path = 'C:\ProgramData\Miniconda3\Library\bin;' + $Env:Path
+    - $Env:Path = 'C:\ProgramData\Miniconda3\;' + $Env:Path
+    - $Env:Path = 'C:\ProgramData\Miniconda3\Scripts;' + $Env:Path
+
+    - echo "Our environemt vars:"
+    - $Env:Path
+
     - echo $CI_PIPELINE_ID
-    - activate ./$CI_PIPELINE_ID
+    - conda activate ./$CI_PIPELINE_ID
     - conda config --add channels defaults
     - conda config --add channels conda-forge
     - conda config --get channels
@@ -121,10 +129,10 @@ test_pygnome_windows:
   script:
     - echo "Building and testing PyGNOME"
 
-    # make sure our conda package is first in the path
-    - $Env:Path = 'C:\ProgramData\Miniconda3\Library\bin;' + $Env:Path
-    - $Env:Path = 'C:\ProgramData\Miniconda3\;' + $Env:Path
-    - $Env:Path = 'C:\ProgramData\Miniconda3\Scripts;' + $Env:Path
+    # # make sure our conda package is first in the path
+    # - $Env:Path = 'C:\ProgramData\Miniconda3\Library\bin;' + $Env:Path
+    # - $Env:Path = 'C:\ProgramData\Miniconda3\;' + $Env:Path
+    # - $Env:Path = 'C:\ProgramData\Miniconda3\Scripts;' + $Env:Path
 
     - echo "Our environemt vars:"
     - $Env:Path
