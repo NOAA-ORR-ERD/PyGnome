@@ -1,4 +1,4 @@
-.. _WCOFS_netcd:
+.. _WCOFS_netcdf:
 
 WCOFS NetCDF formats
 ======================
