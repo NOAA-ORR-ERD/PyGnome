@@ -503,7 +503,10 @@ class PointLineRelease(Release):
 
     @property
     def centroid(self):
-        return self.start_position
+        if self.is_pointsource:
+            return self.start_position
+        else:
+            return (self.start_position + self.end_position)/2.0
 
     @property
     def start_position(self):
