@@ -817,3 +817,35 @@ def spatial_release_spill(start_positions,
                          )
 
     return spill
+    
+def polygon_release_spill(filename,
+                          release_time=None,
+                          substance=None,
+                          water=None,
+                          on=True,
+                          amount=0,
+                          units='kg',
+                          windage_range=None,
+                          windage_persist=None,
+                          name='spatial_release'):
+    '''
+    Helper function returns a Spill object containing a polygon release
+
+    A polygon release is a spill that releases elements randomly within polygons in a shapefile.
+    '''
+    release = PolygonRelease(filename = filename,
+                             release_time=release_time,
+                             name=name)
+                             
+    spill = _setup_spill(release=release,
+                         water=water,
+                         substance=substance,
+                         amount=amount,
+                         units=units,
+                         name=name,
+                         on=on,
+                         windage_range=windage_range,
+                         windage_persist=windage_persist
+                         )
+
+    return spill
