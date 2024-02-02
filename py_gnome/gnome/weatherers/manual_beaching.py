@@ -182,7 +182,8 @@ class Beaching(RemoveMass, Weatherer):
             # convert timeseries to 'kg'
             dv = self.timeseries['value']
 
-            unit_type = uc.FindUnitTypes()[self.units]
+            # FIXME: we shouldn't poke into nucos like this
+            unit_type = uc.unit_conversion.UNIT_TYPES[self.units]
             if unit_type == 'mass':
                 dm = uc.convert('mass', self.units, 'kg', dv)
             elif unit_type == 'volume':

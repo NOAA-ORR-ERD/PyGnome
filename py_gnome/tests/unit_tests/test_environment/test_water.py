@@ -237,7 +237,7 @@ def test_Water_get(attr, unit, val, si_val):
 
 @pytest.mark.parametrize(("attr", "unit"), [('temperature', 'F'),
                                             ('sediment', 'mg/l'),
-                                            ('sediment', 'part per thousand'),
+                                            ('sediment', 'parts per thousand'),
                                             ('wave_height', 'km'),
                                             ('fetch', 'km')])
 def test_Water_set(attr, unit):
