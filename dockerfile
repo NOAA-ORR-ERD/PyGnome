@@ -1,4 +1,4 @@
-ARG PYTHON_VER=3.9
+ARG PYTHON_VER=3.10
 
 FROM registry.orr.noaa.gov/erd/centos-conda/miniforge-python$PYTHON_VER
 
@@ -8,7 +8,7 @@ RUN yum install -y wget gcc make bzip2 gcc-c++ ca-certificates \
 
 COPY ./ /pygnome/
 
-RUN cd pygnome && conda install python=${PYTHON_VER} \
+RUN cd pygnome && conda install python=$PYTHON_VER \
                                 --file conda_requirements.txt \
                                 --file conda_requirements_build.txt \
                                 --file oil_database/adios_db/conda_requirements.txt
