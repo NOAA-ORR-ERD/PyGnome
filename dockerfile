@@ -2,6 +2,9 @@ ARG PYTHON_VER=3.10
 
 FROM registry.orr.noaa.gov/erd/centos-conda/miniforge-python$PYTHON_VER
 
+# Args declared before the FROM need to be redeclared, don't remove this line
+ARG PYTHON_VER
+
 RUN yum install -y wget gcc make bzip2 gcc-c++ ca-certificates \
     libglib2.0-0 libxext6 libsm6 libxrender1 \
     git mercurial subversion tar
