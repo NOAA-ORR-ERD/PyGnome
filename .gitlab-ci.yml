@@ -3,8 +3,8 @@ variables:
 
 stages:
   - compile
-  - test
   - build
+  - test
 
 cache:
   paths:
