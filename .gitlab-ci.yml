@@ -51,9 +51,6 @@ compile_pygnome:
     - pip install ../oil_database/adios_db/
     - pip install ./
 
-    - cd ../  # make sure that it won't find the source gnome package.
-    - python -c "import gnome"  # make sure that it imports
-
     # need extra requirements for the docs
     - conda install -y --file py_gnome/conda_requirements_docs.txt
     - cd py_gnome/documentation && make html  # build the docs
