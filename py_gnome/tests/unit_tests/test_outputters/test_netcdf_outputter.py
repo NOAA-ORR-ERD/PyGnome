@@ -592,8 +592,9 @@ def test_write_output_post_run(model, output_ts_factor):
         assert (not os.path.exists(o_put._u_filename))
 
     # now write netcdf output
-    o_put.write_output_post_run(model.start_time,
-                                model.num_time_steps,
+    o_put.write_output_post_run(model_start_time=model.start_time,
+                                num_time_steps=model.num_time_steps,
+                                model_time_step=3600,
                                 spills=model.spills,
                                 cache=model._cache,
                                 uncertain=model.uncertain)

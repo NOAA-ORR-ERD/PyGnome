@@ -10,6 +10,8 @@ import pytest
 from gnome.spills import surface_point_line_spill
 from gnome.outputters import Outputter
 
+import gnome.scripting as gs
+
 
 @pytest.fixture(scope='function')
 def model(sample_model):
@@ -57,7 +59,7 @@ params = [(model_ts, item) for item in output_ts]
 params.extend([(timedelta(hours=6), (timedelta(days=1), 4, 1))])
 
 
-@pytest.mark.slow
+
 @pytest.mark.parametrize(("model_ts", "output_ts"), params)
 def test_output_timestep(model, model_ts, output_ts):
     """
@@ -149,3 +151,48 @@ def test_output_timestep(model, model_ts, output_ts):
 
         except StopIteration:
             break
+
+
+def test_bad_output_timestep():
+    """
+    output timestep can never be less than 0
+    """
+    # on init:
+    with pytest.raises(ValueError):
+        out = Outputter(output_timestep=gs.hours(0))
+
+    # changing it later
+    out = Outputter(output_timestep=gs.hours(3))
+    with pytest.raises(ValueError):
+        out.output_timestep = gs.hours(-1)
+
+    assert out.output_timestep == gs.hours(3)
+
+
+def test_too_small_output_timestep(model):
+    """
+    warning if output timestep is less than model timestep
+    """
+    o_put = Outputter(output_timestep=gs.minutes(30))
+
+    # no warning
+    o_put.prepare_for_model_run(model_start_time=gs.asdatetime("2025-02-03T12:00"),
+                                spills=None,
+                                model_time_step=1800,  # seconds
+                                )
+    # too long a model timestep
+    with pytest.warns(RuntimeWarning, match="Output will only occur every model timestep.") as warning:
+        o_put.prepare_for_model_run(model_start_time=gs.asdatetime("2025-02-03T12:00"),
+                                    spills=None,
+                                    model_time_step=3600,  # seconds
+                                    )
+
+
+
+
+
+
+    # model.duration = model_ts * output_ts[1]
+    # model.time_step = model_ts
+
+
