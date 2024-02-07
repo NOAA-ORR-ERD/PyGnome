@@ -12,9 +12,9 @@ RUN yum install -y wget gcc make bzip2 gcc-c++ ca-certificates \
 COPY ./ /pygnome/
 WORKDIR /pygnome/
 
-RUN cd py_gnome && conda install python=$PYTHON_VER \
-    --file conda_requirements.txt \
-    --file conda_requirements_build.txt \
+RUN conda install python=$PYTHON_VER \
+    --file py_gnome/conda_requirements.txt \
+    --file py_gnome/conda_requirements_build.txt \
     --file oil_database/adios_db/conda_requirements.txt
 
 # this was pinning things down too much for the webapi step
