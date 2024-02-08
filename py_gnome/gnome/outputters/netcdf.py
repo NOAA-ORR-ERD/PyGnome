@@ -301,6 +301,9 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
             attributes
         :type which_data: string -- one of {'standard', 'most', 'all'}
 
+        NOTE: if you want a custom set of output arrays, you can cahnge the
+        `.self.arrays_to_output` set after initialization.
+
         Optional arguments passed on to base class (kwargs):
 
         :param cache: sets the cache object from which to read data. The model

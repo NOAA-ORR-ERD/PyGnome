@@ -101,7 +101,7 @@ def test_write_output_post_run(model, output_ts_factor, output_dir):
 
     o_geojson.write_output_post_run(model_start_time=model.start_time,
                                     num_time_steps=model.num_time_steps,
-                                    model_time_step=3600,
+                                    model_time_step=900,  # not used, but required by the method
                                     cache=model._cache,
                                     spills=model.spills)
 
