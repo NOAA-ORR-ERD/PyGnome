@@ -277,6 +277,9 @@ def get_testdata():
     get_datafile(os.path.join(env_data, 'staggered_sine_channel.nc'))
     get_datafile(os.path.join(env_data, '3D_circular.nc'))
     get_datafile(os.path.join(env_data, 'tri_ring.nc'))
+    get_datafile(os.path.join(env_data, 'example_roms_degrees.nc'))
+    get_datafile(os.path.join(env_data, 'example_roms_radians.nc'))
+    get_datafile(os.path.join(env_data, 'example_roms_two_times.nc'))
 
     data['CatsMover'] = \
         {'curr': get_datafile(os.path.join(lis, 'tidesWAC.CUR')),
