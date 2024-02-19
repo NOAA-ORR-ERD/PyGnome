@@ -18,6 +18,8 @@ from gnome.utilities.timeseries import TimeseriesError
 # from gnome.utilities.inf_datetime import InfDateTime
 from gnome.environment import Wind, constant_wind, wind_from_values
 
+import gnome.scripting as gs
+
 # from colander import Invalid
 
 from ..conftest import testdata
@@ -162,6 +164,8 @@ def test_at(coord_sys, wind_circ):
         d_val1 = rec['value'][1]
         val1 = wind.at(tp1, time, coord_sys=coord_sys)
 
+        print(f"{val1=}")
+
         if coord_sys in ('r-theta', 'uv'):
             assert np.isclose(val1[0][0], d_val0)
             assert np.isclose(val1[0][1], d_val1)
@@ -169,6 +173,33 @@ def test_at(coord_sys, wind_circ):
             assert np.isclose(val1[0], d_val1)
         else:
             assert np.isclose(val1[0], d_val0)
+
+
+def test_multiple_points():
+    """
+    should return the right amount of data for the number of points
+
+    3D points should return 3D velocity (u, v, w), with w always 0
+    """
+    ts = [(datetime(2014, 6, 25, 10, 14), (0, 0)),
+          (datetime(2014, 6, 25, 10, 20), (1, 1)),
+          ]
+
+    wind = Wind(timeseries=ts, units='mps')
+
+    # 2D points
+    points = [(0, 0), (2.0, 2), (1, 1)]
+    result = wind.at(points, ts[1][0])
+    print(repr(result))
+    assert result.shape == (len(points), 2)
+
+    # 3D points
+    points = [(0, 0, 0), (2.0, 2, 0), (1, 1, 0)]
+    result = wind.at(points, ts[1][0])
+    print(repr(result))
+    assert result.shape == (len(points), 3)
+    assert all(result[:, 2] == 0.0)
+
 
 def test_at_default(wind_circ):
     """
@@ -190,6 +221,38 @@ def test_at_default(wind_circ):
         assert np.isclose(val[0][0], u)
         assert np.isclose(val[0][1], v)
 
+def test_at_out_of_bounds(wind_circ):
+    """
+    Make sure at() does the right thing when passed data out of bounds
+    """
+    wind = wind_circ['wind']
+    print(repr(wind.data_start))
+
+    # Works at the start
+    result = wind.at([(0, 0, 0)], wind.data_start)
+    assert np.array_equal(result, [[-0., -1.,  0.]])
+
+    print(repr(wind.data_stop))
+
+    # Works at the end
+    result = wind.at([(0, 0, 0)], wind.data_stop)
+    assert np.array_equal(result, [[1., 0., 0.]])
+
+    # but should work if extrapolate=True
+    result = wind.at([(0, 0, 0)], wind.data_stop + gs.hours(1), extrapolate=True)
+    assert np.array_equal(result, [[1., 0., 0.]])
+
+    # after the data_stop
+    with pytest.raises(ValueError) as excinfo:
+        result = wind.at([(0, 0, 0)], wind.data_stop + gs.hours(1))
+    assert "not within the bounds" in str(excinfo.value)
+
+    # before data_start
+    with pytest.raises(ValueError)as excinfo:
+        result = wind.at([(0, 0, 0)], wind.data_start - gs.hours(1))
+    assert "not within the bounds" in str(excinfo.value)
+
+
 @pytest.fixture(scope='module')
 def wind_rand(rq_rand):
     """
@@ -197,7 +260,7 @@ def wind_rand(rq_rand):
     'rq_rand'.
 
     NOTE:
-    Since 'rq_rand' randomly generates (r,theta), the corresponing (u,v)
+    Since 'rq_rand' randomly generates (r,theta), the corresponding (u,v)
     are calculated from gnome.utilities.transforms.r_theta_to_uv_wind(...).
     Assumes this method works correctly.
     """
@@ -247,6 +310,7 @@ class TestWind(object):
     Tried decorating the class with the following:
     @pytest.mark.usefixtures("wind")
     """
+
     def test_init_units(self, all_winds):
         """
         check default wind object is created

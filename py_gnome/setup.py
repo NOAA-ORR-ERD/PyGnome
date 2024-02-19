@@ -609,7 +609,8 @@ setup(name='pyGnome',
       package_dir={'gnome': 'gnome'},
       package_data={'gnome': ['data/yeardata/*',
                               'outputters/sample.b64',
-                              'weatherers/platforms.json'
+                              'weatherers/platforms.json',
+                              'outputters/erma_data_package/*',
                               ]},
       # you are not going to be able to "pip install" this anyway
       # -- no need for requirements

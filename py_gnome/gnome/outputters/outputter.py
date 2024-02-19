@@ -182,6 +182,7 @@ class Outputter(GnomeId):
                               model_start_time=None,
                               spills=None,
                               model_time_step=None,
+                              map=None,
                               **kwargs):
         """
         This method gets called by the model at the beginning of a new run.
@@ -240,13 +241,19 @@ class Outputter(GnomeId):
         if cache is not None:
             self.cache = cache
 
+        self.map = map
         if self.output_timestep is None:
             self._write_step = True
 
-
-
         self._dt_since_lastoutput = 0
         self._middle_of_run = True
+
+        # kludge to catch special case of single output at the model start time
+        if self.output_single_step and ((self.output_start_time == model_start_time)
+                                        or self.output_start_time is None):
+            self._single_output_at_start = True
+        else:
+            self._single_output_at_start = False
 
     def prepare_for_model_step(self, time_step, model_time):
         """
@@ -336,7 +343,7 @@ class Outputter(GnomeId):
 
         """
         if step_num == 0:
-            if self.output_zero_step:
+            if self.output_zero_step or self._single_output_at_start:
                 self._write_step = True  # this is the default
             else:
                 self._write_step = False

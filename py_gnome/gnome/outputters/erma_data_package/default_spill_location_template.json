@@ -1,0 +1,38 @@
+{
+    "name": "Spill Location",
+    "expression": null,
+    "expression_type": null,
+    "preview_graphic_point": "",
+    "preview_graphic_line": "",
+    "preview_graphic_polygon": "",
+    "ordering": 0,
+    "labels": [],
+    "styles": [
+        {
+            "ordering": 1,
+            "symbol": null,
+            "outlinesymbol": null,
+            "font_character": {
+                "character_code": 66,
+                "font": {
+                    "fontname": "SHAPES",
+                    "displayname": "Shapes",
+                    "label": false,
+                    "checksum": "sha19f3d7c3382d7181fd488a999b2e78e4aba7ffeae",
+                    "symbol": true,
+                    "font": "file://support_files/fonts/SHAPES.TTF"
+                }
+            },
+            "angle": null,
+            "angle_field": null,
+            "style_size": 16,
+            "size_field": null,
+            "style_width": null,
+            "width_field": null,
+            "color": "#000000",
+            "outlinecolor": "#000000",
+            "offset_x": null,
+            "offset_y": null
+        }
+    ]
+}

@@ -5,7 +5,8 @@ tests for the function in the utilities/__init__.py file
 import pytest
 import numpy as np
 
-from gnome.utilities import convert_longitude, round_sf_scalar, round_sf_array
+from gnome.utilities import (convert_longitude, round_sf_scalar, round_sf_array,
+                             convert_mass_to_mass_or_volume)
 
 L_180_180 = [-180, -179.99999, -90, 0, 90, 179.9999, 180]
 
@@ -129,6 +130,27 @@ def test_round_sf_array():
     # assert np.all(result[~nans] == expected[~nans])
     assert np.all(np.isnan(result[nans]))
 
+@pytest.mark.parametrize(("in_unit", "out_unit", "result"), [
+                             ('kg', 'm^3', 0.001),
+                             ('kg', 'kg', 1.0),
+                             ('g', 'm^3', 1e-6),
+                             ('kg', 'gal', 0.26417205124155846),
+                             ])
+def test_mass_to_volume(in_unit, out_unit, result):
+    density = 1000.0
+    value = 1.0
+    answer = convert_mass_to_mass_or_volume(in_unit, out_unit, density, value)
+    assert answer == result
+
+@pytest.mark.parametrize(("in_unit", "out_unit", "result"), [
+                             ('kg', 'meter', 0.001),
+                             ('gal', 'm^3', 0.001),
+                             ])
+def test_mass_to_volume_bad_unit(in_unit, out_unit, result):
+    density = 1000.0
+    value = 1.0
+    with pytest.raises(ValueError):
+        answer = convert_mass_to_mass_or_volume(in_unit, out_unit, density, value)
 
 
 

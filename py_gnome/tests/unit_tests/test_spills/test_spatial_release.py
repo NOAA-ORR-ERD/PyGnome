@@ -12,7 +12,6 @@ import datetime
 import shapely
 import pytest
 import zipfile
-import shapefile
 
 from gnome.utilities.geometry import geo_routines
 

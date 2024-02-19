@@ -554,13 +554,14 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
         use super to pass model_start_time, cache=None and
         remaining kwargs to base class method
         """
+
         if not self.on:
             return
 
         super(NetCDFOutput, self).prepare_for_model_run(model_start_time,
                                                         spills, **kwargs)
 
-        # this should have been called by the superclass version
+        # this should have been called by the super class version
         # self.clean_output_files()
 
         self.uncertain = uncertain
@@ -638,6 +639,10 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
                                             shape=('time',),
                                             chunksz=(256,))
 
+        # so that we can guard against post_model_run being called twice.
+        # called after the netcdf file is created
+        self.cleaned_up = False  # so that we can guard against post_model_run being called twice.
+
         # need to keep track of starting index for writing data since variable
         # number of particles are released
         self._start_idx = 0
@@ -708,7 +713,7 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
         """
         super(NetCDFOutput, self).write_output(step_num, islast_step)
 
-        #if self.on is False or not self._write_step:
+        # if self.on is False or not self._write_step:
         if self.on is False:
             return None
 
@@ -756,9 +761,9 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
                                                     )
                             grp.variables[key][idx] = val
 
-        if islast_step:
-            if self.zip_output is True:
-                self._zip_output_files()
+        # if islast_step:
+        #     if self.zip_output is True:
+        #         self._zip_output_files()
 
         if not self._write_step:
             return None
@@ -769,7 +774,22 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
                              self._u_filename),
                 'time_stamp': time_stamp.isoformat()}
 
+    def post_model_run(self):
+        """
+        This is where to clean up -- close files, etc.
+        """
+        # NOTE: netcdf files are opened and closed with each write_timestep
+        #       so they don't need to be closed here.
+
+        # Guard against being called twice
+        # shouldn't be necessary, but the model is buggy in this regard ...
+        if not self.cleaned_up:
+            if self.zip_output is True:
+                self._zip_output_files()
+        self.cleaned_up = True
+
     def _zip_output_files(self):
+        print("_zip_output_files called")
         zfilename = self.zip_filename
         zipf = zipfile.ZipFile(zfilename, 'w')
 
@@ -779,11 +799,11 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
                    arcname=file_to_zip)
         os.remove(forcst_file)
         if self.uncertain is True:
-           uncrtn_file = self._u_filename
-           dir, file_to_zip = os.path.split(uncrtn_file)
-           zipf.write(uncrtn_file,
-                      arcname=file_to_zip)
-           os.remove(uncrtn_file)
+            uncrtn_file = self._u_filename
+            dir, file_to_zip = os.path.split(uncrtn_file)
+            zipf.write(uncrtn_file,
+                       arcname=file_to_zip)
+            os.remove(uncrtn_file)
 
         zipf.close()
 

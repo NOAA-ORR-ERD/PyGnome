@@ -14,6 +14,7 @@ from .kmz import KMZOutput
 from .image import IceImageOutput
 from .shape import ShapeOutput
 from .oil_budget import OilBudgetOutput
+from .erma_data_package import ERMADataPackageOutput
 
 # NOTE: no need for __all__ if you want export everything!
 outputters = [Outputter,
@@ -28,7 +29,8 @@ outputters = [Outputter,
               SpillJsonOutput,
               KMZOutput,
               IceImageOutput,
-              ShapeOutput]
+              ShapeOutput,
+              ERMADataPackageOutput]
 
 # any reason for this to be a list rather than a set?
 schemas = {cls._schema for cls in outputters if hasattr(cls, '_schema')}
