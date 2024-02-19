@@ -26,31 +26,33 @@
 
 python>=3.9,<3.12
 
-
-# for SpatialRelease
-trimesh
-shapely
-pyproj
-mapbox_earcut
-
-numpy
-scipy
-gsw
-psutil
-pyzmq
-python-dateutil
-geojson
+## System libs
 colander <2
-
-# # Needed for multiprocessing, which is currently broken
+progressbar
+psutil
+python-dateutil
+pyzmq
+# Needed for multiprocessing, which is currently broken
 # pyzmq
 # tornado
 # tblib
 
-netCDF4
-pyshp
-progressbar
+## Base numerical libs
+numpy
+scipy
 
+## Modeling libs
+gsw
+netCDF4
+trimesh
+
+## Spatial Libs
+geojson
+geopandas
+mapbox_earcut
+pyogrio
+pyproj
+shapely
 
 # NOAA maintained packages
 gridded>=0.6.5
@@ -58,7 +60,6 @@ pynucos=3.2.*
 cell_tree2d
 py_gd>=2.2
 adios_db>=1.1
-
 
 
 

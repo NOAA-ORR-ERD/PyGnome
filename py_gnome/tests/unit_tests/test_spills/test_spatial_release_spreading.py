@@ -11,7 +11,6 @@ import numpy as np
 import shapely
 import pytest
 import zipfile
-import shapefile
 
 from gnome.utilities.geometry import geo_routines
 from gnome.spills.release import (PolygonRelease, NESDISRelease)
@@ -200,4 +199,3 @@ class TestPointLineRelease:
         
     # step 6 ---- setup model run        
         model.full_run()
-        

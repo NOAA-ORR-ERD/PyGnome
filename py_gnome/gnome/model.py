@@ -873,7 +873,8 @@ class Model(GnomeId):
                                             cache=self._cache,
                                             uncertain=self.uncertain,
                                             spills=self.spills,
-                                            model_time_step=self.time_step)
+                                            model_time_step=self.time_step,
+                                            map=self.map)
         self.logger.debug("{0._pid} setup_model_run complete for: "
                           "{0.name}".format(self))
 

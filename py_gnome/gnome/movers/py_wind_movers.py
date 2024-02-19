@@ -166,7 +166,7 @@ class WindMover(movers.PyMover):
         reset uncertainty
         """
         self.is_first_step = True
-        self.uncertainty_list = np.zeros((0,)+self.shape, dtype=np.float64)
+        self.uncertainty_list = np.zeros((0,) + self.shape, dtype=np.float64)
         self.time_uncertainty_was_set = 0
 
         return
