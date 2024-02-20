@@ -1627,14 +1627,16 @@ class Model(GnomeId):
                 if spill.release_time < self.start_time + self.duration:
                     someSpillIntersectsModel = True
 
-                if spill.release_time > self.start_time:
+                if ((spill.release_time > self.start_time and self.time_step > 0)
+                      or (spill.release_time < self.start_time and self.time_step < 0)):
                     msg = ('{0} has release time after model start time'.
                            format(spill.name))
                     self.logger.warning(msg)
 
                     msgs.append(self._warn_pre + msg)
 
-                elif spill.release_time < self.start_time:
+                elif ((spill.release_time < self.start_time and self.time_step > 0)
+                      or (spill.release_time > self.start_time and self.time_step < 0)):
                     msg = ('{0} has release time before model start time: rt = {1}, st = {2}'
                            .format(spill.name, spill.release_time, self.start_time))
                     self.logger.error(msg)
