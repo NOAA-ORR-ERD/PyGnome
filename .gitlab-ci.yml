@@ -167,8 +167,8 @@ build_develop:
 
     # build the py_gnome image
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker build . --build-arg PYTHON_VER=$PYTHON_VER -t registry.orr.noaa.gov/gnome/pygnome:develop
-    - docker push registry.orr.noaa.gov/gnome/pygnome:develop
+    - docker build . --build-arg PYTHON_VER=$PYTHON_VER -t registry.orr.noaa.gov/gnome/pygnome:$CI_COMMIT_BRANCH
+    - docker push registry.orr.noaa.gov/gnome/pygnome:$CI_COMMIT_BRANCH
 
 build_main:
   stage: build
