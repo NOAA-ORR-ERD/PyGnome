@@ -829,16 +829,32 @@ class ERMADataPackageOutput(Outputter):
                             beached_class_template = copy.deepcopy(default_beached_template)
                             units = unit_map['unit']
                             class_label = ''
-                            if idx == 0:
+                            if idx == 0 and len(colormap['colorScaleRange']) == 1:
+                                # Special case that we only have one range... so we show ALL
+                                # particles, but still label it with the range
+                                floating_class_template['expression'] = ('[statuscode] = 2 AND '
+                                                                         f'[spill_id] IN "{spill_group_string}"')
+                                beached_class_template['expression'] = ('[statuscode] = 3 AND '
+                                                                        f'[spill_id] IN "{spill_group_string}"')
+                                class_label = f'<{converted_min:#.4g} - {data_column} - {converted_max:#.4g}+ ({requested_display_unit})'
+                            elif idx == 0:
+                                # First one... open ended lower range
                                 floating_class_template['expression'] = ('[statuscode] = 2 AND '
                                                                          f'[spill_id] IN "{spill_group_string}" AND '
-                                                                         f'({min} <= [{data_column}] AND '
                                                                          f'[{data_column}] <= {max})')
                                 beached_class_template['expression'] = ('[statuscode] = 3 AND '
                                                                         f'[spill_id] IN "{spill_group_string}" AND '
-                                                                        f'({min} <= [{data_column}] AND '
                                                                         f'[{data_column}] <= {max})')
-                                class_label = f'{converted_min:#.4g}<={data_column}<={converted_max:#.4g} ({requested_display_unit})'
+                                class_label = f'<{converted_min:#.4g} - {data_column} - {converted_max:#.4g} ({requested_display_unit})'
+                            elif idx == len(colormap['colorScaleRange'])-1:
+                                # Last one... open ended upper range
+                                floating_class_template['expression'] = ('[statuscode] = 2 AND '
+                                                                         f'[spill_id] IN "{spill_group_string}" AND '
+                                                                         f'({min} <= [{data_column}]')
+                                beached_class_template['expression'] = ('[statuscode] = 3 AND '
+                                                                        f'[spill_id] IN "{spill_group_string}" AND '
+                                                                        f'({min} <= [{data_column}]')
+                                class_label = f'{converted_min:#.4g} - {data_column} - {converted_max:#.4g}+ ({requested_display_unit})'
                             else:
                                 floating_class_template['expression'] = ('[statuscode] = 2 AND '
                                                                          f'[spill_id] IN "{spill_group_string}" AND '
@@ -848,7 +864,7 @@ class ERMADataPackageOutput(Outputter):
                                                                         f'[spill_id] IN "{spill_group_string}" AND '
                                                                         f'({min} < [{data_column}] AND '
                                                                         f'[{data_column}] <= {max})')
-                                class_label = f'{converted_min:#.4g}<{data_column}<={converted_max:#.4g} ({requested_display_unit})'
+                                class_label = f'{converted_min:#.4g} - {data_column} - {converted_max:#.4g} ({requested_display_unit})'
                             colorblocklabel = colormap['colorBlockLabels'][idx]
                             floating_class_template['name'] = f'{spill_names}|{colorblocklabel if colorblocklabel else class_label}'
                             floating_class_template['ordering'] = next(classorder)
