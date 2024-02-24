@@ -5,9 +5,9 @@ FROM registry.orr.noaa.gov/erd/centos-conda/centos7-python$PYTHON_VER
 # Args declared before the FROM need to be redeclared, don't delete this
 ARG PYTHON_VER
 
-RUN yum install -y wget gcc make bzip2 gcc-c++ ca-certificates \
-    libglib2.0-0 libxext6 libsm6 libxrender1 \
-    git mercurial subversion tar
+RUN yum install -y libglib2.0-0 libxext6 libsm6 libxrender1 \
+    wget gcc make bzip2 gcc-c++ chrpath \
+    ca-certificates git mercurial subversion tar
 
 COPY ./ /pygnome/
 WORKDIR /pygnome/
