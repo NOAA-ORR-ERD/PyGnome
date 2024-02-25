@@ -42,7 +42,7 @@ set(EXT_NAMES
     cy_weatherers
 )
 
-set(CPP_FILES
+set(LIBGNOME_CPP_FILES
     RectGridVeL_c.cpp
     MemUtils.cpp
     Mover_c.cpp
@@ -84,9 +84,15 @@ set(CPP_FILES
     Weatherers_c.cpp
 )
 
-list(TRANSFORM CPP_FILES PREPEND "lib_gnome/")
+set(CY_POINT_IN_POLY_CPP_FILES
+    cy_point_in_polygon.pyx
+    c_point_in_polygon.c
+)
 
-add_library(gnome SHARED ${CPP_FILES})
+list(TRANSFORM LIBGNOME_CPP_FILES PREPEND "lib_gnome/")
+list(TRANSFORM CY_POINT_IN_POLY_CPP_FILES PREPEND "gnome/utilities/geometry")
+
+add_library(gnome SHARED ${LIBGNOME_CPP_FILES})
 
 target_link_libraries(gnome PRIVATE NetCDF::NetCDF)
 
@@ -115,11 +121,11 @@ foreach(ext IN LISTS EXT_NAMES)
     target_link_libraries(${ext} PRIVATE gnome Python::NumPy)
 
 
-    #if(APPLE)
+    if(APPLE)
       set_target_properties(${ext} PROPERTIES INSTALL_RPATH "@loader_path/.")
-    #elseif(UNIX)
-    #  set_target_properties(${ext} PROPERTIES INSTALL_RPATH "$ORIGIN/.")
-    #endif()
+    elseif(UNIX)
+      set_target_properties(${ext} PROPERTIES INSTALL_RPATH "$ORIGIN/.")
+    endif()
 
     install(TARGETS ${ext} DESTINATION gnome/cy_gnome)
 
