@@ -16,7 +16,9 @@ import zipfile
 
 from gnome.persist.extend_colander import FilenameSchema
 from gnome.utilities.geometry.polygons import PolygonSet
-from gnome.utilities.shapefile_builder import ParticleShapefileBuilder, BoundaryShapefileBuilder
+from gnome.utilities.shapefile_builder import ParticleShapefileBuilder
+from gnome.utilities.shapefile_builder import BoundaryShapefileBuilder
+from gnome.utilities.shapefile_builder import ContourShapefileBuilder
 from gnome.utilities.hull import calculate_hull
 from gnome.utilities import convert_mass_to_mass_or_volume
 from .outputter import Outputter, BaseOutputterSchema
@@ -49,6 +51,14 @@ class ERMADataPackageSchema(BaseOutputterSchema):
     certain_boundary_hull_allow_holes = SchemaNode(Boolean(), save=True, update=True)
     certain_boundary_color = SchemaNode(String(), save=True, update=True)
     certain_boundary_size = SchemaNode(Int(), save=True, update=True)
+    # Certain contours
+    certain_contours_layer_name = SchemaNode(String(), save=True, update=True)
+    include_certain_contours = SchemaNode(
+        Boolean(), missing=drop, save=True, update=True
+    )
+    certain_contours_hull_ratio = SchemaNode(Float(), save=True, update=True)
+    certain_contours_hull_allow_holes = SchemaNode(Boolean(), save=True, update=True)
+    certain_contours_size = SchemaNode(Int(), save=True, update=True)
     # Uncertain boundary
     uncertain_boundary_layer_name = SchemaNode(String(), save=True, update=True)
     include_uncertain_boundary = SchemaNode(
@@ -115,6 +125,10 @@ class ERMADataPackageOutput(Outputter):
                  certain_boundary_separate_by_spill=True,
                  certain_boundary_hull_ratio=0.5, certain_boundary_hull_allow_holes=False,
                  certain_boundary_color=None, certain_boundary_size=None,
+                 # Certain contours
+                 certain_contours_layer_name=None, include_certain_contours=False,
+                 certain_contours_hull_ratio=0.5, certain_contours_hull_allow_holes=False,
+                 certain_contours_size=None,
                  # Uncertain boundary
                  uncertain_boundary_layer_name=None, include_uncertain_boundary=True,
                  uncertain_boundary_separate_by_spill=True,
@@ -172,6 +186,14 @@ class ERMADataPackageOutput(Outputter):
         self.certain_boundary_hull_allow_holes = certain_boundary_hull_allow_holes
         self.certain_boundary_color = certain_boundary_color
         self.certain_boundary_size = certain_boundary_size
+
+        # Certain contours
+        self.certain_contours_layer_name = certain_contours_layer_name
+        self.include_certain_contours = include_certain_contours
+        self.certain_contours_hull_ratio = certain_contours_hull_ratio
+        self.certain_contours_hull_allow_holes = certain_contours_hull_allow_holes
+        self.certain_contours_size = certain_contours_size
+
         # Uncertain boundary
         self.uncertain_boundary_layer_name = uncertain_boundary_layer_name
         self.include_uncertain_boundary = include_uncertain_boundary
@@ -209,13 +231,26 @@ class ERMADataPackageOutput(Outputter):
         base_shapefile_name = os.path.join(self.tempdir.name, self.filenamestem)
         self.shapefile_name_certain = base_shapefile_name+'_certain'
         self.shapefile_name_certain_boundary = base_shapefile_name+'_certain_boundary'
+        self.shapefile_name_certain_contours = base_shapefile_name+'_certain_contours'
         self.shapefile_name_uncertain = base_shapefile_name+'_uncertain'
         self.shapefile_name_uncertain_boundary = base_shapefile_name+'_uncertain_boundary'
         # Our shapefile builders
         self.shapefile_builder_certain = ParticleShapefileBuilder(self.shapefile_name_certain)
         self.shapefile_builder_certain_boundary = BoundaryShapefileBuilder(self.shapefile_name_certain_boundary)
+        self.shapefile_builder_certain_contours = ContourShapefileBuilder(self.shapefile_name_certain_contours)
         self.shapefile_builder_uncertain = ParticleShapefileBuilder(self.shapefile_name_uncertain)
         self.shapefile_builder_uncertain_boundary = BoundaryShapefileBuilder(self.shapefile_name_uncertain_boundary)
+
+        # Build some mappings for styling
+        self.default_unit_map = {'Mass':{'column': 'mass',
+                                         'unit':'kilograms'},
+                                 'Surface Concentration':{'column': 'surf_conc',
+                                                          'unit':'kg/m^2'},
+                                 'Age': {'column': 'age',
+                                         'unit': 'seconds'},
+                                 'Viscosity': {'column': 'viscosity',
+                                               'unit': 'm^2/s'}
+                                 }
 
     def __del__(self):
         self.tempdir.cleanup()
@@ -233,6 +268,9 @@ class ERMADataPackageOutput(Outputter):
                                                                  **kwargs)
         self.model_start_time = model_start_time
         self.spills = spills
+        # This generates a cutoff struct for contours based
+        # on our spills
+        self.cutoff_struct = self.generate_cutoff_struct()
         self.uncertain = uncertain
         self.hull_info = []
 
@@ -261,6 +299,12 @@ class ERMADataPackageOutput(Outputter):
                                 'hull_allow_holes': self.certain_boundary_hull_allow_holes
                                 }
                         self.shapefile_builder_certain_boundary.append(sc, **karg)
+                    if self.include_certain_contours:
+                        karg = {'cutoff_struct': self.cutoff_struct,
+                                'hull_ratio': self.certain_contours_hull_ratio,
+                                'hull_allow_holes': self.certain_contours_hull_allow_holes
+                                }
+                        self.shapefile_builder_certain_contours.append(sc, **karg)
         if not self._write_step:
             return None
 
@@ -275,6 +319,8 @@ class ERMADataPackageOutput(Outputter):
             self.shapefile_builder_certain.write()
             if self.include_certain_boundary:
                 self.shapefile_builder_certain_boundary.write()
+            if self.include_certain_contours:
+                self.shapefile_builder_certain_contours.write()
             if self.uncertain:
                 self.shapefile_builder_uncertain.write()
                 if self.include_uncertain_boundary:
@@ -339,6 +385,13 @@ class ERMADataPackageOutput(Outputter):
                                                                        self.shapefile_builder_certain_boundary.filename,
                                                                        layer_name, 'Certain Particles Boundary',
                                                                        layer_color, layer_size))
+        if self.include_certain_contours:
+            layer_name = self.certain_contours_layer_name if self.certain_contours_layer_name else 'Certain Particles Contours'
+            layer_size = self.certain_contours_size if self.certain_contours_size else 3
+            layer_json.append(self.make_contour_polygon_package_layer(next(id),
+                                                                      self.shapefile_builder_certain_contours.filename,
+                                                                      layer_name, 'Certain Particles Contour',
+                                                                      layer_size))
         if self.include_uncertain_boundary and self.uncertain:
             layer_name = self.uncertain_boundary_layer_name if self.uncertain_boundary_layer_name else 'Uncertain Particles Boundary'
             layer_color = self.uncertain_boundary_color if self.uncertain_boundary_color else '#FF0000'
@@ -367,6 +420,98 @@ class ERMADataPackageOutput(Outputter):
         zipf.write(font_path,
                    arcname='support_files/fonts/SHAPES.TTF')
         zipf.close()
+
+    def make_contour_polygon_package_layer(self, id, shapefile_filename,
+                                           layer_title, style_name,
+                                           style_width):
+        dir, basefile = os.path.split(shapefile_filename)
+        output_path = os.path.join(self.tempdir.name, str(id)+".json")
+        generic_name = 'contour_certain'
+        generic_description = 'Contour Certain'
+        layer_template = None
+        layer_template_path = os.path.join(os.path.split(__file__)[0],
+                                           'erma_data_package',
+                                           'layer_template.json')
+        contour_template = None
+        contour_template_path = os.path.join(os.path.split(__file__)[0],
+                                             'erma_data_package',
+                                             'default_contour_template.json')
+        with open(layer_template_path) as f:
+            layer_template = json.load(f)
+        with open(contour_template_path) as f:
+            contour_template = json.load(f)
+        if layer_template and contour_template:
+            # Check the timestep and set the time override for ERMA time slider
+            if self.time_step_override and self.time_unit_override:
+                layer_template['time_step_override'] = self.time_step_override
+                layer_template['time_unit_override'] = self.time_unit_override
+            else:
+                timestepseconds = None
+                if self.output_timestep:
+                    timestepseconds = int(self.output_timestep.seconds)
+                else:
+                    timestepseconds = int(self.model_timestep)
+                minute = 60
+                hour = minute*60
+                day = hour*24
+                month = day*30
+                year = day*365
+                if timestepseconds < hour:
+                    # Less than an hour... so use minutes
+                    layer_template['time_step_override'] = int(timestepseconds / minute)
+                    layer_template['time_unit_override'] = 'minute'
+                elif timestepseconds < day:
+                    # Less than a day, use hours
+                    layer_template['time_step_override'] = int(timestepseconds / hour)
+                    layer_template['time_unit_override'] = 'hour'
+                elif timestepseconds < month:
+                    # Less than a month, use day
+                    layer_template['time_step_override'] = int(timestepseconds / day)
+                    layer_template['time_unit_override'] = 'day'
+                elif timestepseconds < year:
+                    # Less than a year, use month
+                    layer_template['time_step_override'] = int(timestepseconds / month)
+                    layer_template['time_unit_override'] = 'month'
+                else:
+                    # More than a year, use year
+                    layer_template['time_step_override'] = int(timestepseconds / year)
+                    layer_template['time_units_override'] = 'year'
+            # Now build the layer file
+            # Folder name
+            layer_template['folder_path'] = self.folder_name
+            layer_template['title'] = layer_title
+            layer_template['mapfile_layer']['layer_type'] = 'line'
+            layer_template['mapfile_layer']['shapefile']['name'] = generic_name + '_shapefile'
+            layer_template['mapfile_layer']['shapefile']['description'] = generic_description + ' Shapefile'
+            layer_template['mapfile_layer']['shapefile']['file'] = "file://source_files/" + basefile
+            layer_template['mapfile_layer']['layer_name'] = generic_name
+            layer_template['mapfile_layer']['layer_desc'] = generic_description
+            layer_template['mapfile_layer']['classitem'] = 'cutoff_id'
+            layer_template['mapfile_layer']['labelitem'] = 'label'
+            # Modify the style object
+            # Loop through self.cutoff_struct and build classes...
+            #{0: {'param': 'surf_conc', 'cutoffs': [{'cutoff': 0.0005280305158615599, 'label': 'Low'}, {'cutoff': 0.001544090616505013, 'label': 'Medium'}, {'cutoff': 0.0038150665966212825, 'label': 'High'}]}}
+            classcounter = itertools.count()
+            for spill_num, spill in enumerate(self.spills):
+                if spill_num in self.cutoff_struct:
+                    cutoff_element = self.cutoff_struct[spill_num]
+                    param = cutoff_element['param']
+                    for cutoff in cutoff_element['cutoffs']:
+                        contour_template_solid = copy.deepcopy(contour_template)
+                        contour_template_solid['name'] = style_name+f'_{spill_num}_{next(classcounter)}'
+                        contour_template_solid['expression'] = cutoff['cutoff_id']
+                        contour_template_solid['styles'][0]['outlinesymbol'] = None
+                        contour_template_solid['styles'][0]['color'] = cutoff['color']
+                        contour_template_solid['styles'][0]['style_width'] = style_width
+                        contour_template_solid['labels'][0]['color'] = cutoff['color']
+                        layer_template['mapfile_layer']['layer_classes'].append(contour_template_solid)
+        else:
+            raise ValueError("Can not write ERMA Data Package without template!!!")
+
+        with open(output_path, "w") as o:
+            json.dump(layer_template, o, indent=4)
+        return {'shapefile_filename': shapefile_filename,
+                'json_filename': output_path}
 
     def make_boundary_polygon_package_layer(self, id, uncertain, shapefile_filename,
                                             layer_title, style_name,
@@ -637,6 +782,36 @@ class ERMADataPackageOutput(Outputter):
             spills_grouped_by_style.append(spills_with_no_style)
         return spills_grouped_by_style
 
+    # Generate a cutoff stuct for contours if needed
+    def generate_cutoff_struct(self):
+        cutoff_struct = {}
+        for spill_idx, spill in enumerate(self.spills):
+            if spill._appearance and spill._appearance.colormap:
+                appearance = spill._appearance.to_dict()
+                colormap = spill._appearance.colormap.to_dict()
+                requested_display_param = appearance['data']
+                requested_display_unit = appearance['units']
+                unit_map = {}
+                if requested_display_param in self.default_unit_map:
+                    unit_map = self.default_unit_map[requested_display_param]
+                else:
+                    raise ValueError(f'Style requested is not supported!!! {requested_display_param}')
+                data_column = unit_map['column']
+                # Looks like the domains are always in the base units...
+                number_scale_domain = [val for val in colormap['numberScaleDomain']]
+                cutoff_array = [val for val in colormap['colorScaleDomain']]
+                cutoff_array.append(number_scale_domain[-1])
+                cutoffs = []
+                for idx, val in enumerate(cutoff_array):
+                    colorblocklabel = colormap['colorBlockLabels'][idx]
+                    color = colormap['colorScaleRange'][idx]
+                    cutoffs.append({'cutoff': val,
+                                    'cutoff_id': idx,
+                                    'color': color,
+                                    'label': colorblocklabel})
+                cutoff_struct[spill_idx] = {'param': data_column,
+                                            'cutoffs': cutoffs}
+        return cutoff_struct
 
     def make_particle_package_layer(self, id, layer_name, uncertain, shapefile_filename):
         dir, basefile = os.path.split(shapefile_filename)
@@ -659,16 +834,6 @@ class ERMADataPackageOutput(Outputter):
         with open(default_beached_template_path) as f:
             default_beached_template = json.load(f)
 
-        # Build some mappings for styling
-        default_unit_map = {'Mass':{'column': 'mass',
-                                    'unit':'kilograms'},
-                            'Surface Concentration':{'column': 'surf_conc',
-                                                     'unit':'kg/m^2'},
-                            'Age': {'column': 'age',
-                                    'unit': 'seconds'},
-                            'Viscosity': {'column': 'viscosity',
-                                          'unit': 'm^2/s'}
-                            }
         if layer_template:
             # Folder name
             layer_template['folder_path'] = self.folder_name
@@ -749,8 +914,8 @@ class ERMADataPackageOutput(Outputter):
                     requested_display_param = appearance['data']
                     requested_display_unit = appearance['units']
                     unit_map = {}
-                    if requested_display_param in default_unit_map:
-                        unit_map = default_unit_map[requested_display_param]
+                    if requested_display_param in self.default_unit_map:
+                        unit_map = self.default_unit_map[requested_display_param]
                     else:
                         raise ValueError(f'Style requested is not supported!!! {requested_display_param}')
                     # Looks like the domains are always in the base units...
@@ -841,19 +1006,19 @@ class ERMADataPackageOutput(Outputter):
                                 # First one... open ended lower range
                                 floating_class_template['expression'] = ('[statuscode] = 2 AND '
                                                                          f'[spill_id] IN "{spill_group_string}" AND '
-                                                                         f'[{data_column}] <= {max})')
+                                                                         f'[{data_column}] <= {max}')
                                 beached_class_template['expression'] = ('[statuscode] = 3 AND '
                                                                         f'[spill_id] IN "{spill_group_string}" AND '
-                                                                        f'[{data_column}] <= {max})')
+                                                                        f'[{data_column}] <= {max}')
                                 class_label = f'<{converted_min:#.4g} - {data_column} - {converted_max:#.4g} ({requested_display_unit})'
                             elif idx == len(colormap['colorScaleRange'])-1:
                                 # Last one... open ended upper range
                                 floating_class_template['expression'] = ('[statuscode] = 2 AND '
                                                                          f'[spill_id] IN "{spill_group_string}" AND '
-                                                                         f'({min} <= [{data_column}]')
+                                                                         f'{min} <= [{data_column}]')
                                 beached_class_template['expression'] = ('[statuscode] = 3 AND '
                                                                         f'[spill_id] IN "{spill_group_string}" AND '
-                                                                        f'({min} <= [{data_column}]')
+                                                                        f'{min} <= [{data_column}]')
                                 class_label = f'{converted_min:#.4g} - {data_column} - {converted_max:#.4g}+ ({requested_display_unit})'
                             else:
                                 floating_class_template['expression'] = ('[statuscode] = 2 AND '
@@ -878,6 +1043,9 @@ class ERMADataPackageOutput(Outputter):
                             min = max
                             layer_template['mapfile_layer']['layer_classes'].append(floating_class_template)
                             layer_template['mapfile_layer']['layer_classes'].append(beached_class_template)
+                        # Loop through the classes... and set "ordering" in reverse order
+                        for idx, layer_class in enumerate(list(reversed(layer_template['mapfile_layer']['layer_classes']))):
+                            layer_class['ordering'] = idx
                 else:
                     # No appearance data... use a default
                     floating_class_template = copy.deepcopy(default_floating_template)
