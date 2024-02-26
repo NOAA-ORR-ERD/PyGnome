@@ -11,7 +11,7 @@ import time
 import warnings
 import zipfile
 
-from gnome.utilities.hull import calculate_hull
+from gnome.utilities.hull import calculate_hull, calculate_contours
 
 # Ignore a pyogrio warning that we dont care about
 warnings.filterwarnings('ignore', message='.*Possibly due to too larger',
@@ -96,6 +96,9 @@ class ParticleShapefileBuilder(ShapefileBuilder):
         if 'density' in sc:
             frame_data['Density'] = sc['density']
         gdf = gpd.GeoDataFrame(frame_data, crs='epsg:4326', geometry='Position')
+        # If we have surface concentration sort by it...
+        if 'surface_concentration' in sc and not sc.uncertain:
+            gdf = gdf.loc[gdf['Surf_Conc'].sort_values().index]
         self.data_frames.append(gdf)
 
     def write(self):
@@ -146,3 +149,69 @@ class BoundaryShapefileBuilder(ShapefileBuilder):
         if not self.data_frames:
             self.geometry_type = 'Polygon'
         super(BoundaryShapefileBuilder, self).write()
+
+class ContourShapefileBuilder(ShapefileBuilder):
+    def __init__(self, filename, zip_output=True, **kwargs):
+        '''
+        :param filename: Full path and basename of the shape file.
+        :param zip: If we should zip the final shapefile results.
+        '''
+        super(ContourShapefileBuilder, self).__init__(filename, zip_output, **kwargs)
+
+    def append(self, sc, cutoff_struct=None, hull_ratio=0.5, hull_allow_holes=False):
+        """Given a spill container, write out the contours based on the cutoffs provided"""
+        # Cutoffs defined in a structure like the following (by spill_num):
+        #cutoff_struct = {1: {'param': 'mass',
+        #                     'cutoffs': [{'cutoff': 100,
+        #                                  'label': 'low'},
+        #                                 {'cutoff': 500,
+        #                                  'label': 'medium'},
+        #                                 {'cutoff': 1000,
+        #                                  'label': 'heavy'}]},
+        #                 2: {'param': 'surf_conc',
+        #                     'cutoffs': [{'cutoff': 0.3,
+        #                                  'label': 'low'},
+        #                                 {'cutoff': 0.5,
+        #                                  'label': 'medium'},
+        #                                 {'cutoff': 1.0,
+        #                                  'label': 'high'}]
+        #                     }
+        #                 }
+        # The cutoffs are ordered array... low to high
+        # First "low" bin is always [data] < cutoffs[current]
+        # Middle bins are cutoffs[previous] < [data] < cutoffs[current]
+        # Last "high" bin is always cutoffs[previous] < [data]
+
+        super(ContourShapefileBuilder, self).append(sc)
+        # Look in the spill container and get a list of spills
+        # Make sure they are defined in the cutoffs_per_spill
+        # If they are, we loop through each spill
+        #   In each spill we loop through the cutoffs and create subsets of the data
+        #   Make a hull around each subset
+        #   Create a geodataframe based on the array of generated hulls
+        #   Append to the data_frames
+
+        # Calculate the contours
+        contours = calculate_contours(sc, cutoff_struct=cutoff_struct,
+                                      ratio=hull_ratio,
+                                      allow_holes=hull_allow_holes)
+        if contours:
+            frame_data = {'geometry': [c['contour'] for c in contours],
+                          'spill_num': [c['spill_num'] for c in contours],
+                          'cutoff': [c['cutoff'] for c in contours],
+                          'cutoff_id': [c['cutoff_id'] for c in contours],
+                          'color': [c['color'] for c in contours],
+                          'label': [c['label'] for c in contours],
+                          'time': sc.current_time_stamp.strftime('%Y-%m-%dT%H:%M:%S')}
+            gdf = gpd.GeoDataFrame(frame_data, crs='epsg:4326', geometry='geometry')
+            self.data_frames.append(gdf)
+
+    def write(self):
+        """Actually write out the shapefile as .shp or .zip"""
+
+        # If we dont have any data... we need to set the geom type of the
+        # empty shapefile that will be written.  Its point for particles, but
+        # polygon for boundary.
+        if not self.data_frames:
+            self.geometry_type = 'Polygon'
+        super(ContourShapefileBuilder, self).write()
