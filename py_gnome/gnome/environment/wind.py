@@ -125,6 +125,7 @@ class WindSchema(base_schema.ObjTypeSchema):
 
 class Wind(Timeseries, Environment):
     ## fixme: rename as "PointWind" -- there is an alias already
+    ## One day we will need to decide if the name change / class refactor is worth the effort!
     '''
     Provides the a "point wind" -- uniform wind over all space
     '''
@@ -652,13 +653,6 @@ class Wind(Timeseries, Environment):
 
         return (msgs, True)
 
-class PointWind(Wind):
-    """
-    Wind at a single point
-    """
-    # currently an alias for Wind -- but we should probably swap those and
-    # make this the real class, and the `Wind` be the alias.
-    pass
 
 def constant_wind(speed, direction, units='m/s'):
     """
