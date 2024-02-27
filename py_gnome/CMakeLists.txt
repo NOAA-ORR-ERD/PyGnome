@@ -2,7 +2,7 @@
 
 
 cmake_minimum_required(VERSION 3.15...3.26)
-project(${SKBUILD_PROJECT_NAME} LANGUAGES CXX)
+project(${SKBUILD_PROJECT_NAME} LANGUAGES C CXX)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
@@ -84,13 +84,7 @@ set(LIBGNOME_CPP_FILES
     Weatherers_c.cpp
 )
 
-set(CY_POINT_IN_POLY_CPP_FILES
-    cy_point_in_polygon.pyx
-    c_point_in_polygon.c
-)
-
 list(TRANSFORM LIBGNOME_CPP_FILES PREPEND "lib_gnome/")
-list(TRANSFORM CY_POINT_IN_POLY_CPP_FILES PREPEND "gnome/utilities/geometry")
 
 add_library(gnome SHARED ${LIBGNOME_CPP_FILES})
 
@@ -99,6 +93,8 @@ target_link_libraries(gnome PRIVATE NetCDF::NetCDF)
 target_compile_definitions(gnome PUBLIC pyGNOME=1)
 
 target_include_directories(gnome PUBLIC lib_gnome)
+
+install(TARGETS gnome DESTINATION gnome/cy_gnome)
 
 foreach(ext IN LISTS EXT_NAMES)
 
@@ -131,4 +127,48 @@ foreach(ext IN LISTS EXT_NAMES)
 
 endforeach()
 
-install(TARGETS gnome DESTINATION gnome/cy_gnome)
+
+#
+# Extension: cy_point_in_polygon
+#
+
+# Now we make the c_point_in_polygon.c file into a library
+# This will have to do until we figure out how to make a .pyx extension with
+# additional .c files
+# No need to make it dynamic since it
+set(POINT_IN_POLY_C_FILES
+    c_point_in_polygon.c
+)
+
+list(TRANSFORM POINT_IN_POLY_C_FILES PREPEND "gnome/utilities/geometry/")
+
+add_library(point_in_polygon SHARED ${POINT_IN_POLY_C_FILES})
+
+install(TARGETS point_in_polygon DESTINATION gnome/utilities/geometry)
+
+# now we make the cy_point_in_polygon extension
+add_custom_command(
+  OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/gnome/utilities/geometry/cy_point_in_polygon.c"
+  DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/gnome/utilities/geometry/cy_point_in_polygon.pyx"
+  VERBATIM
+  COMMAND "${CYTHON}" -3 -v
+          "${CMAKE_CURRENT_SOURCE_DIR}/gnome/utilities/geometry/cy_point_in_polygon.pyx"
+          --output-file
+          "${CMAKE_CURRENT_BINARY_DIR}/gnome/utilities/geometry/cy_point_in_polygon.c"
+)
+
+python_add_library(
+    cy_point_in_polygon
+    MODULE "${CMAKE_CURRENT_BINARY_DIR}/gnome/utilities/geometry/cy_point_in_polygon.c"
+    WITH_SOABI
+)
+
+target_link_libraries(cy_point_in_polygon PRIVATE point_in_polygon Python::NumPy)
+
+if(APPLE)
+    set_target_properties(cy_point_in_polygon PROPERTIES INSTALL_RPATH "@loader_path/.")
+elseif(UNIX)
+    set_target_properties(cy_point_in_polygon PROPERTIES INSTALL_RPATH "$ORIGIN/.")
+endif()
+
+install(TARGETS cy_point_in_polygon DESTINATION gnome/utilities/geometry)
