@@ -1,5 +1,7 @@
 variables:
   PYTHON_VER: "3.10"
+  IMAGE_NAME: "miniforge-python"
+  GIT_DEPTH: 2
 
 stages:
   - compile
@@ -20,7 +22,7 @@ configure_env:
   tags:
     - docker
     - linux
-  image: registry.orr.noaa.gov/erd/centos-conda/centos7-python$PYTHON_VER
+  image: registry.orr.noaa.gov/erd/centos-conda/$IMAGE_NAME$PYTHON_VER
   before_script:
     - echo '' # manual override of before_script because we're on runner 12.3 and inherit options are only 12.9+
   script:
@@ -35,7 +37,7 @@ compile_pygnome:
   tags:
     - docker
     - linux
-  image: registry.orr.noaa.gov/erd/centos-conda/centos7-python$PYTHON_VER
+  image: registry.orr.noaa.gov/erd/centos-conda/$IMAGE_NAME$PYTHON_VER
   script:
     - echo "compiling PyGNOME"
     - yum install gcc gcc-c++ make libXext libSM libXrender -y
@@ -68,7 +70,7 @@ test_pygnome:
     - docker
     - linux
   allow_failure: false
-  image: registry.orr.noaa.gov/erd/centos-conda/centos7-python$PYTHON_VER
+  image: registry.orr.noaa.gov/erd/centos-conda/$IMAGE_NAME$PYTHON_VER
   script:
     - conda install -y --file py_gnome/conda_requirements_test.txt
     - cd ./py_gnome/tests/unit_tests && pytest --runslow
@@ -90,6 +92,7 @@ test_pygnome_scripts:
   script:
     - cd ./py_gnome/scripts/testing_scripts && python run_all.py 2<&1
 
+
 # We will not build a windows docker image, but we do want to know if there are
 # any windows specific problems.
 # So this job tries to compile PyGnome on Windows and run the pytests.
@@ -97,7 +100,7 @@ test_pygnome_scripts:
 # Unfortunately, the Windows GitLab runner is running PowerShell, so it can't
 # really be a true apples-to-apples test of a normal manual install on windows.
 # Oh well, at least we can test the code.
-#
+
 test_pygnome_windows:
   stage: test
   tags:
@@ -107,8 +110,16 @@ test_pygnome_windows:
   before_script:
     - Get-Location
     - dir
+    # make sure conda is on the path first in the path
+    - $Env:Path = 'C:\ProgramData\Miniconda3\Library\bin;' + $Env:Path
+    - $Env:Path = 'C:\ProgramData\Miniconda3\;' + $Env:Path
+    - $Env:Path = 'C:\ProgramData\Miniconda3\Scripts;' + $Env:Path
+
+    - echo "Our environemt vars:"
+    - $Env:Path
+
     - echo $CI_PIPELINE_ID
-    - activate ./$CI_PIPELINE_ID
+    - conda activate ./$CI_PIPELINE_ID
     - conda config --add channels defaults
     - conda config --add channels conda-forge
     - conda config --get channels
@@ -116,10 +127,10 @@ test_pygnome_windows:
   script:
     - echo "Building and testing PyGNOME"
 
-    # make sure our conda package is first in the path
-    - $Env:Path = 'C:\ProgramData\Miniconda3\Library\bin;' + $Env:Path
-    - $Env:Path = 'C:\ProgramData\Miniconda3\;' + $Env:Path
-    - $Env:Path = 'C:\ProgramData\Miniconda3\Scripts;' + $Env:Path
+    # # make sure our conda package is first in the path
+    # - $Env:Path = 'C:\ProgramData\Miniconda3\Library\bin;' + $Env:Path
+    # - $Env:Path = 'C:\ProgramData\Miniconda3\;' + $Env:Path
+    # - $Env:Path = 'C:\ProgramData\Miniconda3\Scripts;' + $Env:Path
 
     - echo "Our environemt vars:"
     - $Env:Path
@@ -139,7 +150,9 @@ test_pygnome_windows:
                                           --file ../oil_database/adios_db/conda_requirements.txt
 
     - echo "Building PyGNOME"
-    - python setup.py install
+    - cd ./py_gnome
+    # - python setup.py install
+    - python setup.py develop
 
     # Make sure that it imports from some folder other than the
     # gnome package folder.
@@ -168,6 +181,7 @@ build_develop:
     # build the py_gnome image
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker build . --build-arg PYTHON_VER=$PYTHON_VER -t registry.orr.noaa.gov/gnome/pygnome:$CI_COMMIT_BRANCH
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker push registry.orr.noaa.gov/gnome/pygnome:$CI_COMMIT_BRANCH
 
 build_main:
@@ -192,6 +206,7 @@ build_main:
     # build the py_gnome image
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker build . --build-arg PYTHON_VER=$PYTHON_VER -t registry.orr.noaa.gov/gnome/pygnome:main
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker push registry.orr.noaa.gov/gnome/pygnome:main
     
 build_production:
@@ -209,4 +224,5 @@ build_production:
 
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker build . --build-arg PYTHON_VER=$PYTHON_VER -t registry.orr.noaa.gov/gnome/pygnome:production
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker push registry.orr.noaa.gov/gnome/pygnome:production

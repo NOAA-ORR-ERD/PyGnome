@@ -17,7 +17,8 @@ class DataBuffer(object):
 
 class MemoryOutputter(Outputter):
 
-    arrays_to_output = ["mass", "positions", "age"]
+    arrays_to_output = ["mass", "positions", "age", "status_codes"]
+
     def prepare_for_model_run(self, *args, **kwargs):
         super(MemoryOutputter, self).prepare_for_model_run(*args, **kwargs)
 

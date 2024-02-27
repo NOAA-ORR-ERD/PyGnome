@@ -20,7 +20,7 @@ import warnings
 
 import importlib
 
-import nucos as uc
+import nucos
 
 # just so it will be in the namespace.
 from .gnomeobject import GnomeId, AddLogger
@@ -46,16 +46,19 @@ def check_dependency_versions():
     """
     def ver_check(required, installed):
         required = tuple(int(part) for part in required.split(".")[:3])
-        installed = tuple(int(part) for part in installed.split(".")[:3])
+        try:
+            installed = tuple(int(part) for part in installed.split(".")[:3])
+        except ValueError: # something is odd -- dev version, or ??
+            return False
         if installed < required:
             return False
         else:
             return True
 
-    libs = [('gridded', '0.5.4', ''),
-            ('nucos', '3.1.1', ''),
-            ('py_gd', '2.1.0', ''),
-            ('adios_db', '1.0.3', 'Only required to use the ADIOS Database '
+    libs = [('gridded', '0.6.1', ''),
+            ('nucos', '3.2.0', ''),
+            ('py_gd', '2.2.0', ''),
+            ('adios_db', '1.1.1', 'Only required to use the ADIOS Database '
                                   'JSON format for oil data.')
             ]
 
@@ -126,14 +129,23 @@ def initialize_console_log(level='debug'):
                         )
 
 
-def _valid_units(unit_name):
-    # fixme: I think there is something built in to nucos for this
-    #        or there should be
-    'convenience function to get all valid units accepted by nucos'
-    _valid_units = list(uc.GetUnitNames(unit_name))
-    _valid_units.extend(chain(*[val[1] for val in
-                                uc.ConvertDataUnits[unit_name].values()]))
-    return tuple(_valid_units)
+def _valid_units(unit_type):
+    """
+    return all the units for a given unit type
+
+    :param unit_type: unit type, e.g. "Mass" or "Temperature"
+    :type unit_type: str
+
+    NOTE: this is just a wrapper for nucos.get_supported_names
+    """
+    ## fixme: why is this in the gnome module __init__"
+    ##        but maybe we should jsut call nucos directly anyway.
+    return nucos.get_supported_names(unit_type)
+    # 'convenience function to get all valid units accepted by nucos'
+    # _valid_units = list(uc.GetUnitNames(unit_type))
+    # _valid_units.extend(chain(*[val[1] for val in
+    #                             uc.ConvertDataUnits[unit_type].values()]))
+    # return tuple(_valid_units)
 
 
 # we have a sort of chicken-egg situation here.  The above functions need

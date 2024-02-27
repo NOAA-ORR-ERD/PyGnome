@@ -512,5 +512,45 @@ class TestGridVectorProp(object):
         assert gc.varnames[0] == 'u'
 
 
+class TestVariable(object):
+    def test_constant(self):
+        v = Variable.constant(name='temperature', units='K', value=273.15)
+        points = np.array(([0,0,0],[0,1,0]))
+        time = v.time.min_time
+        assert np.all(v.at(points, time) == 273.15)
+    
+    def test_unit_conversion(self):
+        v = Variable.constant(name='temperature', units='K', value=273.15)
+        points = np.array(([0,0,0],[0,1,0]))
+        time = v.time.min_time
+        assert np.all(v.at(points, time, units='degC') == 0)
+        assert np.all(v.at(points, time, units='degF') == 32)
+        assert np.all(v.at(points, time) == 273.15)
+        
+        v.units = None
+        assert np.all(v.at(points, time, units='degC') == 273.15)
+        assert np.all(v.at(points, time, units='degF') == 273.15)
+        assert np.all(v.at(points, time, units='K') == 273.15)
+    
+    def test_unit_conversion_gnomeunit(self):
+        v = Variable.constant(name='temperature', units='C', value=0)
+        v._gnome_unit = 'K'
+        points = np.array(([0,0,0],[0,1,0]))
+        time = v.time.min_time
+        
+        #should convert to _gnome_unit if not specified
+        assert np.all(v.at(points, time) == 273.15)
+        assert np.all(v.at(points, time, units='degC') == 0)
+        
+        v.units = None
+        # should use _gnome_unit as data unit.
+        assert np.all(v.at(points, time) == 0)
+        assert np.all(v.at(points, time, units='degC') == -273.15)
+        
+        
+        
+        
+        
+
 if __name__ == '__main__':
     pass

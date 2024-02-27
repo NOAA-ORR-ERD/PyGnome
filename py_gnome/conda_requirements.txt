@@ -10,24 +10,22 @@
 #    conda install --file conda_requirements.txt
 #
 #  or create an environmemnt:
-#    conda create -n gnome python=3.9 --file conda_requirements.txt
+#    conda create -n gnome python=3.10 --file conda_requirements.txt
 #   (python version is not specified in the conda_requirements file)
 # if you want a full development environment,
 # you can install the whole thing at once:
 #
-# conda create -n gnome python=3.9 --file conda_requirements.txt --file conda_requirements_build.txt --file conda_requirements_test.txt --file conda_requirements_docs.txt
+# conda create -n gnome python=3.10 --file conda_requirements.txt --file conda_requirements_build.txt --file conda_requirements_test.txt --file conda_requirements_docs.txt
 
 
 # These packages should all be in one of the following channels:
 # defaults
 # conda-forge
 
-# it'll probably work with 3.8, but CI is teseting with 3.9.
+# it'll probably work with 3.9 -- 3.11, but CI is testing with 3.10
 
-python>=3.9,<3.11
+python>=3.9,<3.12
 
-# for building
-# cython=0.29.* # see the build requirements
 
 # for SpatialRelease
 trimesh
@@ -42,7 +40,7 @@ psutil
 pyzmq
 python-dateutil
 geojson
-colander=1.8.3
+colander <2
 
 # # Needed for multiprocessing, which is currently broken
 # pyzmq
@@ -55,12 +53,8 @@ progressbar
 
 
 # NOAA maintained packages
-gridded>=0.5.5
-pynucos
+gridded>=0.6.1
+pynucos=3.2.*
 cell_tree2d
-py_gd=2.*
-adios_db
-
-
-
-
+py_gd>=2.2
+adios_db>=1.1

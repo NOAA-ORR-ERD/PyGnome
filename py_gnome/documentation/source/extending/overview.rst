@@ -1,7 +1,7 @@
 Extending / Customizing PyGNOME
 ===============================
 
-PyGNOME is a system build of standardized components. The Model's job is to coordinate each of the components into a fully working model, but the details are all determined at run time according to what components the model has been configured to use.
+PyGNOME is a system built of standardized components. The Model's job is to coordinate each of the components into a fully working model, but the details are all determined at run time according to what components the model has been configured to use.
 
 As a result you can write a new component and plug it in to the rest of the model without having to alter any of the model or other code.
 
@@ -17,13 +17,13 @@ The model API
     These are the methods and attributes the object needs to have in order to work with the ``gnome.Model`` system. For the most part, the core methods will be defined in a Base Class (e.g. the ``gnome.movers.mover.Mover`` class), so if you subclass from that, you only need to implement the ones you need.
 
 The Web / Save file API
-    WebGNOME use a JSON API to configure the PyGNOME system. A very similar JSON format is used to save model configurations in "save files", which are zip files with the model configuration and data required to reproduce a model configuration. You can develop and test your new component without using this system, but if you want your component to be usable with WebGNOME or save files, then This API must be defined. This is done by defining a ``Schema`` that specifies what attributes need to be saved and can be updated for a given object. See: :ref:`serialization_overview` for the details.
+    WebGNOME use a JSON API to configure the PyGNOME system. A very similar JSON format is used to save model configurations in "save files", which are zip files with the model configuration and data required to reproduce a model configuration. You can develop and test your new component without using this system, but if you want your component to be usable with WebGNOME or save files, then this API must be defined. This is done by defining a ``Schema`` that specifies what attributes need to be saved and can be updated for a given object. See: :ref:`serialization_overview` for the details.
 
 
 Movers
 ------
 
-A mover is component that "moves" the elements in the model. PyGNOME supports having multiple movers that are all combined via linear superposition. There are some details, but the key method a Mover needs to provide is ``get_move()``:
+A mover is a component that "moves" the elements in the model. PyGNOME supports having multiple movers that are all combined via linear superposition. There are some details, but the key method a Mover needs to provide is ``get_move()``:
 
 .. code-block:: python
 
@@ -51,9 +51,9 @@ A mover is component that "moves" the elements in the model. PyGNOME supports ha
 
         return delta
 
-Note that `get_move()` doesn't alter the positions of the elements. rather it returns a "delta" -- of the amount that of movement in (longitude, latitude, vertical meters) units) for the provided time step. This is so that the model can apply the "delta" from each mover and the result won't change with the order in which they are applied. Essentially, the delta values from all the movers are added together, and then added to the positions array.
+Note that `get_move()` doesn't alter the positions of the elements. Rather it returns a "delta" -- the amount of movement in (longitude, latitude, vertical) meters units for the provided time step. This is so that the model can apply the "delta" from each mover and the result won't change with the order in which they are applied. Essentially, the delta values from all the movers are added together, and then added to the positions array.
 
-``sc`` is a ``SpillContainer``, it contains all the arrays of data associated with the elements. For the most part, for a mover, the "positions" array is the important one, but if movement is affected by other properties of the elements, that data will be stored in the spill_container. The ``SpillContainer`` is a complex object that manges all the data associated with the elements. But it presents a "Mapping" interface (like a Pyton dict) for easy access to the data associated with the elements -- for example: ``sc['postions']`` will return a 3xN numpy array with the positions of the elements. ``sc['mass']`` wil return an array with the mass of each element, etc. Which arrays are assocaed with the elements depends on what components have been added to the model.
+``sc`` is a ``SpillContainer`` which contains all the arrays of data associated with the elements. For the most part, for a mover, the "positions" array is the important one, but if movement is affected by other properties of the elements, that data will be stored in the spill_container. The ``SpillContainer`` is a complex object that manages all the data associated with the elements. But it presents a "Mapping" interface (like a Python dict) for easy access to the data associated with the elements -- for example: ``sc['postions']`` will return a 3xN numpy array with the positions of the elements. ``sc['mass']`` wil return an array with the mass of each element, etc. Which arrays are assocaed with the elements depends on what components have been added to the model.
 
 the ``get_move()`` method will also have access to the time step length (in seconds), and the model time at the beginning of this time step.
 
@@ -101,11 +101,11 @@ And here's how to do this...
 Map
 ---
 
-The Model has to have a Map at all times. After moving and weathering the elements, the map is responsible for the interaction between the elements and the shoreline, as well as the ocean bottom and water surface. (bottom and water surface are only relevant for 3-d simulations).
+The Model has to have a Map at all times. After moving and weathering the elements, the map is responsible for the interaction between the elements and the shoreline, as well as the ocean bottom and water surface. (Bottom and water surface are only relevant for 3-d simulations).
 
 It will determine whether elements have impacted the shoreline, or gone off the map, and can also refloat any elements that were previously beached.
 
-The base map object: :class gnome.GnomeMap: represents a "water world" -- no land anywhere, and unlimited map bounds. But it also provides a base class with the full API. To create another map object, you derive from GnomeMap, an override the methods that you want to implement in a different way. In addition, it should have a few attributes used by the model:
+The base map object: :class:`gnome.GnomeMap` represents a "water world" -- no land anywhere, and unlimited map bounds. But it also provides a base class with the full API. To create another map object, you derive from GnomeMap, and override the methods that you want to implement in a different way. In addition, it should have a few attributes used by the model:
 
 
 Key Attributes of Maps

@@ -33,6 +33,7 @@ with open('../../gnome/__init__.py') as init_file:
             pass
     else:
         raise ValueError("Could not extract version from the gnome.__init__")
+version = release
 
 # -- General configuration ---------------------------------------------------
 
@@ -112,6 +113,24 @@ import sphinx_rtd_theme
 html_theme = "sphinx_rtd_theme"
 html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
+
+html_theme_options = {
+    # 'analytics_id': 'G-XXXXXXXXXX',  #  Provided by Google in your dashboard
+    # 'analytics_anonymize_ip': False,
+    'logo_only': False,
+    # this doesn't seem to work :-(
+    'display_version': True,
+    'prev_next_buttons_location': 'both',
+    'style_external_links': False,
+    'vcs_pageview_mode': '',
+    #'style_nav_header_background': 'white',
+    # Toc options
+    'collapse_navigation': True,
+    'sticky_navigation': True,
+    'navigation_depth': 4,
+    'includehidden': True,
+    'titles_only': False
+}
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
 html_logo = "_static/GNOME_logo_225px-wide.png"

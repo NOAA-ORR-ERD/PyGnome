@@ -12,6 +12,7 @@ from .outputter import OutputterFilenameMixin
 from . import BaseOutputterSchema
 from gnome.persist import Boolean, SchemaNode
 
+
 class OilBudgetOutputSchema(BaseOutputterSchema):
     # these fields are saved in the base class so need to override
     #pass
@@ -32,7 +33,7 @@ class OilBudgetOutput(BaseMassBalanceOutputter, OutputterFilenameMixin):
     _valid_file_formats = {'csv'}
 
     # These go in the oil budget table
-    # note: these need to be kept insync!
+    # note: these need to be kept in sync!
     budget_categories = ['amount_released',
                          'evaporated',
                          'natural_dispersion',
@@ -94,6 +95,7 @@ class OilBudgetOutput(BaseMassBalanceOutputter, OutputterFilenameMixin):
         super(OilBudgetOutput, self).prepare_for_model_run(model_start_time,
                                                            spills,
                                                            **kwargs)
+        self._check_is_dir(self.filename)
         outfile = open(self.filename, 'w', newline='')
         self.csv_writer = csv.writer(outfile)
         # write the header

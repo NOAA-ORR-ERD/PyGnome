@@ -20,7 +20,6 @@ from gnome.persist import base_schema
 from gnome.gnomeobject import GnomeId
 from gnome.persist import (GeneralGnomeObjectSchema, SchemaNode, SequenceSchema,
                            String, Boolean, DateTime, drop, FilenameSchema)
-from gnome.persist.validators import convertible_to_seconds
 from gnome.persist.extend_colander import LocalDateTime
 from gnome.utilities.inf_datetime import InfDateTime
 
@@ -58,7 +57,6 @@ class DepthSchema(base_schema.ObjTypeSchema):
 
 class S_DepthSchema(DepthSchema):
     vtransform = SchemaNode(Int())
-    zero_ref = SchemaNode(String())
 
 
 class VariableSchemaBase(base_schema.ObjTypeSchema):
@@ -388,24 +386,6 @@ class PyGrid(gridded.grids.Grid):
         return gridded.grids.Grid._get_grid_type(*args, **kwargs)
 
 
-class Depth(gridded.depth.Depth):
-    @staticmethod
-    def from_netCDF(*args, **kwargs):
-        kwargs['_default_types'] = (('level', L_Depth),
-                                    ('sigma', S_Depth),
-                                    ('surface', DepthBase))
-
-        return gridded.depth.Depth.from_netCDF(*args, **kwargs)
-
-    @staticmethod
-    def _get_depth_type(*args, **kwargs):
-        kwargs['_default_types'] = (('level', L_Depth),
-                                    ('sigma', S_Depth),
-                                    ('surface', DepthBase))
-
-        return gridded.depth.Depth._get_depth_type(*args, **kwargs)
-
-
 class Variable(gridded.Variable, GnomeId):
     _schema = VariableSchema
 
@@ -416,14 +396,22 @@ class Variable(gridded.Variable, GnomeId):
                                              ._default_component_types)
     _default_component_types.update({'time': Time,
                                      'grid': PyGrid,
-                                     'depth': Depth})
+                                     'depth': None}) #set after Depth defined below
 
     _gnome_unit = None #Default assumption for unit type
 
     # fixme: shouldn't extrapolation_is_allowed be
     #        in Environment only?
-    def __init__(self, extrapolation_is_allowed=False, *args, **kwargs):
-        super(Variable, self).__init__(*args, **kwargs)
+    def __init__(self,
+                 extrapolation_is_allowed=False,
+                 surface_boundary_condition='extrapolate',
+                 bottom_boundary_condition='mask',
+                 *args,
+                 **kwargs):
+        super(Variable, self).__init__(*args,
+                                       surface_boundary_condition=surface_boundary_condition,
+                                       bottom_boundary_condition=bottom_boundary_condition,
+                                       **kwargs)
         self.extrapolation_is_allowed = extrapolation_is_allowed
 
     def __repr__(self):
@@ -561,8 +549,11 @@ class Variable(gridded.Variable, GnomeId):
         if depth is None:
             if (isinstance(grid, (Grid_S, Grid_R)) and len(data.shape) == 4 or
                     isinstance(grid, Grid_U) and len(data.shape) == 3):
-                depth = Depth.from_netCDF(grid_file,
-                                          dataset=dg,
+                depth = Depth.from_netCDF(data_file=data_file,
+                                          grid_file=grid_file,
+                                          grid=grid,
+                                          time=time,
+                                          grid_topology=grid_topology,
                                           )
         if location is None:
             if hasattr(data, 'location'):
@@ -611,8 +602,8 @@ class Variable(gridded.Variable, GnomeId):
         value = super(Variable, self).at(points, time, *args, **kwargs)
 
         data_units = self.units if self.units else self._gnome_unit
-        req_units = units if units else data_units
-        if data_units is not None and data_units != req_units:
+        req_units = units if units else self._gnome_unit
+        if data_units is not None and req_units is not None and data_units != req_units:
             try:
                 value = uc.convert(data_units, req_units, value)
             except uc.NotSupportedUnitError:
@@ -635,7 +626,7 @@ class Variable(gridded.Variable, GnomeId):
         return super(Variable, cls).new_from_dict(dict_)
 
     @classmethod
-    def constant(cls, value):
+    def constant(cls, value, **kwargs):
         #Sets a Variable up to represent a constant scalar field. The result
         #will return a constant value for all times and places.
         Grid = Grid_S
@@ -645,7 +636,7 @@ class Variable(gridded.Variable, GnomeId):
         _node_lat = np.array(([-89.95, -89.95, -89.95], [0, 0, 0], [89.95, 89.95, 89.95]))
         _grid = Grid(node_lon=_node_lon, node_lat=_node_lat)
         _time = Time.constant_time()
-        return cls(grid=_grid, time=_time, data=_data, fill_value=value)
+        return cls(grid=_grid, time=_time, data=_data, fill_value=value, **kwargs)
 
     @property
     def extrapolation_is_allowed(self):
@@ -684,9 +675,6 @@ class DepthBase(gridded.depth.DepthBase, GnomeId):
         rv = cls.from_netCDF(**dict_)
         return rv
 
-    def interpolation_alphas(self, points, time, data_shape, _hash=None, **kwargs):
-        return (None, None)
-
 
 class L_Depth(gridded.depth.L_Depth, GnomeId):
     _schema = DepthSchema
@@ -703,25 +691,43 @@ class L_Depth(gridded.depth.L_Depth, GnomeId):
         return rv
 
 
-class S_Depth(gridded.depth.S_Depth, GnomeId):
+class ROMS_Depth(gridded.depth.ROMS_Depth, GnomeId):
+
+    _schema = S_DepthSchema
+
+    _default_component_types = copy.deepcopy(gridded.depth.ROMS_Depth
+                                             ._default_component_types)
+    _default_component_types.update({'time': Time,
+                                     'grid': PyGrid,
+                                     'variable': Variable})
+
+    @classmethod
+    def new_from_dict(cls, dict_):
+        rv = cls.from_netCDF(**dict_)
+        return rv
+
+class FVCOM_Depth(gridded.depth.FVCOM_Depth, GnomeId):
 
     _schema = S_DepthSchema
 
     _default_component_types = copy.deepcopy(gridded.depth.S_Depth
                                              ._default_component_types)
     _default_component_types.update({'time': Time,
-                                     'grid': PyGrid,
-                                     'variable': Variable})
-
-    def __init__(self,
-                 zero_ref = 'surface',
-                 **kwargs):
-        return super(S_Depth, self).__init__(zero_ref=zero_ref, **kwargs)
+                                     'grid': Grid_U,
+                                     'bathymetry': Variable,
+                                     'zeta': Variable})
 
     @classmethod
     def new_from_dict(cls, dict_):
         rv = cls.from_netCDF(**dict_)
         return rv
+
+class Depth(gridded.depth.Depth):
+    ld_types = [L_Depth]
+    sd_types = [ROMS_Depth, FVCOM_Depth]
+    surf_types = [DepthBase]
+
+Variable._default_component_types['depth'] = Depth
 
 class VectorVariable(gridded.VectorVariable, GnomeId):
 
@@ -742,6 +748,19 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
                  **kwargs):
         super(VectorVariable, self).__init__(*args, **kwargs)
         self.extrapolation_is_allowed = extrapolation_is_allowed
+        
+        #Adding this so unit conversion happens properly in the components
+        #I really don't think we will be doing mixed units in one of these
+        #anytime soon.
+        for var in self.variables:
+            if hasattr(self, '_gnome_unit'):
+                if hasattr(var, '_gnome_unit') and var._gnome_unit is not None:
+                    if self._gnome_unit != var._gnome_unit:
+                        warnings.warn("Variable {0} has units {1} which are not the same as the VectorVariable {2} units {3}.".format(var.name, var._gnome_unit, self.name, self._gnome_unit))
+                else:
+                    var._gnome_unit = self._gnome_unit
+                
+            
 
     def __repr__(self):
         try:
@@ -944,6 +963,22 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
             kwargs['unmask'] = True
         units = units if units else self._gnome_unit #no need to convert here, its handled in the subcomponents
         value = super(VectorVariable, self).at(points, time, units=units, *args, **kwargs)
+
+        data_units = self.units if self.units else self._gnome_unit
+        req_units = units if units else self._gnome_unit
+        if data_units is not None and req_units is not None and data_units != req_units:
+            try:
+                value = uc.convert(data_units, req_units, value)
+            except uc.NotSupportedUnitError:
+                if (not uc.is_supported(data_units)):
+                    warnings.warn("{0} units is not supported: {1}"
+                                  "Using them unconverted as {2}"
+                                  .format(self.name, data_units, req_units))
+                elif (not uc.is_supported(req_units)):
+                    warnings.warn("Requested unit is not supported: {1}".format(req_units))
+                else:
+                    raise
+        return value
 
         return value
 

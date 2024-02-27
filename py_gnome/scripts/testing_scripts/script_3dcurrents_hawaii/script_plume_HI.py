@@ -13,12 +13,13 @@ This is simply making a point source with a given distribution of droplet sizes
 
 import os
 from datetime import datetime, timedelta
-import gnome
 import gnome.scripting as gs
+
 from gnome.utilities.distributions import WeibullDistribution
+from gnome.utilities.distributions import UniformDistribution
 
 from gnome.spills.substance import NonWeatheringSubstance
-from gnome.environment.environment_objects import GridCurrent
+
 
 # define base directory
 base_dir = os.path.dirname(__file__)
@@ -29,7 +30,7 @@ def make_model():
     start_time = datetime(2022, 12, 14, 21, 0)
     model = gs.Model(start_time=start_time,
                      duration=timedelta(hours=48),
-                     time_step= 15 * 60,
+                     time_step=gs.hours(1),
                      uncertain=False)
 
     print('adding the map')
@@ -37,20 +38,27 @@ def make_model():
     model.map = gs.MapFromBNA(mapfile, refloat_halflife=0.0)
 
     print('adding outputters')
-    renderer = gs.Renderer(output_dir=images_dir,
+    renderer = gs.Renderer(mapfile,
+                           output_dir=images_dir,
                            image_size=(800, 600),
                            output_timestep=timedelta(hours=1),
-                           draw_ontop='uncertain')
-    renderer.viewport = ((-155.5, 19), (-157.5, 21))
+                           # draw_ontop='uncertain',
+                           draw_back_to_fore=True,
+                           depth_colors='magma',
+                           min_color_depth=0,
+                           max_color_depth=1000,
+                           point_size=3,
+                           )
+    renderer.viewport = ((-157.5, 19.5), (-155.75, 20.75))
     model.outputters += renderer
 
     print('adding spills')
-    wd = WeibullDistribution(alpha=1.8,
-                             lambda_=.00456,
-                             min_=.0002)  # 200 micron min
-
-    spill = gs.subsurface_spill(num_elements=500,
-                                start_position=(-156.59, 20.021, 60.0),
+    # wd = WeibullDistribution(alpha=1.8,
+    #                          lambda_=.00456,
+    #                          min_=.0002)  # 200 micron min
+    wd = UniformDistribution(low=0.001, high=0.002)
+    spill = gs.subsurface_spill(num_elements=1000,
+                                start_position=(-156.59, 20.021, 1000.0),
                                 release_time=start_time,
                                 distribution=wd,
                                 amount=90,  # default volume_units=m^3

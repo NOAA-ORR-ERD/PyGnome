@@ -433,6 +433,7 @@ class Spill(BaseSpill):
     def release_elements(self, sc, start_time, end_time, environment=None):
         """
         Releases and partially initializes new LEs
+        Note: this will have to be updated if we allow backwards runs for continuous spills
         """
         if not self.on:
             return 0
@@ -441,13 +442,13 @@ class Spill(BaseSpill):
         actual_num_release = self._num_released
         to_rel = expected_num_release - actual_num_release
         if to_rel <= 0:
-            return 0 #nothing to release, so end early
+            return 0  # nothing to release, so end early
         sc._append_data_arrays(to_rel)
         self._num_released += to_rel
 
         sc['spill_num'][-to_rel:] = idx
 
-        #Partial initialization from various objects
+        # Partial initialization from various objects
         self.release.initialize_LEs(to_rel, sc, start_time, end_time)
 
         if 'frac_coverage' in sc:
@@ -455,7 +456,9 @@ class Spill(BaseSpill):
 
         self.substance.initialize_LEs(to_rel, sc, environment=environment)
 
-        self.release.initialize_LEs_post_substance(to_rel, sc, start_time, end_time, environment=environment)
+        self.release.initialize_LEs_post_substance(to_rel, sc,
+                                                   start_time, end_time,
+                                                   environment=environment)
 
         return to_rel
 
@@ -802,6 +805,38 @@ def spatial_release_spill(start_positions,
     release = Release(release_time=release_time,
                              custom_positions=start_positions,
                              name=name)
+    spill = _setup_spill(release=release,
+                         water=water,
+                         substance=substance,
+                         amount=amount,
+                         units=units,
+                         name=name,
+                         on=on,
+                         windage_range=windage_range,
+                         windage_persist=windage_persist
+                         )
+
+    return spill
+    
+def polygon_release_spill(filename,
+                          release_time=None,
+                          substance=None,
+                          water=None,
+                          on=True,
+                          amount=0,
+                          units='kg',
+                          windage_range=None,
+                          windage_persist=None,
+                          name='spatial_release'):
+    '''
+    Helper function returns a Spill object containing a polygon release
+
+    A polygon release is a spill that releases elements randomly within polygons in a shapefile.
+    '''
+    release = PolygonRelease(filename = filename,
+                             release_time=release_time,
+                             name=name)
+                             
     spill = _setup_spill(release=release,
                          water=water,
                          substance=substance,

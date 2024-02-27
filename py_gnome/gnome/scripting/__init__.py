@@ -57,6 +57,7 @@ from gnome.spills.spill import (surface_point_line_spill,
                                 subsurface_spill,
                                 grid_spill,
                                 spatial_release_spill,
+                                polygon_release_spill
                                 )
 
 from gnome.spills.substance import NonWeatheringSubstance
@@ -79,6 +80,7 @@ from gnome.maps.map import MapFromBNA, GnomeMap
 
 from gnome.environment import (FileGridCurrent,
                                GridCurrent,
+                               SteadyUniformCurrent,
                                GridWind,
                                IceAwareCurrent,
                                IceAwareWind,

@@ -31,7 +31,6 @@ from gnome.persist.extend_colander import FilenameSchema
 from . import Outputter, BaseOutputterSchema
 
 
-
 class RendererSchema(BaseOutputterSchema):
     # not sure if bounding box needs defintion separate from LongLatBounds
     viewport = base_schema.LongLatBounds(save=True, update=True)
@@ -40,7 +39,7 @@ class RendererSchema(BaseOutputterSchema):
     # so missing=drop
     map_filename = FilenameSchema(save=True, update=True,
                                   isdatafile=True, test_equal=False,
-                                  missing=drop,)
+                                  missing=drop)
 
     projection = ProjectionSchema(save=True, update=True, missing=drop)
     image_size = base_schema.ImageSize(save=True, update=False, missing=drop)
@@ -63,7 +62,8 @@ class Renderer(Outputter, MapCanvas):
                   ('land', (255, 204, 153)),  # brown
                   ('LE', (0, 0, 0)),  # black
                   ('uncert_LE', (255, 0, 0)),  # red
-                  ('map_bounds', (175, 175, 175)),  # grey
+                  # ('map_bounds', (175, 175, 175)),  # grey
+                  ('map_bounds', (0, 0, 139)),  # dark blue
                   ('spillable_area', (255, 0, 0)),  # red
                   ('raster_map', (51, 102, 0)),  # dark green
                   ('raster_map_outline', (0, 0, 0)),  # black
@@ -98,6 +98,10 @@ class Renderer(Outputter, MapCanvas):
                  output_start_time=None,
                  on=True,
                  timestamp_attrib={},
+                 point_size=2,
+                 depth_colors=None,
+                 min_color_depth=0,
+                 max_color_depth=100,
                  **kwargs
                  ):
         """
@@ -155,8 +159,26 @@ class Renderer(Outputter, MapCanvas):
             final step is written regardless of output_timestep
         :type output_last_step: boolean
 
-        Remaining kwargs are passed onto baseclass's __init__ with a direct
-        call: Outputter.__init__(..)
+        :param point_size=2: size to draw elements, in pixels
+
+        :param depth_colors=None: colorscheme to use to color elements
+                                  according to their depth for 3D modeling.
+                                  Any scheme that py_gd provides can be used::
+                                  `py_gd.colorschemes.keys()`
+                                  Currently: 'cividis', 'inferno', 'magma',
+                                  'plasma', 'turbo', 'twilight', 'viridis'
+                                  (borrowed from matplotlib)
+
+                                  If None, elements will not be colored by
+                                  depth
+
+        :param min_color_depth=0: depth to map the first color in the scheme
+                                  (m)
+
+        :param max_color_depth=100: depth to map the last color in the scheme
+                                  (m)
+
+        Remaining kwargs are passed onto Outputter.__init__(...)
 
         """
         projection = (projections.FlatEarthProjection()
@@ -173,8 +195,9 @@ class Renderer(Outputter, MapCanvas):
                 # check to see if this is a map object
                 self.land_polygons = map_filename.get_polygons()['land_polys']
                 self.map_filename = map_filename.filename
-            except AttributeError: # assume it's a filename
-                self.land_polygons = haz_files.ReadBNA(map_filename, 'PolygonSet')
+            except AttributeError:  # assume it's a filename
+                self.land_polygons = haz_files.ReadBNA(map_filename,
+                                                       'PolygonSet')
         elif land_polygons is not None:
             self.land_polygons = land_polygons
         else:
@@ -183,6 +206,7 @@ class Renderer(Outputter, MapCanvas):
         self.last_filename = ''
         self.draw_ontop = draw_ontop
         self.draw_back_to_fore = draw_back_to_fore
+        self.point_size = point_size
 
         Outputter.__init__(self,
                            cache,
@@ -218,6 +242,9 @@ class Renderer(Outputter, MapCanvas):
 
         # initilize the images:
         self.add_colors(self.map_colors)
+        if depth_colors is not None:
+            self.add_color_ramp(depth_colors, min_color_depth, max_color_depth)
+
         self.background_color = 'background'
 
         if self.map_filename is not None:
@@ -238,6 +265,8 @@ class Renderer(Outputter, MapCanvas):
 
         self.grids = []
         self.props = []
+
+        self.depth_colors = depth_colors
 
     @property
     def delay(self):
@@ -318,9 +347,10 @@ class Renderer(Outputter, MapCanvas):
             if ftype == 'gif':
                 self.start_animation(self.anim_filename)
             else:
-                self.save_background(os.path.join(self.output_dir,
-                                                  self.background_map_name + ftype),
-                                     file_type=ftype)
+                self.save_background(os.path.join(
+                    self.output_dir,
+                    self.background_map_name + ftype
+                ), file_type=ftype)
 
     def set_timestamp_attrib(self, **kwargs):
         """
@@ -403,7 +433,7 @@ class Renderer(Outputter, MapCanvas):
 
     def draw_background(self):
         """
-        Draws the background image -- just land for now
+        Draws the background image -- land and optional graticule
 
         This should be called whenever the scale changes
         """
@@ -466,7 +496,7 @@ class Renderer(Outputter, MapCanvas):
                     self.draw_polygon(poly,
                                       line_color='map_bounds',
                                       fill_color=None,
-                                      line_width=2,
+                                      line_width=3,
                                       background=True)
             elif metadata[1].strip().lower().replace(' ', '') == 'spillablearea':
                 if self.draw_spillable_area:
@@ -506,17 +536,20 @@ class Renderer(Outputter, MapCanvas):
 
             positions = sc['positions']
 
-            # which ones are on land?
+            # Draw the Beached Points
             on_land = sc['status_codes'] == oil_status.on_land
             self.draw_points(positions[on_land],
-                             diameter=2,
-                             color='black',
-                             # color=color,
+                             diameter=self.point_size,
+                             color=color,
                              shape="x")
             # draw the four pixels for the elements not on land and
             # not off the map
+            points_in_water = positions[~on_land]
+            if self.depth_colors is not None:
+                color = self._color_ramp.get_color_indices(points_in_water[:, 2])
+
             self.draw_points(positions[~on_land],
-                             diameter=2,
+                             diameter=self.point_size,
                              color=color,
                              shape="round")
 
@@ -592,8 +625,10 @@ class Renderer(Outputter, MapCanvas):
         if not self._write_step:
             return None
 
-        image_filename = os.path.join(self.output_dir,
-                                      self.foreground_filename_format.format(step_num))
+        image_filename = os.path.join(
+            self.output_dir,
+            self.foreground_filename_format.format(step_num)
+        )
 
         self.clear_foreground()
 

@@ -2,10 +2,6 @@
 shapefile  outputter
 """
 
-
-
-
-
 import os
 import zipfile
 
@@ -47,7 +43,8 @@ class ShapeOutput(Outputter):
 
         '''
         # a little check:
-        self._check_filename(filename)
+        # move check to prepare_for_model_run so don't get error loading save files
+        #self._check_filename(filename)
 
         filename = filename.split(".zip")[0].split(".shp")[0]
 
@@ -131,12 +128,13 @@ class ShapeOutput(Outputter):
             w.autobalance = 1
 
             w.field('Time', 'C')
-            w.field('LE id', 'N')
-            w.field('Depth', 'N')
-            w.field('Mass', 'N')
-            w.field('Age', 'N')
+            w.field('Spill_ID', 'N', decimal=0)
+            w.field('LE_id', 'N', decimal=0)
+            w.field('Depth', 'F', decimal=5)
+            w.field('Mass', 'F', decimal=5)
+            w.field('Age', 'F', decimal=5)
             w.field('Surf_Conc', 'F', decimal=5)
-            w.field('Status_Code', 'N')
+            w.field('Status_Code', 'N', decimal=0)
 
     def write_output(self, step_num, islast_step=False):
         """dump a timestep's data into the shape file"""
@@ -174,7 +172,7 @@ class ShapeOutput(Outputter):
 #         if islast_step:
 #             if self.uncertain is True:
 #                 self._zip_output_files()
- 
+
         return output_info
 
     def _record_shape_entries(self, sc):
@@ -186,6 +184,7 @@ class ShapeOutput(Outputter):
 
             if sc.uncertain:
                 writer.record(curr_time.strftime('%Y-%m-%dT%H:%M:%S'),
+                              sc['spill_num'][k],
                               sc['id'][k],
                               p[2],
                               sc['mass'][k],
@@ -194,6 +193,7 @@ class ShapeOutput(Outputter):
                               sc['status_codes'][k])
             else:
                 writer.record(curr_time.strftime('%Y-%m-%dT%H:%M:%S'),
+                              sc['spill_num'][k],
                               sc['id'][k],
                               p[2],
                               sc['mass'][k],

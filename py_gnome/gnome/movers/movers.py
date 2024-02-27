@@ -33,7 +33,7 @@ class ProcessSchema(ObjTypeSchema):
     '''
     on = SchemaNode(Bool(), missing=drop, save=True, update=True)
     active_range = TimeRangeSchema()
-    
+
     #flag for client weatherer management system
     _automanaged = SchemaNode(Bool(), missing=drop, save=True, update=True)
 
@@ -250,42 +250,44 @@ class PyMover(Mover):
         return vels * time_step
 
     def get_delta_RK2(self, sc, time_step, model_time, pos, vel_field):
-        dt = timedelta(seconds=time_step)
-        dt_s = dt.seconds
-        t = model_time
+        model_time_s = self.datetime_to_seconds(model_time)
+        new_time = model_time_s + time_step
+        new_time_dt = time_utils.sec_to_datetime(new_time)
 
-        v0 = vel_field.at(pos, t)
-        d0 = FlatEarthProjection.meters_to_lonlat(v0 * dt_s, pos)
+        v0 = vel_field.at(pos, model_time)
+        d0 = FlatEarthProjection.meters_to_lonlat(v0 * time_step, pos)
         p1 = pos.copy()
         p1 += d0
 
-        v1 = vel_field.at(p1, t + dt)
+        v1 = vel_field.at(p1, new_time_dt)
 
-        return dt_s / 2 * (v0 + v1)
+        return time_step / 2 * (v0 + v1)
 
     def get_delta_RK4(self, sc, time_step, model_time, pos, vel_field):
-        dt = timedelta(seconds=time_step)
-        dt_s = dt.seconds
-        t = model_time
+        model_time_s = self.datetime_to_seconds(model_time)
+        new_time = model_time_s + time_step
+        new_time2 = model_time_s + time_step / 2
+        new_time_dt = time_utils.sec_to_datetime(new_time)
+        new_time_dt2 = time_utils.sec_to_datetime(new_time2)
 
-        v0 = vel_field.at(pos, t)
-        d0 = FlatEarthProjection.meters_to_lonlat(v0 * dt_s / 2, pos)
+        v0 = vel_field.at(pos, model_time)
+        d0 = FlatEarthProjection.meters_to_lonlat(v0 * time_step / 2, pos)
         p1 = pos.copy()
         p1 += d0
 
-        v1 = vel_field.at(p1, t + dt / 2)
-        d1 = FlatEarthProjection.meters_to_lonlat(v1 * dt_s / 2, pos)
+        v1 = vel_field.at(p1, new_time_dt2)
+        d1 = FlatEarthProjection.meters_to_lonlat(v1 * time_step / 2, pos)
         p2 = pos.copy()
         p2 += d1
 
-        v2 = vel_field.at(p2, t + dt / 2)
-        d2 = FlatEarthProjection.meters_to_lonlat(v2 * dt_s, pos)
+        v2 = vel_field.at(p2, new_time_dt2)
+        d2 = FlatEarthProjection.meters_to_lonlat(v2 * time_step, pos)
         p3 = pos.copy()
         p3 += d2
 
-        v3 = vel_field.at(p3, t + dt)
+        v3 = vel_field.at(p3, new_time_dt)
 
-        return dt_s / 6 * (v0 + 2 * v1 + 2 * v2 + v3)
+        return time_step / 6 * (v0 + 2 * v1 + 2 * v2 + v3)
 
 
 class CyMover(Mover):

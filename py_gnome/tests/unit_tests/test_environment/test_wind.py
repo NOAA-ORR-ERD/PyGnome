@@ -636,13 +636,12 @@ def test_wind_from_values_knots():
               (datetime(2016, 5, 10, 12, 40), 7, 55),
               ]
 
-    wind = wind_from_values(values, units='knot')
+    wind = wind_from_values(values, units='knots')
 
     # see if it's got the correct data
     for dt, r, theta in values:
         vals = wind.get_value(dt)
-        assert np.allclose(vals[0], nucos.convert('velocity',
-                                                            'knot', 'm/s', r))
+        assert np.allclose(vals[0], nucos.convert('velocity', 'knots', 'm/s', r))
         assert np.allclose(vals[1], theta)
 
 

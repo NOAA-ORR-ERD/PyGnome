@@ -503,7 +503,10 @@ class PointLineRelease(Release):
 
     @property
     def centroid(self):
-        return self.start_position
+        if self.is_pointsource:
+            return self.start_position
+        else:
+            return (self.start_position + self.end_position)/2.0
 
     @property
     def start_position(self):
@@ -930,7 +933,7 @@ class PolygonRelease(Release):
         rt = []
         for p, w, t in zip(self.polygons, weights, thicknesses):
             if isinstance(p, shapely.geometry.MultiPolygon):
-                for subp in p:
+                for subp in p.geoms:
                     rw.append(w)
                     rt.append(t)
             else:
