@@ -112,7 +112,7 @@ test_pygnome_windows:
     - Get-Location
 
     # where is our conda installation?
-    - Get-ChildItem -Path 'C:\' -Recurse -Filter "*conda*" -Exclude "*econdary*", "*IconDark*"
+    - Get-ChildItem -Path 'C:\' -Recurse -Filter "conda.py" | % { $_.FullName }
 
     # make sure conda is on the path first in the path
     - $Env:Path = 'C:\ProgramData\Miniconda3\Library\bin;' + $Env:Path
@@ -120,7 +120,10 @@ test_pygnome_windows:
     - $Env:Path = 'C:\ProgramData\Miniconda3\Scripts;' + $Env:Path
 
     - echo "Our environemt vars:"
-    - $Env:Path
+    - $Env:Path -split ';'
+
+    - echo "Python is running from:"
+    - python -c "import sys; print(sys.executable)"
 
     - echo $CI_PIPELINE_ID
     - conda activate ./$CI_PIPELINE_ID
@@ -130,17 +133,6 @@ test_pygnome_windows:
     - conda config --set channel_priority strict
   script:
     - echo "Building and testing PyGNOME"
-
-    # # make sure our conda package is first in the path
-    # - $Env:Path = 'C:\ProgramData\Miniconda3\Library\bin;' + $Env:Path
-    # - $Env:Path = 'C:\ProgramData\Miniconda3\;' + $Env:Path
-    # - $Env:Path = 'C:\ProgramData\Miniconda3\Scripts;' + $Env:Path
-
-    - echo "Our environemt vars:"
-    - $Env:Path
-
-    - echo "Python is running from:"
-    - python -c "import sys; print(sys.executable)"
 
     # get the adios_db code: needed for tests and requirements
     - git clone --depth 1 -b develop https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.orr.noaa.gov/gnome/oil_database/oil_database.git
