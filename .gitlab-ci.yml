@@ -112,7 +112,7 @@ test_pygnome_windows:
     - Get-Location
 
     # where is our conda installation?
-    - Get-ChildItem -Path 'C:\' -Recurse -Filter "*conda*"
+    - Get-ChildItem -Path 'C:\' -Recurse -Filter "*conda*" -Exclude "*econdary*" -Exclude "*IconDark*"
 
     # make sure conda is on the path first in the path
     - $Env:Path = 'C:\ProgramData\Miniconda3\Library\bin;' + $Env:Path
