@@ -114,6 +114,9 @@ test_pygnome_windows:
     # Where is our conda installation?
     # This will tell us where python is installed.  This could change periodically
     #- Get-ChildItem -Path 'C:\' -Recurse -Filter "conda.py" | % { $_.FullName }
+    - Get-ChildItem -Path 'C:\Python310' | % { $_.FullName }
+    - Get-ChildItem -Path 'C:\Python310\Scripts' | % { $_.FullName }
+    - Get-ChildItem -Path 'C:\Python310\Library\bin' | % { $_.FullName }
 
     # make sure conda is on the path first in the path
     - $Env:Path = 'C:\Python310\Library\bin;' + $Env:Path
