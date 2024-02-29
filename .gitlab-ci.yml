@@ -111,13 +111,14 @@ test_pygnome_windows:
     # where are we?
     - Get-Location
 
-    # where is our conda installation?
-    - Get-ChildItem -Path 'C:\' -Recurse -Filter "conda.py" | % { $_.FullName }
+    # Where is our conda installation?
+    # This will tell us where python is installed.  This could change periodically
+    #- Get-ChildItem -Path 'C:\' -Recurse -Filter "conda.py" | % { $_.FullName }
 
     # make sure conda is on the path first in the path
-    - $Env:Path = 'C:\ProgramData\Miniconda3\Library\bin;' + $Env:Path
-    - $Env:Path = 'C:\ProgramData\Miniconda3\;' + $Env:Path
-    - $Env:Path = 'C:\ProgramData\Miniconda3\Scripts;' + $Env:Path
+    - $Env:Path = 'C:\Python310\Library\bin;' + $Env:Path
+    - $Env:Path = 'C:\Python310\;' + $Env:Path
+    - $Env:Path = 'C:\Python310\Scripts;' + $Env:Path
 
     - echo "Our environemt vars:"
     - $Env:Path -split ';'
