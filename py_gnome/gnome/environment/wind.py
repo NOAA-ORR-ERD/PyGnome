@@ -653,6 +653,7 @@ class Wind(Timeseries, Environment):
 
         return (msgs, True)
 
+PointWind = Wind  # alias for Wind class
 
 def constant_wind(speed, direction, units='m/s'):
     """
