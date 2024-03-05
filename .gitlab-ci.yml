@@ -128,6 +128,7 @@ test_pygnome_windows:
     - python -c "import sys; print(sys.executable)"
 
     - echo $CI_PIPELINE_ID
+    - conda init powershell
     - conda activate ./$CI_PIPELINE_ID
     - conda config --add channels defaults
     - conda config --add channels conda-forge
