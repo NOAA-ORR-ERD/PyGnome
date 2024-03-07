@@ -25,6 +25,7 @@ from gnome.movers.movers import TimeRangeSchema, PyMoverSchema
 from gnome.persist.extend_colander import LocalDateTime, FilenameSchema
 from gnome.persist.base_schema import GeneralGnomeObjectSchema
 from gnome.environment.gridded_objects_base import Grid_U, VectorVariableSchema
+from gnome.environment.wind import Wind
 
 
 class WindMoverSchema(PyMoverSchema):
@@ -34,7 +35,8 @@ class WindMoverSchema(PyMoverSchema):
     wind = GeneralGnomeObjectSchema(save=True, update=True,
                                     save_reference=True,
                                     acceptable_schemas=[VectorVariableSchema,
-                                                        GridWind._schema])
+                                                        GridWind._schema,
+                                                        Wind._schema])
     scale_value = SchemaNode(Float(), save=True, update=True, missing=drop)
     #time_offset = SchemaNode(Float(), save=True, update=True, missing=drop)
     data_start = SchemaNode(LocalDateTime(), read_only=True)
