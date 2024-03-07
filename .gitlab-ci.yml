@@ -116,12 +116,12 @@ test_pygnome_windows:
     # This will tell us where python is installed.  This could change periodically
     #- Get-ChildItem -Path 'C:\' -Recurse -Include "conda.exe" | % { $_.FullName }
     - Get-ChildItem -Path 'C:\Python310' -Recurse -Include "python.exe", "conda.exe" | % { $_.FullName }
-    - Get-ChildItem -Path 'C:\ProgramData' -Recurse -Include "python.exe", "conda.exe" | % { $_.FullName }
+    - Get-ChildItem -Path 'C:\ProgramData\miniforge3' -Recurse -Include "python.exe", "conda.exe" | % { $_.FullName }
 
     # make sure conda is on the path first in the path
-    #- $Env:Path = 'C:\Python310\Lib\bin;' + $Env:Path
-    #- $Env:Path = 'C:\Python310\;' + $Env:Path
-    #- $Env:Path = 'C:\Python310\Scripts;' + $Env:Path
+    - $Env:Path = 'C:\ProgramData\miniforge3\;' + $Env:Path
+    - $Env:Path = 'C:\ProgramData\miniforge3\Scripts;' + $Env:Path
+    - $Env:Path = 'C:\ProgramData\miniforge3\Lib\bin;' + $Env:Path
 
     - echo "Our environemt vars:"
     - $Env:Path -split ';'
