@@ -124,10 +124,10 @@ class WindSchema(base_schema.ObjTypeSchema):
 
 
 class Wind(Timeseries, Environment):
-    ## fixme: rename as "PointWind" -- there is an alias already
+    ## fixme: rename as "PointWind" or "UniformWind"? -- there is an alias already
     ## One day we will need to decide if the name change / class refactor is worth the effort!
     '''
-    Provides the a "point wind" -- uniform wind over all space
+    Provides a "point wind" -- uniform wind over all space
     '''
     # object is referenced by others using this attribute name
     _ref_as = 'wind'
@@ -149,7 +149,8 @@ class Wind(Timeseries, Environment):
                  extrapolation_is_allowed=False,
                  **kwargs):
         """
-        Create a PointWind object, representing a time series of wind at a single value
+        Create a uniform Wind object, representing a time series of wind at a single
+        location, applied over all space.
 
         :param timeseries=None:
         :param units=None:
@@ -159,10 +160,9 @@ class Wind(Timeseries, Environment):
         :param longitude=None:
         :param speed_uncertainty_scale=0.0:
         :param extrapolation_is_allowed=False:
-
-
         """
-        self._timeseries = np.array([(sec_to_date(zero_time()), [0.0, 0.0])], dtype=datetime_value_2d)
+        self._timeseries = np.array([(sec_to_date(zero_time()), [0.0, 0.0])],
+                                    dtype=datetime_value_2d)
         self.updated_at = kwargs.pop('updated_at', None)
         self.source_id = kwargs.pop('source_id', 'undefined')
 
@@ -653,14 +653,16 @@ class Wind(Timeseries, Environment):
 
         return (msgs, True)
 
+# we should probably remove this, if we're not going to do it right.
 PointWind = Wind  # alias for Wind class
+
 
 def constant_wind(speed, direction, units='m/s'):
     """
     utility to create a constant wind "timeseries"
 
     :param speed: speed of wind
-    :param direction: direction -- degrees True, direction wind is from
+    :param direction: direction -- direction wind is from
                       (degrees True)
     :param unit='m/s': units for speed, as a string, i.e. "knots", "m/s",
                        "cm/s", etc.
@@ -677,7 +679,7 @@ def constant_wind(speed, direction, units='m/s'):
                                                           minute=0)
     wind_vel['value'][0] = (speed, direction)
 
-    return PointWind(timeseries=wind_vel, coord_sys='r-theta', units=units)
+    return Wind(timeseries=wind_vel, coord_sys='r-theta', units=units)
 
 
 def wind_from_values(values, units='m/s'):

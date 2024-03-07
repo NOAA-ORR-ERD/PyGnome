@@ -154,9 +154,11 @@ def test_scale_value():
     assert py_wind.scale_value == 0
 
 
-def test_with_PointWind():
+def test_with_point_Wind():
     """
-    test that it works right with a PointWind
+    test that it works right with a Wind
+
+    (point wind, or constant wind ...)
 
     (using constant wind to kick it off)
     """
@@ -244,4 +246,5 @@ def test_save_load():
     loaded = WindMover.load(zipfile_)
 
     assert loaded == py_wind
+
 
