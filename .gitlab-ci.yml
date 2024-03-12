@@ -108,6 +108,8 @@ test_pygnome_windows:
     - visual-studio-22
   allow_failure: true
   before_script:
+    - echo $CI_PIPELINE_ID
+
     # where are we?
     - Get-Location
     - Get-ChildItem | % { $_.FullName }  # this should list the current folder
@@ -129,13 +131,14 @@ test_pygnome_windows:
     - echo "Python is running from:"
     - python -c "import sys; print(sys.executable)"
 
-    - echo $CI_PIPELINE_ID
-    - conda init powershell
-    - conda activate ./$CI_PIPELINE_ID
     - conda config --add channels defaults
     - conda config --add channels conda-forge
     - conda config --get channels
     - conda config --set channel_priority strict
+
+    - conda remove -y --name pygnome --all  # This seems to always return True, so no failure to deal with
+    - conda create -y -n pygnome python=$PYTHON_VER
+    - conda activate pygnome
   script:
     - echo "Building and testing PyGNOME"
 
