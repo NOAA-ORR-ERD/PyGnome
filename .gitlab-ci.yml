@@ -131,6 +131,8 @@ test_pygnome_windows:
     - echo "Python is running from:"
     - python -c "import sys; print(sys.executable)"
 
+    - Invoke-Expression "conda shell.powershell hook"
+
     - conda config --add channels defaults
     - conda config --add channels conda-forge
     - conda config --get channels
