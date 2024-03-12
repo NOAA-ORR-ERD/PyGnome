@@ -140,6 +140,7 @@ test_pygnome_windows:
 
     - conda remove -y --name pygnome --all  # This seems to always return True, so no failure to deal with
     - conda create -y -n pygnome python=$PYTHON_VER
+    - Invoke-Expression "conda shell.powershell hook"
     - conda activate pygnome
   script:
     - echo "Building and testing PyGNOME"
@@ -157,13 +158,7 @@ test_pygnome_windows:
 
     - echo "Building PyGNOME"
     - cd ./py_gnome
-    # - python setup.py install
     - python setup.py develop
-
-    # Make sure that it imports from some folder other than the
-    # gnome package folder.
-    # - cd ../
-    # - python -c "import gnome"
 
     - cd ./tests/unit_tests
     - pytest --runslow
