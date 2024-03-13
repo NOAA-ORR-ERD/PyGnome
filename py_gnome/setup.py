@@ -152,23 +152,9 @@ else:
     architecture = 'x86_64'
 
 if sys.platform == 'darwin':
-    # for the mac -- we need to set the -arch flag
-    # FixMe: we needed to do this back in the day with "fat" binaries
-    # still required?
-    os.environ['ARCHFLAGS'] = "-arch {0}".format(architecture)
-    # so that we can use more modern C++ (10.6 is the default for python2.7)
-    if 'MACOSX_DEPLOYMENT_TARGET' not in os.environ:
-        os.environ['MACOSX_DEPLOYMENT_TARGET'] = "10.9"
     libfile = 'lib{0}.a'  # OSX static library filename format
 
 elif sys.platform == "win32":
-    # We are now pretty much only supporting the Microsoft package:
-    #     "Microsoft Visual C++ Compiler for Python 2.7"
-    # which is currently available here:
-    #     http://www.microsoft.com/en-us/download/details.aspx?id=44266
-    #
-    # It should have most everything setup, as long as we have the package
-    #     setuptools>=6.0
     libfile = '{0}.lib'  # windows static library filename format
 
 # setup our third party libraries environment - for Win32/Mac OSX
