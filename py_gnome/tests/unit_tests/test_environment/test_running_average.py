@@ -14,6 +14,7 @@ import pytest
 from pytest import raises
 
 import numpy as np
+from math import isclose
 
 from gnome.utilities.time_utils import (zero_time,
                                         sec_to_date)
@@ -53,7 +54,7 @@ def test_av_from_variable_wind():
 
     assert av.ossm.timeseries['time'][0] == wm.ossm.timeseries['time'][0]
     assert av.ossm.timeseries['value']['u'][0] == wm.ossm.timeseries['value']['u'][0]
-    assert av.ossm.timeseries['value']['u'][1] == 10.5
+    assert isclose(av.ossm.timeseries['value']['u'][1], 10.5)
 
 
 def test_av_from_constant_wind():
