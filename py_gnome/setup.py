@@ -19,6 +19,7 @@ import importlib
 import glob
 import shutil
 import datetime
+import platform
 
 # to support "develop" mode:
 import setuptools
@@ -149,7 +150,7 @@ libfile = ''
 if sys.maxsize <= 2 ** 32:
     architecture = 'i386'
 else:
-    architecture = 'x86_64'
+    architecture = platform.machine()
 
 if sys.platform == 'darwin':
     # for the mac -- we need to set the -arch flag
