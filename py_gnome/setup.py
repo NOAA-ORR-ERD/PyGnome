@@ -19,7 +19,6 @@ import importlib
 import glob
 import shutil
 import datetime
-import platform
 
 # to support "develop" mode:
 import setuptools
@@ -150,7 +149,7 @@ libfile = ''
 if sys.maxsize <= 2 ** 32:
     architecture = 'i386'
 else:
-    architecture = platform.machine()
+    architecture = 'x86_64'
 
 if sys.platform == 'darwin':
     libfile = 'lib{0}.a'  # OSX static library filename format
