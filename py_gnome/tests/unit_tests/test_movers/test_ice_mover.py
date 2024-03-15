@@ -3,9 +3,6 @@ Test all operations for ice mover work
 '''
 
 
-
-
-
 # FIXME: this has been disabled becasuse we are getting seeming random segmentation faults on OS-X
 # And it's not clear this mover is getting used anyway.
 # But these should b re-enabled if we do need it.
@@ -43,8 +40,8 @@ topology_file = testdata['IceMover']['ice_top_curv']
 #         IceMover(testdata['CurrentCycleMover']['curr_bad_file'])
 #
 #     with pytest.raises(TypeError):
-#         IceMover(curr_file, topology_file=10)
-#
+#         IceMover(curr_file, topology_file=10.0)
+
 
 num_le = 4
 start_pos = (-164.01696, 72.921024, 0)
