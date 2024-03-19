@@ -113,7 +113,7 @@ test_pygnome_windows:
     # where are we?
     - Get-Location
     - Get-ChildItem | % { $_.FullName }  # this should list the current folder
-   - $Env:PathOrig = $Env:Path
+    - $Env:PathOrig = $Env:Path
  
     # Where is our conda installation?
     # This will tell us where python is installed.  This could change periodically
