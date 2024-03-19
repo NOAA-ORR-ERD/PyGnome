@@ -113,19 +113,19 @@ test_pygnome_windows:
     # where are we?
     - Get-Location
     - Get-ChildItem | % { $_.FullName }  # this should list the current folder
-
+   - $Env:PathOrig = $Env:Path
+ 
     # Where is our conda installation?
     # This will tell us where python is installed.  This could change periodically
-    #- Get-ChildItem -Path 'C:\' -Recurse -Include "conda.exe" | % { $_.FullName }
-    - Get-ChildItem -Path 'C:\Python310' -Recurse -Include "python.exe", "conda.exe" | % { $_.FullName }
-    - Get-ChildItem -Path 'C:\ProgramData\miniforge3' -Recurse -Include "python.exe", "conda.exe" | % { $_.FullName }
+    #- Get-ChildItem -Path 'C:\Python310' -Recurse -Include "python.exe", "conda.exe" | % { $_.FullName }
+    #- Get-ChildItem -Path 'C:\ProgramData\miniforge3' -Recurse -Include "python.exe", "conda.exe" | % { $_.FullName }
 
     # make sure conda is on the path first in the path
-    - $Env:Path = 'C:\ProgramData\miniforge3\;' + $Env:Path
-    - $Env:Path = 'C:\ProgramData\miniforge3\Scripts;' + $Env:Path
-    - $Env:Path = 'C:\ProgramData\miniforge3\Lib\bin;' + $Env:Path
-
-    - echo "Our environemt vars:"
+    - $Env:Path = 'C:\ProgramData\miniforge3\;' +
+                  'C:\ProgramData\miniforge3\Scripts;' +
+                  'C:\ProgramData\miniforge3\Lib\bin;' +
+                  $Env:PathOrig
+    - echo "Our $Path:"
     - $Env:Path -split ';'
 
     - echo "Python is running from:"
@@ -138,10 +138,14 @@ test_pygnome_windows:
     - conda config --get channels
     - conda config --set channel_priority strict
 
-    - conda remove -y --name pygnome --all  # This seems to always return True, so no failure to deal with
-    - conda create -y -n pygnome python=$PYTHON_VER
-    - Invoke-Expression "conda shell.powershell hook"
-    - conda activate pygnome
+    - conda create -y -p ./pygnome python=$PYTHON_VER
+
+    - echo $Get-Location + '\pygnome'
+    - $Env:Path = $Get-Location + '\pygnome\;' +
+                  $Get-Location + '\pygnome\Scripts\;' +
+                  $Get-Location + '\pygnome\Lib\bin\;' +
+                  $Env:PathOrig
+    - conda activate ./pygnome
   script:
     - echo "Building and testing PyGNOME"
 
