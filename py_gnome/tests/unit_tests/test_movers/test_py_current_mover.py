@@ -390,7 +390,7 @@ def test_save_load():
     test save/loading
     """
 
-    with tempfile.mkdtemp() as saveloc:
+    with tempfile.TemporaryDirectory() as saveloc:
         current = GridCurrent.from_netCDF(curr_file2)
         py_current = CurrentMover(current=current)
         save_json, zipfile_, _refs = py_current.save(saveloc)

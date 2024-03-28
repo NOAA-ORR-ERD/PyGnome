@@ -166,7 +166,7 @@ class TestDemoObj(object):
         inst = DemoObj(filename=None, variable=tsv,
                        variables=[tsv, tsv.variables[0]])
 
-        with tempfile.mkdtemp() as saveloc:
+        with tempfile.TemporaryDirectory() as saveloc:
             _json_, zipfile_, _refs = inst.save(saveloc=saveloc)
             loaded = DemoObj.load(zipfile_)
 

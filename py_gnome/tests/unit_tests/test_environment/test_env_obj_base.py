@@ -98,7 +98,7 @@ class TestTime(object):
 
     def test_save_load(self, dates):
         t = Time(dates)
-        with tempfile.mkdtemp() as saveloc:
+        with tempfile.TemporaryDirectory() as saveloc:
             saveloc = os.path.join(saveloc, 'test.zip')
 
             _references = t.save(saveloc)
@@ -169,7 +169,7 @@ class TestTimeseriesData(object):
 
     def test_save_load(self, dates, series_data):
         t = self.get_tsd_instance(dates, series_data)
-        with tempfile.mkdtemp() as saveloc:
+        with tempfile.TemporaryDirectory() as saveloc:
             saveloc = os.path.join(saveloc, 'test.zip')
 
             _references = t.save(saveloc)
@@ -246,7 +246,7 @@ class TestTimeseriesVector(object):
 
     def test_save_load(self, dates, series_data, series_data2):
         tsv = self.get_tsv_instance(dates, series_data, series_data2)
-        with tempfile.mkdtemp() as saveloc:
+        with tempfile.TemporaryDirectory() as saveloc:
             saveloc = os.path.join(saveloc, 'test.zip')
 
             _references = tsv.save(saveloc)
