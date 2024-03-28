@@ -69,9 +69,9 @@ class AddLogger(object):
         kwargs.pop('json_', None)
         try:
             super(AddLogger, self).__init__(**kwargs)
-        # Due to super magic, the object __init__ does not always get called here
-        #   but if it does, and there are kwargs, you get a TypeError
-        #   trapping that allows a more meaningful message
+        # Due to super magic, the object __init__ does not always get
+        #   called here but if it does, and there are kwargs, you get a
+        #   TypeError trapping that allows a more meaningful message
         except TypeError:
             if kwargs:  # could it fail for some other reason? maybe???
                 msg = ("{} are invalid keyword arguments for:\n"
@@ -120,7 +120,8 @@ class Refs(dict):
         provides a unique name by appending length+1
         '''
         base_name = obj.obj_type.split('.')[-1]
-        num_of_same_type = [v for v in self.values() if v.obj_type == obj.obj_type]
+        num_of_same_type = [v for v in self.values()
+                            if v.obj_type == obj.obj_type]
 
         return base_name + num_of_same_type + 1
 
@@ -128,21 +129,26 @@ class Refs(dict):
 def combine_signatures(cls_or_func):
     '''
     Decorator to tag a function or class that needs a full function signature.
-    CAUTION: Do not use this decorator on functions that do not pass kwargs up to
-    super, or do so after alteration. Doing so will definitely give you a wrong signature.
-    Use with care, verify your work.
+    CAUTION: Do not use this decorator on functions that do not pass kwargs
+    up to super, or do so after alteration. Doing so will definitely give you
+    a wrong signature.  Use with care, verify your work.
 
-    This may not work when applied to classes if they get imported in a particular sequence.
-    If this occurs try applying this decorator to the __init__ directly.
+    This may not work when applied to classes if they get imported in a
+    particular sequence.  If this occurs try applying this decorator to the
+    __init__ directly.
     '''
     if not hasattr(cls_or_func, '__signature_tag__'):
         cls_or_func.__signature_tag__ = 'combine'
     return cls_or_func
 
+
 import inspect
+
+
 def create_signatures(cls, dct):
     '''
-    Looks through the class for tagged functions, then builds and assigns signatures.
+    Looks through the class for tagged functions, then builds and assigns
+    signatures.
     Uses the MRO to find ancestor functions and merges the signatures.
     '''
     worklist = []
@@ -169,12 +175,13 @@ def create_signatures(cls, dct):
             except AttributeError:
                 pass
 
-    if hasattr(cls, '__signature_tag__') and cls.__signature_tag__ == 'combine':
+    if (hasattr(cls, '__signature_tag__') and
+            cls.__signature_tag__ == 'combine'):
         worklist.append(cls)
 
     for item in worklist:
-        #would love to clean up the tag, but this breaks for classmethods
-        #del item.__signature_tag__
+        # would love to clean up the tag, but this breaks for classmethods
+        # del item.__signature_tag__
         t = None
         if item is cls:
             t = lambda c: c
@@ -185,16 +192,20 @@ def create_signatures(cls, dct):
         sigs = [inspect.signature(e) for e in pruned_func_mro]
 
         paramlist = []
-        #0-5 is the enum values of the parameter kind
-        #https://docs.python.org/3/library/inspect.html#inspect.Parameter.kind
-        for k in range(0,5):
+        # 0-5 is the enum values of the parameter kind
+        # https://docs.python.org/3/library/inspect.html#inspect.Parameter.kind
+        for k in range(0, 5):
             for sig in sigs:
                 params = [s for s in sig.parameters.values()]
                 for p in params:
-                    if p.kind == k and p not in paramlist and p.name not in [prm.name for prm in paramlist]:
+                    if (p.kind == k and
+                            p not in paramlist and
+                            p.name not in [prm.name for prm in paramlist]):
                         paramlist.append(p)
-        #replace does not actually replace anything, it returns a new value
+
+        # replace does not actually replace anything, it returns a new value
         item.__signature__ = sigs[0].replace(parameters=paramlist)
+
 
 class GnomeObjMeta(type):
     def __new__(cls, name, parents, dct):
@@ -209,7 +220,6 @@ class GnomeObjMeta(type):
         return newclass
 
 
-
 class GnomeId(AddLogger, metaclass=GnomeObjMeta):
     '''
     A class for assigning a unique ID for an object
@@ -222,7 +232,7 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
     # these could be overridden in a subclass if desired
     RTOL = 1e-05
     # ATOL = 1e-08 # this is the default, but assumes values are of Order 1.
-    ATOL = 1e-38 # this will only let tiny float32 values be takes as close to zero.
+    ATOL = 1e-38  # this will only let tiny float32 values be takes as close to zero.
 
     def __init__(self, name=None, _appearance=None, *args, **kwargs):
         super(GnomeId, self).__init__(*args, **kwargs)
@@ -244,7 +254,6 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
         See ``Spill`` for an example
         '''
         return self.array_types.copy()
-
 
     @property
     def id(self):
@@ -322,7 +331,7 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
         '''
         if not hasattr(self, '_name') or self._name is None:
             return '{}_{}'.format(self.__class__.__name__.split('.')[-1],
-                                        str(self.__class__._instance_count))
+                                  str(self.__class__._instance_count))
         else:
             return self._name
 
@@ -338,28 +347,28 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
         :returns {'ref1': [list of GnomeId], 'ref2 : [list of GnomeId], ...}
         """
         if isinstance(src, GnomeId):
-            src = [src,]
+            src = [src, ]
         for ob in src:
             if hasattr(ob, '_ref_as'):
                 names = ob._ref_as
                 if not isinstance(names, list):
-                    names = [names,]
+                    names = [names, ]
                 for n in names:
                     if n in refs:
                         if ob not in refs[n]:
-                            #only add if it doesn't already exist in the list
+                            # only add if it doesn't already exist in the list
                             refs[n].append(ob)
                     else:
-                        refs[n] = [ob,]
+                        refs[n] = [ob, ]
 
     def _attach_default_refs(self, ref_dict):
         '''
         !!!IMPORTANT!!!
-        If this object requires default references (self._req_refs exists), this
-        function will use the name of the references as keys into a reference
-        dictionary to get a list of satisfactory references (objects that have
-        obj._ref_as == self._req_refs). It will then attach the first object in
-        the reference list to that attribute on this object.
+        If this object requires default references (self._req_refs exists),
+        this function will use the name of the references as keys into a
+        reference dictionary to get a list of satisfactory references (objects
+        that have obj._ref_as == self._req_refs). It will then attach the
+        first object in the reference list to that attribute on this object.
 
         This behavior can be overridden if the object needs more specific
         attachment behavior than simply 'first in line'
@@ -368,8 +377,8 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
         provide default references to any contained child objects. When doing
         so, please be careful to respect already existing references. The
         reference attachment system should only act if the requested reference
-        'is None' when the function is invoked. See Model._attach_default_refs()
-        for an example.
+        'is None' when the function is invoked.
+        See Model._attach_default_refs() for an example.
         '''
         if not hasattr(self, '_req_refs') or not self.make_default_refs:
             return
@@ -506,21 +515,24 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
                 if attrs[name] is colander.drop:
                     del attrs[name]
 
-        # attrs may be out of order. However, we want to process the data in schema order (held in 'updatable')
+        # attrs may be out of order. However, we want to process the data
+        # in schema order (held in 'updatable')
         for k in updatable:
             if hasattr(self, k) and k in attrs:
-                if not updated and self._attr_changed(getattr(self, k), attrs[k]):
+                if not updated and self._attr_changed(getattr(self, k),
+                                                      attrs[k]):
                     updated = True
 
                 try:
                     setattr(self, k, attrs[k])
                 except AttributeError:
                     self.logger.error('Failed to set {} on {} to {}'
-                                         .format(k, self, v))
+                                      .format(k, self, v))
                     raise
                 attrs.pop(k)
 
-        # process all remaining items in any order...can't wait to see where problems pop up in here
+        # process all remaining items in any order...can't wait to see where
+        # problems pop up in here
         for k, v in attrs.items():
             if hasattr(self, k):
                 if not updated and self._attr_changed(getattr(self, k), v):
@@ -530,7 +542,7 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
                     setattr(self, k, v)
                 except AttributeError:
                     self.logger.error('Failed to set {} on {} to {}'
-                                         .format(k, self, v))
+                                      .format(k, self, v))
                     raise
 
         return updated
@@ -541,12 +553,13 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
     @staticmethod
     def _attr_changed(current_value, received_value):
         '''
-        Checks if an attribute passed back in a ``dict_`` from client has changed.
+        Checks if an attribute passed back in a ``dict_`` from client
+        has changed.
         Returns True if changed, else False
         '''
         # first, we normalize our left and right args
-        if (isinstance(current_value, np.ndarray)
-            and isinstance(received_value, (list, tuple))):
+        if (isinstance(current_value, np.ndarray) and
+                isinstance(received_value, (list, tuple))):
             received_value = np.asarray(received_value)
 
         # For a nested object, check if it data contains a new object. If
@@ -576,8 +589,6 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
                 # isinstance(current_value, collections.Iterable) fails for
                 # string so just do a try/except
                 return not np.array_equal(current_value, received_value)
-                # if np.any(np.array(current_value) != np.array(received_value)):
-                #     return True
 
         return False
 
@@ -597,10 +608,11 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
         can be compared with a new object created after it is persisted.
         It can be overridden by the class with which it is mixed.
 
-        It looks at attributes defined in self._state and checks that the values match
+        It looks at attributes defined in self._state and checks that the
+        values match
 
-        It uses allclose() check for floats and numpy arrays, to avoid floating point
-            tolerances: set to:   RTOL=1e-05, ATOL=1e-08
+        It uses allclose() check for floats and numpy arrays, to avoid
+        floating point tolerances: set to:   RTOL=1e-05, ATOL=1e-08
 
         :param other: another GnomeObject used for comparison in obj1 == other
 
@@ -655,7 +667,8 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
 
     def _diff(self, other, fail_early=False):
         """
-        Returns a list of differences between this GnomeObject and another GnomeObject
+        Returns a list of differences between this GnomeObject and
+        another GnomeObject
 
         :param other: other object to compare to.
 
@@ -665,14 +678,16 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
         # NOTE: if you find a case where this breaks, please add a test to
         #       test_gnome_object before fixing it.
 
-        # Fixme: perhaps serializing both, and then comparing the serialized version
-        #        would make it more consistent and less tricky with types.
+        # Fixme: perhaps serializing both, and then comparing the serialized
+        #        version would make it more consistent and less tricky with
+        #        types.
 
         diffs = []
 
         # are these even the same type at all?
         if not self._check_type(other):
-            diffs.append(f'Different type: self={self.__class__}, other={other.__class__}')
+            diffs.append(f'Different type: self={self.__class__}, '
+                         f'other={other.__class__}')
             if fail_early:
                 return diffs
 
@@ -690,8 +705,8 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
             self_attr = getattr(self, name)
             other_attr = getattr(other, name)
 
-            if (isinstance(self_attr, np.ndarray)
-                or isinstance(other_attr, np.ndarray)):
+            if (isinstance(self_attr, np.ndarray) or
+                    isinstance(other_attr, np.ndarray)):
                 # process as an array
                 if np.asarray(self_attr).size != np.asarray(other_attr).size:
                     diffs.append(f'Arrays are not the same size -- {name!r}: '
@@ -702,16 +717,20 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
                 try:
                     if not np.allclose(self_attr, other_attr,
                                        rtol=self.RTOL, atol=self.ATOL):
-                        diffs.append(f'Array values are not all close -- {name!r}: '
-                                     f'self={self_attr!r}, other={other_attr!r}')
+                        diffs.append('Array values are not all close -- '
+                                     f'{name!r}: '
+                                     f'self={self_attr!r}, '
+                                     f'other={other_attr!r}')
                         if fail_early:
                             return diffs
                 except TypeError:
                     # compound types (such as old Timeseries) will break
                     # note: not tests for this!
                     if not np.all(self_attr == other_attr):
-                        diffs.append(f'Array values are not equal -- {name!r}: '
-                                     f'self={self_attr!r}, other={other_attr!r}')
+                        diffs.append(f'Array values are not equal -- '
+                                     f'{name!r}: '
+                                     f'self={self_attr!r}, '
+                                     f'other={other_attr!r}')
                         if fail_early:
                             return diffs
 
@@ -816,7 +835,6 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
         if saveloc is not None:
             saveloc = os.fspath(saveloc)
 
-
         zipfile_ = None
 
         if saveloc is None:
@@ -827,14 +845,17 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
             # fixme: I'm not sure it's getting deleted -- we should make sure
             #        And why not use a StringIO object instead, and keep
             #        it totally in memory?
-            zipfile_ = zipfile.ZipFile(tempfile.SpooledTemporaryFile(prefix='gnome.', mode='w+b'),
-                                       'a',
-                                       compression=zipfile.ZIP_DEFLATED,
-                                       allowZip64=allowzip64)
+            zipfile_ = zipfile.ZipFile(
+                tempfile.SpooledTemporaryFile(prefix='gnome.', mode='w+b'),
+                'a',
+                compression=zipfile.ZIP_DEFLATED,
+                allowZip64=allowzip64
+            )
 
         elif os.path.isdir(saveloc):
             # n = gnome.persist.base_schema.sanitize_string(self.name)
-            # this is a filename, so we should be using this -- even though they are similar
+            # this is a filename, so we should be using this -- even though
+            # they are similar
             n = gnome.utilities.save_updater.sanitize_filename(self.name)
             saveloc = os.path.join(saveloc, n + '.gnome')
 
@@ -852,9 +873,11 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
                 saveloc = saveloc + ".gnome"
             if not overwrite:
                 if zipfile.is_zipfile(saveloc):
-                    zipfile_ = zipfile.ZipFile(saveloc, 'a',
-                                               compression=zipfile.ZIP_DEFLATED,
-                                               allowZip64=allowzip64)
+                    zipfile_ = zipfile.ZipFile(
+                        saveloc, 'a',
+                        compression=zipfile.ZIP_DEFLATED,
+                        allowZip64=allowzip64
+                    )
                 else:
                     raise ValueError('{} already exists and overwrite is False'
                                      .format(saveloc))
@@ -904,7 +927,7 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
 
         if isinstance(saveloc, str):
             if os.path.isdir(saveloc):
-                #run the savefile update system
+                # run the savefile update system
                 update_savefile(saveloc)
 
                 if filename:
