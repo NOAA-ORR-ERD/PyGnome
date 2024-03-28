@@ -527,7 +527,7 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
                     setattr(self, k, attrs[k])
                 except AttributeError:
                     self.logger.error('Failed to set {} on {} to {}'
-                                      .format(k, self, v))
+                                      .format(k, self, attrs[k]))
                     raise
                 attrs.pop(k)
 
@@ -945,7 +945,8 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
                         with open(fn) as fp:
                             json_ = json.load(fp)
                             if 'obj_type' in json_:
-                                if class_from_objtype(json_['obj_type']) is cls:
+                                obj_cls = class_from_objtype(json_['obj_type'])
+                                if obj_cls is cls:
                                     return cls._schema().load(json_,
                                                               saveloc=saveloc,
                                                               refs=refs)
