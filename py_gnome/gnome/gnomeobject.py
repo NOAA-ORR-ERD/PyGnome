@@ -827,7 +827,7 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
             # fixme: I'm not sure it's getting deleted -- we should make sure
             #        And why not use a StringIO object instead, and keep
             #        it totally in memory?
-            zipfile_ = zipfile.ZipFile(tempfile.SpooledTemporaryFile(mode='w+b'),
+            zipfile_ = zipfile.ZipFile(tempfile.SpooledTemporaryFile(prefix='gnome.', mode='w+b'),
                                        'a',
                                        compression=zipfile.ZIP_DEFLATED,
                                        allowZip64=allowzip64)
@@ -933,7 +933,7 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
             elif zipfile.is_zipfile(saveloc):
                 # saveloc is a zip archive
                 # extract to a temporary file and retry load
-                tempdir = tempfile.mkdtemp()
+                tempdir = tempfile.mkdtemp(prefix='gnome.')
                 extract_zipfile(saveloc, tempdir)
                 return cls.load(saveloc=tempdir, filename=filename, refs=refs)
             else:
@@ -953,7 +953,7 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
         elif isinstance(saveloc, zipfile.ZipFile):
             # saveloc is an already open zip archive
             # extract to a temporary directory and retry load
-            tempdir = tempfile.mkdtemp()
+            tempdir = tempfile.mkdtemp(prefix='gnome.')
             extract_zipfile(saveloc, tempdir)
             return cls.load(saveloc=tempdir, filename=filename, refs=refs)
         else:

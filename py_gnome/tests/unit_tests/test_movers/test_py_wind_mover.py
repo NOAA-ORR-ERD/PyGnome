@@ -236,15 +236,13 @@ def test_save_load():
     """
     test save/loading
     """
-    saveloc = tempfile.mkdtemp()
-    wind = GridWind.from_netCDF(wind_file)
-    py_wind = WindMover(wind=wind)
-    save_json, zipfile_, _refs = py_wind.save(saveloc)
+    with tempfile.mkdtemp() as saveloc:
+        wind = GridWind.from_netCDF(wind_file)
+        py_wind = WindMover(wind=wind)
+        save_json, zipfile_, _refs = py_wind.save(saveloc)
 
-    assert validate_save_json(save_json, zipfile.ZipFile(zipfile_), py_wind)
+        assert validate_save_json(save_json, zipfile.ZipFile(zipfile_), py_wind)
 
-    loaded = WindMover.load(zipfile_)
+        loaded = WindMover.load(zipfile_)
 
     assert loaded == py_wind
-
-

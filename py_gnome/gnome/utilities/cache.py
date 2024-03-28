@@ -24,7 +24,7 @@ from gnome.spill_container import (SpillContainerData,
 # it will get cleaned up when python exits
 # all individual cache dirs go in this one.
 
-_cache_dir = tempfile.mkdtemp()
+_cache_dir = tempfile.mkdtemp(prefix='gnome.')
 
 
 class CacheError(Exception):
