@@ -800,6 +800,44 @@ def test_model_release_after_start():
             print('num_LEs', len(sc['positions']))
 
 
+def test_model_release_after_start_backwards():
+    '''
+    This runs the model backwards for a simple spill, that starts after the model starts
+    '''
+    units = 'meter per second'
+    seconds_in_minute = 60
+    start_time = datetime(2013, 2, 22, 0)
+
+    model = Model(time_step=-30 * seconds_in_minute,
+                  start_time=start_time, duration=timedelta(hours=-3))
+
+    # add a spill that starts after the run begins.
+    release_time = start_time - timedelta(hours=1)
+    model.spills += surface_point_line_spill(num_elements=5,
+                                             start_position=(0, 0, 0),
+                                             release_time=release_time)
+
+    # and another that starts later..
+
+    model.spills += surface_point_line_spill(num_elements=4,
+                                             start_position=(0, 0, 0),
+                                             release_time=(start_time -
+                                                           timedelta(hours=2))
+                                             )
+
+    # Add a Wind mover:
+    series = np.array((start_time, (10, 45)),
+                      dtype=datetime_value_2d).reshape((1, ))
+    model.movers += PointWindMover(Wind(timeseries=series, units=units))
+
+    for step in model:
+        print('running a step')
+        assert step['step_num'] == model.current_time_step
+
+        for sc in model.spills.items():
+            print('num_LEs', len(sc['positions']))
+
+
 def test_release_at_right_time():
     '''
     Tests that the elements get released when they should

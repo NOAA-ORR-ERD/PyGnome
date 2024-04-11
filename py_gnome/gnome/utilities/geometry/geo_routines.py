@@ -1,13 +1,13 @@
 import functools
-import shapely
-import pyproj
-import geojson
-import shapefile
 import warnings
 import zipfile
 import trimesh
 
-from shapely.geometry import Polygon
+# Spatial libs
+import pyproj
+import geojson
+from shapely.geometry import Polygon, MultiPolygon, shape
+import geopandas as gpd
 
 import numpy as np
 import random
@@ -21,7 +21,7 @@ def geo_area_of_polygon(poly):
     :return: area of polygon in m^2
     '''
     if isinstance(poly, (geojson.MultiPolygon, geojson.Polygon)):
-        poly = shapely.geometry.shape(poly)
+        poly = shape(poly)
     return abs(geod.geometry_area_perimeter(poly)[0])
 
 def triangulate_poly(poly):
@@ -31,9 +31,9 @@ def triangulate_poly(poly):
     :return: list of shapely.Polygon (triangles)
     '''
     if isinstance(poly, (geojson.MultiPolygon, geojson.Polygon)):
-        poly = shapely.geometry.shape(poly)
+        poly = shape(poly)
     retval = []
-    if isinstance(poly, shapely.geometry.MultiPolygon):
+    if isinstance(poly, MultiPolygon):
         for p in poly.geoms:
             pts, tris = trimesh.creation.triangulate_polygon(p, engine='earcut')
             retval = retval + [Polygon(k) for k in pts[tris]]
@@ -63,8 +63,8 @@ def mixed_polys_to_polygon(polys):
     '''
     rv = []
     for p in polys:
-        p = shapely.geometry.shape(p) #to handle geojson.(Multi)Polygon objects
-        if isinstance(p, shapely.geometry.MultiPolygon):
+        p = shape(p) #to handle geojson.(Multi)Polygon objects
+        if isinstance(p, MultiPolygon):
             for subp in p.geoms:
                 rv.append(subp)
         else:
@@ -75,7 +75,7 @@ def check_valid_polygon(poly):
     """
     checks that a shapely Polygon object at least has valid values for coordinates
     """
-    if isinstance(poly, shapely.geometry.MultiPolygon):
+    if isinstance(poly, MultiPolygon):
         for p in poly.geoms:
             for point in p.exterior.coords:
                 assert -360 < point[0] < 360
@@ -105,79 +105,35 @@ def random_pt_in_tri(tri):
     RPP = A + R*AB + S*AC
     return RPP
 
-def get_shapefile_args(filename):
-    """
-    :param filename: string path of a zipped shapefile
-    :return: dict associating shapefile.Reader kwargs to names in the zip file
-    """
-    with zipfile.ZipFile(filename, 'r') as zsf:
-        #need to hunt down the correct pair of shp/dbf. NESDIS files may
-        #have a 'point' as well as a 'polygon' file...
-        #Going to just go with eliminating choices that contain 'Point Source' and the like for now..
-        sfile_ex = ['shp','dbf','shx','prj']
-        reader_args = {}
-        for arg in sfile_ex:
-            files = [f for f in zsf.namelist() if f.split('.')[-1] == arg and 'point' not in f.lower()]
-            if len(files) == 0:
-                raise ValueError('No .{0} file found'.format(arg))
-            elif len(files) > 1:
-                warnings.warn('More than one .{0} file found. Using {1}'.format(arg, files[0]))
-            reader_args[arg] = files[0]
-        return reader_args
-
-
-def open_shapefile(filename):
-    """
-    :param filename: string path of a zipped shapefile
-    :return: shapefile.Reader
-    """
-    with zipfile.ZipFile(filename, 'r') as zsf:
-        args = get_shapefile_args(filename)
-        for k, v in args.items():
-            args[k] = zsf.open(v, 'r')
-        rv = shapefile.Reader(**args)
-        return rv
-
 def load_shapefile(filename, transform_crs=True):
     """
-    load up a generic shapefile into a FeatureCollection
+    Use GeoPandas to load up a shapefile into a FeatureCollection
 
     :param filename: string path of a zip file
     :param transform_crs: attempts to read the .prj file if any and convert to EPSG:4326
 
     :return: geojson.FeatureCollection
     """
-    rv = open_shapefile(filename)
-    rv = geojson.loads(geojson.dumps(rv.__geo_interface__))
-    args = get_shapefile_args(filename)
-    pf = None
-    with zipfile.ZipFile(filename, 'r') as zsf:
-        pf = pyproj.CRS.from_wkt(zsf.open(args['prj'], 'r').readline().decode('utf-8'))
-    if not transform_crs:
-        if pf.to_epsg() != '4326':
-            warnings.warn('shapefile is using epsg:{0} not epsg:4326!'.format(pf.to_epsg()))
-    else:
-        if pf.to_epsg() != '4326':
-            if int(pyproj.__version__[0]) < 2:
-                Proj1 = pyproj.Proj(init='epsg:3857')
-                Proj2 = pyproj.Proj(init='epsg:4326')
-                transformer = functools.partial(
-                    pyproj.transform,
-                    Proj1,
-                    Proj2)
-            else:
-                transformer = pyproj.Transformer.from_crs(
-                    "epsg:{0}".format(pf.to_epsg()),
-                    "epsg:4326",
-                    always_xy=True
-                )
-            if hasattr(rv, 'bbox'):
-                xx, yy = transformer.transform([rv.bbox[0],rv.bbox[2]],[rv.bbox[1],rv.bbox[3]])
-                rv.bbox = [xx[0], yy[0], xx[1], yy[1]]
-            for feature in rv.features:
-                old_geo = shapely.geometry.shape(feature.geometry)
-                #Geometries can be MultiPolygons or Polygons
-                #Each needs to be converted to EPSG:4326
-                new_geo = shapely.ops.transform(transformer.transform, old_geo)
-                feature.geometry = geojson.loads(geojson.dumps(new_geo.__geo_interface__))
-        return rv
+    # Open up the zip file so we can find any .shp we have
+    with zipfile.ZipFile(filename, 'r') as zipper:
+        # Use the namelist to find any shapefiles in the zip
+        # We also reject any that have 'point' in the name
+        shapefiles = [f for f in zipper.namelist() if f.split('.')[-1] == 'shp' and 'point' not in f.lower()]
+        # If we did not find any, we need to toss an error
+        if not shapefiles:
+            raise ValueError(f'No shapefile found in zip {filename}!')
+        # If we found more than one, we issue a warning and use the first one.
+        if len(shapefiles) > 1:
+            warnings.warn(f'More than one shapefile found in zip {filename}! Using {shapefiles[0]}')
+        # Use GeoPandas to read the shapefile out of the zip
+        shapefile = gpd.read_file(f'zip://{str(filename)}!{shapefiles[0]}', engine="pyogrio")
+        # Force convert to 4326 if requested.  This will be a Noop if already in 4326
+        if transform_crs:
+            shapefile = shapefile.to_crs('epsg:4326')
+        # Dump to json (dataframe -> json string -> json object)
+        shapefile_json = geojson.loads(shapefile.to_json())
+        # Add a bbox to the feature collection
+        shapefile_json['bbox'] = list(shapefile.total_bounds)
+        # Finally, hand the geojson back to the caller
+        return shapefile_json
+

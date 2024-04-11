@@ -153,6 +153,12 @@ class GnomeMap(GnomeId):
         self.spillable_area = spillable_area
         self.land_polys = land_polys
 
+    def __add__(self, other):
+        # Just so pyghnome users will get a helpful message
+        # if the do: model.map += a_map
+        raise TypeError("You can't add to a map.\n"
+                        "If you want to replace the map, try gnome_model.map = a_new_map")
+
     def get_polygons(self):
         polys = {}
         polys['spillable_area'] = self.spillable_area

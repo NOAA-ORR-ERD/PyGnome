@@ -2,18 +2,20 @@
 Tests for the environment objects that aren't tested elsewhere
 """
 import math
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import numpy as np
 import pytest
 
-from gnome.environment.environment_objects import SteadyUniformCurrent
+from gnome.environment.environment_objects import SteadyUniformCurrent, GridCurrent, FileGridCurrent
+from gnome.spill_container import SpillContainer
 
 import gnome.scripting as gs
 
 HERE = Path(__file__).parent
 OUTPUT_DIR = HERE / "output_from_tests"
+TEST_DATA_DIR = HERE / "sample_data"
 
 # tests for SteadyUniformCurrent
 def test_SteadyUniformCurrent_init():
@@ -168,3 +170,68 @@ def test_SteadyUniformCurrent_serialize():
 
     assert suc == new_suc
 
+
+def test_GridCurrent_angle():
+    roms_file_degrees = TEST_DATA_DIR / "example_roms_degrees.nc"
+    grid_cur_degrees = GridCurrent.from_netCDF(filename=roms_file_degrees)
+
+    roms_file_radians = TEST_DATA_DIR / "example_roms_radians.nc"
+    grid_cur_radians = GridCurrent.from_netCDF(filename=roms_file_radians)
+
+    assert grid_cur_degrees.angle.units == "degrees"
+    assert grid_cur_degrees.angle._gnome_unit == "radians"
+    assert grid_cur_radians.angle.units == "radians"
+    assert grid_cur_radians.angle._gnome_unit == "radians"
+
+
+def test_GridCurrent_single_time():
+    roms_file = TEST_DATA_DIR / "example_roms_radians.nc"
+    grid_cur = GridCurrent.from_netCDF(filename=roms_file)
+
+    assert grid_cur.extrapolation_is_allowed == True
+    grid_cur.extrapolation_is_allowed = False
+    # file has one time so extrapolation is always on
+    assert grid_cur.extrapolation_is_allowed == True
+
+
+def test_GridCurrent_at():
+    """
+    test getting velocity and angle from a GridCurrent
+    """
+    roms_file = TEST_DATA_DIR / "example_roms_radians.nc"
+
+    rel_time = datetime(2023, 8, 9, 12, 0)
+    pos = (-152.2,60.5,0)
+    release = gs.PointLineRelease(rel_time,
+                                   pos,
+                                   num_elements=1)
+    sp = gs.Spill(release=release)
+    sc = SpillContainer()
+    sc.spills += sp
+    sc.prepare_for_model_run(array_types=sp.array_types)
+    sp.release_elements(sc, rel_time, rel_time + timedelta(seconds=900))
+    point = sc['positions']
+
+    grid_cur = GridCurrent.from_netCDF(filename=roms_file)
+    velocity = grid_cur.at(points=point,time=rel_time)
+
+    u = velocity[0][0]
+    v = velocity[0][1]
+    w = velocity[0][2]
+
+    assert math.isclose(u, -.58206, rel_tol=1e-5)
+    assert math.isclose(v, -.99779, rel_tol=1e-5)
+    assert math.isclose(w, 0.0, rel_tol=1e-5)
+
+    angle = grid_cur.angle.at(points=point,time=rel_time)
+    assert math.isclose(angle[0][0], -0.32804926, rel_tol=1e-5)
+
+
+def test_FileGridCurrent():
+    roms_file = TEST_DATA_DIR / "example_roms_two_times.nc"
+    grid_cur = FileGridCurrent(filename=roms_file)
+    assert grid_cur.angle.units == "radians"
+    assert grid_cur.extrapolation_is_allowed == False
+
+    grid_cur2 = FileGridCurrent(filename=roms_file,extrapolation_is_allowed=True)
+    assert grid_cur2.extrapolation_is_allowed == True

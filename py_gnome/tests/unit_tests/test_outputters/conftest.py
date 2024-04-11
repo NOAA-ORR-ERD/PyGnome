@@ -4,6 +4,7 @@ common fixture for output_dirs required by different outputters
 
 import os
 import pytest
+from pathlib import Path
 
 
 @pytest.fixture(scope='function')
@@ -29,18 +30,12 @@ def output_dir(request):
     each test module gets its own output dir.
 
     '''
-    #create the dir name from the module path
+    # create the dir name from the module path
     path, name = os.path.split(request.module.__file__)
-    name = os.path.splitext(name)[0].lstrip('test_')
+    name = os.path.splitext(name)[0].removeprefix('test_')
     name = os.path.join(path, "output_"+name)
-
-    # make sure it exists
-    try:
-        os.mkdir(name)
-    except OSError:
-        pass  # already there
-
-    return name
+    os.makedirs(name, exist_ok=True)
+    return Path(name)
 
 
 @pytest.fixture(scope='function')
@@ -49,10 +44,7 @@ def output_filename(output_dir, request):
     trying to create a unique file for tests so pytest_xdist doesn't
     have issues.
     '''
-    dirname = output_dir
-    if not os.path.exists(dirname):
-        os.mkdir(dirname)
-
+    os.makedirs(output_dir, exist_ok=True)
     file_name = request.function.__name__
     extension = request.module.FILE_EXTENSION
     #  This may capture multi-processing pytests
@@ -64,4 +56,4 @@ def output_filename(output_dir, request):
     else:
         file_name = "{}_sample{}".format(file_name, extension)
 
-    return os.path.join(dirname, file_name)
+    return os.path.join(output_dir, file_name)

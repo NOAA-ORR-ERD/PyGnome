@@ -873,7 +873,8 @@ class Model(GnomeId):
                                             cache=self._cache,
                                             uncertain=self.uncertain,
                                             spills=self.spills,
-                                            model_time_step=self.time_step)
+                                            model_time_step=self.time_step,
+                                            map=self.map)
         self.logger.debug("{0._pid} setup_model_run complete for: "
                           "{0.name}".format(self))
 
@@ -1626,14 +1627,16 @@ class Model(GnomeId):
                 if spill.release_time < self.start_time + self.duration:
                     someSpillIntersectsModel = True
 
-                if spill.release_time > self.start_time:
+                if ((spill.release_time > self.start_time and self.time_step > 0)
+                      or (spill.release_time < self.start_time and self.time_step < 0)):
                     msg = ('{0} has release time after model start time'.
                            format(spill.name))
                     self.logger.warning(msg)
 
                     msgs.append(self._warn_pre + msg)
 
-                elif spill.release_time < self.start_time:
+                elif ((spill.release_time < self.start_time and self.time_step > 0)
+                      or (spill.release_time > self.start_time and self.time_step < 0)):
                     msg = ('{0} has release time before model start time: rt = {1}, st = {2}'
                            .format(spill.name, spill.release_time, self.start_time))
                     self.logger.error(msg)

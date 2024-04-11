@@ -1,15 +1,14 @@
-"""
-shapefile  outputter
-"""
+"""Shapefile Outputter"""
 
+from colander import SchemaNode, Boolean, drop, Float
 import os
+import pathlib
+import shutil
+import tempfile
 import zipfile
 
-from colander import SchemaNode, Boolean, drop
-import shapefile as shp
 from gnome.persist.extend_colander import FilenameSchema
-
-
+from gnome.utilities.shapefile_builder import ParticleShapefileBuilder, BoundaryShapefileBuilder
 from .outputter import Outputter, BaseOutputterSchema
 
 
@@ -20,46 +19,86 @@ class ShapeSchema(BaseOutputterSchema):
     zip_output = SchemaNode(
         Boolean(), missing=drop, save=True, update=True
     )
+    include_certain_boundary = SchemaNode(
+        Boolean(), missing=drop, save=True, update=True
+    )
+    certain_boundary_separate_by_spill = SchemaNode(
+        Boolean(), missing=drop, save=True, update=True
+    )
+    certain_boundary_hull_ratio = SchemaNode(Float(), save=True, update=True)
+    certain_boundary_hull_allow_holes = SchemaNode(Boolean(), save=True, update=True)
+    include_uncertain_boundary = SchemaNode(
+        Boolean(), missing=drop, save=True, update=True
+    )
+    uncertain_boundary_separate_by_spill = SchemaNode(
+        Boolean(), missing=drop, save=True, update=True
+    )
+    uncertain_boundary_hull_ratio = SchemaNode(Float(), save=True, update=True)
+    uncertain_boundary_hull_allow_holes = SchemaNode(Boolean(), save=True, update=True)
 
 
 class ShapeOutput(Outputter):
-    '''
-    class that outputs GNOME results (particles) in a shapefile format.
-
-    '''
+    """class that outputs GNOME results (particles) in a shapefile format."""
     _schema = ShapeSchema
-
     time_formatter = '%m/%d/%Y %H:%M'
 
-    def __init__(self, filename, zip_output=True, surface_conc="kde",
-                 **kwargs):
-        '''
-        :param filename: full path and basename of the shape file.
-
-        :param zip_output=True: whether to zip up the output shape files
-
-        :param surface_conc="kde": method to use to compute surface concentration
+    def __init__(self, filename, zip_output=True,
+                 include_certain_boundary=False,
+                 certain_boundary_separate_by_spill=True,
+                 certain_boundary_hull_ratio=0.5, certain_boundary_hull_allow_holes=False,
+                 include_uncertain_boundary=True,
+                 uncertain_boundary_separate_by_spill=True,
+                 uncertain_boundary_hull_ratio=0.5, uncertain_boundary_hull_allow_holes=False,
+                 surface_conc="kde", **kwargs):
+        """
+        :param filename: Full path and basename of the shape file.
+        :param zip_output=True: Whether to zip up the output shape files.
+        :param surface_conc="kde": Method to use to compute surface concentration
                                    current options are: 'kde' and None
-
-        '''
-        # a little check:
-        # move check to prepare_for_model_run so don't get error loading save files
-        #self._check_filename(filename)
-
-        filename = filename.split(".zip")[0].split(".shp")[0]
-
-        if "." in os.path.split(filename)[-1]:
-            # anything after a dot gets removed
-            # I *think* pyshp is doing that, but not sure.
-            raise ValueError("shape files can't have a dot in the filename")
-
-        self.filename = filename
-        self.filedir = os.path.dirname(filename)
-
-        self.zip_output = zip_output
-
-        surface_conc = "kde"  # force this, as it will try!
+        """
         super(ShapeOutput, self).__init__(surface_conc=surface_conc, **kwargs)
+        pathlib_path = pathlib.Path(filename)
+        # If zip is requested... force .zip, else we return .shp.
+        # Later we also check if uncertain is on... and if so we force .zip
+        if zip_output or include_certain_boundary or include_uncertain_boundary:
+            self.filename = pathlib_path.with_suffix('.zip')
+        else:
+            # Else we return .shp
+            self.filename = pathlib_path.with_suffix('.shp')
+        self.filenamestem = pathlib_path.stem
+        self.filedir = str(pathlib_path.parent)
+        # A temp dir used to do our work...
+        self.tempdir = tempfile.TemporaryDirectory(prefix='gnome.')
+        # We will be building shapefiles, so come up with names in the temp dir
+        # These are names without ext... as those get added when deciding to zip or not
+        base_shapefile_name = os.path.join(self.tempdir.name, self.filenamestem)
+        self.shapefile_name_certain = base_shapefile_name+'_certain'
+        self.shapefile_name_certain_boundary = base_shapefile_name+'_certain_boundary'
+        self.shapefile_name_uncertain = base_shapefile_name+'_uncertain'
+        self.shapefile_name_uncertain_boundary = base_shapefile_name+'_uncertain_boundary'
+        # Our shapefile builders
+        self.shapefile_builder_certain = ParticleShapefileBuilder(self.shapefile_name_certain,
+                                                                  zip_output=zip_output)
+        self.shapefile_builder_certain_boundary = BoundaryShapefileBuilder(self.shapefile_name_certain_boundary,
+                                                                           zip_output=zip_output)
+        self.shapefile_builder_uncertain = ParticleShapefileBuilder(self.shapefile_name_uncertain,
+                                                                    zip_output=zip_output)
+        self.shapefile_builder_uncertain_boundary = BoundaryShapefileBuilder(self.shapefile_name_uncertain_boundary,
+                                                                             zip_output=zip_output)
+
+        # Should we be zipping the output
+        self.zip_output = zip_output
+        self.include_certain_boundary = include_certain_boundary
+        self.certain_boundary_separate_by_spill = certain_boundary_separate_by_spill
+        self.certain_boundary_hull_ratio = certain_boundary_hull_ratio
+        self.certain_boundary_hull_allow_holes = certain_boundary_hull_allow_holes
+        self.include_uncertain_boundary = include_uncertain_boundary
+        self.uncertain_boundary_separate_by_spill = uncertain_boundary_separate_by_spill
+        self.uncertain_boundary_hull_ratio = uncertain_boundary_hull_ratio
+        self.uncertain_boundary_hull_allow_holes = uncertain_boundary_hull_allow_holes
+
+    def __del__(self):
+        self.tempdir.cleanup()
 
     def prepare_for_model_run(self,
                               model_start_time,
@@ -67,191 +106,129 @@ class ShapeOutput(Outputter):
                               uncertain = False,
                               **kwargs):
         """
-        .. function:: prepare_for_model_run(model_start_time,
-                                            cache=None,
-                                            uncertain=False,
-                                            spills=None,
-                                            **kwargs)
-
-        Write the headers, png files, etc for the shape file file
-
-        This must be done in prepare_for_model_run because if model _state
-        changes, it is rewound and re-run from the beginning.
-
-        If there are existing output files, they are deleted here.
-
-        This takes more than standard 'cache' argument. Some of these are
-        required arguments - they contain None for defaults because non-default
-        argument cannot follow default argument. Since cache is already 2nd
-        positional argument for Renderer object, the required non-default
-        arguments must be defined following 'cache'.
-
         If uncertainty is on, then SpillContainerPair object contains
         identical _data_arrays in both certain and uncertain SpillContainer's,
         the data itself is different, but they contain the same type of data
         arrays. If uncertain, then data arrays for uncertain spill container
-        are written to the KMZ file.
-
-        .. note::
-            Does not take any other input arguments; however, to keep the
-            interface the same for all outputters, define kwargs in case
-            future outputters require different arguments.
+        are written.
         """
-        if not self.on:
-            return
-
         super(ShapeOutput, self).prepare_for_model_run(model_start_time,
                                                        spills,
                                                        **kwargs)
-
-
+        if not self.on:
+            return
+        self.model_start_time = model_start_time
+        self.spills = spills
         self.uncertain = uncertain
-
-        # shouldn't be required if prepare_for_model_ run cleaned them out.
-        self._file_exists_error(self.filename + '.zip')
-
-        # info for prj file
-        self.epsg = ('GEOGCS["WGS 84",'
-                     'DATUM["WGS_1984",'
-                     'SPHEROID["WGS 84",6378137,298.257223563]]'
-                     ',PRIMEM["Greenwich",0],'
-                     'UNIT["degree",0.0174532925199433]]')
-
-        for sc in self.sc_pair.items():
-            if sc.uncertain:
-                w = shp.Writer(self.filename + '_uncert', shapeType=shp.POINT)
-                self.w_u = w
-            else:
-                w = shp.Writer(self.filename, shapeType=shp.POINT)
-                self.w = w
-
-            w.autobalance = 1
-
-            w.field('Time', 'C')
-            w.field('Spill_ID', 'N', decimal=0)
-            w.field('LE_id', 'N', decimal=0)
-            w.field('Depth', 'F', decimal=5)
-            w.field('Mass', 'F', decimal=5)
-            w.field('Age', 'F', decimal=5)
-            w.field('Surf_Conc', 'F', decimal=5)
-            w.field('Status_Code', 'N', decimal=0)
+        if uncertain:
+            self.filename = self.filename.with_suffix('.zip')
 
     def write_output(self, step_num, islast_step=False):
-        """dump a timestep's data into the shape file"""
+        """Dump a timestep's data into the shapefile"""
 
         super(ShapeOutput, self).write_output(step_num, islast_step)
-
-        #if not self.on or not self._write_step:
-        # still need to write file if last step is not included
         if not self.on:
             return None
 
         for sc in self.cache.load_timestep(step_num).items():
             if self._write_step:
-                self._record_shape_entries(sc)
-
-            if islast_step:
-                self._save_and_archive_shapefiles(sc)
-
-        if islast_step:
-            if self.uncertain is True:
-                self._zip_output_files()
+                # If this is just a step... append the data
+                if sc.uncertain:
+                    self.shapefile_builder_uncertain.append(sc)
+                    if self.include_uncertain_boundary:
+                        karg = {'separate_by_spill': self.uncertain_boundary_separate_by_spill,
+                                'hull_ratio': self.uncertain_boundary_hull_ratio,
+                                'hull_allow_holes': self.uncertain_boundary_hull_allow_holes
+                                }
+                        self.shapefile_builder_uncertain_boundary.append(sc, **karg)
+                else:
+                    self.shapefile_builder_certain.append(sc)
+                    if self.include_certain_boundary:
+                        karg = {'separate_by_spill': self.certain_boundary_separate_by_spill,
+                                'hull_ratio': self.certain_boundary_hull_ratio,
+                                'hull_allow_holes': self.certain_boundary_hull_allow_holes
+                                }
+                        self.shapefile_builder_certain_boundary.append(sc, **karg)
 
         if not self._write_step:
             return None
 
-        if self.zip_output is True:
-            output_filename = self.filename + '.zip'
-        else:
-            output_filename = self.filename
-
         output_info = {'time_stamp': sc.current_time_stamp.isoformat(),
-                       'output_filename': output_filename}
-
-
-#         if islast_step:
-#             if self.uncertain is True:
-#                 self._zip_output_files()
-
+                       'output_filename': str(self.filename)}
         return output_info
 
-    def _record_shape_entries(self, sc):
-        curr_time = sc.current_time_stamp
-        writer = self._get_shape_writer(sc)
+    def post_model_run(self):
+        """ The final step to wrap everything up """
+        # We first try to write the shapefile
+        try:
+            self.shapefile_builder_certain.write()
+            if self.include_certain_boundary:
+                self.shapefile_builder_certain_boundary.write()
+            if self.uncertain:
+                self.shapefile_builder_uncertain.write()
+                if self.include_uncertain_boundary:
+                    self.shapefile_builder_uncertain_boundary.write()
+        except Exception as exception:
+            self.logger.debug(f'Could not write shapefile: {exception=}')
+            data_string = (f'{self.on=}, '
+                           f'{self.model_start_time=}, '
+                           f'{self.output_single_step=}, '
+                           f'{self.output_zero_step=}, '
+                           f'{self.output_last_step=}, '
+                           f'{self.output_timestep=}, '
+                           f'{self.output_start_time=}')
+            self.logger.debug(f'Model state: {data_string}')
+            raise
 
-        for k, p in enumerate(sc['positions']):
-            writer.point(p[0], p[1])
-
-            if sc.uncertain:
-                writer.record(curr_time.strftime('%Y-%m-%dT%H:%M:%S'),
-                              sc['spill_num'][k],
-                              sc['id'][k],
-                              p[2],
-                              sc['mass'][k],
-                              sc['age'][k],
-                              0.0,
-                              sc['status_codes'][k])
-            else:
-                writer.record(curr_time.strftime('%Y-%m-%dT%H:%M:%S'),
-                              sc['spill_num'][k],
-                              sc['id'][k],
-                              p[2],
-                              sc['mass'][k],
-                              sc['age'][k],
-                              sc['surface_concentration'][k],
-                              sc['status_codes'][k])
-
-    def _get_shape_writer(self, spill_container):
-        if spill_container.uncertain:
-            return self.w_u
+        # Finally wrap it all up... bundling if both certain and uncertain
+        if self.uncertain is True:
+            # If we have uncertain, we bundle and rename as filename
+            shutil.copy(self.create_bundle(uncertain=True), self.filename)
         else:
-            return self.w
+            if self.zip_output:
+                if self.include_certain_boundary:
+                    shutil.copy(self.create_bundle(uncertain=False), self.filename)
+                else:
+                    shutil.copy(self.shapefile_builder_certain.filename, self.filename)
+            else:
+                # If its just a single shapefile (no zip), glob all the files
+                # and rename them... removing the _certain
+                fn = self.shapefile_builder_certain.filename
+                for f in fn.parent.glob(fn.with_suffix('.*').name):
+                    pathlib_path = pathlib.Path(f)
+                    stem = pathlib_path.stem.removesuffix('_certain')
+                    suffix = pathlib_path.suffix
+                    shutil.copy(f, pathlib.Path(self.filedir, stem + suffix))
+                fn = self.shapefile_builder_certain_boundary.filename
+                for f in fn.parent.glob(fn.with_suffix('.*').name):
+                    pathlib_path = pathlib.Path(f)
+                    stem = pathlib_path.stem.removesuffix('_certain_boundary') + '_boundary'
+                    suffix = pathlib_path.suffix
+                    shutil.copy(f, pathlib.Path(self.filedir, stem + suffix))
 
-    def _save_and_archive_shapefiles(self, sc):
-        writer = self._get_shape_writer(sc)
 
-        writer.close()
-
-        filename = self.filename + '_uncert' if sc.uncertain else self.filename
-
-        prj_file = open('{}.prj'.format(filename), "w")
-        prj_file.write(self.epsg)
-        prj_file.close()
-
-        if self.zip_output is True:
-            zfilename = filename + '.zip'
-            zipf = zipfile.ZipFile(zfilename, 'w')
-
-            for suf in ['shp', 'prj', 'dbf', 'shx']:
-                file_to_zip = os.path.split(filename)[-1] + '.' + suf
-
-                zipf.write(os.path.join(self.filedir, file_to_zip),
-                           arcname=file_to_zip)
-
-                os.remove(filename + '.' + suf)
-
-            zipf.close()
-
-    def _zip_output_files(self):
-        if self.zip_output is True:
-            zfilename_temp = self.filename + '_temp' + '.zip'
-            zfilename = self.filename + '.zip'
-            zipf = zipfile.ZipFile(zfilename_temp, 'w')
-
-            forcst_file = zfilename
-            dir, file_to_zip = os.path.split(forcst_file)
-            zipf.write(forcst_file,
+    def create_bundle(self, uncertain):
+        """Create a shapefile bundle including both certain and uncertain shapefiles"""
+        zipf_filename = os.path.join(self.tempdir.name, self.filenamestem)+'_bundle.zip'
+        zipf = zipfile.ZipFile(zipf_filename, 'w')
+        # Add the main forcast file
+        dir, file_to_zip = os.path.split(self.shapefile_builder_certain.filename)
+        zipf.write(self.shapefile_builder_certain.filename,
+                   arcname=file_to_zip)
+        if self.include_certain_boundary:
+            dir, file_to_zip = os.path.split(self.shapefile_builder_certain_boundary.filename)
+            zipf.write(self.shapefile_builder_certain_boundary.filename,
                        arcname=file_to_zip)
-            os.remove(forcst_file)
-            if self.uncertain is True:
-               uncrtn_file = self.filename + '_uncert' + '.zip'
-               dir, file_to_zip = os.path.split(uncrtn_file)
-               zipf.write(uncrtn_file,
-                          arcname=file_to_zip)
-               os.remove(uncrtn_file)
-
-            zipf.close()
-            os.rename(zfilename_temp, zfilename)
+        if uncertain:
+            dir, file_to_zip = os.path.split(self.shapefile_builder_uncertain.filename)
+            zipf.write(self.shapefile_builder_uncertain.filename,
+                       arcname=file_to_zip)
+            if self.include_uncertain_boundary:
+                dir, file_to_zip = os.path.split(self.shapefile_builder_uncertain_boundary.filename)
+                zipf.write(self.shapefile_builder_uncertain_boundary.filename,
+                           arcname=file_to_zip)
+        zipf.close()
+        return zipf_filename
 
     def rewind(self):
         '''
@@ -259,20 +236,14 @@ class ShapeOutput(Outputter):
         internal variables.
         '''
         super(ShapeOutput, self).rewind()
-
         self._middle_of_run = False
         self._start_idx = 0
 
     def clean_output_files(self):
         '''
         deletes ouput files that may be around
-
         called by prepare_for_model_run
-
         here in case it needs to be called from elsewhere
         '''
-        try:
-            os.remove(self.filename + '.zip')
-            os.remove(self.filename + '_uncert.zip')
-        except OSError:
-            pass  # it must not be there
+        super(ShapeOutput, self).clean_output_files()
+        # pathlib.Path(self.filename).unlink(missing_ok=True)

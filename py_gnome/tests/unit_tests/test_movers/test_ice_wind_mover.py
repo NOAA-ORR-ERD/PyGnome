@@ -2,9 +2,6 @@
 Test all operations for ice mover work
 '''
 
-
-
-
 import datetime
 
 import numpy as np
@@ -31,7 +28,7 @@ topology_file = testdata['IceMover']['ice_wind_top_curv']
 #         IceMover(testdata['CurrentCycleMover']['curr_bad_file'])
 #
 #     with pytest.raises(TypeError):
-#         IceMover(curr_file, topology_file=10)
+#         IceMover(curr_file, topology_file=10.0)
 #
 
 num_le = 4

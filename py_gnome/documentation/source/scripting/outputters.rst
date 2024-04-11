@@ -37,9 +37,9 @@ For graphical (images) output we add a Renderer::
     import gnome.scripting as gs
 
     model = gs.Model()
-    renderer = gs.Renderer(mapfile="the_map_bna",
-                           images_dir = "output",
-                           size = (1280,1024),
+    renderer = gs.Renderer(map_filename="the_map.bna",
+                           output_dir = "output",
+                           image_size = (1280,1024),
                            output_timestep=gs.hours(6))
     model.outputters += renderer
 
