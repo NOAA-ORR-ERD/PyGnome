@@ -68,7 +68,7 @@ class ShapeOutput(Outputter):
         self.filenamestem = pathlib_path.stem
         self.filedir = str(pathlib_path.parent)
         # A temp dir used to do our work...
-        self.tempdir = tempfile.TemporaryDirectory()
+        self.tempdir = tempfile.TemporaryDirectory(prefix='gnome.')
         # We will be building shapefiles, so come up with names in the temp dir
         # These are names without ext... as those get added when deciding to zip or not
         base_shapefile_name = os.path.join(self.tempdir.name, self.filenamestem)

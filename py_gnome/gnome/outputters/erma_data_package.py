@@ -164,7 +164,7 @@ class ERMADataPackageOutput(Outputter):
         self.filenamestem = pathlib_path.stem
         self.filedir = str(pathlib_path.parent)
         # A temp dir used to do our work...
-        self.tempdir = tempfile.TemporaryDirectory()
+        self.tempdir = tempfile.TemporaryDirectory(prefix='gnome.')
 
         # Default some vars if they are null
         if not folder_name:

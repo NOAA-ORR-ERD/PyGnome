@@ -316,7 +316,7 @@ class Outputter(GnomeId):
             self._write_step = False
             self._dt_since_lastoutput += time_step
 
-            if self._dt_since_lastoutput >= self._output_timestep:
+            if abs(self._dt_since_lastoutput) >= abs(self._output_timestep):
                 self._write_step = True
                 self._dt_since_lastoutput = (self._dt_since_lastoutput %
                                              self._output_timestep)

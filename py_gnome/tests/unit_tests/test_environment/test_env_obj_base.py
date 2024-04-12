@@ -98,11 +98,11 @@ class TestTime(object):
 
     def test_save_load(self, dates):
         t = Time(dates)
-        saveloc = tempfile.mkdtemp()
-        saveloc = os.path.join(saveloc, 'test.zip')
+        with tempfile.TemporaryDirectory() as saveloc:
+            saveloc = os.path.join(saveloc, 'test.zip')
 
-        _references = t.save(saveloc)
-        new_instance = self.test_class.load(saveloc)
+            _references = t.save(saveloc)
+            new_instance = self.test_class.load(saveloc)
 
         assert t == new_instance
 
@@ -169,11 +169,11 @@ class TestTimeseriesData(object):
 
     def test_save_load(self, dates, series_data):
         t = self.get_tsd_instance(dates, series_data)
-        saveloc = tempfile.mkdtemp()
-        saveloc = os.path.join(saveloc, 'test.zip')
+        with tempfile.TemporaryDirectory() as saveloc:
+            saveloc = os.path.join(saveloc, 'test.zip')
 
-        _references = t.save(saveloc)
-        new_instance = self.test_class.load(saveloc)
+            _references = t.save(saveloc)
+            new_instance = self.test_class.load(saveloc)
         assert t == new_instance
 
 
@@ -246,11 +246,11 @@ class TestTimeseriesVector(object):
 
     def test_save_load(self, dates, series_data, series_data2):
         tsv = self.get_tsv_instance(dates, series_data, series_data2)
-        saveloc = tempfile.mkdtemp()
-        saveloc = os.path.join(saveloc, 'test.zip')
+        with tempfile.TemporaryDirectory() as saveloc:
+            saveloc = os.path.join(saveloc, 'test.zip')
 
-        _references = tsv.save(saveloc)
-        new_instance = self.test_class.load(saveloc)
+            _references = tsv.save(saveloc)
+            new_instance = self.test_class.load(saveloc)
 
         assert tsv == new_instance
 
