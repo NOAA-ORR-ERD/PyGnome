@@ -66,7 +66,7 @@ class BeachingSchema(WeathererSchema):
 
 class Beaching(RemoveMass, Weatherer):
     '''
-    It isn't really a reponse/cleanup option; however, it works in the same
+    It isn't really a response/cleanup option; however, it works in the same
     manner in that Beaching removes mass at a user specified rate. Mixin the
     RemoveMass functionality.
     '''
@@ -88,12 +88,12 @@ class Beaching(RemoveMass, Weatherer):
 
         .. note:: Assumes the model's
             time_step is smaller than the timeseries timestep, meaning the
+        fixme: water is never used -- it should be removed.
         '''
         super(Beaching, self).__init__(active_range=active_range, **kwargs)
 
         self.water = water
 
-        self._units = None
         self.units = units
 
         # store mass removal rate as kg/sec for manual beaching
@@ -135,14 +135,15 @@ class Beaching(RemoveMass, Weatherer):
     @units.setter
     def units(self, value):
         '''
-        set units if value is in valid_vol_units
+        set units if value is either mass or volume units
         '''
         if value in self.valid_vol_units or value in self.valid_mass_units:
             self._units = value
         else:
             msg = ('{0} are not valid volume or mass units.'
                    ' Not updated').format(value)
-            self.logger.warning(msg)
+            raise ValueError(msg)
+#            self.logger.warning(msg)
 
     def convert_to_internal_volume(self):
         data = self.timeseries['value']
@@ -182,18 +183,38 @@ class Beaching(RemoveMass, Weatherer):
             # convert timeseries to 'kg'
             dv = self.timeseries['value']
 
-            unit_type = uc.FindUnitTypes()[self.units]
-            if unit_type == 'mass':
+            # FIXME: we shouldn't poke into nucos like this
+            # unit_type = uc.unit_conversion.UNIT_TYPES[self.units]
+            # if unit_type == 'mass':
+            #     dm = uc.convert('mass', self.units, 'kg', dv)
+            # elif unit_type == 'volume':
+            #     # water_temp = self.water.get('temperature')
+            #     # rho = substance.density_at_temp(water_temp)
+            #     volume = uc.convert('volume', self.units, 'm^3', dv)
+            #     dm = volume * substance.standard_density
+            # else:
+            #     # fixme: shouldn't this be checked earlier??
+            #     raise ValueError("{} is not a valid unit for beached oil"
+            #                      .format(self.unit))
+            try:
                 dm = uc.convert('mass', self.units, 'kg', dv)
-            elif unit_type == 'volume':
-                # water_temp = self.water.get('temperature')
-                # rho = substance.density_at_temp(water_temp)
+            except uc.InvalidUnitError:  # not mass
                 volume = uc.convert('volume', self.units, 'm^3', dv)
                 dm = volume * substance.standard_density
-            else:
-                # fixme: shouldn't this be check earlier??
-                raise ValueError("{} is not a valid unit for beached oil"
-                                 .format(self.unit))
+            except uc.InvalidUnitError:  # not volume either
+                raise ValueError(f"{self.unit} is not a valid unit for beached oil")
+            # if unit_type == 'mass':
+            #     dm = uc.convert('mass', self.units, 'kg', dv)
+            # elif unit_type == 'volume':
+            #     # water_temp = self.water.get('temperature')
+            #     # rho = substance.density_at_temp(water_temp)
+            #     volume = uc.convert('volume', self.units, 'm^3', dv)
+            #     dm = volume * substance.standard_density
+            # else:
+            #     # fixme: shouldn't this be checked earlier??
+            #     raise ValueError("{} is not a valid unit for beached oil"
+            #                      .format(self.unit))
+
             self._rate = dm / dt
 
         # find rate for time interval (model_time, model_time + time_step)

@@ -20,14 +20,15 @@ from gnome.basic_types import oil_status
 from gnome.environment import constant_wind, Water
 from gnome.weatherers import Evaporation
 
-from ..conftest import sample_model, sample_model_weathering, test_oil
+from ..conftest import sample_model_fcn, sample_model_weathering, test_oil
+
 
 @pytest.fixture(scope='function')
-def model(sample_model, output_dir):
-    model = sample_model_weathering(sample_model, test_oil)
+def model(sample_model_fcn, output_dir):
+    model = sample_model_weathering(sample_model_fcn, test_oil)
 
-    rel_start_pos = sample_model['release_start_pos']
-    rel_end_pos = sample_model['release_end_pos']
+    rel_start_pos = sample_model_fcn['release_start_pos']
+    rel_end_pos = sample_model_fcn['release_end_pos']
 
     model.cache_enabled = True
     model.uncertain = True
@@ -52,8 +53,8 @@ def model(sample_model, output_dir):
                                              units='tons')
 
     model.outputters += TrajectoryGeoJsonOutput(output_dir=output_dir)
-    model.rewind()
     return model
+
 
 def test_init():
     'simple initialization passes'
@@ -78,33 +79,35 @@ def test_clean_output_files(model, output_dir):
     assert len(files) == 0
 
 
-@pytest.mark.slow
+# @pytest.mark.slow
 @pytest.mark.parametrize("output_ts_factor", [1, 2, 2.4])
 def test_write_output_post_run(model, output_ts_factor, output_dir):
-    model.rewind()
+
+    # maybe better to add the outputter here?
     o_geojson = model.outputters[-1]
     o_geojson.output_timestep = timedelta(seconds=model.time_step *
                                           output_ts_factor)
 
-    del model.outputters[-1]
+    # so the run won't write output
+    model.outputters.clear()
 
     model.full_run()
-    # purge the output
-    # note: there are two outputter on the model -- not sure why
-    #       so still one after removing this one so need to clear output dir
+    # purge the output (written by other tests) -- not good
     o_geojson.clean_output_files()
 
+    # just making sure that it's clean
     files = glob(os.path.join(output_dir, '*.geojson'))
     assert len(files) == 0
 
-    o_geojson.write_output_post_run(model.start_time,
-                                    model.num_time_steps,
+    o_geojson.write_output_post_run(model_start_time=model.start_time,
+                                    num_time_steps=model.num_time_steps,
+                                    model_time_step=900,  # not used, but required by the method
                                     cache=model._cache,
                                     spills=model.spills)
 
     files = glob(os.path.join(output_dir, '*.geojson'))
 
-    assert len(files) == int((model.num_time_steps-2)/output_ts_factor) + 2
+    assert len(files) == int((model.num_time_steps - 2) / output_ts_factor) + 2
 
     o_geojson.output_timestep = None
     model.outputters += o_geojson

@@ -1,10 +1,3 @@
-'''
-Test all operations for gridcurrent mover work
-'''
-
-
-
-
 
 import datetime
 import os
@@ -16,7 +9,12 @@ from gnome.movers import CurrentCycleMover
 from gnome.environment import Tide
 from gnome.utilities import time_utils
 
+# to ensure the test files are downloaded.
+# from .. import conftest
+
+
 from ..conftest import sample_sc_release, testdata
+
 
 curr_file = testdata['CurrentCycleMover']['curr']
 topology_file = testdata['CurrentCycleMover']['top']
@@ -29,14 +27,16 @@ def test_exceptions():
     """
 
     with pytest.raises(ValueError):
-        'file does not exis'
+        'file does not exist'
         CurrentCycleMover(os.path.join('./', 'ChesBay.CUR'))
 
     with pytest.raises(OSError):
         CurrentCycleMover(testdata['CurrentCycleMover']['curr_bad_file'])
 
     with pytest.raises(TypeError):
-        CurrentCycleMover(curr_file, topology_file=10)
+        # note: you may not get a type error if you pass in
+        # an integer -- an integer can be valid for os.path.exists()
+        CurrentCycleMover(curr_file, topology_file=10.0)
 
 
 num_le = 4

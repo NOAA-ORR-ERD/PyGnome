@@ -6,11 +6,7 @@ import various names, and provides:
 initialize_console_log(level='debug')
 
   set up the logger to dump to console.
-
-
 """
-
-from itertools import chain
 
 import sys
 
@@ -20,7 +16,7 @@ import warnings
 
 import importlib
 
-import nucos as uc
+import nucos
 
 # just so it will be in the namespace.
 from .gnomeobject import GnomeId, AddLogger
@@ -55,10 +51,10 @@ def check_dependency_versions():
         else:
             return True
 
-    libs = [('gridded', '0.5.6', ''),
-            ('nucos', '3.1.1', ''),
+    libs = [('gridded', '0.6.5', ''),
+            ('nucos', '3.2.0', ''),
             ('py_gd', '2.2.0', ''),
-            ('adios_db', '1.0.4', 'Only required to use the ADIOS Database '
+            ('adios_db', '1.1.1', 'Only required to use the ADIOS Database '
                                   'JSON format for oil data.')
             ]
 
@@ -71,7 +67,6 @@ def check_dependency_versions():
                    "needs to be installed: {}".format(name, version, note))
             warnings.warn(msg)
         else:
-            ver = tuple(module.__version__.split(".")[:3])
             if not ver_check(version, module.__version__):
                 msg = ('Version {0} of {1} package is required, '
                        'but actual version in module is {2}:'
@@ -129,18 +124,29 @@ def initialize_console_log(level='debug'):
                         )
 
 
-def _valid_units(unit_name):
-    # fixme: I think there is something built in to nucos for this
-    #        or there should be
-    'convenience function to get all valid units accepted by nucos'
-    _valid_units = list(uc.GetUnitNames(unit_name))
-    _valid_units.extend(chain(*[val[1] for val in
-                                uc.ConvertDataUnits[unit_name].values()]))
-    return tuple(_valid_units)
+def _valid_units(unit_type):
+    """
+    return all the units for a given unit type
+
+    :param unit_type: unit type, e.g. "Mass" or "Temperature"
+    :type unit_type: str
+
+    NOTE: this is just a wrapper for nucos.get_supported_names
+    """
+    ## fixme: why is this in the gnome module __init__"
+    ##        but maybe we should jsut call nucos directly anyway.
+    return nucos.get_supported_names(unit_type)
+    # 'convenience function to get all valid units accepted by nucos'
+    # _valid_units = list(uc.GetUnitNames(unit_type))
+    # _valid_units.extend(chain(*[val[1] for val in
+    #                             uc.ConvertDataUnits[unit_type].values()]))
+    # return tuple(_valid_units)
 
 
 # we have a sort of chicken-egg situation here.  The above functions need
 # to be defined before we can import these modules.
+# FIXME: they should be defined in a utilities module or something
+# to avoid this
 check_dependency_versions()
 
 from . import (environment,

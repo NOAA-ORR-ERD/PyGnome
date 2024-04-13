@@ -158,6 +158,20 @@ class Test_GnomeMap:
         gmap.update_from_dict(json_)
         assert np.all(gmap.map_bounds == json_['map_bounds'])
 
+    def test_adding_a_map(self):
+        '''
+        you can't add to a map, but this makes sure you get a nice error message
+        '''
+
+        gmap = GnomeMap()
+
+        with pytest.raises(TypeError, match="You can't add to a map"):
+            gmap += 'fred'
+
+        with pytest.raises(TypeError, match="You can't add to a map"):
+            gmap += GnomeMap()
+
+
 
 class Test_ParamMap:
     '''

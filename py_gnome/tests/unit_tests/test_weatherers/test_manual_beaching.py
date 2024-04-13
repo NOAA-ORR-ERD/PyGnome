@@ -82,6 +82,31 @@ class TestBeaching(ObjForTests):
 
             assert to_rm == mass_to_rm
 
+    @mark.parametrize(("model_time", "dt", "rate_idx", "rate_dt"),
+                      [(active_range[0], 1800, [0], [1800]),
+                       ])
+    def test_remove_mass_bad_unit(self, model_time, dt, rate_idx, rate_dt):
+        '''
+        check that _remove_mass() gives correct results for time intervals
+        that cross over various timeseries indices.
+        '''
+        self.reset_and_release()
+        # this is setting an internal attribute - it should never happen
+        # but there's a guard against it later anyway.
+        b = Beaching(active_range, 'l', timeseries, name='test_beaching')
+        b._units = 'meter'  # this should be mass or volume
+        b.prepare_for_model_step(self.sc, dt, model_time)
+        if b.active:
+            with pytest.raises(ValueError):
+                mass_to_rm = b._remove_mass(b._timestep,
+                                            model_time,
+                                            self.substance)
+
+    def test_set_bad_unit(self):
+        with pytest.raises(ValueError):
+            self.b.units = 'meter'
+
+
     def test_weather_elements(self):
         '''
         test weather_elements removes amount of mass specified by timeseries
@@ -128,6 +153,7 @@ class TestBeaching(ObjForTests):
 
         assert np.isclose(self.sc.mass_balance['observed_beached'],
                           total_mass)
+
 
     @pytest.mark.skipif(reason="serialization for weatherers overall needs review")
     def test_serialize_deserialize_update_from_dict(self):

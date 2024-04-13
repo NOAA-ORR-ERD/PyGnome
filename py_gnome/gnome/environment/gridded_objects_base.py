@@ -57,7 +57,6 @@ class DepthSchema(base_schema.ObjTypeSchema):
 
 class S_DepthSchema(DepthSchema):
     vtransform = SchemaNode(Int())
-    zero_ref = SchemaNode(String())
 
 
 class VariableSchemaBase(base_schema.ObjTypeSchema):
@@ -387,24 +386,6 @@ class PyGrid(gridded.grids.Grid):
         return gridded.grids.Grid._get_grid_type(*args, **kwargs)
 
 
-class Depth(gridded.depth.Depth):
-    @staticmethod
-    def from_netCDF(*args, **kwargs):
-        kwargs['_default_types'] = (('level', L_Depth),
-                                    ('sigma', S_Depth),
-                                    ('surface', DepthBase))
-
-        return gridded.depth.Depth.from_netCDF(*args, **kwargs)
-
-    @staticmethod
-    def _get_depth_type(*args, **kwargs):
-        kwargs['_default_types'] = (('level', L_Depth),
-                                    ('sigma', S_Depth),
-                                    ('surface', DepthBase))
-
-        return gridded.depth.Depth._get_depth_type(*args, **kwargs)
-
-
 class Variable(gridded.Variable, GnomeId):
     _schema = VariableSchema
 
@@ -415,7 +396,7 @@ class Variable(gridded.Variable, GnomeId):
                                              ._default_component_types)
     _default_component_types.update({'time': Time,
                                      'grid': PyGrid,
-                                     'depth': Depth})
+                                     'depth': None}) #set after Depth defined below
 
     _gnome_unit = None #Default assumption for unit type
 
@@ -441,6 +422,9 @@ class Variable(gridded.Variable, GnomeId):
 
     def init_from_netCDF(self,
                          filename=None,
+                         dataset=None,
+                         data_file=None,
+                         grid_file=None,
                          varname=None,
                          grid_topology=None,
                          name=None,
@@ -448,10 +432,8 @@ class Variable(gridded.Variable, GnomeId):
                          time=None,
                          time_origin=None,
                          grid=None,
+                         depth_index=None,
                          depth=None,
-                         dataset=None,
-                         data_file=None,
-                         grid_file=None,
                          location=None,
                          load_all=False,
                          fill_value=0,
@@ -565,16 +547,19 @@ class Variable(gridded.Variable, GnomeId):
                             filename=time.filename,
                             varname=time.varname,
                             origin=time_origin)
+        if isinstance(depth_index, int):
+            depth = DepthBase(surface_index=depth_index)
         if depth is None:
             if (isinstance(grid, (Grid_S, Grid_R)) and len(data.shape) == 4 or
                     isinstance(grid, Grid_U) and len(data.shape) == 3):
-                depth = Depth.from_netCDF(dataset=dg,
-                                          data_file=data_file,
+                depth = Depth.from_netCDF(data_file=data_file,
                                           grid_file=grid_file,
                                           grid=grid,
                                           time=time,
                                           grid_topology=grid_topology,
                                           )
+        if depth_index == 'surface':
+            depth = DepthBase(surface_index=depth.surface_index, bottom_index = depth.bottom_index)
         if location is None:
             if hasattr(data, 'location'):
                 location = data.location
@@ -628,7 +613,7 @@ class Variable(gridded.Variable, GnomeId):
                 value = uc.convert(data_units, req_units, value)
             except uc.NotSupportedUnitError:
                 if (not uc.is_supported(data_units)):
-                    warnings.warn("{0} units is not supported: {1}"
+                    warnings.warn("{0} units is not supported: {1} "
                                   "Using them unconverted as {2}"
                                   .format(self.name, data_units, req_units))
                 elif (not uc.is_supported(req_units)):
@@ -711,25 +696,43 @@ class L_Depth(gridded.depth.L_Depth, GnomeId):
         return rv
 
 
-class S_Depth(gridded.depth.S_Depth, GnomeId):
+class ROMS_Depth(gridded.depth.ROMS_Depth, GnomeId):
+
+    _schema = S_DepthSchema
+
+    _default_component_types = copy.deepcopy(gridded.depth.ROMS_Depth
+                                             ._default_component_types)
+    _default_component_types.update({'time': Time,
+                                     'grid': PyGrid,
+                                     'variable': Variable})
+
+    @classmethod
+    def new_from_dict(cls, dict_):
+        rv = cls.from_netCDF(**dict_)
+        return rv
+
+class FVCOM_Depth(gridded.depth.FVCOM_Depth, GnomeId):
 
     _schema = S_DepthSchema
 
     _default_component_types = copy.deepcopy(gridded.depth.S_Depth
                                              ._default_component_types)
     _default_component_types.update({'time': Time,
-                                     'grid': PyGrid,
-                                     'variable': Variable})
-
-    def __init__(self,
-                 zero_ref = 'surface',
-                 **kwargs):
-        return super(S_Depth, self).__init__(zero_ref=zero_ref, **kwargs)
+                                     'grid': Grid_U,
+                                     'bathymetry': Variable,
+                                     'zeta': Variable})
 
     @classmethod
     def new_from_dict(cls, dict_):
         rv = cls.from_netCDF(**dict_)
         return rv
+
+class Depth(gridded.depth.Depth):
+    ld_types = [L_Depth]
+    sd_types = [ROMS_Depth, FVCOM_Depth]
+    surf_types = [DepthBase]
+
+Variable._default_component_types['depth'] = Depth
 
 class VectorVariable(gridded.VectorVariable, GnomeId):
 
@@ -750,6 +753,19 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
                  **kwargs):
         super(VectorVariable, self).__init__(*args, **kwargs)
         self.extrapolation_is_allowed = extrapolation_is_allowed
+        
+        #Adding this so unit conversion happens properly in the components
+        #I really don't think we will be doing mixed units in one of these
+        #anytime soon.
+        for var in self.variables:
+            if hasattr(self, '_gnome_unit'):
+                if hasattr(var, '_gnome_unit') and var._gnome_unit is not None:
+                    if self._gnome_unit != var._gnome_unit:
+                        warnings.warn("Variable {0} has units {1} which are not the same as the VectorVariable {2} units {3}.".format(var.name, var._gnome_unit, self.name, self._gnome_unit))
+                else:
+                    var._gnome_unit = self._gnome_unit
+                
+            
 
     def __repr__(self):
         try:
@@ -953,7 +969,26 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
         units = units if units else self._gnome_unit #no need to convert here, its handled in the subcomponents
         value = super(VectorVariable, self).at(points, time, units=units, *args, **kwargs)
 
+        data_units = self.units if self.units else self._gnome_unit
+        req_units = units if units else self._gnome_unit
+        if data_units is not None and req_units is not None and data_units != req_units:
+            try:
+                value = uc.convert(data_units, req_units, value)
+            except uc.NotSupportedUnitError:
+                if (not uc.is_supported(data_units)):
+                    warnings.warn("{0} units is not supported: {1}"
+                                  "Using them unconverted as {2}"
+                                  .format(self.name, data_units, req_units))
+                elif (not uc.is_supported(req_units)):
+                    warnings.warn("Requested unit is not supported: {1}".format(req_units))
+                else:
+                    raise
         return value
+
+        return value
+
+    def get_grid_lines(self):
+        ''''''
 
     def get_data_vectors(self):
         '''

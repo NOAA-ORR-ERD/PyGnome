@@ -124,9 +124,10 @@ class WindSchema(base_schema.ObjTypeSchema):
 
 
 class Wind(Timeseries, Environment):
-    ## fixme: rename as "PointWind"
+    ## fixme: rename as "PointWind" or "UniformWind"? -- there is an alias already
+    ## One day we will need to decide if the name change / class refactor is worth the effort!
     '''
-    Provides the a "point wind" -- uniform wind over all space
+    Provides a "point wind" -- uniform wind over all space
     '''
     # object is referenced by others using this attribute name
     _ref_as = 'wind'
@@ -148,7 +149,8 @@ class Wind(Timeseries, Environment):
                  extrapolation_is_allowed=False,
                  **kwargs):
         """
-        Create a PointWind object, representing a time series of wind at a single value
+        Create a uniform Wind object, representing a time series of wind at a single
+        location, applied over all space.
 
         :param timeseries=None:
         :param units=None:
@@ -158,10 +160,9 @@ class Wind(Timeseries, Environment):
         :param longitude=None:
         :param speed_uncertainty_scale=0.0:
         :param extrapolation_is_allowed=False:
-
-
         """
-        self._timeseries = np.array([(sec_to_date(zero_time()), [0.0, 0.0])], dtype=datetime_value_2d)
+        self._timeseries = np.array([(sec_to_date(zero_time()), [0.0, 0.0])],
+                                    dtype=datetime_value_2d)
         self.updated_at = kwargs.pop('updated_at', None)
         self.source_id = kwargs.pop('source_id', 'undefined')
 
@@ -508,8 +509,11 @@ class Wind(Timeseries, Environment):
 
         return tuple(data[0]['value'])
 
-    def at(self, points, time, coord_sys='uv', units=None,
+    def at(self, points, time, coord_sys='uv', units=None, extrapolate=False,
            _auto_align=True):
+        # fixme: this isn't quite aligned with the Environment base class signature.
+        # it should be:
+        # def at(self, points, time, units=None, extrapolate=False, coord_sys='uv', _auto_align=True):
         '''
         Returns the value of the wind at the specified points at the specified
         time. Valid coordinate systems include 'r-theta', 'r', 'theta',
@@ -517,38 +521,57 @@ class Wind(Timeseries, Environment):
         environment objects.
 
         :param points: Nx2 or Nx3 array of positions (lon, lat, [z]).
-                       This may not be None. To get wind values
-                       position-independently, use get_value(time)
+                       This may be None: this is a spatially independent
+                       wind - value is the same for all points.
         :param time: Datetime of the time to be queried
 
         :param coord_sys: String describing the coordinate system.
         '''
         if points is None:
-            points = np.array((0, 0)).reshape(-1, 2)
+            points = np.zeros((1, 2))
+            # points = np.array((0, 0)).reshape(-1, 2)
 
+        # we really shouldn't need this here
         pts = gridded.utilities._reorganize_spatial_data(points)
 
-        ret_data = np.zeros_like(pts, dtype='float64')
+        ret_data = np.zeros_like(pts, dtype=np.float64)
 
+        idx = None
         if coord_sys in ('r-theta', 'uv'):
-            data = self.get_wind_data(time, 'm/s', coord_sys)[0]['value']
-            ret_data[:, 0] = data[0]
-            ret_data[:, 1] = data[1]
-        elif coord_sys in ('u', 'v', 'r', 'theta'):
-            if coord_sys in ('u', 'v'):
-                f = 'uv'
-            else:
-                f = 'r-theta'
-
-            data = self.get_wind_data(time, 'm/s', f)[0]['value']
-            if coord_sys in ('u', 'r'):
-                ret_data[:, 0] = data[0]
-                ret_data = ret_data[:, 0]
-            else:
-                ret_data[:, 1] = data[1]
-                ret_data = ret_data[:, 1]
+            cs = coord_sys
+        elif coord_sys == 'u':
+            cs = 'uv'
+            idx = 0
+        elif coord_sys == 'r':
+            cs = 'r-theta'
+            idx = 0
+        elif coord_sys == 'v':
+            cs = 'uv'
+            idx = 1
+        elif coord_sys == 'theta':
+            cs = 'r-theta'
+            idx = 1
         else:
             raise ValueError('invalid coordinate system {0}'.format(coord_sys))
+
+        if extrapolate:
+            self.extrapolation_is_allowed = True
+        else:
+            self.extrapolation_is_allowed = False
+        print(f"{self.extrapolation_is_allowed=}")
+        try:
+            data = self.get_wind_data(time, 'm/s', cs)[0]['value']
+        except IndexError:
+            # CyTimeseries is raising an IndexError
+            raise ValueError(f'time specified ({time}) is not within the bounds of the time: '
+                             f'({self.data_start} to {self.data_stop})')
+        if idx is None:
+            ret_data[:, 0] = data[0]
+            ret_data[:, 1] = data[1]
+        # extract scalar
+        else:
+            ret_data[:, idx] = data[idx]
+            ret_data = ret_data[:, idx]
 
         if _auto_align:
             ret_data = (gridded.utilities
@@ -630,20 +653,16 @@ class Wind(Timeseries, Environment):
 
         return (msgs, True)
 
-class PointWind(Wind):
-    """
-    Wind at a single point
-    """
-    # currently an alias for Wind -- but we should probably swap those and
-    # make this the real class, and the `Wind` be the alias.
-    pass
+# we should probably remove this, if we're not going to do it right.
+PointWind = Wind  # alias for Wind class
+
 
 def constant_wind(speed, direction, units='m/s'):
     """
     utility to create a constant wind "timeseries"
 
     :param speed: speed of wind
-    :param direction: direction -- degrees True, direction wind is from
+    :param direction: direction -- direction wind is from
                       (degrees True)
     :param unit='m/s': units for speed, as a string, i.e. "knots", "m/s",
                        "cm/s", etc.
@@ -660,14 +679,17 @@ def constant_wind(speed, direction, units='m/s'):
                                                           minute=0)
     wind_vel['value'][0] = (speed, direction)
 
-    return PointWind(timeseries=wind_vel, coord_sys='r-theta', units=units)
+    return Wind(timeseries=wind_vel, coord_sys='r-theta', units=units)
 
 
 def wind_from_values(values, units='m/s'):
     """
-    creates a Wind object directly from data.
+    Creates a Wind object directly from data.
 
     :param values: list of (datetime, speed, direction) tuples
+    :param units='m/s': speed units.
+
+    Direction is the where the wind is coming from in degrees from North
 
     :returns: A Wind timeseries object that can be used for a wind mover, etc.
     """

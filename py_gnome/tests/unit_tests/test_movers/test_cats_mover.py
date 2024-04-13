@@ -234,12 +234,12 @@ def test_save_load(tide):
     test save/loading with and without tide
     """
 
-    saveloc = tempfile.mkdtemp()
-    c_cats = CatsMover(curr_file, tide=tide)
-    save_json, zipfile_, _refs = c_cats.save(saveloc)
+    with tempfile.TemporaryDirectory() as saveloc:
+        c_cats = CatsMover(curr_file, tide=tide)
+        save_json, zipfile_, _refs = c_cats.save(saveloc)
 
-    assert validate_save_json(save_json, zipfile.ZipFile(zipfile_), c_cats)
+        assert validate_save_json(save_json, zipfile.ZipFile(zipfile_), c_cats)
 
-    loaded = CatsMover.load(zipfile_)
+        loaded = CatsMover.load(zipfile_)
 
-    assert loaded == c_cats
+        assert loaded == c_cats

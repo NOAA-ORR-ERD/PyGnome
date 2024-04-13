@@ -95,22 +95,21 @@ class TrajectoryGeoJsonOutput(Outputter):
         super(TrajectoryGeoJsonOutput, self).__init__(output_dir=output_dir,
                                                       **kwargs)
 
-    def prepare_for_model_run(self, *args, **kwargs):
-        """
-        prepares the outputter for a model run.
+    # def prepare_for_model_run(self, *args, **kwargs):
+    #     """
+    #     prepares the outputter for a model run.
 
-        Parameters passed to base class (use super): model_start_time, cache
+    #     Parameters passed to base class (use super): model_start_time, cache
 
-        Does not take any other input arguments; however, to keep the interface
-        the same for all outputters, define `**kwargs` and pass into base class
+    #     Does not take any other input arguments; however, to keep the interface
+    #     the same for all outputters, define `**kwargs` and pass into base class
 
-        In this case, it cleans out previous written data files
+    #     In this case, it cleans out previous written data files
 
-        If you want to keep them, a new output_dir should be set
-        """
-        super(TrajectoryGeoJsonOutput, self).prepare_for_model_run(*args,
-                                                                   **kwargs)
-        self.clean_output_files()
+    #     If you want to keep them, a new output_dir should be set
+    #     """
+    #     super().prepare_for_model_run(*args, **kwargs)
+    #     self.clean_output_files()
 
     def write_output(self, step_num, islast_step=False):
         'dump data in geojson format'

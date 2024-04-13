@@ -19,6 +19,7 @@ from gnome.utilities.time_utils import asdatetime
 from gnome.utilities.appearance import SpillAppearanceSchema
 
 from colander import (SchemaNode, Bool, String, Float, drop)
+from warnings import warn
 
 from gnome.gnomeobject import GnomeId
 from gnome.persist.base_schema import ObjTypeSchema, GeneralGnomeObjectSchema
@@ -519,6 +520,88 @@ def _setup_spill(release,
         spill.substance.windage_persist = windage_persist
 
     return spill
+    
+def point_line_spill(num_elements,
+                             start_position,
+                             release_time,
+                             end_position=None,
+                             end_release_time=None,
+                             substance=None,
+                             amount=0,
+                             units='kg',
+                             water=None,
+                             on=True,
+                             windage_range=None,
+                             windage_persist=None,
+                             name='Point or Line Release'):
+    '''
+    Helper function returns a Spill object
+
+    :param num_elements: total number of elements to be released
+    :type num_elements: integer
+
+    :param start_position: initial location the elements are released
+    :type start_position: 3-tuple of floats (long, lat, postive depth) or 
+        2-tuple of floats (lon,lat) in which case depth will default to 0
+
+    :param release_time: time the LEs are released (datetime object)
+    :type release_time: datetime.datetime
+
+    :param end_position=None: Optional. For moving source, the end position
+                              If None, then release is from a point source
+    :type end_position: 2-tuple of floats (long, lat)
+
+    :param end_release_time=None: optional -- for a time varying release,
+        the end release time. If None, then release is instantaneous
+    :type end_release_time: datetime.datetime
+
+    :param substance=None: Type of oil spilled.
+    :type substance: Substance object
+
+    :param amount=None: mass or volume of oil spilled
+    :type amount: float
+
+    :param units=None: units for amount spilled
+    :type units: str
+
+    :param tuple windage_range=(.01, .04): Percentage range for windage.
+                                           Active only for surface particles
+                                           when a mind mover is added
+    :type windage_range: tuple
+
+    :param windage_persist=900: Persistence for windage values in seconds.
+                                    Use -1 for inifinite, otherwise it is
+                                    randomly reset on this time scale
+    :type windage_persist: int
+
+    :param name='Point/Line Spill': a name for the spill
+    :type name: str
+    '''
+    # make positions 3d, with depth = 0 if they are not already
+    if len(start_position) == 2:
+        start_position = *start_position[:2], 0
+    if end_position is not None  and len(end_position) == 2:
+        end_position = (*end_position[:2], 0) 
+
+    release = PointLineRelease(release_time=release_time,
+                               start_position=start_position,
+                               num_elements=num_elements,
+                               end_position=end_position,
+                               end_release_time=end_release_time)
+
+    spill = _setup_spill(release=release,
+                         water=water,
+                         substance=substance,
+                         amount=amount,
+                         units=units,
+                         name=name,
+                         on=on,
+                         windage_range=windage_range,
+                         windage_persist=windage_persist,
+                         )
+
+
+    return spill    
 
 def surface_point_line_spill(num_elements,
                              start_position,
@@ -575,6 +658,7 @@ def surface_point_line_spill(num_elements,
     :param name='Surface Point/Line Spill': a name for the spill
     :type name: str
     '''
+    warn('This helper function is deprecated in favor of point_line_spill.', DeprecationWarning)
     # make positions 3d, with depth = 0 if they are not already
     start_position = *start_position[:2], 0
 
@@ -805,6 +889,38 @@ def spatial_release_spill(start_positions,
     release = Release(release_time=release_time,
                              custom_positions=start_positions,
                              name=name)
+    spill = _setup_spill(release=release,
+                         water=water,
+                         substance=substance,
+                         amount=amount,
+                         units=units,
+                         name=name,
+                         on=on,
+                         windage_range=windage_range,
+                         windage_persist=windage_persist
+                         )
+
+    return spill
+    
+def polygon_release_spill(filename,
+                          release_time=None,
+                          substance=None,
+                          water=None,
+                          on=True,
+                          amount=0,
+                          units='kg',
+                          windage_range=None,
+                          windage_persist=None,
+                          name='spatial_release'):
+    '''
+    Helper function returns a Spill object containing a polygon release
+
+    A polygon release is a spill that releases elements randomly within polygons in a shapefile.
+    '''
+    release = PolygonRelease(filename = filename,
+                             release_time=release_time,
+                             name=name)
+                             
     spill = _setup_spill(release=release,
                          water=water,
                          substance=substance,
