@@ -165,7 +165,8 @@ test_pygnome_windows:
 
     - echo "Building PyGNOME"
     - cd ./py_gnome
-    - python setup.py develop
+    #python -m build --no-isolation --config-setting cmake.verbose=true
+    - pip install ./
 
     - cd ./tests/unit_tests
     - pytest --runslow

@@ -1,7 +1,7 @@
 # to jcfr@github henryiii
 
 
-cmake_minimum_required(VERSION 3.15...3.26)
+cmake_minimum_required(VERSION 3.15...3.28)
 project(${SKBUILD_PROJECT_NAME} LANGUAGES C CXX)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
@@ -15,6 +15,14 @@ find_package(
 )
 
 find_program(CYTHON "cython")
+
+# On Windows, we need to set these environmental variables so that the linker
+# can properly find the .lib file associated with a dynamic library (.dll).
+# And they must be set before any add_library() commands
+if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+    set(BUILD_SHARED_LIBS TRUE)
+endif()
 
 set(EXT_NAMES
     cy_basic_types
@@ -94,7 +102,7 @@ target_compile_definitions(gnome PUBLIC pyGNOME=1)
 
 target_include_directories(gnome PUBLIC lib_gnome)
 
-install(TARGETS gnome DESTINATION gnome/cy_gnome)
+install(TARGETS gnome LIBRARY DESTINATION gnome/cy_gnome)
 
 foreach(ext IN LISTS EXT_NAMES)
 
