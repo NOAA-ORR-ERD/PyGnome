@@ -481,7 +481,7 @@ class ObjType(SchemaType):
                      if d in cstruct]
 
         if len(datafiles) > 0:
-            tmpdir = tempfile.mkdtemp()
+            tmpdir = tempfile.mkdtemp(prefix='gnome.')
 
         for d in datafiles:
             if isinstance(cstruct[d], str):

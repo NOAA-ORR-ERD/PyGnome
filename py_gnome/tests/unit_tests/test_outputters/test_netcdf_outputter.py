@@ -77,7 +77,8 @@ def test_exceptions(output_filename):
     print("output_filename:", output_filename)
     # begin tests
     netcdf = NetCDFOutput(output_filename, which_data='all')
-    netcdf.rewind()  # delete temporary files
+    # netcdf.rewind()  # delete temporary files
+    #netcdf.clean_output_files()  # delete temporary files, incase they got left around
 
     with raises(ValueError):
         # must be filename, not dir name
@@ -106,7 +107,7 @@ def test_exceptions(output_filename):
     # changed renderer and netcdf ouputter to delete old files in
     # prepare_for_model_run() rather than rewind()
     # -- rewind() was getting called a lot
-    # -- before there was time to change the ouput file names, etc.
+    # -- before there was time to change the output file names, etc.
     # So for this unit test, there should be no exception if we do it twice.
     netcdf.prepare_for_model_run(model_start_time=datetime.now(),
                                  spills=spill_pair,
@@ -126,13 +127,15 @@ def test_exceptions(output_filename):
 def test_exceptions_middle_of_run(model):
     """
     Test attribute exceptions are called when changing parameters in middle of
-    run for 'which_data' and 'filename'
+    run for 'which_data' and 'filename' and ...
     """
     model.rewind()
     model.step()
-    o_put = [model.outputters[outputter.id]
-             for outputter in model.outputters
+
+    # find the netCDF outputter
+    o_put = [outputter for outputter in model.outputters
              if isinstance(outputter, NetCDFOutput)][0]
+
 
     assert o_put.middle_of_run
 
@@ -592,8 +595,9 @@ def test_write_output_post_run(model, output_ts_factor):
         assert (not os.path.exists(o_put._u_filename))
 
     # now write netcdf output
-    o_put.write_output_post_run(model.start_time,
-                                model.num_time_steps,
+    o_put.write_output_post_run(model_start_time=model.start_time,
+                                num_time_steps=model.num_time_steps,
+                                model_time_step=3600,
                                 spills=model.spills,
                                 cache=model._cache,
                                 uncertain=model.uncertain)

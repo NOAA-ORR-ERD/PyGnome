@@ -8,7 +8,6 @@ import functools
 import math
 import warnings
 import numpy as np
-import shapefile as shp
 # import trimesh # making this optional
 import geojson
 import zipfile

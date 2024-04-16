@@ -422,6 +422,9 @@ class Variable(gridded.Variable, GnomeId):
 
     def init_from_netCDF(self,
                          filename=None,
+                         dataset=None,
+                         data_file=None,
+                         grid_file=None,
                          varname=None,
                          grid_topology=None,
                          name=None,
@@ -429,10 +432,8 @@ class Variable(gridded.Variable, GnomeId):
                          time=None,
                          time_origin=None,
                          grid=None,
+                         depth_index=None,
                          depth=None,
-                         dataset=None,
-                         data_file=None,
-                         grid_file=None,
                          location=None,
                          load_all=False,
                          fill_value=0,
@@ -546,6 +547,8 @@ class Variable(gridded.Variable, GnomeId):
                             filename=time.filename,
                             varname=time.varname,
                             origin=time_origin)
+        if isinstance(depth_index, int):
+            depth = DepthBase(surface_index=depth_index)
         if depth is None:
             if (isinstance(grid, (Grid_S, Grid_R)) and len(data.shape) == 4 or
                     isinstance(grid, Grid_U) and len(data.shape) == 3):
@@ -555,6 +558,8 @@ class Variable(gridded.Variable, GnomeId):
                                           time=time,
                                           grid_topology=grid_topology,
                                           )
+        if depth_index == 'surface':
+            depth = DepthBase(surface_index=depth.surface_index, bottom_index = depth.bottom_index)
         if location is None:
             if hasattr(data, 'location'):
                 location = data.location
@@ -608,7 +613,7 @@ class Variable(gridded.Variable, GnomeId):
                 value = uc.convert(data_units, req_units, value)
             except uc.NotSupportedUnitError:
                 if (not uc.is_supported(data_units)):
-                    warnings.warn("{0} units is not supported: {1}"
+                    warnings.warn("{0} units is not supported: {1} "
                                   "Using them unconverted as {2}"
                                   .format(self.name, data_units, req_units))
                 elif (not uc.is_supported(req_units)):
@@ -981,6 +986,9 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
         return value
 
         return value
+
+    def get_grid_lines(self):
+        ''''''
 
     def get_data_vectors(self):
         '''

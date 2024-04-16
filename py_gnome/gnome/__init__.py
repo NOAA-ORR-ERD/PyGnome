@@ -6,11 +6,7 @@ import various names, and provides:
 initialize_console_log(level='debug')
 
   set up the logger to dump to console.
-
-
 """
-
-from itertools import chain
 
 import sys
 
@@ -55,7 +51,7 @@ def check_dependency_versions():
         else:
             return True
 
-    libs = [('gridded', '0.6.1', ''),
+    libs = [('gridded', '0.6.5', ''),
             ('nucos', '3.2.0', ''),
             ('py_gd', '2.2.0', ''),
             ('adios_db', '1.1.1', 'Only required to use the ADIOS Database '
@@ -71,7 +67,6 @@ def check_dependency_versions():
                    "needs to be installed: {}".format(name, version, note))
             warnings.warn(msg)
         else:
-            ver = tuple(module.__version__.split(".")[:3])
             if not ver_check(version, module.__version__):
                 msg = ('Version {0} of {1} package is required, '
                        'but actual version in module is {2}:'
@@ -150,6 +145,8 @@ def _valid_units(unit_type):
 
 # we have a sort of chicken-egg situation here.  The above functions need
 # to be defined before we can import these modules.
+# FIXME: they should be defined in a utilities module or something
+# to avoid this
 check_dependency_versions()
 
 from . import (environment,

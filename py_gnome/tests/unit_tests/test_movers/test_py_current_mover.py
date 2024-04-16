@@ -390,13 +390,13 @@ def test_save_load():
     test save/loading
     """
 
-    saveloc = tempfile.mkdtemp()
-    current = GridCurrent.from_netCDF(curr_file2)
-    py_current = CurrentMover(current=current)
-    save_json, zipfile_, _refs = py_current.save(saveloc)
+    with tempfile.TemporaryDirectory() as saveloc:
+        current = GridCurrent.from_netCDF(curr_file2)
+        py_current = CurrentMover(current=current)
+        save_json, zipfile_, _refs = py_current.save(saveloc)
 
-    assert validate_save_json(save_json, zipfile.ZipFile(zipfile_), py_current)
+        assert validate_save_json(save_json, zipfile.ZipFile(zipfile_), py_current)
 
-    loaded = CurrentMover.load(zipfile_)
+        loaded = CurrentMover.load(zipfile_)
 
     assert loaded == py_current

@@ -1,0 +1,47 @@
+{
+    "name": "Contour",
+    "expression": null,
+    "expression_type": "V",
+    "preview_graphic_point": null,
+    "preview_graphic_line": null,
+    "preview_graphic_polygon": null,
+    "ordering": 0,
+    "labels": [
+        {
+            "font": {
+                "fontname": "LucidaSansRegular",
+                "checksum": "sha139cc8bcb8d4a71d4657fc92ef0b9f4e3e9e67add"
+            },
+            "font_size": 10,
+            "color": "#ffffff",
+            "outlinecolor": "#000000",
+            "backgroundcolor": null,
+            "buffer": null,
+            "mindistance": null,
+            "position": "auto",
+            "offset_x": null,
+            "offset_y": null,
+            "antialias": true,
+            "partials": false,
+            "force": true
+        }
+    ],
+    "styles": [
+        {
+            "ordering": 1,
+            "symbol": null,
+            "outlinesymbol": null,
+            "font_character": null,
+            "angle": null,
+            "angle_field": null,
+            "style_size": null,
+            "size_field": null,
+            "style_width": 3,
+            "width_field": null,
+            "color": "#000000",
+            "outlinecolor": null,
+            "offset_x": null,
+            "offset_y": null
+        }
+    ]
+}

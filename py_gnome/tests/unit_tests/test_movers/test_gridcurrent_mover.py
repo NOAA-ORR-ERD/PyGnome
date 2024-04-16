@@ -2,10 +2,6 @@
 Test all operations for gridcurrent mover work
 '''
 
-
-
-
-
 import datetime
 import os
 
@@ -40,7 +36,7 @@ def test_exceptions():
         c_GridCurrentMover(testdata['CurrentCycleMover']['curr_bad_file'])
 
     with pytest.raises(TypeError):
-        c_GridCurrentMover(curr_file, topology_file=10)
+        c_GridCurrentMover(curr_file, topology_file=10.0)
 
 
 def test_loop():

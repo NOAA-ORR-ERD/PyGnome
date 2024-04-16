@@ -12,6 +12,8 @@ import warnings
 
 import numpy as np
 
+import nucos
+
 #from .sig_fig_rounding import RoundToSigFigs_fp as round_sf
 
 div = {'GB': 1024*1024*1024,
@@ -211,4 +213,41 @@ def round_sf_array(x, sigfigs):
     result.shape = shape
     return result
 
+def convert_mass_to_mass_or_volume(in_unit, out_unit, density, value):
+    """
+    convert a mass unit to either a mass or volume unit
 
+    :param in_unit: units of input, should be a valid mass unit.
+
+    :param out_unit: units you want the result in -- can be a volume or mass unit
+
+    :param density: density to use to convert from mass to volume. has to be kg/m^3
+
+    :param value: value (in in_units) you want converted.
+
+    ex:
+
+    convert_mass_to_mass_or_volume('kg', 'bbl', 950, 2000)
+
+    convert_mass_to_mass_or_volume('lbs', 'kg', 950, 4000)
+    """
+    try:
+        result = nucos.convert('mass', in_unit, out_unit, value)
+    except nucos.InvalidUnitError:  # out_unit not mass
+        # convert value to kg
+        mass = nucos.convert('mass', in_unit, 'kg', value)
+        vol = mass / density
+        result = nucos.convert('volume', 'm^3', out_unit, vol)
+    except nucos.InvalidUnitError as err:
+        # add an additional message
+        raise err
+    return result
+
+
+            # try:
+            #     dm = uc.convert('mass', self.units, 'kg', dv)
+            # except uc.InvalidUnitError:  # not mass
+            #     volume = uc.convert('volume', self.units, 'm^3', dv)
+            #     dm = volume * substance.standard_density
+            # except uc.InvalidUnitError:  # not volume either
+            #     raise ValueError(f"{self.unit} is not a valid unit for beached oil")

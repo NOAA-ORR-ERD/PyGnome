@@ -265,10 +265,9 @@ def test_save_load(wind):
     create a new Component mover and make sure it has same properties
     """
 
-    saveloc = tempfile.mkdtemp()
-    c_component = ComponentMover(curr1_file, wind=wind)
-    json_, saveloc, refs = c_component.save(saveloc)
-    loaded =  ComponentMover.load(saveloc)
+    with tempfile.TemporaryDirectory() as saveloc:
+        c_component = ComponentMover(curr1_file, wind=wind)
+        json_, saveloc, refs = c_component.save(saveloc)
+        loaded =  ComponentMover.load(saveloc)
 
     assert loaded == c_component
-

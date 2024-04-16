@@ -2,9 +2,6 @@
 Test all operations for gridcurrent mover work
 '''
 
-
-
-
 import os
 import datetime
 
@@ -52,7 +49,7 @@ def test_exceptions():
 
     with pytest.raises(TypeError):
         # topology file needs to be a string filename
-        c_GridWindMover(wind_file, topology_file=10)
+        c_GridWindMover(wind_file, topology_file=10.0)
 
 
 def test_init_defaults():

@@ -276,7 +276,7 @@ class IceImageOutput(Outputter):
         # the wrapper is yet to be written)
         # So we will just write to a tempfile and then read it back.
         # If we ever have to do this anywhere else, a context manager would be good.
-        tempdir = tempfile.mkdtemp()
+        tempdir = tempfile.mkdtemp(prefix='gnome.')
         tempfilename = os.path.join(tempdir, "gnome_temp_image_file.png")
 
         canvas.save_foreground(tempfilename)
