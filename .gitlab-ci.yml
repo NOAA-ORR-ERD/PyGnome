@@ -165,7 +165,9 @@ test_pygnome_windows:
 
     - echo "Building PyGNOME"
     - cd ./py_gnome
-    #python -m build --no-isolation --config-setting cmake.verbose=true
+    # If you want verbose output including the compiler/linker commands,
+    # run the following command:
+    #   python -m build --no-isolation --config-setting cmake.verbose=true
     - pip install ./
 
     - cd ./tests/unit_tests

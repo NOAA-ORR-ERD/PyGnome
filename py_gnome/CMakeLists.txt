@@ -20,7 +20,7 @@ find_program(CYTHON "cython")
 # can properly find the .lib file associated with a dynamic library (.dll).
 # And they must be set before any add_library() commands
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
     set(BUILD_SHARED_LIBS TRUE)
 endif()
 
