@@ -164,11 +164,10 @@ test_pygnome_windows:
                                           --file ../oil_database/adios_db/conda_requirements.txt
 
     - echo "Building PyGNOME"
-    - cd ./py_gnome
     # If you want verbose output including the compiler/linker commands,
     # run the following command:
     #   python -m build --no-isolation --config-setting cmake.verbose=true
-    - pip install ./
+    - python -m pip install ./
 
     - cd ./tests/unit_tests
     - pytest --runslow

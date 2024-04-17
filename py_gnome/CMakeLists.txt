@@ -94,15 +94,15 @@ set(LIBGNOME_CPP_FILES
 
 list(TRANSFORM LIBGNOME_CPP_FILES PREPEND "lib_gnome/")
 
-add_library(gnome SHARED ${LIBGNOME_CPP_FILES})
+add_library(lib_gnome SHARED ${LIBGNOME_CPP_FILES})
 
-target_link_libraries(gnome PRIVATE NetCDF::NetCDF)
+target_link_libraries(lib_gnome PRIVATE NetCDF::NetCDF)
 
-target_compile_definitions(gnome PUBLIC pyGNOME=1)
+target_compile_definitions(lib_gnome PUBLIC pyGNOME=1)
 
-target_include_directories(gnome PUBLIC lib_gnome)
+target_include_directories(lib_gnome PUBLIC lib_gnome)
 
-install(TARGETS gnome LIBRARY DESTINATION gnome/cy_gnome)
+install(TARGETS lib_gnome LIBRARY DESTINATION gnome/cy_gnome)
 
 foreach(ext IN LISTS EXT_NAMES)
 
@@ -122,7 +122,7 @@ foreach(ext IN LISTS EXT_NAMES)
         WITH_SOABI
     )
 
-    target_link_libraries(${ext} PRIVATE gnome Python::NumPy)
+    target_link_libraries(${ext} PRIVATE lib_gnome Python::NumPy)
 
 
     if(APPLE)
