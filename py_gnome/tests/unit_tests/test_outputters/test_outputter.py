@@ -155,8 +155,7 @@ def test_output_timestep(model, model_ts, output_ts):
 
 def test_bad_output_timestep():
     """
-    output timestep can never be zero
-    output timestep should match sign of model_time_step
+    output timestep can never be less than zero
     """
     # on init:
     with pytest.raises(ValueError):
@@ -164,23 +163,23 @@ def test_bad_output_timestep():
 
     # changing it later
     out = Outputter(output_timestep=gs.hours(3))
-    # allowing negative timestep for backwards run
-    #with pytest.raises(ValueError):
-        #out.output_timestep = gs.hours(-1)
+
+    with pytest.raises(ValueError):
+        out.output_timestep = gs.hours(-1)
 
     assert out.output_timestep == gs.hours(3)
 
-    out.output_timestep = gs.hours(-1)
-    with pytest.warns(RuntimeWarning, match="is less than zero") as warning:
-        out.prepare_for_model_run(model_start_time=datetime.now(),model_time_step=900)
-
-    assert out.output_timestep == gs.hours(-1)
-
-    out.output_timestep = gs.hours(1)
-    with pytest.warns(RuntimeWarning, match="is greater than zero") as warning:
-        out.prepare_for_model_run(model_start_time=datetime.now(),model_time_step=-900)
-
-    assert out.output_timestep == gs.hours(1)
+#     out.output_timestep = gs.hours(-1)
+#     with pytest.warns(RuntimeWarning, match="is less than zero") as warning:
+#         out.prepare_for_model_run(model_start_time=datetime.now(),model_time_step=900)
+#
+#     assert out.output_timestep == gs.hours(-1)
+#
+#     out.output_timestep = gs.hours(1)
+#     with pytest.warns(RuntimeWarning, match="is greater than zero") as warning:
+#         out.prepare_for_model_run(model_start_time=datetime.now(),model_time_step=-900)
+#
+#     assert out.output_timestep == gs.hours(1)
 
 
 def test_too_small_output_timestep(model):
