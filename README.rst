@@ -15,7 +15,10 @@ Introduction
 developed by the National Oceanic and Atmospheric Administration (**NOAA**),
 Office of Response and Restoration (**ORR**), Emergency Response Division.
 
-It is designed to support oil and other hazardous material spills in the coastal environment, and is also a full featured, flexible particle tracking system, that can be used for other oceanographic transport applications, such as fish larvae, marine debris, etc.
+It is designed to support oil and other hazardous material spills in the
+coastal environment, and is also a full featured, flexible particle tracking
+system, that can be used for other oceanographic transport applications,
+such as fish larvae, marine debris, etc.
 
 PyGNOME is a python package that encapsulates GNOME's functionality.
 
@@ -39,37 +42,34 @@ Installation
 ============
 
 We have put some effort into making this package reasonably easy,
-or at least possible, to install in a number of ways on a few different computing platforms:
+or at least possible, to install on a few different computing platforms:
 
  - OS-X
  - Windows
  - Linux (tested on CentOS 7)
 
-At this time, it must be compiled from the source code.
+This package contains modules written in C/C++, and they must be
+compiled for this package to function, and we primarily use the Anaconda
+distribution of Python for installation.  Anaconda is built primarily for
+scientific, engineering, and math applications.
+It is now the only supported way to get set up to use ``PyGNOME``,
+and it is used in our development and testing process.
 
-The "tricky" part is installing the dependencies: details in the following:
-
-`Install using conda <./Installing.rst>`_
-
-The conda package manager is built primarily for scientific, engineering,
-and math applications it is the easiest way to get set up to use ``PyGNOME``, and it is used in our development and testing process.
-
-If you don't want to / can't use conda -- here are some notes on that:
-
-`Installing Without Conda <./Install_without_conda.rst>`_
-
+`Install using Anaconda <./Installing.rst>`_
 
 The WebGNOME Interface:
 =======================
 
 Scripting is the most featurefull way to access PyGNOME's capabilities.
-However we have developed a system that allows a user to create and run PyGNOME models from a web browser.
+However we have developed a system that allows a user to create and run
+PyGNOME models from a web browser.
 
 There is a publicly available instance of WebGNOME at:
 
 https://gnome.orr.noaa.gov
 
-If you want to run your own instance of WebGNOME, the code is in the following projects:
+If you want to run your own instance of WebGNOME, the code is in the
+following projects:
 
 - `WebGnomeAPI <https://github.com/NOAA-ORR-ERD/WebGnomeAPI>`_:
   A web server that implements the PyGNOME interface
@@ -78,4 +78,5 @@ If you want to run your own instance of WebGNOME, the code is in the following p
 
 **Fair Warning:**
 
-The WebGNOME system is under active development, and by its very nature does not expose the full capabilities of PyGNOME.
+The WebGNOME system is under active development, and by its very nature
+does not expose the full capabilities of PyGNOME.
