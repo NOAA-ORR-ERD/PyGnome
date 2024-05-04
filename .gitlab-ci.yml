@@ -128,13 +128,13 @@ test_pygnome_windows:
                   'C:\ProgramData\miniforge3\Scripts;' +
                   'C:\ProgramData\miniforge3\Lib\bin;' +
                   $Env:PathOrig
-    - echo "Our $Path:"
     - $Env:Path -split ';'
 
-    - echo "Python is running from:"
     - python -c "import sys; print(sys.executable)"
 
-    - Invoke-Expression "conda shell.powershell hook"
+    # This might be changing our current directory.  It only needs to be run
+    # one time anyway, so we will comment it out.
+    #- Invoke-Expression "conda shell.powershell hook"
 
     - conda config --add channels defaults
     - conda config --add channels conda-forge
