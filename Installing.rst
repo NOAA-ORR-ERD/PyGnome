@@ -41,7 +41,7 @@ Run the tests::
     > cd tests/unit_tests
     > pytest --runslow
 
-NOTE: *the "runslow" tests requiring downloading data for the tests -- you can
+NOTE: *The "runslow" tests requiring downloading data for the tests -- you can
 eliminate that flag to get most of the tests to run without that delay.*
 
 All the details
@@ -118,7 +118,7 @@ Linux:
 
 The Linux 64bit-python3.10 is the one to use.
 
-*NOTE: We do not support 32 bit on any platform.*
+NOTE: *We do not support 32 bit on any platform.*
 
 conda
 -----
@@ -129,7 +129,7 @@ package manager for installing conda packages. ``pip`` can also be used
 within conda, but it's best to use use conda for as much as you can.
 
 As a rule, if you need a new package, you should try to conda install it,
-and then, if there is not conda package available, you can pip install it.
+and then, if there is no conda package available, you can pip install it.
 
 We have made sure that every package you need for PyGNOME is available for conda.
 
@@ -185,7 +185,7 @@ Adding another channel to conda:
 ................................
 
 In order to find packages available on conda-forge, it should be added to your
-conda channel configuration:
+conda channel configuration::
 
     > conda config --add channels conda-forge
 
@@ -206,7 +206,7 @@ In that order -- the order is important
 
 You need to set the channel prioroty to "strict"::
 
-  > conda config --set channel_priority strict
+    > conda config --set channel_priority strict
 
 This will assure that you will get packages from conda-forge, even if there are
 newer ones available in the defaults channel.
@@ -268,9 +268,7 @@ it yet, it is available here:
 https://github.com/NOAA-ORR-ERD/PyGNOME
 
 You can either download a zip file of all the sources and unpack it, or
-you can "clone" the git repository. If you clone the repository, you will
-be able to update the code with the latest version with a simple command,
-rather than having to re-download the whole package.
+you can "clone" the git repository. Either choice is valid.
 
 
 Downloading a single release
@@ -281,29 +279,35 @@ zip and tar archives of the PyGNOME source code can be found here:
 https://github.com/NOAA-ORR-ERD/PyGNOME/releases
 
 This will get you the entire source archive of a given release, which is a
-fine way to work with PyGNOME. However, if you want to be able to quickly
-include changes as we update the code, you may want to work with a git "clone"
-of the source code instead.
+fine way to work with PyGNOME.  However if, in the future, you want to use any
+new changes that have been made to the code, you will need to re-download the
+new release in its entirety.
 
-Cloning the PyGNOME git repository
+Cloning the PyGNOME Git repository
 ----------------------------------
 
-git
-...
+If you clone the repository, you will be able to update the code with the
+latest version with a simple command (`git pull`).  This will download only
+the files that have changed and requires no archive extraction, so it will
+not only be a faster operation, but we think you will find it is also more
+convenient.
 
-You will need a git client:
+First you will need a Git client.  On Linux, it should be available from your
+package manager using one of the following commands::
 
-On Linux, it should be available from your package manager::
-
-    > apt_get install git
+    > apt_get install git  # Debian & Linux Mint
     or
-    > yum install git
+    > yum install git  # CentOS & Red Hat Enterprise Linux
 
-On OS-X, git comes with the XCode command line tools:
+NOTE: *There are a few other Linux package managers out there.  Look at this
+`exhaustive list <https://en.wikipedia.org/wiki/List_of_software_package_management_systems#Linux>`__
+to find the one your Linux distribution uses*
+
+On OS-X, Git comes with the XCode command line tools:
 
   http://osxdaily.com/2014/02/12/install-command-line-tools-mac-os-x/
 
-On Windows, the "official" git for Windows installer is a good bet:
+On Windows, the "official" Git for Windows installer is a good bet:
 
   https://git-for-windows.github.io/
 
@@ -311,7 +315,7 @@ Once you have the client, it's as easy as::
 
   > git clone https://github.com/NOAA-ORR-ERD/PyGNOME.git
 
-This will create a PyGNOME directory with all the code in it.
+This will create a `./pygnome` directory with all the code in it.
 
 git branches:
   git supports a number of different "branches" or versions of the code.
@@ -328,17 +332,13 @@ To use the gnome environment you created, it needs to be activated with::
 
     > conda activate gnome
 
-and when you are done, you can deactivate it with::
-
-    > conda deactivate
-
 If you don't want to create an environment (or already have one), you can
-install what PyGNOME needs into an existing environment:
+install what PyGNOME needs into an existing environment::
 
-    > cd PyGNOME  # or wherever you put the PyGNOME project
+    > cd ./pygnome  # or wherever you put the PyGNOME project
     > conda install --file conda_requirements.txt --file conda_requirements_build.txt --file conda_requirements_test.txt
 
-*NOTE: PyGNOME has a lot of specific dependencies -- it can be very hard
+NOTE: *PyGNOME has a lot of specific dependencies -- it can be very hard
 for conda to resolve them with an large installed package base.
 If you have trouble, it's easiest to make a new environment just for PyGNOME.*
 
@@ -404,20 +404,21 @@ The latest releases (of the same branch) of each should be compatible.
 
 To clone the repository::
 
-  > git clone https://github.com/NOAA-ORR-ERD/adios_oil_database.git
+    > git clone https://github.com/NOAA-ORR-ERD/adios_oil_database.git
 
 To install its dependencies::
 
-  > cd adios_db
-  > conda install --file conda_requirements.txt
+    > cd ./oil_database/adios_db
+    > conda install --file conda_requirements.txt
 
 Installing the package::
 
-  > pip install ./
+    > pip install ./
 
 (or ``pip install -e ./`` to get an "editable" version)
 
-Testing the adios_db install.
+Testing the adios_db install
+............................
 
 If you run the PyGNOME tests after having installed ``adios_db``, it will run
 a few additional tests that require the ``adios_db``. It should not need
@@ -427,10 +428,9 @@ But if you want to test it directly, you will need additional requirements::
 
   > conda install --file conda_requirements_test.txt
 
-And then you can run the tests:
+And then you can run the tests::
 
   > pytest --pyargs adios_db
-
 
 Compilers
 ---------
@@ -473,7 +473,8 @@ similar to **"x64 Native Tools Command Prompt (for VS 20XX)"** in order to
 build PyGNOME -- this is to make sure the compiler is setup for building
 x64 targets.
 
-.. warning:: On some locked down systems, such as those at NOAA, the
+Warning:
+  On some locked down systems, such as those at NOAA, the
   standard way to use the MS compiler will not work for a user that does not
   have administration privileges.  If you get errors about not being able to
   run the ``vcvarsall.bat`` script, then the compiler must be run as an
@@ -489,11 +490,9 @@ Linux
 Linux uses the GNU gcc compiler. If it is not already installed on your
 system, use your system package manager to get it.
 
--  apt for Ubuntu and Linux Mint
--  rpm for Red Hat
--  dpkg for Debian
+-  apt for Debian based distros (Ubuntu, Mint, Kali, ...)
 -  yum for CentOS
--  ??? for other distros
+-  `... <https://en.wikipedia.org/wiki/List_of_software_package_management_systems#Linux>`__
 
 Building PyGNOME
 ................
@@ -503,7 +502,7 @@ and you can build the PyGNOME package itself.  But How you build the package
 depends on how you plan to use it.
 
 Most people will likely want to simply use the package for building and running
-simulations.  For this, run the following:
+simulations.  For this, run the following::
 
     > cd <your_pygnome_git_repo>/py_gnome
     > python -m pip install ./
@@ -525,12 +524,12 @@ then you may want to perform a "develop" install.  A "develop" install allows
 changes in the python code to be immediately available in your python
 environment without re-installing.
 
-For this, run the following:
+For this, run the following::
 
     > cd <your_pygnome_git_repo>/py_gnome
     > python -m pip install --editable ./
 
-If you would like or need to uninstall the package, run the following:
+If you would like or need to uninstall the package, run the following::
 
     > python -m pip uninstall gnome
 
@@ -561,10 +560,18 @@ runs.
 What if some tests fail?
 ........................
 
-We do our best to keep all tests passing on release versions of the package. But sometimes tests will fail due to the setup of the machine they are being run on -- package versions, etc. So the first thing to do is to make sure you have installed the dependencies as specified.
+We do our best to keep all tests passing on release versions of the package.
+But sometimes tests will fail due to the setup of the machine they are being
+run on -- package versions, etc. So the first thing to do is to make sure you
+have installed the dependencies as specified.
 
-But ``gnome`` is large package -- hardly anyone is going to use all of it. So while we'd like all tests to pass, a given test failure may not be an issue for any given use case.
-It's a bit hard to know whether a given test failure will affect your use case, but if you look at the name of the tests that fail, you might get a hint. For example, if any of the tests fail under ``test_weathering``, and you are not doing any oil weathering modeling, you don't need to worry about it.
+But ``gnome`` is large package -- hardly anyone is going to use all of it.
+So while we'd like all tests to pass, a given test failure may not be an issue
+for any given use case.  It's a bit hard to know whether a given test failure
+will affect your use case, but if you look at the name of the tests that fail,
+you might get a hint. For example, if any of the tests fail under
+``test_weathering``, and you are not doing any oil weathering modeling,
+you don't need to worry about it.
 
 In any case, you can try to run your use case, and see what happens.
 
@@ -575,21 +582,24 @@ Running scripts
 
 There are a number of scripts in the ``scripts`` directory.
 
-In ``example_scripts`` you will find examples of using the ``gnome`` package for various tasks.
+In ``example_scripts`` you will find examples of using the ``gnome`` package
+for various tasks.
 
-In ``testing_scripts`` you will find scripts that have been developed to test various features of the model. There are many more of these, so do look to see if they have what you need. But they are generally written in a less compact way as they are designed to exercise particular features.
+In ``testing_scripts`` you will find scripts that have been developed to
+test various features of the model. There are many more of these, so do look
+to see if they have what you need. But they are generally written in a
+less compact way as they are designed to exercise particular features.
 
-You should be able to run these scripts in the same way as any Python script (with an IDE such as Spyder or PyCharm, or at the command line).
+You should be able to run these scripts in the same way as any Python script
+(with an IDE such as Spyder or PyCharm, or at the command line).
 
 
-To run a script on the command line:
-
-::
+To run a script on the command line::
 
     > cd py_gnome/scripts/example_scripts
 
 
-If you are using a conda environment:
+If you are using a conda environment::
 
     > conda activate gnome
 
@@ -597,16 +607,13 @@ Run the script::
 
     > python example_script.py
 
-Each of the scripts exercises different features of PyGNOME -- they are hopefully well commented to see how they work.
+Each of the scripts exercises different features of PyGNOME -- they are
+hopefully well commented to see how they work.
 
-In the ``testing_scripts`` dir, there is a ``run_all.py`` script that will run all the testing scripts -- primarily to make sure they all can still run as we update the model.
+In the ``testing_scripts`` dir, there is a ``run_all.py`` script that will
+run all the testing scripts -- primarily to make sure they all can still run
+as we update the model.
 
 For further documentation of PyGNOME, see:
 
 https://gnome.orr.noaa.gov/doc/PyGNOME/index.html
-
-
-
-
-
-
