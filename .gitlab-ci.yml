@@ -133,10 +133,10 @@ test_pygnome_windows:
 
     - python -c "import sys; print(sys.executable)"
 
-    # This might be changing our current directory, so we re-establish it
-    # after initializing the powershell hooks.
-    - Invoke-Expression "conda shell.powershell hook"
-    - cd $Env:CurrDir
+    # This might be changing our current directory.  It only needs to be run
+    # one time anyway, so we will comment it out.
+    #- Invoke-Expression "conda shell.powershell hook"
+    - conda init powershell
 
     - conda config --add channels defaults
     - conda config --add channels conda-forge
@@ -150,7 +150,7 @@ test_pygnome_windows:
                   (Get-Location) + '\pygnome\Scripts\;' +
                   (Get-Location) + '\pygnome\Lib\bin\;' +
                   $Env:PathOrig
-    - conda activate '' + (Get-Location) + '\pygnome'
+    - conda activate ./pygnome
   script:
     - echo "Building and testing PyGNOME"
 
