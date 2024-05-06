@@ -117,6 +117,7 @@ test_pygnome_windows:
     - Get-Location
     - Get-ChildItem | % { $_.FullName }  # this should list the current folder
     - $Env:PathOrig = $Env:Path
+    - $Env:CurrDir = Get-Location
  
     # Where is our conda installation?
     # This will tell us where python is installed.  This could change periodically
@@ -132,9 +133,10 @@ test_pygnome_windows:
 
     - python -c "import sys; print(sys.executable)"
 
-    # This might be changing our current directory.  It only needs to be run
-    # one time anyway, so we will comment it out.
-    #- Invoke-Expression "conda shell.powershell hook"
+    # This might be changing our current directory, so we re-establish it
+    # after initializing the powershell hooks.
+    - Invoke-Expression "conda shell.powershell hook"
+    - cd $Env:CurrDir
 
     - conda config --add channels defaults
     - conda config --add channels conda-forge
