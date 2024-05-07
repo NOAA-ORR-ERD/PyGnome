@@ -136,7 +136,11 @@ test_pygnome_windows:
     # This might be changing our current directory.  It only needs to be run
     # one time anyway, so we will comment it out.
     #- Invoke-Expression "conda shell.powershell hook"
-    - conda init powershell
+    #- conda init powershell
+
+    # On SO, it was suggested that this would perform a `conda init`
+    # without needing to restart PowerShell.  So we will test it.
+    - C:\ProgramData\miniforge3\shell\condabin\conda-hook.ps1
 
     - conda config --add channels defaults
     - conda config --add channels conda-forge
