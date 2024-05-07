@@ -145,11 +145,11 @@ test_pygnome_windows:
 
     - conda create -y -p ./pygnome python=$PYTHON_VER
 
-    - $Env:Path = '' +
-                  (Get-Location) + '\pygnome\;' +
-                  (Get-Location) + '\pygnome\Scripts\;' +
-                  (Get-Location) + '\pygnome\Lib\bin\;' +
-                  $Env:PathOrig
+    #- $Env:Path = '' +
+    #              (Get-Location) + '\pygnome\;' +
+    #              (Get-Location) + '\pygnome\Scripts\;' +
+    #              (Get-Location) + '\pygnome\Lib\bin\;' +
+    #              $Env:PathOrig
     - conda activate ./pygnome
   script:
     - echo "Building and testing PyGNOME"
