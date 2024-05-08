@@ -34,7 +34,7 @@ Build the gnome package::
     > cd py_gnome
     > python setup.py develop
 
-.. warning:: when you run this command, you will get a warning from ``setuptools`` that running ``setup.py`` directly is deprecated. That is expected, and the build system will be updated before it stops working altogether.
+.. note:: when you run this command, you will get a warning from ``setuptools`` that running ``setup.py`` directly is deprecated. That is expected, and the build system will be updated before it stops working altogether.
 
 You now should be good to go, but to make sure:
 
@@ -92,6 +92,8 @@ PyGNOME. Either the graphical installer or the command line one is
 fine -- use the graphical one if you are not all that comfortable with
 the \*nix command line.
 
+Everything PyGNOME needs is available for either Intel or the "M" series of processors (also called arm64 or Apple Silicon). Choose a miniconda/miniforge that matches the processor in your computer.
+
 Linux:
 ......
 
@@ -103,7 +105,7 @@ conda
 -----
 
 `conda <http://conda.pydata.org/docs/intro.html>`__ is the package
-manager that Anaconda is built on. So when working with Anaconda, you
+manager that Anaconda is built on. So when working with Anaconda, or miniconda, you
 use the conda package manager for installing conda packages. ``pip``
 can also be used within conda, but it's best to use use conda for as much as you can.
 
@@ -111,7 +113,7 @@ As a rule, if you need a new package, you should try to conda install it, and th
 
 We have made sure that every package you need for PyGNOME is available for conda.
 
-conda-forge
+Conda-Forge
 ...........
 
 Conda-Forge (https://conda-forge.org/) is a community  project that supplies a huge number of packages for the conda package manager. We have tried to assure that everything you need to run PyGNOME is available via the conda-forge channel.
@@ -167,6 +169,8 @@ Add the conda-forge channel::
 
     > conda config --add channels conda-forge
 
+.. note:: MiniForge comes pre-configured to work with conda-forge, this step is not neccesary of you are using the miniforge distribution.
+
 When you add a channel to conda, it puts it at the top of the list.
 So now when you install a package, conda will first look in conda-forge,
 and then in the default channel. This order should work well for PyGNOME.
@@ -182,7 +186,7 @@ It should return something like this::
 
 In that order -- the order is important
 
-You need to set the channel prioroty to "strict"::
+You also need to set the channel priority to "strict"::
 
   > conda config --set channel_priority strict
 
@@ -221,7 +225,7 @@ and when you are done, you can deactivate it with::
 
 
 After activating the environment, you can proceed with these instructions,
-and all the packages PyGNOME needs will be installed into that environment and kept separate from your main Anaconda install.
+and all the packages PyGNOME needs will be available in that environment and kept separate from your main Anaconda install.
 
 You will need to activate the environment any time you want to work with
 PyGNOME in the future
@@ -244,6 +248,8 @@ you can "clone" the git repository. If you clone the repository, you will
 be able to update the code with the latest version with a simple command,
 rather than having to re-download the whole package.
 
+Unless you want to contribute to the project, you should use the "main" branch.
+
 
 Downloading a single release
 ----------------------------
@@ -253,6 +259,7 @@ zip and tar archives of the PyGNOME source code can be found here:
 https://github.com/NOAA-ORR-ERD/PyGNOME/releases
 
 This will get you the entire source archive of a given release, which is a fine way to work with PyGNOME. However, if you want to be able to quickly include changes as we update the code, you may want to work with a git "clone" of the source code instead.
+
 
 Cloning the PyGNOME git repository
 ----------------------------------
@@ -270,7 +277,7 @@ Linux:
     > yum install git
 
 OS-X:
-  git comes with the XCode command line tools:
+  git comes with the XCode command line tools, which you will need for the compiler as well:
 
   http://osxdaily.com/2014/02/12/install-command-line-tools-mac-os-x/
 
@@ -422,7 +429,9 @@ Once installed, you will want to use one of the  "Visual Studio Developer Comman
 
 .. warning:: On some locked down systems, such as those at NOAA, the standard way to use the MS compiler will not work for a user that does not have administration privileges.
   If you get errors about not being able to run the ``vcvarsall.bat`` script, then the compiler must be run as an administrator.
+
   If you have access to the NOAA/ORR GitLab server, a work around is supplied here: `Building Python extensions on Windows <https://gitlab.orr.noaa.gov/erd/programmers/-/blob/main/tech_notes/compiling_py3_C_extensions.md?ref_type=heads>`_.
+
   If you have this issue and are not from NOAA, ask for help on Python fora or as an issue in the PyGNOME gitHub project.
 
 
@@ -479,7 +488,7 @@ gitHub repo -- particularly if strange errors are occurring.
 
 You will need to re-run ``develop`` or ``install`` after running ``cleanall``
 
-NOTE: PyGNOME is not currently configured to be built with pip -- you need to call ``setup.py`` directly.
+NOTE: PyGNOME is not currently configured to be built with pip -- you need to call ``setup.py`` directly. Note that you will get a message about setup.py being deprecated -- it will still work, and we will updated the build system soon.
 
 
 Testing PyGNOME
