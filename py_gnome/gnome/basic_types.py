@@ -17,7 +17,11 @@ import numpy as np
 from enum import IntEnum
 
 # pull everything from the cython code
-from .cy_gnome import cy_basic_types as cbt
+try:
+    from .cy_gnome import cy_basic_types as cbt
+except ImportError as err:
+    raise ImportError("Unable to import the gnome package -- "
+                      "it must be properly built and installed.") from err
 
 # in lib_gnome, the coordinate systems used (r-theta, uv, etc)
 # are called ts_format, which is not a very descriptive name.
