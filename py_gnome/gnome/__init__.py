@@ -28,9 +28,14 @@ __version__ = '1.1.7'
 if os.name == 'nt':
     # In Windows, we need to add the location of our lib_gnome.dll to the
     # .dll search path.
-    os.add_dll_directory(
-        pathlib.Path(sys._stdlib_dir) / 'site-packages' / 'bin'
-    )
+    here = getattr(sys, '_stdlib_dir', None)
+    if not here and hasattr(os, '__file__'):
+        here = os.path.dirname(os.__file__)
+
+    if here:
+        os.add_dll_directory(
+            pathlib.Path(here) / 'site-packages' / 'bin'
+        )
 
 #
 # A few imports so that the basic stuff is there
