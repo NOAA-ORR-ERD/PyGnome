@@ -21,7 +21,7 @@ import nucos
 # just so it will be in the namespace.
 from .gnomeobject import GnomeId, AddLogger
 
-__version__ = '1.1.7'
+__version__ = '1.1.8'
 
 
 # a few imports so that the basic stuff is there
@@ -54,7 +54,7 @@ def check_dependency_versions():
     libs = [('gridded', '0.6.5', ''),
             ('nucos', '3.2.0', ''),
             ('py_gd', '2.2.0', ''),
-            ('adios_db', '1.1.1', 'Only required to use the ADIOS Database '
+            ('adios_db', '1.2.0', 'Only required to use the ADIOS Database '
                                   'JSON format for oil data.')
             ]
 
