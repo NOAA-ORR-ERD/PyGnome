@@ -151,3 +151,4 @@ The renderer added to the model generates an animated GIF with a frame every 8 h
 
 It will have been saved in ``output`` dir relative to the directory that the script was executed from, as specified in the ``Renderer`` creation.
 The animation should show a cloud of elements moving east and spreading.
+

@@ -1,3 +1,5 @@
+.. _scripting_weathering:
+
 Weatherers
 ==========
 
@@ -19,7 +21,13 @@ You can find a documented simple example script in:
 
 ``pygnome/py_gnome/scripts/example_scripts/weathering_script.py``
 
+Or download it here:
+:download:`weathering_script.py <../../../scripts/example_scripts/weathering_script.py>`
+
 It is well commented.
+
+You will also need an oil definition JSON file, such as:
+:download:`alaska-north-slope_AD00020.json <../../../scripts/example_scripts/example_files/alaska-north-slope_AD00020.json>`
 
 
 
