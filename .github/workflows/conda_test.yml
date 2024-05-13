@@ -8,7 +8,7 @@ jobs:
     strategy:
         matrix:
             os: ["ubuntu-latest", "windows-latest","macos-latest"]
-            pyver: ["3.8", "3.9", "3.10", "3.11"]
+            pyver: ["3.9", "3.10", "3.11"]
     steps:
       - uses: actions/checkout@v4
       - uses: conda-incubator/setup-miniconda@v3
@@ -27,9 +27,9 @@ jobs:
             conda install -y mamba
             cd ./py_gnome
             echo "Setting up conda environment"
-            mamba install -y --file conda_requirements.txt
-                             --file conda_requirements_build.txt
-                             --file conda_requirements_test.txt
+            mamba install -y --file conda_requirements.txt \
+                             --file conda_requirements_build.txt \
+                             --file conda_requirements_test.txt \
                              --file ../oil_database/adios_db/conda_requirements.txt
       - name: Build Our Packages
         shell: bash -l {0}
