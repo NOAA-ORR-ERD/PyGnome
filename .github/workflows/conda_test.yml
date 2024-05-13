@@ -23,7 +23,7 @@ jobs:
       - name: Setup environment
         shell: bash -l {0}
         run: |
-            git clone --depth 1 -b develop https://github.com/NOAA-ORR-ERD/adios_oil_database.git
+            git clone --depth 1 -b develop https://github.com/NOAA-ORR-ERD/adios_oil_database.git oil_database
             conda install -y mamba
             cd ./py_gnome
             echo "Setting up conda environment"
