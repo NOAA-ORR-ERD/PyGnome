@@ -113,6 +113,8 @@ PyGNOME. Either the graphical installer or the command line one is
 fine -- use the graphical one if you are not all that comfortable with
 the \*nix command line.
 
+Everything PyGNOME needs is available for either Intel or the "M" series of processors (also called arm64 or Apple Silicon). Choose a miniconda/miniforge that matches the processor in your computer.
+
 Linux:
 ......
 
@@ -133,7 +135,7 @@ and then, if there is no conda package available, you can pip install it.
 
 We have made sure that every package you need for PyGNOME is available for conda.
 
-conda-forge
+Conda-Forge
 ...........
 
 `Conda-Forge <https://conda-forge.org/>`__ is a community  project that supplies
@@ -189,6 +191,8 @@ conda channel configuration::
 
     > conda config --add channels conda-forge
 
+.. note:: MiniForge comes pre-configured to work with conda-forge, this step is not neccesary of you are using the miniforge distribution.
+
 When you add a channel to conda, it puts it at the top of the list.
 So now when you install a package, conda will first look in conda-forge,
 and then in the default channel. This order should work well for PyGNOME.
@@ -204,7 +208,7 @@ It should return something like this::
 
 In that order -- the order is important
 
-You need to set the channel prioroty to "strict"::
+You also need to set the channel priority to "strict"::
 
     > conda config --set channel_priority strict
 
@@ -269,6 +273,8 @@ https://github.com/NOAA-ORR-ERD/PyGNOME
 
 You can either download a zip file of all the sources and unpack it, or
 you can "clone" the git repository. Either choice is valid.
+
+Unless you want to contribute to the project, you should use the "main" branch.
 
 
 Downloading a single release

@@ -40,7 +40,7 @@ def convert_longitude(lon, coord_system='-180--180'):
     -180 converts to 180
 
     It should be safe to call this on any coords -- if they are already
-    in the expected format, they will not be changes, except for the
+    in the expected format, they will not be changed, except for the
     normalization above.
     """
 

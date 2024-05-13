@@ -36,10 +36,15 @@ renderer = gs.Renderer(mymap,
                        output_timestep=gs.hours(6),
                        # set part of map to view
                        viewport=((-125.5, 47.5),
-                                 (-124.0, 48.5))
+                                 (-124.0, 48.5)),
+                       formats=['gif']
                        )
 
 model.outputters += renderer
+
+kmzout = gs.KMZOutput('output/gridded_example.kmz')
+print("adding KMZ outputter")
+model.outputters += kmzout
 
 print("running the model: see output in the output dir")
 
