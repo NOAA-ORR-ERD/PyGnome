@@ -3,13 +3,13 @@ simple_script.py
 
 About the simplest script you can write
 
-This example is documented in the PyGNOME docs: Scripting Overview
+This example is documented in the PYGNOME docs: Scripting Overview
 """
 
 # easiest way to get all the common functionality in one place
 import gnome.scripting as gs
 # gnome can use either ISO style strings or datetime objects
-start_time = "2024-01-01T12:00:00"
+start_time = "2015-01-01"
 
 model = gs.Model(start_time=start_time,
                  duration=gs.days(3),

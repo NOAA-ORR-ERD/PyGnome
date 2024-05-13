@@ -46,18 +46,15 @@ This example does not load any external data, but creates a simple map and mover
 The "spill" is a conservative substance, i.e. a "passive tracer."
 
 This example is in the PyGNOME source under "scripts/example_scripts", or can be downloaded here:
-:download:`simple_script.py <../../../scripts/example_scripts/simple_script.py>`
+.. this download link is getting rendered oddly -- and why do I need so many ../?
+:download:`simple_script.py <../../../../../scripts/example_scripts/simple_script.py`
 
 Initialize the Model
 --------------------
-The model is initialized to begin on New Years Day 2015 and run for 3 days with a model time step of 15 minutes:
-
-.. code-block:: python
+The model is initialized to begin on New Years Day 2015 and run for 3 days with a model time step of 15 minutes::
 
     import gnome.scripting as gs
-
-    start_time = "2024-01-01T12:00:00"
-
+    start_time = "2015-01-01"
     model = gs.Model(start_time=start_time,
                      duration=gs.days(3),
                      time_step=gs.minutes(15)
@@ -154,3 +151,4 @@ The renderer added to the model generates an animated GIF with a frame every 8 h
 
 It will have been saved in ``output`` dir relative to the directory that the script was executed from, as specified in the ``Renderer`` creation.
 The animation should show a cloud of elements moving east and spreading.
+
