@@ -10,11 +10,11 @@ jobs:
             os: ["ubuntu-latest", "windows-latest","macos-latest"]
             pyver: ["3.8", "3.9", "3.10", "3.11"]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - uses: conda-incubator/setup-miniconda@v3
         with:
           activate-environment: test
-#          environment-file: environment.yml
+          # environment-file: environment.yml
           python-version: ${{ matrix.pyver }}
           auto-activate-base: false
       - shell: bash -l {0}
@@ -47,7 +47,7 @@ jobs:
     name: Flake8 linting
     runs-on: "ubuntu-latest"
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - uses: conda-incubator/setup-miniconda@v3
         with:
           activate-environment: lint
