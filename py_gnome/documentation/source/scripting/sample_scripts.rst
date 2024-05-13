@@ -3,7 +3,6 @@
 Sample Scripts Included with PyGNOME
 ####################################
 
-
 A good way to learn to use PyGNOME is to find an example script that uses similar components to what you need, and use that as a starting point.
 
 There are two sets of scripts included with PyGNOME:
@@ -12,6 +11,37 @@ There are two sets of scripts included with PyGNOME:
 
 
 * ``py_gnome/scripts/testing_scripts``: scripts set up to test particular aspects of PyGNOME
+
+
+Example Scripts
+===============
+
+The scripts in the example dir may require data found in the ``example_files`` directory.
+
+``simple_script.py``
+--------------------
+
+The very simplest script one can write with PyGNOME. Discussed in:
+:ref:`scripting_overview`
+
+
+``weathering_script.py``
+------------------------
+
+An example of a simple weathering run -- weathering is described more in:
+:ref:`scripting_weathering`
+
+
+``gridded_script.py``
+---------------------
+
+A script that demonstrates how to use gridded currents and winds from netcdf files.
+
+
+``current_uncertainty_example.py``
+----------------------------------
+
+Demonstration of adding uncertainty to a model, and adjusting the uncertainty parameters of a current mover.
 
 
 Testing Scripts
