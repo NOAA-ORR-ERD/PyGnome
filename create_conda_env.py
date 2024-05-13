@@ -13,7 +13,7 @@ saves typing in all the requirements files
 
 default is "all" -- full dev environment
 
-"run" will only give you wnat you need to run the code
+"run" will only give you what you need to run the code
 
 "build" will add what's needed to build PYGNOME
 
@@ -23,7 +23,7 @@ default is "all" -- full dev environment
 
 Example:
 
-./create_conda_env gnome build test
+python ./create_conda_env.py gnome build test
 
 Will create and environment called "gnome" with everything needed to
 build, run and test PyGNOME
