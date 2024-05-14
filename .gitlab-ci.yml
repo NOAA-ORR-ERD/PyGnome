@@ -169,6 +169,9 @@ test_pygnome_windows:
                                           --file conda_requirements_test.txt
                                           --file ../oil_database/adios_db/conda_requirements.txt
 
+    # install adios_db
+    - pip install ../oil_database/adios_db/
+
     - echo "Building PyGNOME"
     # If you want verbose output including the compiler/linker commands,
     # run the following command:
