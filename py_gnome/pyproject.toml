@@ -52,5 +52,7 @@ include = ["gnome*"]  # package names should match these glob patterns (["*"] by
 # exclude = ["my_package.tests*"]  # exclude packages matching these glob patterns (empty by default)
 namespaces = false  # to disable scanning PEP 420 namespaces (true by default)
 
+[tool.scikit-build]
+wheel.py-api = "py3"
 
 # [project.optional-dependencies]

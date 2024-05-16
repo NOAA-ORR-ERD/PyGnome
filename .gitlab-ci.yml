@@ -52,9 +52,15 @@ compile_pygnome:
     # install adios_db
     - pip install ../oil_database/adios_db/
 
-    # install pygnome
-    #python -m build --no-isolation
-    - pip install ./
+    # Install pygnome
+    # If you want verbose output including the compiler/linker commands,
+    # run the following command:
+    #   python -m build --no-isolation --config-setting cmake.verbose=true
+    #
+    # And there may be times we want to build a wheel file (.whl)
+    # The following command will build a wheel in the current directory:
+    #   python -m pip wheel ./
+    - python -m pip install ./
 
     # need extra requirements for the docs
     - conda install -y --file conda_requirements_docs.txt
@@ -172,10 +178,14 @@ test_pygnome_windows:
     # install adios_db
     - pip install ../oil_database/adios_db/
 
-    - echo "Building PyGNOME"
+    # Install pygnome
     # If you want verbose output including the compiler/linker commands,
     # run the following command:
     #   python -m build --no-isolation --config-setting cmake.verbose=true
+    #
+    # And there may be times we want to build a wheel file (.whl)
+    # The following command will build a wheel in the current directory:
+    #   python -m pip wheel ./
     - python -m pip install ./
 
     - cd ./tests/unit_tests
