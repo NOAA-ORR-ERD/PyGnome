@@ -59,8 +59,8 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with: 
-          name: installable-wheel
-          path: installable_wheel
+          name: installable-wheel-${{ matrix.os }}-Py${{ matrix.pyver }}
+          path: installable_wheel_${{ matrix.os }}_Py${{ matrix.pyver }}
 
   lint:
     name: Flake8 linting
