@@ -53,9 +53,9 @@ jobs:
       - name: Copy files to artifact folder
         shell: bash -l {0}
         run: |
-            mkdir installable_wheel
-            cp ./py_gnome/*.whl installable_wheel
-            cp ./py_gnome/conda_requirements.txt installable_wheel
+            mkdir installable_wheel_${{ matrix.os }}_Py${{ matrix.pyver }}
+            cp ./py_gnome/*.whl installable_wheel_${{ matrix.os }}_Py${{ matrix.pyver }}
+            cp ./py_gnome/conda_requirements.txt installable_wheel_${{ matrix.os }}_Py${{ matrix.pyver }}
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with: 
