@@ -45,6 +45,22 @@ jobs:
         run: |
             cd ./py_gnome/tests/unit_tests
             pytest --runslow
+      - name: Build wheel file
+        shell: bash -l {0}
+        run: |
+            cd ./py_gnome
+            python -m pip wheel ./
+      - name: Copy files to artifact folder
+        shell: bash -l {0}
+        run: |
+            mkdir installable_wheel
+            cp ./py_gnome/*.whl installable_wheel
+            cp ./py_gnome/conda_requirements.txt installable_wheel
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with: 
+          name: installable-wheel
+          path: installable_wheel
 
   lint:
     name: Flake8 linting
