@@ -359,16 +359,23 @@ class CyMover(Mover):
                                                   uncertain_spill_count,
                                                   uncertain_spill_size)
             except OSError as e:
-                msg = ('No available data in the time interval '
-                       'that is being modeled\n'
-                       '\tModel time: {}\n'
-                       '\tData available from {} to {}\n'
-                       '\tMover: {} of type {}\n'
-                       '\tError: {}'
-                       .format(model_time_datetime,
-                               self.data_start, self.data_stop,
-                               self.name, self.__class__,
-                               str(e)))
+                if "reference point" in str(e):
+                    msg = ('Reference point not valid '
+                           '\tMover: {} of type {}\n'
+                           '\tError: {}'
+                           .format(self.name, self.__class__,
+                                   str(e)))
+                else:
+                    msg = ('No available data in the time interval '
+                           'that is being modeled\n'
+                           '\tModel time: {}\n'
+                           '\tData available from {} to {}\n'
+                           '\tMover: {} of type {}\n'
+                           '\tError: {}'
+                           .format(model_time_datetime,
+                                   self.data_start, self.data_stop,
+                                   self.name, self.__class__,
+                                   str(e)))
 
                 self.logger.error(msg)
                 raise RuntimeError(msg)
