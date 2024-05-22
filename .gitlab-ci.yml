@@ -116,6 +116,7 @@ test_pygnome_windows:
     - windows
     - visual-studio-22
   allow_failure: true
+  cache: []
   before_script:
     - echo $CI_PIPELINE_ID
 
