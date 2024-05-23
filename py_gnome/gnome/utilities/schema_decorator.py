@@ -6,13 +6,10 @@ NOTE: maybe it would be better to do with a metaclass
       for GNOME_ID ?
 """
 
-
-
-
-
 # from future import standard_library
 # standard_library.install_aliases()
 # from builtins import *
+
 
 def serializable(cls):
     """
@@ -24,7 +21,5 @@ def serializable(cls):
     print(cls.__name__)
     type("Schema")
     Schema(base_schema.ObjTypeSchema)
-    for attr in cls.__dict__:
+    for _attr in cls.__dict__:
         pass
-
-
