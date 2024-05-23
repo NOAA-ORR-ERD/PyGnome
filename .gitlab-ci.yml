@@ -197,7 +197,6 @@ build_develop:
   stage: build
   only:
     - develop
-    - new_build
   tags:
     - shell
     - build
