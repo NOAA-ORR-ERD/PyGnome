@@ -60,6 +60,7 @@ def test_exceptions():
     wind = constant_wind(10, 270, units='knots')
     water = Water()
     model.weatherers += Evaporation(water, wind)
+    model.spills += Spill(Release(release_time=model.start_time), substance=test_oil)
     with raises(GnomeRuntimeError):
         model.check_inputs()
 

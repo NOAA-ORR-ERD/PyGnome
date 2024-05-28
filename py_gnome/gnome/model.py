@@ -152,6 +152,7 @@ class ModelSchema(ObjTypeSchema):
     #manual_weathering = SchemaNode(Bool(), save=False, update=True, test_equal=False, missing=drop)
     weathering_activated = SchemaNode(Bool(), save=True, update=True, test_equal=False, missing=drop)
 
+    run_backwards = SchemaNode(Bool())
 
 class Model(GnomeId):
     '''
@@ -207,6 +208,7 @@ class Model(GnomeId):
                  uncertain_spills=[],
                  #manual_weathering=False,
                  weathering_activated=False,
+                 run_backwards=False,
                  **kwargs):
         '''
         Initializes a model.
@@ -285,6 +287,15 @@ class Model(GnomeId):
         if time_step is not None:
             self.time_step = time_step  # this calls rewind() !
         self._reset_num_time_steps()
+
+        # for backwards run set duration and time_step to be negative
+        self._run_backwards = run_backwards
+        if self._run_backwards is True:
+            if self.duration.total_seconds() > 0:
+                self._duration = timedelta(seconds = -self._duration.total_seconds())
+            if self.time_step is not None and self.time_step > 0:
+                self.time_step = -self.time_step
+
 
         # default is to zip save file
         self.zipsave = True
@@ -483,6 +494,33 @@ class Model(GnomeId):
     @property
     def uncertain_spills(self):
         return self.spills.to_dict().get('uncertain_spills', [])
+
+    @property
+    def run_backwards(self):
+        '''
+        Run backwards attribute of the model. If flag is toggled, rewind model
+        '''
+        return self._run_backwards
+
+    @run_backwards.setter
+    def run_backwards(self, run_backwards):
+        '''
+        Run backwards attribute of the model
+        if gets toggled change sign of time and duration
+        '''
+        if self._run_backwards != run_backwards:
+            self._run_backwards = run_backwards  # update run_backwards
+            if self._run_backwards is True:
+                if self.duration.total_seconds() > 0:
+                    self._duration = timedelta(seconds = -self._duration.total_seconds())
+                if self.time_step is not None and self.time_step > 0:
+                    self.time_step = -self.time_step
+            else:
+                if self.duration.total_seconds() < 0:
+                    self._duration = timedelta(seconds = abs(self._duration.total_seconds()))
+                if self.time_step is not None and self.time_step < 0:
+                    self.time_step = abs(self.time_step)
+            self.rewind()
 
     @property
     def cache_enabled(self):
@@ -1570,6 +1608,7 @@ class Model(GnomeId):
         (msgs, isValid) = self.validate()
 
         someSpillIntersectsModel = False
+        isWeatherable = False
         num_spills = len(self.spills)
         if num_spills == 0:
             msg = '{0} contains no spills'.format(self.name)
@@ -1624,8 +1663,14 @@ class Model(GnomeId):
 
                         msgs.append(self._warn_pre + msg)
 
-                if spill.release_time < self.start_time + self.duration:
-                    someSpillIntersectsModel = True
+
+
+                if not self.run_backwards:
+                    if spill.release_time < self.start_time + self.duration:
+                        someSpillIntersectsModel = True
+                else:
+                    if spill.release_time > self.start_time + self.duration:
+                        someSpillIntersectsModel = True
 
                 if ((spill.release_time > self.start_time and self.time_step > 0)
                       or (spill.release_time < self.start_time and self.time_step < 0)):
@@ -1654,6 +1699,7 @@ class Model(GnomeId):
 
 
                 if spill.substance.is_weatherable:
+                    isWeatherable = True
                     pour_point = spill.substance.pour_point
 
                     if spill.substance.water is not None:
@@ -1714,22 +1760,17 @@ class Model(GnomeId):
                 msg = ('Time step and duration must have the same sign: time step = {0} duration = {1} '
                        'To run backwards they must both be negative.'
                         .format(self.time_step,self.duration.total_seconds()))
-                #self.logger.warning(msg)  # for now make this a warning
-                #msgs.append('warning: ' + self.__class__.__name__ + ': ' + msg)
                 isValid = False
                 raise GnomeRuntimeError(msg)
             if self.duration.total_seconds() > 0:
                 msg = ('Time step and duration must have the same sign: time step = {0} duration = {1} '
                        'To run backwards they must both be negative.'
                         .format(self.time_step,self.duration.total_seconds()))
-                #self.logger.warning(msg)  # for now make this a warning
-                #msgs.append('warning: ' + self.__class__.__name__ + ': ' + msg)
                 isValid = False
-            if self.has_weathering:
+            if self.has_weathering and isWeatherable:
+            #if self.weathering_activated: # might have a better check for weathering
                 msg = ('Backwards run is not valid for weathering. '
                        'Turn off weathering to model a backwards trajectory.')
-                #self.logger.warning(msg)  # for now make this a warning
-                #msgs.append('warning: ' + self.__class__.__name__ + ': ' + msg)
                 isValid = False
                 raise GnomeRuntimeError(msg)
 

@@ -174,10 +174,10 @@ class Outputter(GnomeId):
         if value is None:
             self._output_timestep = None
         else:
-            if value == timedelta(0):
-                raise ValueError("output_timestep cannot be zero")
-            #if value <= timedelta(0):
-                #raise ValueError("output_timestep must be positive")
+            #if value == timedelta(0):
+                #raise ValueError("output_timestep cannot be zero")
+            if value <= timedelta(0):
+                raise ValueError("output_timestep must be positive")
             self._output_timestep = int(value.total_seconds())
 
     def prepare_for_model_run(self,
@@ -232,12 +232,12 @@ class Outputter(GnomeId):
         self.sc_pair = spills
 
         if self._output_timestep is not None:
-            if self._output_timestep < 0 and model_time_step > 0:
-                warnings.warn(f"Outputter output timestep {self.output_timestep} is less than "
-                              f"zero.", RuntimeWarning)
-            if self._output_timestep > 0 and model_time_step < 0:
-                warnings.warn(f"Outputter output timestep {self.output_timestep} is greater than "
-                              f"zero.", RuntimeWarning)
+#             if self._output_timestep < 0 and model_time_step > 0:
+#                 warnings.warn(f"Outputter output timestep {self.output_timestep} is less than "
+#                               f"zero.", RuntimeWarning)
+#             if self._output_timestep > 0 and model_time_step < 0:
+#                 warnings.warn(f"Outputter output timestep {self.output_timestep} is greater than "
+#                               f"zero.", RuntimeWarning)
             if abs(self._output_timestep) < abs(model_time_step):
                 warnings.warn(f"Outputter output timestep {self.output_timestep} is less than "
                               f"model time step: {model_time_step} seconds. "
@@ -302,7 +302,8 @@ class Outputter(GnomeId):
                     self._is_first_output = False
                     return
 
-                if model_time + d > self.output_start_time:
+                if ((model_time + d > self.output_start_time and time_step > 0) or
+                    (model_time + d < self.output_start_time and time_step < 0)):
                     if self._is_first_output:
                         self._write_step = True
                         self._is_first_output = False
