@@ -11,13 +11,10 @@ from gnome.cy_gnome import cy_helpers
 import random
 
 
-def random_with_persistance(
-    low,
-    high,
-    array=None,  # update this array, if provided
-    persistence=None,
-    time_step=1.,
-    ):
+def random_with_persistance(low, high,
+                            array=None,  # update this array, if provided
+                            persistence=None,
+                            time_step=1.):
     """
     Used by gnome to generate a randomness between low and high, which is
     persistent for duration time_step
@@ -45,7 +42,6 @@ def random_with_persistance(
           should also be the same length array, list or tuple. Give
           all 3 parameters for each element of the array.
     """
-
     # make copies since we don't want to change the original arrays
     low = np.copy(low)
     high = np.copy(high)
@@ -55,7 +51,7 @@ def random_with_persistance(
     else:
         if not isinstance(array, np.ndarray):
             raise ValueError("If an 'array' is provided for computed values,"
-                    " it must be a numpy array")
+                             " it must be a numpy array")
 
     # exceptions
     len_msg = ("Length of 'low', 'high' and 'persistence' arrays"
@@ -71,7 +67,8 @@ def random_with_persistance(
 
     if np.any(high < low):
         raise ValueError('The lower bound for random_with_persistance must be '
-                         'less than or equal to upper bound for all array elements')
+                         'less than or equal to upper bound '
+                         'for all array elements')
 
     if np.all(low == high):
         array[:] = low[:]
@@ -90,8 +87,8 @@ def random_with_persistance(
         assume any persistence greater than 1 hour is meant to be infinite
         interface should only allow 15 minute or infinite
         """
-        #u_mask = (persistence > 0) # update mask for values to be changed
-        u_mask = (persistence > 0) & (persistence <= 900) # update mask for values to be changed
+        # update mask for values to be changed
+        u_mask = (persistence > 0) & (persistence <= 900)
 
         if np.any(u_mask):
             if np.any(persistence[u_mask] != abs(time_step)):
@@ -104,7 +101,9 @@ def random_with_persistance(
                 readable.
                 """
                 orig = high[u_mask] - low[u_mask]
-                l__range = orig * np.sqrt(persistence[u_mask] / float(abs(time_step)))
+                l__range = orig * np.sqrt(
+                    persistence[u_mask] / float(abs(time_step))
+                )
                 mean = (high[u_mask] + low[u_mask]) / 2.
 
                 # update the bounds for generating the random number
@@ -123,7 +122,6 @@ def seed(seed=1):
     :param seed: Random number generator should be seeded by this value.
         Default is 1
     """
-
     cy_helpers.srand(seed)
     random.seed(seed)
     np.random.seed(seed)

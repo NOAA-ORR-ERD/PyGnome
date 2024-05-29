@@ -7,12 +7,12 @@ by adding decorators where profiling is desired.
 def foo():
     sleep(1)
 
-this should profile foo whenever it is called and add it to the global profile stats.
+this should profile foo whenever it is called and add it to the
+global profile stats.
 
 '''
 import cProfile
 import pstats
-import io
 
 profiler = cProfile.Profile()
 

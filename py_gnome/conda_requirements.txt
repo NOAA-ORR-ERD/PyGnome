@@ -24,7 +24,7 @@
 
 # it'll probably work with 3.9 -- 3.11, but CI is testing with 3.10
 
-python>=3.9,<3.12
+python>=3.9,<=3.12
 
 ## System libs
 colander <2
@@ -60,6 +60,3 @@ pynucos=3.2.*
 cell_tree2d
 py_gd>=2.2
 adios_db>=1.1
-
-
-

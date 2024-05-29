@@ -1,9 +1,16 @@
-
-import numpy as np
-
-import colander
+'''
+This file is documentation and a demonstration of how to use Schema objects to
+allow Gnome objects to do the following tasks:
+    Save the object to a zip file
+    Load the object from a zip file
+    Get a serialization of the object (JSON)
+    Deserialize a JSON structure into an instance
+    Apply a JSON structure as an update
+'''
 import datetime as dt
 
+import numpy as np
+import colander
 
 from gnome.persist import base_schema
 from gnome.persist.extend_colander import FilenameSchema
@@ -15,15 +22,6 @@ from gnome.environment.timeseries_objects_base import (TimeseriesDataSchema,
                                                        TimeseriesData)
 from gnome.gnomeobject import GnomeId
 
-'''
-This file is documentation and a demonstration of how to use Schema objects to
-allow Gnome objects to do the following tasks:
-    Save the object to a zip file
-    Load the object from a zip file
-    Get a serialization of the object (JSON)
-    Deserialize a JSON structure into an instance
-    Apply a JSON structure as an update
-'''
 
 def dates():
     return np.array([dt.datetime(2000, 1, 1, 0),
@@ -32,11 +30,13 @@ def dates():
                      dt.datetime(2000, 1, 1, 6),
                      dt.datetime(2000, 1, 1, 8), ])
 
+
 def series_data():
-    return np.array([1,3,6,10,15])
+    return np.array([1, 3, 6, 10, 15])
+
 
 def series_data2():
-    return np.array([2,6,12,20,30])
+    return np.array([2, 6, 12, 20, 30])
 
 
 class DemoObjSchema(base_schema.ObjTypeSchema):
@@ -80,17 +80,19 @@ class DemoObj(GnomeId):
 
     _schema = DemoObjSchema
 
-    def __init__(self, filename=None, foo_float=None, foo_float_array=None, variable=None, variables=None, **kwargs):
+    def __init__(self, filename=None, foo_float=None, foo_float_array=None,
+                 variable=None, variables=None, **kwargs):
         self.filename = filename
         self.foo_float = 42.0
-        self.foo_float_array = [42.0,84.0]
+        self.foo_float_array = [42.0, 84.0]
         self.variable = variable
         self.variables = variables
         super(DemoObj, self).__init__(**kwargs)
 
     @property
     def timeseries(self):
-        return [(t, self.variable.variables[0].data[i]) for i, t in enumerate(self.variable.time)]
+        return [(t, self.variable.variables[0].data[i])
+                for i, t in enumerate(self.variable.time)]
 
     @classmethod
     def demo(cls):
@@ -102,4 +104,3 @@ class DemoObj(GnomeId):
         )
 
         return DemoObj(variable=tsv, variables=[tsv, tsv.variables[0]])
-

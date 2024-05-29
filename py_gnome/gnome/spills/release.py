@@ -350,6 +350,9 @@ class Release(GnomeId):
         '''
         if self._prepared:
             self.rewind()
+        if ts < 1 and (self.end_release_time != self.release_time):
+            raise ValueError('Backwards run is not valid for continuous releases.  \
+                Use an instantaneous release or run forwards.')
         if self.LE_timestep_ratio(ts) < 1:
             raise ValueError('Not enough LEs: Number of LEs must at least \
                 be equal to the number of timesteps in the release')

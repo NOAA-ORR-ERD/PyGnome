@@ -7,8 +7,9 @@ initialize_console_log(level='debug')
 
   set up the logger to dump to console.
 """
-
 import sys
+import os
+import pathlib
 
 import logging
 import json
@@ -24,7 +25,21 @@ from .gnomeobject import GnomeId, AddLogger
 __version__ = '1.1.8'
 
 
-# a few imports so that the basic stuff is there
+if os.name == 'nt':
+    # In Windows, we need to add the location of our lib_gnome.dll to the
+    # .dll search path.
+    here = getattr(sys, '_stdlib_dir', None)
+    if not here and hasattr(os, '__file__'):
+        here = os.path.dirname(os.__file__)
+
+    if here:
+        os.add_dll_directory(
+            pathlib.Path(here) / 'site-packages' / 'bin'
+        )
+
+#
+# A few imports so that the basic stuff is there
+#
 
 def check_dependency_versions():
     """

@@ -445,7 +445,7 @@ class SpillContainer(AddLogger, SpillContainerData):
                                      "trying to add :{}\n"
                                      "These are the substances in the on spills:\n"
                                      "{}".format(substance, subs))
-                                     
+
         # set the number of oil components
         # fixme: with only one substance this could be determined elsewhere
         if hasattr(substance, 'num_components'):
@@ -815,7 +815,8 @@ class SpillContainer(AddLogger, SpillContainerData):
 
         #self._append_initializer_array_types(array_types)
         for s in self.spills:
-            s.prepare_for_model_run(time_step)
+            if s.on:
+                s.prepare_for_model_run(time_step)
         ats = default_array_types.copy()
         ats.update(array_types)
         self._array_types = ats

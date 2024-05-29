@@ -1,16 +1,10 @@
 #!/usr/bin/env python
-
 """
 Code to compute surface surface_concentration from particles
 
 Ultimatley, there may be multiple versions of this
 -- with Cython optimizationas and all that.
 """
-
-
-
-
-
 import warnings
 import numpy as np
 from scipy.stats import gaussian_kde
@@ -30,8 +24,8 @@ def compute_surface_concentration(sc, algorithm):
     if algorithm == 'kde':
         surface_conc_kde(sc)
     else:
-        raise ValueError('the only surface concentration algorithm currently supported'
-                         'is "kde"')
+        raise ValueError('the only surface concentration algorithm '
+                         'currently supported is "kde"')
 
 
 def surface_conc_kde(sc):
@@ -49,7 +43,7 @@ def surface_conc_kde(sc):
     spill_num = sc['spill_num']
     sc['surface_concentration'] = np.zeros(spill_num.shape[0],)
     for s in np.unique(spill_num):
-        sid = np.where(spill_num==s)
+        sid = np.where(spill_num == s)
         positions = sc['positions'][sid]
         mass = sc['mass'][sid]
         age = sc['age'][sid]
@@ -57,19 +51,27 @@ def surface_conc_kde(sc):
         lon = positions[:, 0]
         lat = positions[:, 1]
 
-        bin_length = 1*3600 #kde will be calculated on particles 0-6hrs, 6-12hrs,...
+        # kde will be calculated on particles 0-6hrs, 6-12hrs,...
+        bin_length = 1 * 3600
+
         t = age.min()
         max_age = age.max()
 
-        while t<=max_age:
-            id = np.where((age<t+bin_length))[0] #we use all particles < t + bin_length for kernel
+        while t <= max_age:
+            # we use all particles < t + bin_length for kernel
+            id = np.where((age < t + bin_length))[0]
+
             lon_for_kernel = lon[id]
             lat_for_kernel = lat[id]
             age_for_kernel = age[id]
             mass_for_kernel = mass[id]
-            id_bin = np.where(age_for_kernel>=t)[0] #we only calculate pdf for particles in bin
 
-            if len(np.unique(lat_for_kernel))>2 and len(np.unique(lon_for_kernel))>2: # can't compute a kde for less than 3 unique points!
+            # we only calculate pdf for particles in bin
+            id_bin = np.where(age_for_kernel >= t)[0]
+
+            # can't compute a kde for less than 3 unique points!
+            if (len(np.unique(lat_for_kernel)) > 2 and
+                    len(np.unique(lon_for_kernel)) > 2):
                 try:
                     lon0, lat0 = min(lon_for_kernel), min(lat_for_kernel)
                     # FIXME: should use projection code to get this right.
@@ -77,15 +79,19 @@ def surface_conc_kde(sc):
                     y = (lat_for_kernel - lat0) * 111325
                     xy = np.vstack([x, y])
                     if len(np.unique(mass_for_kernel)) > 1:
-                        kernel = gaussian_kde(xy,weights=mass_for_kernel/mass_for_kernel.sum())
+                        kernel = gaussian_kde(
+                            xy,
+                            weights=mass_for_kernel / mass_for_kernel.sum()
+                        )
                     else:
                         kernel = gaussian_kde(xy)
                     if mass_for_kernel.sum() > 0:
-                        c[id[id_bin]] = kernel(xy[:,id_bin]) * mass_for_kernel.sum()
+                        c[id[id_bin]] = kernel(xy[:, id_bin]) * mass_for_kernel.sum()
                     else:
-                        c[id[id_bin]] = kernel(xy[:,id_bin]) * len(mass_for_kernel)
+                        c[id[id_bin]] = kernel(xy[:, id_bin]) * len(mass_for_kernel)
                 except np.linalg.LinAlgError:
-                    warnings.warn("LinAlg error occurred in surface concentration calculations.")
+                    warnings.warn('LinAlg error occurred in '
+                                  'surface concentration calculations.')
             t = t + bin_length
 
         sc['surface_concentration'][sid] = c
