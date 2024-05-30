@@ -28,7 +28,7 @@ Building everything by hand / with pip
 
 It is always good practice to create and run a complex system like this in a virtual environment of some sort: virtualenv, pipenv, etc.
 
-A virtual environment is **not required** to run PyGNOME.
+A virtual environment is *not required* to run PyGNOME.
 But you may be working in an environment (on a corporate network, for example) that restricts your access to the system files on your computer.
 In such a case, you may require a virtualenv in order to freely install python packages in python's site-packages dir. (site-packages is the standard place where python installers will put packages after building them)
 
@@ -121,17 +121,13 @@ Download and install the newest Windows executable distribution of
 
 `Python 3.10 <http://www.python.org/download/>`_
 
-(3.9 -- 3.11 shoule work)
+(3.9 -- 3.12 should work)
 
 A number of the packages that GNOME depends on have very complex and
 brittle build processes, and depend on third-party libraries that can be
 a challenge to build.
 
 Fortunately, many of them are available as binary wheels on PyPi
-
-Another option is to use a Python scientific distribution, such as
-`Anaconda <https://www.anaconda.com/products/distribution>`_ -- in which case, stop and read the ``Installing.rst`` file.
-
 
 Dependencies can be installed using the command::
 
@@ -152,25 +148,17 @@ Build PyGNOME
     > cd PyGNOME/py_gnome
     > pip install -r requirements.txt
 
-3. Install the adios_db pacakge -- it is under active development along  with py_gnome, so it's best to install that from source as well:
+3. Install the adios_db package -- it is under active development along  with py_gnome, so it's best to install that from source as well:
 
    https://github.com/NOAA-ORR-ERD/adios_oil_database/tree/production/adios_db
 
-4. build the ``py_gnome`` module in develop or install mode:
+4. build the ``py_gnome`` module in editable or install mode.
 
-   ``> python setup.py build``
-
-   or
-
-   ``> python setup.py install``
+   ``> python -m pip install ./``
 
    or
 
-   ``> python setup.py develop``
-
-The other option you may need is ``cleanall``, which should clean the development environment -- good to do after puling new code from git::
-
-   > python setup.py cleanall
+   ``> python -m pip install --editable ./``
 
 
 5. If this successfully completes, then run the unit tests::
