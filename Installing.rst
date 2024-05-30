@@ -87,9 +87,9 @@ independent environment for it.
 **NOTES:**
 
 PyGNOME requires Python version 3.9 or greater (version 3.10 is currently used
-operationally -- 3.11 should work, but it not well tested)
+operationally -- 3.11 and 3.12 should work, but it not well tested)
 
-Anaconda (and miniconda) can be installed in either single-user or multi-user mode:
+Anaconda (and miniconda and miniforge) can be installed in either single-user or multi-user mode:
 
 https://docs.continuum.io/anaconda/install
 
@@ -172,9 +172,6 @@ conda packages for download.  The way this is done is through anaconda
 "channels", which can be thought of simply as places on ``anaconda.org``
 where collections of packages are bundled together by the people hosting them.
 
-Many of the dependencies that PyGNOME requires come out of the box
-with Anaconda (or the conda "defaults" channel), but a few important
-ones don't.
 
 **The "conda-forge" project:**
 
@@ -191,7 +188,7 @@ conda channel configuration::
 
     > conda config --add channels conda-forge
 
-.. note:: MiniForge comes pre-configured to work with conda-forge, this step is not neccesary of you are using the miniforge distribution.
+.. note:: MiniForge comes pre-configured to work with conda-forge, this step is not necessary if you are using the miniforge distribution.
 
 When you add a channel to conda, it puts it at the top of the list.
 So now when you install a package, conda will first look in conda-forge,
@@ -245,7 +242,6 @@ so it may take a while.
 To use that environment, you activate it with::
 
     > conda activate gnome
-
 
 and when you are done, you can deactivate it with::
 
@@ -526,9 +522,8 @@ Running pip as a module ensures we are referencing the correct environment
 for installation*
 
 If you are planning to develop or debug the PyGNOME source code itself,
-then you may want to perform a "develop" install.  A "develop" install allows
-changes in the python code to be immediately available in your python
-environment without re-installing.
+then you may want to perform a "editable" install.  A "editable" install
+puts a links intot he source code, rather than copying it into the Python install, so that changes in the python code are immediately available in your python environment without re-installing.
 
 For this, run the following::
 

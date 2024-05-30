@@ -127,15 +127,6 @@ class Grid_U(gridded.grids.Grid_U, GnomeId):
 
     _schema = GridSchema
 
-    def __init__(self, **kwargs):
-        super(Grid_U, self).__init__(**kwargs)
-
-        #This is for the COOPS case, where their coordinates go from 0-360 starting at prime meridian
-        for lon in [self.node_lon,]:
-            if lon is not None and lon.max() > 180:
-                self.logger.warning('Detected longitudes > 180 in {0}. Rotating -360 degrees'.format(self.name))
-                lon -= 360
-
     def draw_to_plot(self, ax, features=None, style=None):
         import matplotlib
         def_style = {'color': 'blue',
