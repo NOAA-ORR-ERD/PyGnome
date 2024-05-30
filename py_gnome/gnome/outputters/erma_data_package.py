@@ -23,6 +23,9 @@ from gnome.utilities.hull import calculate_hull
 from gnome.utilities import convert_mass_to_mass_or_volume
 from .outputter import Outputter, BaseOutputterSchema
 
+
+erma_data_package_data_dir = pathlib.Path(__file__).parent / "erma_data_package_data"
+
 class ERMADataPackageSchema(BaseOutputterSchema):
     filename = FilenameSchema(
         missing=drop, save=True, update=True, test_equal=False
@@ -414,9 +417,7 @@ class ERMADataPackageOutput(Outputter):
         # Write out some empty dirs for now for attachments etc.
         zipf.writestr(zipfile.ZipInfo('attachment/'), '')
         # Needed font file
-        font_path = os.path.join(os.path.split(__file__)[0],
-                                 'erma_data_package',
-                                 'SHAPES.TTF')
+        font_path = erma_data_package_data_dir / 'SHAPES.TTF'
         zipf.write(font_path,
                    arcname='support_files/fonts/SHAPES.TTF')
         zipf.close()
@@ -429,13 +430,11 @@ class ERMADataPackageOutput(Outputter):
         generic_name = 'contour_certain'
         generic_description = 'Contour Certain'
         layer_template = None
-        layer_template_path = os.path.join(os.path.split(__file__)[0],
-                                           'erma_data_package',
-                                           'layer_template.json')
+
+        layer_template_path = erma_data_package_data_dir / 'layer_template.json'
         contour_template = None
-        contour_template_path = os.path.join(os.path.split(__file__)[0],
-                                             'erma_data_package',
-                                             'default_contour_template.json')
+        contour_template_path = erma_data_package_data_dir / 'default_contour_template.json'
+
         with open(layer_template_path) as f:
             layer_template = json.load(f)
         with open(contour_template_path) as f:
@@ -523,13 +522,9 @@ class ERMADataPackageOutput(Outputter):
         generic_name = f'boundary_{"uncertain" if uncertain else "certain"}'
         generic_description = f'Boundary {"Uncertain" if uncertain else "Certain"}'
         layer_template = None
-        layer_template_path = os.path.join(os.path.split(__file__)[0],
-                                           'erma_data_package',
-                                           'layer_template.json')
+        layer_template_path = erma_data_package_data_dir / 'layer_template.json'
         polygon_template = None
-        polygon_template_path = os.path.join(os.path.split(__file__)[0],
-                                             'erma_data_package',
-                                             'default_polygon_cartoline_template.json')
+        polygon_template_path = erma_data_package_data_dir / 'default_polygon_cartoline_template.json'
         with open(layer_template_path) as f:
             layer_template = json.load(f)
         with open(polygon_template_path) as f:
@@ -613,13 +608,10 @@ class ERMADataPackageOutput(Outputter):
         shz_name = os.path.join(self.tempdir.name, shapefile_name+'.shz')
         shapefile_pathlib_path = pathlib.Path(shz_name)
         layer_template = None
-        layer_template_path = os.path.join(os.path.split(__file__)[0],
-                                           'erma_data_package',
-                                           'layer_template.json')
+        layer_template_path = erma_data_package_data_dir / 'layer_template.json'
         polygon_template = None
-        polygon_template_path = os.path.join(os.path.split(__file__)[0],
-                                             'erma_data_package',
-                                             'default_polygon_template.json')
+        polygon_template_path = erma_data_package_data_dir / 'default_polygon_template.json'
+
         with open(layer_template_path) as f:
             layer_template = json.load(f)
         with open(polygon_template_path) as f:
@@ -675,13 +667,9 @@ class ERMADataPackageOutput(Outputter):
         shz_name = os.path.join(self.tempdir.name, shapefile_name+'.shz')
         shapefile_pathlib_path = pathlib.Path(shz_name)
         layer_template = None
-        layer_template_path = os.path.join(os.path.split(__file__)[0],
-                                           'erma_data_package',
-                                           'layer_template.json')
+        layer_template_path = erma_data_package_data_dir / 'layer_template.json'
         default_spill_location_template = None
-        default_spill_location_template_path = os.path.join(os.path.split(__file__)[0],
-                                                            'erma_data_package',
-                                                            'default_spill_location_template.json')
+        default_spill_location_template_path = erma_data_package_data_dir / 'default_spill_location_template.json'
         with open(layer_template_path) as f:
             layer_template = json.load(f)
         with open(default_spill_location_template_path) as f:
@@ -816,15 +804,9 @@ class ERMADataPackageOutput(Outputter):
     def make_particle_package_layer(self, id, layer_name, uncertain, shapefile_filename):
         dir, basefile = os.path.split(shapefile_filename)
         output_path = dir+"/"+str(id)+".json"
-        layer_template_path = os.path.join(os.path.split(__file__)[0],
-                                           'erma_data_package',
-                                           'layer_template.json')
-        default_floating_template_path = os.path.join(os.path.split(__file__)[0],
-                                                      'erma_data_package',
-                                                      'default_floating_template.json')
-        default_beached_template_path = os.path.join(os.path.split(__file__)[0],
-                                                     'erma_data_package',
-                                                     'default_beached_template.json')
+        layer_template_path = erma_data_package_data_dir / 'layer_template.json'
+        default_floating_template_path = erma_data_package_data_dir / 'default_floating_template.json'
+        default_beached_template_path = erma_data_package_data_dir / 'default_beached_template.json'
         layer_template = None
         default_floating_template = default_beached_template = None
         with open(layer_template_path) as f:
