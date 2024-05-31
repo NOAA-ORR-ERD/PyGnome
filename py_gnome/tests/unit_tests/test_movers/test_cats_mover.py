@@ -94,6 +94,19 @@ def run_loop():
 
     return delta
 
+def run_no_tide_loop():
+    """
+    test one time step with no tide attached to the mover
+    will check move is different from mover with tide.
+    also checks the motion is same for all LEs
+    """
+
+    pSpill = sample_sc_release(num_le, start_pos, rel_time)
+    cats = CatsMover(curr_file)
+    delta = _certain_loop(pSpill, cats)
+
+    return delta
+
 def test_uncertain_loop():
     """
     test one time step with uncertainty on the spill
@@ -133,10 +146,23 @@ def test_certain_uncertain():
     assert np.all(delta[:, :2] != u_delta[:, :2])
     assert np.all(delta[:, 2] == u_delta[:, 2])
 
+def test_tide_notide():
+    """
+    make sure cats with tide and cats with no tide results in different deltas
+    """
+
+    tide_delta = run_loop()
+    no_tide_delta = run_no_tide_loop()
+    print()
+    print(tide_delta)
+    print(no_tide_delta)
+    assert np.all(tide_delta[:, :2] != no_tide_delta[:, :2])
+    assert np.all(tide_delta[:, 2] == no_tide_delta[:, 2])
+
 
 c_cats = CatsMover(curr_file)
 
-0
+
 def test_default_props():
     """
     test default properties
