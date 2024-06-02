@@ -586,6 +586,9 @@ class PointLineRelease(Release):
         '''
         # if time_step == 0:
         #     time_step = 1  # to deal with initializing position in instantaneous release case
+        if self.release_duration == 0 and start_time != end_time: # special case for instantaneous spill with release after model start
+            if self.release_time <= end_time and self.release_time>=start_time:
+                 start_time = end_time = self.release_time
         if start_time == end_time:
             end_time += timedelta(seconds=1)
         sl = slice(-to_rel, None, 1)
