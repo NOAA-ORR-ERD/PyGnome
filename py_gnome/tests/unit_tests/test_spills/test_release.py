@@ -198,6 +198,46 @@ class TestPointLineRelease(object):
         deser = PointLineRelease.deserialize(ser)
         assert deser == r1
 
+    def test_LE_initialization_instantaneous(self, r2):
+        #initialize_LEs(self, to_rel, data, current_time, time_step)
+        data = LEData()
+        ts = 900
+        r = r2
+        num_le = 0
+        r.prepare_for_model_run(ts)
+
+        data.prepare_for_model_run(r.array_types, None)
+        data.extend_data_arrays(10)
+        #initialize over the time interval 0-10%
+        r.initialize_LEs(10, data, r.release_time, r.release_time+timedelta(seconds=ts))
+
+        #particles should have positions spread over the
+        #line from start_position to end_position
+        assert len(data['positions']) == 10
+        for pos in data['positions']:
+            for d in [0,1,2]:
+                #instantaneous so particles should be spread across whole line
+                assert pos[d] >= r.start_position[d] + num_le
+            num_le += 1
+
+        assert np.all(data['mass'] == r._mass_per_le)
+
+        #reset and try overlap beginning
+        data.rewind()
+        num_le = 0
+        data.prepare_for_model_run(r.array_types, None)
+        data.extend_data_arrays(100)
+        #initialize 100 LEs overlapping the start of the release
+        r.initialize_LEs(100, data, r.release_time - timedelta(seconds=ts/2), r.release_time)
+        for pos in data['positions']:
+            for d in [0,1,2]:
+                #instantaneous so particles should be spread across whole line
+                assert pos[d] >= r.start_position[d] + num_le*.1
+            num_le += 1
+
+        assert np.all(data['mass'] == r._mass_per_le)
+
+
     #This isn't supported yet in pytest????
     #@pytest.mark.parametrize('r', [r1, r3])
     def test_LE_initialization(self, r1, r3):
