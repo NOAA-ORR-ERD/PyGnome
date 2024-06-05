@@ -6,6 +6,31 @@ Assorted technical notes about GNOME and its algorithms and use.
 
 These are often responses to questions from users.
 
+Error messages and fixes
+=========================
+
+Here are some known errors and tips for fixing them.
+
+Datetime errors from using `xarray`:
+------------------------------------
+
+
+
+ TypeError: '<' not supported between instances of 'int' and 'datetime.datetime'
+
+`xarray` converts time to a numpy.datetime64 format that isn't compatible with the `datetime.datetime` format that is used throughout PyGNOME.  The fix is to convert the time array from `numpy.datetime64` format to a `datetime` format.  This can be accomplished with appending `.values.astype('datetime64[s]').tolist()` to the `numpy.datetime64` array, e.g.:
+
+ compatible_time = u_xr.time_counter.values.astype('datetime64[s]').tolist()
+
+
+
+Dimension errors from using `xarray`:
+-------------------------------------
+ ValueError: dimensions ('y', 'x') must have the same length as the number of data dimensions, ndim=1
+
+This error reflects PyGNOME's dislike of `xarray.DataArray` and is fixed by slapping `.values` at the end of all  `xarray.DataArray`, e.g.:
+
+ node_lon = lon_psi.values
 
 The role of mass in GNOME
 =========================

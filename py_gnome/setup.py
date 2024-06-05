@@ -12,42 +12,44 @@ It needs to be imported before any other extensions
 (which happens in the gnome.__init__.py file)
 """
 
-import os
-import sys
-import sysconfig
+import datetime
 import importlib
 import glob
+import os
+from pathlib import Path
+import platform
 import shutil
-import datetime
+import sys
+import sysconfig
+
 
 # to support "develop" mode:
 import setuptools
-from setuptools import setup, find_packages
+from setuptools import setup
+
 from distutils.command.clean import clean
 
 from distutils.extension import Extension
 from Cython.Distutils import build_ext
 
-import platform
 from git import Repo
 
 import numpy as np
 
-# could run setup from anywhere
+# could run setup from anywhere (though not really??)
 SETUP_PATH = os.path.dirname(os.path.abspath(__file__))
 
 # the extension used for compiled modules
-# # why is this so ugly?!? on py2?
+# does this not work ??
 # comp_modules_ext = sysconfig.get_config_var('EXT_SUFFIX')
 # if comp_modules_ext is None:
 #     comp_modules_ext = '.lib' if 'win' in sys.platform else ".so"
-if sys.version_info.major == 3:
+if sys.version_info.major < 3 or sys.version_info.minor < 9:
+    raise NotImplementedError("PyGNOME can only be built with Python 3.9 or above")
+else:
     py_impl = ['.'] + [c.lower() for c in platform.python_implementation() if c.isupper()]
     py_impl = py_impl + sysconfig.get_python_version().split('.') + ['-'] + [sysconfig.get_platform().replace('-','_')]
     win_comp_modules_ext = ''.join(py_impl) + '.lib'
-else:
-    win_comp_modules_ext = '.lib'
-
 
 # cd to SETUP_PATH, run develop or install, then cd back
 CWD = os.getcwd()
@@ -57,8 +59,6 @@ try:
     repo = Repo('../.')
     branch_name = repo.active_branch.name
     last_update = next(repo.iter_commits()).committed_datetime.isoformat(),
-    # except TypeError:
-    #     branch_name = 'no-branch'
 except:  # anything goes wrong -- we want to keep moving
     branch_name = 'no-branch'
     last_update = datetime.datetime.now().isoformat()
@@ -182,8 +182,6 @@ def get_netcdf_libs():
         include_dir = include_dir.decode("ASCII").strip()
         lib_dir = lib_dir.decode("ASCII")
         libs = [l.decode("ASCII") for l in libs]
-        # print("found netcdf install:")
-        # print([lib_dir, libs, include_dir])
         return lib_dir, libs, include_dir
     except OSError:
         raise NotImplementedError("this setup.py needs nc-config "
@@ -204,10 +202,8 @@ def get_conda_includes_win():
 # maybe this will work with Windows, too" at least with conda?
 if sys.platform.startswith("linux") or sys.platform == "darwin":
     netcdf_base, netcdf_libs, netcdf_inc = get_netcdf_libs()
-    # print("netcdf include dir (line 188)", netcdf_inc)
     netcdf_lib_files = []
 elif sys.platform in ("win32"):  # but for now, still using our shipped libs.
-# elif sys.platform in ("darwin", "win32"):
     third_party_dir = os.path.join('..', 'third_party_lib')
     if 'CONDA_PREFIX' in os.environ:
         netcdf_libs, netcdf_inc, netcdf_dll = get_conda_includes_win()
@@ -218,7 +214,6 @@ elif sys.platform in ("win32"):  # but for now, still using our shipped libs.
         netcdf_lib_files = [os.path.join(netcdf_libs, libfile.format(l))
                             for l in netcdf_names]
     else:
-
         # the netCDF environment
         netcdf_base = os.path.join(third_party_dir, 'netcdf-4.3',
                                 sys.platform, architecture)
@@ -341,7 +336,7 @@ cpp_files = ['RectGridVeL_c.cpp',
              ]
 
 
-cpp_code_dir = os.path.join('..', 'lib_gnome')
+cpp_code_dir = os.path.join('.', 'lib_gnome')
 cpp_files = [os.path.join(cpp_code_dir, f) for f in cpp_files]
 
 
@@ -352,9 +347,10 @@ macros = [('pyGNOME', 1), ]
 # Build the extension objects
 
 # suppressing certain warnings
-compile_args = ["-Wno-unused-function",  # unused function - cython creates a lot
-                "-stdlib=libc++",  # to use the "correct" C++ libs
-                ]
+compile_args = [
+    "-Wno-unused-function",  # unused function - cython creates a lot
+    "-stdlib=libc++",  # to use the "correct" C++ libs
+]
 
 extensions = []
 
@@ -380,11 +376,10 @@ static_lib_files = netcdf_lib_files
 #           conda netcdf...
 
 if sys.platform == "darwin":
-    # on the mac, the libgnome code is linked into the cy_basic_types
+    # On the mac, the libgnome code is linked into the cy_basic_types
     #    extension -- which makes it available to all the other extensions
     #.   as long as it's imported first.
     # This is being done in the gnome/cy_gnome/__init__.py
-
     basic_types_ext = Extension('gnome.cy_gnome.cy_basic_types',
                                 ['gnome/cy_gnome/cy_basic_types.pyx'] + cpp_files,
                                 language='c++',
@@ -397,7 +392,6 @@ if sys.platform == "darwin":
 
     extensions.append(basic_types_ext)
     static_lib_files = []
-
 elif sys.platform == "win32":
     # On windows, the
     # build our compile arguments
@@ -428,7 +422,7 @@ elif sys.platform == "win32":
 
     # we will reference this library when building all other extensions
     # fixme: Where is this getting built??
-    #        That filename needs to be dynamically determined with code somehat like:
+    #        That filename needs to be dynamically determined with code somewhat like:
     # if sys.version_info.major > 2:
     #     suffix = importlib.machinery.EXTENSION_SUFFIXES[0]
     #     libname = 'gnome' + suffix
@@ -470,7 +464,6 @@ elif sys.platform.startswith("linux"):
                                  language='c++',
                                  define_macros=macros,
                                  libraries=['netcdf'],
-                                 # include_dirs=[cpp_code_dir],
                                  include_dirs=include_dirs,
                                  )])
 
@@ -531,7 +524,6 @@ elif sys.platform.startswith("linux"):
 for mod_name in extension_names:
     cy_file = os.path.join("gnome/cy_gnome", mod_name + ".pyx")
     print("setting up cython extensions")
-    # print("include_dirs:", include_dirs)
     extensions.append(Extension('gnome.cy_gnome.' + mod_name,
                                 [cy_file],
                                 language="c++",
@@ -574,17 +566,6 @@ if sys.version_info.major == 2:
                                 language="c",
                                 ))
 
-def get_version():
-    """
-    return the version number from the __init__
-    """
-    for line in open("gnome/__init__.py"):
-        if line.startswith("__version__"):
-            version = line.strip().split('=')[1].strip().strip("'").strip('"')
-            return version
-    raise ValueError("can't find version string in __init__")
-
-
 for e in extensions:
     e.cython_directives = {'language_level': "3"}  # all are Python-3
 
@@ -603,25 +584,6 @@ setup(name='pyGnome',
       requires=[],   # want other packages here?
       cmdclass={'build_ext': build_ext,
                 'cleanall': cleanall},
-
-      # scripts,
-
-      # metadata for upload to PyPI
-      author="Gnome team at NOAA/ORR/ERD",
-      author_email="orr.gnome@noaa.gov",
-      description=("GNOME (General NOAA Operational Modeling Environment) "
-                   "is the modeling tool the Office of Response and "
-                   "Restoration's (OR&R) Emergency Response Division uses to "
-                   "predict the possible route, or trajectory, a pollutant "
-                   "might follow in or on a body of water, such as in an "
-                   "oil spill.  "
-                   "It can also be used as a customizable general particle "
-                   "tracking code. "
-                   "Branch: {} "
-                   "LastUpdate: {}"
-                   .format(branch_name, last_update)),
-      license="Public Domain",
-      keywords="oilspill modeling particle_tracking",
       url="https://github.com/NOAA-ORR-ERD/PyGnome"
       )
 

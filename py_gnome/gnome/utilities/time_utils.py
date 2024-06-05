@@ -99,7 +99,6 @@ def date_to_sec(date_times):
         date_times = [date_times.astype(datetime)]
 
     if not isinstance(date_times[0], (datetime, cftime.datetime)):
-    # if not isinstance(date_times[0], datetime):
         raise TypeError('date_to_sec only works on datetime and datetime64 '
                         'objects. Got a: {}'.format(type(date_times[0])))
 

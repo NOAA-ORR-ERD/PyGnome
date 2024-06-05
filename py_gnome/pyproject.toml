@@ -1,0 +1,58 @@
+
+[build-system]
+# note: using setuptools_scm for file finding, not versioning
+#       we should probably do versioning later, but it requires tagging the git repo properly
+requires = ["scikit-build-core", "cython", "numpy"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "gnome"
+authors = [
+    {name = "Gnome team at NOAA/ORR/ERD", email = "orr.gnome@noaa.gov"},
+]
+description = "Particle tracking code with features specifically for oil spill modeling."
+requires-python = ">=3.9"
+keywords = ["oilspill", "modeling", "particle-tracking"]
+license = {text = "CC0-1.0"}
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: C++",
+    "Programming Language :: Cython",
+    "Intended Audience :: Science/Research",
+    "License :: CC0 1.0 Universal (CC0 1.0) Public Domain Dedication",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Oceanography",
+]
+
+version = "1.1.7dev"
+readme = "README.rst"
+
+# dynamic = ["version", "readme"]
+
+# really hard to do with conda compatibility :-)
+# dependencies = [
+#     "requests",
+#     'importlib-metadata; python_version<"3.8"',
+# ]
+
+[tool.setuptools_scm]
+root = ".."
+# write_to = "py_gnome/gnome/_version.py"
+
+[tool.setuptools]
+zip-safe = false
+
+[tool.setuptools.packages.find]
+where = ["gnome"]  # list of folders that contain the packages (["."] by default)
+include = ["gnome*"]  # package names should match these glob patterns (["*"] by default)
+# exclude = ["my_package.tests*"]  # exclude packages matching these glob patterns (empty by default)
+namespaces = false  # to disable scanning PEP 420 namespaces (true by default)
+
+[tool.scikit-build]
+wheel.py-api = "py3"
+
+# [project.optional-dependencies]

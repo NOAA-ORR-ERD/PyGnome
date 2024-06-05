@@ -302,8 +302,10 @@ OSErr CATSMover_c::PrepareForModelStep(const Seconds &model_time,
 
 	err = this->ComputeVelocityScale(model_time);
 	if (err)
+	{
 		printError("An error occurred in TCATSMover::PrepareForModelStep");
-
+		return err;
+	}
 	// in m/s
 	//note: DIVIDED by timestep because this is later multiplied by the timestep
 	this->fOptimize.isOptimizedForStep = true;
