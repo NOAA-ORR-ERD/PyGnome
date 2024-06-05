@@ -18,7 +18,7 @@ RUN conda install python=$PYTHON_VER \
 
 RUN cd oil_database/adios_db && python -m pip install ./
 
-RUN cd py_gnome && pip install ./
+RUN cd py_gnome && python -m pip install ./
 
 # to check if they got installed properly
 #RUN python -c "import adios_db"
