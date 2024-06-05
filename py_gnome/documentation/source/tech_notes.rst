@@ -25,7 +25,7 @@ Datetime errors from using `xarray`:
 
 
 Dimension errors from using `xarray`:
-------------------------------------
+-------------------------------------
  ValueError: dimensions ('y', 'x') must have the same length as the number of data dimensions, ndim=1
 
 This error reflects PyGNOME's dislike of `xarray.DataArray` and is fixed by slapping `.values` at the end of all  `xarray.DataArray`, e.g.:
