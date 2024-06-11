@@ -175,6 +175,13 @@ add_library(point_in_polygon SHARED ${POINT_IN_POLY_C_FILES})
 
 install(TARGETS point_in_polygon DESTINATION gnome/utilities/geometry)
 
+# cython can't create the output .cpp file if the underlying directory
+# doesn't exist.
+if(NOT EXISTS ${GEO_BINARY_DIR})
+    message("Creating output directory '${GEO_BINARY_DIR}'")
+    file(MAKE_DIRECTORY "${GEO_BINARY_DIR}")
+endif()
+
 # now we make the cy_point_in_polygon extension
 add_custom_command(
   OUTPUT "${GEO_BINARY_DIR}/cy_point_in_polygon.c"
