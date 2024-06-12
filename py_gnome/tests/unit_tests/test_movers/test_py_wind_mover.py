@@ -154,6 +154,17 @@ def test_scale_value():
     assert py_wind.scale_value == 0
 
 
+def test_get_grid_bounds():
+    """
+    test grid bounds are not just defaults
+    """
+
+    bounds = py_wind.get_bounds()
+
+    assert bounds[0][0] > -360 and bounds[0][1] < 360
+    assert bounds[0][1] > -90 and bounds[1][1] < 90
+
+
 def test_with_point_Wind():
     """
     test that it works right with a Wind

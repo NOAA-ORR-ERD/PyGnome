@@ -227,6 +227,21 @@ def test_GridCurrent_at():
     assert math.isclose(angle[0][0], -0.32804926, rel_tol=1e-5)
 
 
+def test_GridCurrent_get_bounds():
+    """
+    test getting bounds from the grid
+    """
+    roms_file = TEST_DATA_DIR / "example_roms_radians.nc"
+
+    grid_cur = GridCurrent.from_netCDF(filename=roms_file)
+    bounds = grid_cur.get_bounds() # ((lon_min, lat_min), (lon_max, lat_max))
+
+    assert math.isclose(bounds[0][0], -152.86, rel_tol=1e-5)
+    assert math.isclose(bounds[0][1], 60.422, rel_tol=1e-5)
+    assert math.isclose(bounds[1][0], -152.029, rel_tol=1e-5)
+    assert math.isclose(bounds[1][1], 60.649, rel_tol=1e-5)
+
+
 def test_FileGridCurrent():
     roms_file = TEST_DATA_DIR / "example_roms_two_times.nc"
     grid_cur = FileGridCurrent(filename=roms_file)

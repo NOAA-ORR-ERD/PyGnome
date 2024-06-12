@@ -232,7 +232,7 @@ class WindMover(movers.PyMover):
             This function exists because it is part of the top level Mover API
         '''
         if hasattr(self.wind, 'get_bounds'):
-            return self.wind.get_bounds
+            return self.wind.get_bounds()
         else:
             return super(WindMover, self).get_bounds()
 
