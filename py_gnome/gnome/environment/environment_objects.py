@@ -260,6 +260,17 @@ class VelocityGrid(VectorVariable):
         else:
             return super(VelocityGrid, self).get_data_vectors()
 
+    def get_bounds(self):
+        '''
+            Return a bounding box surrounding the grid data.
+        '''
+        lon_max  = self.grid.node_lon.max()
+        lon_min  = self.grid.node_lon.min()
+        lat_max  = self.grid.node_lat.max()
+        lat_min  = self.grid.node_lat.min()
+
+        return ((lon_min, lat_min), (lon_max, lat_max))
+
 
 class WindTS(VelocityTS, Environment):
 

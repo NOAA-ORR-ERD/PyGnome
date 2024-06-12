@@ -16,11 +16,58 @@ from gnome.spills import surface_point_line_spill
 from gnome.environment import constant_wind, Water, Wind
 from gnome.weatherers import Evaporation
 from gnome.outputters import WeatheringOutput
-from gnome.basic_types import oil_status
+from gnome.basic_types import oil_status, datetime_value_2d
 
 from .conftest import weathering_data_arrays, test_oil
 from ..conftest import (# sample_model,
                         sample_model_weathering)
+
+
+def test_evaporation_bad_wind():
+    series = np.zeros((2, ), dtype=datetime_value_2d)
+    start_time = datetime(2000, 1, 1, 1) # same as conftest time
+
+    series[0] = (start_time + timedelta(hours=24), (10, 45))	# starts after model start
+    series[1] = (start_time + timedelta(hours=48), (10, 90))
+    wind = Wind(timeseries=series, units='m/s')
+    wind.extrapolate=True # add separate
+
+    evap = Evaporation(Water(), wind=wind)
+    (sc, time_step) = weathering_data_arrays(evap.array_types, evap.water)[:2]
+
+    model_time = (sc.spills[0].release_time +
+                  timedelta(seconds=time_step))
+
+    evap.prepare_for_model_run(sc)
+    evap.prepare_for_model_step(sc, time_step, model_time)
+    with pytest.raises(ValueError)as excinfo:
+        evap.weather_elements(sc, time_step, model_time)
+    assert "not within the bounds" in str(excinfo.value)
+
+@pytest.mark.xfail
+def test_evaporation_extrapolate_bad_wind():
+    """
+    NOTE: This test should work once we allow extrapolation for weatherers
+    """
+    series = np.zeros((2, ), dtype=datetime_value_2d)
+    start_time = datetime(2000, 1, 1, 1) # same as conftest time
+
+    series[0] = (start_time + timedelta(hours=24), (10, 45))	# starts after model start
+    series[1] = (start_time + timedelta(hours=48), (10, 90))
+    wind = Wind(timeseries=series, units='m/s', extrapolation_is_allowed=True)
+
+    evap = Evaporation(Water(), wind=wind)
+    (sc, time_step) = weathering_data_arrays(evap.array_types, evap.water)[:2]
+
+    model_time = (sc.spills[0].release_time +
+                  timedelta(seconds=time_step))
+
+    evap.prepare_for_model_run(sc)
+    evap.prepare_for_model_step(sc, time_step, model_time)
+    evap.weather_elements(sc, time_step, model_time)
+    for spill in sc.spills:
+        mask = sc.get_spill_mask(spill)
+        assert np.all(sc['evap_decay_constant'][mask, :] < 0.0)
 
 
 def test_evaporation_no_wind():

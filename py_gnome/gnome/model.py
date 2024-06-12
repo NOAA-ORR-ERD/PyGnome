@@ -1753,6 +1753,7 @@ class Model(GnomeId):
                         .format(mover.name))
                 self.logger.warning(msg)  # for now make this a warning
                 msgs.append('warning: ' + self.__class__.__name__ + ': ' + msg)
+                warnings.warn('warning: ' + msg)
 
         # check if backwards run has weathering on
         if self.time_step < 0:

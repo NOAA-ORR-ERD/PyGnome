@@ -104,21 +104,35 @@ target_include_directories(lib_gnome PUBLIC lib_gnome)
 
 install(TARGETS lib_gnome LIBRARY DESTINATION gnome/cy_gnome)
 
-foreach(ext IN LISTS EXT_NAMES)
 
+set(CY_EXT_SOURCE_DIR
+    ${CMAKE_CURRENT_SOURCE_DIR}/gnome/cy_gnome
+)
+set(CY_EXT_BINARY_DIR
+    ${CMAKE_CURRENT_BINARY_DIR}/gnome/cy_gnome
+)
+
+# cython can't create the output .cpp file if the underlying directory
+# doesn't exist.
+if(NOT EXISTS ${CY_EXT_BINARY_DIR})
+    message("Creating output directory '${CY_EXT_BINARY_DIR}'")
+    file(MAKE_DIRECTORY "${CY_EXT_BINARY_DIR}")
+endif()
+
+foreach(ext IN LISTS EXT_NAMES)
     add_custom_command(
-        OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/gnome/cy_gnome/${ext}.cpp"
-        DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/gnome/cy_gnome/${ext}.pyx"
+        OUTPUT "${CY_EXT_BINARY_DIR}/${ext}.cpp"
+        DEPENDS "${CY_EXT_SOURCE_DIR}/${ext}.pyx"
         VERBATIM
         COMMAND "${CYTHON}" --cplus -3
-                "${CMAKE_CURRENT_SOURCE_DIR}/gnome/cy_gnome/${ext}.pyx"
+                "${CY_EXT_SOURCE_DIR}/${ext}.pyx"
                 --output-file
-                "${CMAKE_CURRENT_BINARY_DIR}/gnome/cy_gnome/${ext}.cpp"
+                "${CY_EXT_BINARY_DIR}/${ext}.cpp"
     )
     
     python_add_library(
         ${ext}
-        MODULE "${CMAKE_CURRENT_BINARY_DIR}/gnome/cy_gnome/${ext}.cpp"
+        MODULE "${CY_EXT_BINARY_DIR}/${ext}.cpp"
         WITH_SOABI
     )
 
@@ -140,6 +154,13 @@ endforeach()
 # Extension: cy_point_in_polygon
 #
 
+set(GEO_SOURCE_DIR
+    ${CMAKE_CURRENT_SOURCE_DIR}/gnome/utilities/geometry
+)
+set(GEO_BINARY_DIR
+    ${CMAKE_CURRENT_BINARY_DIR}/gnome/utilities/geometry
+)
+
 # Now we make the c_point_in_polygon.c file into a library
 # This will have to do until we figure out how to make a .pyx extension with
 # additional .c files
@@ -154,20 +175,27 @@ add_library(point_in_polygon SHARED ${POINT_IN_POLY_C_FILES})
 
 install(TARGETS point_in_polygon DESTINATION gnome/utilities/geometry)
 
+# cython can't create the output .cpp file if the underlying directory
+# doesn't exist.
+if(NOT EXISTS ${GEO_BINARY_DIR})
+    message("Creating output directory '${GEO_BINARY_DIR}'")
+    file(MAKE_DIRECTORY "${GEO_BINARY_DIR}")
+endif()
+
 # now we make the cy_point_in_polygon extension
 add_custom_command(
-  OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/gnome/utilities/geometry/cy_point_in_polygon.c"
-  DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/gnome/utilities/geometry/cy_point_in_polygon.pyx"
+  OUTPUT "${GEO_BINARY_DIR}/cy_point_in_polygon.c"
+  DEPENDS "${GEO_SOURCE_DIR}/cy_point_in_polygon.pyx"
   VERBATIM
   COMMAND "${CYTHON}" -3 -v
-          "${CMAKE_CURRENT_SOURCE_DIR}/gnome/utilities/geometry/cy_point_in_polygon.pyx"
+          "${GEO_SOURCE_DIR}/cy_point_in_polygon.pyx"
           --output-file
-          "${CMAKE_CURRENT_BINARY_DIR}/gnome/utilities/geometry/cy_point_in_polygon.c"
+          "${GEO_BINARY_DIR}/cy_point_in_polygon.c"
 )
 
 python_add_library(
     cy_point_in_polygon
-    MODULE "${CMAKE_CURRENT_BINARY_DIR}/gnome/utilities/geometry/cy_point_in_polygon.c"
+    MODULE "${GEO_BINARY_DIR}/cy_point_in_polygon.c"
     WITH_SOABI
 )
 

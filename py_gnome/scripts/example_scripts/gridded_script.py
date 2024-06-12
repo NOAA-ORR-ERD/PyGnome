@@ -26,6 +26,10 @@ wind = gs.GridWind.from_netCDF(filename=fn)
 wind_mover = gs.WindMover(wind)
 model.movers += wind_mover
 
+# Need some Diffusion
+model.movers += gs.RandomMover(diffusion_coef=1e5)
+
+
 # create a current mover (auto creates and adds environment object)
 fn = data_dir / 'gridded_current.nc'
 current_mover = gs.CurrentMover.from_netCDF(filename=fn)
@@ -49,4 +53,9 @@ model.outputters += kmzout
 print("running the model: see output in the output dir")
 
 model.full_run()
+
+# Save it as a gnome save file:
+model.save('gridded_example.gnome')
+
+
 

@@ -468,6 +468,7 @@ class ParamMap(GnomeMap):
         :param bearing: The bearing the closest point on the shoreline is
                         from the center.
         """
+        warnings.warn("ParamMap is deprecated. Code is no longer being updated", DeprecationWarning)
         refloat_halflife = kwargs.pop('refloat_halflife', 1)
         self._refloat_halflife = refloat_halflife * 3600
         self.build(center, distance, bearing, units)

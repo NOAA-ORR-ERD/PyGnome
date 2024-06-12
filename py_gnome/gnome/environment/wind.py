@@ -558,7 +558,7 @@ class Wind(Timeseries, Environment):
             self.extrapolation_is_allowed = True
         else:
             self.extrapolation_is_allowed = False
-        print(f"{self.extrapolation_is_allowed=}")
+        #print(f"{self.extrapolation_is_allowed=}")
         try:
             data = self.get_wind_data(time, 'm/s', cs)[0]['value']
         except IndexError:
