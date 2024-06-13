@@ -509,8 +509,7 @@ class Wind(Timeseries, Environment):
 
         return tuple(data[0]['value'])
 
-    def at(self, points, time, coord_sys='uv', units=None, extrapolate=False,
-           _auto_align=True):
+    def at(self, points, time, *, units=None, extrapolate=False, coord_sys='uv',_auto_align=True, **kwargs):
         # fixme: this isn't quite aligned with the Environment base class signature.
         # it should be:
         # def at(self, points, time, units=None, extrapolate=False, coord_sys='uv', _auto_align=True):

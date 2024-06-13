@@ -133,7 +133,7 @@ class TimeseriesData(GnomeId):
             raise ValueError('Object being assigned must be an iterable '
                              'or a Time object')
 
-    def at(self, points, time, units=None, extrapolate=None, auto_align=True, **kwargs):
+    def at(self, points, time, *, units=None, extrapolate=False, auto_align=True, **kwargs):
         '''
             Interpolates this property to the given points at the given time
             with the units specified.
@@ -364,7 +364,7 @@ class TimeseriesVector(GnomeId):
         '''
         raise NotImplementedError()
 
-    def at(self, points, time, units=None, *args, **kwargs):
+    def at(self, points, time, *, units=None, extrapolate=False, **kwargs):
         '''
             Find the value of the property at positions P at time T
 

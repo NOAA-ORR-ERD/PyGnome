@@ -589,13 +589,13 @@ class Variable(gridded.Variable, GnomeId):
         return var
 
     @combine_signatures
-    def at(self, points, time, units=None, *args, **kwargs):
-        if ('extrapolate' not in kwargs):
-            kwargs['extrapolate'] = False
-        if ('unmask' not in kwargs):
-            kwargs['unmask'] = True
+    def at(self, points, time, *, units=None, extrapolate=False, unmask=True, **kwargs):
 
-        value = super(Variable, self).at(points, time, *args, **kwargs)
+        value = super(Variable, self).at(points, time,
+                                         units=units,
+                                         extrapolate=extrapolate,
+                                         unmask=unmask,
+                                         **kwargs)
 
         data_units = self.units if self.units else self._gnome_unit
         req_units = units if units else self._gnome_unit
@@ -952,13 +952,13 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
         _vars = [Variable(grid=_grid, units=units[i], time=_time, data=d) for i, d in enumerate(_datas)]
         return cls(name=name, grid=_grid, time=_time, variables=_vars)
 
-    def at(self, points, time, units=None, *args, **kwargs):
-        if ('extrapolate' not in kwargs):
-            kwargs['extrapolate'] = False
-        if ('unmask' not in kwargs):
-            kwargs['unmask'] = True
+    def at(self, points, time, *, units=None, extrapolate=False, unmask=True, **kwargs):
         units = units if units else self._gnome_unit #no need to convert here, its handled in the subcomponents
-        value = super(VectorVariable, self).at(points, time, units=units, *args, **kwargs)
+        value = super(VectorVariable, self).at(points, time, 
+                                               units=units,
+                                               extrapolate=extrapolate,
+                                               unmask=unmask,
+                                               **kwargs)
 
         data_units = self.units if self.units else self._gnome_unit
         req_units = units if units else self._gnome_unit
