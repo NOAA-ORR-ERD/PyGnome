@@ -1,8 +1,14 @@
+## WARNING -- this is TOTALLY out of date
+
+# it needs to be completely replaced with a
+# modern version built on the scikit-build system
+
 package:
   name: py_gnome
   version: 0.1.1
 
-# no source -- source is local
+source:
+  path: ../
 
 requirements:
   build:
@@ -12,7 +18,7 @@ requirements:
     - netcdf4
     - cython
   run:
-    - oil_library
+    - adios_db
     - python
     - pytest
     - scipy
