@@ -95,7 +95,7 @@ from gnome.ops.density import recalc_density
 class ModelSchema(ObjTypeSchema):
     'Colander schema for Model object'
     time_step = SchemaNode(Float())
-    weathering_substeps = SchemaNode(Int())
+    weathering_substeps = SchemaNode(Int(), read_only=True)
     start_time = SchemaNode(
         extend_colander.LocalDateTime(),
         validator=validators.convertible_to_seconds
@@ -265,6 +265,19 @@ class Model(GnomeId):
         # default to now, rounded to the nearest hour
         self.start_time = start_time
         self._duration = duration
+
+        if weathering_substeps != 1:
+            if weathering_substeps > 1:
+                msg = ('Setting weathering_subteps > 1 has not been well tested. '
+                       'Use at your own risk: weathering_substeps = {0}'
+                       .format(weathering_substeps))
+                #self.logger.warning(msg)
+                warnings.warn('warning: ' + msg)
+            else:
+                raise ValueError('Weathering_substeps = {} is invalid, '
+                                 'should be >= 1'
+                                 .format(weathering_substeps))
+
         self.weathering_substeps = weathering_substeps
 
         if not map:
