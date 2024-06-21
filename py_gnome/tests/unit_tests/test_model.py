@@ -1374,7 +1374,14 @@ def test_two_substance_different(sample_model_fcn, s0=test_oil, s1="oil_crude"):
 def test_weathering_substeps():
     '''
     check if weathering substep > 1 model uses appropriate substeps
+    make sure error is raised for bad value
     '''
+    with raises(ValueError):
+        model = Model(weathering_substeps = 0)
+
+    with pytest.warns(UserWarning,match='has not been well tested'):
+        model = Model(weathering_substeps = 10)
+
     model = Model()
     assert model.weathering_substeps == 1 # default
 
