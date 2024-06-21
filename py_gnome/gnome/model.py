@@ -883,7 +883,7 @@ class Model(GnomeId):
             for sc in self.spills.items():
                 # weatherers will initialize 'mass_balance' key/values
                 # to 0.0
-                if w.on:
+                if w.on and not sc.uncertain:
                     w.prepare_for_model_run(sc)
                     weathering = True
 
@@ -945,7 +945,8 @@ class Model(GnomeId):
         for w in self.weatherers:
             for sc in self.spills.items():
                 # maybe we will setup a super-sampling step here???
-                w.prepare_for_model_step(sc, self.time_step, self.model_time)
+                if not sc.uncertain:
+                    w.prepare_for_model_step(sc, self.time_step, self.model_time)
 
         for environment in self.environment:
             environment.prepare_for_model_step(self.model_time)
@@ -1044,11 +1045,12 @@ class Model(GnomeId):
 
             sc.reset_fate_dataview()
 
-            for w in self.weatherers:
-                for model_time, time_step in self._split_into_substeps():
-                    # change 'mass_components' in weatherer
-                    w.weather_elements(sc, time_step, model_time)
-                    # self.logger.info('density after {0}: {1}'.format(w.name, sc['density'][-5:]))
+            if not sc.uncertain:
+                for w in self.weatherers:
+                    for model_time, time_step in self._split_into_substeps():
+                        # change 'mass_components' in weatherer
+                        w.weather_elements(sc, time_step, model_time)
+                        # self.logger.info('density after {0}: {1}'.format(w.name, sc['density'][-5:]))
 
         # self.logger.info('density after weather_elements: {0}'.format(sc['density'][-5:]))
 
