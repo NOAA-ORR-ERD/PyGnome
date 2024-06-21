@@ -1123,7 +1123,8 @@ class Model(GnomeId):
             sc.model_step_is_done()
             # age remaining particles
             # fixme: why not sc['age'] += self.time_step
-            sc['age'][:] = sc['age'][:] + self.time_step
+            # let time increase also for backwards run
+            sc['age'][:] = sc['age'][:] + abs(self.time_step)
 
     def write_output(self, valid, messages=None):
         output_info = {'step_num': self.current_time_step}
