@@ -390,7 +390,7 @@ class TimeseriesVector(GnomeId):
             :rtype: double
         '''
         units = units if units else self._gnome_unit #no need to convert here, its handled in the subcomponents
-        val = np.column_stack([var.at(points, time,  units=units, *args, **kwargs) for var in self.variables])
+        val = np.column_stack([var.at(points, time,  units=units, **kwargs) for var in self.variables])
 
         # No need to unit convert since that should be handled by the individual variable objects
         if points is None:
