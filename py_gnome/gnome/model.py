@@ -95,7 +95,7 @@ from gnome.ops.density import recalc_density
 class ModelSchema(ObjTypeSchema):
     'Colander schema for Model object'
     time_step = SchemaNode(Float())
-    weathering_substeps = SchemaNode(Int())
+    weathering_substeps = SchemaNode(Int(), read_only=True)
     start_time = SchemaNode(
         extend_colander.LocalDateTime(),
         validator=validators.convertible_to_seconds
@@ -265,6 +265,19 @@ class Model(GnomeId):
         # default to now, rounded to the nearest hour
         self.start_time = start_time
         self._duration = duration
+
+        if weathering_substeps != 1:
+            if weathering_substeps > 1:
+                msg = ('Setting weathering_subteps > 1 has not been well tested. '
+                       'Use at your own risk: weathering_substeps = {0}'
+                       .format(weathering_substeps))
+                #self.logger.warning(msg)
+                warnings.warn('warning: ' + msg)
+            else:
+                raise ValueError('Weathering_substeps = {} is invalid, '
+                                 'should be >= 1'
+                                 .format(weathering_substeps))
+
         self.weathering_substeps = weathering_substeps
 
         if not map:
@@ -883,7 +896,7 @@ class Model(GnomeId):
             for sc in self.spills.items():
                 # weatherers will initialize 'mass_balance' key/values
                 # to 0.0
-                if w.on:
+                if w.on and not sc.uncertain:
                     w.prepare_for_model_run(sc)
                     weathering = True
 
@@ -945,7 +958,8 @@ class Model(GnomeId):
         for w in self.weatherers:
             for sc in self.spills.items():
                 # maybe we will setup a super-sampling step here???
-                w.prepare_for_model_step(sc, self.time_step, self.model_time)
+                if not sc.uncertain:
+                    w.prepare_for_model_step(sc, self.time_step, self.model_time)
 
         for environment in self.environment:
             environment.prepare_for_model_step(self.model_time)
@@ -1044,11 +1058,12 @@ class Model(GnomeId):
 
             sc.reset_fate_dataview()
 
-            for w in self.weatherers:
-                for model_time, time_step in self._split_into_substeps():
-                    # change 'mass_components' in weatherer
-                    w.weather_elements(sc, time_step, model_time)
-                    # self.logger.info('density after {0}: {1}'.format(w.name, sc['density'][-5:]))
+            if not sc.uncertain:
+                for w in self.weatherers:
+                    for model_time, time_step in self._split_into_substeps():
+                        # change 'mass_components' in weatherer
+                        w.weather_elements(sc, time_step, model_time)
+                        # self.logger.info('density after {0}: {1}'.format(w.name, sc['density'][-5:]))
 
         # self.logger.info('density after weather_elements: {0}'.format(sc['density'][-5:]))
 
@@ -1108,7 +1123,8 @@ class Model(GnomeId):
             sc.model_step_is_done()
             # age remaining particles
             # fixme: why not sc['age'] += self.time_step
-            sc['age'][:] = sc['age'][:] + self.time_step
+            # let time increase also for backwards run
+            sc['age'][:] = sc['age'][:] + abs(self.time_step)
 
     def write_output(self, valid, messages=None):
         output_info = {'step_num': self.current_time_step}

@@ -1,3 +1,7 @@
+## THIS IS THE OLD SETUP.PY -- not longer used
+## Still here, just in case we want to reference it in the future
+
+
 #!/usr/bin/env python
 """
 The master setup.py file for py_gnome

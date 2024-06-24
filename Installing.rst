@@ -34,6 +34,12 @@ Build the gnome package::
     > cd py_gnome
     > python -m pip install ./
 
+or::
+
+    > pip install --no-build-isolation -e ./
+
+to get an "editable" (develop) version
+
 You now should be good to go, but to make sure:
 
 Run the tests::
@@ -417,7 +423,7 @@ Installing the package::
 
     > pip install ./
 
-(or ``pip install -e ./`` to get an "editable" version)
+(or ``pip install --no-build-isolation -e ./`` to get an "editable" version)
 
 Testing the adios_db install
 ............................
@@ -528,7 +534,7 @@ puts a links intot he source code, rather than copying it into the Python instal
 For this, run the following::
 
     > cd <your_pygnome_git_repo>/py_gnome
-    > python -m pip install --editable ./
+    > python -m pip install --no-build-isolation --editable ./
 
 If you would like or need to uninstall the package, run the following::
 

@@ -39,6 +39,7 @@ from gnome.outputters import Renderer, TrajectoryGeoJsonOutput
 
 from .conftest import sample_model_weathering, testdata, test_oil
 from gnome.spills.substance import NonWeatheringSubstance
+from gnome.utilities.time_utils import date_to_sec
 
 from gnome.exceptions import ReferencedObjectNotSet, GnomeRuntimeError
 
@@ -1368,6 +1369,29 @@ def test_two_substance_different(sample_model_fcn, s0=test_oil, s1="oil_crude"):
 
     with pytest.raises(ValueError):
         model.spills += cs
+
+
+def test_weathering_substeps():
+    '''
+    check if weathering substep > 1 model uses appropriate substeps
+    make sure error is raised for bad value
+    '''
+    with raises(ValueError):
+        model = Model(weathering_substeps = 0)
+
+    with pytest.warns(UserWarning,match='has not been well tested'):
+        model = Model(weathering_substeps = 10)
+
+    model = Model()
+    assert model.weathering_substeps == 1 # default
+
+    model.weathering_substeps = 10
+    assert model.weathering_substeps == 10
+
+    res = model._split_into_substeps()
+    for index, (model_time, time_step) in enumerate(res):
+         assert time_step == model.time_step / 10
+         assert date_to_sec(model_time) == date_to_sec(model.model_time) + index * time_step
 
 
 def test_weathering_data_attr():
