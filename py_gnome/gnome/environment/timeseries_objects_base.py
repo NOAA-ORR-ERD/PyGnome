@@ -151,8 +151,7 @@ class TimeseriesData(GnomeId):
         if len(self.time) == 1:
             value = self.data
         else:
-            if extrapolate is None:
-                extrapolate = self.extrapolate
+            extrapolate = self.extrapolate or extrapolate
             if not extrapolate:
                 self.time.valid_time(time)
 

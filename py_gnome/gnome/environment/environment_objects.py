@@ -516,7 +516,7 @@ class GridCurrent(VelocityGrid, Environment):
             if res is not None:
                 return res
 
-        extrapolate = self.extrapolation_is_allowed
+        extrapolate = self.extrapolation_is_allowed or extrapolate
 
         value = super(GridCurrent, self).at(points, time,
                                             units=units,
@@ -628,7 +628,7 @@ class GridWind(VelocityGrid, Environment):
                 return self.transform_result(value, coord_sys)
 
         if value is None:
-            extrapolate = self.extrapolation_is_allowed
+            extrapolate = self.extrapolation_is_allowed or extrapolate
             value = super(GridWind, self).at(pts, time,
                                              units=units,
                                              extrapolate=extrapolate,
@@ -841,7 +841,7 @@ class IceAwareCurrent(GridCurrent):
         )
 
     def at(self, points, time, *, units=None, extrapolate=False, **kwargs):
-        extrapolate = self.extrapolation_is_allowed
+        extrapolate = self.extrapolation_is_allowed or extrapolate
         cctn = (self.ice_concentration.at(points, time,
                                             extrapolate=extrapolate, **kwargs)
                   .copy())
@@ -913,7 +913,7 @@ class IceAwareWind(GridWind):
                         value, it will be set to this value.
         :type min_val: float
         """
-        extrapolate = self.extrapolation_is_allowed
+        extrapolate = self.extrapolation_is_allowed or extrapolate
 
         cctn = self.ice_concentration.at(points, time, extrapolate=extrapolate, **kwargs)
         wind_v = super(IceAwareWind, self).at(points, time,
