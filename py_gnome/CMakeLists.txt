@@ -1,7 +1,7 @@
 # to jcfr@github henryiii
 
 
-cmake_minimum_required(VERSION 3.15...3.28)
+cmake_minimum_required(VERSION 3.15...3.29)
 project(${SKBUILD_PROJECT_NAME} LANGUAGES C CXX)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
