@@ -509,7 +509,7 @@ class Wind(Timeseries, Environment):
 
         return tuple(data[0]['value'])
 
-    def at(self, points, time, *, units=None, extrapolate=False, coord_sys='uv',_auto_align=True, **kwargs):
+    def at(self, points, time, *, units=None, extrapolate=None, coord_sys='uv',_auto_align=True, **kwargs):
         # fixme: this isn't quite aligned with the Environment base class signature.
         # it should be:
         # def at(self, points, time, units=None, extrapolate=False, coord_sys='uv', _auto_align=True):
@@ -553,10 +553,11 @@ class Wind(Timeseries, Environment):
         else:
             raise ValueError('invalid coordinate system {0}'.format(coord_sys))
 
-        if extrapolate:
-            self.extrapolation_is_allowed = True
-        else:
-            self.extrapolation_is_allowed = False
+        if extrapolate is not None: # passed in a value, assume this is what we want
+            self.extrapolation_is_allowed = extrapolate
+        else: # otherwise probably set on the wind_mover
+            if self.extrapolation_is_allowed is None:
+                self.extrapolation_is_allowed = False
         #print(f"{self.extrapolation_is_allowed=}")
         try:
             data = self.get_wind_data(time, 'm/s', cs)[0]['value']
