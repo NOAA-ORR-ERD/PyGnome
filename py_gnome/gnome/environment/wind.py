@@ -553,10 +553,13 @@ class Wind(Timeseries, Environment):
         else:
             raise ValueError('invalid coordinate system {0}'.format(coord_sys))
 
+        # since extrapolation_is_allowed is not passed into the C code we need
+        # to temporarily set it if extrapolate is passed in, and then change it back
+        original_extrapolation =  self.extrapolation_is_allowed # save value
         if extrapolate is not None: # passed in a value, assume this is what we want
             self.extrapolation_is_allowed = extrapolate
         else: # otherwise probably set on the wind_mover
-            if self.extrapolation_is_allowed is None:
+            if self.extrapolation_is_allowed is None: # shouldn't happen
                 self.extrapolation_is_allowed = False
         #print(f"{self.extrapolation_is_allowed=}")
         try:
@@ -565,6 +568,8 @@ class Wind(Timeseries, Environment):
             # CyTimeseries is raising an IndexError
             raise ValueError(f'time specified ({time}) is not within the bounds of the time: '
                              f'({self.data_start} to {self.data_stop})')
+        self.extrapolation_is_allowed = original_extrapolation # put it back the way it was
+
         if idx is None:
             ret_data[:, 0] = data[0]
             ret_data[:, 1] = data[1]

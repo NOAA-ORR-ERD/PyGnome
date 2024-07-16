@@ -238,6 +238,10 @@ def test_at_out_of_bounds(wind_circ):
     result = wind.at([(0, 0, 0)], wind.data_stop)
     assert np.array_equal(result, [[1., 0., 0.]])
 
+    # but should work if extrapolate=True
+    result = wind.at([(0, 0, 0)], wind.data_stop + gs.hours(1), extrapolate=True)
+    assert np.array_equal(result, [[1., 0., 0.]])
+
     # after the data_stop
     with pytest.raises(ValueError) as excinfo:
         result = wind.at([(0, 0, 0)], wind.data_stop + gs.hours(1))
@@ -247,10 +251,6 @@ def test_at_out_of_bounds(wind_circ):
     with pytest.raises(ValueError)as excinfo:
         result = wind.at([(0, 0, 0)], wind.data_start - gs.hours(1))
     assert "not within the bounds" in str(excinfo.value)
-
-    # but should work if extrapolate=True
-    result = wind.at([(0, 0, 0)], wind.data_stop + gs.hours(1), extrapolate=True)
-    assert np.array_equal(result, [[1., 0., 0.]])
 
 
 @pytest.fixture(scope='module')
