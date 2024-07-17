@@ -38,7 +38,7 @@ pyzmq
 # tblib
 
 ## Base numerical libs
-numpy
+numpy <2
 scipy
 
 ## Modeling libs
