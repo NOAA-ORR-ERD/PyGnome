@@ -589,7 +589,10 @@ class Variable(gridded.Variable, GnomeId):
         return var
 
     @combine_signatures
-    def at(self, points, time, *, units=None, extrapolate=False, unmask=True, **kwargs):
+    def at(self, points, time, *, units=None, extrapolate=None, unmask=True, **kwargs):
+
+        if extrapolate is None:
+            extrapolate = self.extrapolation_is_allowed
 
         value = super(Variable, self).at(points, time,
                                          units=units,
@@ -744,7 +747,7 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
                  **kwargs):
         super(VectorVariable, self).__init__(*args, **kwargs)
         self.extrapolation_is_allowed = extrapolation_is_allowed
-        
+
         #Adding this so unit conversion happens properly in the components
         #I really don't think we will be doing mixed units in one of these
         #anytime soon.
@@ -755,8 +758,8 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
                         warnings.warn("Variable {0} has units {1} which are not the same as the VectorVariable {2} units {3}.".format(var.name, var._gnome_unit, self.name, self._gnome_unit))
                 else:
                     var._gnome_unit = self._gnome_unit
-                
-            
+
+
 
     def __repr__(self):
         try:
@@ -939,7 +942,7 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
         :param values: vector of values
         :type values: array-like
         '''
-        
+
         Grid = Grid_S
         Time = cls._default_component_types['time']
         _node_lon = np.array(([-360, 0, 360], [-360, 0, 360], [-360, 0, 360]))
@@ -952,9 +955,11 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
         _vars = [Variable(grid=_grid, units=units[i], time=_time, data=d) for i, d in enumerate(_datas)]
         return cls(name=name, grid=_grid, time=_time, variables=_vars)
 
-    def at(self, points, time, *, units=None, extrapolate=False, unmask=True, **kwargs):
+    def at(self, points, time, *, units=None, extrapolate=None, unmask=True, **kwargs):
         units = units if units else self._gnome_unit #no need to convert here, its handled in the subcomponents
-        value = super(VectorVariable, self).at(points, time, 
+        if extrapolate is None:
+            extrapolate = self.extrapolation_is_allowed
+        value = super(VectorVariable, self).at(points, time,
                                                units=units,
                                                extrapolate=extrapolate,
                                                unmask=unmask,
@@ -1013,7 +1018,7 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
             xt = x.shape[0]
             y = raw_v[:]
             yt = y.shape[0]
-            if raw_u.shape[-2:] == raw_v.shape[-2:] and raw_u.shape[-2:] == self.grid.center_mask.shape: 
+            if raw_u.shape[-2:] == raw_v.shape[-2:] and raw_u.shape[-2:] == self.grid.center_mask.shape:
                 #raw u/v are same shape and on center
                 #need to padding_slice the variable since they are not interpolated from u/v
                 x = x[(np.s_[:],) + ctr_padding_slice]
