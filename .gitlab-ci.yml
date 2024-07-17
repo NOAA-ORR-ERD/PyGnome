@@ -46,7 +46,7 @@ compile_pygnome:
     - echo 'tzdata tzdata/Zones/America select Los_Angeles' | debconf-set-selections
     - DEBIAN_FRONTEND="noninteractive" apt install -y tzdata
 
-    - apt install g++ make libxext-dev libsm-dev libxrender-dev -y
+    - apt install git g++ make libxext-dev libsm-dev libxrender-dev -y
 
   script:
     # get the adios_db code: needed for tests and requirements
