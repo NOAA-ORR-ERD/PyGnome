@@ -568,7 +568,8 @@ class Wind(Timeseries, Environment):
             # CyTimeseries is raising an IndexError
             raise ValueError(f'time specified ({time}) is not within the bounds of the time: '
                              f'({self.data_start} to {self.data_stop})')
-        self.extrapolation_is_allowed = original_extrapolation # put it back the way it was
+        finally: # make sure it gets restored even if there's an error
+            self.extrapolation_is_allowed = original_extrapolation # put it back the way it was
 
         if idx is None:
             ret_data[:, 0] = data[0]
