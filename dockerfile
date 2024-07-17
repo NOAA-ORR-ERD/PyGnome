@@ -1,10 +1,13 @@
 ARG PYTHON_VER
-FROM registry.orr.noaa.gov/erd/centos-conda/miniforge-python$PYTHON_VER
+FROM registry.orr.noaa.gov/erd/centos-conda/ubuntu/ubuntuforge-python$PYTHON_VER
 
 # Args declared before the FROM need to be redeclared, don't delete this
 ARG PYTHON_VER
 
-RUN yum install -y libglib2.0-0 libxext6 libsm6 libxrender1 \
+RUN apt update
+RUN apt upgrade -y
+
+RUN apt install -y libglib2.0-0 libxext6 libsm6 libxrender1 \
     wget gcc make bzip2 gcc-c++ chrpath patchelf \
     ca-certificates git mercurial subversion tar
 
