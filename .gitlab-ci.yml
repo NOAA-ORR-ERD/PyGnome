@@ -38,7 +38,7 @@ compile_pygnome:
     - docker
     - linux
   image: registry.orr.noaa.gov/erd/centos-conda/$IMAGE_NAME$PYTHON_VER
-  before_script:
+  script:
     - apt update
     - apt upgrade -y
 
@@ -48,7 +48,6 @@ compile_pygnome:
 
     - apt install git g++ make libxext-dev libsm-dev libxrender-dev -y
 
-  script:
     # get the adios_db code: needed for tests and requirements
     - git clone --depth 1 -b develop https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.orr.noaa.gov/gnome/oil_database/oil_database.git
     - cd ./py_gnome
@@ -105,7 +104,7 @@ test_pygnome_scripts:
     - docker
     - linux
   allow_failure: true
-  image: registry.orr.noaa.gov/erd/centos-conda/centos7-python$PYTHON_VER
+  image: registry.orr.noaa.gov/erd/centos-conda/$IMAGE_NAME$PYTHON_VER
   script:
     - cd ./py_gnome/scripts/testing_scripts && python run_all.py 2<&1
 
