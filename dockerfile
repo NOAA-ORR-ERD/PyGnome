@@ -4,12 +4,17 @@ FROM registry.orr.noaa.gov/erd/centos-conda/ubuntu/ubuntuforge-python$PYTHON_VER
 # Args declared before the FROM need to be redeclared, don't delete this
 ARG PYTHON_VER
 
-RUN apt update
-RUN apt upgrade -y
+RUN apt-get update
+RUN apt-get upgrade -y
 
-RUN apt install -y libglib2.0-0 libxext6 libsm6 libxrender1 \
-    wget gcc make bzip2 gcc-c++ chrpath patchelf \
-    ca-certificates git mercurial subversion tar
+#RUN echo 'tzdata tzdata/Areas select America' | debconf-set-selections
+#RUN echo 'tzdata tzdata/Zones/America select Los_Angeles' | debconf-set-selections
+#RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y tzdata
+
+RUN apt-get install -y \
+    g++ make libxext-dev libsm-dev libxrender-dev libglib2.0-0 \
+    wget chrpath bzip2 tar \
+    git patchelf ca-certificates
 
 COPY ./ /pygnome/
 WORKDIR /pygnome/

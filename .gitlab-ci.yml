@@ -39,14 +39,14 @@ compile_pygnome:
     - linux
   image: registry.orr.noaa.gov/erd/centos-conda/$IMAGE_NAME$PYTHON_VER
   script:
-    - apt update
-    - apt upgrade -y
+    - apt-get update
+    - apt-get upgrade -y
 
-    - echo 'tzdata tzdata/Areas select America' | debconf-set-selections
-    - echo 'tzdata tzdata/Zones/America select Los_Angeles' | debconf-set-selections
-    - DEBIAN_FRONTEND="noninteractive" apt install -y tzdata
+    #- echo 'tzdata tzdata/Areas select America' | debconf-set-selections
+    #- echo 'tzdata tzdata/Zones/America select Los_Angeles' | debconf-set-selections
+    #- DEBIAN_FRONTEND="noninteractive" apt-get install -y tzdata
 
-    - apt install git g++ make libxext-dev libsm-dev libxrender-dev -y
+    - apt-get install git g++ make libxext-dev libsm-dev libxrender-dev -y
 
     # get the adios_db code: needed for tests and requirements
     - git clone --depth 1 -b develop https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.orr.noaa.gov/gnome/oil_database/oil_database.git
