@@ -7,10 +7,6 @@ ARG PYTHON_VER
 RUN apt-get update
 RUN apt-get upgrade -y
 
-#RUN echo 'tzdata tzdata/Areas select America' | debconf-set-selections
-#RUN echo 'tzdata tzdata/Zones/America select Los_Angeles' | debconf-set-selections
-#RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y tzdata
-
 RUN apt-get install -y \
     g++ make libxext-dev libsm-dev libxrender-dev libglib2.0-0 \
     wget chrpath bzip2 tar \
@@ -20,9 +16,9 @@ COPY ./ /pygnome/
 WORKDIR /pygnome/
 
 RUN conda install python=$PYTHON_VER \
-        --file py_gnome/conda_requirements.txt \
-        --file py_gnome/conda_requirements_build.txt \
-        --file oil_database/adios_db/conda_requirements.txt
+    --file py_gnome/conda_requirements.txt \
+    --file py_gnome/conda_requirements_build.txt \
+    --file oil_database/adios_db/conda_requirements.txt
 
 RUN cd oil_database/adios_db && python -m pip install ./
 

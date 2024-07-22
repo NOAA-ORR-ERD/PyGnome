@@ -42,10 +42,6 @@ compile_pygnome:
     - apt-get update
     - apt-get upgrade -y
 
-    #- echo 'tzdata tzdata/Areas select America' | debconf-set-selections
-    #- echo 'tzdata tzdata/Zones/America select Los_Angeles' | debconf-set-selections
-    #- DEBIAN_FRONTEND="noninteractive" apt-get install -y tzdata
-
     - apt-get install git g++ make libxext-dev libsm-dev libxrender-dev -y
 
     # get the adios_db code: needed for tests and requirements
