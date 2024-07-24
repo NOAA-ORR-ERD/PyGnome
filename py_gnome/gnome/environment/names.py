@@ -25,7 +25,7 @@ a netcdf files to one these names, PYGNOME should be able to load the file.
 
 **grid_temperature**
 
-  Default Names: water_t, temp
+  Default Names: temp, water_t, TEMP, WATER_T
 
 
   CF Standard Names: sea_water_temperature, sea_surface_temperature
@@ -33,7 +33,7 @@ a netcdf files to one these names, PYGNOME should be able to load the file.
 
 **grid_salinity**
 
-  Default Names: salt
+  Default Names: salt, SALT
 
 
   CF Standard Names: sea_water_salinity, sea_surface_salinity
@@ -41,15 +41,15 @@ a netcdf files to one these names, PYGNOME should be able to load the file.
 
 **grid_sediment**
 
-  Default Names: sand_06
+  Default Names: sand_06, SAND_06
 
 
-  CF Standard Names:
+  CF Standard Names: 
 
 
 **ice_concentration**
 
-  Default Names: ice_fraction, aice
+  Default Names: aice, ice_fraction, AICE, ICE_FRACTION
 
 
   CF Standard Names: sea_ice_area_fraction
@@ -57,7 +57,7 @@ a netcdf files to one these names, PYGNOME should be able to load the file.
 
 **bathymetry**
 
-  Default Names: h
+  Default Names: H, h
 
 
   CF Standard Names: depth
@@ -65,11 +65,11 @@ a netcdf files to one these names, PYGNOME should be able to load the file.
 
 **grid_current**
 
- Default Names for u: u, U, water_u, curr_ucmp, u_surface, u_sur
+ Default Names for u: water_u, u_sur, WATER_U, CURR_UCMP, u_surface, u, U_SUR, U_SURFACE, U, curr_ucmp
 
- Default Names for v: v, V, water_v, curr_vcmp, v_surface, v_sur
+ Default Names for v: V, curr_vcmp, v_surface, v_sur, CURR_VCMP, V_SUR, v, water_v, WATER_V, V_SURFACE
 
- Default Names for w: w, W
+ Default Names for w: W, w
 
 
  CF Standard Names for u: eastward_sea_water_velocity, surface_eastward_sea_water_velocity
@@ -81,9 +81,9 @@ a netcdf files to one these names, PYGNOME should be able to load the file.
 
 **grid_wind**
 
- Default Names for u: air_u, Air_U, air_ucmp, wind_u, u-component_of_wind_height_above_ground, UWind
+ Default Names for u: AIR_UCMP, wind_u, air_ucmp, Air_U, WIND_U, AIR_U, UWIND, air_u, U-COMPONENT_OF_WIND_HEIGHT_ABOVE_GROUND, u-component_of_wind_height_above_ground, u10, Uwind, U10
 
- Default Names for v: air_v, Air_V, air_vcmp, wind_v, v-component_of_wind_height_above_ground, VWind
+ Default Names for v: Air_V, air_vcmp, VWIND, v10, V10, air_v, AIR_VCMP, V-COMPONENT_OF_WIND_HEIGHT_ABOVE_GROUND, WIND_V, wind_v, v-component_of_wind_height_above_ground, Vwind, AIR_V
 
 
  CF Standard Names for u: eastward_wind, eastward wind
@@ -93,9 +93,9 @@ a netcdf files to one these names, PYGNOME should be able to load the file.
 
 **ice_velocity**
 
- Default Names for u: ice_u, uice
+ Default Names for u: ice_u, UUICE, uice, uuice, ICE_U, UICE
 
- Default Names for v: ice_v, vice
+ Default Names for v: VICE, vice, ICE_V, VVICE, ice_v, vvice
 
 
  CF Standard Names for u: eastward_sea_ice_velocity
@@ -164,6 +164,27 @@ nc_names = {
         }
     },
 }
+
+def capitalize_name_mapping(name_map):
+    """
+    This function will go through the name mapping, and add capitalized
+    versions of all  the default_names
+
+    NOTE: the name_map is changed in place.
+    """
+    for variable, data in name_map.items():
+        def_names = data['default_names']
+        try:
+            for name in def_names[:]:
+                def_names.append(name.upper())
+            def_names[:] = list(set(def_names))
+        except TypeError:  # it's nested
+            for sub_var in def_names.values():
+                for name in sub_var[:]:
+                    sub_var.append(name.upper())
+                    # eliminate the duplicates
+                sub_var[:] = list(set(sub_var))
+capitalize_name_mapping(nc_names)
 
 def insert_names_table(table_text):
     """

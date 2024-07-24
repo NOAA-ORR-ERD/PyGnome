@@ -133,7 +133,7 @@ class TimeseriesData(GnomeId):
             raise ValueError('Object being assigned must be an iterable '
                              'or a Time object')
 
-    def at(self, points, time, units=None, extrapolate=None, auto_align=True, **kwargs):
+    def at(self, points, time, *, units=None, extrapolate=False, auto_align=True, **kwargs):
         '''
             Interpolates this property to the given points at the given time
             with the units specified.
@@ -151,8 +151,7 @@ class TimeseriesData(GnomeId):
         if len(self.time) == 1:
             value = self.data
         else:
-            if extrapolate is None:
-                extrapolate = self.extrapolate
+            extrapolate = self.extrapolate or extrapolate
             if not extrapolate:
                 self.time.valid_time(time)
 
@@ -364,7 +363,7 @@ class TimeseriesVector(GnomeId):
         '''
         raise NotImplementedError()
 
-    def at(self, points, time, units=None, *args, **kwargs):
+    def at(self, points, time, *, units=None, extrapolate=False, **kwargs):
         '''
             Find the value of the property at positions P at time T
 
@@ -390,7 +389,7 @@ class TimeseriesVector(GnomeId):
             :rtype: double
         '''
         units = units if units else self._gnome_unit #no need to convert here, its handled in the subcomponents
-        val = np.column_stack([var.at(points, time,  units=units, *args, **kwargs) for var in self.variables])
+        val = np.column_stack([var.at(points, time,  units=units, **kwargs) for var in self.variables])
 
         # No need to unit convert since that should be handled by the individual variable objects
         if points is None:

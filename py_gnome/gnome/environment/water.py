@@ -59,7 +59,7 @@ def make_water_property(property, default_unit):
 
     def wrapper(cls):
 
-        def at(self, points, time, units=default_unit):
+        def at(self, points, time, units=default_unit, extrapolate=False, **kwargs):
             """
             return the temperature at the points and time asked for
 
