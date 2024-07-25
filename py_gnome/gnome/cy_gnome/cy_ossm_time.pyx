@@ -155,7 +155,8 @@ cdef class CyOSSMTime(object):
             wp['z'][:] = wp['z']
 
             g_wp = np.zeros((1,), dtype=basic_types.world_point)
-            g_wp[0] = (wp['long'], wp['lat'], 0)
+            g_wp[0] = (wp['long'][0], wp['lat'][0], 0)
+
 
             return tuple(g_wp[0])
 

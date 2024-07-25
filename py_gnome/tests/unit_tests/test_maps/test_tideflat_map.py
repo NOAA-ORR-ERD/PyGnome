@@ -4,11 +4,7 @@
 tests for the tidal flat map
 """
 
-
-
-
-
-# a few tests that show that the delation to the underlying map works:
+# a few tests that show that the delegation to the underlying map works:
 
 import os
 from datetime import datetime
@@ -72,7 +68,7 @@ def simple_model(output_dir):
     model.map = MapFromBNA(bna_file)
     model.movers += gs.constant_point_wind_mover(10, 300, "m/s")
 
-    model.spills += gs.surface_point_line_spill(num_elements=100,
+    model.spills += gs.point_line_spill(num_elements=100,
                                                 start_position=(5.4, 53.38, 0),
                                                 end_position=(5.8, 53.4, 0),
                                                 release_time=start_time,
@@ -256,6 +252,7 @@ def test_model_run_with_tideflat(simple_model):
 
     # to make it run faster
     model.time_step = gs.hours(2)
+    model.outputters[0].output_timestep = gs.hours(2)
     for step in model:
         print("step_num", step['step_num'])
 

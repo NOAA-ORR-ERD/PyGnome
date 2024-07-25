@@ -6,9 +6,6 @@ unit tests for cy_wind_mover wrapper
 designed to be run with py.test
 """
 
-
-
-
 import os
 
 import numpy as np
@@ -79,7 +76,8 @@ def test_eq():
 
 
 # use following constant wind for testing
-const_wind = np.zeros((1, ), dtype=velocity_rec)
+# can't figure out how to get a scalar other than create a array and extract ...
+const_wind = np.zeros((1, ), dtype=velocity_rec)[0]
 const_wind['u'] = 50  # meters per second?
 const_wind['v'] = 100
 

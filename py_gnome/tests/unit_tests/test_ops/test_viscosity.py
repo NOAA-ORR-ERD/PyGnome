@@ -35,7 +35,7 @@ def test_recalc_viscosity():
 #    sc.substance = NonWeatheringSubstance()
 # fix it **********
     sc = SpillContainer()
-    spill = gs.surface_point_line_spill(num_elements=100,
+    spill = gs.point_line_spill(num_elements=100,
                                         start_position=(0.0, 0.0, 0.0),
                                         release_time=datetime(2014, 1, 1, 0, 0),
                                         amount=100,
@@ -63,7 +63,7 @@ def test_recalc_viscosity():
 #    sc.substance = new_subs
 # fix it **********
     sc = SpillContainer()
-    spill = gs.surface_point_line_spill(num_elements=100,
+    spill = gs.point_line_spill(num_elements=100,
                                         start_position=(0.0, 0.0, 0.0),
                                         release_time=datetime(2014, 1, 1, 0, 0),
                                         amount=100,

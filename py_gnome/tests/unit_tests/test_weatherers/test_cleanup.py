@@ -19,7 +19,7 @@ from gnome.weatherers import (
                               ChemicalDispersion,
                               weatherer_sort)
 from gnome.spill_container import SpillContainer
-from gnome.spills import surface_point_line_spill
+from gnome.spills.spill import point_line_spill
 from gnome.utilities.inf_datetime import InfDateTime
 from gnome.environment import Waves, constant_wind, Water
 
@@ -61,7 +61,7 @@ class ObjForTests(object):
         sc = SpillContainer()
         print("******************")
         print("Adding a spill to spill container")
-        sc.spills += surface_point_line_spill(10,
+        sc.spills += point_line_spill(10,
                                               (0, 0, 0),
                                               rel_time,
                                               substance=test_oil,

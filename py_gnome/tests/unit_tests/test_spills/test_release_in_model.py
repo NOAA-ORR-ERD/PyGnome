@@ -10,7 +10,7 @@ import pytest
 from datetime import datetime
 
 from gnome.model import Model
-from gnome.spills.spill import surface_point_line_spill
+from gnome.spills.spill import point_line_spill
 from gnome.outputters.memory_outputter import MemoryOutputter
 
 import gnome.scripting as gs
@@ -49,7 +49,7 @@ def empty_model():
 
 @pytest.fixture
 def inst_spill():
-    spill = surface_point_line_spill(
+    spill = point_line_spill(
         num_elements=NUM_ELEMENTS,
         start_position=(0, 0, 0),
         release_time=START_TIME,
@@ -64,7 +64,7 @@ def inst_spill():
 
 @pytest.fixture
 def cont_spill():
-    spill = surface_point_line_spill(
+    spill = point_line_spill(
         num_elements=NUM_ELEMENTS,
         start_position=(0, 0, 0),
         release_time=START_TIME,
@@ -176,7 +176,7 @@ def test_one_element_per_timestep():
     )
     model.outputters += MemoryOutputter()
 
-    model.spills += surface_point_line_spill(
+    model.spills += point_line_spill(
         num_elements=10,
         start_position=(0, 0, 0),
         release_time=model.start_time,
@@ -207,7 +207,7 @@ def test_two_elements_per_timestep():
     )
     model.outputters += MemoryOutputter()
 
-    model.spills += surface_point_line_spill(
+    model.spills += point_line_spill(
         num_elements=20,
         start_position=(0, 0, 0),
         release_time=model.start_time,
@@ -240,7 +240,7 @@ def test_fractional_elements_per_timestep(num_per):
     )
     model.outputters += MemoryOutputter()
 
-    model.spills += surface_point_line_spill(
+    model.spills += point_line_spill(
         num_elements= int(10 * num_per),
         start_position=(0, 0, 0),
         release_time=model.start_time,

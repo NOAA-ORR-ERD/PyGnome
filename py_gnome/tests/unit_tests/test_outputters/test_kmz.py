@@ -14,7 +14,8 @@ from gnome.outputters import KMZOutput
 from gnome.outputters import kmz_templates
 
 
-from gnome.spills import PolygonRelease, Spill, surface_point_line_spill
+from gnome.spills.spill import Spill, point_line_spill
+from gnome.spills.release import PolygonRelease
 from gnome.spill_container import SpillContainerPair
 from gnome.movers import RandomMover, constant_point_wind_mover
 from gnome.model import Model
@@ -41,7 +42,7 @@ def model(sample_model, output_filename):
     model.cache_enabled = True
     model.uncertain = True
 
-    model.spills += surface_point_line_spill(2,
+    model.spills += point_line_spill(2,
                                              start_position=rel_start_pos,
                                              release_time=model.start_time,
                                              end_position=rel_end_pos)

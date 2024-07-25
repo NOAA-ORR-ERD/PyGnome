@@ -18,6 +18,8 @@ SAMPLE_DATA_DIR = Path(__file__).parent / "sample_data"
 
 save_files = SAMPLE_DATA_DIR.glob("*.gnome")
 
+pytestmark = pytest.mark.filterwarnings("ignore:Provided map bounds superscede map bounds found in file")
+
 @pytest.mark.parametrize('savefilename', save_files)
 def test_old_save_files(savefilename):
     print("testing loading of:", savefilename)

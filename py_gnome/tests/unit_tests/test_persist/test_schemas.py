@@ -28,9 +28,15 @@ def test_datetimes():
     assert dt == dt2
 
 
-@pytest.mark.skip("these are known not to work")
-def test_cfdatetimes():
+# @pytest.mark.skip("these are known not to work")
 
+@pytest.mark.xfail(reason="cfdatetime is not supported")
+def test_cfdatetimes():
+    """
+    test of serializing cfdatetimes
+
+    It does not work, but keeping this, in case we decide to support it one day
+    """
     dt = [cfdatetime(2020, 10, 10 + i, 12, 30) for i in range(10)]
 
     serial = tss.serialize(dt)
@@ -42,6 +48,4 @@ def test_cfdatetimes():
     print(dt2)
 
     assert dt == dt2
-
-    assert False
 

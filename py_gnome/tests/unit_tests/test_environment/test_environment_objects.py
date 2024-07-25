@@ -125,7 +125,7 @@ def test_SteadyUniformCurrent_in_model():
                      duration=gs.hours(1),
                      time_step=gs.minutes(10),
                      )
-    model.spills += gs.surface_point_line_spill(num_elements=10,
+    model.spills += gs.point_line_spill(num_elements=10,
                                                 release_time=start_time,
                                                 start_position=(0,0))
     suc = SteadyUniformCurrent(math.sqrt(2), 45, units='knots')
