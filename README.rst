@@ -56,39 +56,6 @@ and it is used in our development and testing process.
 
 `Install using Anaconda <./Installing.rst>`_
 
-Compiling PyGnome
-=================
-Move to the repository directory and activate the ``gnome`` conda environment with:
-
- (base) conda activate gnome
-
-Delete ``py3buildenv_.txt`` if re-compiling code after making software changes.  The text file `py3buildenv_.txt` is used to cache software versions to avoid repitious prompts but will cause path problems if changes have been made and needs to be deleted to avoid these erroneous path defs.  
-
-Copy ``python Py3Env.py`` to an untracked file that defines local setup, e.g. ``python Py3Env_RDM.py``, and edit  
-``places`` to point to the right directory on your local system:
-
- places = [r"put-your-VisualStudio-vcvars64.bat-directory-path-here"]
-
-This file can remain untracked in version control because it is unique to each user and easily reproducible from the tracked file ``Py3Env.py`` that will be updated with future advancements.  Once this path is corrected to local path, run the script in gnome environment:
-
- (base) conda activate gnome
-
- (gnome) python Py3Env_RDM.py
-
-A command terminal ``cmd.exe`` prompt will open.  Change directories and run ``setup.py``
-
- (gnome) cd py_gnome
-
- (gnome) python setup.py develop
-
-After many, many messages, you will see something like: 
-
- Installed c:\users\rachael.mueller\projects\pygnome\py_gnome
-
- Processing dependencies for pyGnome==1.1.7
-
- Finished processing dependencies for pyGnome==1.1.7
-
 
 The WebGNOME Interface:
 =======================
