@@ -14,7 +14,7 @@ from pytest import raises
 
 from gnome.outputters import ShapeOutput
 import gnome.scripting as gs
-from gnome.spills import surface_point_line_spill
+from gnome.spills.spill import point_line_spill
 from gnome.spill_container import SpillContainerPair
 
 
@@ -32,7 +32,7 @@ def model(sample_model_fcn, output_filename):
     model.cache_enabled = True
     model.uncertain = True
 
-    model.spills += surface_point_line_spill(2,
+    model.spills += point_line_spill(2,
                                              start_position=rel_start_pos,
                                              release_time=model.start_time,
                                              end_position=rel_end_pos)

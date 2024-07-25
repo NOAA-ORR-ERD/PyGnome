@@ -522,37 +522,40 @@ def _setup_spill(release,
     return spill
     
 def point_line_spill(num_elements,
-                             start_position,
-                             release_time,
-                             end_position=None,
-                             end_release_time=None,
-                             substance=None,
-                             amount=0,
-                             units='kg',
-                             water=None,
-                             on=True,
-                             windage_range=None,
-                             windage_persist=None,
-                             name='Point or Line Release'):
+                     start_position,
+                     release_time,
+                     end_position=None,
+                     end_release_time=None,
+                     substance=None,
+                     amount=0,
+                     units='kg',
+                     water=None,
+                     on=True,
+                     windage_range=None,
+                     windage_persist=None,
+                     name='Point-Line Spill'):
     '''
-    Helper function returns a Spill object
+    Helper function to create a spill from a point or line source.
+
+    Returns a configured Spill object
 
     :param num_elements: total number of elements to be released
     :type num_elements: integer
 
     :param start_position: initial location the elements are released
-    :type start_position: 3-tuple of floats (long, lat, postive depth) or 
-        2-tuple of floats (lon,lat) in which case depth will default to 0
+    :type start_position: 3-tuple of floats (long, lat, positive depth) or
+        2-tuple of floats (lon, lat) in which case depth will default to 0.
 
-    :param release_time: time the LEs are released (datetime object)
+    :param release_time: time the elements are released
     :type release_time: datetime.datetime
 
     :param end_position=None: Optional. For moving source, the end position
                               If None, then release is from a point source
     :type end_position: 2-tuple of floats (long, lat)
 
-    :param end_release_time=None: optional -- for a time varying release,
-        the end release time. If None, then release is instantaneous
+    :param end_release_time=None: Optional -- for a time varying release,
+                                  the end release time. If None, then
+                                  the release is instantaneous
     :type end_release_time: datetime.datetime
 
     :param substance=None: Type of oil spilled.
@@ -566,15 +569,15 @@ def point_line_spill(num_elements,
 
     :param tuple windage_range=(.01, .04): Percentage range for windage.
                                            Active only for surface particles
-                                           when a mind mover is added
-    :type windage_range: tuple
+                                           when a wind mover is added
+    :type windage_range: 2-tuple in fraction of wind speed the elements will move.
 
     :param windage_persist=900: Persistence for windage values in seconds.
-                                    Use -1 for inifinite, otherwise it is
-                                    randomly reset on this time scale
-    :type windage_persist: int
+                                Use -1 for infinite, otherwise it is
+                                randomly reset on this time scale
+    :type windage_persist: int seconds.
 
-    :param name='Point/Line Spill': a name for the spill
+    :param name='Point-Line Spill': a name for the spill
     :type name: str
     '''
     # make positions 3d, with depth = 0 if they are not already
@@ -617,7 +620,9 @@ def surface_point_line_spill(num_elements,
                              windage_persist=None,
                              name='Surface Point or Line Release'):
     '''
-    Helper function returns a Spill object
+    Helper function for a surface spill at a point or over a line.
+
+    Returns a configured Spill object
 
     :param num_elements: total number of elements to be released
     :type num_elements: integer
@@ -658,7 +663,8 @@ def surface_point_line_spill(num_elements,
     :param name='Surface Point/Line Spill': a name for the spill
     :type name: str
     '''
-    warn('This helper function is deprecated in favor of point_line_spill.', DeprecationWarning)
+    warn('The `surface_point_line_spill` helper function is deprecated in favor of point_line_spill.',
+         DeprecationWarning)
     # make positions 3d, with depth = 0 if they are not already
     start_position = *start_position[:2], 0
 

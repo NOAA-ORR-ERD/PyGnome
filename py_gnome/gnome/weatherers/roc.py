@@ -1408,11 +1408,12 @@ class Disperse(Response):
                 treated_possible = disp_actual * self.disp_oil_ratio
                 mass_treatable = None
 
-                if np.isnan(np.mean(sc['density'][self.dispersable_oil_idxs(sc)
-                                                  ])):
+                disp_oil_idx = self.dispersable_oil_idxs(sc)
+
+                if not len(disp_oil_idx) or np.isnan(np.mean(sc['density'][disp_oil_idx])):
                     mass_treatable = 0
                 else:
-                    mass_treatable = np.mean(sc['density'][self.dispersable_oil_idxs(sc)]) * treated_possible
+                    mass_treatable = np.mean(sc['density'][disp_oil_idx]) * treated_possible
 
                 oil_avail = self.dispersable_oil_amount(sc, 'kg')
 
@@ -1563,7 +1564,8 @@ class Disperse(Response):
 
     def dispersable_oil_amount(self, sc, units='gal'):
         idxs = self.dispersable_oil_idxs(sc)
-
+        if not len(idxs):
+            return 0
         if units in _valid_vol_units:
             tot_vol = np.sum(sc['mass'][idxs] / sc['density'][idxs])
             return max(0, uc.convert('m^3', units, tot_vol))

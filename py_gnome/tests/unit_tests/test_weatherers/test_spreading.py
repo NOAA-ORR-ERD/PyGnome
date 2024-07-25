@@ -1,6 +1,3 @@
-'''
-Test Langmuir() - very simple object with only one method
-'''
 
 import sys
 
@@ -270,7 +267,7 @@ class TestFayGravityViscous(object):
                      time_step=15 * 60,
                      uncertain=False)
 
-        spill_0 = gs.surface_point_line_spill(num_elements=16,
+        spill_0 = gs.point_line_spill(num_elements=16,
                                         start_position=(-164.791878561,
                                                         69.6252597267, 0.0),
                                         release_time=start_time,
@@ -279,7 +276,7 @@ class TestFayGravityViscous(object):
                                         substance=test_oil,
                                         units='bbl')
 
-        spill_1 = gs.surface_point_line_spill(num_elements=16,
+        spill_1 = gs.point_line_spill(num_elements=16,
                                         start_position=(-164.791878561,
                                                         69.6252597267, 0.0),
                                         release_time=start_time,
@@ -288,7 +285,7 @@ class TestFayGravityViscous(object):
                                         substance=test_oil,
                                         units='bbl')
 
-        spill_2 = gs.surface_point_line_spill(num_elements=16,
+        spill_2 = gs.point_line_spill(num_elements=16,
                                         start_position=(-164.791878561,
                                                         69.6252597267, 0.0),
                                         release_time=start_time,
@@ -297,7 +294,7 @@ class TestFayGravityViscous(object):
                                         substance=test_oil,
                                         units='bbl')
 
-        spill_3 = gs.surface_point_line_spill(num_elements=16,
+        spill_3 = gs.point_line_spill(num_elements=16,
                                         start_position=(-164.791878561,
                                                         69.6252597267, 0.0),
                                         release_time=start_time,
@@ -354,7 +351,7 @@ class TestFayGravityViscous(object):
                 time_step=15 * 60,
                 uncertain=False)
 
-        spill =   gs.surface_point_line_spill(num_elements=num_elements,
+        spill =   gs.point_line_spill(num_elements=num_elements,
                                         start_position=(-164.791878561,
                                                         69.6252597267, 0.0),
                                         release_time=start_time,

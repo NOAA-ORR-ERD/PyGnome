@@ -172,7 +172,7 @@ class Test_GnomeMap:
             gmap += GnomeMap()
 
 
-
+@pytest.mark.filterwarnings("ignore:ParamMap")
 class Test_ParamMap:
     '''
     WIP
@@ -607,6 +607,8 @@ class Test_MapfromBNA:
                 for c in coord_coll[0]:
                     assert len(c) == 2
 
+    # this is result of the serialization saving the bounds, just in case they changed.
+    @pytest.mark.filterwarnings("ignore:Provided map bounds superscede map bounds")
     def test_serialize_deserialize(self):
         """
         test create new object from to_dict
@@ -962,12 +964,11 @@ class Test_serialize:
 
         assert ser['spillable_area'] is None
 
-    #need to add the file to file server
-    @pytest.mark.xfail()
+    # @pytest.mark.xfail()
     def test_serialize_from_blob_old(self):
         # this one uses the "old" name, before moving the map module.
         json_data = {'approximate_raster_interval': 53.9608870724,
-                     'filename': u'/Users/chris.barker/Hazmat/GitLab/pygnome/py_gnome/tests/unit_tests/sample_data/florida_with_lake_small.bna',
+                     'filename': bna_with_lake,
                      'id': u'b3590b7d-aab1-11ea-8899-1e00b098d304',
                      'map_bounds': [(-82.8609915978, 24.5472415066),
                                     (-82.8609915978, 28.1117673335),
@@ -993,11 +994,10 @@ class Test_serialize:
         assert map.spillable_area is None
         assert len(map.map_bounds) == 4
 
-    @pytest.mark.xfail()
-    def test_serialize_from_blob_new(self):
+    # @pytest.mark.xfail()    def test_serialize_from_blob_new(self):
         # this one uses the "new" name, after moving the map module.
         json_data = {'approximate_raster_interval': 53.9608870724,
-                     'filename': u'/Users/chris.barker/Hazmat/GitLab/pygnome/py_gnome/tests/unit_tests/sample_data/florida_with_lake_small.bna',
+                     'filename': bna_with_lake,
                      'id': u'b3590b7d-aab1-11ea-8899-1e00b098d304',
                      'map_bounds': [(-82.8609915978, 24.5472415066),
                                     (-82.8609915978, 28.1117673335),
