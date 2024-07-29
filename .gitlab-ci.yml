@@ -1,6 +1,6 @@
 variables:
   PYTHON_VER: "3.10"
-  IMAGE_NAME: "miniforge-python"
+  IMAGE_NAME: "ubuntu/ubuntuforge-python"
   GIT_DEPTH: 2
 
 stages:
@@ -39,8 +39,10 @@ compile_pygnome:
     - linux
   image: registry.orr.noaa.gov/erd/centos-conda/$IMAGE_NAME$PYTHON_VER
   script:
-    - echo "compiling PyGNOME"
-    - yum install gcc gcc-c++ make libXext libSM libXrender -y
+    - apt-get update
+    - apt-get upgrade -y
+
+    - apt-get install git g++ make libxext-dev libsm-dev libxrender-dev -y
 
     # get the adios_db code: needed for tests and requirements
     - git clone --depth 1 -b develop https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.orr.noaa.gov/gnome/oil_database/oil_database.git
@@ -60,6 +62,7 @@ compile_pygnome:
     # And there may be times we want to build a wheel file (.whl)
     # The following command will build a wheel in the current directory:
     #   python -m pip wheel ./
+    - echo "compiling PyGNOME"
     - python -m pip install ./
 
     # need extra requirements for the docs
@@ -97,7 +100,7 @@ test_pygnome_scripts:
     - docker
     - linux
   allow_failure: true
-  image: registry.orr.noaa.gov/erd/centos-conda/centos7-python$PYTHON_VER
+  image: registry.orr.noaa.gov/erd/centos-conda/$IMAGE_NAME$PYTHON_VER
   script:
     - cd ./py_gnome/scripts/testing_scripts && python run_all.py 2<&1
 
