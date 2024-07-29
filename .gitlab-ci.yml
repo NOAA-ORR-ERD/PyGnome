@@ -1,12 +1,12 @@
 variables:
   PYTHON_VER: "3.10"
-  IMAGE_NAME: "miniforge-python"
+  IMAGE_NAME: "ubuntu/ubuntuforge-python"
   GIT_DEPTH: 2
 
 stages:
   - compile
-  - test
   - build
+  - test
 
 cache:
   paths:
@@ -39,27 +39,35 @@ compile_pygnome:
     - linux
   image: registry.orr.noaa.gov/erd/centos-conda/$IMAGE_NAME$PYTHON_VER
   script:
-    - echo "compiling PyGNOME"
-    - yum install gcc gcc-c++ make libXext libSM libXrender -y
+    - apt-get update
+    - apt-get upgrade -y
+
+    - apt-get install git g++ make libxext-dev libsm-dev libxrender-dev -y
 
     # get the adios_db code: needed for tests and requirements
     - git clone --depth 1 -b develop https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.orr.noaa.gov/gnome/oil_database/oil_database.git
+    - cd ./py_gnome
     - conda install -y python=$PYTHON_VER --file conda_requirements.txt
                                           --file conda_requirements_build.txt
-                                          --file oil_database/adios_db/conda_requirements.txt
+                                          --file ../oil_database/adios_db/conda_requirements.txt
 
     # install adios_db
-    - pip install oil_database/adios_db/
+    - pip install ../oil_database/adios_db/
 
-    - cd ./py_gnome
-    - python setup.py install
-
-    - cd ../  # make sure that it won't find the source gnome package.
-    - python -c "import gnome"  # make sure that it imports
+    # Install pygnome
+    # If you want verbose output including the compiler/linker commands,
+    # run the following command:
+    #   python -m build --no-isolation --config-setting cmake.verbose=true
+    #
+    # And there may be times we want to build a wheel file (.whl)
+    # The following command will build a wheel in the current directory:
+    #   python -m pip wheel ./
+    - echo "compiling PyGNOME"
+    - python -m pip install ./
 
     # need extra requirements for the docs
     - conda install -y --file conda_requirements_docs.txt
-    - cd py_gnome/documentation && make html  # build the docs
+    - cd documentation && make html  # build the docs
   artifacts:
     when: always
     expire_in: 15 days
@@ -76,8 +84,10 @@ test_pygnome:
   allow_failure: false
   image: registry.orr.noaa.gov/erd/centos-conda/$IMAGE_NAME$PYTHON_VER
   script:
-    - conda install -y --file conda_requirements_test.txt
+    - conda install -y --file py_gnome/conda_requirements_test.txt
     - cd ./py_gnome/tests/unit_tests && pytest --runslow
+
+    # save the package list if tests pass
     - conda list > conda_packages.txt
 
 # Ideally, all the scripts in "testing_scripts" should run without errors,
@@ -90,7 +100,7 @@ test_pygnome_scripts:
     - docker
     - linux
   allow_failure: true
-  image: registry.orr.noaa.gov/erd/centos-conda/centos7-python$PYTHON_VER
+  image: registry.orr.noaa.gov/erd/centos-conda/$IMAGE_NAME$PYTHON_VER
   script:
     - cd ./py_gnome/scripts/testing_scripts && python run_all.py 2<&1
 
@@ -124,56 +134,78 @@ test_pygnome_windows:
     - windows
     - visual-studio-22
   allow_failure: true
+  cache: []
   before_script:
-    - Get-Location
-    - dir
-    # make sure conda is on the path first in the path
-    - $Env:Path = 'C:\ProgramData\Miniconda3\Library\bin;' + $Env:Path
-    - $Env:Path = 'C:\ProgramData\Miniconda3\;' + $Env:Path
-    - $Env:Path = 'C:\ProgramData\Miniconda3\Scripts;' + $Env:Path
-
-    - echo "Our environemt vars:"
-    - $Env:Path
-
     - echo $CI_PIPELINE_ID
-    - conda activate ./$CI_PIPELINE_ID
+
+    # where are we?
+    - Get-Location
+    - Get-ChildItem | % { $_.FullName }  # this should list the current folder
+    - $Env:PathOrig = $Env:Path
+    - $Env:CurrDir = Get-Location
+ 
+    # Where is our conda installation?
+    # This will tell us where python is installed.  This could change periodically
+    #- Get-ChildItem -Path 'C:\Python310' -Recurse -Include "python.exe", "conda.exe" | % { $_.FullName }
+    #- Get-ChildItem -Path 'C:\ProgramData\miniforge3' -Recurse -Include "python.exe", "conda.exe" | % { $_.FullName }
+
+    # make sure conda is on the path first in the path
+    - $Env:Path = 'C:\ProgramData\miniforge3\;' +
+                  'C:\ProgramData\miniforge3\Scripts;' +
+                  'C:\ProgramData\miniforge3\Lib\bin;' +
+                  $Env:PathOrig
+    - $Env:Path -split ';'
+
+    - python -c "import sys; print(sys.executable)"
+
+    # This might be changing our current directory.  It only needs to be run
+    # one time anyway, so we will comment it out.
+    #- Invoke-Expression "conda shell.powershell hook"
+    #- conda init powershell
+
+    # On SO, it was suggested that this would perform a `conda init`
+    # without needing to restart PowerShell.  So we will test it.
+    - C:\ProgramData\miniforge3\shell\condabin\conda-hook.ps1
+
     - conda config --add channels defaults
     - conda config --add channels conda-forge
     - conda config --get channels
     - conda config --set channel_priority strict
+
+    - conda create -y -p ./pygnome python=$PYTHON_VER
+
+    #- $Env:Path = '' +
+    #              (Get-Location) + '\pygnome\;' +
+    #              (Get-Location) + '\pygnome\Scripts\;' +
+    #              (Get-Location) + '\pygnome\Lib\bin\;' +
+    #              $Env:PathOrig
+    - conda activate ./pygnome
   script:
     - echo "Building and testing PyGNOME"
-
-    # # make sure our conda package is first in the path
-    # - $Env:Path = 'C:\ProgramData\Miniconda3\Library\bin;' + $Env:Path
-    # - $Env:Path = 'C:\ProgramData\Miniconda3\;' + $Env:Path
-    # - $Env:Path = 'C:\ProgramData\Miniconda3\Scripts;' + $Env:Path
-
-    - echo "Our environemt vars:"
-    - $Env:Path
-
-    - echo "Python is running from:"
-    - python -c "import sys; print(sys.executable)"
 
     # get the adios_db code: needed for tests and requirements
     - git clone --depth 1 -b develop https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.orr.noaa.gov/gnome/oil_database/oil_database.git
 
     - conda install -y python=$PYTHON_VER mamba
+    - cd ./py_gnome
     - echo "Setting up conda environment"
     - mamba install -y python=$PYTHON_VER --file conda_requirements.txt
                                           --file conda_requirements_build.txt
                                           --file conda_requirements_test.txt
-                                          --file oil_database/adios_db/conda_requirements.txt
+                                          --file ../oil_database/adios_db/conda_requirements.txt
 
-    - echo "Building PyGNOME"
-    - cd ./py_gnome
-    # - python setup.py install
-    - python setup.py develop
+    # install adios_db
+    - pip install ../oil_database/adios_db/
 
-    # Make sure that it imports from some folder other than the
-    # gnome package folder.
-    # - cd ../
-    # - python -c "import gnome"
+    # Install pygnome
+    # If you want verbose output including the compiler/linker commands,
+    # run the following command:
+    #   python -m build --no-isolation --config-setting cmake.verbose=true
+    #
+    # And there may be times we want to build a wheel file (.whl)
+    # The following command will build a wheel in the current directory:
+    #   python -m pip wheel ./
+    - python -m pip install ./
 
     - cd ./tests/unit_tests
     - pytest --runslow
@@ -195,9 +227,9 @@ build_develop:
 
     # build the py_gnome image
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker build . --build-arg PYTHON_VER=$PYTHON_VER -t registry.orr.noaa.gov/gnome/pygnome:develop
+    - docker build . --build-arg PYTHON_VER=$PYTHON_VER -t registry.orr.noaa.gov/gnome/pygnome:$CI_COMMIT_BRANCH
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker push registry.orr.noaa.gov/gnome/pygnome:develop
+    - docker push registry.orr.noaa.gov/gnome/pygnome:$CI_COMMIT_BRANCH
 
 build_main:
   stage: build

@@ -84,6 +84,11 @@ def make_model():
                                      horizontal_diffusion_coef_below_ml = 100000,
                                      mixed_layer_depth=20)
 
+    ncout = gs.NetCDFOutput(filename="HI_output.nc",
+                        output_timestep=gs.hours(1),
+                        )
+
+    model.outputters += ncout
     return model
 
 

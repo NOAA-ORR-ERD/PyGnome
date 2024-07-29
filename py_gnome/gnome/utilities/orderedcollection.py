@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+
 class OrderedCollection(object):
     '''
     Generalized Container for a set of objects of a particular type which
@@ -14,22 +15,22 @@ class OrderedCollection(object):
 
     def __init__(self, elems=None, dtype=None):
         if elems and not isinstance(elems, list):
-            raise TypeError('%s: needs a list of objects'
-                            % self.__class__.__name__)
+            raise TypeError(f'{self.__class__.__name__}: '
+                            'needs a list of objects')
         if not elems:
             elems = []
 
         if not dtype and len(elems) == 0:
-            raise TypeError('%s: specify a data type if list is empty'
-                            % self.__class__.__name__)
+            raise TypeError(f'{self.__class__.__name__}: '
+                            'specify a data type if list is empty')
         elif not dtype:
             self.dtype = type(elems[0])
         else:
             self.dtype = dtype
 
         if not all([isinstance(e, self.dtype) for e in elems]):
-            raise TypeError('%s: needs a list of %s'
-                            % (self.__class__.__name__, self.dtype))
+            raise TypeError(f'{self.__class__.__name__}: '
+                            f'needs a list of {self.dtype}')
 
         # a bunch of Gnome classes have an id property defined, which we will
         # prefer
@@ -38,7 +39,8 @@ class OrderedCollection(object):
         # is hard to reference as a key
 
         self._elems = elems[:]
-        self._d_index = {self._s_id(elem): idx for idx, elem in enumerate(self._elems)}
+        self._d_index = {self._s_id(elem): idx
+                         for idx, elem in enumerate(self._elems)}
 
         self.callbacks = []
 
@@ -88,20 +90,15 @@ class OrderedCollection(object):
             try:
                 for e in elem:
                     if not isinstance(e, self.dtype):
-                        raise TypeError('{0}:\n'
-                                        'Expected: {1!r}\n'
-                                        'Got: {2!r}\n of type: {3}'.format(self.__class__.__name__,
-                                                                           self.dtype,
-                                                                           e,
-                                                                           type(e)))
+                        raise TypeError(f'{self.__class__.__name__}:\n'
+                                        f'Expected: {self.dtype!r}\n'
+                                        f'Got: {e!r}\n of type: {type(e)}')
                     self.add(e)
             except TypeError:
-                raise TypeError('{0}:\n'
-                                'Expected: {1!r} or an iterable of {1}.\n'
-                                'Got: {2!r}\n of type: {3}'.format(self.__class__.__name__,
-                                                                   self.dtype,
-                                                                   elem,
-                                                                   type(elem)))
+                raise TypeError(f'{self.__class__.__name__}:\n'
+                                f'Expected: {self.dtype!r} '
+                                f'or an iterable of {self.dtype}.\n'
+                                f'Got: {elem!r}\n of type: {type(elem)}')
 
     def append(self, elem):
         self.add(elem)
@@ -136,10 +133,8 @@ class OrderedCollection(object):
         raise exception if 'id' is not found.
         '''
         if not isinstance(new_elem, self.dtype):
-            raise TypeError('{0}: expected {1}, '
-                            'got {2}'.format(self.__class__.__name__,
-                                             self.dtype,
-                                             type(new_elem)))
+            raise TypeError(f'{self.__class__.__name__}: '
+                            f'expected {self.dtype}, got {type(new_elem)}')
 
         if isinstance(ident, int):
             l__key = self._s_id(self._elems[ident])
@@ -173,8 +168,7 @@ class OrderedCollection(object):
                 try:
                     idx = self._d_index[idx]
                 except KeyError:
-                    raise ValueError('{0} is not in OrderedCollection'
-                                    .format(elem))
+                    raise ValueError(f'{elem} is not in OrderedCollection')
             else:
                 idx = self._d_index[elem]
         except KeyError:
@@ -183,8 +177,7 @@ class OrderedCollection(object):
             try:
                 idx = self._d_index[ident]
             except KeyError:
-                raise ValueError('{0} is not in OrderedCollection'
-                                 .format(elem))
+                raise ValueError(f'{elem} is not in OrderedCollection')
 
         return sorted(self._d_index.values()).index(idx)
 
@@ -248,7 +241,7 @@ class OrderedCollection(object):
         itemlist = sorted(list(self._d_index.items()), key=lambda x: x[1])
 
         # reference the value in list
-        itemlist = [self._elems[v] for (k, v) in itemlist]
+        itemlist = [self._elems[v] for (_, v) in itemlist]
 
         formatter = '    %s,'
         if len(itemlist) > 12:  # should we abbreviate the list at all?
@@ -306,26 +299,28 @@ class OrderedCollection(object):
             if isinstance(elem, dict):
                 id_ = elem.get('id', None)
                 if id_ is None:
-                    raise ValueError('id of element in OC update dict is missing')
+                    raise ValueError('id of element in OC update dict '
+                                     'is missing')
                 if id_ in self._d_index:
-                    #obj currently exists in this collection
+                    # obj currently exists in this collection
                     obj = self.get(id_)
                     obj.update(elem)
                 else:
-                    raise ValueError('{0} is not an object contained by this OC'.format(id))
+                    raise ValueError(f'{id} is not an object contained '
+                                     'by this OrderedCollection')
                 new_vals.append(obj)
             elif isinstance(elem, self.dtype):
                 new_vals.append(elem)
             else:
-                raise ValueError('update element is not dict or valid type for this OC')
+                raise ValueError('update element is not dict or valid type '
+                                 'for this OrderedCollection')
 
         self.clear()
         self.add(new_vals)
 
         return self
 
-
-    #JAH: This is why OCs can be serialized and lists cannot!
+    # JAH: This is why OCs can be serialized and lists cannot!
     def to_dict(self):
         '''
         Method takes the instance of ordered collection and outputs a list of
@@ -338,7 +333,7 @@ class OrderedCollection(object):
 
         for obj in self:
             try:
-                obj_type = '{0.__module__}.{0.__class__.__name__}'.format(obj)
+                obj_type = f'{obj.__module__}.{obj.__class__.__name__}'
             except AttributeError:
                 obj_type = '{0.__class__.__name__}'.format(obj)
             item = {'obj_type': obj_type, 'id': self._s_id(obj)}
@@ -361,7 +356,7 @@ class OrderedCollection(object):
             if event not in ('add', 'remove', 'replace'):
                 raise ValueError("Events must be either "
                                  "('add', 'remove', 'replace'). "
-                                 "{0} is not supported".format(event))
+                                 f"{event} is not supported")
 
         self.callbacks.append((callback, events))
 

@@ -127,15 +127,6 @@ class Grid_U(gridded.grids.Grid_U, GnomeId):
 
     _schema = GridSchema
 
-    def __init__(self, **kwargs):
-        super(Grid_U, self).__init__(**kwargs)
-
-        #This is for the COOPS case, where their coordinates go from 0-360 starting at prime meridian
-        for lon in [self.node_lon,]:
-            if lon is not None and lon.max() > 180:
-                self.logger.warning('Detected longitudes > 180 in {0}. Rotating -360 degrees'.format(self.name))
-                lon -= 360
-
     def draw_to_plot(self, ax, features=None, style=None):
         import matplotlib
         def_style = {'color': 'blue',
@@ -598,13 +589,13 @@ class Variable(gridded.Variable, GnomeId):
         return var
 
     @combine_signatures
-    def at(self, points, time, units=None, *args, **kwargs):
-        if ('extrapolate' not in kwargs):
-            kwargs['extrapolate'] = False
-        if ('unmask' not in kwargs):
-            kwargs['unmask'] = True
+    def at(self, points, time, *, units=None, extrapolate=False, unmask=True, **kwargs):
 
-        value = super(Variable, self).at(points, time, *args, **kwargs)
+        value = super(Variable, self).at(points, time,
+                                         units=units,
+                                         extrapolate=extrapolate,
+                                         unmask=unmask,
+                                         **kwargs)
 
         data_units = self.units if self.units else self._gnome_unit
         req_units = units if units else self._gnome_unit
@@ -961,13 +952,13 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
         _vars = [Variable(grid=_grid, units=units[i], time=_time, data=d) for i, d in enumerate(_datas)]
         return cls(name=name, grid=_grid, time=_time, variables=_vars)
 
-    def at(self, points, time, units=None, *args, **kwargs):
-        if ('extrapolate' not in kwargs):
-            kwargs['extrapolate'] = False
-        if ('unmask' not in kwargs):
-            kwargs['unmask'] = True
+    def at(self, points, time, *, units=None, extrapolate=False, unmask=True, **kwargs):
         units = units if units else self._gnome_unit #no need to convert here, its handled in the subcomponents
-        value = super(VectorVariable, self).at(points, time, units=units, *args, **kwargs)
+        value = super(VectorVariable, self).at(points, time, 
+                                               units=units,
+                                               extrapolate=extrapolate,
+                                               unmask=unmask,
+                                               **kwargs)
 
         data_units = self.units if self.units else self._gnome_unit
         req_units = units if units else self._gnome_unit

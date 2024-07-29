@@ -1,0 +1,62 @@
+# Documents the conda packages required for PyGnome
+#
+#  This should be the minimal conda install to run PyGNOME
+#  See:
+#    conda_requirements_build.txt for build requirements
+#    conda_requirements_test for testing requirements
+#    conda_requirements_docs.txt requirements for building the sphinx docs
+
+#  install with:
+#    conda install --file conda_requirements.txt
+#
+#  or create an environmemnt:
+#    conda create -n gnome python=3.10 --file conda_requirements.txt
+#   (python version is not specified in the conda_requirements file)
+# if you want a full development environment,
+# you can install the whole thing at once:
+#
+# conda create -n gnome python=3.10 --file conda_requirements.txt --file conda_requirements_build.txt --file conda_requirements_test.txt --file conda_requirements_docs.txt
+
+
+# These packages should all be in one of the following channels:
+# defaults
+# conda-forge
+
+# it'll probably work with 3.9 -- 3.11, but CI is testing with 3.10
+
+python>=3.9,<=3.12
+
+## System libs
+colander <2
+progressbar
+psutil
+python-dateutil
+pyzmq
+# Needed for multiprocessing, which is currently broken
+# pyzmq
+# tornado
+# tblib
+
+## Base numerical libs
+numpy <2
+scipy
+
+## Modeling libs
+gsw
+netCDF4
+trimesh
+
+## Spatial Libs
+geojson
+geopandas
+mapbox_earcut
+pyogrio
+pyproj
+shapely
+
+# NOAA maintained packages
+gridded>=0.6.5
+pynucos=3.2.*
+cell_tree2d
+py_gd>=2.2
+adios_db>=1.1

@@ -14,13 +14,6 @@ Used by map_canvas code and map code.
 NOTE: all coordinates are takes as (lon, lat, depth)
       even though depth is always ignored
 """
-
-
-
-
-
-
-
 import numpy as np
 from gnome.gnomeobject import GnomeId
 from gnome.persist.base_schema import ObjTypeSchema
@@ -378,9 +371,9 @@ class FlatEarthProjection(GeoProjection):
         :type ref_positions: NX3, numpy array (Only lat is used here)
 
         :returns delta_lon_lat: Differential (delta) positional values
-                                Nx3 numpy array of (delta-lon, delta-lat, delta-z)
+                                Nx3 numpy array of
+                                (delta-lon, delta-lat, delta-z)
         """
-
         # make a copy -- don't change meters
         delta_lon_lat = np.array(meters, dtype=np.float64)
         if len(delta_lon_lat.shape) == 1:

@@ -49,7 +49,7 @@ current_mover = gs.CurrentMover.from_netCDF(filename=cur_file,
 #                                 )
 model.movers += current_mover
 
-# Turn Diffusion off to see the effects of the uncertainty
+# Turn Diffusion down to see the effects of the uncertainty
 model.movers += gs.RandomMover(diffusion_coef=1e1)
 
 renderer = gs.Renderer(mymap,

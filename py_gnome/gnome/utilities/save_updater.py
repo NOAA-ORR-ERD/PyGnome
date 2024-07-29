@@ -1,13 +1,15 @@
-# Updates a save loaded using pygnome.Model to the latest version
-# !!!!Update the version number in gnome.gnomeobject to be consistent with versioning here
-
-import json
-import logging
-import glob
-import sys
-import contextlib
+"""
+Updates a save loaded using pygnome.Model to the latest version
+!!!!Update the version number in gnome.gnomeobject to be consistent
+with versioning here
+"""
 import os
+import sys
 import re
+import glob
+import logging
+import contextlib
+import json
 import zipfile
 from pathlib import Path
 
@@ -20,14 +22,14 @@ errortypes = [
 ]
 
 NON_WEATHERING_DICT = {
- "obj_type": "gnome.spill.substance.NonWeatheringSubstance",
- "id": "dummy-id-from-save_updater",
- "name": "NonWeatheringSubstance_99",
- "initializers": [
-  "InitWindages_99.json"
- ],
- "is_weatherable": False,
- "standard_density": 1000.0
+    "obj_type": "gnome.spill.substance.NonWeatheringSubstance",
+    "id": "dummy-id-from-save_updater",
+    "name": "NonWeatheringSubstance_99",
+    "initializers": [
+        "InitWindages_99.json"
+    ],
+    "is_weatherable": False,
+    "standard_density": 1000.0
 }
 
 # if needed:
@@ -42,6 +44,7 @@ NON_WEATHERING_DICT = {
 #  "name": "InitWindages_99"
 # }
 
+
 @contextlib.contextmanager
 def remember_cwd(new_wd):
     curdir = os.getcwd()
@@ -54,9 +57,10 @@ def remember_cwd(new_wd):
 
 def update_savefile(save_directory):
 
-    if not isinstance(save_directory, str) or not os.path.isdir(save_directory):
-        raise ValueError('Must unzip save to directory in order to upgrade it to '
-                         'the latest version')
+    if (not isinstance(save_directory, str) or
+            not os.path.isdir(save_directory)):
+        raise ValueError('Must unzip save to directory in order to upgrade it '
+                         'to the latest version')
 
     messages = []
     errors = []
@@ -88,9 +92,9 @@ def update_savefile(save_directory):
 
 def v0tov1(messages, errors):
     '''
-    Takes a zipfile containing no version.txt and up-converts it to 'version 1'.
-    This functions purpose is to upgrade save files to maintain compatibility
-    after the SpillRefactor upgrades.
+    Takes a zipfile containing no version.txt and up-converts it
+    to 'version 1'.  This function's purpose is to upgrade save files to
+    maintain compatibility after the SpillRefactor upgrades.
     '''
     def Substance_from_ElementType(et_json, water):
         '''
@@ -103,8 +107,9 @@ def v0tov1(messages, errors):
                 init['obj_type'] = init['obj_type'].replace('.elements.', '.')
         if 'substance' not in et_json:
             '''
-            Note the id of the new cstructs. The ID IS required at this stage, because
-            the load process will use it later to establish references between objects
+            Note the id of the new cstructs. The ID IS required at this stage,
+            because the load process will use it later to establish references
+            between objects
             '''
             substance = NON_WEATHERING_DICT
             substance["initializers"] = inits
@@ -212,9 +217,14 @@ def v1tov2(messages, errors):
                     oils.append(fname)
                     # See if it can be used with the current GnomeOil
                     try:
+                        # I don't know if this is absolutely necessary,
+                        # but we import this locally so as to not have a
+                        # global dependency on any external oil packages.
+                        from gnome.spills.gnome_oil import GnomeOil
                         GnomeOil(**json_)
                     except Exception:
-                        # can't be used with GnomeOIl: replace with NonWeathering
+                        # Can't be used with GnomeOIl: replace with
+                        # NonWeathering
                         log.info(f"Oil: {json_['name']} is not longer valid\n"
                                  "You will need re-load an oil, which can be "
                                  "obtained from The ADIOS Oil Database:\n"
@@ -237,7 +247,8 @@ def v1tov2(messages, errors):
                     if "InitWindages" in init_js["obj_type"]:
                         json_['windage_range'] = init_js['windage_range']
                         json_['windage_persist'] = init_js['windage_persist']
-                        json.dump(json_, open(fname, 'w', encoding='utf-8'), indent=4)
+                        json.dump(json_, open(fname, 'w', encoding='utf-8'),
+                                  indent=4)
                         files_to_remove.append(wind_init)
 
     with open('version.txt', 'w', encoding='utf-8') as vers_file:
@@ -248,6 +259,7 @@ def v1tov2(messages, errors):
 
     messages.append('**Update from v1 to v2 successful**')
     return messages, errors
+
 
 def v2tov3(messages, errors):
     '''
@@ -267,7 +279,7 @@ def v2tov3(messages, errors):
     spills = []  # things with a "gnome.spill" in the path
     movers = []  # current_movers, CurrentMover
     wind_movers = []  # wind_movers, WindMover
-    srs = [] # SpatialRelease
+    srs = []  # SpatialRelease
     for fname in jsonfiles:
         with open(fname, 'r', encoding='utf-8') as fn:
             json_ = json.load(fn)
@@ -282,12 +294,14 @@ def v2tov3(messages, errors):
                     srs.append((fname, json_))
 
     for fn, sp in spills:
-        sp['obj_type'] = sp['obj_type'].replace('gnome.spill.', 'gnome.spills.')
+        sp['obj_type'] = sp['obj_type'].replace('gnome.spill.',
+                                                'gnome.spills.')
         with open(fn, 'w', encoding='utf-8') as fp:
             json.dump(sp, fp, indent=4)
 
     for fn, sr in srs:
-        sr['obj_type'] = sr['obj_type'].replace('SpatialRelease', 'PolygonRelease')
+        sr['obj_type'] = sr['obj_type'].replace('SpatialRelease',
+                                                'PolygonRelease')
         with open(fn, 'w', encoding='utf-8') as fp:
             json.dump(sr, fp, indent=4)
 
@@ -330,13 +344,14 @@ def v3tov4(messages, errors):
 
     files_to_remove = []
 
-    # search for files which have weathering_data object, added to the files_to_remove list
+    # search for files which have weathering_data object, added to the
+    # files_to_remove list
     for fname in jsonfiles:
             with open(fname, 'r', encoding='utf-8') as fn:
                 json_ = json.load(fn)
                 if 'obj_type' in json_:
-                   if json_['obj_type'] == "gnome.weatherers.weathering_data.WeatheringData":
-                      files_to_remove.append(fname)
+                    if json_['obj_type'] == "gnome.weatherers.weathering_data.WeatheringData":
+                        files_to_remove.append(fname)
 
     # remove weathering_data reference from model file
     for fname in jsonfiles:
@@ -346,7 +361,7 @@ def v3tov4(messages, errors):
                     # this is assuming only one
                     for item in json_['weatherers']:
                         if item in files_to_remove:
-                             json_['weatherers'].remove(item)
+                            json_['weatherers'].remove(item)
                 json.dump(json_, open(fname, 'w', encoding='utf-8'), indent=4)
 
     # remove targeted files
@@ -355,6 +370,7 @@ def v3tov4(messages, errors):
 
     messages.append('**Update from v3 to v4 successful**')
     return messages, errors
+
 
 def v4tov5(messages, errors):
     '''
@@ -371,11 +387,10 @@ def v4tov5(messages, errors):
 
     jsonfiles = glob.glob('*.json')
 
-
     # updating the name of spills
     movers = []  # PyCurrentMover --> CurrentMover
-    wind_movers = []  #PyWindMover --> WindMover
-    point_wind_movers = [] #WindMover  --> PointWindMover
+    wind_movers = []  # PyWindMover --> WindMover
+    point_wind_movers = []  # WindMover  --> PointWindMover
     for fname in jsonfiles:
         with open(fname, 'r', encoding='utf-8') as fn:
             json_ = json.load(fn)
@@ -398,7 +413,7 @@ def v4tov5(messages, errors):
                                                 'WindMover')
         with open(fn, 'w', encoding='utf-8') as fp:
             json.dump(mv, fp, indent=4)
-            
+
     for fn, mv in point_wind_movers:
         mv['obj_type'] = mv['obj_type'].replace('WindMover',
                                                 'PointWindMover')
@@ -409,10 +424,10 @@ def v4tov5(messages, errors):
         vers_file.write('5\n')
 
     messages.append('**Update from v4 to v5 successful**')
-    
+
     return messages, errors
-    
-    
+
+
 def extract_zipfile(zip_file, to_folder='.'):
     def work(zf):
         folders = [name for name in zf.namelist()
@@ -441,8 +456,8 @@ def extract_zipfile(zip_file, to_folder='.'):
             log.info('Save file contained invalid names. '
                      'Editing extracted json to maintain save file integrity.')
             for jsonfile in glob.glob(os.path.join(to_folder, '*.json')):
-                # if any file name edits were made, references may need to be updated too
-                # otherwise the .json file won't be found
+                # if any file name edits were made, references may need
+                # to be updated too otherwise the .json file won't be found
                 contents = None
                 replaced = False
                 with open(jsonfile, 'r', encoding='utf-8') as jf:
@@ -469,12 +484,12 @@ def sanitize_filename(fname):
     NOTE: this looks a lot like html sanitization
           do we need to remove "<" and ">" from filenames?
 
-          and/or should we replace with a placeholder, rather than simply remove?
+          and/or should we replace with a placeholder,
+          rather than simply remove?
     Also -- maybe replace spaces with underscores ...
     '''
     return re.sub(r'[\\\\/*?:"<>|]', "", fname)
     # return re.sub(r'[\\\\/*?:"<>|]', "", fname).replace(" ", "_")
-
 
 
 all_update_steps = [v0tov1, v1tov2, v2tov3, v3tov4, v4tov5]

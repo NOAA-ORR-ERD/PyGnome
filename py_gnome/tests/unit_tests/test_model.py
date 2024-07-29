@@ -19,14 +19,14 @@ from gnome.basic_types import datetime_value_2d
 from gnome.utilities.inf_datetime import InfDateTime
 
 from gnome.maps import GnomeMap, MapFromBNA
-from gnome.environment import Wind, Tide, constant_wind, Water, Waves
+from gnome.environment import Wind, Tide, constant_wind, Water, Waves, GridWind
 from gnome.model import Model
 
 from gnome.spills import (Spill,
                          surface_point_line_spill,
                          Release)
 
-from gnome.movers import SimpleMover, RandomMover, PointWindMover, CatsMover
+from gnome.movers import SimpleMover, RandomMover, PointWindMover, CatsMover, WindMover
 
 from gnome.weatherers import (HalfLifeWeatherer,
                               Evaporation,
@@ -39,6 +39,7 @@ from gnome.outputters import Renderer, TrajectoryGeoJsonOutput
 
 from .conftest import sample_model_weathering, testdata, test_oil
 from gnome.spills.substance import NonWeatheringSubstance
+from gnome.utilities.time_utils import date_to_sec
 
 from gnome.exceptions import ReferencedObjectNotSet, GnomeRuntimeError
 
@@ -60,9 +61,28 @@ def test_exceptions():
     wind = constant_wind(10, 270, units='knots')
     water = Water()
     model.weatherers += Evaporation(water, wind)
+    model.spills += Spill(Release(release_time=model.start_time), substance=test_oil)
     with raises(GnomeRuntimeError):
         model.check_inputs()
 
+
+def test_runtime_warning():
+    """
+    Test warning if setup has issues user should be alerted to
+    map bounds and mover bounds not overlapping
+    """
+    wind_grid_file = testdata['c_GridWindMover']['wind_rect']
+    map_file = testdata['Renderer']['bna_star']
+    gnome_map = MapFromBNA(map_file, refloat_halflife=6)
+    model = Model(map=gnome_map)
+    wind = GridWind.from_netCDF(wind_grid_file)
+    py_wind_mover = WindMover(wind=wind)
+    model.movers += py_wind_mover
+    wind_bounds = py_wind_mover.get_bounds()
+    map_bounds = model.map.get_map_bounding_box()
+
+    with pytest.warns(UserWarning,match='does not overlap with the map bounds'):
+        model.check_inputs()
 
 @pytest.fixture(scope='function')
 def model(sample_model_fcn, tmpdir):
@@ -1349,6 +1369,29 @@ def test_two_substance_different(sample_model_fcn, s0=test_oil, s1="oil_crude"):
 
     with pytest.raises(ValueError):
         model.spills += cs
+
+
+def test_weathering_substeps():
+    '''
+    check if weathering substep > 1 model uses appropriate substeps
+    make sure error is raised for bad value
+    '''
+    with raises(ValueError):
+        model = Model(weathering_substeps = 0)
+
+    with pytest.warns(UserWarning,match='has not been well tested'):
+        model = Model(weathering_substeps = 10)
+
+    model = Model()
+    assert model.weathering_substeps == 1 # default
+
+    model.weathering_substeps = 10
+    assert model.weathering_substeps == 10
+
+    res = model._split_into_substeps()
+    for index, (model_time, time_step) in enumerate(res):
+         assert time_step == model.time_step / 10
+         assert date_to_sec(model_time) == date_to_sec(model.model_time) + index * time_step
 
 
 def test_weathering_data_attr():

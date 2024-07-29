@@ -1,6 +1,0 @@
-# Required to build PyGNOME
-# NOTE: you also need a compiler set up to build Python extensions
-
-cython=3.*
-setuptools>=62  # older versions uses different build dirs
-gitpython

@@ -178,7 +178,7 @@ class CurrentMover(movers.PyMover):
             This function exists because it is part of the top level Mover API
         '''
         if hasattr(self.current, 'get_bounds'):
-            return self.current.get_bounds
+            return self.current.get_bounds()
         else:
             return super(CurrentMover, self).get_bounds()
 
