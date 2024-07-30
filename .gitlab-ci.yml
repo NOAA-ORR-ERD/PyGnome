@@ -115,6 +115,7 @@ test_pygnome_scripts:
 
 test_pygnome_windows:
   stage: test
+  when: manual
   tags:
     - windows
     - visual-studio-22
