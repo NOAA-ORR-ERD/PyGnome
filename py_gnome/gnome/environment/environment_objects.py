@@ -119,7 +119,7 @@ class SteadyUniformCurrent(Environment):
         return self._v
 
 
-    def at(self, points, time, *, units=None, extrapolate=False, **kwargs):
+    def at(self, points, time, *, units=None, extrapolate=None, **kwargs):
         """
         Find the value of the property at positions of points at time T
 
@@ -486,7 +486,7 @@ class GridCurrent(VelocityGrid, Environment):
 #                      'surface_northward_sea_water_velocity'],
 #                'w': ['upward_sea_water_velocity']}
 
-    def at(self, points, time, *, units=None, extrapolate=False, **kwargs):
+    def at(self, points, time, *, units=None, extrapolate=None, **kwargs):
         '''
         Find the value of the property at positions P at time T
 
@@ -516,7 +516,9 @@ class GridCurrent(VelocityGrid, Environment):
             if res is not None:
                 return res
 
-        extrapolate = self.extrapolation_is_allowed or extrapolate
+        if extrapolate is None:
+            extrapolate = self.extrapolation_is_allowed
+
 
         value = super(GridCurrent, self).at(points, time,
                                             units=units,
@@ -580,7 +582,7 @@ class GridWind(VelocityGrid, Environment):
 
         self.wet_dry_mask = wet_dry_mask
 
-    def at(self, points, time, *, units=None, extrapolate=False, coord_sys='uv', _auto_align=True, **kwargs):
+    def at(self, points, time, *, units=None, extrapolate=None, coord_sys='uv', _auto_align=True, **kwargs):
         '''
         Find the value of the property at positions P at time T
 
@@ -628,7 +630,8 @@ class GridWind(VelocityGrid, Environment):
                 return self.transform_result(value, coord_sys)
 
         if value is None:
-            extrapolate = self.extrapolation_is_allowed or extrapolate
+            if extrapolate is None:
+                extrapolate = self.extrapolation_is_allowed
             value = super(GridWind, self).at(pts, time,
                                              units=units,
                                              extrapolate=extrapolate,
@@ -711,7 +714,7 @@ class LandMask(Variable):
 
         kwargs['data'] = data
 
-    def at(self, points, time, *, units=None, extrapolate=False,
+    def at(self, points, time, *, units=None, extrapolate=None,
            _hash=None, _mem=True, **kwargs):
 
         if _hash is None:
@@ -727,6 +730,9 @@ class LandMask(Variable):
         _idxs = self.grid.locate_faces(points)
         _time_idx = self.time.index_of(time)
         order = self.dimension_ordering
+
+        if extrapolate is None:
+            extrapolate = self.extrapolation_is_allowed
 
         if order[0] == 'time':
             value = self._time_interp(points, time, units=units, extrapolate=extrapolate,
@@ -840,8 +846,9 @@ class IceAwareCurrent(GridCurrent):
             **kwargs
         )
 
-    def at(self, points, time, *, units=None, extrapolate=False, **kwargs):
-        extrapolate = self.extrapolation_is_allowed or extrapolate
+    def at(self, points, time, *, units=None, extrapolate=None, **kwargs):
+        if extrapolate is None:
+            extrapolate = self.extrapolation_is_allowed
         cctn = (self.ice_concentration.at(points, time,
                                             extrapolate=extrapolate, **kwargs)
                   .copy())
@@ -907,13 +914,14 @@ class IceAwareWind(GridWind):
                              ice_velocity=ice_velocity,
                              **kwargs))
 
-    def at(self, points, time, *, units=None, extrapolate=False, min_val=0, **kwargs):
+    def at(self, points, time, *, units=None, extrapolate=None, min_val=0, **kwargs):
         """
         :param min_val: Minimum value for wind speed. If computed wind speed is less than this
                         value, it will be set to this value.
         :type min_val: float
         """
-        extrapolate = self.extrapolation_is_allowed or extrapolate
+        if extrapolate is None:
+            extrapolate = self.extrapolation_is_allowed
 
         cctn = self.ice_concentration.at(points, time, extrapolate=extrapolate, **kwargs)
         wind_v = super(IceAwareWind, self).at(points, time,

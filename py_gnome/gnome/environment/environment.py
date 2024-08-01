@@ -56,7 +56,7 @@ class Environment(GnomeId):
         self.array_types = {}
         super().__init__(**kwargs)
 
-    def at(self, points, time, *, units=None, extrapolate=False, **kwargs):
+    def at(self, points, time, *, units=None, extrapolate=None, **kwargs):
         """
         Find the value of the property at positions P at time T
 

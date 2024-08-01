@@ -42,12 +42,12 @@ def test_recalc_density():
 #    nw_subs = NonWeatheringSubstance(standard_density=900)
 #    sc.substance = nw_subs
 # fix it **********
-    spill = gs.surface_point_line_spill(num_elements=100,
-                                        start_position=(0.0, 0.0, 0.0),
-                                        release_time=datetime(2014, 1, 1, 0, 0),
-                                        amount=100,
-                                        units='bbl',
-                                        substance = NonWeatheringSubstance(standard_density=900))  
+    spill = gs.point_line_spill(num_elements=100,
+                                start_position=(0.0, 0.0, 0.0),
+                                release_time=datetime(2014, 1, 1, 0, 0),
+                                amount=100,
+                                units='bbl',
+                                substance=NonWeatheringSubstance(standard_density=900))
     sc.spills.add(spill)
 # fix it **********
     sc.prepare_for_model_run(weathering_array_types)
@@ -60,8 +60,8 @@ def test_recalc_density():
     default_water = Water()
     assert sc.mass_balance['avg_density'] == 0
 
-    #Nonweathering density should not get recalculated.
-    #Aggregation should still occur.
+    # Nonweathering density should not get recalculated.
+    # Aggregation should still occur.
     recalc_density(sc, water=default_water, aggregate=True)
     assert np.all(sc['density'] == 900) 
     assert sc.mass_balance['avg_density'] == 900
@@ -72,12 +72,12 @@ def test_recalc_density():
 #    sc.substance = new_subs
 # fix it **********
     sc = SpillContainer()
-    spill = gs.surface_point_line_spill(num_elements=100,
-                                        start_position=(0.0, 0.0, 0.0),
-                                        release_time=datetime(2014, 1, 1, 0, 0),
-                                        amount=100,
-                                        units='bbl',
-                                        substance=GnomeOil('oil_crude'))  
+    spill = gs.point_line_spill(num_elements=100,
+                                start_position=(0.0, 0.0, 0.0),
+                                release_time=datetime(2014, 1, 1, 0, 0),
+                                amount=100,
+                                units='bbl',
+                                substance=GnomeOil('oil_crude'))
     sc.spills.add(spill)
 # fix it **********
     sc.prepare_for_model_run(weathering_array_types)

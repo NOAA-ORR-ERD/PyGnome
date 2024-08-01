@@ -16,7 +16,8 @@ from gnome.environment import (Wind,
                                Tide,
                                Water,
                                constant_wind,
-                               GridCurrent)
+                               GridCurrent,
+                               GridWind)
 
 from gnome.movers import (constant_point_wind_mover,
                           SimpleMover,
@@ -42,7 +43,7 @@ from gnome.outputters import (Renderer,
                               TrajectoryGeoJsonOutput)
 
 from gnome.maps import MapFromBNA
-from gnome.spills.spill import (surface_point_line_spill,
+from gnome.spills.spill import (point_line_spill,
                                 PointLineRelease,
                                 )
 
@@ -59,6 +60,8 @@ import pytest
 from testfixtures import LogCapture
 from ..conftest import test_oil
 
+# reloading maps often triggers this one:
+pytestmark = pytest.mark.filterwarnings("ignore:Provided map bounds superscede map bounds found in file")
 
 def test_warning_logged():
     '''
@@ -83,7 +86,7 @@ def test_class_from_objtype():
 
 
 def test_exceptions():
-    a = 1
+    a = 1.1 # need to use something other than an int -- ints are interned.
     refs = References()
     refs.reference(a, 'a')
     refs.reference(a, 'a')  # should not do anything
@@ -101,7 +104,7 @@ def test_reference_object():
     '''
     get a reference to an object,then retrieve the object by reference
     '''
-    a = 1
+    a = 1.1
     refs = References()
     r1 = refs.reference(a)
     obj = refs.retrieve(r1)
@@ -149,41 +152,40 @@ g_objects = (
     Tide(testdata['CatsMover']['tide']),
     # Wind(filename=testdata['ComponentMover']['wind']),
     constant_wind(5., 270, 'knots'),
-    Wind(timeseries=(sec_to_date(24 * 60 * 60),
-                     (0, 0)), units='mps'),
+    Wind(timeseries=(sec_to_date(24 * 60 * 60), (0, 0)), units='mps'),
     Water(temperature=273),
-
     RandomMover(),
     CatsMover(testdata['CatsMover']['curr']),
-    CatsMover(testdata['CatsMover']['curr'],
-              tide=Tide(testdata['CatsMover']['tide'])),
+    CatsMover(testdata['CatsMover']['curr'], tide=Tide(testdata['CatsMover']['tide'])),
     ComponentMover(testdata['ComponentMover']['curr']),
-    ComponentMover(testdata['ComponentMover']['curr'],
-                   wind=constant_wind(5., 270, 'knots')),
-                   # wind=Wind(filename=testdata['ComponentMover']['wind'])),
-     WindMover(testdata['c_GridWindMover']['wind_rect']),
-     #WindMover(testdata['c_GridWindMover']['wind_curv']), #variable names wrong
-     CurrentMover(testdata['c_GridCurrentMover']['curr_tri']),
-     CurrentMover(testdata['c_GridCurrentMover']['curr_reg']),
+    ComponentMover(testdata['ComponentMover']['curr'], wind=constant_wind(5., 270, 'knots')),
+    # wind=Wind(filename=testdata['ComponentMover']['wind'])),
+    WindMover(GridWind.from_netCDF(testdata['c_GridWindMover']['wind_rect'])),
+    #WindMover(testdata['c_GridWindMover']['wind_curv']), #variable names wrong
+    CurrentMover(GridCurrent.from_netCDF(testdata['c_GridCurrentMover']['curr_tri'])),
+    CurrentMover(GridCurrent.from_netCDF(testdata['c_GridCurrentMover']['curr_reg'])),
     RandomMover3D(),
     SimpleMover(velocity=(10.0, 10.0, 0.0)),
-
     MapFromBNA(testdata['MapFromBNA']['testmap'], 6),
-    NetCDFOutput(os.path.join(base_dir, 'xtemp.nc')), Renderer(testdata['Renderer']['bna_sample'],
-             os.path.join(base_dir, 'output_dir')),
+    NetCDFOutput(os.path.join(base_dir, 'xtemp.nc')),
+    Renderer(testdata['Renderer']['bna_sample'], os.path.join(base_dir, 'output_dir')),
     WeatheringOutput(),
-    PointLineRelease(release_time=datetime.now(),
-                           num_elements=10,
-                           start_position=(0, 0, 0)),
-    surface_point_line_spill(10, (0, 0, 0), datetime.now()),
+    PointLineRelease(release_time=datetime.now(), num_elements=10, start_position=(0, 0, 0)),
+    point_line_spill(10, (0, 0, 0), datetime.now()),
     Substance(windage_range=(0.05, 0.07)),
     GnomeOil(test_oil, windage_range=(0.05, 0.07)),
     NonWeatheringSubstance(windage_range=(0.05, 0.07)),
-    Skimmer(amount=100, efficiency=0.3, active_range=(datetime(2014, 1, 1, 0, 0), datetime(2014, 1, 1, 4, 0)), units='kg'),
-    Burn(area=100, thickness=1, active_range=(datetime(2014, 1, 1, 0, 0), datetime(2014, 1, 1, 4, 0)),
-                    efficiency=.9),
-    ChemicalDispersion(fraction_sprayed=.2, active_range=(datetime(2014, 1, 1, 0, 0), datetime(2014, 1, 1, 4, 0)),
-                                  efficiency=.3),
+    Skimmer(amount=100,
+            efficiency=0.3,
+            active_range=(datetime(2014, 1, 1, 0, 0), datetime(2014, 1, 1, 4, 0)),
+            units='kg'),
+    Burn(area=100,
+         thickness=1,
+         active_range=(datetime(2014, 1, 1, 0, 0), datetime(2014, 1, 1, 4, 0)),
+         efficiency=.9),
+    ChemicalDispersion(fraction_sprayed=.2,
+                       active_range=(datetime(2014, 1, 1, 0, 0), datetime(2014, 1, 1, 4, 0)),
+                       efficiency=.3),
     # todo: ask Caitlin how to fix
     # movers.RiseVelocityMover(),
     # todo: This is incomplete - no _schema for
@@ -191,7 +193,6 @@ g_objects = (
     # spill.PolygonRelease(datetime.now(), ((0, 0, 0), (1, 2, 0))),
     TrajectoryGeoJsonOutput(),
 )
-
 
 @pytest.mark.parametrize("obj", g_objects)
 def test_serial_deserial(saveloc_, obj):
@@ -203,7 +204,6 @@ def test_serial_deserial(saveloc_, obj):
     obj2 = obj.__class__.deserialize(json_)
 
     assert obj == obj2
-
 
 @pytest.mark.parametrize("obj", g_objects)
 def test_save_load_fun(saveloc_, obj):

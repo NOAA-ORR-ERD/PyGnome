@@ -11,13 +11,15 @@ import pytest
 # from gnome.basic_types import oil_status
 from gnome.utilities import time_utils
 
-from gnome.spills import Release, Spill, surface_point_line_spill
+from gnome.maps.map import GnomeMap
+from gnome.spills.spill import Spill, point_line_spill
+from gnome.spills.release import Release
 from gnome.movers import IceMover
 from gnome.outputters import IceGeoJsonOutput, IceJsonOutput
 
 from ..conftest import testdata
 
-pytest.mark.skip("ice outputter not currently useful -- tests slow")
+pytestmark = pytest.mark.skip("ice outputter not currently useful -- tests slow")
 
 
 curr_file = testdata['IceMover']['ice_curr_curv']
@@ -25,9 +27,14 @@ topology_file = testdata['IceMover']['ice_top_curv']
 c_ice_mover = IceMover(curr_file, topology_file)
 
 
+# NOTE: we really don't need a full model here
+#       unit tests should test as little as possible ...
 @pytest.fixture(scope='function')
 def model(sample_model, output_dir):
     model = sample_model['model']
+
+    #reset map to water world, so we dont get overlapping issues
+    model.map = GnomeMap()
     rel_start_pos = sample_model['release_start_pos']
     rel_end_pos = sample_model['release_end_pos']
 
@@ -41,7 +48,7 @@ def model(sample_model, output_dir):
     line_pos[:, 1] = np.linspace(rel_start_pos[1], rel_end_pos[1], N)
 
     start_pos = (-164.01696, 72.921024, 0)
-    model.spills += surface_point_line_spill(1,
+    model.spills += point_line_spill(1,
                                              start_position=start_pos,
                                              release_time=model.start_time,
                                              end_position=start_pos)
@@ -56,6 +63,23 @@ def model(sample_model, output_dir):
     model.outputters += IceGeoJsonOutput([c_ice_mover])
 
     model.rewind()
+
+    return model
+
+
+@pytest.fixture(scope='function')
+def model(output_dir):
+    """
+    A simple model with only the mover / environment object needed
+    """
+    time_step = 15 * 60  # seconds
+
+    model = Model(start_time = datetime(2015, 5, 14, 0),
+                  time_step=time_step)
+
+    model.movers += c_ice_mover
+
+    model.outputters += IceGeoJsonOutput([c_ice_mover])
 
     return model
 
@@ -88,7 +112,10 @@ def test_ice_geojson_output(model):
         # We just want to verify here that our keys exist in the movers
         # collection.
         for k in list(fcs.keys()):
-            assert model.movers.index(k) > 0
+            try:
+                model.movers[k]
+            except KeyError:
+                assert False, "mover is not in the movers collection"
 
         # Check that our structure is correct.
         for fc_list in list(fcs.values()):

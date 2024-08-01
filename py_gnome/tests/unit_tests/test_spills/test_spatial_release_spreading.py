@@ -177,7 +177,7 @@ class TestPointLineRelease:
         model.environment += [constant_wind(1, 0), Water(temperature = 30.+273.15), Waves()]   
         
     # step 2 ---- add a spill object
-        spill = gs.surface_point_line_spill(num_elements=1000,
+        spill = gs.point_line_spill(num_elements=1000,
                                             start_position=(0.0, 0.0, 0.0),
                                             release_time=datetime.datetime(2000, 1, 1, 1),
                                             amount=amount,

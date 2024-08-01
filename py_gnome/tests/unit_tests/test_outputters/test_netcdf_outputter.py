@@ -14,7 +14,8 @@ import numpy as np
 
 import netCDF4 as nc
 
-from gnome.spills import surface_point_line_spill, Spill, Release
+from gnome.spills.spill import point_line_spill, Spill
+from gnome.spills.release import Release
 from gnome.spill_container import SpillContainerPair
 from gnome.weatherers import Evaporation
 from gnome.environment import Water
@@ -38,7 +39,7 @@ def model(sample_model_fcn, output_filename):
 
     model.cache_enabled = True
     model.spills += \
-        surface_point_line_spill(num_elements=5,
+        point_line_spill(num_elements=5,
                                  start_position=sample_model_fcn['release_start_pos'],
                                  release_time=model.start_time,
                                  end_release_time=model.start_time + model.duration,
@@ -564,7 +565,7 @@ def test_read_all_arrays(model):
         # 2nd time around, look at uncertain filename so toggle uncertain flag
         uncertain = True
 
-
+@pytest.mark.filterwarnings("ignore: Outputter output timestep")
 @pytest.mark.slow
 @pytest.mark.parametrize("output_ts_factor", [1, 2])
 def test_write_output_post_run(model, output_ts_factor):
@@ -665,7 +666,7 @@ def test_serialize_deserialize(output_filename):
     '''
     s_time = datetime(2014, 1, 1, 1, 1, 1)
     model = Model(start_time=s_time)
-    model.spills += surface_point_line_spill(num_elements=5,
+    model.spills += point_line_spill(num_elements=5,
                                              start_position=(0, 0, 0),
                                              release_time=model.start_time)
 
