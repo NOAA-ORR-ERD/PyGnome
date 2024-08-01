@@ -22,7 +22,7 @@ import nucos
 # just so it will be in the namespace.
 from .gnomeobject import GnomeId, AddLogger
 
-__version__ = "1.1.13dev"
+__version__ = "1.1.13"
 
 
 if os.name == 'nt':
