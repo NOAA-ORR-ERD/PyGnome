@@ -431,7 +431,7 @@ class Spill(BaseSpill):
         '''
         self.release.prepare_for_model_run(timestep)
 
-    def release_elements(self, sc, start_time, end_time, environment=None):
+    def release_elements(self, sc, start_time, end_time, environment=None, weathering_active=True):
         """
         Releases and partially initializes new LEs
         Note: this will have to be updated if we allow backwards runs for continuous spills
@@ -457,9 +457,10 @@ class Spill(BaseSpill):
 
         self.substance.initialize_LEs(to_rel, sc, environment=environment)
 
-        self.release.initialize_LEs_post_substance(to_rel, sc,
-                                                   start_time, end_time,
-                                                   environment=environment)
+        if weathering_active:
+            self.release.initialize_LEs_post_substance(to_rel, sc,
+                                                       start_time, end_time,
+                                                       environment=environment)
 
         return to_rel
 
@@ -520,7 +521,7 @@ def _setup_spill(release,
         spill.substance.windage_persist = windage_persist
 
     return spill
-    
+
 def point_line_spill(num_elements,
                      start_position,
                      release_time,
@@ -584,7 +585,7 @@ def point_line_spill(num_elements,
     if len(start_position) == 2:
         start_position = *start_position[:2], 0
     if end_position is not None  and len(end_position) == 2:
-        end_position = (*end_position[:2], 0) 
+        end_position = (*end_position[:2], 0)
 
     release = PointLineRelease(release_time=release_time,
                                start_position=start_position,
@@ -604,7 +605,7 @@ def point_line_spill(num_elements,
                          )
 
 
-    return spill    
+    return spill
 
 def surface_point_line_spill(num_elements,
                              start_position,
@@ -907,7 +908,7 @@ def spatial_release_spill(start_positions,
                          )
 
     return spill
-    
+
 def polygon_release_spill(filename,
                           release_time=None,
                           substance=None,
@@ -926,7 +927,7 @@ def polygon_release_spill(filename,
     release = PolygonRelease(filename = filename,
                              release_time=release_time,
                              name=name)
-                             
+
     spill = _setup_spill(release=release,
                          water=water,
                          substance=substance,

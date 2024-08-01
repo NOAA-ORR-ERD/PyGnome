@@ -1229,7 +1229,7 @@ class Model(GnomeId):
         env = self.compile_env()
         for sc in self.spills.items():
             # release particles
-            num_released = sc.release_elements(start_time, end_time, environment=env)
+            num_released = sc.release_elements(start_time, end_time, environment=env, weathering_active = self.has_weathering)
             # initialize data - currently only weatherers do this so cycle
             # over weatherers collection - in future, maybe movers can also do
             # this
