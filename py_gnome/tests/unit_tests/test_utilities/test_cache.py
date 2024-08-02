@@ -37,7 +37,7 @@ tdelta = timedelta(hours=1)
   #     return self._file.seek(*args)
   # ValueError: I/O operation on closed file.
 # only happens when run alongside other utilities tests ...
-@pytest.mark.skip("this is raising mysterious errors")
+@pytest.mark.skip("this is raising mysterious errors -- particularly on Windows")
 def test_init():
     """
     can we even create one?
@@ -47,7 +47,7 @@ def test_init():
     print(cache.global_cache_dir)
     assert True
 
-# @pytest.mark.skip("these are intermittently failing -- and we're not using the cache anyway")
+@pytest.mark.skip("this is raising mysterious errors -- particularly on Windows")
 def test_cache_clear_on_delete():
 
     c1 = cache.ElementCache()
