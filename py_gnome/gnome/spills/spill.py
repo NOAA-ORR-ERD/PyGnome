@@ -431,7 +431,7 @@ class Spill(BaseSpill):
         '''
         self.release.prepare_for_model_run(timestep)
 
-    def release_elements(self, sc, start_time, end_time, environment=None, weathering_active=True):
+    def release_elements(self, sc, start_time, end_time, environment=None):
         """
         Releases and partially initializes new LEs
         Note: this will have to be updated if we allow backwards runs for continuous spills
@@ -457,10 +457,9 @@ class Spill(BaseSpill):
 
         self.substance.initialize_LEs(to_rel, sc, environment=environment)
 
-        if weathering_active:
-            self.release.initialize_LEs_post_substance(to_rel, sc,
-                                                       start_time, end_time,
-                                                       environment=environment)
+        self.release.initialize_LEs_post_substance(to_rel, sc,
+                                                   start_time, end_time,
+                                                   environment=environment)
 
         return to_rel
 
