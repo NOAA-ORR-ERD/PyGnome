@@ -872,7 +872,7 @@ class SpillContainer(AddLogger, SpillContainerData):
         w_mask = np.logical_and(w_mask, self['mass'] > 0.0)
         return w_mask
 
-    def release_elements(self, start_time, end_time, environment=None, weathering_active=True):
+    def release_elements(self, start_time, end_time, environment=None):
         """
         :param start_time: -- beginning of the release
         :param end_time: -- end of the release.
@@ -892,7 +892,7 @@ class SpillContainer(AddLogger, SpillContainerData):
             if not spill.on:
                 continue
 
-            num_rel = spill.release_elements(self, start_time, end_time, environment=environment, weathering_active=weathering_active)
+            num_rel = spill.release_elements(self, start_time, end_time, environment=environment)
             if num_rel > 0:
                 # update 'spill_num' ArrayType's initial_value so it
                 # corresponds with spill number for this set of released
