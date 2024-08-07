@@ -64,5 +64,13 @@ sdist.exclude = ["scripts",
                  "gnome/cy_gnome/*.cpp"
                  ]
 
+[tool.pytest.ini_options]
+# ignore warnings from geopandas -- out of our control
+filterwarnings = ["ignore:.*BlockManager to :DeprecationWarning",
+                  "ignore:.*Possibly due to too larger :RuntimeWarning"]
+testpaths = [
+    "tests"
+]
+addopts = "--ignore=tests/profiling"
 
 # [project.optional-dependencies]

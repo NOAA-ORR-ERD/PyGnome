@@ -113,6 +113,7 @@ class ERMADataPackageSchema(BaseOutputterSchema):
         Int(), missing=drop, save=True, update=True
     )
     time_unit_override = SchemaNode(String(), save=True, update=True)
+    timezone = SchemaNode(String(), save=True, update=True)
 
 class ERMADataPackageOutput(Outputter):
     '''
@@ -158,6 +159,7 @@ class ERMADataPackageOutput(Outputter):
                  disable_legend_collapse=False,
                  # Time settings
                  time_step_override=None, time_unit_override=None,
+                 timezone='',
                  # Other
                  surface_conc="kde", **kwargs):
         '''
@@ -240,8 +242,7 @@ class ERMADataPackageOutput(Outputter):
         # Time settings
         self.time_step_override = time_step_override
         self.time_unit_override = time_unit_override
-
-
+        self.timezone = timezone
         # We will be building shapefiles, so come up with names in the temp dir
         # These are names without ext... as those get added when deciding to zip or not
         base_shapefile_name = os.path.join(self.tempdir.name, self.filenamestem)
@@ -502,6 +503,9 @@ class ERMADataPackageOutput(Outputter):
             layer_template['mapfile_layer']['shapefile']['name'] = generic_name + '_shapefile'
             layer_template['mapfile_layer']['shapefile']['description'] = generic_description + ' Shapefile'
             layer_template['mapfile_layer']['shapefile']['file'] = "file://source_files/" + basefile
+            # If we have a timezone, write that into the timezone_fields
+            if self.timezone:
+                layer_template['mapfile_layer']['shapefile']['timezone_fields'] = {"time": self.timezone}
             layer_template['mapfile_layer']['layer_name'] = generic_name
             layer_template['mapfile_layer']['layer_desc'] = generic_description
             layer_template['mapfile_layer']['classitem'] = 'cutoff_id'
@@ -592,6 +596,9 @@ class ERMADataPackageOutput(Outputter):
             layer_template['mapfile_layer']['shapefile']['name'] = generic_name + '_shapefile'
             layer_template['mapfile_layer']['shapefile']['description'] = generic_description + ' Shapefile'
             layer_template['mapfile_layer']['shapefile']['file'] = "file://source_files/" + basefile
+            # If we have a timezone, write that into the timezone_fields
+            if self.timezone:
+                layer_template['mapfile_layer']['shapefile']['timezone_fields'] = {"time": self.timezone}
             layer_template['mapfile_layer']['layer_name'] = generic_name
             layer_template['mapfile_layer']['layer_desc'] = generic_description
             # Get rid of a few things we dont want
@@ -838,6 +845,9 @@ class ERMADataPackageOutput(Outputter):
             layer_template['mapfile_layer']['shapefile']['name'] = basefile
             layer_template['mapfile_layer']['shapefile']['description'] = basefile
             layer_template['mapfile_layer']['shapefile']['file'] = "file://source_files/" + basefile
+            # If we have a timezone, write that into the timezone_fields
+            if self.timezone:
+                layer_template['mapfile_layer']['shapefile']['timezone_fields'] = {"time": self.timezone}
             # Check the timestep and set the time override for ERMA time slider
             if self.time_step_override and self.time_unit_override:
                 layer_template['time_step_override'] = self.time_step_override
