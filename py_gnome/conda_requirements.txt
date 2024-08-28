@@ -56,7 +56,8 @@ shapely
 
 # NOAA maintained packages
 gridded>=0.6.9
-pynucos=3.2.*
+pynucos>=3.3.0
 cell_tree2d
-py_gd>=2.2
-adios_db>=1.1
+py_gd>=2.3
+adios_db>=1.2.4
+

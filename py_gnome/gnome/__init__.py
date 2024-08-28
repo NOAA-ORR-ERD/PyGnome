@@ -66,10 +66,10 @@ def check_dependency_versions():
         else:
             return True
 
-    libs = [('gridded', '0.6.5', ''),
-            ('nucos', '3.2.0', ''),
-            ('py_gd', '2.2.0', ''),
-            ('adios_db', '1.2.0', 'Only required to use the ADIOS Database '
+    libs = [('gridded', '0.6.9', ''),
+            ('nucos', '3.3.0', ''),
+            ('py_gd', '2.3.0', ''),
+            ('adios_db', '1.2.4', 'Only required to use the ADIOS Database '
                                   'JSON format for oil data.')
             ]
 
