@@ -200,6 +200,9 @@ cdef class CyCatsMover(CyCurrentMover):
         Takes a CyShioTime object as input and sets C++ Cats mover properties
         from the Shio object.
         """
+        print("in set_shio")
+        print("CyShioTime:", CyShioTime)
+        print("cy_shio:", cy_shio)
         self.cats.SetTimeDep(cy_shio.shio)
 
         if cy_shio.station_location is not None and self.ref_point is None:

@@ -1,6 +1,7 @@
 from functools import lru_cache
 
 import numpy as np
+import warnings
 
 from gnome.basic_types import fate, oil_status
 from gnome.array_types import gat
@@ -708,6 +709,10 @@ class GnomeOil(Substance):
                                             self.kvis_weathering) if w == 0.0]
 
         if len(kvis) == 1:  # use default k_v2
+            self.logger.warning("Using an oil with a single viscosity value is deprecated. "
+                          "For best results please update your oil.")
+            warnings.warn("Using an oil with a single viscosity value is deprecated. "
+                          "For best results please update your oil.")
             self._k_v2 = 2100.0
             self._visc_A = kvis[0] * np.exp(-self._k_v2 / kvis_ref_temps[0])
         else:

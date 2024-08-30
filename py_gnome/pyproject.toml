@@ -28,10 +28,14 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Oceanography",
 ]
 
-version = "1.1.12"
 readme = "README.rst"
 
-# dynamic = ["version", "readme"]
+dynamic = ["version"]
+
+[tool.scikit-build.metadata.version]
+provider = "scikit_build_core.metadata.regex"
+input = "gnome/__init__.py"
+
 
 # really hard to do with conda compatibility :-)
 # dependencies = [
@@ -54,5 +58,19 @@ namespaces = false  # to disable scanning PEP 420 namespaces (true by default)
 
 [tool.scikit-build]
 wheel.py-api = "py3"
+# sdist.include = ["tests/unit_tests"]
+sdist.exclude = ["scripts",
+                 "tests/", # until we can figure out how to exclude the downloaded data files.
+                 "gnome/cy_gnome/*.cpp"
+                 ]
+
+[tool.pytest.ini_options]
+# ignore warnings from geopandas -- out of our control
+filterwarnings = ["ignore:.*BlockManager to :DeprecationWarning",
+                  "ignore:.*Possibly due to too larger :RuntimeWarning"]
+testpaths = [
+    "tests"
+]
+addopts = "--ignore=tests/profiling"
 
 # [project.optional-dependencies]

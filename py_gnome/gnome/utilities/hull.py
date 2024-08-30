@@ -1,4 +1,5 @@
 import geopandas as gpd
+import numpy as np
 from shapely.geometry import Polygon, MultiPolygon, Point, MultiPoint, LineString
 from shapely import concave_hull, union_all
 
@@ -17,11 +18,27 @@ def buffer_hull(this_hull, buffer_distance=1):
 def calculate_hull(spill_container, ratio=0.5, allow_holes=False,
                    separate_by_spill=False):
     hulls_found = []
+    sc_positions = None
+    sc_spill_num = None
+    if isinstance(spill_container, (tuple, list)):
+        # If we have multiple spill containers, we need to combine the
+        # position and spill num arrays
+        positions = []
+        spill_num = []
+        for sc in spill_container:
+            positions.append(sc['positions'])
+            spill_num.append(sc['spill_num'])
+        sc_positions = np.concatenate(positions)
+        sc_spill_num = np.concatenate(spill_num)
+    else:
+        sc_positions = spill_container['positions']
+        sc_spill_num = spill_container['spill_num']
+
     if separate_by_spill:
         # Make a dataframe
         schema = {'positions': [Point(point)
-                                for point in spill_container['positions']],
-                  'spill_num': spill_container['spill_num']}
+                                for point in sc_positions],
+                  'spill_num': sc_spill_num}
         data_frame = gpd.GeoDataFrame(schema, crs='epsg:4326',
                                       geometry='positions')
         spill_nums = data_frame['spill_num'].unique()
@@ -40,10 +57,10 @@ def calculate_hull(spill_container, ratio=0.5, allow_holes=False,
     else:
         # We want a hull around everything
         schema = {'positions': [Point(point)
-                                for point in spill_container['positions']]}
+                                for point in sc_positions]}
         data_frame = gpd.GeoDataFrame(schema, crs='epsg:4326')
         this_mpt = MultiPoint([Point(point)
-                               for point in spill_container['positions']])
+                               for point in sc_positions])
         this_hull = concave_hull(this_mpt, ratio=ratio,
                                  allow_holes=allow_holes)
         if (isinstance(this_hull, Point) or isinstance(this_hull, LineString)):

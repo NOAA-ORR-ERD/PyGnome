@@ -24,7 +24,7 @@ from gnome.utilities.inf_datetime import InfDateTime
 from gnome.maps import MapFromBNA
 from gnome.environment import Wind, Tide, Water
 from gnome.model import Model
-from gnome.spills import surface_point_line_spill
+from gnome.spills.spill import point_line_spill
 from gnome.movers import RandomMover, PointWindMover, CatsMover, IceMover
 from gnome.weatherers import Evaporation, Skimmer, Burn
 from gnome.outputters import CurrentJsonOutput, IceJsonOutput
@@ -57,7 +57,7 @@ def make_model(uncertain=False, mode='gnome'):
     end_release_time = start_time + timedelta(hours=6)
     spill_amount = 1000.0
     spill_units = 'kg'
-    model.spills += surface_point_line_spill(num_elements=1000,
+    model.spills += point_line_spill(num_elements=1000,
                                              start_position=start_position,
                                              release_time=start_time,
                                              end_release_time=end_release_time,

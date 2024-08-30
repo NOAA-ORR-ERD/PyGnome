@@ -90,8 +90,8 @@ def surface_conc_kde(sc):
                     else:
                         c[id[id_bin]] = kernel(xy[:, id_bin]) * len(mass_for_kernel)
                 except np.linalg.LinAlgError:
-                    warnings.warn('LinAlg error occurred in '
-                                  'surface concentration calculations.')
+                    warnings.warn('LinAlg error occurred in surface concentration calculations. '
+                                  'This is usually do to all (or many) elements being at the same location')
             t = t + bin_length
 
         sc['surface_concentration'][sid] = c

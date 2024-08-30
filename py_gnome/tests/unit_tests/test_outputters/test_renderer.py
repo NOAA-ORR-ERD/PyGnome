@@ -418,7 +418,7 @@ def test_animation_in_model(output_dir):
     """
     model = gs.Model()
     model.movers += gs.RandomMover()
-    model.spills += gs.surface_point_line_spill(num_elements=100,
+    model.spills += gs.point_line_spill(num_elements=100,
                                                 start_position=(0, 0),
                                                 release_time=model.start_time,
                                                 )
@@ -488,4 +488,4 @@ def test_particle_color_with_depth(output_dir):
                  formats=['png'],
                  depth_colors='inferno')
 
-    assert np.alltrue(r1._color_ramp.color_index == r2._color_ramp.color_index)
+    assert np.all(r1._color_ramp.color_index == r2._color_ramp.color_index)

@@ -31,7 +31,7 @@ def test_off_map_removed_GnomeMap():
                                         (-0.1, -0.1),
                                         (-0.1, 0.1)])
 
-    model.spills += gs.surface_point_line_spill(num_elements=10,
+    model.spills += gs.point_line_spill(num_elements=10,
                                                 start_position=(0.0, 0.0),
                                                 release_time=model.start_time,
                                                 end_release_time=model.start_time + gs.hours(5),
@@ -84,7 +84,7 @@ def test_off_map_removed_MapFromBNA():
     #                                 )
 
 
-    model.spills += gs.surface_point_line_spill(num_elements=10,
+    model.spills += gs.point_line_spill(num_elements=10,
                                                 start_position=(-126.2, 48.0),
                                                 release_time=model.start_time,
                                                 end_release_time=model.start_time + gs.hours(5),
@@ -146,7 +146,7 @@ def test_mass_balance_MapFromBNA():
     #  [-127.465333   47.44727 ]]
 
     # This goes off the map
-    model.spills += gs.surface_point_line_spill(num_elements=10,
+    model.spills += gs.point_line_spill(num_elements=10,
                                                 start_position=(-126.2, 48.2),
                                                 release_time=model.start_time,
                                                 end_release_time=model.start_time + gs.hours(5),
@@ -154,7 +154,7 @@ def test_mass_balance_MapFromBNA():
                                                 )
 
     # this one hits land
-    model.spills += gs.surface_point_line_spill(num_elements=10,
+    model.spills += gs.point_line_spill(num_elements=10,
                                                 start_position=(-127.0, 47.7),
                                                 release_time=model.start_time,
                                                 end_release_time=model.start_time + gs.hours(5),

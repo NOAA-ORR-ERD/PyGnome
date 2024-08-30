@@ -25,7 +25,7 @@ from gnome.movers import (c_GridWindMover,
                           constant_point_wind_mover,
                           point_wind_mover_from_file)
 
-from gnome.spills import surface_point_line_spill
+from gnome.spills.spill import point_line_spill
 
 from .conftest import sample_sc_release, testdata
 
@@ -214,7 +214,7 @@ def test_full_model_run():
 
     model.movers += RandomMover()  # defaults are fine
 
-    model.spills += surface_point_line_spill(num_elements=10,
+    model.spills += point_line_spill(num_elements=10,
                                              start_position=(0.0, 0.0, 0.0),
                                              release_time=start_time,
                                              )

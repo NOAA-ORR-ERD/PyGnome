@@ -71,7 +71,7 @@ jobs:
       - uses: conda-incubator/setup-miniconda@v3
         with:
           activate-environment: lint
-          python-version: 3.9
+          python-version: 3.12
           auto-activate-base: false
       - shell: bash -l {0}
         run: |

@@ -13,7 +13,7 @@ import zipfile
 
 from gnome.outputters import ERMADataPackageOutput
 import gnome.scripting as gs
-from gnome.spills import surface_point_line_spill
+from gnome.spills.spill import point_line_spill
 from gnome.spill_container import SpillContainerPair
 
 # file extension to use for test output files
@@ -30,7 +30,7 @@ def model(sample_model_fcn, output_filename):
     model.cache_enabled = True
     model.uncertain = True
 
-    model.spills += surface_point_line_spill(10,
+    model.spills += point_line_spill(10,
                                              start_position=rel_start_pos,
                                              release_time=model.start_time,
                                              end_position=rel_end_pos)

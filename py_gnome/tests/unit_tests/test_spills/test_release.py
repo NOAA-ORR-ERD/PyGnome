@@ -14,10 +14,10 @@ import pytest
 import numpy as np
 
 from gnome.spills import (Release,
-                         PointLineRelease,
-                         PolygonRelease,
-                         #GridRelease,
-                         )
+                          PointLineRelease,
+                          PolygonRelease,
+                          #GridRelease,
+                          )
 from gnome.spills.release import release_from_splot_data
 from gnome.spills.le import LEData
 
