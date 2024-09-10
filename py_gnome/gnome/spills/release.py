@@ -36,6 +36,7 @@ from gnome.basic_types import world_point_type
 from gnome.array_types import gat
 from gnome.utilities.plume import Plume, PlumeGenerator
 
+
 from gnome.outputters import NetCDFOutput
 from gnome.gnomeobject import GnomeId
 from gnome.environment.timeseries_objects_base import (TimeseriesData,
@@ -45,7 +46,8 @@ from gnome.environment.gridded_objects_base import Time
 from gnome.weatherers.spreading import FayGravityViscous
 from gnome.environment import Water
 from gnome.constants import gravity
-from gnome.exceptions import ReferencedObjectNotSet
+from gnome.ops import default_constants
+#from gnome.exceptions import ReferencedObjectNotSet
 from .initializers import (InitRiseVelFromDropletSizeFromDist,
                            InitRiseVelFromDist)
 
@@ -407,10 +409,12 @@ class Release(GnomeId):
         if sc.substance.is_weatherable:
            if environment['water'] is not None:
               water = environment['water']
+              temp_k=water.get('temperature')
            else:
-              raise ReferencedObjectNotSet("water object not found in environment collection")
+              temp_k = default_constants.default_water_temperature
+              #raise ReferencedObjectNotSet("water object not found in environment collection")
 
-           visc = sc.substance.kvis_at_temp(temp_k=water.get('temperature'))
+           visc = sc.substance.kvis_at_temp(temp_k)
            thickness_limit = FayGravityViscous.get_thickness_limit(visc)
 
            sc['fay_area'][sl] = (sc['init_mass'][sl] / sc['density'][sl]) / thickness_limit
@@ -622,7 +626,8 @@ class PointLineRelease(Release):
            if environment['water'] is not None:
               water = environment['water']
            else:
-              raise ReferencedObjectNotSet("water object not found in environment collection")
+              water = Water(default_constants.default_water_temperature)
+              #raise ReferencedObjectNotSet("water object not found in environment collection")
 
            spread = FayGravityViscous(water=water)
            spread.prepare_for_model_run(sc)
