@@ -38,7 +38,7 @@ pyzmq
 # tblib
 
 ## Base numerical libs
-numpy >=1.24,<2
+numpy >=1.24,<3
 scipy
 
 ## Modeling libs
@@ -52,7 +52,7 @@ geopandas
 mapbox_earcut
 pyogrio
 pyproj
-shapely
+shapely>=2.0.6 # older one broken with numpy2
 
 # NOAA maintained packages
 gridded>=0.6.9
