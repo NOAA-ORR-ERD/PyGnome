@@ -72,6 +72,9 @@ class ERMADataPackageSchema(BaseOutputterSchema):
     include_uncertain_boundary = SchemaNode(
         Boolean(), missing=drop, save=True, update=True
     )
+    include_certain_in_uncertain_boundary = SchemaNode(
+        Boolean(), missing=drop, save=True, update=True
+    )
     uncertain_boundary_separate_by_spill = SchemaNode(
         Boolean(), missing=drop, save=True, update=True
     )
@@ -141,6 +144,7 @@ class ERMADataPackageOutput(Outputter):
                  certain_contours_size=None,
                  # Uncertain boundary
                  uncertain_boundary_layer_name=None, include_uncertain_boundary=True,
+                 include_certain_in_uncertain_boundary=True,
                  uncertain_boundary_separate_by_spill=True,
                  uncertain_boundary_hull_ratio=0.5, uncertain_boundary_hull_allow_holes=False,
                  uncertain_boundary_color=None, uncertain_boundary_size=None,
@@ -215,6 +219,7 @@ class ERMADataPackageOutput(Outputter):
         # Uncertain boundary
         self.uncertain_boundary_layer_name = uncertain_boundary_layer_name
         self.include_uncertain_boundary = include_uncertain_boundary
+        self.include_certain_in_uncertain_boundary = include_certain_in_uncertain_boundary
         self.uncertain_boundary_separate_by_spill = uncertain_boundary_separate_by_spill
         self.uncertain_boundary_hull_ratio = uncertain_boundary_hull_ratio
         self.uncertain_boundary_hull_allow_holes = uncertain_boundary_hull_allow_holes
@@ -303,7 +308,8 @@ class ERMADataPackageOutput(Outputter):
             return None
         super(ERMADataPackageOutput, self).write_output(step_num, islast_step)
         self.logger.debug(f'erma_data_package step_num: {step_num}')
-        for sc in self.cache.load_timestep(step_num).items():
+        sp = self.cache.load_timestep(step_num).items()
+        for sc in sp:
             if self._write_step:
                 # If this is just a step... append the data
                 if sc.uncertain:
@@ -313,7 +319,13 @@ class ERMADataPackageOutput(Outputter):
                                 'hull_ratio': self.uncertain_boundary_hull_ratio,
                                 'hull_allow_holes': self.uncertain_boundary_hull_allow_holes
                                 }
-                        self.shapefile_builder_uncertain_boundary.append(sc, **karg)
+                        if self.include_certain_in_uncertain_boundary:
+                            # If we want to include certain in the uncertain boundary
+                            # we need to pass in the spill pair, not just the uncertain
+                            # spill container.
+                            self.shapefile_builder_uncertain_boundary.append(sp, **karg)
+                        else:
+                            self.shapefile_builder_uncertain_boundary.append(sc, **karg)
                 else:
                     self.shapefile_builder_certain.append(sc)
                     if self.include_certain_boundary:

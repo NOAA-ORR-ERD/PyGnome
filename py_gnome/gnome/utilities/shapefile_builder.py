@@ -144,6 +144,14 @@ class BoundaryShapefileBuilder(ShapefileBuilder):
         data frame
         """
         super(BoundaryShapefileBuilder, self).append(sc)
+        # If we have a tuple or list for sc, we need to grab the timestep
+        # out of the first
+        current_time_stamp = None
+        if isinstance(sc, (tuple, list)):
+            current_time_stamp = sc[0].current_time_stamp
+        else:
+            current_time_stamp = sc.current_time_stamp
+
         # Calculate a concave hull
         hull = calculate_hull(sc, separate_by_spill=separate_by_spill,
                               ratio=hull_ratio,
@@ -154,7 +162,7 @@ class BoundaryShapefileBuilder(ShapefileBuilder):
             frame_data = {
                 'geometry': [hull],
                 'area': [area_in_meters(hull)],
-                'time': sc.current_time_stamp.strftime('%Y-%m-%dT%H:%M:%S')
+                'time': current_time_stamp.strftime('%Y-%m-%dT%H:%M:%S')
             }
 
             gdf = gpd.GeoDataFrame(frame_data, crs='epsg:4326',

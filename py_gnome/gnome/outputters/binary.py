@@ -31,7 +31,7 @@ le_dtype = np.dtype(np.dtype([('Lat', np.float32),
 
 le_dtype = le_dtype.newbyteorder('B') # or ">"
 
-header_dtype = np.dtype(np.dtype([('name', np.string_, 10),
+header_dtype = np.dtype(np.dtype([('name', np.bytes_, 10),
                               ('day', np.int16),
                               ('month', np.int16),
                               ('year', np.int16),
@@ -73,7 +73,7 @@ class BinaryOutput(OutputterFilenameMixin,Outputter):
         other arguments as defined in the Outputter class
         '''
         super(BinaryOutput, self).__init__(filename=filename,
-                                               **kwargs)
+                                                    **kwargs)
 
         name, ext = os.path.splitext(self.filename)
         self.name = name
@@ -126,8 +126,8 @@ class BinaryOutput(OutputterFilenameMixin,Outputter):
             return
 
         super(BinaryOutput, self).prepare_for_model_run(model_start_time,
-                                                       spills,
-                                                       **kwargs)
+                                                        spills,
+                                                        **kwargs)
         self.file_num = 0
         self.uncertain = uncertain
 
@@ -138,7 +138,7 @@ class BinaryOutput(OutputterFilenameMixin,Outputter):
         '''
         super(BinaryOutput, self).write_output(step_num, islast_step)
 
-        #if not self._write_step:
+        # if not self._write_step:
         if self.on is False:
             return None
 
@@ -202,7 +202,7 @@ class BinaryOutput(OutputterFilenameMixin,Outputter):
         current_time = seconds/3600.0;
 
         LE_header = np.zeros((1,), dtype=header_dtype)
-        LE_header['name'] = name
+        LE_header['name'] = name.encode(errors='replace')  # just in case there's a Unicode char
         LE_header['day'] = day
         LE_header['month'] = month
         LE_header['year'] = year

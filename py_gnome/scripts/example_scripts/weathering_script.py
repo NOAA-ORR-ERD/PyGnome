@@ -50,13 +50,13 @@ model.spills += spill
 # model.movers += gs.RandomMover()
 
 # print('adding a wind mover:')
+# use wind mover rather than environment or save file won't work in WebGnome
+model.movers += gs.constant_point_wind_mover(speed=10, direction=0, units="m/s")
 
-# model.movers += gs.constant_point_wind_mover(speed=10, direction=0, units="m/s")
-
-wind = gs.constant_wind(speed=10,
-                        direction=0,
-                        units='knots')
-model.environment += wind
+# wind = gs.constant_wind(speed=10,
+#                         direction=0,
+#                         units='knots')
+# model.environment += wind
 
 # Water properties are needed for the weathering algorithms
 model.environment += gs.Water(25, units={"temperature": "C"})
