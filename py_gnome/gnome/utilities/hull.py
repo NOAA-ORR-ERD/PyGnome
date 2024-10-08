@@ -15,9 +15,10 @@ def buffer_hull(this_hull, buffer_distance=1):
     return geodataframe_3857_buffered_back_to_4326[0]
 
 
-def calculate_hull(spill_container, ratio=0.5, allow_holes=False,
-                   separate_by_spill=False):
-    hulls_found = []
+def calculate_hull(spill_container, ratio=0.5, union_results=True,
+                   allow_holes=False, separate_by_spill=False):
+    hulls_found = {'hulls': [],
+                   'spill_num': []}
     sc_positions = None
     sc_spill_num = None
     if isinstance(spill_container, (tuple, list)):
@@ -53,7 +54,8 @@ def calculate_hull(spill_container, ratio=0.5, allow_holes=False,
                 this_hull = buffer_hull(this_hull)
             if (isinstance(this_hull, Polygon) or
                     isinstance(this_hull, MultiPolygon)):
-                hulls_found.append(this_hull)
+                hulls_found['hulls'].append(this_hull)
+                hulls_found['spill_num'].append(spill_num)
     else:
         # We want a hull around everything
         schema = {'positions': [Point(point)
@@ -67,11 +69,12 @@ def calculate_hull(spill_container, ratio=0.5, allow_holes=False,
             this_hull = buffer_hull(this_hull)
         if (isinstance(this_hull, Polygon) or
                 isinstance(this_hull, MultiPolygon)):
-            hulls_found.append(this_hull)
-    final_geom = union_all(hulls_found)
-    return final_geom if (isinstance(final_geom, Polygon) or
-                          isinstance(final_geom, MultiPolygon)) else None
-
+            hulls_found['hulls'].append(this_hull)
+            hulls_found['spill_num'].append(None)
+    if union_results:
+        hulls_found['hulls'] = [union_all(hulls_found['hulls'])]
+        hulls_found['spill_num'] = [None]
+    return hulls_found
 
 # Cutoffs defined in a structure like the following (by spill_num):
 # cutoff_struct = {1: {'param': 'mass',
@@ -98,6 +101,9 @@ def calculate_hull(spill_container, ratio=0.5, allow_holes=False,
 def calculate_contours(spill_container, cutoff_struct=None,
                        ratio=0.5, allow_holes=False):
     contours_found = []
+    # If we are not calculating any contours, dont bother parsing the data
+    if not cutoff_struct:
+        return [];
     # The spills requested are the keys
     spills = cutoff_struct.keys()
     # Make a dataframe
