@@ -152,18 +152,33 @@ class BoundaryShapefileBuilder(ShapefileBuilder):
         else:
             current_time_stamp = sc.current_time_stamp
 
+        #TODO - Need to make this a variable
+        union_results = True
         # Calculate a concave hull
         hull = calculate_hull(sc, separate_by_spill=separate_by_spill,
-                              ratio=hull_ratio,
+                              ratio=hull_ratio, union_results=union_results,
                               allow_holes=hull_allow_holes)
+        
         # Only process it if we get a hull back.
         # There are cases where the hull is not a polygon, and we skip those.
-        if hull:
-            frame_data = {
-                'geometry': [hull],
-                'area': [area_in_meters(hull)],
-                'time': current_time_stamp.strftime('%Y-%m-%dT%H:%M:%S')
-            }
+        if len(hull['hulls']):
+            # make area array
+            areas = []
+            for h in hull['hulls']:
+                areas.append(area_in_meters(h))
+            if separate_by_spill:
+                frame_data = {
+                    'geometry': hull['hulls'],
+                    'spill_num': hull['spill_num'], 
+                    'area': areas,
+                    'time': current_time_stamp.strftime('%Y-%m-%dT%H:%M:%S')
+                }
+            else:
+                frame_data = {
+                    'geometry': hull['hulls'],
+                    'area': areas,
+                    'time': current_time_stamp.strftime('%Y-%m-%dT%H:%M:%S')
+                }
 
             gdf = gpd.GeoDataFrame(frame_data, crs='epsg:4326',
                                    geometry='geometry')

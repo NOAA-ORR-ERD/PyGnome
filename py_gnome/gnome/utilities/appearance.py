@@ -6,7 +6,6 @@ from gnome.persist.base_schema import ObjTypeSchema, ObjType
 from gnome.gnomeobject import GnomeId
 from colander import drop
 
-
 class AppearanceSchema(ObjTypeSchema):
     def __init__(self, unknown='preserve', *args, **kwargs):
         super(AppearanceSchema, self).__init__(*args, **kwargs)
@@ -18,6 +17,7 @@ class ColormapSchema(AppearanceSchema):
 
 class SpillAppearanceSchema(AppearanceSchema):
     colormap = ColormapSchema(test_equal=False, missing=drop)
+
 '''
 class Appearance(object):
     __metaclass__ = GnomeObjMeta
@@ -108,6 +108,8 @@ class Appearance(GnomeId):
             dict_.pop(name)
         for k, v in dict_.items():
             setattr(self, k, v)
+            if k not in self.appearance_keys:
+                self.appearance_keys.append(k)
 
     def to_dict(self, json_=None):
         data = super(Appearance, self).to_dict(json_=json_)
