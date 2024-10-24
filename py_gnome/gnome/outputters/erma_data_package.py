@@ -527,8 +527,10 @@ class ERMADataPackageOutput(Outputter):
             layer_template['mapfile_layer']['shapefile']['file'] = "file://source_files/" + basefile
             if self.timeoffset is not None:
                 layer_template['mapfile_layer']['shapefile']['timezone_fields'] = {"time_utc": "UTC"}
+                layer_template['mapfile_layer']['time_column'] = "time_utc"
             else:
                 layer_template['mapfile_layer']['shapefile']['timezone_fields'] = {"time": "UTC"}
+                layer_template['mapfile_layer']['time_column'] = "time"
             layer_template['mapfile_layer']['layer_name'] = generic_name
             layer_template['mapfile_layer']['layer_desc'] = generic_description
             layer_template['mapfile_layer']['classitem'] = 'cutoff_id'
@@ -621,8 +623,10 @@ class ERMADataPackageOutput(Outputter):
             layer_template['mapfile_layer']['shapefile']['file'] = "file://source_files/" + basefile
             if self.timeoffset is not None:
                 layer_template['mapfile_layer']['shapefile']['timezone_fields'] = {"time_utc": "UTC"}
+                layer_template['mapfile_layer']['time_column'] = "time_utc"
             else:
                 layer_template['mapfile_layer']['shapefile']['timezone_fields'] = {"time": "UTC"}
+                layer_template['mapfile_layer']['time_column'] = "time"
             layer_template['mapfile_layer']['layer_name'] = generic_name
             layer_template['mapfile_layer']['layer_desc'] = generic_description
             # Get rid of a few things we dont want
@@ -871,8 +875,10 @@ class ERMADataPackageOutput(Outputter):
             layer_template['mapfile_layer']['shapefile']['file'] = "file://source_files/" + basefile
             if self.timeoffset is not None:
                 layer_template['mapfile_layer']['shapefile']['timezone_fields'] = {"time_utc": "UTC"}
+                layer_template['mapfile_layer']['time_column'] = "time_utc"
             else:
                 layer_template['mapfile_layer']['shapefile']['timezone_fields'] = {"time": "UTC"}
+                layer_template['mapfile_layer']['time_column'] = "time"
             # Check the timestep and set the time override for ERMA time slider
             if self.time_step_override and self.time_unit_override:
                 layer_template['time_step_override'] = self.time_step_override
