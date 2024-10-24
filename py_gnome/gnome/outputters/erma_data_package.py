@@ -116,7 +116,10 @@ class ERMADataPackageSchema(BaseOutputterSchema):
         Int(), missing=drop, save=True, update=True
     )
     time_unit_override = SchemaNode(String(), save=True, update=True)
-    timezone = SchemaNode(String(), save=True, update=True)
+    # Currently we do not support timezone, but instead stick with static
+    # time offset.
+    # timezone = SchemaNode(String(), save=True, update=True)
+    timeoffset = SchemaNode(Int(), save=True, update=True)
 
 class ERMADataPackageOutput(Outputter):
     '''
@@ -136,17 +139,17 @@ class ERMADataPackageOutput(Outputter):
                  # Certain boundary
                  certain_boundary_layer_name=None, include_certain_boundary=False,
                  certain_boundary_separate_by_spill=True,
-                 certain_boundary_hull_ratio=0.5, certain_boundary_hull_allow_holes=False,
+                 certain_boundary_hull_ratio=0.8, certain_boundary_hull_allow_holes=False,
                  certain_boundary_color=None, certain_boundary_size=None,
                  # Certain contours
                  certain_contours_layer_name=None, include_certain_contours=False,
-                 certain_contours_hull_ratio=0.5, certain_contours_hull_allow_holes=False,
+                 certain_contours_hull_ratio=0.8, certain_contours_hull_allow_holes=False,
                  certain_contours_size=None,
                  # Uncertain boundary
                  uncertain_boundary_layer_name=None, include_uncertain_boundary=True,
                  include_certain_in_uncertain_boundary=True,
                  uncertain_boundary_separate_by_spill=True,
-                 uncertain_boundary_hull_ratio=0.5, uncertain_boundary_hull_allow_holes=False,
+                 uncertain_boundary_hull_ratio=0.8, uncertain_boundary_hull_allow_holes=False,
                  uncertain_boundary_color=None, uncertain_boundary_size=None,
                  # Map bounds
                  map_bounds_layer_name=None, include_map_bounds=False,
@@ -163,7 +166,9 @@ class ERMADataPackageOutput(Outputter):
                  disable_legend_collapse=False,
                  # Time settings
                  time_step_override=None, time_unit_override=None,
-                 timezone='',
+                 # timezone='',
+                 # Default to None
+                 timeoffset=None,
                  # Other
                  surface_conc="kde", **kwargs):
         '''
@@ -247,7 +252,7 @@ class ERMADataPackageOutput(Outputter):
         # Time settings
         self.time_step_override = time_step_override
         self.time_unit_override = time_unit_override
-        self.timezone = timezone
+        self.timeoffset = timeoffset
         # We will be building shapefiles, so come up with names in the temp dir
         # These are names without ext... as those get added when deciding to zip or not
         base_shapefile_name = os.path.join(self.tempdir.name, self.filenamestem)
@@ -257,11 +262,16 @@ class ERMADataPackageOutput(Outputter):
         self.shapefile_name_uncertain = base_shapefile_name+'_uncertain'
         self.shapefile_name_uncertain_boundary = base_shapefile_name+'_uncertain_boundary'
         # Our shapefile builders
-        self.shapefile_builder_certain = ParticleShapefileBuilder(self.shapefile_name_certain)
-        self.shapefile_builder_certain_boundary = BoundaryShapefileBuilder(self.shapefile_name_certain_boundary)
-        self.shapefile_builder_certain_contours = ContourShapefileBuilder(self.shapefile_name_certain_contours)
-        self.shapefile_builder_uncertain = ParticleShapefileBuilder(self.shapefile_name_uncertain)
-        self.shapefile_builder_uncertain_boundary = BoundaryShapefileBuilder(self.shapefile_name_uncertain_boundary)
+        self.shapefile_builder_certain = ParticleShapefileBuilder(self.shapefile_name_certain,
+                                                                  timeoffset=self.timeoffset)
+        self.shapefile_builder_certain_boundary = BoundaryShapefileBuilder(self.shapefile_name_certain_boundary,
+                                                                           timeoffset=self.timeoffset)
+        self.shapefile_builder_certain_contours = ContourShapefileBuilder(self.shapefile_name_certain_contours,
+                                                                          timeoffset=self.timeoffset)
+        self.shapefile_builder_uncertain = ParticleShapefileBuilder(self.shapefile_name_uncertain,
+                                                                    timeoffset=self.timeoffset)
+        self.shapefile_builder_uncertain_boundary = BoundaryShapefileBuilder(self.shapefile_name_uncertain_boundary,
+                                                                             timeoffset=self.timeoffset)
 
         # Build some mappings for styling
         self.default_unit_map = {'Mass':{'column': 'mass',
@@ -515,9 +525,12 @@ class ERMADataPackageOutput(Outputter):
             layer_template['mapfile_layer']['shapefile']['name'] = generic_name + '_shapefile'
             layer_template['mapfile_layer']['shapefile']['description'] = generic_description + ' Shapefile'
             layer_template['mapfile_layer']['shapefile']['file'] = "file://source_files/" + basefile
-            # If we have a timezone, write that into the timezone_fields
-            if self.timezone:
-                layer_template['mapfile_layer']['shapefile']['timezone_fields'] = {"time": self.timezone}
+            if self.timeoffset is not None:
+                layer_template['mapfile_layer']['shapefile']['timezone_fields'] = {"time_utc": "UTC"}
+                layer_template['mapfile_layer']['time_column'] = "time_utc"
+            else:
+                layer_template['mapfile_layer']['shapefile']['timezone_fields'] = {"time": "UTC"}
+                layer_template['mapfile_layer']['time_column'] = "time"
             layer_template['mapfile_layer']['layer_name'] = generic_name
             layer_template['mapfile_layer']['layer_desc'] = generic_description
             layer_template['mapfile_layer']['classitem'] = 'cutoff_id'
@@ -608,9 +621,12 @@ class ERMADataPackageOutput(Outputter):
             layer_template['mapfile_layer']['shapefile']['name'] = generic_name + '_shapefile'
             layer_template['mapfile_layer']['shapefile']['description'] = generic_description + ' Shapefile'
             layer_template['mapfile_layer']['shapefile']['file'] = "file://source_files/" + basefile
-            # If we have a timezone, write that into the timezone_fields
-            if self.timezone:
-                layer_template['mapfile_layer']['shapefile']['timezone_fields'] = {"time": self.timezone}
+            if self.timeoffset is not None:
+                layer_template['mapfile_layer']['shapefile']['timezone_fields'] = {"time_utc": "UTC"}
+                layer_template['mapfile_layer']['time_column'] = "time_utc"
+            else:
+                layer_template['mapfile_layer']['shapefile']['timezone_fields'] = {"time": "UTC"}
+                layer_template['mapfile_layer']['time_column'] = "time"
             layer_template['mapfile_layer']['layer_name'] = generic_name
             layer_template['mapfile_layer']['layer_desc'] = generic_description
             # Get rid of a few things we dont want
@@ -857,9 +873,12 @@ class ERMADataPackageOutput(Outputter):
             layer_template['mapfile_layer']['shapefile']['name'] = basefile
             layer_template['mapfile_layer']['shapefile']['description'] = basefile
             layer_template['mapfile_layer']['shapefile']['file'] = "file://source_files/" + basefile
-            # If we have a timezone, write that into the timezone_fields
-            if self.timezone:
-                layer_template['mapfile_layer']['shapefile']['timezone_fields'] = {"time": self.timezone}
+            if self.timeoffset is not None:
+                layer_template['mapfile_layer']['shapefile']['timezone_fields'] = {"time_utc": "UTC"}
+                layer_template['mapfile_layer']['time_column'] = "time_utc"
+            else:
+                layer_template['mapfile_layer']['shapefile']['timezone_fields'] = {"time": "UTC"}
+                layer_template['mapfile_layer']['time_column'] = "time"
             # Check the timestep and set the time override for ERMA time slider
             if self.time_step_override and self.time_unit_override:
                 layer_template['time_step_override'] = self.time_step_override
@@ -1106,6 +1125,8 @@ class ERMADataPackageOutput(Outputter):
                     beached_class_template['styles'][0]['color'] = uncertain_color
                     beached_class_template['styles'][0]['outlinecolor'] = uncertain_color
                     beached_class_template['name'] = 'Beached'
+                    layer_template['mapfile_layer']['layer_classes'].append(floating_class_template)
+                    layer_template['mapfile_layer']['layer_classes'].append(beached_class_template)
                 else:
                     floating_class_template['name'] = 'Floating'
                     beached_class_template['name'] = 'Beached'

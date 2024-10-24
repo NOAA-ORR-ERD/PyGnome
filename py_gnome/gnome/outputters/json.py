@@ -3,9 +3,14 @@ JSON outputter
 Does not contain a schema for persistence yet
 '''
 
+import copy
 import numpy as np
+import json
+import geopandas as gpd
+import shapely
+import time
 from collections.abc import Iterable
-from colander import SchemaNode, SequenceSchema, String, drop
+from colander import Boolean, SchemaNode, SequenceSchema, String, drop
 
 from gnome.utilities.time_utils import date_to_sec
 
@@ -17,11 +22,15 @@ from gnome.movers.c_current_movers import CatsMoverSchema,\
     ComponentMoverSchema, c_GridCurrentMoverSchema, CurrentCycleMoverSchema,\
     IceMoverSchema
 from gnome.movers.c_wind_movers import PointWindMoverSchema
+from gnome.utilities.hull import calculate_hull, calculate_contours
 
 
 class SpillJsonSchema(BaseOutputterSchema):
     _additional_data = SequenceSchema(
         SchemaNode(String()), missing=drop, save=True, update=True
+    )
+    include_uncertain_bounds = SchemaNode(
+        Boolean(), missing=False, save=True, update=True
     )
 
 
@@ -49,13 +58,18 @@ class SpillJsonOutput(Outputter):
                 "mass": []
                 "spill_num":[]
             }
+            "uncertain_bounds":{
+                "length":<LENGTH>
+                "bounds": []
+                "spill_num":[]
+            }
             "step_num": <STEP_NUM>
             "timestamp": <TIMESTAMP>
         }
     '''
     _schema = SpillJsonSchema
 
-    def __init__(self, _additional_data=None, **kwargs):
+    def __init__(self, _additional_data=None, include_uncertain_bounds=False, **kwargs):
         '''
         :param list current_movers: A list or collection of current grid mover
                                     objects.
@@ -63,8 +77,68 @@ class SpillJsonOutput(Outputter):
         use super to pass optional kwargs to base class __init__ method
         '''
         self._additional_data =_additional_data if _additional_data else []
-
+        self.include_uncertain_bounds = include_uncertain_bounds
         super(SpillJsonOutput, self).__init__(**kwargs)
+
+        # Build some mappings for styling
+        self.default_unit_map = {'Mass':{'column': 'mass',
+                                         'unit':'kilograms'},
+                                 'Surface Concentration':{'column': 'surf_conc',
+                                                          'unit':'kg/m^2'},
+                                 'Age': {'column': 'age',
+                                         'unit': 'seconds'},
+                                 'Viscosity': {'column': 'viscosity',
+                                               'unit': 'm^2/s'}
+                                 }
+
+    def prepare_for_model_run(self,
+                              model_start_time,
+                              spills,
+                              uncertain = False,
+                              **kwargs):
+        """ Setup before we run the model. """
+        if not self.on:
+            return
+        super(SpillJsonOutput, self).prepare_for_model_run(model_start_time,
+                                                           spills,
+                                                           **kwargs)
+        self.model_start_time = model_start_time
+        self.spills = spills
+
+        self.cutoff_struct = self.generate_cutoff_struct()
+        self.uncertain = uncertain
+
+    # Generate a cutoff stuct for contours if needed
+    def generate_cutoff_struct(self):
+        cutoff_struct = {}
+        for spill_idx, spill in enumerate(self.spills):
+            if spill._appearance and spill._appearance.include_certain_contours and spill._appearance.colormap:
+                appearance = spill._appearance.to_dict()
+                # self.logger.debug(f'appearance: {appearance}')
+                colormap = spill._appearance.colormap.to_dict()
+                requested_display_param = appearance['data']
+                requested_display_unit = appearance['units']
+                unit_map = {}
+                if requested_display_param in self.default_unit_map:
+                    unit_map = self.default_unit_map[requested_display_param]
+                else:
+                    raise ValueError(f'Style requested is not supported!!! {requested_display_param}')
+                data_column = unit_map['column']
+                # Looks like the domains are always in the base units...
+                number_scale_domain = [val for val in colormap['numberScaleDomain']]
+                cutoff_array = [val for val in colormap['colorScaleDomain']]
+                cutoff_array.append(number_scale_domain[-1])
+                cutoffs = []
+                for idx, val in enumerate(cutoff_array):
+                    colorblocklabel = colormap['colorBlockLabels'][idx]
+                    color = colormap['colorScaleRange'][idx]
+                    cutoffs.append({'cutoff': val,
+                                    'cutoff_id': idx,
+                                    'color': color,
+                                    'label': colorblocklabel})
+                cutoff_struct[spill_idx] = {'param': data_column,
+                                            'cutoffs': cutoffs}
+        return cutoff_struct
 
     def write_output(self, step_num, islast_step=False):
         'dump data in geojson format'
@@ -77,16 +151,19 @@ class SpillJsonOutput(Outputter):
         # because client performance is much more stable with one
         # feature per step rather than (n) features per step.features = []
         certain_scs = []
+        certain_contours_scs = []
         uncertain_scs = []
+        uncertain_bounds_scs = []
+        self.cutoff_struct = self.generate_cutoff_struct()
 
-        for sc in self.cache.load_timestep(step_num).items():
+        sp = self.cache.load_timestep(step_num).items()
+        for sc in sp:
             position = sc['positions']
             longitude = np.around(position[:, 0], 5).tolist()
             latitude = np.around(position[:, 1], 5).tolist()
             status = sc['status_codes'].tolist()
             mass = np.around(sc['mass'], 4).tolist()
             spill_num = sc['spill_num'].tolist()
-
             # break elements into multipoint features based on their
             # status code
             #   evaporated : 10
@@ -113,15 +190,76 @@ class SpillJsonOutput(Outputter):
 
             if sc.uncertain:
                 uncertain_scs.append(out)
+                if self.include_uncertain_bounds:
+                    # Calculate the uncertain bounds
+                    separate_by_spill = True
+                    hull_ratio = 0.8
+                    hull_allow_holes = False
+                    start = time.time()
+                    hull = calculate_hull(sp, separate_by_spill=separate_by_spill,
+                                          ratio=hull_ratio, union_results=True,
+                                          allow_holes=hull_allow_holes)
+                    end = time.time()
+                    # self.logger.debug(f'calculate_hull: {end-start}')
+                    json_geoms = []
+                    spill_num = []
+                    for h in hull['hulls']:
+                        json_geoms.append(shapely.geometry.mapping(h))
+                    if len(hull['spill_num']):
+                        if hull['spill_num'][0]:
+                            spill_num = list(map(int, hull['spill_num']))
+                        else:
+                            spill_num = hull['spill_num']
+                    boundary_out = {"bounds": json_geoms, #hull['hulls'],
+                                    "spill_num": spill_num,
+                                    "length": len(hull['hulls'])
+                                    }
+                    uncertain_bounds_scs.append(boundary_out)
             else:
                 certain_scs.append(out)
+                # Calculate the contours
+                hull_ratio = 0.8
+                hull_allow_holes = False
+                start = time.time()
+                # self.logger.debug(f'cutoff_struct: {self.cutoff_struct}')
+                contours = calculate_contours(sc, cutoff_struct=self.cutoff_struct,
+                                              ratio=hull_ratio,
+                                              allow_holes=hull_allow_holes)
+                end = time.time()
+                # self.logger.debug(f'calculate_contours: {end-start}')
+                json_geoms = []
+                spill_num = []
+                # Unique spill ids
+                spill_ids = list(set([item['spill_num'] for item in contours]))
+                contour_list = []
+                for id in spill_ids:
+                    # Make our list to convert to json
+                    schema = {'geometry': [item['contour']
+                                           for item in contours if item['spill_num'] == id],
+                              'spill_num': [item['spill_num']
+                                            for item in contours if item['spill_num'] == id],
+                              'color': [item['color']
+                                        for item in contours if item['spill_num'] == id],
+                              'label': [item['label']
+                                        for item in contours if item['spill_num'] == id]}
+                    data_frame = gpd.GeoDataFrame(schema, crs='epsg:4326',
+                                                  geometry='geometry')
+                    json_geoms = json.loads(data_frame.to_json())
+                    json_geoms['spill_num'] = id
+                    contour_list.append(json_geoms)
+                certain_contours_out = {"contours": contour_list,
+                                        "length": len(contour_list)
+                                        }
+                certain_contours_scs.append(certain_contours_out)
 
         # default geojson should not output data to file
         # read data from file and send it to web client
         output_info = {'time_stamp': sc.current_time_stamp.isoformat(),
                        'step_num': step_num,
                        'certain': certain_scs,
-                       'uncertain': uncertain_scs}
+                       'certain_contours': certain_contours_scs,
+                       'uncertain': uncertain_scs,
+                       'uncertain_bounds': uncertain_bounds_scs}
 
         if self.output_dir:
             output_info['output_filename'] = self.output_to_file(certain_scs,
