@@ -925,7 +925,8 @@ class Model(GnomeId):
                                             uncertain=self.uncertain,
                                             spills=self.spills,
                                             model_time_step=self.time_step,
-                                            map=self.map)
+                                            map=self.map,
+                                            model_name=self.name)
         self.logger.debug("{0._pid} setup_model_run complete for: "
                           "{0.name}".format(self))
 

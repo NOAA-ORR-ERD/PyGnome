@@ -11,6 +11,7 @@ import pandas as pd
 import pathlib
 from shapely.geometry import Point, Polygon, MultiPoint, MultiPolygon
 import shutil
+from slugify import slugify
 import tempfile
 import zipfile
 
@@ -296,7 +297,7 @@ class ERMADataPackageOutput(Outputter):
     def prepare_for_model_run(self,
                               model_start_time,
                               spills,
-                              uncertain = False,
+                              uncertain=False,
                               **kwargs):
         """ Setup before we run the model. """
         if not self.on:
@@ -318,6 +319,8 @@ class ERMADataPackageOutput(Outputter):
         self.uncertain = uncertain
         self.hull_info = []
         self.output_timesteps = []
+        self.model_name_slug = slugify(self.model_name, separator='_') if self.model_name else ''
+        self.filename_timestamp = self.model_start_time.strftime('%Y%m%d_%H%M%S')
 
     def write_output(self, step_num, islast_step=False):
         """Dump a timestep's data into the shapefile """
@@ -524,6 +527,10 @@ class ERMADataPackageOutput(Outputter):
         output_path = os.path.join(self.tempdir.name, str(id)+".json")
         generic_name = 'contour_certain'
         generic_description = 'Contour Certain'
+        erma_shapefile_name = self.model_name_slug + '_' + generic_name + '_' + self.filename_timestamp + '_shapefile'
+        # When ERMA allows more than 50 characters for the mapfile layer name
+        # erma_mapfilelayer_name = self.model_name_slug + '_' + generic_name + '_' + self.filename_timestamp + '_mapfilelayer'
+        erma_mapfilelayer_name = generic_name + '_' + self.filename_timestamp + '_mapfilelayer'
         layer_template = None
 
         layer_template_path = erma_data_package_data_dir / 'layer_template.json'
@@ -576,7 +583,7 @@ class ERMADataPackageOutput(Outputter):
             layer_template['title'] = layer_title
             layer_template['additional_param'] = time_expression
             layer_template['mapfile_layer']['layer_type'] = 'line'
-            layer_template['mapfile_layer']['shapefile']['name'] = generic_name + '_shapefile'
+            layer_template['mapfile_layer']['shapefile']['name'] = erma_shapefile_name
             layer_template['mapfile_layer']['shapefile']['description'] = generic_description + ' Shapefile'
             layer_template['mapfile_layer']['shapefile']['file'] = "file://source_files/" + basefile
             if timestamp is not None:
@@ -588,7 +595,7 @@ class ERMADataPackageOutput(Outputter):
             else:
                 layer_template['mapfile_layer']['shapefile']['timezone_fields'] = {"time": "UTC"}
                 layer_template['mapfile_layer']['time_column'] = "time"
-            layer_template['mapfile_layer']['layer_name'] = generic_name
+            layer_template['mapfile_layer']['layer_name'] = erma_mapfilelayer_name
             layer_template['mapfile_layer']['layer_desc'] = generic_description
             layer_template['mapfile_layer']['classitem'] = 'cutoff_id'
             layer_template['mapfile_layer']['labelitem'] = 'label'
@@ -629,6 +636,10 @@ class ERMADataPackageOutput(Outputter):
         #shapefile_pathlib_path = pathlib.Path(shz_name)
         generic_name = f'boundary_{"uncertain" if uncertain else "certain"}'
         generic_description = f'Boundary {"Uncertain" if uncertain else "Certain"}'
+        erma_shapefile_name = self.model_name_slug + '_' + generic_name + '_' + self.filename_timestamp + '_shapefile'
+        # When ERMA allows more than 50 characters for the mapfile layer name
+        # erma_mapfilelayer_name = self.model_name_slug + '_' + generic_name + '_' + self.filename_timestamp + '_mapfilelayer'
+        erma_mapfilelayer_name = generic_name + '_' + self.filename_timestamp + '_mapfilelayer'
         layer_template = None
         layer_template_path = erma_data_package_data_dir / 'layer_template.json'
         polygon_template = None
@@ -679,7 +690,7 @@ class ERMADataPackageOutput(Outputter):
             layer_template['title'] = layer_title
             layer_template['additional_param'] = time_expression
             layer_template['mapfile_layer']['layer_type'] = 'polygon'
-            layer_template['mapfile_layer']['shapefile']['name'] = generic_name + '_shapefile'
+            layer_template['mapfile_layer']['shapefile']['name'] = erma_shapefile_name
             layer_template['mapfile_layer']['shapefile']['description'] = generic_description + ' Shapefile'
             layer_template['mapfile_layer']['shapefile']['file'] = "file://source_files/" + basefile
             if timestamp is not None:
@@ -691,7 +702,7 @@ class ERMADataPackageOutput(Outputter):
             else:
                 layer_template['mapfile_layer']['shapefile']['timezone_fields'] = {"time": "UTC"}
                 layer_template['mapfile_layer']['time_column'] = "time"
-            layer_template['mapfile_layer']['layer_name'] = generic_name
+            layer_template['mapfile_layer']['layer_name'] = erma_mapfilelayer_name
             layer_template['mapfile_layer']['layer_desc'] = generic_description
             # Modify the style object
             polygon_template_cartoline = copy.deepcopy(polygon_template)
@@ -717,6 +728,11 @@ class ERMADataPackageOutput(Outputter):
         output_path = os.path.join(self.tempdir.name, str(id)+".json")
         shz_name = os.path.join(self.tempdir.name, shapefile_name+'.shz')
         shapefile_pathlib_path = pathlib.Path(shz_name)
+        generic_name = 'map_polygon'
+        erma_shapefile_name = self.model_name_slug + '_' + generic_name + '_' + self.filename_timestamp + '_shapefile'
+        # When ERMA allows more than 50 characters for the mapfile layer name
+        # erma_mapfilelayer_name = self.model_name_slug + '_' + generic_name + '_' + self.filename_timestamp + '_mapfilelayer'
+        erma_mapfilelayer_name = generic_name + '_' + self.filename_timestamp + '_mapfilelayer'
         layer_template = None
         layer_template_path = erma_data_package_data_dir / 'layer_template.json'
         polygon_template = None
@@ -749,10 +765,10 @@ class ERMADataPackageOutput(Outputter):
             layer_template['folder_path'] = self.folder_name
             layer_template['title'] = layer_title
             layer_template['mapfile_layer']['layer_type'] = 'polygon'
-            layer_template['mapfile_layer']['shapefile']['name'] = 'map_polygon_shapefile'
+            layer_template['mapfile_layer']['shapefile']['name'] = erma_shapefile_name
             layer_template['mapfile_layer']['shapefile']['description'] = 'Map Polygon Shapefile'
             layer_template['mapfile_layer']['shapefile']['file'] = "file://source_files/" + shapefile_name + '.zip'
-            layer_template['mapfile_layer']['layer_name'] = 'map_polygon'
+            layer_template['mapfile_layer']['layer_name'] = erma_mapfilelayer_name
             layer_template['mapfile_layer']['layer_desc'] = 'Map Polygon'
             # Get rid of a few things we dont want
             layer_template['mapfile_layer']['shapefile']['timezone_fields'] = None
@@ -776,6 +792,11 @@ class ERMADataPackageOutput(Outputter):
         output_path = os.path.join(self.tempdir.name, str(id)+".json")
         shz_name = os.path.join(self.tempdir.name, shapefile_name+'.shz')
         shapefile_pathlib_path = pathlib.Path(shz_name)
+        generic_name = 'spill_location'
+        erma_shapefile_name = self.model_name_slug + '_' + generic_name + '_' + self.filename_timestamp + '_shapefile'
+        # When ERMA allows more than 50 characters for the mapfile layer name
+        # erma_mapfilelayer_name = self.model_name_slug + '_' + generic_name + '_' + self.filename_timestamp + '_mapfilelayer'
+        erma_mapfilelayer_name = generic_name + '_' + self.filename_timestamp + '_mapfilelayer'
         layer_template = None
         layer_template_path = erma_data_package_data_dir / 'layer_template.json'
         default_spill_location_template = None
@@ -803,10 +824,10 @@ class ERMADataPackageOutput(Outputter):
             # Folder name
             layer_template['folder_path'] = self.folder_name
             layer_template['title'] = 'Spill Location'
-            layer_template['mapfile_layer']['shapefile']['name'] = 'spill_location_shapefile'
+            layer_template['mapfile_layer']['shapefile']['name'] = erma_shapefile_name
             layer_template['mapfile_layer']['shapefile']['description'] = 'Spill Location Shapefile'
             layer_template['mapfile_layer']['shapefile']['file'] = "file://source_files/" + shapefile_name + '.zip'
-            layer_template['mapfile_layer']['layer_name'] = 'spill_location'
+            layer_template['mapfile_layer']['layer_name'] = erma_mapfilelayer_name
             layer_template['mapfile_layer']['layer_desc'] = 'Spill Location'
             # Get rid of a few things we dont want
             layer_template['mapfile_layer']['shapefile']['timezone_fields'] = None
@@ -919,6 +940,11 @@ class ERMADataPackageOutput(Outputter):
         default_beached_template_path = erma_data_package_data_dir / 'default_beached_template.json'
         layer_template = None
         default_floating_template = default_beached_template = None
+        generic_name = f'{"uncertain" if uncertain else "certain"}'
+        erma_shapefile_name = self.model_name_slug + '_' + generic_name + '_' + self.filename_timestamp + '_shapefile'
+        # When ERMA allows more than 50 characters for the mapfile layer name
+        # erma_mapfilelayer_name = self.model_name_slug + '_' + generic_name + '_' + self.filename_timestamp + '_mapfilelayer'
+        erma_mapfilelayer_name = generic_name + '_' + self.filename_timestamp + '_mapfilelayer'
         time_expression = f'time__in={timestamp.isoformat()}' if timestamp is not None else None
         with open(layer_template_path) as f:
             layer_template = json.load(f)
@@ -932,10 +958,11 @@ class ERMADataPackageOutput(Outputter):
             layer_template['folder_path'] = self.folder_name
             layer_template['title'] = layer_name
             layer_template['additional_param'] = time_expression
+            layer_template['mapfile_layer']['layer_name'] = erma_mapfilelayer_name
             if uncertain:
                 layer_template['opacity'] = '0.75'
 
-            layer_template['mapfile_layer']['shapefile']['name'] = basefile
+            layer_template['mapfile_layer']['shapefile']['name'] = erma_shapefile_name
             layer_template['mapfile_layer']['shapefile']['description'] = basefile
             layer_template['mapfile_layer']['shapefile']['file'] = "file://source_files/" + basefile
             if timestamp is not None:

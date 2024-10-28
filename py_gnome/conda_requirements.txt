@@ -27,6 +27,7 @@
 python>=3.9,<3.12
 
 ## System libs
+awesome-slugify
 colander <2
 progressbar
 psutil
