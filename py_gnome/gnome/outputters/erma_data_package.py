@@ -519,7 +519,7 @@ class ERMADataPackageOutput(Outputter):
     def make_contour_polygon_package_layer(self, id, shapefile_filename,
                                            layer_title, style_name,
                                            style_width, timestamp=None):
-        time_expression = f' AND `[time]` = `{timestamp.isoformat()}`' if timestamp is not None else ''
+        time_expression = f'time__in={timestamp.isoformat()}' if timestamp is not None else None
         dir, basefile = os.path.split(shapefile_filename)
         output_path = os.path.join(self.tempdir.name, str(id)+".json")
         generic_name = 'contour_certain'
@@ -574,6 +574,7 @@ class ERMADataPackageOutput(Outputter):
             # Folder name
             layer_template['folder_path'] = self.folder_name
             layer_template['title'] = layer_title
+            layer_template['additional_param'] = time_expression
             layer_template['mapfile_layer']['layer_type'] = 'line'
             layer_template['mapfile_layer']['shapefile']['name'] = generic_name + '_shapefile'
             layer_template['mapfile_layer']['shapefile']['description'] = generic_description + ' Shapefile'
@@ -603,7 +604,7 @@ class ERMADataPackageOutput(Outputter):
                         thiscount = next(classcounter)
                         contour_template_solid = copy.deepcopy(contour_template)
                         contour_template_solid['name'] = style_name+f' {spill.name} {cutoff["label"]}'
-                        contour_template_solid['expression'] = f'[cutoff_id] = {cutoff["cutoff_id"]}{time_expression}'
+                        contour_template_solid['expression'] = f'[cutoff_id] = {cutoff["cutoff_id"]}'
                         contour_template_solid['ordering'] = thiscount
                         contour_template_solid['styles'][0]['outlinesymbol'] = None
                         contour_template_solid['styles'][0]['color'] = cutoff['color']
@@ -621,7 +622,7 @@ class ERMADataPackageOutput(Outputter):
     def make_boundary_polygon_package_layer(self, id, uncertain, shapefile_filename,
                                             layer_title, style_name,
                                             color, style_width, timestamp=None):
-        time_expression = f'`[time]` = `{timestamp.isoformat()}`' if timestamp is not None else ''
+        time_expression = f'time__in={timestamp.isoformat()}' if timestamp is not None else None
         dir, basefile = os.path.split(shapefile_filename)
         output_path = os.path.join(self.tempdir.name, str(id)+".json")
         #shz_name = os.path.join(self.tempdir.name, shapefile_name+'.shz')
@@ -676,6 +677,7 @@ class ERMADataPackageOutput(Outputter):
             # Folder name
             layer_template['folder_path'] = self.folder_name
             layer_template['title'] = layer_title
+            layer_template['additional_param'] = time_expression
             layer_template['mapfile_layer']['layer_type'] = 'polygon'
             layer_template['mapfile_layer']['shapefile']['name'] = generic_name + '_shapefile'
             layer_template['mapfile_layer']['shapefile']['description'] = generic_description + ' Shapefile'
@@ -694,14 +696,9 @@ class ERMADataPackageOutput(Outputter):
             # Modify the style object
             polygon_template_cartoline = copy.deepcopy(polygon_template)
             polygon_template_cartoline['name'] = style_name
-            if timestamp is not None:
-                layer_template['mapfile_layer']['classitem'] = 'time'
-                polygon_template_cartoline['expression'] = f'{time_expression}'
-                polygon_template_cartoline['expression_type'] = 'M'
-            else:
-                layer_template['mapfile_layer']['classitem'] = None
-                polygon_template_cartoline['expression'] = None
-                polygon_template_cartoline['expression_type'] = None
+            layer_template['mapfile_layer']['classitem'] = None
+            polygon_template_cartoline['expression'] = None
+            polygon_template_cartoline['expression_type'] = None
             polygon_template_cartoline['styles'][0]['outlinecolor'] = color
             polygon_template_cartoline['styles'][0]['outlinesymbol'] = 'dashedcartoline'
             polygon_template_cartoline['styles'][0]['style_width'] = style_width
@@ -922,7 +919,7 @@ class ERMADataPackageOutput(Outputter):
         default_beached_template_path = erma_data_package_data_dir / 'default_beached_template.json'
         layer_template = None
         default_floating_template = default_beached_template = None
-        time_expression = f' AND `[time]` = `{timestamp.isoformat()}`' if timestamp is not None else ''
+        time_expression = f'time__in={timestamp.isoformat()}' if timestamp is not None else None
         with open(layer_template_path) as f:
             layer_template = json.load(f)
         with open(default_floating_template_path) as f:
@@ -934,6 +931,7 @@ class ERMADataPackageOutput(Outputter):
             # Folder name
             layer_template['folder_path'] = self.folder_name
             layer_template['title'] = layer_name
+            layer_template['additional_param'] = time_expression
             if uncertain:
                 layer_template['opacity'] = '0.75'
 
@@ -1041,14 +1039,12 @@ class ERMADataPackageOutput(Outputter):
                             floating_class_template = copy.deepcopy(default_floating_template)
                             beached_class_template = copy.deepcopy(default_beached_template)
                             floating_class_template['expression'] = ('[statuscode] = 2 AND '
-                                                                     f'[spill_id] IN "{spill_group_string}"'
-                                                                     f'{time_expression}')
+                                                                     f'[spill_id] IN "{spill_group_string}"')
                             floating_class_template['styles'][0]['color'] = uncertain_color
                             floating_class_template['styles'][0]['style_size'] = style_size
                             floating_class_template['name'] = f'{spill_names}|Floating Uncertain'
                             beached_class_template['expression'] = ('[statuscode] = 3 AND '
-                                                                    f'[spill_id] IN "{spill_group_string}"'
-                                                                    f'{time_expression}')
+                                                                    f'[spill_id] IN "{spill_group_string}"')
                             beached_class_template['styles'][0]['color'] = uncertain_color
                             beached_class_template['styles'][0]['outlinecolor'] = uncertain_color
                             beached_class_template['styles'][0]['style_size'] = style_size
@@ -1106,45 +1102,37 @@ class ERMADataPackageOutput(Outputter):
                                     # Special case that we only have one range... so we show ALL
                                     # particles, but still label it with the range
                                     floating_class_template['expression'] = ('[statuscode] = 2 AND '
-                                                                             f'[spill_id] IN "{spill_group_string}"'
-                                                                             f'{time_expression}')
+                                                                             f'[spill_id] IN "{spill_group_string}"')
                                     beached_class_template['expression'] = ('[statuscode] = 3 AND '
-                                                                            f'[spill_id] IN "{spill_group_string}"'
-                                                                            f'{time_expression}')
+                                                                            f'[spill_id] IN "{spill_group_string}"')
                                     class_label = f'<{converted_min:#.4g} - {data_column} - {converted_max:#.4g}+ ({requested_display_unit})'
                                 elif idx == 0:
                                     # First one... open ended lower range
                                     floating_class_template['expression'] = ('[statuscode] = 2 AND '
                                                                              f'[spill_id] IN "{spill_group_string}" AND '
-                                                                             f'[{data_column}] <= {max}'
-                                                                             f'{time_expression}')
+                                                                             f'[{data_column}] <= {max}')
                                     beached_class_template['expression'] = ('[statuscode] = 3 AND '
                                                                             f'[spill_id] IN "{spill_group_string}" AND '
-                                                                            f'[{data_column}] <= {max}'
-                                                                            f'{time_expression}')
+                                                                            f'[{data_column}] <= {max}')
                                     class_label = f'<{converted_min:#.4g} - {data_column} - {converted_max:#.4g} ({requested_display_unit})'
                                 elif idx == len(colormap['colorScaleRange'])-1:
                                     # Last one... open ended upper range
                                     floating_class_template['expression'] = ('[statuscode] = 2 AND '
                                                                              f'[spill_id] IN "{spill_group_string}" AND '
-                                                                             f'{min} <= [{data_column}]'
-                                                                             f'{time_expression}')
+                                                                             f'{min} <= [{data_column}]')
                                     beached_class_template['expression'] = ('[statuscode] = 3 AND '
                                                                             f'[spill_id] IN "{spill_group_string}" AND '
-                                                                            f'{min} <= [{data_column}]'
-                                                                            f'{time_expression}')
+                                                                            f'{min} <= [{data_column}]')
                                     class_label = f'{converted_min:#.4g} - {data_column} - {converted_max:#.4g}+ ({requested_display_unit})'
                                 else:
                                     floating_class_template['expression'] = ('[statuscode] = 2 AND '
                                                                              f'[spill_id] IN "{spill_group_string}" AND '
                                                                              f'({min} < [{data_column}] AND '
-                                                                             f'[{data_column}] <= {max})'
-                                                                             f'{time_expression}')
+                                                                             f'[{data_column}] <= {max})')
                                     beached_class_template['expression'] = ('[statuscode] = 3 AND '
                                                                             f'[spill_id] IN "{spill_group_string}" AND '
                                                                             f'({min} < [{data_column}] AND '
-                                                                            f'[{data_column}] <= {max})'
-                                                                            f'{time_expression}')
+                                                                            f'[{data_column}] <= {max})')
                                     class_label = f'{converted_min:#.4g} - {data_column} - {converted_max:#.4g} ({requested_display_unit})'
                                 colorblocklabel = colormap['colorBlockLabels'][idx]
                                 floating_class_template['name'] = f'{spill_names}|{colorblocklabel if colorblocklabel else class_label}'
@@ -1167,11 +1155,9 @@ class ERMADataPackageOutput(Outputter):
                         floating_class_template = copy.deepcopy(default_floating_template)
                         beached_class_template = copy.deepcopy(default_beached_template)
                         floating_class_template['expression'] = ('[statuscode] = 2 AND '
-                                                                 f'[spill_id] IN "{spill_group_string}"'
-                                                                 f'{time_expression}')
+                                                                 f'[spill_id] IN "{spill_group_string}"')
                         beached_class_template['expression'] = ('[statuscode] = 3 AND '
-                                                                f'[spill_id] IN "{spill_group_string}"'
-                                                                f'{time_expression}')
+                                                                f'[spill_id] IN "{spill_group_string}"')
                         if uncertain:
                             uncertain_color = '#FF0000'
                             floating_class_template['styles'][0]['color'] = uncertain_color
@@ -1197,10 +1183,8 @@ class ERMADataPackageOutput(Outputter):
                 # No appearance data... use a default
                 floating_class_template = copy.deepcopy(default_floating_template)
                 beached_class_template = copy.deepcopy(default_beached_template)
-                floating_class_template['expression'] = ('[statuscode] = 2'
-                                                         f'{time_expression}')
-                beached_class_template['expression'] = ('[statuscode] = 3'
-                                                        f'{time_expression}')
+                floating_class_template['expression'] = '[statuscode] = 2'
+                beached_class_template['expression'] = '[statuscode] = 3'
                 if uncertain:
                     uncertain_color = '#FF0000'
                     floating_class_template['styles'][0]['color'] = uncertain_color
