@@ -266,7 +266,7 @@ class CatsMover(CurrentMoversBase):
                 self.scale_refpoint is None):
             raise TypeError("Provide a reference point in 'scale_refpoint'.")
 
-        self.mover.compute_velocity_scale()
+        #self.mover.compute_velocity_scale()
 
     def __repr__(self):
         return 'CatsMover(filename={0})'.format(self.filename)
@@ -338,6 +338,11 @@ class CatsMover(CurrentMoversBase):
         else:
             self.mover.ref_point = val
 
+        err = self.mover.compute_velocity_scale()  # make sure ref_scale is up to date
+        if err:
+            msg = ('CATS reference point not valid: {0}'.format(self.mover.ref_point))
+            self.logger.warning(msg)
+
     @property
     def tide(self):
         return self._tide
@@ -392,6 +397,7 @@ class CatsMover(CurrentMoversBase):
         """
         velocities = self.mover._get_velocity_handle()
         self.mover.compute_velocity_scale()  # make sure ref_scale is up to date
+
         ref_scale = self.ref_scale
 
         if self._tide is not None:
