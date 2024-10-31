@@ -5,6 +5,7 @@ Movers using currents and tides as forcing functions
 import os
 
 import numpy as np
+import warnings
 
 from colander import (SchemaNode, Bool, String, Float, Int, drop)
 
@@ -342,6 +343,7 @@ class CatsMover(CurrentMoversBase):
         if err:
             msg = ('CATS reference point not valid: {0}'.format(self.mover.ref_point))
             self.logger.warning(msg)
+            warnings.warn(msg)
 
     @property
     def tide(self):

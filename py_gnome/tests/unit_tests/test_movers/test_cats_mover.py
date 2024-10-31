@@ -204,6 +204,10 @@ def test_scale_refpoint(tgt):
     c_cats.scale_refpoint = list(tgt)  # can be a list or a tuple
     assert c_cats.scale_refpoint == tuple(exp_tgt)
 
+	# test for warning using these bad ref points
+    c_cats.scale = True
+    with pytest.warns(UserWarning, match="CATS reference point not valid") as warning:
+        c_cats.scale_refpoint = tgt
 
 # Helper functions for tests
 
