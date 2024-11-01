@@ -156,7 +156,6 @@ The oil type is specified using the sample oil file provided above with a spill 
 
     spill = gs.polygon_release_spill(filename='spatial_example.zip',
                                         release_time=start_time,
-                                        #end_release_time = start_time + gs.days(1),
                                         amount=1000,
                                         substance=gs.GnomeOil(filename='alaska-north-slope_AD00020.json'),
                                         units='bbl',
