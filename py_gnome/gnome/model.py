@@ -1128,7 +1128,8 @@ class Model(GnomeId):
             sc['age'][:] = sc['age'][:] + abs(self.time_step)
 
     def write_output(self, valid, messages=None):
-        output_info = {'step_num': self.current_time_step}
+        output_info = {'step_num': self.current_time_step,
+                       'step_time': self.model_time}
 
         for outputter in self.outputters:
             if self.current_time_step == self.num_time_steps - 1:
