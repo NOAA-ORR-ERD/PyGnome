@@ -13,7 +13,7 @@ saves typing in all the requirements files
 
 default is "all" -- full dev environment
 
-"run" will only give you wnat you need to run the code
+"run" will only give you what you need to run the code
 
 "build" will add what's needed to build PYGNOME
 
@@ -57,6 +57,7 @@ if __name__ == "__main__":
     for req in reqs:
         cmd.extend(["--file", req])
     print("running\n", cmd)
+    # subprocess.run(cmd, shell=True)
     subprocess.run(cmd)
 
 

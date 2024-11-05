@@ -5,7 +5,13 @@ test time_utils different input formats
 """
 
 from datetime import datetime, timedelta
-from datetime import UTC as dtUTC
+try:
+    from datetime import UTC as dtUTC
+except ImportError:
+    # datetime.UTC added as of Python 3.11
+    from datetime import timezone
+    dtUTC = timezone.utc
+
 import numpy as np
 import pytest
 
