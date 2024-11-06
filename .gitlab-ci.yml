@@ -1,5 +1,5 @@
 variables:
-  PYTHON_VER: "3.12"
+  PYTHON_VER: "3.10"
   IMAGE_NAME: "ubuntu/ubuntuforge-python"
   GIT_DEPTH: 2
 
