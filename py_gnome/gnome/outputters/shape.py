@@ -41,7 +41,7 @@ class ShapeSchema(BaseOutputterSchema):
     # Currently we do not support timezone, but instead stick with static
     # time offset.
     # timezone = SchemaNode(String(), save=True, update=True)
-    timeoffset = SchemaNode(Int(), save=True, update=True)
+    timeoffset = SchemaNode(Float(), save=True, update=True)
 
 
 class ShapeOutput(Outputter):

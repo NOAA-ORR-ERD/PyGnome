@@ -89,7 +89,7 @@ class ParticleShapefileBuilder(ShapefileBuilder):
         super(ParticleShapefileBuilder, self).append(sc)
         current_datetime_utc = None
         if self.timeoffset is not None:
-            current_timezone_by_offset = datetime.timezone(datetime.timedelta(hours=self.timeoffset))
+            current_timezone_by_offset = datetime.timezone(datetime.timedelta(minutes=int(self.timeoffset*60)))
             current_datetime_with_offset = sc.current_time_stamp.replace(tzinfo=current_timezone_by_offset)
             current_datetime_utc = current_datetime_with_offset.astimezone(datetime.timezone.utc).isoformat()
         frame_data = {
@@ -165,7 +165,7 @@ class BoundaryShapefileBuilder(ShapefileBuilder):
             current_time_stamp = sc.current_time_stamp
         current_datetime_utc = None
         if self.timeoffset is not None:
-            current_timezone_by_offset = datetime.timezone(datetime.timedelta(hours=self.timeoffset))
+            current_timezone_by_offset = datetime.timezone(datetime.timedelta(minutes=int(self.timeoffset*60)))
             current_datetime_with_offset = current_time_stamp.replace(tzinfo=current_timezone_by_offset)
             current_datetime_utc = current_datetime_with_offset.astimezone(datetime.timezone.utc).isoformat()
 
@@ -269,7 +269,7 @@ class ContourShapefileBuilder(ShapefileBuilder):
             current_time_stamp = sc.current_time_stamp
         current_datetime_utc = None
         if self.timeoffset is not None:
-            current_timezone_by_offset = datetime.timezone(datetime.timedelta(hours=self.timeoffset))
+            current_timezone_by_offset = datetime.timezone(datetime.timedelta(minutes=int(self.timeoffset*60)))
             current_datetime_with_offset = current_time_stamp.replace(tzinfo=current_timezone_by_offset)
             current_datetime_utc = current_datetime_with_offset.astimezone(datetime.timezone.utc).isoformat()
 
