@@ -343,7 +343,7 @@ class CatsMover(CurrentMoversBase):
         if err:
             msg = ('CATS reference point not valid: {0}'.format(self.mover.ref_point))
             self.logger.warning(msg)
-            warnings.warn(msg)
+            warnings.warn(msg, UserWarning)
 
     @property
     def tide(self):
