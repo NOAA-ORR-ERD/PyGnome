@@ -120,7 +120,7 @@ class ERMADataPackageSchema(BaseOutputterSchema):
     # Currently we do not support timezone, but instead stick with static
     # time offset.
     # timezone = SchemaNode(String(), save=True, update=True)
-    timeoffset = SchemaNode(Int(), save=True, update=True)
+    timeoffset = SchemaNode(Float(), save=True, update=True)
     enable_each_timestep_as_layer = SchemaNode(
         Boolean(), save=True, update=True
     )
