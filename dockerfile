@@ -17,7 +17,7 @@ WORKDIR /pygnome/
 
 RUN conda install python=$PYTHON_VER \
     --file py_gnome/conda_requirements.txt \
-    --file py_gnome/conda_requirements_build.txt \
+    --file py_gnome/conda_requirements_build.txt
 #    --file oil_database/adios_db/conda_requirements.txt
 
 # RUN cd oil_database/adios_db && python -m pip install ./
