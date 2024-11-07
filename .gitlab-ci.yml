@@ -44,15 +44,16 @@ compile_pygnome:
 
     - apt-get install git g++ make libxext-dev libsm-dev libxrender-dev -y
 
-    # get the adios_db code: needed for tests and requirements
-    - git clone --depth 1 -b develop https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.orr.noaa.gov/gnome/oil_database/oil_database.git
-    - cd ./py_gnome
-    - conda install -y python=$PYTHON_VER --file conda_requirements.txt
-                                          --file conda_requirements_build.txt
-                                          --file ../oil_database/adios_db/conda_requirements.txt
+    # # get the adios_db code: needed for tests and requirements
+    # no longer needed -- pygnome is pulling adios_db from conda-forge
+    # - git clone --depth 1 -b develop https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.orr.noaa.gov/gnome/oil_database/oil_database.git
+    # - cd ./py_gnome
+    # - conda install -y python=$PYTHON_VER --file conda_requirements.txt
+    #                                       --file conda_requirements_build.txt
+    #                                       --file ../oil_database/adios_db/conda_requirements.txt
 
-    # install adios_db
-    - pip install ../oil_database/adios_db/
+    # # install adios_db
+    # - pip install ../oil_database/adios_db/
 
     # Install pygnome
     # If you want verbose output including the compiler/linker commands,
@@ -62,6 +63,10 @@ compile_pygnome:
     # And there may be times we want to build a wheel file (.whl)
     # The following command will build a wheel in the current directory:
     #   python -m pip wheel ./
+    - conda install -y python=$PYTHON_VER --file conda_requirements.txt
+                                          --file conda_requirements_build.txt
+
+
     - echo "compiling PyGNOME"
     - python -m pip install ./
 
