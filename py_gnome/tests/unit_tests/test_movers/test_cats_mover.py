@@ -205,6 +205,7 @@ def test_scale_refpoint(tgt):
     c_cats.scale = True
     with pytest.warns(UserWarning, match="CATS reference point not valid") as warning:
         c_cats.scale_refpoint = tgt
+    c_cats.scale = False
 
 # Helper functions for tests
 
