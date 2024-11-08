@@ -185,6 +185,7 @@ class Outputter(GnomeId):
                               spills=None,
                               model_time_step=None,
                               map=None,
+                              model_name=None,
                               **kwargs):
         """
         This method gets called by the model at the beginning of a new run.
@@ -250,6 +251,7 @@ class Outputter(GnomeId):
             self.cache = cache
 
         self.map = map
+        self.model_name = model_name
         if self.output_timestep is None:
             self._write_step = True
 

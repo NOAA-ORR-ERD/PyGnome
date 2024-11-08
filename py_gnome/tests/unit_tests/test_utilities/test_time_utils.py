@@ -4,13 +4,16 @@
 test time_utils different input formats
 """
 
-
-
-
 from datetime import datetime, timedelta
+try:
+    from datetime import UTC as dtUTC
+except ImportError:
+    # datetime.UTC added as of Python 3.11
+    from datetime import timezone
+    dtUTC = timezone.utc
+
 import numpy as np
 import pytest
-
 
 from gnome.utilities.time_utils import (date_to_sec,
                                         sec_to_date,
@@ -57,7 +60,7 @@ def test_datetime_array():
     test time_utils conversion works for python datetime object
     """
 
-    x = np.array([datetime.utcfromtimestamp(zero_time())] * 3,
+    x = np.array([datetime.fromtimestamp(zero_time())] * 3,
                  dtype=datetime)
     xn = _convert(x)
 
@@ -69,7 +72,7 @@ def test_numpy_array():
     time_utils works for numpy datetime object
     """
 
-    x = np.array([datetime.utcfromtimestamp(zero_time())] * 3,
+    x = np.array([datetime.fromtimestamp(zero_time())] * 3,
                  dtype='datetime64[s]')
 
     xn = _convert(x)

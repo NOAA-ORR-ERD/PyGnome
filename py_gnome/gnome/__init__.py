@@ -22,7 +22,7 @@ import nucos
 # just so it will be in the namespace.
 from .gnomeobject import GnomeId, AddLogger
 
-__version__ = "1.1.14dev"
+__version__ = "1.1.14"
 
 
 if os.name == 'nt':
@@ -66,7 +66,7 @@ def check_dependency_versions():
         else:
             return True
 
-    libs = [('gridded', '0.6.9', ''),
+    libs = [('gridded', '0.6.10', ''),
             ('nucos', '3.3.0', ''),
             ('py_gd', '2.3.0', ''),
             ('adios_db', '1.2.4', 'Only required to use the ADIOS Database '

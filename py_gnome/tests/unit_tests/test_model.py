@@ -866,10 +866,6 @@ def test_release_at_right_time():
     supposed to be released then.  Particularly for the
     first time step of the model.
     '''
-    # default to now, rounded to the nearest hour
-    # seconds_in_minute = 60
-    # minutes_in_hour = 60
-    # seconds_in_hour = seconds_in_minute * minutes_in_hour
 
     start_time = datetime(2013, 1, 1, 0)
     time_step = gs.hours(2)
@@ -1059,7 +1055,7 @@ def test_all_weatherers_in_model(model, add_langmuir):
 
 @pytest.mark.xfail()
 def test_setup_model_run(model):
-    'turn of movers/weatherers and ensure data_arrays change'
+    'turn off movers/weatherers and ensure data_arrays change'
     model.environment += Water()
     model.rewind()
     model.step()
@@ -1733,10 +1729,14 @@ def test_get_spill_property():
     print(repr(prop))
     assert np.array_equal(prop, [0., 0., 0., 0., 0., 0., 0., 0., 0., 0.])
 
-# if __name__ == '__main__':
+def test_step_output():
+    """
+    tests that the basic output from step is what we want
+    """
+    model = Model() # all the defaults
 
-    # test_all_movers()
-    # test_release_at_right_time()
-    # test_simple_run_with_image_output()
+    step1 = model.step()
 
-    # test_simple_run_with_image_output_uncertainty()
+    assert step1['step_num'] == 0
+    assert step1['step_time'] == model.start_time.isoformat(timespec='minutes')
+

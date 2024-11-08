@@ -19,7 +19,7 @@ Create an environment for PyGNOME with all requirements:
 
 If you only need to run PyGNOME::
 
-    > conda create -n gnome --file python=3.10 conda_requirements.txt
+    > conda create -n gnome python=3.10 --file  conda_requirements.txt
 
 If you need to build, etc PyGNOME::
 

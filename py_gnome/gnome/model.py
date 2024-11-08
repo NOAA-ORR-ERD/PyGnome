@@ -925,7 +925,8 @@ class Model(GnomeId):
                                             uncertain=self.uncertain,
                                             spills=self.spills,
                                             model_time_step=self.time_step,
-                                            map=self.map)
+                                            map=self.map,
+                                            model_name=self.name)
         self.logger.debug("{0._pid} setup_model_run complete for: "
                           "{0.name}".format(self))
 
@@ -1127,7 +1128,8 @@ class Model(GnomeId):
             sc['age'][:] = sc['age'][:] + abs(self.time_step)
 
     def write_output(self, valid, messages=None):
-        output_info = {'step_num': self.current_time_step}
+        output_info = {'step_num': self.current_time_step,
+                       'step_time': self.model_time.isoformat(timespec='minutes')}
 
         for outputter in self.outputters:
             if self.current_time_step == self.num_time_steps - 1:

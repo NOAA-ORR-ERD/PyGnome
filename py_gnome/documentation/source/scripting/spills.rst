@@ -86,6 +86,22 @@ Polygon Releases
 The :class:`gnome.spills.release.PolygonRelease` Object releases particles distributed over a polygon or set
 of polygons. The particles are distributed randomly over the polygons with a simple weighting by polygon area (i.e., geographically larger polygons will be seeded with more particles). The subclass :class:`gnome.spills.release.NESDISRelease` can be used specifically with the |nesdis_reports| operationally produced by NOAA's Office of Satellite and Product Operations.
 
+Here's an example setting up a spill from a polygon. The polygon file used in the example can be accessed :download:`here <spatial_example.zip>`. A list of polygons can be used instead of a shapefile:
+
+.. code-block:: python
+
+    import gnome.scripting as gs
+    start_time = "2024-10-01T00:00"
+    model = gs.Model(start_time=start_time,
+                     duration=gs.days(2),
+                     time_step=60 * 60  # 1 hour in seconds
+                     )
+    release = gs.PolygonRelease(filename='spatial_example.zip',
+                                  release_time=start_time
+                                  )
+    spill = gs.Spill(release=release)
+    model.spills += spill
+
 
 Using Helper Functions
 ----------------------
@@ -120,6 +136,32 @@ The helper function creates both the ``Release`` and the ``Substance`` objects a
                                         windage_range=(0.01, 0.02),
                                         windage_persist=-1,
                                         name='My spill')
+    model.spills += spill
+
+    # ... add movers/weatherers
+
+    model.full_run()
+
+Similarly we can use the :func:`gnome.scripting.polygon_release_spill` helper function to initialize a polygon spill.
+The oil type is specified using the sample oil file provided above with a spill volume of 1000 barrels. The polygon shapefile used is the sample file provided above.
+
+.. code-block:: python
+
+    import gnome.scripting as gs
+    start_time = gs.asdatetime("2024-10-01T00:00")
+    model = gs.Model(start_time=start_time,
+                     duration=gs.days(2),
+                     time_step=60 * 60, # 1 hour in seconds
+                     )
+
+    spill = gs.polygon_release_spill(filename='spatial_example.zip',
+                                        release_time=start_time,
+                                        amount=1000,
+                                        substance=gs.GnomeOil(filename='alaska-north-slope_AD00020.json'),
+                                        units='bbl',
+                                        windage_range=(0.01, 0.02),
+                                        windage_persist=-1,
+                                        name='polygon spill')
     model.spills += spill
 
     # ... add movers/weatherers

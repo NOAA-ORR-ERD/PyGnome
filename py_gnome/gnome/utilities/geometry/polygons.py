@@ -73,8 +73,8 @@ class Polygon(np.ndarray):
 
         self.metadata = getattr(obj, 'metadata', {})
 
-    def __array_wrap__(self, out_arr, context=None):
-        return np.ndarray.__array_wrap__(self, out_arr, context)
+    def __array_wrap__(self, out_arr, context=None, return_scalar=False):
+        return np.ndarray.__array_wrap__(self, out_arr, context, return_scalar)
 
     def __getitem__(self, index):
         """
