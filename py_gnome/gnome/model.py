@@ -100,6 +100,7 @@ class ModelSchema(ObjTypeSchema):
         extend_colander.LocalDateTime(),
         validator=validators.convertible_to_seconds
     )
+    timeoffset = SchemaNode(Float())
     duration = SchemaNode(
         extend_colander.TimeDelta()
     )
@@ -265,6 +266,7 @@ class Model(GnomeId):
         # default to now, rounded to the nearest hour
         self.start_time = start_time
         self._duration = duration
+        self.timeoffset = None
 
         if weathering_substeps != 1:
             if weathering_substeps > 1:
