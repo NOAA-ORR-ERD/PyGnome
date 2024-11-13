@@ -374,10 +374,6 @@ class Model(GnomeId):
                                  " {}".format(wx_name,
                                               list(weatherers_by_name.keys())))
 
-
-
-
-
     def reset(self, **kwargs):
         '''
         Resets model to defaults -- Caution -- clears all movers, spills, etc.

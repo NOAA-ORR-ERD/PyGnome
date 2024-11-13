@@ -1740,3 +1740,13 @@ def test_step_output():
     assert step1['step_num'] == 0
     assert step1['step_time'] == model.start_time.isoformat(timespec='minutes')
 
+def test_model_tz_offset():
+    """
+    all the time zone offset does is sit ther for ues,  and save and reload from a save file
+
+    make sure it at least does that.
+    """
+
+    model = Model()
+
+    model.timezone_offset =

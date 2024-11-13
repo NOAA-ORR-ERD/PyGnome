@@ -22,6 +22,7 @@ from gnome.utilities.time_utils import (date_to_sec,
                                         UTC,
                                         FixedOffset,
                                         asdatetime,
+                                        TZOffset
                                         )
 
 
@@ -240,6 +241,60 @@ def test_asdatetime_none():
     """ None should get passed through as well """
     dt = asdatetime(None)
     assert dt is None
+
+def test_TZOffset():
+    """
+    too much in one test, but whatever ...
+    """
+    tzo = TZOffset(-4)
+
+    assert tzo.offset == -4.0
+
+    tzo = TZOffset(-4, title = "some title")
+
+    assert tzo.offset == -4.0
+    assert tzo.title == "some title"
+
+
+def test_TZOffset_timedelta():
+    """
+    too much in one test, but whatever ...
+    """
+    tzo = TZOffset(-3.5)
+
+    print(tzo.as_timedelta())
+    print(-timedelta(hours=3, minutes=30))
+    assert tzo.as_timedelta() == -timedelta(hours=3, minutes=30)
+
+
+def test_TZOffset_string():
+    """
+    too much in one test, but whatever ...
+    """
+    tzo = TZOffset(-3.5)
+
+    assert tzo.as_iso_string() == "-03:30"
+
+    tzo = TZOffset(8)
+
+    assert tzo.as_iso_string() == "+08:00"
+
+def test_TZOffset_persist():
+    """
+    Does is serialize and deserialize properly
+    """
+    tzo = TZOffset(-3.5, "TZ with half hour")
+
+    pson = tzo.serialize()
+
+    print(pson)
+
+    assert pson['offset'] == -3.5
+    assert pson['title'] == "TZ with half hour"
+
+    tzo2 = TZOffset.deserialize(pson)
+
+    assert tzo == tzo2
 
 
 

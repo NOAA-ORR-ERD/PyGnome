@@ -6,16 +6,52 @@ assorted utilities for working with time and datetime
 """
 
 from datetime import datetime, timedelta, tzinfo
+from dataclasses import dataclass
 import cftime
 from dateutil.parser import parse as parsetime
 import time
 
 import numpy as np
 
+from gnome.persist import (ObjTypeSchema, SchemaNode, String, Float)
+from gnome.gnomeobject import GnomeId
 
 # tzinfo classes for use with datetime.datetime
 #
 # These are supplied out of the box with py3, but not py2, so here they are
+
+class TZOffsetSchema(ObjTypeSchema):
+    offset = SchemaNode(Float())
+    title = SchemaNode(String())
+
+@dataclass
+class TZOffset(GnomeId):
+    offset: float
+    title: str = ""
+    name: str = "tz_offset"
+
+    _schema = TZOffsetSchema
+
+    def as_timedelta(self):
+        """
+        returns the offset as a timedelta
+        """
+        return timedelta(minutes=int(self.offset * 60))
+
+    def as_iso_string(self):
+        """
+        returns the offset as an isostring:
+
+        -8:00
+
+        3:30
+
+        etc ...
+        """
+        sign = "-" if self.offset <0 else "+"
+        hours = int(abs(self.offset))
+        minutes = int((abs(self.offset) - hours) * 60)
+        return f"{sign}{hours:0>2}:{minutes:0>2}"
 
 
 class FixedOffset(tzinfo):
