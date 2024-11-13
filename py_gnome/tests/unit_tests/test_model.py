@@ -38,7 +38,7 @@ from gnome.outputters import Renderer, TrajectoryGeoJsonOutput
 
 from .conftest import sample_model_weathering, testdata, test_oil
 from gnome.spills.substance import NonWeatheringSubstance
-from gnome.utilities.time_utils import date_to_sec
+from gnome.utilities.time_utils import date_to_sec, TZOffset
 
 from gnome.exceptions import ReferencedObjectNotSet, GnomeRuntimeError
 
@@ -1742,11 +1742,22 @@ def test_step_output():
 
 def test_model_tz_offset():
     """
-    all the time zone offset does is sit ther for ues,  and save and reload from a save file
+    all the time zone offset does is sit there for info
+    and save and reload from a save file
 
     make sure it at least does that.
     """
 
     model = Model()
 
-    model.timezone_offset =
+    assert model.timezone_offset.offset == None
+
+    model = Model(timezone_offset=TZOffset(-3.5, "half hour tz"))
+
+    assert model.timezone_offset.offset == -3.5
+
+    assert model.timezone_offset.title == "half hour tz"
+
+
+
+

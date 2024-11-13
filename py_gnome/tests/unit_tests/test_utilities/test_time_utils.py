@@ -279,6 +279,18 @@ def test_TZOffset_string():
 
     assert tzo.as_iso_string() == "+08:00"
 
+def test_TZOffset_none():
+    """
+    default is None, with "no timezone set"
+    """
+
+    tzo = TZOffset()
+    assert tzo.offset is None
+
+    assert tzo.as_iso_string() == ""
+
+    assert tzo.as_timedelta() == timedelta(0)
+
 def test_TZOffset_persist():
     """
     Does is serialize and deserialize properly
@@ -291,6 +303,21 @@ def test_TZOffset_persist():
 
     assert pson['offset'] == -3.5
     assert pson['title'] == "TZ with half hour"
+
+    tzo2 = TZOffset.deserialize(pson)
+
+    assert tzo == tzo2
+
+    # can it deal with None?
+
+    tzo = TZOffset()
+
+    pson = tzo.serialize()
+
+    print(pson)
+
+    assert pson['offset'] == None
+    assert pson['title'] == "No Timezone Specified"
 
     tzo2 = TZOffset.deserialize(pson)
 

@@ -4,10 +4,6 @@ and the ability of Model to be recreated in midrun
 tests save/load to directory - original functionality and save/load to zip
 '''
 
-
-
-
-
 import os
 import shutil
 from datetime import datetime, timedelta
@@ -20,6 +16,7 @@ import numpy as np
 
 from gnome.basic_types import datetime_value_2d
 from gnome.utilities.inf_datetime import InfDateTime
+from gnome.utilities.time_utils import TZOffset
 
 from gnome.maps import MapFromBNA
 from gnome.environment import Wind, Tide, Water
@@ -362,3 +359,68 @@ class TestWebApi(object):
         # update the dict so it gives a valid model to load
         assert m2 == model
         print(m2)
+
+def test_serialize_timezone_offset():
+    """
+    test to make sure the timezone_offset gets saved (and reloaded)
+    """
+
+    model = Model()
+
+    model = Model(timezone_offset=TZOffset(-3.5, "half hour tz"))
+
+    assert model.timezone_offset.offset == -3.5
+    assert model.timezone_offset.title == "half hour tz"
+
+    pson = model.serialize()
+
+    print(pson)
+    assert pson['timezone_offset']['offset'] == -3.5
+    assert pson['timezone_offset']['title'] == "half hour tz"
+
+    # See if you can rebuild it.
+
+    model2 = Model.deserialize(pson)
+
+    assert model.timezone_offset.offset == -3.5
+    assert model.timezone_offset.title == "half hour tz"
+
+    assert model == model2
+
+"""
+{
+    'obj_type': 'gnome.model.Model',
+    'id': 'f53839a8-a158-11ef-baba-acde48001122',
+    'name': 'Model',
+    'time_step': 900.0,
+    'weathering_substeps': 1,
+    'start_time': '2024-11-12T17:00:00',
+    'duration': 86400.0,
+    'uncertain': False,
+    'cache_enabled': False,
+    'num_time_steps': 97,
+    'make_default_refs': True,
+    'mode': 'gnome',
+    'location': [],
+    'map': {
+        'obj_type': 'gnome.maps.map.GnomeMap',
+        'id': 'f5384088-a158-11ef-baba-acde48001122',
+        'name': 'GnomeMap_2',
+        'map_bounds': [(-360.0, -90.0), (-360.0, 90.0), (360.0, 90.0), (360.0, -90.0)]
+    },
+    'environment': [],
+    'spills': [],
+    'movers': [],
+    'weatherers': [],
+    'outputters': [],
+    'weathering_activated': False,
+    'run_backwards': False,
+    'timezone_offset': {
+        'obj_type': 'gnome.utilities.time_utils.TZOffset',
+        'id': 'f5384830-a158-11ef-baba-acde48001122',
+        'name': 'tz_offset',
+        'offset': -3.5,
+        'title': 'half hour tz'
+    }
+}
+"""

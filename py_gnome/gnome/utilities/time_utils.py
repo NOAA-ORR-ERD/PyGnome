@@ -21,14 +21,14 @@ from gnome.gnomeobject import GnomeId
 # These are supplied out of the box with py3, but not py2, so here they are
 
 class TZOffsetSchema(ObjTypeSchema):
-    offset = SchemaNode(Float())
+    offset = SchemaNode(Float(), missing=None)
     title = SchemaNode(String())
 
 @dataclass
 class TZOffset(GnomeId):
-    offset: float
-    title: str = ""
-    name: str = "tz_offset"
+    offset: float = None
+    title: str = "No Timezone Specified"
+    name: str = "tz_offset" # name only here to satisfy GnomeObject schema
 
     _schema = TZOffsetSchema
 
@@ -36,7 +36,10 @@ class TZOffset(GnomeId):
         """
         returns the offset as a timedelta
         """
-        return timedelta(minutes=int(self.offset * 60))
+        if self.offset is None:
+            return timedelta(0)
+        else:
+            return timedelta(minutes=int(self.offset * 60))
 
     def as_iso_string(self):
         """
@@ -48,13 +51,18 @@ class TZOffset(GnomeId):
 
         etc ...
         """
-        sign = "-" if self.offset <0 else "+"
-        hours = int(abs(self.offset))
-        minutes = int((abs(self.offset) - hours) * 60)
-        return f"{sign}{hours:0>2}:{minutes:0>2}"
+        if self.offset is None:
+            return ""
+        else:
+            sign = "-" if self.offset <0 else "+"
+            hours = int(abs(self.offset))
+            minutes = int((abs(self.offset) - hours) * 60)
+            return f"{sign}{hours:0>2}:{minutes:0>2}"
 
 
 class FixedOffset(tzinfo):
+    # Fixme -- this is, I think, built in to Python now.
+
     """Fixed offset "timezone" in minutes east from UTC."""
 
     def __init__(self, offset, name):

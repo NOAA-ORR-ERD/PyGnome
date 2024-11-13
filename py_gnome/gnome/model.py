@@ -46,7 +46,7 @@ from colander import (SchemaNode,
                       String, Float, Int, Bool, List,
                       drop, OneOf)
 
-from gnome.utilities.time_utils import round_time, asdatetime
+from gnome.utilities.time_utils import round_time, asdatetime, TZOffset, TZOffsetSchema
 import gnome.utilities.rand
 from gnome.utilities.cache import ElementCache
 from gnome.utilities.orderedcollection import OrderedCollection
@@ -154,6 +154,8 @@ class ModelSchema(ObjTypeSchema):
 
     run_backwards = SchemaNode(Bool())
 
+    timezone_offset = TZOffsetSchema()
+
 class Model(GnomeId):
     '''
     PyGnome Model Class
@@ -209,6 +211,7 @@ class Model(GnomeId):
                  #manual_weathering=False,
                  weathering_activated=False,
                  run_backwards=False,
+                 timezone_offset=TZOffset(),
                  **kwargs):
         '''
         Initializes a model.
@@ -265,6 +268,8 @@ class Model(GnomeId):
         # default to now, rounded to the nearest hour
         self.start_time = start_time
         self._duration = duration
+
+        self.timezone_offset=timezone_offset
 
         if weathering_substeps != 1:
             if weathering_substeps > 1:
