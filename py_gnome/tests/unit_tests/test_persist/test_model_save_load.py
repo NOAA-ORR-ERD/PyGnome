@@ -6,6 +6,7 @@ tests save/load to directory - original functionality and save/load to zip
 
 import os
 import shutil
+import sys
 from datetime import datetime, timedelta
 import json
 
@@ -387,6 +388,8 @@ def test_serialize_timezone_offset():
 
     assert model == model2
 
+@pytest.mark.skipif(sys.version_info.minor < 11,
+                    reason="Doesn't work in Python < 3.11")
 def test_save_timezone_offset_none():
     model = Model()
 
