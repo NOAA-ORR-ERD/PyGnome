@@ -154,7 +154,7 @@ class ModelSchema(ObjTypeSchema):
 
     run_backwards = SchemaNode(Bool())
 
-    timezone_offset = TZOffsetSchema()
+    timezone_offset = TZOffsetSchema(missing=drop)
 
 class Model(GnomeId):
     '''

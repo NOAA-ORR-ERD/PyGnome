@@ -22,7 +22,8 @@ from gnome.utilities.time_utils import (date_to_sec,
                                         UTC,
                                         FixedOffset,
                                         asdatetime,
-                                        TZOffset
+                                        TZOffset,
+                                        TZOffsetSchema,
                                         )
 
 
@@ -297,31 +298,34 @@ def test_TZOffset_persist():
     """
     tzo = TZOffset(-3.5, "TZ with half hour")
 
-    pson = tzo.serialize()
+    pson = TZOffsetSchema().serialize(tzo)
 
     print(pson)
 
     assert pson['offset'] == -3.5
     assert pson['title'] == "TZ with half hour"
 
-    tzo2 = TZOffset.deserialize(pson)
+    tzo2 = TZOffsetSchema().deserialize(pson)
 
     assert tzo == tzo2
 
     # can it deal with None?
 
+def test_TZOffset_persist_None():
+
     tzo = TZOffset()
 
-    pson = tzo.serialize()
+    pson = TZOffsetSchema().serialize(tzo)
 
-    print(pson)
+    print(f"{pson=}")
 
     assert pson['offset'] == None
     assert pson['title'] == "No Timezone Specified"
 
-    tzo2 = TZOffset.deserialize(pson)
+    tzo2 = TZOffsetSchema().deserialize(pson)
 
     assert tzo == tzo2
 
+# def test_TZOffset_persist():
 
 
