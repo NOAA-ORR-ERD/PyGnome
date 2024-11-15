@@ -102,6 +102,13 @@ Here's an example setting up a spill from a polygon. The polygon file used in th
     spill = gs.Spill(release=release)
     model.spills += spill
 
+You can find a complete script using a PolygonRelease in:
+
+``pygnome/py_gnome/scripts/example_scripts/polygon_release_script.py``
+
+Or download it here:
+:download:`polygon_release_script.py <../../../scripts/example_scripts/polygon_release_script.py>`
+
 
 Using Helper Functions
 ----------------------
