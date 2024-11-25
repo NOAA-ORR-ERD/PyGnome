@@ -403,22 +403,49 @@ class Release(GnomeId):
 
     def initialize_LEs_post_substance(self, to_rel, sc, start_time, end_time, environment):
 
-        # compute initial spreading area based terminal oil thickness
+        # compute initial spreading area based on Fay
         sl = slice(-to_rel, None, 1)
 
         if sc.substance.is_weatherable:
            if environment['water'] is not None:
               water = environment['water']
-              temp_k=water.get('temperature')
+              # temp_k=water.get('temperature')
            else:
-              temp_k = default_constants.default_water_temperature
+              water = Water(default_constants.default_water_temperature)
               #raise ReferencedObjectNotSet("water object not found in environment collection")
 
-           visc = sc.substance.kvis_at_temp(temp_k)
-           thickness_limit = FayGravityViscous.get_thickness_limit(visc)
+           spread = FayGravityViscous(water=water)
+           spread.prepare_for_model_run(sc)
+           spread._set_init_relative_buoyancy(sc.substance)
 
-           sc['fay_area'][sl] = (sc['init_mass'][sl] / sc['density'][sl]) / thickness_limit
+           # compute release rate
+           if self.release_duration > 0:
+            sc['release_rate'][sl] = sum(sc['init_mass'][sl] / sc['density'][sl]) / (end_time-start_time).total_seconds()
+           else:
+            sc['release_rate'][sl] = np.nan
+
+           if end_time <= self.release_time + self.cumulative_time_scale:
+            self._previously_released = self._previously_released + sum(sc['init_mass'][sl] / sc['density'][sl])
+           # compute release rate
+
+           # change the computation of bulk_init_volume
+           if not np.isnan(sc['release_rate'][sl][0]):
+                sc['bulk_init_volume'][sl] = self._previously_released
+           else:
+                sc['bulk_init_volume'][sl] = sum(sc['init_mass'][sl] / sc['density'][sl])
+           # change the computation of bulk_init_volume
+
+           if sc['bulk_init_volume'][sl][0] > 0:
+                sc['vol_frac_le_st'][sl] = (sc['init_mass'][sl] / sc['density'][sl]) / sc['bulk_init_volume'][sl]
+           else:
+                sc['vol_frac_le_st'][sl] = 0
+
+           init_blob_area = spread.init_area(sc.substance.kvis_at_temp(temp_k=water.get('temperature')), spread._init_relative_buoyancy, sc['bulk_init_volume'][sl][0])
+
+           sc['fay_area'][sl] = init_blob_area * sc['vol_frac_le_st'][sl]
            sc['area'][sl] = sc['fay_area'][sl]
+        # compute initial spreading area based on Fay
+
 
 class PointLineRelease(Release):
     """
@@ -616,50 +643,6 @@ class PointLineRelease(Release):
 
         if self.retain_initial_positions:
             sc['init_positions'][sl] = sc['positions'][sl]
-
-    def initialize_LEs_post_substance(self, to_rel, sc, start_time, end_time, environment):
-
-        # compute initial spreading area based on Fay
-        sl = slice(-to_rel, None, 1)
-
-        if sc.substance.is_weatherable:
-           if environment['water'] is not None:
-              water = environment['water']
-           else:
-              water = Water(default_constants.default_water_temperature)
-              #raise ReferencedObjectNotSet("water object not found in environment collection")
-
-           spread = FayGravityViscous(water=water)
-           spread.prepare_for_model_run(sc)
-           spread._set_init_relative_buoyancy(sc.substance)
-
-           # compute release rate
-           if self.release_duration > 0:
-            sc['release_rate'][sl] = sum(sc['init_mass'][sl] / sc['density'][sl]) / (end_time-start_time).total_seconds()
-           else:
-            sc['release_rate'][sl] = np.nan
-
-           if end_time <= self.release_time + self.cumulative_time_scale:
-            self._previously_released = self._previously_released + sum(sc['init_mass'][sl] / sc['density'][sl])
-           # compute release rate
-
-           # change the computation of bulk_init_volume
-           if not np.isnan(sc['release_rate'][sl][0]):
-                sc['bulk_init_volume'][sl] = self._previously_released
-           else:
-                sc['bulk_init_volume'][sl] = sum(sc['init_mass'][sl] / sc['density'][sl])
-           # change the computation of bulk_init_volume
-
-           if sc['bulk_init_volume'][sl][0] > 0:
-                sc['vol_frac_le_st'][sl] = (sc['init_mass'][sl] / sc['density'][sl]) / sc['bulk_init_volume'][sl]
-           else:
-                sc['vol_frac_le_st'][sl] = 0
-
-           init_blob_area = spread.init_area(sc.substance.kvis_at_temp(temp_k=water.get('temperature')), spread._init_relative_buoyancy, sc['bulk_init_volume'][sl][0])
-
-           sc['fay_area'][sl] = init_blob_area * sc['vol_frac_le_st'][sl]
-           sc['area'][sl] = sc['fay_area'][sl]
-        # compute initial spreading area based on Fay
 
 
 class PolygonReleaseSchema(BaseReleaseSchema):

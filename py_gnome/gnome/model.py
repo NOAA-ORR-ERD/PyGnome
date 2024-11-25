@@ -46,7 +46,7 @@ from colander import (SchemaNode,
                       String, Float, Int, Bool, List,
                       drop, OneOf)
 
-from gnome.utilities.time_utils import round_time, asdatetime
+from gnome.utilities.time_utils import round_time, asdatetime, TZOffset, TZOffsetSchema
 import gnome.utilities.rand
 from gnome.utilities.cache import ElementCache
 from gnome.utilities.orderedcollection import OrderedCollection
@@ -154,6 +154,8 @@ class ModelSchema(ObjTypeSchema):
 
     run_backwards = SchemaNode(Bool())
 
+    timezone_offset = TZOffsetSchema(missing=drop)
+
 class Model(GnomeId):
     '''
     PyGnome Model Class
@@ -209,6 +211,7 @@ class Model(GnomeId):
                  #manual_weathering=False,
                  weathering_activated=False,
                  run_backwards=False,
+                 timezone_offset=TZOffset(),
                  **kwargs):
         '''
         Initializes a model.
@@ -265,6 +268,8 @@ class Model(GnomeId):
         # default to now, rounded to the nearest hour
         self.start_time = start_time
         self._duration = duration
+
+        self.timezone_offset=timezone_offset
 
         if weathering_substeps != 1:
             if weathering_substeps > 1:
@@ -373,10 +378,6 @@ class Model(GnomeId):
                                  "The options are:"
                                  " {}".format(wx_name,
                                               list(weatherers_by_name.keys())))
-
-
-
-
 
     def reset(self, **kwargs):
         '''
@@ -925,7 +926,8 @@ class Model(GnomeId):
                                             uncertain=self.uncertain,
                                             spills=self.spills,
                                             model_time_step=self.time_step,
-                                            map=self.map)
+                                            map=self.map,
+                                            model_name=self.name)
         self.logger.debug("{0._pid} setup_model_run complete for: "
                           "{0.name}".format(self))
 
@@ -1127,7 +1129,8 @@ class Model(GnomeId):
             sc['age'][:] = sc['age'][:] + abs(self.time_step)
 
     def write_output(self, valid, messages=None):
-        output_info = {'step_num': self.current_time_step}
+        output_info = {'step_num': self.current_time_step,
+                       'step_time': self.model_time.isoformat(timespec='minutes')}
 
         for outputter in self.outputters:
             if self.current_time_step == self.num_time_steps - 1:

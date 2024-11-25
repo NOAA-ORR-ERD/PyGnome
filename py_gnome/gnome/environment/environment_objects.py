@@ -246,9 +246,13 @@ class VelocityGrid(VectorVariable):
             if 'degree' in self.angle.units:
                 raw_ang = raw_ang * np.pi/180.
 
-            ctr_mask = gridded.utilities.gen_celltree_mask_from_center_mask(self.grid.center_mask, angle_padding_slice)
+            if self.grid.center_mask is not None:
+                ctr_mask = gridded.utilities.gen_celltree_mask_from_center_mask(self.grid.center_mask, angle_padding_slice)
+                ctr_mask = ctr_mask.reshape(-1)
+            else:
+                ctr_mask = False
             ang = raw_ang.reshape(-1)
-            ang = np.ma.MaskedArray(ang, mask = ctr_mask.reshape(-1))
+            ang = np.ma.MaskedArray(ang, mask = ctr_mask)
             ang = ang.compressed()
 
             x = lin_u[:] * np.cos(ang) - lin_v[:] * np.sin(ang)

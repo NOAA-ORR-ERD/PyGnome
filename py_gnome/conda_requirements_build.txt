@@ -2,11 +2,12 @@
 # NOTE: you also need a compiler set up to build Python extensions
 
 cython=3.*
+pip
 setuptools>=62  # older versions uses different build dirs
 # setuptools-scm>=6.2
+pip
 gitpython
 python-build
 cmake
 ninja
 scikit-build-core>=0.9.9
-# hatchling

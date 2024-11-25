@@ -91,6 +91,11 @@ class Evaporation(Weatherer):
         If K is expressed in m/sec, then Buchanan and Hurford set c = 0.0025
         U is wind_speed 10m above the surface
 
+        Updated to use MacKay and Matsugu where c = 0.0048
+        Schmidt number is included separately in the evap_decay_constant
+
+            K = c * U ** 0.78 for all U
+
         .. note:: wind speed is at least 1 m/s, unless there is an ice aware wind.
 
         .. note:: ice aware wind enforces minimum speed before applying coverage factor.

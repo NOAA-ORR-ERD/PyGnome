@@ -16,11 +16,11 @@ variables exist with the standard names, then common variable names will be used
 
 **nc_names:**
 
-These are common variable names used for the variables PyGNOME uses. If you set the variable names in
-a netcdf files to one these names, PYGNOME should be able to load the file.
+These are common variable names used for the variables PyGNOME uses.
+If you set the variable names in a netcdf files to one these names,
+PyGNOME should be able to load the file.
 
 **Name Mapping:**
-
 
 
 **grid_temperature**
@@ -175,15 +175,17 @@ def capitalize_name_mapping(name_map):
     for variable, data in name_map.items():
         def_names = data['default_names']
         try:
-            for name in def_names[:]:
-                def_names.append(name.upper())
-            def_names[:] = list(set(def_names))
-        except TypeError:  # it's nested
             for sub_var in def_names.values():
                 for name in sub_var[:]:
                     sub_var.append(name.upper())
                     # eliminate the duplicates
                 sub_var[:] = list(set(sub_var))
+        except AttributeError:  # it's not nested
+            for name in def_names[:]:
+                def_names.append(name.upper())
+            def_names[:] = list(set(def_names))
+
+
 capitalize_name_mapping(nc_names)
 
 def insert_names_table(table_text):
