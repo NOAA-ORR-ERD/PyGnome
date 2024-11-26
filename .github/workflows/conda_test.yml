@@ -51,28 +51,28 @@ jobs:
         shell: bash -l {0}
         run: |
             cd ./py_gnome
-            python -m pip install ./
+            python -m pip install -vvv ./
       - name: Run pytest
         shell: bash -l {0}
         run: |
             cd ./py_gnome/tests/unit_tests
             pytest --runslow
-      - name: Build wheel file
-        shell: bash -l {0}
-        run: |
-            cd ./py_gnome
-            python -m pip wheel ./
-      - name: Copy files to artifact folder
-        shell: bash -l {0}
-        run: |
-            mkdir installable_wheel_${{ matrix.os }}_Py${{ matrix.pyver }}
-            cp ./py_gnome/*.whl installable_wheel_${{ matrix.os }}_Py${{ matrix.pyver }}
-            cp ./py_gnome/conda_requirements.txt installable_wheel_${{ matrix.os }}_Py${{ matrix.pyver }}
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
-        with: 
-          name: installable-wheel-${{ matrix.os }}-Py${{ matrix.pyver }}
-          path: installable_wheel_${{ matrix.os }}_Py${{ matrix.pyver }}
+      # - name: Build wheel file
+      #   shell: bash -l {0}
+      #   run: |
+      #       cd ./py_gnome
+      #       python -m pip wheel ./
+      # - name: Copy files to artifact folder
+      #   shell: bash -l {0}
+      #   run: |
+      #       mkdir installable_wheel_${{ matrix.os }}_Py${{ matrix.pyver }}
+      #       cp ./py_gnome/*.whl installable_wheel_${{ matrix.os }}_Py${{ matrix.pyver }}
+      #       cp ./py_gnome/conda_requirements.txt installable_wheel_${{ matrix.os }}_Py${{ matrix.pyver }}
+      # - name: Upload Artifact
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: installable-wheel-${{ matrix.os }}-Py${{ matrix.pyver }}
+      #     path: installable_wheel_${{ matrix.os }}_Py${{ matrix.pyver }}
 
   lint:
     name: Flake8 linting
