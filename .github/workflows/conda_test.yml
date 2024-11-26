@@ -21,6 +21,7 @@ jobs:
     name: Miniforge tests ${{ matrix.os }} Py${{ matrix.pyver }}
     runs-on: ${{ matrix.os }}-latest
     strategy:
+        fail-fast: false
         matrix:
             os: ["ubuntu", "windows","macos"]
             # os: ["windows-latest","macos-latest"]
