@@ -1,5 +1,7 @@
 import sys
 import time
+import pathlib
+import argparse
 
 import numpy as np
 
@@ -24,12 +26,21 @@ from gnome.environment.gridded_objects_base import Grid_U, Grid_R, Grid_S
 
 from gridded.utilities import convert_mask_to_numpy_mask
 from pyproj import Transformer
-transformer = Transformer.from_crs("EPSG:4326", "EPSG:3857")
-transformer.transform(12, 12)
 
 #test_filename = 'C:\\Users\\jahen\\Downloads\\CIOFS.nc'
-test_filename = 'C:\\Users\\jahen\\Downloads\\wcofs.t03z.20241003.fields.f060.nc'
+# test_filename = 'C:\\Users\\jahen\\Downloads\\wcofs.t03z.20241003.fields.f060.nc'
+# spill_location = (-123.96, 45.6)
 
+
+parser=argparse.ArgumentParser(
+    description='''Small QT/MPL app to draw grids, examine masks, and query grid cells.'''
+    )
+parser.add_argument('filename', type=pathlib.Path, help='Path to file')
+parser.add_argument('-spill', nargs=2, help='Spill location in lon lat')
+args=parser.parse_args()
+
+test_filename = args.filename
+spill_location = args.spill
 class GridGeoGenerator(object):
     
     node_line_appearance = {
@@ -331,10 +342,8 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         self.edge2_markers_water_checkbox.stateChanged.connect(self.callback_wrapper(self.toggle_markers, 'edge2', 'water'))
         
         #add the spill position
-        sp = (-123.96, 45.6)
-        spill_pos = sgeom.Point(ctrans.transform(*sp))
-        ax.scatter(spill_pos.x, spill_pos.y, s=100, color='red', marker='*')
-        print(self.g3.index_query(grid_obj, sp))
+        if spill_location is not None:
+            self.draw_spill(spill_location)
         
     def callback_wrapper(self, func, location, land_or_water, *args, **kwargs):
         return lambda state: func(state, self, location, land_or_water, *args, **kwargs)
@@ -456,6 +465,12 @@ class ApplicationWindow(QtWidgets.QMainWindow):
                 },
         )
         self.fig.canvas.draw()
+        pass
+    
+    def draw_spill(self, spill_location):
+        #Draws the spill location on the map
+        spill_pos = sgeom.Point(self.ctrans.transform(*spill_location))
+        self.map_ax.scatter(spill_pos.x, spill_pos.y, s=100, color='red', marker='*')
         pass
 
 if __name__ == "__main__":
