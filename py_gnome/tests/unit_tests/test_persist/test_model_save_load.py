@@ -6,6 +6,7 @@ tests save/load to directory - original functionality and save/load to zip
 
 import os
 import shutil
+import sys
 from datetime import datetime, timedelta
 import json
 
@@ -387,14 +388,28 @@ def test_serialize_timezone_offset():
 
     assert model == model2
 
+@pytest.mark.skipif(sys.version_info.minor < 11,
+                    reason="Doesn't work in Python < 3.11")
+def test_save_timezone_offset_none():
+    model = Model()
+
+    pson, zipfile, refs = model.save(None)
+
+    # print(pson)
+
+    model2 = Model.load(zipfile)
+
+    assert model == model2
+
+# minimal model JSON
 """
 {
     'obj_type': 'gnome.model.Model',
-    'id': 'f53839a8-a158-11ef-baba-acde48001122',
+    'id': '4043ec9e-a230-11ef-a848-acde48001122',
     'name': 'Model',
     'time_step': 900.0,
     'weathering_substeps': 1,
-    'start_time': '2024-11-12T17:00:00',
+    'start_time': '2024-11-13T18:00:00',
     'duration': 86400.0,
     'uncertain': False,
     'cache_enabled': False,
@@ -402,12 +417,7 @@ def test_serialize_timezone_offset():
     'make_default_refs': True,
     'mode': 'gnome',
     'location': [],
-    'map': {
-        'obj_type': 'gnome.maps.map.GnomeMap',
-        'id': 'f5384088-a158-11ef-baba-acde48001122',
-        'name': 'GnomeMap_2',
-        'map_bounds': [(-360.0, -90.0), (-360.0, 90.0), (360.0, 90.0), (360.0, -90.0)]
-    },
+    'map': 'GnomeMap_4.json',
     'environment': [],
     'spills': [],
     'movers': [],
@@ -416,11 +426,8 @@ def test_serialize_timezone_offset():
     'weathering_activated': False,
     'run_backwards': False,
     'timezone_offset': {
-        'obj_type': 'gnome.utilities.time_utils.TZOffset',
-        'id': 'f5384830-a158-11ef-baba-acde48001122',
-        'name': 'tz_offset',
-        'offset': -3.5,
-        'title': 'half hour tz'
+        'title': 'No Timezone Specified',
+        'offset': None
     }
 }
 """

@@ -44,6 +44,12 @@ A script that demonstrates how to use gridded currents and winds from netcdf fil
 Demonstration of adding uncertainty to a model, and adjusting the uncertainty parameters of a current mover.
 
 
+``polygon_release_script.py``
+---------------------
+
+A script that demonstrates how to create a spill from a shape file or list of polygons.
+
+
 Testing Scripts
 ===============
 

@@ -13,28 +13,40 @@ import time
 
 import numpy as np
 
-from gnome.persist import (ObjTypeSchema, SchemaNode, String, Float)
+from gnome.persist import (ObjTypeSchema, SchemaNode, String, Float, MappingSchema, null, drop)
 from gnome.gnomeobject import GnomeId
 
-# tzinfo classes for use with datetime.datetime
-#
-# These are supplied out of the box with py3, but not py2, so here they are
 
-class TZOffsetSchema(ObjTypeSchema):
+class TZOffsetSchema(MappingSchema):
     offset = SchemaNode(Float(), missing=None)
     title = SchemaNode(String())
 
+    def serialize(self, appstruct):
+        if appstruct is not null:
+            dict_ = {'title': appstruct.title,
+                     'offset': appstruct.offset}
+            return dict_
+            # using the super serialize resulted in a colander.null instead of None
+            # result = super().serialize(dict_)
+        else:
+            return super().serialize(null)
+
+    def deserialize(self, cstruct=null):
+        dict_ = super().deserialize(cstruct)
+
+        if cstruct is not null:
+            return TZOffset(**dict_)
+        else:
+            return null
+
 @dataclass
-class TZOffset(GnomeId):
+class TZOffset:
     offset: float = None
     title: str = "No Timezone Specified"
-    name: str = "tz_offset" # name only here to satisfy GnomeObject schema
-
-    _schema = TZOffsetSchema
 
     def as_timedelta(self):
         """
-        returns the offset as a timedelta
+        Returns the offset as a timedelta
         """
         if self.offset is None:
             return timedelta(0)
