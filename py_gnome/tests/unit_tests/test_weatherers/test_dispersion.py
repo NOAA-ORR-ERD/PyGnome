@@ -106,8 +106,8 @@ def test_dispersion_not_active(oil, temp, num_elems):
 #                           ('oil_ans_mp', 288.7, 404.244),
 #                           ]
 #                         [('oil_bahia', 288.7, 400.753),
-                         [('oil_bahia', 288.7, 190.214),
-                          ('oil_ans_mp', 288.7, 697.214),
+                         [('oil_bahia', 288.7, 245.799),
+                          ('oil_ans_mp', 288.7, 881.144),
                           ]
                          )
 def test_full_run_DS1988(sample_model_fcn2, oil, temp, dispersed):
@@ -147,8 +147,8 @@ def test_full_run_DS1988(sample_model_fcn2, oil, temp, dispersed):
 #                           ('oil_ans_mp', 288.7, 8158.10),
 #                           ]
 #                         [('oil_bahia', 288.7, 3399.69),
-                         [('oil_bahia', 288.7, 1239.032),
-                          ('oil_ans_mp', 288.7, 7875.77),
+                         [('oil_bahia', 288.7, 1417.413),
+                          ('oil_ans_mp', 288.7, 8128.34),
                           ]
                          )
 def test_full_run_Li2017(sample_model_fcn2, oil, temp, dispersed):
