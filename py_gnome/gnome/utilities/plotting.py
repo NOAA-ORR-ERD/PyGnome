@@ -27,7 +27,7 @@ from gnome.environment.gridded_objects_base import Grid_U, Grid_R, Grid_S
 from gridded.utilities import convert_mask_to_numpy_mask
 from pyproj import Transformer
 
-#test_filename = 'C:\\Users\\jahen\\Downloads\\CIOFS.nc'
+# test_filename = 'C:\\Users\\jahen\\Downloads\\CIOFS.nc'
 # test_filename = 'C:\\Users\\jahen\\Downloads\\wcofs.t03z.20241003.fields.f060.nc'
 # spill_location = (-123.96, 45.6)
 
@@ -42,6 +42,7 @@ args=parser.parse_args()
 test_filename = args.filename
 spill_location = args.spill
 class GridGeoGenerator(object):
+    #Class to facilitate interaction with the gridded objects
     
     node_line_appearance = {
         'color': 'black',
@@ -242,24 +243,37 @@ class GridGeoGenerator(object):
             rv['edge1_interp_idx'] = edge1_interp_idx
             rv['edge1_u0_pos'] = (grid_obj.get_variable_at_index(grid_obj.edge1_lon, edge1_interp_idx.reshape(-1,2))[0][0],
                                   grid_obj.get_variable_at_index(grid_obj.edge1_lat, edge1_interp_idx.reshape(-1,2))[0][0])
-            rv['edge1_u0_value'] = grid_obj.get_variable_at_index(self.gc.u.data[0,-1,:], edge1_interp_idx.reshape(-1,2))[0][0]
+            if self.gc.depth is not None:
+                rv['edge1_u0_value'] = grid_obj.get_variable_at_index(self.gc.u.data[0,-1,:], edge1_interp_idx.reshape(-1,2))[0][0]
+            else:
+                rv['edge1_u0_value'] = grid_obj.get_variable_at_index(self.gc.u.data[0,:], edge1_interp_idx.reshape(-1,2))[0][0]
             u1_offset = [0, 1]
             edge1_interp_u1_idx = edge1_interp_idx + u1_offset
             rv['edge1_u1_pos'] = (grid_obj.get_variable_at_index(grid_obj.edge1_lon, edge1_interp_u1_idx.reshape(-1,2))[0][0],
                                   grid_obj.get_variable_at_index(grid_obj.edge1_lat, edge1_interp_u1_idx.reshape(-1,2))[0][0])
-            rv['edge1_u1_value'] = grid_obj.get_variable_at_index(self.gc.u.data[0,-1,:], edge1_interp_u1_idx.reshape(-1,2))[0][0]
+            if self.gc.depth is not None:
+                rv['edge1_u1_value'] = grid_obj.get_variable_at_index(self.gc.u.data[0,-1,:], edge1_interp_u1_idx.reshape(-1,2))[0][0]
+            else:
+                rv['edge1_u1_value'] = grid_obj.get_variable_at_index(self.gc.u.data[0,:], edge1_interp_u1_idx.reshape(-1,2))[0][0]
             
             e2_padding = grid_obj.get_padding_by_location('edge2')
             edge2_interp_idx = grid_obj.apply_padding_to_idxs(index.copy(), padding=e2_padding)
             rv['edge2_interp_idx'] = edge2_interp_idx
             rv['edge2_v0_pos'] = (grid_obj.get_variable_at_index(grid_obj.edge2_lon, edge2_interp_idx.reshape(-1,2))[0][0],
                                   grid_obj.get_variable_at_index(grid_obj.edge2_lat, edge2_interp_idx.reshape(-1,2))[0][0])
-            rv['edge2_v0_value'] = grid_obj.get_variable_at_index(self.gc.v.data[0,-1,:], edge2_interp_idx.reshape(-1,2))[0][0]
+            if self.gc.depth is not None:
+                rv['edge2_v0_value'] = grid_obj.get_variable_at_index(self.gc.v.data[0,-1,:], edge2_interp_idx.reshape(-1,2))[0][0]
+            else:
+                rv['edge2_v0_value'] = grid_obj.get_variable_at_index(self.gc.v.data[0,:], edge2_interp_idx.reshape(-1,2))[0][0]
             v1_offset = [1, 0]
             edge2_interp_v1_idx = edge2_interp_idx + v1_offset
             rv['edge2_v1_pos'] = (grid_obj.get_variable_at_index(grid_obj.edge2_lon, edge2_interp_v1_idx.reshape(-1,2))[0][0],
                                   grid_obj.get_variable_at_index(grid_obj.edge2_lat, edge2_interp_v1_idx.reshape(-1,2))[0][0])
-            rv['edge2_v1_value'] = grid_obj.get_variable_at_index(self.gc.v.data[0,-1,:], edge2_interp_v1_idx.reshape(-1,2))[0][0]
+            if self.gc.depth is not None:
+                rv['edge2_v1_value'] = grid_obj.get_variable_at_index(self.gc.v.data[0,-1,:], edge2_interp_v1_idx.reshape(-1,2))[0][0]
+            else:
+                rv['edge2_v1_value'] = grid_obj.get_variable_at_index(self.gc.v.data[0,:], edge2_interp_v1_idx.reshape(-1,2))[0][0]
+                    
             rv['node_lons'] = grid_obj.get_variable_by_index(grid_obj.node_lon, index.reshape(-1,2))[0]
             rv['node_lats'] = grid_obj.get_variable_by_index(grid_obj.node_lat, index.reshape(-1,2))[0]
             return rv
@@ -300,6 +314,7 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         layout.addWidget(buttons)
         
         #Define the projections in use
+        #TODO Make these args
         self.plot_crs_class = ccrs.Orthographic
         self.g3_crs_class = ccrs.PlateCarree
         
