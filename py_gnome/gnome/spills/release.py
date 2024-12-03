@@ -136,7 +136,7 @@ class Release(GnomeId):
         :type release_mass: integer
 
         :param retain_initial_positions: Optional. If True, each LE will retain
-            information about it's originally released position
+            information about its originally released position
         :type retain_initial_positions: boolean
         """
         self._num_elements = self._num_per_timestep = None
@@ -807,7 +807,7 @@ class PolygonRelease(Release):
                 del feat.properties['weight']
             return
         if self.thicknesses is not None:
-            raise ValueError('Cannot assign thicknesses to {} due to previously assigned weights'.format(self.name))
+            raise ValueError('Cannot assign weights to {} due to previously assigned thicknesses'.format(self.name))
         for feat, w in zip(self.features[:], vals):
             feat.properties['weight'] = w
 
@@ -975,7 +975,7 @@ class NESDISReleaseSchema(PolygonReleaseSchema):
         SchemaNode(Float()), save=False, read_only=True, update=False
     )
     oil_types = SequenceSchema(
-        SchemaNode(String()), save=False
+        SchemaNode(String()), save=False, read_only=True
     )
 
 

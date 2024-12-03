@@ -59,6 +59,7 @@ class Evaporation(Weatherer):
         super(Evaporation, self).__init__(make_default_refs=make_default_refs, **kwargs)
         self.array_types.update({'positions': gat('positions'),
                                  'area': gat('area'),
+                                 'vol_frac_le_st': gat('vol_frac_le_st'),
                                  'evap_decay_constant': gat('evap_decay_constant'),
                                  'frac_water': gat('frac_water'),
                                  'frac_lost': gat('frac_lost'),
@@ -92,7 +93,10 @@ class Evaporation(Weatherer):
         U is wind_speed 10m above the surface
 
         Updated to use MacKay and Matsugu where c = 0.0048
-        Schmidt number is included separately in the evap_decay_constant
+
+            K = c * U ** 0.78 * Sc^(-2/3) * X^(-1/9) for all U
+
+        Schmidt number (Sc) and puddle diameter (X) are included in set_evap_decay_constant
 
             K = c * U ** 0.78 for all U
 
@@ -103,6 +107,7 @@ class Evaporation(Weatherer):
         wind_speed = self.get_wind_speed(points, model_time, min_val = 1, fill_value=1.0)
         #wind_speed[wind_speed < 1.0] = 1.0  # this is handled by get_wind_speed now
         c_evap = 0.0048     # if wind_speed in m/s
+        #c_evap = 0.0025     # if wind_speed in m/s
         return c_evap * wind_speed ** 0.78
 #         return np.where(wind_speed <= 10.0,
 #                         c_evap * wind_speed ** 0.78,
@@ -126,13 +131,19 @@ class Evaporation(Weatherer):
 
         sum_mi_mw = (data['mass_components'][:, :len(vp)] / mw).sum(axis=1)
 
-# term for Schmidt number
+# term for Schmidt number (Schmidt^(-2/3))
 #        air_visc = 14.8e-6
 #        D_water = 2.4e-5
 #        (air_visc / D_water) ** (-2. / 3.) = 1.380277
 
-        Schmidt = 1.380277 * (0.018 / mw) ** (1. / 3.)
+        #Schmidt_number = (air_visc / D_water) * np.sqrt(mw / 0.018)
+        Schmidt_term = 1.380277 * (0.018 / mw) ** (1. / 3.)
 # term for Schmidt number
+
+        # estimate puddle diameter from area
+        puddle_diameter = 2. * np.sqrt(data['area'] / data['vol_frac_le_st']) / np.sqrt(np.pi)
+        puddle_diameter = np.clip(puddle_diameter,a_min=1.,a_max=None)
+        puddle_diameter = puddle_diameter ** (-1./9.)
         # d_numer = -1/rho * f_diff.reshape(-1, 1) * K * vp
         # d_denom = (data['thickness'] * constants.gas_constant *
         #            water_temp * sum_frac_mw).reshape(-1, 1)
@@ -142,7 +153,7 @@ class Evaporation(Weatherer):
         # of data - left sum_frac_mw, which is a copy but easier to
         # read/understand
 
-        edc = ((-data['area'] * f_diff * K / (constants.gas_constant * water_temp * sum_mi_mw)).reshape(-1, 1)* vp * Schmidt)
+        edc = ((-data['area'] * f_diff * K * puddle_diameter / (constants.gas_constant * water_temp * sum_mi_mw)).reshape(-1, 1)* vp * Schmidt_term )
 
         data['evap_decay_constant'][:, :len(vp)] = edc
 
