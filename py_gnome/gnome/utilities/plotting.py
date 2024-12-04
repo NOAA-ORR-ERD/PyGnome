@@ -52,7 +52,7 @@ class GridGeoGenerator(object):
     }
     
     node_line_masked_appearance = {
-        'color': 'burgundy',
+        'color': 'darkred',
         'alpha': 0.25,
         'linewidth': 0.5,
         'facecolor': 'none',
