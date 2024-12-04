@@ -10,7 +10,7 @@ from matplotlib.backends.backend_qtagg import \
     NavigationToolbar2QT as NavigationToolbar
 from matplotlib.backends.qt_compat import QtWidgets
 from matplotlib.figure import Figure
-from matplotlib.widgets import CheckButtons
+from matplotlib.collections import LineCollection
 import matplotlib.style as mplstyle
 mplstyle.use('fast')
 
@@ -48,12 +48,14 @@ class GridGeoGenerator(object):
         'color': 'black',
         'alpha': 1,
         'linewidth': 0.5,
+        'facecolor': 'none',
     }
     
     node_line_masked_apperance = {
-        'color': 'black',
+        'color': 'burgundy',
         'alpha': 0.25,
         'linewidth': 0.5,
+        'facecolor': 'none',
     }
     
     node_marker_appearance = {
@@ -168,38 +170,48 @@ class GridGeoGenerator(object):
         mask = getattr(grid_obj, mask_var_name)
         return convert_mask_to_numpy_mask(mask)
 
-    def gen_grid_lines(self, grid_obj, location='node', use_mask=True):
+    def draw_grid_lines(self, ax, grid_obj, location='node', use_mask=True, appearance=None, plot_crs=None, **kwargs):
         #Returns a GeoSeries object representing the grid lines
+        lines = None
         if isinstance(grid_obj, Grid_S):
             if use_mask:
-                return self.gen_grid_lines_S_masked(grid_obj, location)
+                lines = self.gen_grid_lines_S_masked(grid_obj, location)
             else: 
-                return self.gen_grid_lines_S_unmasked(grid_obj, location)
+                lines = self.gen_grid_lines_S_unmasked(grid_obj, location)
         elif isinstance(grid_obj, Grid_U):
-            return self.gen_grid_lines_U(grid_obj, location)
+            lines = self.gen_grid_lines_U(grid_obj, location)
         elif isinstance(grid_obj, Grid_R):
-            return self.gen_grid_lines_R(grid_obj, location)
-        pass
+            lines = self.gen_grid_lines_R(grid_obj, location)
+        converted_lines = []
+        transformer = None
+        if plot_crs is not None:
+            transformer = ccrs.Transformer.from_proj(self.crs, plot_crs)
+            for l in lines.geoms:
+                converted_lines.append(np.stack(transformer.transform(*l.xy), axis=-1))
+        else:
+            for l in lines.geoms:
+                converted_lines.append(np.stack(*l.xy, axis=-1))
+        line_coll = LineCollection(converted_lines, **appearance)
+        return ax.add_collection(line_coll)
 
     def gen_grid_lines_S_unmasked(self, grid_obj, location='node'):
-        #Returns a GeoSeries object representing the grid lines of a Grid_S object (no masking)
+        #Returns a shapely geometry object representing the grid lines of a Grid_S object (no masking)
         lons, lats = self.get_lonlat(grid_obj, location)
         h_lines = [sgeom.LineString([(lons[i, j], lats[i, j]) for j in range(lons.shape[1])]) for i in range(lons.shape[0])]
         v_lines = [sgeom.LineString([(lons[i, j], lats[i, j]) for i in range(lons.shape[0])]) for j in range(lons.shape[1])]
         multiline = sgeom.MultiLineString(h_lines + v_lines)
-        return gpd.GeoSeries([multiline], crs=self.crs.to_proj4())
+        return multiline
 
     def gen_grid_lines_S_masked(self, grid_obj, location='node'):
         #Returns a GeoSeries object representing the grid lines of a Grid_S object (with masking)
-        lons, lats = self.get_lonlat(grid_obj, location)
-        mask = self.get_mask_bool(grid_obj, location)
+        lens, all_lines = self.grid_obj.get_lines()
+        if isinstance(all_lines, list):
+            all_lines = np.concatenate(all_lines, axis=0)
         lines = []
-        for i in range(lons.shape[0]):
-            for j in range(lons.shape[1]-1):
-                if not mask[i, j] and not mask[i, j+1]:
-                    lines.append(sgeom.LineString([(lons[i, j], lats[i, j]), (lons[i, j+1], lats[i, j+1])]))
+        for i in range(all_lines.shape[0]):
+                lines.append(sgeom.LineString(all_lines[i]))
         multiline = sgeom.MultiLineString(lines)
-        return gpd.GeoSeries([multiline], crs=self.crs)
+        return multiline
 
     def gen_grid_lines_U(self, grid_obj, location='node'):
         pass
@@ -279,7 +291,6 @@ class GridGeoGenerator(object):
             return rv
        
 
-
 class ApplicationWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
@@ -299,12 +310,14 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         buttons.sizePolicy().setHorizontalPolicy(QtWidgets.QSizePolicy.Minimum)
         buttons.setFixedHeight(50)
         hblayout = QtWidgets.QHBoxLayout(buttons)
+        self.all_lines_checkbox = QtWidgets.QCheckBox('Draw All Lines')
         self.center_markers_water_checkbox = QtWidgets.QCheckBox('Center Markers (Water)')
         self.center_markers_land_checkbox = QtWidgets.QCheckBox('Center Markers (Land)')
         self.edge1_markers_water_checkbox = QtWidgets.QCheckBox('Edge1 Markers (Water)')
         self.edge1_markers_land_checkbox = QtWidgets.QCheckBox('Edge1 Markers (Land)')
         self.edge2_markers_water_checkbox = QtWidgets.QCheckBox('Edge2 Markers (Water)')
         self.edge2_markers_land_checkbox = QtWidgets.QCheckBox('Edge2 Markers (Land)')
+        hblayout.addWidget(self.all_lines_checkbox)
         hblayout.addWidget(self.center_markers_land_checkbox)
         hblayout.addWidget(self.center_markers_water_checkbox)
         hblayout.addWidget(self.edge1_markers_land_checkbox)
@@ -343,12 +356,12 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         
         #add the node lines
         print("Drawing node lines")
-        node_lines = g3.gen_grid_lines(grid_obj, 'node', use_mask=False)
-        node_lines.to_crs(plot_crs).plot(ax=ax, **g3.node_line_appearance)
+        self.masked_node_lines = g3.draw_grid_lines(self.map_ax, grid_obj, location='node', appearance=g3.node_line_appearance, plot_crs=self.plot_crs)
         
         #add the node markers callbacks. Perhaps move markerscale to the appearances?
         self.markerscale = 60
-        self.center_markers_land = self.center_markers_water = self.edge1_markers_land = self.edge1_markers_water = self.edge2_markers_land = self.edge2_markers_water = None
+        self.unmasked_node_lines = self.center_markers_land = self.center_markers_water = self.edge1_markers_land = self.edge1_markers_water = self.edge2_markers_land = self.edge2_markers_water = None
+        self.all_lines_checkbox.stateChanged.connect(self.callback_wrapper(self.toggle_unmasked_grid_lines, 'all', 'land'))
         self.center_markers_land_checkbox.stateChanged.connect(self.callback_wrapper(self.toggle_markers, 'center', 'land'))
         self.center_markers_water_checkbox.stateChanged.connect(self.callback_wrapper(self.toggle_markers, 'center', 'water'))
         self.edge1_markers_land_checkbox.stateChanged.connect(self.callback_wrapper(self.toggle_markers, 'edge1', 'land'))
@@ -487,6 +500,19 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         spill_pos = sgeom.Point(self.ctrans.transform(*spill_location))
         self.map_ax.scatter(spill_pos.x, spill_pos.y, s=100, color='red', marker='*')
         pass
+    
+    @staticmethod
+    def toggle_unmasked_grid_lines(state, self, *args):
+        #Draws all the grid lines
+        if state:
+            if self.unmasked_node_lines is None:
+                self.unmasked_node_lines = self.g3.draw_grid_lines(self.map_ax, self.grid_obj, location='node', use_mask=False, appearance=self.g3.node_line_masked_appearance, plot_crs=self.plot_crs)
+            else:
+                self.unmasked_node_lines.set_visible(True)
+        else:
+            if self.unmasked_node_lines is not None:
+                self.unmasked_node_lines.set_visible(False)
+        self.fig.canvas.draw()
 
 if __name__ == "__main__":
     # Check whether there is already a running QApplication (e.g., if running
