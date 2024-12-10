@@ -1,5 +1,7 @@
 import sys
 import time
+import pathlib
+import argparse
 
 import numpy as np
 
@@ -8,6 +10,9 @@ from matplotlib.backends.backend_qtagg import \
     NavigationToolbar2QT as NavigationToolbar
 from matplotlib.backends.qt_compat import QtWidgets
 from matplotlib.figure import Figure
+from matplotlib.collections import LineCollection
+import matplotlib.style as mplstyle
+mplstyle.use('fast')
 
 import matplotlib.pyplot as plt
 
@@ -21,24 +26,36 @@ from gnome.environment.gridded_objects_base import Grid_U, Grid_R, Grid_S
 
 from gridded.utilities import convert_mask_to_numpy_mask
 from pyproj import Transformer
-transformer = Transformer.from_crs("EPSG:4326", "EPSG:3857")
-transformer.transform(12, 12)
 
-#test_filename = 'C:\\Users\\jahen\\Downloads\\CIOFS.nc'
-test_filename = 'C:\\Users\\jahen\\Downloads\\wcofs.t03z.20241003.fields.f060.nc'
+# test_filename = 'C:\\Users\\jahen\\Downloads\\CIOFS.nc'
+# test_filename = 'C:\\Users\\jahen\\Downloads\\wcofs.t03z.20241003.fields.f060.nc'
+# spill_location = (-123.96, 45.6)
 
+
+parser=argparse.ArgumentParser(
+    description='''Small QT/MPL app to draw grids, examine masks, and query grid cells.'''
+    )
+parser.add_argument('filename', type=pathlib.Path, help='Path to file')
+parser.add_argument('-spill', nargs=2, help='Spill location in lon lat')
+args=parser.parse_args()
+
+test_filename = args.filename
+spill_location = args.spill
 class GridGeoGenerator(object):
+    #Class to facilitate interaction with the gridded objects
     
     node_line_appearance = {
         'color': 'black',
         'alpha': 1,
         'linewidth': 0.5,
+        'facecolor': 'none',
     }
     
-    node_line_masked_apperance = {
-        'color': 'black',
+    node_line_masked_appearance = {
+        'color': 'darkred',
         'alpha': 0.25,
         'linewidth': 0.5,
+        'facecolor': 'none',
     }
     
     node_marker_appearance = {
@@ -125,12 +142,11 @@ class GridGeoGenerator(object):
         'marker': 'd',
     }
     
-    def __init__(self, crs=None):
+    def __init__(self, crs=None, filename=None):
         self.crs = crs
-
-    def get_gc(self, filename):
-        gc = GridCurrent.from_netCDF(filename)
-        return gc
+        if filename is not None:
+            self.gc = GridCurrent.from_netCDF(filename)
+            self.grid_obj = self.gc.grid
 
     def get_lonlat(self, grid_obj, location_name):
         lon_var_name = location_name+'_lon'
@@ -154,38 +170,48 @@ class GridGeoGenerator(object):
         mask = getattr(grid_obj, mask_var_name)
         return convert_mask_to_numpy_mask(mask)
 
-    def gen_grid_lines(self, grid_obj, location='node', use_mask=True):
+    def draw_grid_lines(self, ax, grid_obj, location='node', use_mask=True, appearance=None, plot_crs=None, **kwargs):
         #Returns a GeoSeries object representing the grid lines
+        lines = None
         if isinstance(grid_obj, Grid_S):
             if use_mask:
-                return self.gen_grid_lines_S_masked(grid_obj, location)
+                lines = self.gen_grid_lines_S_masked(grid_obj, location)
             else: 
-                return self.gen_grid_lines_S_unmasked(grid_obj, location)
+                lines = self.gen_grid_lines_S_unmasked(grid_obj, location)
         elif isinstance(grid_obj, Grid_U):
-            return self.gen_grid_lines_U(grid_obj, location)
+            lines = self.gen_grid_lines_U(grid_obj, location)
         elif isinstance(grid_obj, Grid_R):
-            return self.gen_grid_lines_R(grid_obj, location)
-        pass
+            lines = self.gen_grid_lines_R(grid_obj, location)
+        converted_lines = []
+        transformer = None
+        if plot_crs is not None:
+            transformer = ccrs.Transformer.from_proj(self.crs, plot_crs)
+            for l in lines.geoms:
+                converted_lines.append(np.stack(transformer.transform(*l.xy), axis=-1))
+        else:
+            for l in lines.geoms:
+                converted_lines.append(np.stack(*l.xy, axis=-1))
+        line_coll = LineCollection(converted_lines, **appearance)
+        return ax.add_collection(line_coll)
 
     def gen_grid_lines_S_unmasked(self, grid_obj, location='node'):
-        #Returns a GeoSeries object representing the grid lines of a Grid_S object (no masking)
+        #Returns a shapely geometry object representing the grid lines of a Grid_S object (no masking)
         lons, lats = self.get_lonlat(grid_obj, location)
         h_lines = [sgeom.LineString([(lons[i, j], lats[i, j]) for j in range(lons.shape[1])]) for i in range(lons.shape[0])]
         v_lines = [sgeom.LineString([(lons[i, j], lats[i, j]) for i in range(lons.shape[0])]) for j in range(lons.shape[1])]
         multiline = sgeom.MultiLineString(h_lines + v_lines)
-        return gpd.GeoSeries([multiline], crs=self.crs.to_proj4())
+        return multiline
 
     def gen_grid_lines_S_masked(self, grid_obj, location='node'):
         #Returns a GeoSeries object representing the grid lines of a Grid_S object (with masking)
-        lons, lats = self.get_lonlat(grid_obj, location)
-        mask = self.get_mask_bool(grid_obj, location)
+        lens, all_lines = self.grid_obj.get_lines()
+        if isinstance(all_lines, list):
+            all_lines = np.concatenate(all_lines, axis=0)
         lines = []
-        for i in range(lons.shape[0]):
-            for j in range(lons.shape[1]-1):
-                if not mask[i, j] and not mask[i, j+1]:
-                    lines.append(sgeom.LineString([(lons[i, j], lats[i, j]), (lons[i, j+1], lats[i, j+1])]))
+        for i in range(all_lines.shape[0]):
+                lines.append(sgeom.LineString(all_lines[i]))
         multiline = sgeom.MultiLineString(lines)
-        return gpd.GeoSeries([multiline], crs=self.crs)
+        return multiline
 
     def gen_grid_lines_U(self, grid_obj, location='node'):
         pass
@@ -213,81 +239,280 @@ class GridGeoGenerator(object):
         points = gpd.GeoSeries([sgeom.Point(lon, lat) for lon, lat in np.reshape(pts, (-1, 2))], crs=self.crs)
         return points
 
-    def gen_grid_point_ij_labels(self, grid_obj, location='node'):
-        pass
-
-    def gen_masked_grid_points(self, grid_obj, location='node'):
-        #Returns a pair of GeoSeries objects representing the masked and unmasked grid points
-        pass
-
-    def gen_mask(self, grid_obj, location='node'):
-        #Returns a True/False mask of the grid points
-        pass
-
+    def index_query(self, grid_obj, position):
+        #Returns the index of the grid cell that contains the given position
+        #along with the indices of any relevant interpolation points.
+        index = grid_obj.locate_faces(position, _memo=False, _copy=False, _hash=False)
+        if np.all(index == -1):
+            return None
+        
+        rv = {'cell_index': index}
+        if isinstance(grid_obj, Grid_S):
+            #compute the u and v interpolation indices
+            e1_padding = grid_obj.get_padding_by_location('edge1')
+            index = index.reshape(-1,2)
+            edge1_interp_idx = grid_obj.apply_padding_to_idxs(index.copy(), padding=e1_padding)
+            rv['edge1_interp_idx'] = edge1_interp_idx
+            rv['edge1_u0_pos'] = (grid_obj.get_variable_at_index(grid_obj.edge1_lon, edge1_interp_idx.reshape(-1,2))[0][0],
+                                  grid_obj.get_variable_at_index(grid_obj.edge1_lat, edge1_interp_idx.reshape(-1,2))[0][0])
+            if self.gc.depth is not None:
+                rv['edge1_u0_value'] = grid_obj.get_variable_at_index(self.gc.u.data[0,-1,:], edge1_interp_idx.reshape(-1,2))[0][0]
+            else:
+                rv['edge1_u0_value'] = grid_obj.get_variable_at_index(self.gc.u.data[0,:], edge1_interp_idx.reshape(-1,2))[0][0]
+            u1_offset = [0, 1]
+            edge1_interp_u1_idx = edge1_interp_idx + u1_offset
+            rv['edge1_u1_pos'] = (grid_obj.get_variable_at_index(grid_obj.edge1_lon, edge1_interp_u1_idx.reshape(-1,2))[0][0],
+                                  grid_obj.get_variable_at_index(grid_obj.edge1_lat, edge1_interp_u1_idx.reshape(-1,2))[0][0])
+            if self.gc.depth is not None:
+                rv['edge1_u1_value'] = grid_obj.get_variable_at_index(self.gc.u.data[0,-1,:], edge1_interp_u1_idx.reshape(-1,2))[0][0]
+            else:
+                rv['edge1_u1_value'] = grid_obj.get_variable_at_index(self.gc.u.data[0,:], edge1_interp_u1_idx.reshape(-1,2))[0][0]
+            
+            e2_padding = grid_obj.get_padding_by_location('edge2')
+            edge2_interp_idx = grid_obj.apply_padding_to_idxs(index.copy(), padding=e2_padding)
+            rv['edge2_interp_idx'] = edge2_interp_idx
+            rv['edge2_v0_pos'] = (grid_obj.get_variable_at_index(grid_obj.edge2_lon, edge2_interp_idx.reshape(-1,2))[0][0],
+                                  grid_obj.get_variable_at_index(grid_obj.edge2_lat, edge2_interp_idx.reshape(-1,2))[0][0])
+            if self.gc.depth is not None:
+                rv['edge2_v0_value'] = grid_obj.get_variable_at_index(self.gc.v.data[0,-1,:], edge2_interp_idx.reshape(-1,2))[0][0]
+            else:
+                rv['edge2_v0_value'] = grid_obj.get_variable_at_index(self.gc.v.data[0,:], edge2_interp_idx.reshape(-1,2))[0][0]
+            v1_offset = [1, 0]
+            edge2_interp_v1_idx = edge2_interp_idx + v1_offset
+            rv['edge2_v1_pos'] = (grid_obj.get_variable_at_index(grid_obj.edge2_lon, edge2_interp_v1_idx.reshape(-1,2))[0][0],
+                                  grid_obj.get_variable_at_index(grid_obj.edge2_lat, edge2_interp_v1_idx.reshape(-1,2))[0][0])
+            if self.gc.depth is not None:
+                rv['edge2_v1_value'] = grid_obj.get_variable_at_index(self.gc.v.data[0,-1,:], edge2_interp_v1_idx.reshape(-1,2))[0][0]
+            else:
+                rv['edge2_v1_value'] = grid_obj.get_variable_at_index(self.gc.v.data[0,:], edge2_interp_v1_idx.reshape(-1,2))[0][0]
+                    
+            rv['node_lons'] = grid_obj.get_variable_by_index(grid_obj.node_lon, index.reshape(-1,2))[0]
+            rv['node_lats'] = grid_obj.get_variable_by_index(grid_obj.node_lat, index.reshape(-1,2))[0]
+            return rv
+       
 
 class ApplicationWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
+        
+        #Setup the main window
         self._main = QtWidgets.QWidget()
         self.setCentralWidget(self._main)
         layout = QtWidgets.QVBoxLayout(self._main)
-
-        fig = Figure(figsize=(15, 9))
-        static_canvas = FigureCanvas(fig)
+        self.fig = fig = Figure(figsize=(15, 18))
+        self.static_canvas = static_canvas = FigureCanvas(fig)
         # Ideally one would use self.addToolBar here, but it is slightly
         # incompatible between PyQt6 and other bindings, so we just add the
         # toolbar as a plain widget instead.
-        layout.addWidget(NavigationToolbar(static_canvas, self))
+        layout.addWidget(NavigationToolbar(static_canvas, self)) #pan, zoom, save controls
         layout.addWidget(static_canvas)
+        buttons = QtWidgets.QGroupBox()
+        buttons.sizePolicy().setHorizontalPolicy(QtWidgets.QSizePolicy.Minimum)
+        buttons.setFixedHeight(50)
+        hblayout = QtWidgets.QHBoxLayout(buttons)
+        self.all_lines_checkbox = QtWidgets.QCheckBox('Draw All Lines')
+        self.center_markers_water_checkbox = QtWidgets.QCheckBox('Center Markers (Water)')
+        self.center_markers_land_checkbox = QtWidgets.QCheckBox('Center Markers (Land)')
+        self.edge1_markers_water_checkbox = QtWidgets.QCheckBox('Edge1 Markers (Water)')
+        self.edge1_markers_land_checkbox = QtWidgets.QCheckBox('Edge1 Markers (Land)')
+        self.edge2_markers_water_checkbox = QtWidgets.QCheckBox('Edge2 Markers (Water)')
+        self.edge2_markers_land_checkbox = QtWidgets.QCheckBox('Edge2 Markers (Land)')
+        hblayout.addWidget(self.all_lines_checkbox)
+        hblayout.addWidget(self.center_markers_land_checkbox)
+        hblayout.addWidget(self.center_markers_water_checkbox)
+        hblayout.addWidget(self.edge1_markers_land_checkbox)
+        hblayout.addWidget(self.edge1_markers_water_checkbox)
+        hblayout.addWidget(self.edge2_markers_land_checkbox)
+        hblayout.addWidget(self.edge2_markers_water_checkbox)
+        layout.addWidget(buttons)
         
-        plot_crs_class = ccrs.Orthographic
-        g3_crs_class = ccrs.PlateCarree
+        #Define the projections in use
+        #TODO Make these args
+        self.plot_crs_class = ccrs.Orthographic
+        self.g3_crs_class = ccrs.PlateCarree
         
-        g3 = GridGeoGenerator()
-        gc = g3.get_gc(test_filename)
-        grid_obj = gc.grid
+        #Open the file and get the grid
+        self.g3 = g3 = GridGeoGenerator(crs = self.g3_crs_class(), filename=test_filename)
+        self.gc = g3.gc
+        self.grid_obj = grid_obj = self.gc.grid
+        
+        #Set up the map extent and projection transformation
         extent = g3.get_max_extent(grid_obj)
-        g3.crs = g3_crs_class()
-        plot_crs = plot_crs_class(extent[0] + (extent[1] - extent[0])/2, extent[2] + (extent[3] - extent[2])/2)
+        g3.crs = self.g3_crs_class()
+        self.plot_crs = plot_crs = self.plot_crs_class(extent[0] + (extent[1] - extent[0])/2, extent[2] + (extent[3] - extent[2])/2)
         
-        ctrans = Transformer.from_proj(g3.crs, plot_crs)
+        self.ctrans = ctrans = Transformer.from_proj(g3.crs, plot_crs)
         ws = ctrans.transform(extent[0], extent[2])
         en = ctrans.transform(extent[1], extent[3])
         
-        ax = fig.add_subplot(1, 1, 1, projection=plot_crs)
+        self.map_ax = ax = fig.add_subplot(1, 1, 1, projection=plot_crs)
         ax.set_extent(extent, crs=g3.crs)
-
+        
+        #Add the map features from cartopy
         ax.add_feature(cfeature.OCEAN.with_scale('50m'), zorder=0)
         ax.add_feature(cfeature.LAND.with_scale('50m'), zorder=0, edgecolor='black')
-        
-        ax.gridlines()
-        
-        node_lines = g3.gen_grid_lines(grid_obj, 'node', use_mask=False)
-        node_lines.to_crs(plot_crs).plot(ax=ax, **g3.node_line_appearance)
-        
-        markerscale = 30
-        
-        center_markers = g3.gen_grid_points(grid_obj, 'center').to_crs(plot_crs)
-        center_mask_raw = g3.get_mask_raw(grid_obj, 'center', scale=markerscale)
-        center_mask_invert = g3.get_mask_raw_invert(grid_obj, 'center', scale=markerscale)
-        ax.scatter(center_markers.x, center_markers.y, s=center_mask_raw, **g3.center_marker_appearance)
-        ax.scatter(center_markers.x, center_markers.y, s=center_mask_invert, **g3.center_marker_masked_appearance)
-        
-        edge1_markers = g3.gen_grid_points(grid_obj, 'edge1').to_crs(plot_crs)
-        edge1_mask_raw = g3.get_mask_raw(grid_obj, 'edge1', scale=markerscale)
-        edge1_mask_invert = g3.get_mask_raw_invert(grid_obj, 'edge1', scale=markerscale)
-        ax.scatter(edge1_markers.x, edge1_markers.y, s=edge1_mask_raw, **g3.edge1_marker_appearance)
-        ax.scatter(edge1_markers.x, edge1_markers.y, s=edge1_mask_invert, **g3.edge1_marker_masked_appearance)
-        
-        edge2_markers = g3.gen_grid_points(grid_obj, 'edge2').to_crs(plot_crs)
-        edge2_mask_raw = g3.get_mask_raw(grid_obj, 'edge2', scale=markerscale)
-        edge2_mask_invert = g3.get_mask_raw_invert(grid_obj, 'edge2', scale=markerscale)
-        ax.scatter(edge2_markers.x, edge2_markers.y, s=edge2_mask_raw, **g3.edge2_marker_appearance)
-        ax.scatter(edge2_markers.x, edge2_markers.y, s=edge2_mask_invert, **g3.edge2_marker_masked_appearance)
-        
-        spill_pos = sgeom.Point(ctrans.transform(-123.96, 45.6))
-        ax.scatter(spill_pos.x, spill_pos.y, s=100, color='red', marker='*')
 
+        cid = fig.canvas.mpl_connect('button_press_event', self.cell_index_lookup)
+        
+        #add the node lines
+        print("Drawing node lines")
+        self.masked_node_lines = g3.draw_grid_lines(self.map_ax, grid_obj, location='node', appearance=g3.node_line_appearance, plot_crs=self.plot_crs)
+        
+        #add the node markers callbacks. Perhaps move markerscale to the appearances?
+        self.markerscale = 60
+        self.unmasked_node_lines = self.center_markers_land = self.center_markers_water = self.edge1_markers_land = self.edge1_markers_water = self.edge2_markers_land = self.edge2_markers_water = None
+        self.all_lines_checkbox.stateChanged.connect(self.callback_wrapper(self.toggle_unmasked_grid_lines, 'all', 'land'))
+        self.center_markers_land_checkbox.stateChanged.connect(self.callback_wrapper(self.toggle_markers, 'center', 'land'))
+        self.center_markers_water_checkbox.stateChanged.connect(self.callback_wrapper(self.toggle_markers, 'center', 'water'))
+        self.edge1_markers_land_checkbox.stateChanged.connect(self.callback_wrapper(self.toggle_markers, 'edge1', 'land'))
+        self.edge1_markers_water_checkbox.stateChanged.connect(self.callback_wrapper(self.toggle_markers, 'edge1', 'water'))
+        self.edge2_markers_land_checkbox.stateChanged.connect(self.callback_wrapper(self.toggle_markers, 'edge2', 'land'))
+        self.edge2_markers_water_checkbox.stateChanged.connect(self.callback_wrapper(self.toggle_markers, 'edge2', 'water'))
+        
+        #add the spill position
+        if spill_location is not None:
+            self.draw_spill(spill_location)
+        
+    def callback_wrapper(self, func, location, land_or_water, *args, **kwargs):
+        return lambda state: func(state, self, location, land_or_water, *args, **kwargs)
+    
+    @staticmethod
+    def toggle_markers(state, self, location, land_or_water):
+        markers = getattr(self, location+'_markers_' + land_or_water)
+        print(markers)
+        print(self)
+        print(location)
+        g3 = self.g3
+        grid_obj = self.grid_obj
+        if state:
+            if markers is None:
+                print("Drawing cell centers")
+                markers = g3.gen_grid_points(grid_obj, location).to_crs(self.plot_crs)
+                mask_raw = appearance = None
+                if land_or_water == 'water':
+                   mask_raw = g3.get_mask_raw(grid_obj, location, scale=self.markerscale)
+                   appearance = getattr(g3, location+'_marker_appearance')
+                else:
+                   mask_raw = g3.get_mask_raw_invert(grid_obj, location, scale=self.markerscale)
+                   appearance = getattr(g3, location+'_marker_masked_appearance')
+                c1 = self.map_ax.scatter(markers.x, markers.y, s=mask_raw, **appearance)
+                setattr(self, location+'_markers_' + land_or_water, c1)
+                markers = c1
+            markers.set_visible(True)
+        else:
+            if markers is not None:
+                markers.set_visible(False)
+        self.fig.canvas.draw()
+
+    def cell_index_lookup(self, event):
+            print('%s click: button=%d, x=%d, y=%d, xdata=%f, ydata=%f' %
+                 ('double' if event.dblclick else 'single', event.button,
+                  event.x, event.y, event.xdata, event.ydata))
+            coord = sgeom.Point(self.ctrans.transform(event.xdata, event.ydata, direction='INVERSE'))
+            print(coord)
+            print(dir(event))
+            if (event.button == 1 and event.dblclick):
+                query_result = self.g3.index_query(self.grid_obj, (coord.x, coord.y))
+                print(query_result)
+                self.draw_query_result(query_result)
+                #Double click to query a position.
+
+    def draw_query_result(self, query_result):
+        #query result is a dict with the following keys:
+        #cell_index, edge1_interp_idx, edge1_u0_pos, edge1_u1_pos, edge2_interp_idx, edge2_v0_pos, edge2_v1_pos, node_lons, node_lats
+        node_coords = self.ctrans.transform(query_result['node_lons'], query_result['node_lats'])
+        print(node_coords)
+        self.map_ax.scatter(*node_coords, s=100, color='green', marker='s')
+        u_coords = zip(self.ctrans.transform(*query_result['edge1_u0_pos']), self.ctrans.transform(*query_result['edge1_u1_pos']))
+        self.map_ax.scatter(*u_coords, s=100, color='blue', marker='^')
+        self.map_ax.annotate(
+                f"{query_result['edge1_interp_idx']}\n" +
+                "{:.3f},{:.3f}\n".format(*query_result['edge1_u0_pos']) +
+                "u = {:.3f}".format(query_result['edge1_u0_value']),
+                self.ctrans.transform(*query_result['edge1_u0_pos']),
+                xytext=(0, -25),
+                textcoords="offset points",
+                horizontalalignment="center",
+                verticalalignment="center",
+                bbox={
+                    "facecolor": "white",
+                    "alpha": 0.75,
+                    "boxstyle": "round,pad=0.0",
+                    "ec": "white",
+                },
+        )
+        self.map_ax.annotate(
+                f"{query_result['edge1_interp_idx'] + [0,1]}\n" +
+                "{:.3f},{:.3f}\n".format(*query_result['edge1_u1_pos']) +
+                "u = {:.3f}".format(query_result['edge1_u1_value']),
+                self.ctrans.transform(*query_result['edge1_u1_pos']),
+                xytext=(0, -25),
+                textcoords="offset points",
+                horizontalalignment="center",
+                verticalalignment="center",
+                bbox={
+                    "facecolor": "white",
+                    "alpha": 0.5,
+                    "boxstyle": "round,pad=0.0",
+                    "ec": "white",
+                },
+        )
+        #plot v stuff
+        v_coords = zip(self.ctrans.transform(*query_result['edge2_v0_pos']), self.ctrans.transform(*query_result['edge2_v1_pos']))
+        self.map_ax.scatter(*v_coords, s=100, color='red', marker='^')
+        self.map_ax.annotate(
+                f"{query_result['edge2_interp_idx']}\n" +
+                "{:.3f},{:.3f}\n".format(*query_result['edge2_v0_pos']) +
+                "v = {:.3f}".format(query_result['edge2_v0_value']),
+                self.ctrans.transform(*query_result['edge2_v0_pos']),
+                xytext=(0, -25),
+                textcoords="offset points",
+                horizontalalignment="center",
+                verticalalignment="center",
+                bbox={
+                    "facecolor": "white",
+                    "alpha": 0.75,
+                    "boxstyle": "round,pad=0.0",
+                    "ec": "white",
+                },
+        )
+        self.map_ax.annotate(
+                f"{query_result['edge2_interp_idx'] + [0,1]}\n" +
+                "{:.3f},{:.3f}\n".format(*query_result['edge2_v1_pos']) +
+                "v = {:.3f}".format(query_result['edge2_v1_value']),
+                self.ctrans.transform(*query_result['edge2_v1_pos']),
+                xytext=(0, -25),
+                textcoords="offset points",
+                horizontalalignment="center",
+                verticalalignment="center",
+                bbox={
+                    "facecolor": "white",
+                    "alpha": 0.5,
+                    "boxstyle": "round,pad=0.0",
+                    "ec": "white",
+                },
+        )
+        self.fig.canvas.draw()
+        pass
+    
+    def draw_spill(self, spill_location):
+        #Draws the spill location on the map
+        spill_pos = sgeom.Point(self.ctrans.transform(*spill_location))
+        self.map_ax.scatter(spill_pos.x, spill_pos.y, s=100, color='red', marker='*')
+        pass
+    
+    @staticmethod
+    def toggle_unmasked_grid_lines(state, self, *args):
+        #Draws all the grid lines
+        if state:
+            if self.unmasked_node_lines is None:
+                self.unmasked_node_lines = self.g3.draw_grid_lines(self.map_ax, self.grid_obj, location='node', use_mask=False, appearance=self.g3.node_line_masked_appearance, plot_crs=self.plot_crs)
+            else:
+                self.unmasked_node_lines.set_visible(True)
+        else:
+            if self.unmasked_node_lines is not None:
+                self.unmasked_node_lines.set_visible(False)
+        self.fig.canvas.draw()
 
 if __name__ == "__main__":
     # Check whether there is already a running QApplication (e.g., if running
