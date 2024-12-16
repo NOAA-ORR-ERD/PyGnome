@@ -195,10 +195,9 @@ class VelocityGrid(VectorVariable):
         if 'variables' in kwargs:
             variables = kwargs['variables']
             if len(variables) == 2:
-                variables.append(TimeseriesData(name='constant w',
-                                                data=[0.0],
-                                                time=Time.constant_time(),
-                                                units='m/s'))
+                variables.append(Variable.constant(value=0,
+                                                   name='constant w',
+                                                   units='m/s'))
 
             kwargs['variables'] = variables
 
@@ -831,24 +830,34 @@ class IceAwareCurrent(GridCurrent):
                          ice_velocity=None,
                          *args,
                          **kwargs):
-        temp_fn = None
-        if ice_file is not None:
-            temp_fn = kwargs['filename']
-            kwargs['filename'] = ice_file
-        if ice_concentration is None:
-            ice_concentration = IceConcentration.from_netCDF(**kwargs)
-
-        if ice_velocity is None:
-            ice_velocity = IceVelocity.from_netCDF(**kwargs)
-
-        if temp_fn is not None:
-            kwargs['filename'] = temp_fn
 
         super(IceAwareCurrent, self).init_from_netCDF(
             ice_concentration=ice_concentration,
             ice_velocity=ice_velocity,
             **kwargs
         )
+        temp_fn = None
+        if ice_file is not None:
+            temp_fn = kwargs['filename']
+            kwargs['filename'] = ice_file
+            if ice_concentration is None:
+                ice_concentration = IceConcentration.from_netCDF(**kwargs)
+            if ice_velocity is None:
+                ice_velocity = IceVelocity.from_netCDF(**kwargs)
+        else:
+            
+            kwargs['time'] = self.time
+            kwargs['grid'] = self.grid
+            kwargs['depth'] = self.depth
+            kwargs['angle'] = self.angle
+            if ice_concentration is None:
+                ice_concentration = IceConcentration.from_netCDF(**kwargs)
+
+            if ice_velocity is None:
+                ice_velocity = IceVelocity.from_netCDF(**kwargs)
+        
+        self.ice_concentration = ice_concentration
+        self.ice_velocity = ice_velocity
 
     def at(self, points, time, *, units=None, extrapolate=None, **kwargs):
         if extrapolate is None:
@@ -905,18 +914,22 @@ class IceAwareWind(GridWind):
     @GridWind._get_shared_vars()
     def from_netCDF(cls,
                     ice_concentration=None,
-                    ice_velocity=None,
                     **kwargs):
+        iaw = (super(IceAwareWind, cls).from_netCDF(
+            ice_concentration=ice_concentration,
+            **kwargs
+            )
+        )
+        kwargs['time'] = iaw.time
+        kwargs['grid'] = iaw.grid
+        kwargs['depth'] = iaw.depth
+        kwargs['angle'] = iaw.angle
         if ice_concentration is None:
             ice_concentration = IceConcentration.from_netCDF(**kwargs)
+        iaw.ice_concentration = ice_concentration
+        
+        return iaw
 
-        if ice_velocity is None:
-            ice_velocity = IceVelocity.from_netCDF(**kwargs)
-
-        return (super(IceAwareWind, cls)
-                .from_netCDF(ice_concentration=ice_concentration,
-                             ice_velocity=ice_velocity,
-                             **kwargs))
 
     def at(self, points, time, *, units=None, extrapolate=None, min_val=0, **kwargs):
         """

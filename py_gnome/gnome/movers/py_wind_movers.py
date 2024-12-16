@@ -159,12 +159,12 @@ class WindMover(movers.PyMover):
 
     @property
     def time_offset(self):
-        td = self.current.time.tz_offset
+        td = self.wind.time.tz_offset
         return td.total_seconds() / 3600
     
     @time_offset.setter
     def time_offset(self, value):
-        self.current.time.tz_offset = value
+        self.wind.time.tz_offset = value
         
     def prepare_for_model_run(self):
         """
