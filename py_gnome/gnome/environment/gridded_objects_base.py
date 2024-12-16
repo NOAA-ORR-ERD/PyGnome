@@ -257,7 +257,7 @@ class Grid_S(GnomeId, gridded.grids.Grid_S):
             lats = (self.node_lat[0:-1, 0:-1] + self.node_lat[1:, 1:]) / 2
             return np.stack((lons, lats), axis=-1).reshape(-1, 2)
         else:
-            if self._get_geo_mask('center'):
+            if self._get_geo_mask('center') is not None:
                 if not self._cell_tree:
                     self.build_celltree(use_mask=True)
                 ctr_padding_slice = self.get_padding_slices(self.center_padding)

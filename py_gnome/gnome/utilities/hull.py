@@ -3,6 +3,8 @@ import numpy as np
 from shapely.geometry import Polygon, MultiPolygon, Point, MultiPoint, LineString
 from shapely import concave_hull, union_all
 
+import logging
+logger = logging.getLogger(__name__)
 
 # Buffer by a number of meters
 def buffer_hull(this_hull, buffer_distance=1):
@@ -34,7 +36,9 @@ def calculate_hull(spill_container, ratio=0.5, union_results=True,
     else:
         sc_positions = spill_container['positions']
         sc_spill_num = spill_container['spill_num']
-
+    # If we dont have any points, abort
+    if len(sc_positions) == 0:
+        return hulls_found
     if separate_by_spill:
         # Make a dataframe
         schema = {'positions': [Point(point)
@@ -102,7 +106,7 @@ def calculate_contours(spill_container, cutoff_struct=None,
                        ratio=0.5, allow_holes=False):
     contours_found = []
     # If we are not calculating any contours, dont bother parsing the data
-    if not cutoff_struct:
+    if not cutoff_struct or len(spill_container['positions']) == 0:
         return [];
     # The spills requested are the keys
     spills = cutoff_struct.keys()

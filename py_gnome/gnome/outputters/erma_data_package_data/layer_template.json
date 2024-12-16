@@ -21,7 +21,7 @@
             "allow_download": true,
             "checksum": null,
             "description": "TBD",
-            "timezone_fields": "{\"time\": \"UTC\"}",
+            "timezone_fields": "{\"time_utc\": \"UTC\"}",
             "proxy_urls": false,
             "begin_date": null,
             "end_date": null,
@@ -46,7 +46,7 @@
         "sort_field": null,
         "sort_order": null,
         "template": false,
-        "time_column": "time",
+        "time_column": "time_utc",
         "created_by": null,
         "layer_classes": []
     },

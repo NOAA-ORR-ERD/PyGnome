@@ -2,9 +2,6 @@
 Test all operations for cats mover work
 '''
 
-
-
-
 import datetime
 import os
 from os.path import basename
@@ -187,7 +184,7 @@ def test_scale_value():
     print(c_cats.scale_value)
     assert c_cats.scale_value == 0
 
-
+@pytest.mark.filterwarnings("ignore:CATS reference point not valid")
 @pytest.mark.parametrize("tgt", [(1, 2, 3), (5, 6)])
 def test_scale_refpoint(tgt):
     """
@@ -204,6 +201,11 @@ def test_scale_refpoint(tgt):
     c_cats.scale_refpoint = list(tgt)  # can be a list or a tuple
     assert c_cats.scale_refpoint == tuple(exp_tgt)
 
+	# test for warning using these bad ref points
+    c_cats.scale = True
+    with pytest.warns(UserWarning, match="CATS reference point not valid") as warning:
+        c_cats.scale_refpoint = tgt
+    c_cats.scale = False
 
 # Helper functions for tests
 

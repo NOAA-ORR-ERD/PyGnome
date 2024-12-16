@@ -15,18 +15,19 @@
 # if you want a full development environment,
 # you can install the whole thing at once:
 #
-# conda create -n gnome python=3.10 --file conda_requirements.txt --file conda_requirements_build.txt --file conda_requirements_test.txt --file conda_requirements_docs.txt
+# conda create -n gnome python=3.12 --file conda_requirements.txt --file conda_requirements_build.txt --file conda_requirements_test.txt --file conda_requirements_docs.txt
 
 
 # These packages should all be in one of the following channels:
 # defaults
 # conda-forge
 
-# it'll probably work with 3.9 -- 3.12, but CI is testing with 3.10
+# it'll probably work with 3.9 -- 3.13, but CI is testing with 3.10
 
-python>=3.9,<3.12
+python>=3.9,<=3.12
 
 ## System libs
+awesome-slugify
 colander <2
 progressbar
 psutil
@@ -55,7 +56,7 @@ pyproj
 shapely>=2.0.6 # older one broken with numpy2
 
 # NOAA maintained packages
-gridded>=0.6.9
+gridded>=0.6.10
 pynucos>=3.3.0
 cell_tree2d
 py_gd>=2.3

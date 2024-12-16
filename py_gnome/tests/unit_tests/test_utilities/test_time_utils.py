@@ -4,13 +4,16 @@
 test time_utils different input formats
 """
 
-
-
-
 from datetime import datetime, timedelta
+try:
+    from datetime import UTC as dtUTC
+except ImportError:
+    # datetime.UTC added as of Python 3.11
+    from datetime import timezone
+    dtUTC = timezone.utc
+
 import numpy as np
 import pytest
-
 
 from gnome.utilities.time_utils import (date_to_sec,
                                         sec_to_date,
@@ -19,6 +22,8 @@ from gnome.utilities.time_utils import (date_to_sec,
                                         UTC,
                                         FixedOffset,
                                         asdatetime,
+                                        TZOffset,
+                                        TZOffsetSchema,
                                         )
 
 
@@ -57,7 +62,7 @@ def test_datetime_array():
     test time_utils conversion works for python datetime object
     """
 
-    x = np.array([datetime.utcfromtimestamp(zero_time())] * 3,
+    x = np.array([datetime.fromtimestamp(zero_time())] * 3,
                  dtype=datetime)
     xn = _convert(x)
 
@@ -69,7 +74,7 @@ def test_numpy_array():
     time_utils works for numpy datetime object
     """
 
-    x = np.array([datetime.utcfromtimestamp(zero_time())] * 3,
+    x = np.array([datetime.fromtimestamp(zero_time())] * 3,
                  dtype='datetime64[s]')
 
     xn = _convert(x)
@@ -238,5 +243,89 @@ def test_asdatetime_none():
     dt = asdatetime(None)
     assert dt is None
 
+def test_TZOffset():
+    """
+    too much in one test, but whatever ...
+    """
+    tzo = TZOffset(-4)
+
+    assert tzo.offset == -4.0
+
+    tzo = TZOffset(-4, title = "some title")
+
+    assert tzo.offset == -4.0
+    assert tzo.title == "some title"
+
+
+def test_TZOffset_timedelta():
+    """
+    too much in one test, but whatever ...
+    """
+    tzo = TZOffset(-3.5)
+
+    print(tzo.as_timedelta())
+    print(-timedelta(hours=3, minutes=30))
+    assert tzo.as_timedelta() == -timedelta(hours=3, minutes=30)
+
+
+def test_TZOffset_string():
+    """
+    too much in one test, but whatever ...
+    """
+    tzo = TZOffset(-3.5)
+
+    assert tzo.as_iso_string() == "-03:30"
+
+    tzo = TZOffset(8)
+
+    assert tzo.as_iso_string() == "+08:00"
+
+def test_TZOffset_none():
+    """
+    default is None, with "no timezone set"
+    """
+
+    tzo = TZOffset()
+    assert tzo.offset is None
+
+    assert tzo.as_iso_string() == ""
+
+    assert tzo.as_timedelta() == timedelta(0)
+
+def test_TZOffset_persist():
+    """
+    Does is serialize and deserialize properly
+    """
+    tzo = TZOffset(-3.5, "TZ with half hour")
+
+    pson = TZOffsetSchema().serialize(tzo)
+
+    print(pson)
+
+    assert pson['offset'] == -3.5
+    assert pson['title'] == "TZ with half hour"
+
+    tzo2 = TZOffsetSchema().deserialize(pson)
+
+    assert tzo == tzo2
+
+    # can it deal with None?
+
+def test_TZOffset_persist_None():
+
+    tzo = TZOffset()
+
+    pson = TZOffsetSchema().serialize(tzo)
+
+    print(f"{pson=}")
+
+    assert pson['offset'] == None
+    assert pson['title'] == "No Timezone Specified"
+
+    tzo2 = TZOffsetSchema().deserialize(pson)
+
+    assert tzo == tzo2
+
+# def test_TZOffset_persist():
 
 
