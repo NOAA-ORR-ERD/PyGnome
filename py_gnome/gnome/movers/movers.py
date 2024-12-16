@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 
 import numpy as np
 
-from colander import (SchemaNode, TupleSchema, Bool, drop, String)
+from colander import (SchemaNode, TupleSchema, Bool, drop, String, Float)
 
 from gnome.basic_types import (world_point,
                                world_point_type,
@@ -39,6 +39,13 @@ class ProcessSchema(ObjTypeSchema):
 
 
 class PyMoverSchema(ProcessSchema):
+    scale_value = SchemaNode(Float(), save=True, update=True, missing=drop)
+    #time_offset units are in hours
+    time_offset = SchemaNode(Float(), save=True, update=True, missing=drop)
+    data_start = SchemaNode(LocalDateTime(), read_only=True)
+    data_stop = SchemaNode(LocalDateTime(), read_only=True)
+    uncertain_duration = SchemaNode(Float())
+    uncertain_time_delay = SchemaNode(Float())
     default_num_method = SchemaNode(String(), missing=drop, save=True, update=True)
 
 class Process(GnomeId):
@@ -229,6 +236,14 @@ class PyMover(Mover):
                     for o in kwargs['env']:
                         if k in o._ref_as:
                             setattr(self, k, o)
+    
+    @property
+    def time_offset(self):
+        raise NotImplementedError('time_offset property is not implemented for {}'.format(self.__class__.__name__))
+    
+    @time_offset.setter
+    def time_offset(self, value):
+        raise NotImplementedError('time_offset property setter is not implemented for {}'.format(self.__class__.__name__))
 
     def delta_method(self, method_name=None):
         '''

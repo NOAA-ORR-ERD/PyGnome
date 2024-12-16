@@ -576,6 +576,18 @@ class Variable(gridded.Variable, GnomeId):
                       varname=varname,
                       **kwargs)
 
+    @property
+    def time_offset(self):
+        return self.time.time_offset
+    
+    @time_offset.setter
+    def time_offset(self, value):
+        #Due to the possibility of multiple time objects, we need to check for and set the offset
+        #for all of them
+        self.time.time_offset = value
+        if self.depth is not None and hasattr(self.depth, 'time') and self.depth.time is not self.time:
+            self.depth.time_offset = value
+
     @classmethod
     @combine_signatures
     def from_netCDF(cls, *args, **kwargs):
@@ -1085,6 +1097,8 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
             @wraps(func)
             def wrapper(*args, **kws):
                 def _mod(n):
+                    #helper to check if a kwarg name is in the shared list
+                    #and has NOT been assigned a value yet
                     k = kws
                     s = shared
                     return (n in s) and ((n not in k) or (n in k and k[n] is None))
