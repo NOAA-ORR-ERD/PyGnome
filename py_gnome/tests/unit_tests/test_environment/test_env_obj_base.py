@@ -95,6 +95,11 @@ class TestTime(object):
         web_ser = t.serialize()
         t2 = self.test_class.deserialize(web_ser)
         assert t == t2
+        
+        t.tz_offset = 8
+        web_ser = t.serialize()
+        t2 = self.test_class.deserialize(web_ser)
+        assert t == t2
 
     def test_save_load(self, dates):
         t = Time(dates)

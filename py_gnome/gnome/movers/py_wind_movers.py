@@ -37,12 +37,6 @@ class WindMoverSchema(PyMoverSchema):
                                     acceptable_schemas=[VectorVariableSchema,
                                                         GridWind._schema,
                                                         Wind._schema])
-    scale_value = SchemaNode(Float(), save=True, update=True, missing=drop)
-    #time_offset = SchemaNode(Float(), save=True, update=True, missing=drop)
-    data_start = SchemaNode(LocalDateTime(), read_only=True)
-    data_stop = SchemaNode(LocalDateTime(), read_only=True)
-    uncertain_duration = SchemaNode(Float())
-    uncertain_time_delay = SchemaNode(Float())
     uncertain_speed_scale = SchemaNode(
         Float(), missing=drop, save=True, update=True
     )
@@ -163,6 +157,15 @@ class WindMover(movers.PyMover):
     def data_stop(self):
         return self.wind.data_stop
 
+    @property
+    def time_offset(self):
+        td = self.wind.time.tz_offset
+        return td.total_seconds() / 3600
+    
+    @time_offset.setter
+    def time_offset(self, value):
+        self.wind.time.tz_offset = value
+        
     def prepare_for_model_run(self):
         """
         reset uncertainty

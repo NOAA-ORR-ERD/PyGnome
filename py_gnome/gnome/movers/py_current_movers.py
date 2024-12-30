@@ -30,11 +30,6 @@ class CurrentMoverSchema(PyMoverSchema):
                                        acceptable_schemas=[VectorVariableSchema,
                                                            GridCurrent._schema]
                                        )
-    scale_value = SchemaNode(Float(), save=True, update=True, missing=drop)
-    data_start = SchemaNode(LocalDateTime(), read_only=True)
-    data_stop = SchemaNode(LocalDateTime(), read_only=True)
-    uncertain_duration = SchemaNode(Float())
-    uncertain_time_delay = SchemaNode(Float())
     uncertain_along = SchemaNode(
         Float(), missing=drop, save=True, update=True
     )
@@ -56,7 +51,6 @@ class CurrentMover(movers.PyMover):
 
     def __init__(self,
                  current=None,
-                 time_offset=0,
                  scale_value=1,
                  uncertain_duration= 24 * 3600,
                  uncertain_time_delay=0,
@@ -65,6 +59,7 @@ class CurrentMover(movers.PyMover):
                  uncertain_cross=.25,
                  default_num_method='RK2',
                  filename=None,
+                 time_offset=None,
                  **kwargs
                  ):
         """
@@ -121,6 +116,9 @@ class CurrentMover(movers.PyMover):
         self.time_uncertainty_was_set = 0
         self.shape = (2,)
         self._uncertainty_list = np.zeros((0,)+self.shape, dtype=np.float64)
+        
+        if time_offset is not None:
+            self.time_offset = time_offset
 
     #fixme: we have the defaults on the from_netCDF init -- they should be lower down!
     @classmethod
@@ -145,6 +143,8 @@ class CurrentMover(movers.PyMover):
                    filename=filename,
                    time_offset=time_offset,
                    scale_value=scale_value,
+                   uncertain_duration=uncertain_duration,
+                   uncertain_time_delay=uncertain_time_delay,
                    uncertain_along=uncertain_along,
                    #uncertain_across=uncertain_across,
                    uncertain_cross=uncertain_cross,
@@ -171,6 +171,15 @@ class CurrentMover(movers.PyMover):
     @property
     def data_stop(self):
         return self.current.data_stop
+
+    @property
+    def time_offset(self):
+        td = self.current.time.tz_offset
+        return td.total_seconds() / 3600
+    
+    @time_offset.setter
+    def time_offset(self, value):
+        self.current.time.tz_offset = value
 
     def get_bounds(self):
         '''

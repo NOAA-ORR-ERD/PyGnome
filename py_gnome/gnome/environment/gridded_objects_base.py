@@ -19,7 +19,7 @@ from gnome.gnomeobject import combine_signatures
 from gnome.persist import base_schema
 from gnome.gnomeobject import GnomeId
 from gnome.persist import (GeneralGnomeObjectSchema, SchemaNode, SequenceSchema,
-                           String, Boolean, DateTime, drop, FilenameSchema)
+                           String, Boolean, DateTime, TimeDelta, drop, FilenameSchema)
 from gnome.persist.extend_colander import LocalDateTime
 from gnome.utilities.inf_datetime import InfDateTime
 
@@ -42,7 +42,9 @@ class TimeSchema(base_schema.ObjTypeSchema):
     max_time = SchemaNode(
         DateTime(default_tzinfo=None), read_only=True
     )
-
+    tz_offset = SchemaNode(
+        TimeDelta(), save=True, update=True
+    )
 
 class GridSchema(base_schema.ObjTypeSchema):
     name = SchemaNode(String(), test_equal=False)
@@ -121,6 +123,7 @@ class Time(gridded.time.Time, GnomeId):
                     t.append(datetime.datetime.strptime(line, '%c'))
 
         return Time(t)
+    
 
 
 class Grid_U(gridded.grids.Grid_U, GnomeId):
@@ -522,8 +525,8 @@ class Variable(gridded.Variable, GnomeId):
                                 'must supply variable name')
         data = ds[varname]
         if name is None:
-            name = self.__class__.__name__ + str(self._def_count)
-            self._def_count += 1
+            name = self.__class__.__name__ + '_' + str(self._instance_count)
+            self._instance_count += 1
         if units is None:
             try:
                 units = data.units
@@ -575,6 +578,18 @@ class Variable(gridded.Variable, GnomeId):
                       location=location,
                       varname=varname,
                       **kwargs)
+
+    @property
+    def time_offset(self):
+        return self.time.time_offset
+    
+    @time_offset.setter
+    def time_offset(self, value):
+        #Due to the possibility of multiple time objects, we need to check for and set the offset
+        #for all of them
+        self.time.time_offset = value
+        if self.depth is not None and hasattr(self.depth, 'time') and self.depth.time is not self.time:
+            self.depth.time_offset = value
 
     @classmethod
     @combine_signatures
@@ -845,8 +860,8 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
             if all([v is None for v in varnames]):
                 raise ValueError('No compatible variable names found!')
         if name is None:
-            name = self.__class__.__name__ + str(self._def_count)
-            self._def_count += 1
+            name = self.__class__.__name__ + str(self._instance_count)
+            self._instance_count += 1
         data = ds[varnames[0]]
         if time is None:
             time = Time.from_netCDF(filename=data_file,
@@ -1085,6 +1100,8 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
             @wraps(func)
             def wrapper(*args, **kws):
                 def _mod(n):
+                    #helper to check if a kwarg name is in the shared list
+                    #and has NOT been assigned a value yet
                     k = kws
                     s = shared
                     return (n in s) and ((n not in k) or (n in k and k[n] is None))
