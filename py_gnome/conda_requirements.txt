@@ -39,7 +39,7 @@ pyzmq
 # tblib
 
 ## Base numerical libs
-numpy >=1.24,<3
+numpy >=1.24,<2  # works with numpy 2 everywhere but Windows
 scipy
 
 ## Modeling libs
