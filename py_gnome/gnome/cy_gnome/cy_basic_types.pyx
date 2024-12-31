@@ -4,6 +4,7 @@ cython file used to store all the type info for GNOME.
 Pulled from type_defs.pxi -- i.e pulled from C++ headers, etc.
 
 """
+import numpy as np
 
 # Use the "new" Py3 Enum type
 from enum import IntEnum
@@ -106,5 +107,8 @@ class ts_format(IntEnum):
     r_theta = M19MAGNITUDEDIRECTION
 
 
-cdef Seconds temp
-seconds = type(temp)
+# cdef Seconds temp
+# if int(np.__version__.split(".")[0]) < 2:
+#     seconds = type(temp)
+# else:
+#     seconds = np.long

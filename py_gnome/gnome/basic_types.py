@@ -33,7 +33,14 @@ ts_format = cbt.ts_format
 oil_status = cbt.oil_status
 spill_type = cbt.spill_type
 
-seconds = cbt.seconds
+# seconds = cbt.seconds
+
+# numpy 1 did not have a long attribute -- but it matched int
+if int(np.__version__.split(".")[0]) < 2:
+    seconds = int
+else:
+    seconds = np.long
+
 
 # this is a mapping of oil_status code to the meaningful name:
 oil_status_map = {num: name for name, num in oil_status.__members__.items()}
