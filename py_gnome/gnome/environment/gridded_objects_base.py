@@ -643,6 +643,7 @@ class Variable(gridded.Variable, GnomeId):
     def constant(cls, value, **kwargs):
         #Sets a Variable up to represent a constant scalar field. The result
         #will return a constant value for all times and places.
+        #This object currently (12/31/24) does not serialize/deserialize properly due to the Grid_S
         Grid = Grid_S
         Time = cls._default_component_types['time']
         _data = np.full((3,3), value)
@@ -957,6 +958,7 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
         :param values: vector of values
         :type values: array-like
         '''
+        #This object currently (12/31/24) does not serialize/deserialize properly due to the Grid_S
 
         Grid = Grid_S
         Time = cls._default_component_types['time']

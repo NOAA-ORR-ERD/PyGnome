@@ -195,9 +195,10 @@ class VelocityGrid(VectorVariable):
         if 'variables' in kwargs:
             variables = kwargs['variables']
             if len(variables) == 2:
-                variables.append(Variable.constant(value=0,
-                                                   name='constant w',
-                                                   units='m/s'))
+                variables.append(TimeseriesData(name='constant w',
+                                                data=[0.0],
+                                                time=Time.constant_time(),
+                                                units='m/s'))
 
             kwargs['variables'] = variables
 
