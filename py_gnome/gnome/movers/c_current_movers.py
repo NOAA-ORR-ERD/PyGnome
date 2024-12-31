@@ -433,9 +433,9 @@ class c_GridCurrentMoverSchema(CurrentMoversBaseSchema):
     extrapolate = SchemaNode(
         Bool(), missing=drop, save=True, update=True
     )
-    time_offset = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
+    # time_offset = SchemaNode(
+    #     Float(), missing=drop, save=True, update=True
+    # )
     is_data_on_cells = SchemaNode(
         Bool(), missing=drop, read_only=True
     )

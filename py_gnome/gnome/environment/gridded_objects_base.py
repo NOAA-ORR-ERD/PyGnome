@@ -42,9 +42,9 @@ class TimeSchema(base_schema.ObjTypeSchema):
     max_time = SchemaNode(
         DateTime(default_tzinfo=None), read_only=True
     )
-    tz_offset = SchemaNode(
-        TimeDelta(), save=True, update=True
-    )
+    # tz_offset = SchemaNode(
+    #     TimeDelta(), save=True, update=True, missing=drop
+    # )
 
 class GridSchema(base_schema.ObjTypeSchema):
     name = SchemaNode(String(), test_equal=False)
@@ -579,17 +579,17 @@ class Variable(gridded.Variable, GnomeId):
                       varname=varname,
                       **kwargs)
 
-    @property
-    def time_offset(self):
-        return self.time.time_offset
+    # @property
+    # def time_offset(self):
+    #     return self.time.time_offset
     
-    @time_offset.setter
-    def time_offset(self, value):
-        #Due to the possibility of multiple time objects, we need to check for and set the offset
-        #for all of them
-        self.time.time_offset = value
-        if self.depth is not None and hasattr(self.depth, 'time') and self.depth.time is not self.time:
-            self.depth.time_offset = value
+    # @time_offset.setter
+    # def time_offset(self, value):
+    #     #Due to the possibility of multiple time objects, we need to check for and set the offset
+    #     #for all of them
+    #     self.time.time_offset = value
+    #     if self.depth is not None and hasattr(self.depth, 'time') and self.depth.time is not self.time:
+    #         self.depth.time_offset = value
 
     @classmethod
     @combine_signatures

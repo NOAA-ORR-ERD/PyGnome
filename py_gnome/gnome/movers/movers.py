@@ -41,7 +41,7 @@ class ProcessSchema(ObjTypeSchema):
 class PyMoverSchema(ProcessSchema):
     scale_value = SchemaNode(Float(), save=True, update=True, missing=drop)
     #time_offset units are in hours
-    time_offset = SchemaNode(Float(), save=True, update=True, missing=drop)
+    #time_offset = SchemaNode(Float(), save=True, update=True, missing=drop)
     data_start = SchemaNode(LocalDateTime(), read_only=True)
     data_stop = SchemaNode(LocalDateTime(), read_only=True)
     uncertain_duration = SchemaNode(Float())
@@ -237,13 +237,13 @@ class PyMover(Mover):
                         if k in o._ref_as:
                             setattr(self, k, o)
     
-    @property
-    def time_offset(self):
-        raise NotImplementedError('time_offset property is not implemented for {}'.format(self.__class__.__name__))
+    # @property
+    # def time_offset(self):
+    #     raise NotImplementedError('time_offset property is not implemented for {}'.format(self.__class__.__name__))
     
-    @time_offset.setter
-    def time_offset(self, value):
-        raise NotImplementedError('time_offset property setter is not implemented for {}'.format(self.__class__.__name__))
+    # @time_offset.setter
+    # def time_offset(self, value):
+    #     raise NotImplementedError('time_offset property setter is not implemented for {}'.format(self.__class__.__name__))
 
     def delta_method(self, method_name=None):
         '''

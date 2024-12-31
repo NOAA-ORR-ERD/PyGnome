@@ -59,7 +59,7 @@ class CurrentMover(movers.PyMover):
                  uncertain_cross=.25,
                  default_num_method='RK2',
                  filename=None,
-                 time_offset=None,
+                #time_offset=None,
                  **kwargs
                  ):
         """
@@ -117,8 +117,8 @@ class CurrentMover(movers.PyMover):
         self.shape = (2,)
         self._uncertainty_list = np.zeros((0,)+self.shape, dtype=np.float64)
         
-        if time_offset is not None:
-            self.time_offset = time_offset
+        #if time_offset is not None:
+        #    self.time_offset = time_offset
 
     #fixme: we have the defaults on the from_netCDF init -- they should be lower down!
     @classmethod
@@ -172,14 +172,14 @@ class CurrentMover(movers.PyMover):
     def data_stop(self):
         return self.current.data_stop
 
-    @property
-    def time_offset(self):
-        td = self.current.time.tz_offset
-        return td.total_seconds() / 3600
+    # @property
+    # def time_offset(self):
+    #     td = self.current.time.tz_offset
+    #     return td.total_seconds() / 3600.0
     
-    @time_offset.setter
-    def time_offset(self, value):
-        self.current.time.tz_offset = value
+    # @time_offset.setter
+    # def time_offset(self, value):
+    #     self.current.time.tz_offset = value
 
     def get_bounds(self):
         '''
