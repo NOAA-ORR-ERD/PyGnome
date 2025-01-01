@@ -38,8 +38,10 @@ spill_type = cbt.spill_type
 # numpy 1 did not have a long attribute -- but it matched int
 if int(np.__version__.split(".")[0]) < 2:
     seconds = int
+    np_long = int
 else:
     seconds = np.long
+    np_long = np.long
 
 
 # this is a mapping of oil_status code to the meaningful name:
@@ -60,7 +62,7 @@ oil_status_map = {num: name for name, num in oil_status.__members__.items()}
 # and numpy figures it out for itself at run time, so I think we can
 # just do that:
 
-np_long = int
+#np_long = int
 
 # THE REST OF THIS IS OUT OF DATE:
 # on OSX 64:
