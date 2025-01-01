@@ -400,3 +400,25 @@ def test_save_load():
         loaded = CurrentMover.load(zipfile_)
 
     assert loaded == py_current
+
+
+def test_time_offset_setting():
+    """
+    test setting time_offset
+    """
+    current = GridCurrent.from_netCDF(curr_file2)
+    py_cur = CurrentMover(current=current)
+
+    assert py_cur.time_offset is None
+    assert py_cur.current.time.tz_offset is None
+
+    py_cur.time_offset = 4
+    assert py_cur.time_offset == 4
+    assert py_cur.current.time.tz_offset.total_seconds() == 14400
+
+    py_cur.time_offset = -4
+    assert py_cur.time_offset == -4
+    assert py_cur.current.time.tz_offset.total_seconds() == -14400
+    
+    py_cur.time_offset = None
+    assert py_cur.current.time.tz_offset is None

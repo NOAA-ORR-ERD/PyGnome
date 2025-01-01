@@ -33,60 +33,25 @@ ts_format = cbt.ts_format
 oil_status = cbt.oil_status
 spill_type = cbt.spill_type
 
-seconds = cbt.seconds
-
-# this is a mapping of oil_status code to the meaningful name:
-oil_status_map = {num: name for name, num in oil_status.__members__.items()}
-
-
-# Here we customize what a numpy 'long' type is....
-# We do this because numpy does different things with a long
-# that can mismatch what Cython does with the numpy ctypes.
+# Here we customize what a 'long' type is....
 # NOTE: This is all so we can create numpy arrays that are compatible
 #       with the structs in the C++ code -- most of which
 #       use the old-style C types, e.g. int, short, long.
-# In particular, long is defined differently on Windows and Linux
-# so we need to make sure that we are using the right type on each platform
-# note: numpy no longer HAS numpy.long or numpy.int
-#       there is a numpy.compat.long, which maps to int (which is the Python int type)
-# however, I *think* that Python uses a C long for int,
-# and numpy figures it out for itself at run time, so I think we can
-# just do that:
+# it turns out that with numpy1 `int` mapped to long on the
+# platform you were running on: int32 on *nix32, windows 32 and 64 and
+# int64 on *nix64
+# but now it maps to int64 everywhere (or all 32 bit platforms anyway)
+# recent numpy 1 doesn't have a long attribute -- but it matched int
+# numpy 2 has a long attribute, which seems to match the C long.
+if int(np.__version__.split(".")[0]) < 2:
+    seconds = int
+    np_long = int
+else:
+    seconds = np.long
+    np_long = np.long
 
-np_long = int
-
-# THE REST OF THIS IS OUT OF DATE:
-# on OSX 64:
-# - numpy identifies np.long as int64, which is a Cython ctype 'long'
-# on OSX 32:
-# - numpy identifies np.long as int64, which is a Cython ctype 'long long'
-# on Win32:
-# - numpy identifies np.long as int64, which is a Cython ctype 'long long',
-# on Win64:
-# - unknown what numpy does
-# - Presumably an int64 would be a ctype 'long' ???
-# we should clean this up! -- on Python3, I think np.compat.long == int
-
-########
-# NOTE: all this below was essentially simply setting np_long to int
-#  on all platforms anyway.
-# IF we have future problems, it might be as simple as:
-# if sys.platform == 'win32':
-#     np_long = np.int32
-# elif sys.platform in ('darwin', 'linux2', 'linux'):
-#     np_long = np.int64
-########
-
-# if sys.platform == 'win32':
-#     np_long = np.int
-# elif sys.platform in ('darwin', 'linux2', 'linux'):
-#     if sys.maxsize > 2147483647:
-#         np_long = np.compat.long
-#     else:
-#         np_long = int
-# else:
-#     # untested platforms will just default to what numpy thinks it is.
-#     np_long = np.compat.long
+# this is a mapping of oil_status code to the meaningful name:
+oil_status_map = {num: name for name, num in oil_status.__members__.items()}
 
 mover_type = np.float64
 world_point_type = np.float64

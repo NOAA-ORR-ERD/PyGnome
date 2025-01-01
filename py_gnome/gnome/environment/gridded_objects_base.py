@@ -43,7 +43,7 @@ class TimeSchema(base_schema.ObjTypeSchema):
         DateTime(default_tzinfo=None), read_only=True
     )
     tz_offset = SchemaNode(
-        TimeDelta(), save=True, update=True
+        TimeDelta(), save=True, update=True, missing=drop
     )
 
 class GridSchema(base_schema.ObjTypeSchema):
