@@ -125,7 +125,7 @@ class CurrentMover(movers.PyMover):
     def from_netCDF(cls,
                     filename=None,
                     name=None,
-                    time_offset=0,
+                    time_offset=None,
                     scale_value=1,
                     uncertain_duration=24 * 3600,
                     uncertain_time_delay=0,
@@ -172,14 +172,14 @@ class CurrentMover(movers.PyMover):
     def data_stop(self):
         return self.current.data_stop
 
-    # @property
-    # def time_offset(self):
-    #     td = self.current.time.tz_offset
-    #     return td.total_seconds() / 3600.0
+    @property
+    def time_offset(self):
+        td = self.current.time.tz_offset
+        return None if td is None else td.total_seconds() / 3600
     
-    # @time_offset.setter
-    # def time_offset(self, value):
-    #     self.current.time.tz_offset = value
+    @time_offset.setter
+    def time_offset(self, value):
+        self.current.time.tz_offset = value
 
     def get_bounds(self):
         '''

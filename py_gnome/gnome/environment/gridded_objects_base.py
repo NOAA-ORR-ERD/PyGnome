@@ -42,9 +42,9 @@ class TimeSchema(base_schema.ObjTypeSchema):
     max_time = SchemaNode(
         DateTime(default_tzinfo=None), read_only=True
     )
-    # tz_offset = SchemaNode(
-    #     TimeDelta(), save=True, update=True, missing=drop
-    # )
+    tz_offset = SchemaNode(
+        TimeDelta(), save=True, update=True, missing=drop
+    )
 
 class GridSchema(base_schema.ObjTypeSchema):
     name = SchemaNode(String(), test_equal=False)
