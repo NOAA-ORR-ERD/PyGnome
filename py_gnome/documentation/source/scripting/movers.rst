@@ -163,6 +163,51 @@ The presence of ice modifies the movement of the oil on the water surface. For e
     ice_aware_current = gs.IceAwareCurrent.from_netCDF('file_with_currents_ice.nc')
     ice_current_mover = gs.CurrentMover(ice_aware_current)
 
+
+Here's a more complete example with ice modified movers:
+
+.. code-block:: python
+
+    import gnome.scripting as gs
+
+    start_time = "1985-01-01T13:31"
+    model = gs.Model(start_time=start_time,
+                     duration=gs.days(2),
+                     time_step=60 * 15, #seconds
+                     )
+    spill = gs.surface_point_line_spill(num_elements=1000,
+                                start_position=(-163.75,69.75,0),
+                                release_time=start_time)
+
+    model.spills += spill
+
+    fn = [gs.get_datafile(data_dir / 'arctic_avg2_0001_gnome.nc'),
+          gs.get_datafile(data_dir / 'arctic_avg2_0002_gnome.nc'),
+          ]
+    gt = {'node_lon': 'lon',
+          'node_lat': 'lat'}
+
+    ice_aware_curr = gs.IceAwareCurrent.from_netCDF(filename=fn,
+                                                    grid_topology=gt)
+    ice_aware_wind = gs.IceAwareWind.from_netCDF(filename=fn,
+                                                 grid=ice_aware_curr.grid,)
+    i_c_mover = gs.CurrentMover(current=ice_aware_curr)
+    i_w_mover = gs.WindMover(wind=ice_aware_wind)
+
+    model.movers += i_c_mover
+    model.movers += i_w_mover
+
+    model.movers += gs.IceAwareRandomMover(ice_concentration=ice_aware_curr.ice_concentration,
+                                           diffusion_coef=50000)
+    model.full_run()
+
+You can find a complete script using ice modified movers in:
+
+``pygnome/py_gnome/scripts/example_scripts/ice_example.py``
+
+Or download it here:
+:download:`ice_example.py <../../../scripts/example_scripts/ice_example.py>`
+
 CATS  Movers
 ------------
 
