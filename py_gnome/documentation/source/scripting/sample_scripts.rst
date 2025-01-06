@@ -50,6 +50,12 @@ Demonstration of adding uncertainty to a model, and adjusting the uncertainty pa
 A script that demonstrates how to create a spill from a shape file or list of polygons.
 
 
+``ice_example.py``
+---------------------
+
+A script that demonstrates how to use ice information from netcdf files to create ice aware movers.
+
+
 Testing Scripts
 ===============
 

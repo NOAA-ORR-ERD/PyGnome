@@ -3,7 +3,7 @@
 CATS currents
 ==============
 
-How to use GNOME with currents from the NOAA's CATS model
+How to use GNOME with currents from the NOAA CATS model
 
 NOAA's CATS model is a hydrodynamic model used to model current patterns in most of the Location Files.
 To create a script to run a location file start with one of the testing scripts in the scripting module.
