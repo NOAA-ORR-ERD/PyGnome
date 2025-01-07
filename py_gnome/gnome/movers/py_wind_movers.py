@@ -157,14 +157,14 @@ class WindMover(movers.PyMover):
     def data_stop(self):
         return self.wind.data_stop
 
-    # @property
-    # def time_offset(self):
-    #     td = self.wind.time.tz_offset
-    #     return td.total_seconds() / 3600
+    @property
+    def time_offset(self):
+        return self._time_offset
     
-    # @time_offset.setter
-    # def time_offset(self, value):
-    #     self.wind.time.tz_offset = value
+    @time_offset.setter
+    def time_offset(self, tz_o):
+        new_tz_value = tz_o.offset
+        self.wind.time.tz_offset = new_tz_value
         
     def prepare_for_model_run(self):
         """

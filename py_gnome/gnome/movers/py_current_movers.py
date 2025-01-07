@@ -12,6 +12,7 @@ from gnome.basic_types import oil_status
 
 from gnome.utilities.projections import FlatEarthProjection
 
+
 from gnome.environment import GridCurrent
 from gnome.environment.gridded_objects_base import Grid_U, VectorVariableSchema
 
@@ -59,7 +60,6 @@ class CurrentMover(movers.PyMover):
                  uncertain_cross=.25,
                  default_num_method='RK2',
                  filename=None,
-                #time_offset=None,
                  **kwargs
                  ):
         """
@@ -174,12 +174,12 @@ class CurrentMover(movers.PyMover):
 
     @property
     def time_offset(self):
-        td = self.current.time.tz_offset
-        return None if td is None else td.total_seconds() / 3600
+        return self._time_offset
     
     @time_offset.setter
-    def time_offset(self, value):
-        self.current.time.tz_offset = value
+    def time_offset(self, tz_o):
+        new_tz_value = tz_o.offset
+        self.current.time.tz_offset = new_tz_value
 
     def get_bounds(self):
         '''
