@@ -222,7 +222,7 @@ class PyMover(Mover):
     _schema = PyMoverSchema
 
     def __init__(self,
-                 time_offset=time_utils.TZOffset()
+                 time_offset=time_utils.TZOffset(),
                  default_num_method='RK2',
                  **kwargs):
         super(PyMover, self).__init__(**kwargs)
