@@ -523,6 +523,11 @@ class TestVariable(object):
         points = np.array(([0,0,0],[0,1,0]))
         time = v.time.min_time
         assert np.all(v.at(points, time) == 273.15)
+        
+    def test_name_incrementing(self):
+        start_idx = Variable._instance_count + 1
+        a = [Variable.constant(value=1) for i in range(10)]
+        assert all([v.name == 'Variable_{0}'.format(i + start_idx) for i, v in enumerate(a)])
     
     def test_unit_conversion(self):
         v = Variable.constant(name='temperature', units='K', value=273.15)

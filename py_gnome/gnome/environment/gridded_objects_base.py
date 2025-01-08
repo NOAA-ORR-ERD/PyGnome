@@ -100,7 +100,7 @@ class VectorVariableSchema(VariableSchemaBase):
     )
 
 
-class Time(gridded.time.Time, GnomeId):
+class Time(GnomeId, gridded.time.Time):
 
     _schema = TimeSchema
     def __repr__(self):
@@ -126,7 +126,7 @@ class Time(gridded.time.Time, GnomeId):
     
 
 
-class Grid_U(gridded.grids.Grid_U, GnomeId):
+class Grid_U(GnomeId, gridded.grids.Grid_U):
 
     _schema = GridSchema
 
@@ -314,7 +314,7 @@ class Grid_S(GnomeId, gridded.grids.Grid_S):
         return (lens, [hor_lines, ver_lines])
 
 
-class Grid_R(gridded.grids.Grid_R, GnomeId):
+class Grid_R(GnomeId, gridded.grids.Grid_R):
 
     _schema = GridSchema
 
@@ -380,7 +380,7 @@ class PyGrid(gridded.grids.Grid):
         return gridded.grids.Grid._get_grid_type(*args, **kwargs)
 
 
-class Variable(gridded.Variable, GnomeId):
+class Variable(GnomeId, gridded.Variable):
     _schema = VariableSchema
 
     default_names = []
@@ -402,7 +402,7 @@ class Variable(gridded.Variable, GnomeId):
                  bottom_boundary_condition='mask',
                  *args,
                  **kwargs):
-        super(Variable, self).__init__(*args,
+        super().__init__(*args,
                                        surface_boundary_condition=surface_boundary_condition,
                                        bottom_boundary_condition=bottom_boundary_condition,
                                        **kwargs)
@@ -524,9 +524,6 @@ class Variable(gridded.Variable, GnomeId):
                 raise NameError('Default current names are not in the data file, '
                                 'must supply variable name')
         data = ds[varname]
-        if name is None:
-            name = self.__class__.__name__ + '_' + str(self._instance_count)
-            self._instance_count += 1
         if units is None:
             try:
                 units = data.units
@@ -744,7 +741,7 @@ class Depth(gridded.depth.Depth):
 
 Variable._default_component_types['depth'] = Depth
 
-class VectorVariable(gridded.VectorVariable, GnomeId):
+class VectorVariable(GnomeId, gridded.VectorVariable):
 
     _schema = VectorVariableSchema
 
@@ -860,9 +857,6 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
                                          dataset=ds)
             if all([v is None for v in varnames]):
                 raise ValueError('No compatible variable names found!')
-        if name is None:
-            name = self.__class__.__name__ + str(self._instance_count)
-            self._instance_count += 1
         data = ds[varnames[0]]
         if time is None:
             time = Time.from_netCDF(filename=data_file,

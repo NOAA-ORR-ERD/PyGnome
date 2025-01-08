@@ -237,6 +237,7 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
     def __init__(self, name=None, _appearance=None, *args, **kwargs):
         super(GnomeId, self).__init__(*args, **kwargs)
         self.__class__._instance_count += 1
+        self._instance_count = self.__class__._instance_count
 
         if name:
             self.name = name
@@ -331,7 +332,7 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
         '''
         if not hasattr(self, '_name') or self._name is None:
             return '{}_{}'.format(self.__class__.__name__.split('.')[-1],
-                                  str(self.__class__._instance_count))
+                                  str(self._instance_count))
         else:
             return self._name
 
