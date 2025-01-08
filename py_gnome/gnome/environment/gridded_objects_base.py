@@ -9,7 +9,7 @@ from functools import wraps
 
 from colander import (SchemaNode, SequenceSchema,
                       String, Boolean, DateTime,
-                      drop, Int)
+                      drop, Int, Float)
 
 import gridded
 from gridded.utilities import get_dataset
@@ -43,7 +43,7 @@ class TimeSchema(base_schema.ObjTypeSchema):
         DateTime(default_tzinfo=None), read_only=True
     )
     tz_offset = SchemaNode(
-        TimeDelta(), save=True, update=True, missing=drop
+        Float(), save=True, update=True, missing=drop
     )
 
 class GridSchema(base_schema.ObjTypeSchema):

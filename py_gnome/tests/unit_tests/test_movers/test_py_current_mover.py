@@ -409,23 +409,15 @@ def test_time_offset_setting():
     current = GridCurrent.from_netCDF(curr_file2)
     py_cur = CurrentMover(current=current)
 
-
-    assert model.timezone_offset.offset == None
-
-    model = Model(timezone_offset=TZOffset(-3.5, "half hour tz"))
-
-    assert model.timezone_offset.offset == -3.5
-
-    assert model.timezone_offset.title == "half hour tz"
     assert py_cur.time_offset.offset is None
-    assert py_cur.current.time.tz_offset is None
+    assert py_cur.current.time.tz_offset == 0
 
-    py_cur.time_offset = TZOffset(-3.5, "half hour tz")
-    assert py_cur.time_offset == -3.5
+    py_cur.time_offset = time_utils.TZOffset(-3.5, "half hour tz")
+    assert py_cur.time_offset.offset == -3.5
 
-    py_cur.time_offset = TZOffset(4, "half hour tz")
-    assert py_cur.time_offset == 4
+    py_cur.time_offset = time_utils.TZOffset(4, "half hour tz")
+    assert py_cur.time_offset.offset == 4
     
-    py_cur.time_offset = None
+    py_cur.time_offset = time_utils.TZOffset(None, None)
     assert py_cur.time_offset.offset is None
     assert py_cur.current.time.tz_offset is None

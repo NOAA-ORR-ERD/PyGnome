@@ -178,8 +178,11 @@ class CurrentMover(movers.PyMover):
     
     @time_offset.setter
     def time_offset(self, tz_o):
-        new_tz_value = tz_o.offset
-        self.current.time.tz_offset = new_tz_value
+        self._time_offset = tz_o
+        if tz_o is not None:
+            self.current.time.tz_offset = tz_o.offset
+        else:
+            self.current.time.tz_offset = None
 
     def get_bounds(self):
         '''
