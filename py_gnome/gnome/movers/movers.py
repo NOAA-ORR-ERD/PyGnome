@@ -45,7 +45,6 @@ class PyMoverSchema(ProcessSchema):
     uncertain_duration = SchemaNode(Float())
     uncertain_time_delay = SchemaNode(Float())
     default_num_method = SchemaNode(String(), missing=drop, save=True, update=True)
-    #time_offset units are in hours
     time_offset = time_utils.TZOffsetSchema(save=True, update=True)
 
 class Process(GnomeId):
