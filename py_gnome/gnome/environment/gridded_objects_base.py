@@ -20,7 +20,7 @@ from gnome.persist import base_schema
 from gnome.gnomeobject import GnomeId
 from gnome.persist import (GeneralGnomeObjectSchema, SchemaNode, SequenceSchema,
                            String, Boolean, DateTime, TimeDelta, drop, FilenameSchema)
-from gnome.persist.extend_colander import LocalDateTime
+from gnome.persist.extend_colander import LocalDateTime, UnknownMappingSchema
 from gnome.utilities.inf_datetime import InfDateTime
 
 
@@ -51,6 +51,7 @@ class GridSchema(base_schema.ObjTypeSchema):
     filename = FilenameSchema(
         isdatafile=True, test_equal=False, update=False
     )
+    grid_topology = UnknownMappingSchema(save=True, update=False)
 
 class DepthSchema(base_schema.ObjTypeSchema):
     filename = FilenameSchema(
@@ -131,7 +132,7 @@ class Time(gridded.time.Time, GnomeId):
 # properly super-chain their __init__ currently (as of gridded 0.7.0). This causes certain
 # GnomeId class tricks to break. Once past gridded 0.7.0  we should be able to change 
 # all to (parent, GnomeId)
-class Grid_U(GnomeId, gridded.grids.Grid_U):
+class Grid_U(gridded.grids.Grid_U, GnomeId):
 
     _schema = GridSchema
 
@@ -196,22 +197,15 @@ class Grid_U(GnomeId, gridded.grids.Grid_U):
 # properly super-chain their __init__ currently (as of gridded 0.7.0). This causes certain
 # GnomeId class tricks to break. Once past gridded 0.7.0  we should be able to change 
 # all to (parent, GnomeId)
-class Grid_S(GnomeId, gridded.grids.Grid_S):
+class Grid_S(gridded.grids.Grid_S, GnomeId):
 
     _schema = GridSchema
 
     def __init__(self, use_masked_boundary=True, *args, **kwargs):
-        super(Grid_S, self).__init__(*args, use_masked_boundary=use_masked_boundary, **kwargs)
-
-        '''
-        #This is for the COOPS case, where their coordinates go from 0-360 starting at prime meridian
-        for lon in [self.node_lon, self.center_lon, self.edge1_lon, self.edge2_lon]:
-            if lon is not None and lon.max() > 180:
-                self.logger.warning('Detected longitudes > 180 in {0}. Rotating -360 degrees'.format(self.name))
-                lon -= 360
-        '''
-
-    '''hack to avoid problems when registering object in webgnome'''
+        #set use_masked_boundary to True by default (gridded is False)
+        super(Grid_S, self).__init__(*args, use_masked_boundary=use_masked_boundary, *args, **kwargs)
+    
+    
     @property
     def non_grid_variables(self):
         return None
@@ -389,7 +383,7 @@ class PyGrid(gridded.grids.Grid):
         return gridded.grids.Grid._get_grid_type(*args, **kwargs)
 
 
-class Variable(GnomeId, gridded.Variable):
+class Variable(gridded.Variable, GnomeId):
     _schema = VariableSchema
 
     default_names = []
