@@ -100,7 +100,7 @@ class VectorVariableSchema(VariableSchemaBase):
     )
 
 
-class Time(GnomeId, gridded.time.Time):
+class Time(gridded.time.Time, GnomeId):
 
     _schema = TimeSchema
     def __repr__(self):
@@ -126,6 +126,11 @@ class Time(GnomeId, gridded.time.Time):
     
 
 
+# NOTE some classes inherit from (GnomeId, parent) while some from (parent, GnomeId)
+# at the moment. This is because the classes that inherit from GnomeId first do not 
+# properly super-chain their __init__ currently (as of gridded 0.7.0). This causes certain
+# GnomeId class tricks to break. Once past gridded 0.7.0  we should be able to change 
+# all to (parent, GnomeId)
 class Grid_U(GnomeId, gridded.grids.Grid_U):
 
     _schema = GridSchema
@@ -186,7 +191,11 @@ class Grid_U(GnomeId, gridded.grids.Grid_U):
         json_['num_cells'] = self.faces.shape[0]
         return json_
 
-
+# NOTE some classes inherit from (GnomeId, parent) while some from (parent, GnomeId)
+# at the moment. This is because the classes that inherit from GnomeId first do not 
+# properly super-chain their __init__ currently (as of gridded 0.7.0). This causes certain
+# GnomeId class tricks to break. Once past gridded 0.7.0  we should be able to change 
+# all to (parent, GnomeId)
 class Grid_S(GnomeId, gridded.grids.Grid_S):
 
     _schema = GridSchema
@@ -314,7 +323,7 @@ class Grid_S(GnomeId, gridded.grids.Grid_S):
         return (lens, [hor_lines, ver_lines])
 
 
-class Grid_R(GnomeId, gridded.grids.Grid_R):
+class Grid_R(gridded.grids.Grid_R, GnomeId):
 
     _schema = GridSchema
 
@@ -741,7 +750,7 @@ class Depth(gridded.depth.Depth):
 
 Variable._default_component_types['depth'] = Depth
 
-class VectorVariable(GnomeId, gridded.VectorVariable):
+class VectorVariable(gridded.VectorVariable, GnomeId):
 
     _schema = VectorVariableSchema
 

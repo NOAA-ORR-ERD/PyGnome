@@ -316,14 +316,14 @@ class Release(GnomeId):
             # This is a special case, when the release is short enough a single
             # timestep encompasses the whole thing.
             if self.release_duration == 0:
-                t = Time([self.release_time,
-                          self.end_release_time + timedelta(seconds=1)])
+                t = Time(data=[self.release_time, self.end_release_time + timedelta(seconds=1)])
             else:
-                t = Time([self.release_time, self.end_release_time])
+                t = Time(data=[self.release_time, self.end_release_time])
         else:
-            t = Time([self.release_time + timedelta(seconds=ts * step)
+            t = Time(data=[self.release_time + timedelta(seconds=ts * step)
                       for step in range(0, num_ts + 1)])
             t.data[-1] = self.end_release_time
+        
         if self.release_duration == 0:
             self._release_ts = TimeseriesData(name=self.name+'_release_ts',
                                               time=t,
