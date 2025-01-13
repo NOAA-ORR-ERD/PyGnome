@@ -332,7 +332,7 @@ class CurrentMover(movers.PyMover):
 
         :param deltas: the movement for the current time step
         """
-        if self._uncertainty_list is None:
+        if self._uncertainty_list is None or len(self._uncertainty_list)==0:
             return deltas  # this is our clue to not add uncertainty
 
         if len(self._uncertainty_list) > 0:

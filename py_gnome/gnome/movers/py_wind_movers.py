@@ -375,7 +375,7 @@ class WindMover(movers.PyMover):
 
         :param deltas: the movement for the current time step
         """
-        if self.uncertainty_list is None:
+        if self.uncertainty_list is None or len(self.uncertainty_list)==0:
             return deltas # this is our clue to not add uncertainty
 
         num_les = len(self.uncertainty_list)
