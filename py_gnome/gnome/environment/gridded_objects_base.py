@@ -85,14 +85,13 @@ class VariableSchemaBase(base_schema.ObjTypeSchema):
 
 class VariableSchema(VariableSchemaBase):
     varname = SchemaNode(
-        String(), missing=drop, read_only=True
+        String(), missing=drop
     )
 
 
 class VectorVariableSchema(VariableSchemaBase):
     varnames = SequenceSchema(
         SchemaNode(String()),
-        read_only=True
     )
     variables = SequenceSchema(
         GeneralGnomeObjectSchema(
@@ -153,6 +152,9 @@ class Grid_U(gridded.grids.Grid_U, GnomeId):
     @classmethod
     @combine_signatures
     def new_from_dict(cls, dict_):
+        read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
+
+        [dict_.pop(n, None) for n in read_only_attrs]
         rv = cls.from_netCDF(**dict_)
 
         return rv
@@ -237,6 +239,9 @@ class Grid_S(gridded.grids.Grid_S, GnomeId):
     @classmethod
     @combine_signatures
     def new_from_dict(cls, dict_):
+        read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
+
+        [dict_.pop(n, None) for n in read_only_attrs]
         rv = cls.from_netCDF(**dict_)
         return rv
 
@@ -323,6 +328,9 @@ class Grid_R(gridded.grids.Grid_R, GnomeId):
 
     @classmethod
     def new_from_dict(cls, dict_):
+        read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
+
+        [dict_.pop(n, None) for n in read_only_attrs]
         rv = cls.from_netCDF(**dict_)
         return rv
 
@@ -372,6 +380,9 @@ class PyGrid(gridded.grids.Grid):
 
     @staticmethod
     def new_from_dict(dict_):
+        read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
+
+        [dict_.pop(n, None) for n in read_only_attrs]
         return PyGrid.from_netCDF(**dict_)
 
     @staticmethod
@@ -634,6 +645,9 @@ class Variable(gridded.Variable, GnomeId):
     @classmethod
     @combine_signatures
     def new_from_dict(cls, dict_):
+        read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
+
+        [dict_.pop(n, None) for n in read_only_attrs]
         if 'data' not in dict_:
             return cls.from_netCDF(**dict_)
 
@@ -687,6 +701,9 @@ class DepthBase(gridded.depth.DepthBase, GnomeId):
 
     @classmethod
     def new_from_dict(cls, dict_):
+        read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
+
+        [dict_.pop(n, None) for n in read_only_attrs]
         rv = cls.from_netCDF(**dict_)
         return rv
 
@@ -702,6 +719,9 @@ class L_Depth(gridded.depth.L_Depth, GnomeId):
 
     @classmethod
     def new_from_dict(cls, dict_):
+        read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
+
+        [dict_.pop(n, None) for n in read_only_attrs]
         rv = cls.from_netCDF(**dict_)
         return rv
 
@@ -718,6 +738,9 @@ class ROMS_Depth(gridded.depth.ROMS_Depth, GnomeId):
 
     @classmethod
     def new_from_dict(cls, dict_):
+        read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
+
+        [dict_.pop(n, None) for n in read_only_attrs]
         rv = cls.from_netCDF(**dict_)
         return rv
 
@@ -734,6 +757,9 @@ class FVCOM_Depth(gridded.depth.FVCOM_Depth, GnomeId):
 
     @classmethod
     def new_from_dict(cls, dict_):
+        read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
+
+        [dict_.pop(n, None) for n in read_only_attrs]
         rv = cls.from_netCDF(**dict_)
         return rv
 
@@ -937,6 +963,9 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
 
     @classmethod
     def new_from_dict(cls, dict_, **kwargs):
+        read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
+
+        [dict_.pop(n, None) for n in read_only_attrs]
         if not dict_.get('variables', False):
             return super(VectorVariable, cls).new_from_dict(cls.from_netCDF(**dict_).to_dict(), **kwargs)
         else:

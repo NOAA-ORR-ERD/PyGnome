@@ -235,7 +235,6 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
     ATOL = 1e-38  # this will only let tiny float32 values be takes as close to zero.
 
     def __init__(self, name=None, _appearance=None, *args, **kwargs):
-        super(GnomeId, self).__init__(*args, **kwargs)
         self.__class__._instance_count += 1
         self._instance_count = self.__class__._instance_count
 
@@ -243,6 +242,7 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
             self.name = name
         self._appearance = _appearance
         self.array_types = dict()
+        super(GnomeId, self).__init__(*args, **kwargs)
 
     @property
     def all_array_types(self):

@@ -11,6 +11,7 @@ from gnome.basic_types import oil_status
 #                                status_code_type)
 
 from gnome.utilities.projections import FlatEarthProjection
+from gnome.utilities.time_utils import TZOffset
 
 
 from gnome.environment import GridCurrent
@@ -174,15 +175,21 @@ class CurrentMover(movers.PyMover):
 
     @property
     def time_offset(self):
-        return self._time_offset
+        return TZOffset(offset=self.current.time.tz_offset, title=self._time_offset.title)
     
     @time_offset.setter
     def time_offset(self, tz_o):
-        self._time_offset = tz_o
-        if tz_o is not None:
+        if isinstance(tz_o, TZOffset):
+            self._time_offset = tz_o
             self.current.time.tz_offset = tz_o.offset
-        else:
+        elif isinstance(tz_o, (int, float)):
+            self._time_offset = TZOffset(offset=tz_o)
+            self.current.time.tz_offset = tz_o
+        elif tz_o is None:
+            self._time_offset = TZOffset()
             self.current.time.tz_offset = None
+        else:
+            raise ValueError("time_offset must be a TZOffset or a number, or None")
 
     def get_bounds(self):
         '''

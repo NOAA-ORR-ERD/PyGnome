@@ -1042,6 +1042,9 @@ class FileGridCurrent(GridCurrent):
 
     @classmethod
     def new_from_dict(cls, serial_dict):
+        read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
+
+        [serial_dict.pop(n, None) for n in read_only_attrs]
         return cls(filename=serial_dict.get('filename'),
                    extrapolation_is_allowed=serial_dict.get('extrapolation_is_allowed')  # noqa
                    )

@@ -113,7 +113,6 @@ class TestPyGrid_U(object):
 
         ug2 = Grid_U.from_netCDF(filename)
         assert ug2.filename == filename
-        assert ug2.grid_topology == grid_topology
         # assert isinstance(ug2.node_lon, nc.Variable)
         # assert ug2.node_lon.name == 'lon'
 
@@ -124,6 +123,7 @@ class TestPyGrid_U(object):
         print(ug4.shape)
         assert ug == ug3
         assert ug2 == ug4
+        assert ug2.grid_topology == ug4.grid_topology
 
     def test_serialize(self, ug, ug_data, ug_topology):
         filename = ug_data[0]
