@@ -380,9 +380,9 @@ class PyGrid(gridded.grids.Grid):
 
     @staticmethod
     def new_from_dict(dict_):
-        read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
+        # read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
 
-        [dict_.pop(n, None) for n in read_only_attrs]
+        # [dict_.pop(n, None) for n in read_only_attrs]
         return PyGrid.from_netCDF(**dict_)
 
     @staticmethod
