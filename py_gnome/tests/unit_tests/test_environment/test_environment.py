@@ -7,6 +7,7 @@ import pytest
 from nucos import InvalidUnitError
 
 from gnome.utilities.inf_datetime import InfDateTime
+from gnome.utilities.time_utils import TZOffset
 from gnome.environment import Environment, Water
 
 
@@ -15,6 +16,8 @@ def test_environment_init():
     sample_time = 60 * 60 * 24 * 365 * 30  # seconds
 
     assert env._ref_as == 'environment'
+
+    assert isinstance(env.timezone_offset, TZOffset)
 
     with pytest.raises(NotImplementedError):
         _dstart = env.data_start
