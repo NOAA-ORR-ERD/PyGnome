@@ -24,6 +24,10 @@ from .gnomeobject import GnomeId, AddLogger
 
 __version__ = "1.1.16dev"
 
+# set up to show DeprecationWarnings that come from PyGNOME
+warnings.filterwarnings("default",
+                        category=DeprecationWarning,
+                        module="gnome.*")
 
 if os.name == 'nt':
     # In Windows, we need to add the location of our lib_gnome.dll to the
