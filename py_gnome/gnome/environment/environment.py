@@ -4,16 +4,15 @@ the Wind object defines the Wind conditions for the spill
 """
 
 import copy
-
 from functools import lru_cache
 
 from colander import SchemaNode, MappingSchema, Float, String, drop, OneOf
 
 import gsw
-
 import nucos as uc
 
 from gnome import constants
+from gnome.utilities.time_utils import TZOffset
 from gnome.persist import base_schema
 from gnome.gnomeobject import GnomeObjMeta, GnomeId
 
@@ -46,13 +45,18 @@ class Environment(GnomeId):
     __metaclass__ = EnvironmentMeta
 
     # fixme: are there any **kwargs to be passed on?
-    def __init__(self, make_default_refs=True, **kwargs):
+    def __init__(self,
+                 make_default_refs=True,
+                 *,
+                 timezone_offset=TZOffset(),
+                 **kwargs):
         '''
         base class for environment objects
 
         :param name=None:
         '''
         self.make_default_refs = make_default_refs
+        self.timezone_offset=TZOffset()
         self.array_types = {}
         super().__init__(**kwargs)
 
