@@ -257,15 +257,28 @@ def test_TZOffset():
     assert tzo.title == "some title"
 
 
+def test_TZOffset_from_timedelta():
+    """
+    Too much in one test, but whatever ...
+    """
+    tzo = TZOffset(timedelta(hours=-4), title="some title")
+
+    assert tzo.offset == -4.0
+    assert tzo.title == "some title"
+
 def test_TZOffset_timedelta():
-    """
-    too much in one test, but whatever ...
-    """
     tzo = TZOffset(-3.5)
 
     print(tzo.as_timedelta())
     print(-timedelta(hours=3, minutes=30))
     assert tzo.as_timedelta() == -timedelta(hours=3, minutes=30)
+
+
+def test_TZOffset_auto_name():
+    tzo = TZOffset(-3.5)
+
+    assert tzo.offset == -3.5
+    assert tzo.title == "-03:30"
 
 
 def test_TZOffset_string():
