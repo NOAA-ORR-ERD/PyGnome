@@ -198,21 +198,21 @@ class WindMover(movers.PyMover):
         super(WindMover, self).prepare_for_model_step(sc, time_step,
                                                         model_time_datetime)
 
-        # if no particles released, then no need for windage
-        # TODO: revisit this since sc.num_released shouldn't be None
-        if sc.num_released is None or sc.num_released == 0:
-            return
-
         if self.active:
+            seconds = self.datetime_to_seconds(model_time_datetime)
+            if self.is_first_step:
+                self.model_start_time = seconds
+
+            # if no particles released, then no need for windage
+            # TODO: revisit this since sc.num_released shouldn't be None
+            if sc.num_released is None or sc.num_released == 0:
+                return
+
             rand.random_with_persistance(sc['windage_range'][:, 0],
                                     sc['windage_range'][:, 1],
                                     sc['windages'],
                                     sc['windage_persist'],
                                     time_step)
-
-            seconds = self.datetime_to_seconds(model_time_datetime)
-            if self.is_first_step:
-                self.model_start_time = seconds	#check units on this
 
             if sc.uncertain:
                 elapsed_time = abs(seconds - self.model_start_time)
