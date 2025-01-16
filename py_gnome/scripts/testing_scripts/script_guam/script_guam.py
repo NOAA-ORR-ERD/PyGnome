@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 """
 Script to test GNOME with guam data
+
+This script uses:
+ - a hand-generated Wind time series
+ - A CATS tide (SHIO) mover.
 """
 
 import os
@@ -16,10 +20,8 @@ from gnome.utilities.remote_data import get_datafile
 
 from gnome.model import Model
 
-from gnome.maps import MapFromBNA
-from gnome.environment import Wind, Tide
-from gnome.spills import surface_point_line_spill
-from gnome.movers import RandomMover, PointWindMover, CatsMover
+from gnome.environment import Tide
+from gnome.movers import RandomMover, CatsMover
 
 from gnome.outputters import Renderer
 from gnome.outputters import NetCDFOutput
@@ -55,15 +57,15 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     print('adding a spill')
     end_time = start_time + timedelta(hours=6)
-    spill = surface_point_line_spill(num_elements=1000,
-                                     start_position=(144.664166,
-                                                     13.441944, 0.0),
-                                     release_time=start_time,
-                                     end_release_time=end_time)
+    spill = gs.point_line_spill(num_elements=1000,
+                                start_position=(144.664166, 13.441944, 0.0),
+                                release_time=start_time,
+                                end_release_time=end_time)
     model.spills += spill
 
     print('adding a RandomMover:')
     model.movers += RandomMover(diffusion_coef=50000)
+
 
     print('adding a wind mover:')
     series = np.zeros((4, ), dtype=datetime_value_2d)
@@ -72,8 +74,9 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     series[2] = (start_time + timedelta(hours=25), (5, 0))
     series[3] = (start_time + timedelta(hours=48), (5, 0))
 
-    wind = Wind(timeseries=series, units='knot')
-    w_mover = gs.PointWindMover(wind)
+    wind = gs.PointWind(timeseries=series, units='knot')
+    # w_mover = gs.PointWindMover(wind)
+    w_mover = gs.WindMover(wind)
     model.movers += w_mover
     model.environment += w_mover.wind
 

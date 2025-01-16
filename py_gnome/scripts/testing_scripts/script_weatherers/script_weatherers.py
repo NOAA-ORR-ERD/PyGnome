@@ -2,21 +2,14 @@
 """
 Script to test GNOME with all weatherers and response options
 
-Note: this version is using the WEatherers individually
+Note: this version is using the Weatherers individually
       see script_weathering_run to see an easier way
 """
-
-
-
-
-
 
 from gnome import scripting as gs
 
 from gnome.basic_types import datetime_value_2d
 import os
-
-from gnome import scripting as gs
 
 
 from gnome.environment import constant_wind, Water, Waves
@@ -87,16 +80,16 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     end_time = start_time + gs.hours(24)
     oil_file = os.path.join(base_dir, 'alaska-north-slope.json')
     substance = gs.GnomeOil(filename=oil_file)
-    spill = gs.surface_point_line_spill(num_elements=100,
-                                        start_position=(-164.791878561,
-                                                        69.6252597267, 0.0),
-                                        release_time=start_time,
-                                        end_release_time=end_time,
-                                        amount=1000,
-                                        #substance='ALASKA NORTH SLOPE (MIDDLE PIPELINE, 1997)',
-                                        #substance='oil_ans_mp',
-                                        substance=substance,
-                                        units='bbl')
+    spill = gs.point_line_spill(
+        num_elements=100,
+        start_position=(-164.791878561, 69.6252597267, 0.0),
+        release_time=start_time,
+        end_release_time=end_time,
+        amount=1000,
+        #substance='ALASKA NORTH SLOPE (MIDDLE PIPELINE, 1997)',
+        #substance='oil_ans_mp',
+        substance=substance,
+        units='bbl')
 
     # set bullwinkle to .303 to cause mass goes to zero bug at 24 hours (when continuous release ends)
     spill.substance._bullwinkle = .303
