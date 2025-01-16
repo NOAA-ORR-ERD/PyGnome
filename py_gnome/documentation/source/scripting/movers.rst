@@ -77,10 +77,11 @@ Here's an example of first building an environment object from a gridded wind::
     wind_mover = gs.WindMover(wind)
     model.movers += wind_mover
 
-The work flow is identical for adding a current. Alternatively, we could skip explicitly creating the environment object as the mover classes also have the "from_netCDF" method. For example::
+The work flow is identical for adding a current::
 
     fn = 'gridded_current.nc'
-    current_mover = gs.CurrentMover.from_netCDF(filename=fn)
+    current = gs.GridCurrent.from_netCDF(filename=fn)
+    current_mover = gs.CurrentMover(current)
     model.movers += current_mover
 
 In both cases, the corresponding environment object is also added to the model.
