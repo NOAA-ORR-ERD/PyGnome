@@ -137,8 +137,6 @@ class WindMover(movers.PyMover):
                     uncertain_angle_scale=.4,
                     default_num_method='RK2',
                     **kwargs):
-        warnings.warn("WindMover.from_netCDF is deprecated. "
-                      "Please create the wind separately or use a helper function", DeprecationWarning)
 
         wind = GridWind.from_netCDF(filename, **kwargs)
 
