@@ -140,7 +140,6 @@ class CurrentMover(movers.PyMover):
         """
         Function for specifically creating a CurrentMover from a file
         """
-        warnings.warn("CurrentMover.from_netCDF is deprecated. Please create the current separately or use a helper function", DeprecationWarning)
         current = GridCurrent.from_netCDF(filename, **kwargs)
 
         return cls(name=name,
