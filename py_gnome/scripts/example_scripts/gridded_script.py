@@ -30,7 +30,7 @@ spill = gs.point_line_spill(release_time="2023-03-03",
 model.spills += spill
 
 # create wind object and associated mover;
-# add to model (also adds environment object
+# add to model (also adds environment object)
 fn = data_dir / 'gridded_wind.nc'
 wind = gs.GridWind.from_netCDF(filename=fn)
 wind_mover = gs.WindMover(wind)
@@ -40,6 +40,13 @@ model.movers += wind_mover
 # fn = data_dir / 'gridded_current.nc'
 # current_mover = gs.CurrentMover.from_netCDF(filename=fn)
 # model.movers += current_mover
+
+# create current object and associated mover;
+# add to model (also adds environment object)
+fn = data_dir / 'gridded_current.nc'
+current = gs.GridCurrent.from_netCDF(filename=fn)
+current_mover = gs.CurrentMover(current)
+model.movers += current_mover
 
 # Add random walk Diffusion
 model.movers += gs.RandomMover(diffusion_coef=1e5)
