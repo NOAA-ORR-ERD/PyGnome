@@ -39,10 +39,34 @@ class TZOffsetSchema(MappingSchema):
         else:
             return null
 
-@dataclass
+
+@dataclass(frozen=True)
 class TZOffset:
     offset: float = None
-    title: str = "No Timezone Specified"
+    title: str = ""
+
+    def __post_init__(self):
+        """
+        Make sure offset is a float: convert from timedelta if need be.
+        Assign a default title if not given.
+        """
+        if self.offset is not None:
+            try:
+                hours = self.offset.total_seconds() / 3600
+            except AttributeError:
+                hours = float(self.offset)
+            # self.offset = hours
+            # need to use this for frozen dataclass
+            object.__setattr__(self, 'offset', hours)
+
+        if self.title == "":
+            if self.offset is None:
+                title = "No Timezone Specified"
+            else:
+                title = self.as_iso_string()
+            # self.title = title
+            # need to use this for frozen dataclass
+            object.__setattr__(self, 'title', title)
 
     def as_timedelta(self):
         """
