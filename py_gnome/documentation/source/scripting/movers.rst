@@ -31,6 +31,13 @@ Now we create a :class:`gnome.movers.PointWindMover` by passing the Wind Object 
 
 Even though we didn't explicitly add the wind to the model environment, when the mover is added to the model, the wind object will also be added. Any weatherers subsequently added to the model will use that wind by default (see next section).
 
+To set uncertainty parameters if you are running with model uncertainty on::
+
+    w_mover = gs.PointWindMover(wind, uncertain_duration=3.0 * 3600, uncertain_time_delay=0,
+                              uncertain_speed_scale=2.0, uncertain_angle_scale=0.4)
+
+The uncertain_time_delay is in seconds from the model start_time. Only parameters that are set different from the defaults need to be included.
+
 Some helper functions are available in :mod:`gnome.scripting` for creating wind movers.
 Many of these helper functions automatically create and add environment objects to the model.
 For example, to create a wind mover from a single point time series in a text file::
@@ -78,6 +85,16 @@ The work flow is identical for adding a current. Alternatively, we could skip ex
 
 In both cases, the corresponding environment object is also added to the model.
 
+To set uncertainty parameters if you are running with model uncertainty on::
+
+    wind_mover = gs.WindMover(wind, uncertain_duration=3.0 * 3600, uncertain_time_delay=0,
+                              uncertain_speed_scale=2.0, uncertain_angle_scale=0.4)
+
+    current_mover = gs.CurrentMover(current, uncertain_duration=3.0 * 3600, uncertain_time_delay=0,
+                              uncertain_along=0.25, uncertain_cross=0.1)
+
+The uncertain_time_delay is in seconds from the model start_time. Only parameters that are set different from the defaults need to be included.
+
 To use a current or wind in multiple files pass in a Python list with the file names::
  
     file_list = ['day1.nc',
@@ -109,11 +126,15 @@ Randoms movers can be added to simulate both horizontal and vertical turbulent m
     random_mover = gs.RandomMover(diffusion_coef=10000) #in cm/s
     model.movers += random_mover
 
-    #Or, for  a 3D simulation
+    # Or, for a 3D simulation
     random_mover_3d = gs.RandomMover3D(vertical_diffusion_coef_above_ml=10,vertical_diffusion_coef_below_ml=0.2,\
     mixed_layer_depth=10, horizontal_diffusion_coef_above_ml=10000,\
     horizontal_diffusion_coef_below_ml=100) #diffusion coefficients in cm/s, MLD in meters
     model.movers += random_mover_3d
+
+    # With model uncertainty turned on, change the diffusion uncertainty, default = 2
+    random_mover = gs.RandomMover(diffusion_coef=10000, uncertain_factor = 3) #diffusion coefficients in cm/s
+    model.movers += random_mover
 
 Rise velocity movers
 --------------------
