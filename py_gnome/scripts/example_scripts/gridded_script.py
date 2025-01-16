@@ -15,7 +15,7 @@ mymap = gs.MapFromBNA(map_fn, refloat_halflife=1)
 model.map = mymap
 
 # create and add a spill
-spill = gs.surface_point_line_spill(release_time="2023-03-03",
+spill = gs.point_line_spill(release_time="2023-03-03",
                                     start_position=(-125, 48.0, 0),
                                     num_elements=1000)
 model.spills += spill
@@ -32,7 +32,9 @@ model.movers += gs.RandomMover(diffusion_coef=1e5)
 
 # create a current mover (auto creates and adds environment object)
 fn = data_dir / 'gridded_current.nc'
-current_mover = gs.CurrentMover.from_netCDF(filename=fn)
+#current_mover = gs.CurrentMover.from_netCDF(filename=fn)	# deprecated
+current = gs.GridCurrent.from_netCDF(filename=fn)
+current_mover = gs.CurrentMover(current)
 model.movers += current_mover
 
 renderer = gs.Renderer(mymap,
