@@ -37,16 +37,16 @@ wind_mover = gs.WindMover(wind)
 model.movers += wind_mover
 
 # # create a current mover (auto creates and adds environment object)
-# fn = data_dir / 'gridded_current.nc'
-# current_mover = gs.CurrentMover.from_netCDF(filename=fn)
-# model.movers += current_mover
+fn = data_dir / 'gridded_current.nc'
+current_mover = gs.CurrentMover.from_netCDF(filename=fn)
+model.movers += current_mover
 
 # create current object and associated mover;
 # add to model (also adds environment object)
-fn = data_dir / 'gridded_current.nc'
-current = gs.GridCurrent.from_netCDF(filename=fn)
-current_mover = gs.CurrentMover(current)
-model.movers += current_mover
+# fn = data_dir / 'gridded_current.nc'
+# current = gs.GridCurrent.from_netCDF(filename=fn)
+# current_mover = gs.CurrentMover(current)
+# model.movers += current_mover
 
 # Add random walk Diffusion
 model.movers += gs.RandomMover(diffusion_coef=1e5)
