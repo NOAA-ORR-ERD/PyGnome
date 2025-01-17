@@ -86,8 +86,6 @@ class CurrentMover(movers.PyMover):
                                    Default: RK2
         """
 
-        (super(CurrentMover, self).__init__(default_num_method=default_num_method,
-                                              **kwargs))
         self.filename = filename
         self.current = current
 
@@ -124,6 +122,7 @@ class CurrentMover(movers.PyMover):
         
         #if time_offset is not None:
         #    self.time_offset = time_offset
+        (super(CurrentMover, self).__init__(default_num_method=default_num_method, **kwargs))
 
     #fixme: we have the defaults on the from_netCDF init -- they should be lower down!
     @classmethod
@@ -178,19 +177,23 @@ class CurrentMover(movers.PyMover):
 
     @property
     def time_offset(self):
-        return TZOffset(offset=self.current.time.tz_offset, title=self._time_offset.title)
+        self._tz_offset = TZOffset(offset=self.current.time.tz_offset, title=self.current.time.tz_offset_name)
+        return self._tz_offset
     
     @time_offset.setter
     def time_offset(self, tz_o):
         if isinstance(tz_o, TZOffset):
             self._time_offset = tz_o
             self.current.time.tz_offset = tz_o.offset
+            self.current.time.tz_offset_name = tz_o.title
         elif isinstance(tz_o, (int, float)):
             self._time_offset = TZOffset(offset=tz_o)
             self.current.time.tz_offset = tz_o
+            self.current.time.tz_offset_name = 'No Name Specified'
         elif tz_o is None:
             self._time_offset = TZOffset()
-            self.current.time.tz_offset = None
+            self.current.time.tz_offset = self._time_offset.offset
+            self.current.time.tz_offset_name = self._time_offset.title
         else:
             raise ValueError("time_offset must be a TZOffset or a number, or None")
 

@@ -230,7 +230,7 @@ class PyMover(Mover):
                             'Euler': self.get_delta_Euler,
                             'RK2': self.get_delta_RK2}
         self.default_num_method = default_num_method
-        self._time_offset = time_offset if time_offset is not None else time_utils.TZOffset()
+        self.time_offset = time_offset if time_offset is not None else time_utils.TZOffset()
 
         if 'env' in kwargs:
             if hasattr(self, '_req_refs'):
