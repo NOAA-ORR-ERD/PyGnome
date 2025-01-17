@@ -100,7 +100,7 @@ class CurrentMover(movers.PyMover):
                           "helper function", DeprecationWarning)
             self.current = GridCurrent.from_netCDF(filename=self.current,
                                                  **kwargs)
-        if filename is not None:
+        if filename is not None and current is None:
             warnings.warn("The behavior of providing a filename to a CurrentMover "
                           "__init__ is deprecated. Please pass a current or use a "
                           "helper function", DeprecationWarning)

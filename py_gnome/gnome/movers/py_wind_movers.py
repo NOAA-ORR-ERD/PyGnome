@@ -102,7 +102,7 @@ class WindMover(movers.PyMover):
                           "Please pass a wind or use a helper function", DeprecationWarning)
             self.wind = GridWind.from_netCDF(filename=self.wind,
                                                  **kwargs)
-        if filename is not None:
+        if filename is not None and wind is None:
             warnings.warn("The behavior of providing a filename to a WindMover __init__ is deprecated. "
                           "Please pass a wind or use a helper function", DeprecationWarning)
 
