@@ -12,6 +12,7 @@ This is simply making a point source with a given distribution of droplet sizes
 """
 
 import os
+from pathlib import Path
 from datetime import datetime, timedelta
 import gnome.scripting as gs
 
@@ -22,8 +23,8 @@ from gnome.spills.substance import NonWeatheringSubstance
 
 
 # define base directory
-base_dir = os.path.dirname(__file__)
-images_dir = os.path.join(base_dir, 'images')
+base_dir = Path(__file__).parent
+images_dir = base_dir / 'images'
 
 def make_model():
     print('initializing the model')
@@ -84,9 +85,10 @@ def make_model():
                                      horizontal_diffusion_coef_below_ml = 100000,
                                      mixed_layer_depth=20)
 
-    ncout = gs.NetCDFOutput(filename="HI_output.nc",
-                        output_timestep=gs.hours(1),
-                        )
+    ncout = gs.NetCDFOutput(
+        filename=base_dir / "HI_output.nc",
+        output_timestep=gs.hours(1),
+    )
 
     model.outputters += ncout
     return model

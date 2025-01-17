@@ -35,7 +35,6 @@ model.spills += spill
 # create a current mover
 
 cur_file = data_dir / 'gridded_current.nc'
-# gs.CurrentMover.from_netCDF is deprecated
 # current_mover = gs.CurrentMover.from_netCDF(filename=cur_file,
 #                                             uncertain_along=0.25,
 #                                             uncertain_cross=0.1,
