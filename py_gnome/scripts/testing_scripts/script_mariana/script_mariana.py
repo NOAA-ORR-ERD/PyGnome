@@ -15,7 +15,6 @@ from gnome.utilities.remote_data import get_datafile
 from gnome.model import Model
 
 from gnome.maps import MapFromBNA
-from gnome.spills import surface_point_line_spill
 from gnome.movers import RandomMover, constant_point_wind_mover, c_GridCurrentMover
 
 from gnome.outputters import (Renderer,
@@ -79,19 +78,19 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # #
 
     print('adding four spill')
-    model.spills += surface_point_line_spill(num_elements=NUM_ELEMENTS // 4,
+    model.spills += scripting.point_line_spill(num_elements=NUM_ELEMENTS // 4,
                                              start_position=(145.25, 15.0,
                                                              0.0),
                                              release_time=start_time)
-    model.spills += surface_point_line_spill(num_elements=NUM_ELEMENTS // 4,
+    model.spills += scripting.point_line_spill(num_elements=NUM_ELEMENTS // 4,
                                              start_position=(146.25, 15.0,
                                                              0.0),
                                              release_time=start_time)
-    model.spills += surface_point_line_spill(num_elements=NUM_ELEMENTS // 4,
+    model.spills += scripting.point_line_spill(num_elements=NUM_ELEMENTS // 4,
                                              start_position=(145.75, 15.25,
                                                              0.0),
                                              release_time=start_time)
-    model.spills += surface_point_line_spill(num_elements=NUM_ELEMENTS // 4,
+    model.spills += scripting.point_line_spill(num_elements=NUM_ELEMENTS // 4,
                                              start_position=(145.75, 14.75,
                                                              0.0),
                                              release_time=start_time)

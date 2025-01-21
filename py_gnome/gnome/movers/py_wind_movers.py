@@ -102,7 +102,7 @@ class WindMover(movers.PyMover):
                           "Please pass a wind or use a helper function", DeprecationWarning)
             self.wind = GridWind.from_netCDF(filename=self.wind,
                                                  **kwargs)
-        if filename is not None:
+        if filename is not None and wind is None:
             warnings.warn("The behavior of providing a filename to a WindMover __init__ is deprecated. "
                           "Please pass a wind or use a helper function", DeprecationWarning)
 
@@ -137,8 +137,6 @@ class WindMover(movers.PyMover):
                     uncertain_angle_scale=.4,
                     default_num_method='RK2',
                     **kwargs):
-        warnings.warn("WindMover.from_netCDF is deprecated. "
-                      "Please create the wind separately or use a helper function", DeprecationWarning)
 
         wind = GridWind.from_netCDF(filename, **kwargs)
 
@@ -198,21 +196,21 @@ class WindMover(movers.PyMover):
         super(WindMover, self).prepare_for_model_step(sc, time_step,
                                                         model_time_datetime)
 
-        # if no particles released, then no need for windage
-        # TODO: revisit this since sc.num_released shouldn't be None
-        if sc.num_released is None or sc.num_released == 0:
-            return
-
         if self.active:
+            seconds = self.datetime_to_seconds(model_time_datetime)
+            if self.is_first_step:
+                self.model_start_time = seconds
+
+            # if no particles released, then no need for windage
+            # TODO: revisit this since sc.num_released shouldn't be None
+            if sc.num_released is None or sc.num_released == 0:
+                return
+
             rand.random_with_persistance(sc['windage_range'][:, 0],
                                     sc['windage_range'][:, 1],
                                     sc['windages'],
                                     sc['windage_persist'],
                                     time_step)
-
-            seconds = self.datetime_to_seconds(model_time_datetime)
-            if self.is_first_step:
-                self.model_start_time = seconds	#check units on this
 
             if sc.uncertain:
                 elapsed_time = abs(seconds - self.model_start_time)

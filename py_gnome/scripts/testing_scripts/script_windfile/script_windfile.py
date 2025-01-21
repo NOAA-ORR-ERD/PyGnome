@@ -4,7 +4,7 @@
 Script to test "bad" nws data file
 
 Data file downloaded via GOODS on 3/9/2016 -- that same point source fails
-when used thorugh WebGNOME
+when used thru WebGNOME
 
 """
 
@@ -13,7 +13,7 @@ from datetime import datetime, timedelta
 
 import numpy as np
 
-from gnome import scripting
+from gnome import scripting as gs
 from gnome.basic_types import datetime_value_2d
 
 from gnome.utilities.remote_data import get_datafile
@@ -23,7 +23,6 @@ from gnome.environment import Wind
 from gnome.maps import MapFromBNA
 
 from gnome.model import Model
-from gnome.spills import surface_point_line_spill
 from gnome.movers import RandomMover, PointWindMover
 # from gnome.movers import CatsMover, ComponentMover
 
@@ -66,7 +65,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     model.outputters += renderer
 
     # netcdf_file = os.path.join(base_dir, 'script_boston.nc')
-    # scripting.remove_netcdf(netcdf_file)
+    # gs.remove_netcdf(netcdf_file)
     # model.outputters += NetCDFOutput(netcdf_file, which_data='all')
 
     # model.outputters += KMZOutput(os.path.join(base_dir, 'script_boston.kmz'))
@@ -103,12 +102,11 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
     print('adding a spill')
 
-    end_time = start_time + timedelta(hours=12)
-    spill = surface_point_line_spill(num_elements=100,
-                                     start_position=(-70.911432,
-                                                     42.369142, 0.0),
-                                     release_time=start_time,
-                                     end_release_time=end_time)
+    end_time = start_time + gs.hours(12)
+    spill = gs.point_line_spill(num_elements=100,
+                                start_position=(-70.911432, 42.369142, 0.0),
+                                release_time=start_time,
+                                end_release_time=end_time)
 
     model.spills += spill
 
@@ -116,7 +114,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
 
 if __name__ == "__main__":
-    scripting.make_images_dir()
+    gs.make_images_dir()
     print("setting up the model")
     model = make_model()
     print("running the model")

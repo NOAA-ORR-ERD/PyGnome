@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 import dateutil
 import geopandas as gpd
 import os
-import pathlib
+from pathlib import Path
 import tempfile
 import zipfile
 
@@ -21,6 +21,11 @@ from gnome.spill_container import SpillContainerPair
 # file extension to use for test output files
 #  this is used by the output_filename fixture in conftest:
 FILE_EXTENSION = ""
+
+# fixme: there's also a output_dir fixture that should to the trick
+HERE = Path(__file__).parent
+OUTPUT_DIR = HERE / "output_shape"
+OUTPUT_DIR.mkdir(exist_ok=True)
 
 
 @pytest.fixture(scope='function')
@@ -47,7 +52,9 @@ def model(sample_model_fcn, output_filename):
 
 def test_init(output_dir):
     'simple initialization passes'
-    shp = ShapeOutput(os.path.join(output_dir, 'test'))
+    shp = ShapeOutput(output_dir / 'test')
+
+    assert isinstance(shp, ShapeOutput)
 
 
 def test_init_filename_exceptions():
@@ -137,7 +144,7 @@ def get_shape_file_stats(filename):
 
 
 def test_multi_timesteps(model, output_dir):
-    filename = os.path.join(output_dir, "multi_timesteps.zip")
+    filename = output_dir / "multi_timesteps.zip"
 
     shp = ShapeOutput(filename, include_uncertain_boundary=True,
                       include_certain_boundary=True)
@@ -215,7 +222,7 @@ def test_singlestep_model_start(model, output_dir):
        #    set to False.  Should just output single set of points for the model
        #    start time.
     """
-    filename = os.path.join(output_dir, "single_step_model_start.zip")
+    filename = output_dir / "single_step_model_start.zip"
     # Just look at certain for this test...
     model.uncertain = False
     # model_step = timedelta(seconds=model.time_step)
@@ -241,7 +248,7 @@ def test_singlestep_model_start(model, output_dir):
 
 
 def test_singlestep(model, output_dir):
-    filename = os.path.join(output_dir, "single_step.zip")
+    filename = output_dir / "single_step.zip"
     # Just look at certain for this test...
     model.uncertain = False
     model_step = timedelta(seconds=model.time_step)
@@ -350,7 +357,7 @@ def test_singlestep(model, output_dir):
 
 
 def test_nozip(model, output_dir):
-    filename = pathlib.Path(output_dir, "shapefile_no_zip.shp")
+    filename = output_dir / "shapefile_no_zip.shp"
 
     shp = ShapeOutput(filename, zip_output=False)
     model.outputters += shp
@@ -407,11 +414,10 @@ def test_timesteps2(model, output_dir):
 
 
 @pytest.mark.xfail
+# NOTE: This currently fails because the model isn't
+#       calling post_model_run after a failure -- it's just crashing out.
 def test_model_stops_in_middle(model):
     """
-    NOTE: This currently fails because the model isn't
-          calling post_model_run after a failure -- it's just crashing out.
-
     If the model stops in the middle of a run:
     e.g. runs out of data, it should still output results.
     """

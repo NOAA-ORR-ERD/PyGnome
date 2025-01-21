@@ -4,9 +4,8 @@ Eventually update to use Grid Map rather than BNA
 """
 
 import os
+from pathlib import Path
 from datetime import datetime, timedelta
-
-import numpy as np
 
 from gnome import scripting
 from gnome import utilities
@@ -31,10 +30,10 @@ from gnome.movers import IceWindMover, IceMover
 import gnome.utilities.profiledeco as pd
 
 # define base directory
-base_dir = os.path.dirname(__file__)
+base_dir = Path(__file__).parent
 
 
-def make_model(images_dir=os.path.join(base_dir, 'images')):
+def make_model(images_dir=base_dir / 'images'):
     print('initializing the model')
 
     start_time = datetime(1985, 1, 1, 13, 31)
@@ -45,7 +44,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
                   duration=timedelta(days=4),
                   time_step=3600*2)
 
-    mapfile = get_datafile(os.path.join(base_dir, 'arctic_coast3.bna'))
+    mapfile = get_datafile(base_dir / 'arctic_coast3.bna')
 
     print('adding the map')
     model.map = MapFromBNA(mapfile, refloat_halflife=0.0)  # seconds
@@ -58,7 +57,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # default is 'forecast' LEs draw on top
 #     renderer = Renderer(mapfile, images_dir, image_size=(1024, 768))
 #     model.outputters += renderer
-    netcdf_file = os.path.join(base_dir, 'script_old_TAPa.nc')
+    netcdf_file = base_dir / 'script_old_TAPa.nc'
     scripting.remove_netcdf(netcdf_file)
 
     model.outputters += NetCDFOutput(netcdf_file, which_data='all')

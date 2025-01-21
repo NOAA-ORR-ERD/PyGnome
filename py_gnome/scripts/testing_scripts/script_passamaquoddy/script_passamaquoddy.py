@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 
 import numpy as np
 
-from gnome import scripting
+from gnome import scripting as gs
 from gnome.basic_types import datetime_value_2d
 from gnome.utilities.remote_data import get_datafile
 
@@ -16,7 +16,6 @@ from gnome.model import Model
 
 from gnome.maps import MapFromBNA
 from gnome.environment import Wind, Tide
-from gnome.spills import surface_point_line_spill
 from gnome.movers import RandomMover, PointWindMover, CurrentCycleMover
 
 from gnome.outputters import (Renderer,
@@ -52,12 +51,12 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     model.outputters += renderer
 
     netcdf_file = os.path.join(base_dir, 'script_passamaquoddy.nc')
-    scripting.remove_netcdf(netcdf_file)
+    gs.remove_netcdf(netcdf_file)
 
     model.outputters += NetCDFOutput(netcdf_file, which_data='all')
 
     print('adding a spill')
-    spill = surface_point_line_spill(num_elements=1000,
+    spill = gs.point_line_spill(num_elements=1000,
                                      start_position=(-66.991344, 45.059316,
                                                      0.0),
                                      release_time=start_time)
@@ -97,6 +96,6 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
 
 
 if __name__ == '__main__':
-    scripting.make_images_dir()
+    gs.make_images_dir()
     model = make_model()
     model.full_run()

@@ -42,7 +42,7 @@ model.outputters += gs.NetCDFOutput(netcdf_file,
                                     which_data='all')
 
 print('adding a spill')
-spill1 = gs.surface_point_line_spill(num_elements=1000,
+spill1 = gs.point_line_spill(num_elements=1000,
                                      start_position=(-163.75,
                                                      69.75,
                                                      0.0),
