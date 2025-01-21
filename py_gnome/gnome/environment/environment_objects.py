@@ -831,12 +831,11 @@ class IceAwareCurrent(GridCurrent):
                          ice_velocity=None,
                          *args,
                          **kwargs):
-
+        
         super(IceAwareCurrent, self).init_from_netCDF(
-            ice_concentration=ice_concentration,
-            ice_velocity=ice_velocity,
             **kwargs
         )
+        
         temp_fn = None
         if ice_file is not None:
             temp_fn = kwargs['filename']
@@ -917,7 +916,6 @@ class IceAwareWind(GridWind):
                     ice_concentration=None,
                     **kwargs):
         iaw = (super(IceAwareWind, cls).from_netCDF(
-            ice_concentration=ice_concentration,
             **kwargs
             )
         )
