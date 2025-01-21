@@ -174,8 +174,6 @@ class TrajectoryGeoJsonOutput(Outputter):
         filename = os.path.join(self.output_dir,
                                 file_format.format(step_num))
 
-        print("output to file")
-        print(type(json_content))
         with open(filename, 'w+', encoding='utf-8') as outfile:
             dump(json_content, outfile, indent=4)
 
@@ -215,12 +213,11 @@ class TrajectoryGeoJsonOutput(Outputter):
     #     self.clean_output_files()
 
     def clean_output_files(self):
-        print("in clean_output_files")
         if self.output_dir:
             files = glob(os.path.join(self.output_dir, 'geojson_*.geojson'))
 
-            print("files are:")
-            print(files)
+            self.logger.debug("Cleaning output files: ")
+            self.logger.debug(files)
 
             for f in files:
                 os.remove(f)

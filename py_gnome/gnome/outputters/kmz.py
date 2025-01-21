@@ -2,7 +2,8 @@
 kmz  outputter
 """
 
-import os
+# import os
+from pathlib import Path
 from datetime import timedelta, datetime
 import zipfile
 import base64
@@ -43,16 +44,9 @@ class KMZOutput(OutputterFilenameMixin, Outputter):
 
         uses super to pass optional ``**kwargs`` to base class ``__init__`` method
         '''
-        # a little check:
-        # move check to prepare_for_model_run so don't get error loading save files
-        #self._check_filename(filename)
-
-        # strip off the .kml or .kmz
-        filename = filename[:-4] if filename.endswith(".kml") else filename
-        filename = filename[:-4] if filename.endswith(".kmz") else filename
-        filename += ".kmz"
-
-        self.kml_name = os.path.split(filename)[-1] + ".kml"
+        filename = Path(filename)  # make sure it's a Path object
+        filename = filename.with_suffix(".kmz")
+        self.kml_name = filename.with_suffix(".kml").parts[-1]
 
         super(KMZOutput, self).__init__(filename=filename,
                                         **kwargs)
