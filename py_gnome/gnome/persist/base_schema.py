@@ -552,7 +552,11 @@ class ObjTypeSchema(MappingSchema):
 
     save = True             # Attr will appear in save files
     update = True           # Attr is updatable through .update
-    read_only = False       # Attr is read only. This supersedes update
+    read_only = False       # Attr is read only. This supersedes update.
+                            # Read only means the attribute will be dropped when 
+                            # passing through update or deserialization
+                            # It cannot be set directly, or provided to __init__
+                            # read_only and save are NOT mutually exclusive
     test_equal = True       # Attr will be ignored in == tests
     isdatafile = False      # Attr references filenames to be added to save files
     save_reference = True   # Attr is a link to another GnomeId and should be
@@ -574,44 +578,6 @@ class ObjTypeSchema(MappingSchema):
                           'missing': missing,
                           'default': default
                           }
-
-    # Attr will appear in save files
-    save = True
-
-    # Attr is updatable through .update
-    update = True
-
-    # Attr is read only. This supersedes update
-    read_only = False
-
-    # Attr will be ignored in == tests
-    test_equal = True
-
-    # Attr references filenames to be added to save files
-    isdatafile = False
-
-    # Attr is a link to another GnomeId and should be saved as a reference
-    # in save files
-    save_reference = True
-
-    # (Colander) Set default = drop to skip this attribute if it is None
-    # during serialization
-    default = null
-
-    # (Colander) If not present in cstruct, ignore. This attribute is NOT
-    # required for correct deserialization.  Set missing=required for all
-    # attributes that ARE required for object init.
-    missing = drop
-
-    # These are the defaults automatically applied to children of this node
-    # if not defined already
-    _colander_defaults = {'save': save,
-                          'update': update,
-                          'read_only': read_only,
-                          'test_equal': test_equal,
-                          'isdatafile': isdatafile,
-                          'missing': missing,
-                          'default': default}
 
     # defines the obj_type which is stored by all gnome objects when persisting
     # to save files
