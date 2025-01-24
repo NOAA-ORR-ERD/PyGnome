@@ -1,7 +1,8 @@
 
 from .spill import (Spill,
                     SpillSchema,
-                    surface_point_line_spill,
+                    surface_point_line_spill,	#deprecated
+                    point_line_spill,
                     subsurface_spill,
                     grid_spill,
                     spatial_release_spill,

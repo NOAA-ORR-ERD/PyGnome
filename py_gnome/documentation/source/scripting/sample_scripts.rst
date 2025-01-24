@@ -117,6 +117,11 @@ This script uses the current cycle mover for Passamaquoddy Bay - a set of repres
 This script uses a gridded wind.
 
 
+``script_plume_HI``
+------------------
+This script sets up a subsurface spill and uses the rise velocity mover and 3D diffusion.
+
+
 ``script_weatherers``
 ---------------------
 This script uses all weatherers and response options (as of 9/2015).
