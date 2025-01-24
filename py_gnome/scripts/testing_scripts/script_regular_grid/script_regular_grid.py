@@ -23,7 +23,7 @@ def make_model(images_dir=base_dir / 'images'):
     model.map = gs.MapFromBNA(mapfile)
 
     curfile = gs.get_datafile(base_dir / "mareaabril.nc")
-    cur_mover = gs.CurrentMover(curfile)
+    cur_mover = gs.CurrentMover.from_netCDF(curfile)
     model.movers += cur_mover
 
     # model.movers += gs.RandomMover(diffusion_coef=1e5)
@@ -31,7 +31,7 @@ def make_model(images_dir=base_dir / 'images'):
     # adding a wind to make it more interesting
     model.movers += gs.constant_point_wind_mover(15, 270, "m/s")
 
-    model.spills += gs.surface_point_line_spill(
+    model.spills += gs.point_line_spill(
         num_elements=10,
         amount=1.0,  # kg
         start_position=(

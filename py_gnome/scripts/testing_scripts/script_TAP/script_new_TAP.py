@@ -16,7 +16,7 @@ from gnome.model import Model
 
 from gnome.maps import MapFromBNA
 from gnome.environment import Environment
-from gnome.spills import surface_point_line_spill
+from gnome.spills import point_line_spill
 from gnome.movers import RandomMover, constant_point_wind_mover, c_GridCurrentMover, IceAwareRandomMover
 
 from gnome.environment import IceAwareCurrent, IceAwareWind, GridCurrent
@@ -58,7 +58,7 @@ def make_model(images_dir=base_dir / 'images'):
 #                                                       0.0),
 #                                       release_time=start_time)
 #
-    spill1 = surface_point_line_spill(num_elements=50000,
+    spill1 = point_line_spill(num_elements=50000,
                                       start_position=(196.25,
                                                       69.75,
                                                       0.0),

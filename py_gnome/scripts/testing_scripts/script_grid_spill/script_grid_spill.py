@@ -63,7 +63,7 @@ model.movers += forecast
 
 currentfile = gs.get_datafile(os.path.join(base_dir, 'CAROMS.nc'))
 
-roms = gs.CurrentMover(currentfile)
+roms = gs.CurrentMover.from_netCDF(currentfile)
 # extrapolate the currents
 roms.current.extrapolation_is_allowed = True
 # roms.active_range = (gs.MinusInfTime(), gs.asdatetime("2019-04-19T20:00"))
