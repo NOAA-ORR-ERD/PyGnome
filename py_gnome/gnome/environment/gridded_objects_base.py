@@ -47,6 +47,9 @@ class TimeSchema(base_schema.ObjTypeSchema):
     tz_offset = SchemaNode(
         Float(), save=True, update=True, missing=drop
     )
+    tz_offset_name = SchemaNode(
+        String(), save=True, update=True, missing=drop
+    )
 
 class GridSchema(base_schema.ObjTypeSchema):
     name = SchemaNode(String(), test_equal=False)
@@ -798,10 +801,13 @@ class VectorVariable(gridded.VectorVariable, Environment):
                  bottom_boundary_condition='mask',
                  *args,
                  **kwargs):
-        super().__init__(*args,
-                         surface_boundary_condition=surface_boundary_condition,
-                         bottom_boundary_condition=bottom_boundary_condition,
-                         **kwargs)
+        
+        super(VectorVariable, self).__init__(
+            *args,
+            surface_boundary_condition=surface_boundary_condition,
+            bottom_boundary_condition=bottom_boundary_condition,
+            **kwargs
+        )
         self.extrapolation_is_allowed = extrapolation_is_allowed
 
         #Adding this so unit conversion happens properly in the components

@@ -57,7 +57,7 @@ class Environment(GnomeId):
         '''
         self.make_default_refs = make_default_refs
         super().__init__(**kwargs)
-        self.timezone_offset=timezone_offset
+        self._timezone_offset=timezone_offset
         self.array_types = {}
 
     @property
