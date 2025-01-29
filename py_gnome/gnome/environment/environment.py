@@ -56,10 +56,31 @@ class Environment(GnomeId):
         :param name=None:
         '''
         self.make_default_refs = make_default_refs
-        self.timezone_offset=TZOffset()
-        self.array_types = {}
         super().__init__(**kwargs)
+        self._timezone_offset=timezone_offset
+        self.array_types = {}
 
+    @property
+    def timezone_offset(self):
+        return self._get_timezone_offset()
+    
+    def _get_timezone_offset(self):
+        return self._timezone_offset
+    
+    @timezone_offset.setter
+    def timezone_offset(self, value):
+        #Due to the possibility of multiple time objects, we need to check for and set the offset
+        #for all of them. Subclasses should re-implement this as necessary to maintain consistency
+        if value is None or isinstance(value, TZOffset):
+            self._set_timezone_offset(value)
+        else:
+            raise ValueError("timezone_offset must be set with a TZOffset object or None")
+    
+    def _set_timezone_offset(self, tzo):
+        if tzo is None:
+            tzo = TZOffset(offset=None, title="No Timezone Specified")
+        self._timezone_offset = tzo
+        
     def at(self, points, time, *, units=None, extrapolate=None, **kwargs):
         """
         Find the value of the property at positions P at time T

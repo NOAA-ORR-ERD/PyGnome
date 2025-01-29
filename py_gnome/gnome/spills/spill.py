@@ -70,17 +70,18 @@ class SpillSchema(ObjTypeSchema):
         missing=drop, save=True, update=True, save_reference=True
     )
     units = SchemaNode(
-        String(), missing=drop, save=True, update=True
+        String(),
+        missing=drop, save=True, update=True
     )
     amount = SchemaNode(
-        Float(), missing=0, save=True, update=True
+        Float(),
+        missing=0, save=True, update=True
     )
     amount_uncertainty_scale = SchemaNode(
         Float(), missing=drop, save=True, update=True
     )
     _appearance = SpillAppearanceSchema(
-        save=True, update=True, missing=drop,
-        test_equal=False
+        save=True, update=True, missing=drop, test_equal=False
     )
 
 
