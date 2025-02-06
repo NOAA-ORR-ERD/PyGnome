@@ -139,7 +139,6 @@ def test_default_props():
     assert py_cur.uncertain_along == 0.5
     assert py_cur.uncertain_cross == 0.25
     assert py_cur.scale_value == 1
-    #assert py_cur.time_offset == 0
     assert py_cur.default_num_method == 'RK2'
     #assert py_cur.grid_topology == None
 
@@ -400,24 +399,3 @@ def test_save_load():
         loaded = CurrentMover.load(zipfile_)
 
     assert loaded == py_current
-
-
-def test_time_offset_setting():
-    """
-    test setting time_offset
-    """
-    current = GridCurrent.from_netCDF(curr_file2)
-    py_cur = CurrentMover(current=current)
-
-    assert py_cur.time_offset.offset is 0
-    assert py_cur.current.time.tz_offset == 0
-
-    py_cur.time_offset = time_utils.TZOffset(-3.5, "half hour tz")
-    assert py_cur.time_offset.offset == -3.5
-
-    py_cur.time_offset = time_utils.TZOffset(4, "half hour tz")
-    assert py_cur.time_offset.offset == 4
-    
-    py_cur.time_offset = time_utils.TZOffset(None, None)
-    assert py_cur.time_offset.offset is None
-    assert py_cur.current.time.tz_offset is None

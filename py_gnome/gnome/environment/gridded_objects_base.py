@@ -18,10 +18,12 @@ import nucos as uc
 from gnome.gnomeobject import combine_signatures
 from gnome.persist import base_schema
 from gnome.gnomeobject import GnomeId
+from gnome.environment.environment import Environment
 from gnome.persist import (GeneralGnomeObjectSchema, SchemaNode, SequenceSchema,
                            String, Boolean, DateTime, TimeDelta, drop, FilenameSchema)
 from gnome.persist.extend_colander import LocalDateTime, UnknownMappingSchema
 from gnome.utilities.inf_datetime import InfDateTime
+from gnome.utilities.time_utils import TZOffset, TZOffsetSchema
 
 
 class TimeSchema(base_schema.ObjTypeSchema):
@@ -44,6 +46,9 @@ class TimeSchema(base_schema.ObjTypeSchema):
     )
     tz_offset = SchemaNode(
         Float(), save=True, update=True, missing=drop
+    )
+    tz_offset_name = SchemaNode(
+        String(), save=True, update=True, missing=drop
     )
 
 class GridSchema(base_schema.ObjTypeSchema):
@@ -68,6 +73,8 @@ class VariableSchemaBase(base_schema.ObjTypeSchema):
     units = SchemaNode(String())
     time = TimeSchema(
         save_reference=True
+    )
+    timezone_offset = TZOffsetSchema(
     )
     grid = GridSchema(
         save_reference=True
@@ -395,7 +402,7 @@ class PyGrid(gridded.grids.Grid):
         return gridded.grids.Grid._get_grid_type(*args, **kwargs)
 
 
-class Variable(gridded.Variable, GnomeId):
+class Variable(gridded.Variable, Environment):
     _schema = VariableSchema
 
     default_names = []
@@ -418,9 +425,9 @@ class Variable(gridded.Variable, GnomeId):
                  *args,
                  **kwargs):
         super().__init__(*args,
-                                       surface_boundary_condition=surface_boundary_condition,
-                                       bottom_boundary_condition=bottom_boundary_condition,
-                                       **kwargs)
+                         surface_boundary_condition=surface_boundary_condition,
+                         bottom_boundary_condition=bottom_boundary_condition,
+                         **kwargs)
         self.extrapolation_is_allowed = extrapolation_is_allowed
 
     def __repr__(self):
@@ -591,18 +598,6 @@ class Variable(gridded.Variable, GnomeId):
                       varname=varname,
                       **kwargs)
 
-    # @property
-    # def time_offset(self):
-    #     return self.time.time_offset
-    
-    # @time_offset.setter
-    # def time_offset(self, value):
-    #     #Due to the possibility of multiple time objects, we need to check for and set the offset
-    #     #for all of them
-    #     self.time.time_offset = value
-    #     if self.depth is not None and hasattr(self.depth, 'time') and self.depth.time is not self.time:
-    #         self.depth.time_offset = value
-
     @classmethod
     @combine_signatures
     def from_netCDF(cls, *args, **kwargs):
@@ -615,6 +610,22 @@ class Variable(gridded.Variable, GnomeId):
         var.init_from_netCDF(*args, **kwargs)
         return var
 
+    def _get_timezone_offset(self):
+        if not hasattr(self, 'time') or self.time is None:
+            return TZOffset()
+        return TZOffset(offset=self.time.tz_offset, title=self.time.tz_offset_name)
+
+    def _set_timezone_offset(self, tzo):
+        if not hasattr(self, 'time') or self.time is None:
+            return
+        if tzo is None:
+            tzo = TZOffset(offset=None, title="No Timezone Specified")
+        self.time.tz_offset = tzo.offset
+        self.time.tz_offset_name = tzo.title
+        if self.depth and hasattr(self.depth, 'time') and self.depth.time is not None:
+            self.depth.time.tz_offset = tzo.offset
+            self.depth.time.tz_offset_name = tzo.title
+            
     @combine_signatures
     def at(self, points, time, *, units=None, extrapolate=None, unmask=True, **kwargs):
 
@@ -771,7 +782,7 @@ class Depth(gridded.depth.Depth):
 
 Variable._default_component_types['depth'] = Depth
 
-class VectorVariable(gridded.VectorVariable, GnomeId):
+class VectorVariable(gridded.VectorVariable, Environment):
 
     _schema = VectorVariableSchema
 
@@ -786,9 +797,17 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
 
     def __init__(self,
                  extrapolation_is_allowed=False,
+                 surface_boundary_condition='extrapolate',
+                 bottom_boundary_condition='mask',
                  *args,
                  **kwargs):
-        super(VectorVariable, self).__init__(*args, **kwargs)
+        
+        super(VectorVariable, self).__init__(
+            *args,
+            surface_boundary_condition=surface_boundary_condition,
+            bottom_boundary_condition=bottom_boundary_condition,
+            **kwargs
+        )
         self.extrapolation_is_allowed = extrapolation_is_allowed
 
         #Adding this so unit conversion happens properly in the components
@@ -831,27 +850,34 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
         Allows one-function initialization of a VectorVariable from a file.
 
         :param filename: Default data source. Parameters below take precedence
-        :param varnames: Names of the variables in the data source file
-        :param grid_topology: Description of the relationship between grid attributes and variable names.
-        :param name: Name of property
-        :param units: Units
-        :param time: Time axis of the data
-        :param data: Underlying data source
-        :param grid: Grid that the data corresponds with
-        :param dataset: Instance of open Dataset
-        :param data_file: Name of data source file
-        :param grid_file: Name of grid source file
         :type filename: string
-        :type varnames: [] of string
-        :type grid_topology: {string : string, ...}
-        :type name: string
-        :type units: string
-        :type time: [] of datetime.datetime, netCDF4 Variable, or Time object
-        :type data: netCDF4.Variable or numpy.array
-        :type grid: pysgrid or pyugrid
+        
+        :param dataset: Instance of open Dataset
         :type dataset: netCDF4.Dataset
+        
+        :param data_file: Name of data source file
         :type data_file: string
+        
+        :param grid_file: Name of grid source file
         :type grid_file: string
+        
+        :param grid_topology: Description of the relationship between grid attributes and variable names.
+        :type grid_topology: {string : string, ...}
+        
+        :param grid: Grid that the data corresponds with
+        :type grid: pysgrid or pyugrid
+        
+        :param varnames: Names of the variables in the data source file
+        :type varnames: [] of string. Order of the names in the list would be order of vector components
+        
+        :param time: Time axis of the data
+        :type time: [] of datetime.datetime, netCDF4 Variable, or Time object
+        
+        :param name: Name of property
+        :type name: string
+        
+        :param units: Units
+        :type units: string
         '''
         Grid = self._default_component_types['grid']
         Time = self._default_component_types['time']
@@ -952,13 +978,42 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
                     load_all=load_all,
                     **kwargs)
 
+    @combine_signatures
     @classmethod
     def from_netCDF(cls, *args, **kwargs):
-        """
-        create a new VectorVariable object from a netcdf file
+        '''
+        Allows one-function initialization of a VectorVariable from a file.
 
-        See init_from_netcdf for signature
-        """
+        :param filename: Default data source. Parameters below take precedence
+        :type filename: string
+        
+        :param dataset: Instance of open Dataset
+        :type dataset: netCDF4.Dataset
+        
+        :param data_file: Name of data source file
+        :type data_file: string
+        
+        :param grid_file: Name of grid source file
+        :type grid_file: string
+        
+        :param grid_topology: Description of the relationship between grid attributes and variable names.
+        :type grid_topology: {string : string, ...}
+        
+        :param grid: Grid that the data corresponds with
+        :type grid: pysgrid or pyugrid
+        
+        :param varnames: Names of the variables in the data source file
+        :type varnames: [] of string. Order of the names in the list would be order of vector components
+        
+        :param time: Time axis of the data
+        :type time: [] of datetime.datetime, netCDF4 Variable, or Time object
+        
+        :param name: Name of property
+        :type name: string
+        
+        :param units: Units
+        :type units: string
+        '''
         var = cls.__new__(cls)
         var.init_from_netCDF(*args, **kwargs)
         return var
@@ -1000,6 +1055,22 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
         _vars = [Variable(grid=_grid, units=units[i], time=_time, data=d) for i, d in enumerate(_datas)]
         return cls(name=name, grid=_grid, time=_time, variables=_vars)
 
+    def _get_timezone_offset(self):
+        if not hasattr(self, 'time') or self.time is None:
+            return TZOffset()
+        return TZOffset(offset=self.time.tz_offset, title=self.time.tz_offset_name)
+    
+    def _set_timezone_offset(self, tzo):
+        if not hasattr(self, 'time') or self.time is None:
+            return
+        if tzo is None:
+            tzo = TZOffset(offset=None, title="No Timezone Specified")
+        self.time.tz_offset = tzo.offset
+        self.time.tz_offset_name = tzo.title
+        if self.depth and hasattr(self.depth, 'time') and self.depth.time is not None:
+            self.depth.time.tz_offset = tzo.offset
+            self.depth.time.tz_offset_name = tzo.title
+            
     def at(self, points, time, *, units=None, extrapolate=None, unmask=True, **kwargs):
         units = units if units else self._gnome_unit #no need to convert here, its handled in the subcomponents
         if extrapolate is None:

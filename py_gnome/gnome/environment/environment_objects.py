@@ -225,6 +225,11 @@ class VelocityGrid(VectorVariable):
             self.angle = angle
 
         super(VelocityGrid, self).__init__(**kwargs)
+        
+    def _set_timezone_offset(self, offset):
+        super(VelocityGrid, self)._set_timezone_offset(offset)
+        if self.angle is not None:
+            self.angle._set_timezone_offset(offset)
 
 
     def get_data_vectors(self):
@@ -444,12 +449,12 @@ class WaterDensityTS(TimeseriesData, Environment):
                                 data=data)
 
 
-class GridSediment(Variable, Environment):
+class GridSediment(Variable):
     _gnome_unit = 'ppt'
     default_names = nc_names['grid_sediment']['default_names'] #['sand_06']
 
 
-class IceConcentration(Variable, Environment):
+class IceConcentration(Variable):
     _ref_as = ['ice_concentration', 'ice_aware']
     default_names = nc_names['ice_concentration']['default_names'] #['ice_fraction', 'aice' ]
     cf_names = nc_names['ice_concentration']['cf_names'] #['sea_ice_area_fraction']
@@ -465,7 +470,7 @@ class Bathymetry(Variable):
     cf_names = nc_names['bathymetry']['cf_names'] #['depth']
 
 
-class GridCurrent(VelocityGrid, Environment):
+class GridCurrent(VelocityGrid):
     """
     GridCurrent is VelocityGrid that adds specific stuff for currents:
 
@@ -549,7 +554,7 @@ class GridCurrent(VelocityGrid, Environment):
         return value
 
 
-class GridWind(VelocityGrid, Environment):
+class GridWind(VelocityGrid):
     """
     Gridded winds -- usually from netcdf files from meteorological models.
 
@@ -755,7 +760,7 @@ class LandMask(Variable):
         return value
 
 
-class IceVelocity(VelocityGrid, Environment):
+class IceVelocity(VelocityGrid):
     _ref_as = ['ice_velocity', 'ice_aware']
     _gnome_unit = 'm/s'
     default_names = nc_names['ice_velocity']['default_names'] #{'u': ['ice_u','uice'],
@@ -893,6 +898,11 @@ class IceAwareCurrent(GridCurrent):
             return vels
         else:
             return water_v
+    
+    def _set_timezone_offset(self, offset):
+        super(IceAwareCurrent, self)._set_timezone_offset(offset)
+        self.ice_concentration._set_timezone_offset(offset)
+        self.ice_velocity._set_timezone_offset(offset)
 
 
 class IceAwareWind(GridWind):
@@ -968,6 +978,10 @@ class IceAwareWind(GridWind):
             return vels
         else:
             return wind_v
+    
+    def _set_timezone_offset(self, offset):
+        super(IceAwareWind, self)._set_timezone_offset(offset)
+        self.ice_concentration._set_timezone_offset(offset)
 
 
 
