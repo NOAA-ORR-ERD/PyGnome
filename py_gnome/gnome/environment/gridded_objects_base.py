@@ -850,27 +850,34 @@ class VectorVariable(gridded.VectorVariable, Environment):
         Allows one-function initialization of a VectorVariable from a file.
 
         :param filename: Default data source. Parameters below take precedence
-        :param varnames: Names of the variables in the data source file
-        :param grid_topology: Description of the relationship between grid attributes and variable names.
-        :param name: Name of property
-        :param units: Units
-        :param time: Time axis of the data
-        :param data: Underlying data source
-        :param grid: Grid that the data corresponds with
-        :param dataset: Instance of open Dataset
-        :param data_file: Name of data source file
-        :param grid_file: Name of grid source file
         :type filename: string
-        :type varnames: [] of string
-        :type grid_topology: {string : string, ...}
-        :type name: string
-        :type units: string
-        :type time: [] of datetime.datetime, netCDF4 Variable, or Time object
-        :type data: netCDF4.Variable or numpy.array
-        :type grid: pysgrid or pyugrid
+        
+        :param dataset: Instance of open Dataset
         :type dataset: netCDF4.Dataset
+        
+        :param data_file: Name of data source file
         :type data_file: string
+        
+        :param grid_file: Name of grid source file
         :type grid_file: string
+        
+        :param grid_topology: Description of the relationship between grid attributes and variable names.
+        :type grid_topology: {string : string, ...}
+        
+        :param grid: Grid that the data corresponds with
+        :type grid: pysgrid or pyugrid
+        
+        :param varnames: Names of the variables in the data source file
+        :type varnames: [] of string. Order of the names in the list would be order of vector components
+        
+        :param time: Time axis of the data
+        :type time: [] of datetime.datetime, netCDF4 Variable, or Time object
+        
+        :param name: Name of property
+        :type name: string
+        
+        :param units: Units
+        :type units: string
         '''
         Grid = self._default_component_types['grid']
         Time = self._default_component_types['time']
@@ -971,13 +978,42 @@ class VectorVariable(gridded.VectorVariable, Environment):
                     load_all=load_all,
                     **kwargs)
 
+    @combine_signatures
     @classmethod
     def from_netCDF(cls, *args, **kwargs):
-        """
-        create a new VectorVariable object from a netcdf file
+        '''
+        Allows one-function initialization of a VectorVariable from a file.
 
-        See init_from_netcdf for signature
-        """
+        :param filename: Default data source. Parameters below take precedence
+        :type filename: string
+        
+        :param dataset: Instance of open Dataset
+        :type dataset: netCDF4.Dataset
+        
+        :param data_file: Name of data source file
+        :type data_file: string
+        
+        :param grid_file: Name of grid source file
+        :type grid_file: string
+        
+        :param grid_topology: Description of the relationship between grid attributes and variable names.
+        :type grid_topology: {string : string, ...}
+        
+        :param grid: Grid that the data corresponds with
+        :type grid: pysgrid or pyugrid
+        
+        :param varnames: Names of the variables in the data source file
+        :type varnames: [] of string. Order of the names in the list would be order of vector components
+        
+        :param time: Time axis of the data
+        :type time: [] of datetime.datetime, netCDF4 Variable, or Time object
+        
+        :param name: Name of property
+        :type name: string
+        
+        :param units: Units
+        :type units: string
+        '''
         var = cls.__new__(cls)
         var.init_from_netCDF(*args, **kwargs)
         return var
