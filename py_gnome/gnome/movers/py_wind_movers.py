@@ -59,7 +59,6 @@ class WindMover(movers.PyMover):
 
     def __init__(self,
                  wind=None,
-                 time_offset=0,
                  uncertain_duration=3.* 3600,
                  uncertain_time_delay=0,
                  uncertain_speed_scale=2.,
@@ -84,14 +83,11 @@ class WindMover(movers.PyMover):
         :param uncertain_time_delay: when does the uncertainly kick in.
         :param uncertain_speed_scale: Scale for uncertainty of wind speed
         :param uncertain_angle_scale: Scale for uncertainty of wind angle
-        :param time_offset: Time zone shift if data is in GMT
         :param num_method: Numerical method for calculating movement delta.
                            Choices:('Euler', 'RK2', 'RK4')
                            Default: RK2
 
         """
-
-        (super(WindMover, self).__init__(default_num_method=default_num_method, **kwargs))
         self.wind = wind
         self.make_default_refs = False
 
@@ -110,7 +106,6 @@ class WindMover(movers.PyMover):
         self.uncertain_diffusion = 0
 
         self.scale_value = scale_value
-        #self.time_offset = time_offset
 
         self.sigma_theta = 0
         self.sigma2 = 0
@@ -119,6 +114,7 @@ class WindMover(movers.PyMover):
         self.shape = (2,)
         self.uncertainty_list = np.zeros((0,)+self.shape, dtype=np.float64)
 
+        (super(WindMover, self).__init__(default_num_method=default_num_method, **kwargs))
         self.array_types.update({'windages': gat('windages'),
                                  'windage_range': gat('windage_range'),
                                  'windage_persist': gat('windage_persist')})
@@ -126,7 +122,6 @@ class WindMover(movers.PyMover):
     @classmethod
     def from_netCDF(cls,
                     filename=None,
-                    time_offset=0,
                     scale_value=1,
                     uncertain_duration=3 * 3600,
                     uncertain_time_delay=0,
@@ -139,7 +134,6 @@ class WindMover(movers.PyMover):
 
         return cls(wind=wind,
                    filename=filename,
-                   time_offset=time_offset,
                    scale_value=scale_value,
                    uncertain_speed_scale=uncertain_speed_scale,
                    uncertain_angle_scale=uncertain_angle_scale,
@@ -152,24 +146,6 @@ class WindMover(movers.PyMover):
     @property
     def data_stop(self):
         return self.wind.data_stop
-
-    @property
-    def time_offset(self):
-        return TZOffset(offset=self.wind.time.tz_offset, title=self._time_offset.title)
-    
-    @time_offset.setter
-    def time_offset(self, tz_o):
-        if isinstance(tz_o, TZOffset):
-            self._time_offset = tz_o
-            self.wind.time.tz_offset = tz_o.offset
-        elif isinstance(tz_o, (int, float)):
-            self._time_offset = TZOffset(offset=tz_o)
-            self.wind.time.tz_offset = tz_o
-        elif tz_o is None:
-            self._time_offset = TZOffset()
-            self.wind.time.tz_offset = None
-        else:
-            raise ValueError("time_offset must be a TZOffset or a number, or None")
         
     def prepare_for_model_run(self):
         """

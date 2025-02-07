@@ -45,7 +45,6 @@ class PyMoverSchema(ProcessSchema):
     uncertain_duration = SchemaNode(Float())
     uncertain_time_delay = SchemaNode(Float())
     default_num_method = SchemaNode(String(), missing=drop, save=True, update=True)
-    time_offset = time_utils.TZOffsetSchema(save=True, update=True)
 
 class Process(GnomeId):
     """
@@ -221,7 +220,6 @@ class PyMover(Mover):
     _schema = PyMoverSchema
 
     def __init__(self,
-                 time_offset=None,
                  default_num_method='RK2',
                  **kwargs):
         super(PyMover, self).__init__(**kwargs)
@@ -230,7 +228,6 @@ class PyMover(Mover):
                             'Euler': self.get_delta_Euler,
                             'RK2': self.get_delta_RK2}
         self.default_num_method = default_num_method
-        self._time_offset = time_offset if time_offset is not None else time_utils.TZOffset()
 
         if 'env' in kwargs:
             if hasattr(self, '_req_refs'):
@@ -238,14 +235,6 @@ class PyMover(Mover):
                     for o in kwargs['env']:
                         if k in o._ref_as:
                             setattr(self, k, o)
-    
-    @property
-    def time_offset(self):
-        return self._time_offset
-    
-    @time_offset.setter
-    def time_offset(self, value):
-        raise NotImplementedError('time_offset property setter is not implemented for {}'.format(self.__class__.__name__))
 
     def delta_method(self, method_name=None):
         '''

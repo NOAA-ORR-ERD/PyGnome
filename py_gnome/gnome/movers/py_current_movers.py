@@ -80,14 +80,11 @@ class CurrentMover(movers.PyMover):
         :param uncertain_time_delay: when does the uncertainly kick in in seconds
         :param uncertain_cross: Scale for uncertainty perpendicular to the flow
         :param uncertain_along: Scale for uncertainty parallel to the flow
-        :param time_offset: Time zone shift: not functional
         :param default_num_method: Numerical method for calculating movement delta.
                                    Choices:('Euler', 'RK2', 'RK4')
                                    Default: RK2
         """
 
-        (super(CurrentMover, self).__init__(default_num_method=default_num_method,
-                                              **kwargs))
         self.filename = filename
         self.current = current
 
@@ -118,15 +115,13 @@ class CurrentMover(movers.PyMover):
         self.shape = (2,)
         self._uncertainty_list = np.zeros((0,)+self.shape, dtype=np.float64)
         
-        #if time_offset is not None:
-        #    self.time_offset = time_offset
+        (super(CurrentMover, self).__init__(default_num_method=default_num_method, **kwargs))
 
     #fixme: we have the defaults on the from_netCDF init -- they should be lower down!
     @classmethod
     def from_netCDF(cls,
                     filename=None,
                     name=None,
-                    time_offset=None,
                     scale_value=1,
                     uncertain_duration=24 * 3600,
                     uncertain_time_delay=0,
@@ -141,7 +136,6 @@ class CurrentMover(movers.PyMover):
         return cls(name=name,
                    current=current,
                    filename=filename,
-                   time_offset=time_offset,
                    scale_value=scale_value,
                    uncertain_duration=uncertain_duration,
                    uncertain_time_delay=uncertain_time_delay,
@@ -171,24 +165,6 @@ class CurrentMover(movers.PyMover):
     @property
     def data_stop(self):
         return self.current.data_stop
-
-    @property
-    def time_offset(self):
-        return TZOffset(offset=self.current.time.tz_offset, title=self._time_offset.title)
-    
-    @time_offset.setter
-    def time_offset(self, tz_o):
-        if isinstance(tz_o, TZOffset):
-            self._time_offset = tz_o
-            self.current.time.tz_offset = tz_o.offset
-        elif isinstance(tz_o, (int, float)):
-            self._time_offset = TZOffset(offset=tz_o)
-            self.current.time.tz_offset = tz_o
-        elif tz_o is None:
-            self._time_offset = TZOffset()
-            self.current.time.tz_offset = None
-        else:
-            raise ValueError("time_offset must be a TZOffset or a number, or None")
 
     def get_bounds(self):
         '''

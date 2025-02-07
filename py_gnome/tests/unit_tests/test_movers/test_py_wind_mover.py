@@ -139,7 +139,6 @@ def test_default_props():
     assert py_wind.uncertain_speed_scale == 2.
     assert py_wind.uncertain_angle_scale == 0.4
     assert py_wind.scale_value == 1
-    #assert pywindr.time_offset == 0
     assert py_wind.default_num_method == 'RK2'
     #assert py_wind.grid_topology == None
 
