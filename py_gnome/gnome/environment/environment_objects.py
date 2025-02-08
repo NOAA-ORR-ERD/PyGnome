@@ -545,7 +545,8 @@ class GridCurrent(VelocityGrid):
             value[:, 0] = x
             value[:, 1] = y
 
-        value[:, 2][points[:, 2] == 0.0] = 0
+        if points.shape[-1] == 3: #depth present in points
+            value[:, 2][points[:, 2] == 0.0] = 0 #set w velocity to 0 if depth is 0
 
         if _mem:
             self._memoize_result(points, time, value,
