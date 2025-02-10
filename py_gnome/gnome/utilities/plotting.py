@@ -238,6 +238,13 @@ class GridGeoGenerator(object):
         pts = np.stack((lons, lats), axis=-1)
         points = gpd.GeoSeries([sgeom.Point(lon, lat) for lon, lat in np.reshape(pts, (-1, 2))], crs=self.crs)
         return points
+    
+    def gen_quad_subsample_grid(self, grid_obj, quad_index, subsample=10):
+        #given the index of a grid cell, return the subsampled grid of the cell
+        #returns a numpy array of shape (subsample, subsample, 2)
+        node_lons = grid_obj.get_variable_by_index(grid_obj.node_lon, quad_index.reshape(-1,2))[0]
+        node_lats = grid_obj.get_variable_by_index(grid_obj.node_lat, quad_index.reshape(-1,2))[0]
+        
 
     def index_query(self, grid_obj, position):
         #Returns the index of the grid cell that contains the given position
@@ -493,6 +500,8 @@ class ApplicationWindow(QtWidgets.QMainWindow):
                 },
         )
         self.fig.canvas.draw()
+        
+        
         pass
     
     def draw_spill(self, spill_location):
