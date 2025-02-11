@@ -465,32 +465,26 @@ Windows
 .......
 
 For compiling python extensions on Windows with python3 it is best to use
-the Microsoft the Visual Studio 2019 (or later) Build Tools. They should be
+the Microsoft the Visual Studio 2022 Build Tools. They should be
 available here:
 
 https://visualstudio.microsoft.com/downloads/
 
-The free "Community" version should be fine.
+Download the: "Visual Studio 2022 Community Edition"
 
-Once Visual Studio is installed, a number of
-"Visual Studio Developer Command Prompt" applications will be made available
-on the Windows toolbar.  ``Scikit-build-core`` claims that it can intelligently
-configure its environment to correctly build your package, but to be on the
-safe side, you will want to open up the one with a name that looks something
-similar to **"x64 Native Tools Command Prompt (for VS 20XX)"** in order to
-build PyGNOME -- this is to make sure the compiler is setup for building
-x64 targets.
+That will give you an installer, and when you run that, you can decide what to install -- the whole thing is MASSIVE -- you don't want it all.
 
-Warning:
-  On some locked down systems, such as those at NOAA, the
-  standard way to use the MS compiler will not work for a user that does not
-  have administration privileges.  If you get errors about not being able to
-  run the ``vcvarsall.bat`` script, then the compiler must be run as an
-  administrator.  If you have access to the NOAA/ORR GitLab server, a
-  work around is supplied here:
-  `Building Python extensions on Windows <https://gitlab.orr.noaa.gov/erd/programmers/-/blob/main/tech_notes/compiling_py3_C_extensions.md?ref_type=heads>`__.
-  If you have this issue and are not from NOAA, ask for help on the Python
-  forum or as an issue in the PyGNOME gitHub project.
+There are two options:
+
+1) Install the "Python Development" workload. This is mostly for writing Python code -- but if you **make sure to click the optional "Python native development tools"** -- that will give you the compiler you need to build extensions.
+
+2) Install a subset of the Desktop development with C++ workload.
+   Then you can deselect most of it -- keeping:
+   - C++ core desktop features
+   - Windows 11 SDK
+
+Once the compiler has been installed, the build commands (`pip install`) should "just work". Do make sure to re-start any command line windows after the install, to make sure.
+
 
 Linux
 .....
@@ -518,25 +512,19 @@ simulations.  For this, run the following::
 Just keep in mind that any updates to the project will need to be
 rebuilt and re-installed in order for changes to take effect.
 
-*NOTE: You may have noticed that we run the pip module inside python instead of
-running the `pip` executable directly.  We have noticed on some platforms
-(Windows) that conda virtual environments, when activated, sometimes don't
-properly update the $Path environmental variable, causing pip to be run from
-the base conda environment instead of the current one.  The result is that
-PyGNOME gets installed there instead of our current conda environment.
-Running pip as a module ensures we are referencing the correct environment
-for installation*
+**NOTE:** You may have noticed that we run the pip module inside python instead of running the `pip` executable directly.
+This is to ensure that you get the version of pip associated with your active Python install, and is a recommend practice.
 
 If you are planning to develop or debug the PyGNOME source code itself,
 then you may want to perform a "editable" install.  A "editable" install
-puts a links intot he source code, rather than copying it into the Python install, so that changes in the python code are immediately available in your python environment without re-installing.
+puts a links into the source code, rather than copying it into the Python install, so that changes in the python code are immediately available in your python environment without re-installing.
 
 For this, run the following::
 
     > cd <your_pygnome_git_repo>/py_gnome
     > python -m pip install --no-build-isolation --editable ./
 
-If you would like or need to uninstall the package, run the following::
+If you would like to, or need to, uninstall the package, run the following::
 
     > python -m pip uninstall gnome
 
@@ -549,7 +537,7 @@ PyGNOME is working properly.
 
 To run the tests::
 
-    > cd <your_pygnome_git_repo>/py_gnome/tests/unit_tests
+    > cd py_gnome/tests/unit_tests
     > pytest
 
 and if those pass, you can run::
@@ -582,7 +570,7 @@ you don't need to worry about it.
 
 In any case, you can try to run your use case, and see what happens.
 
-Please report any unresolved test failures as an Issue on the gitHub project.
+Please report any unresolved test failures as an Issue on the GitHub project.
 
 Running scripts
 ---------------
