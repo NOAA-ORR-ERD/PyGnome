@@ -99,7 +99,7 @@ class BaseSpill(GnomeId):
 
 class Spill(BaseSpill):
     """
-    Models a spill by combining Release and Substance objects
+    Provides a complete spill object as needed by the model.
     """
     _schema = SpillSchema
 
@@ -122,30 +122,31 @@ class Spill(BaseSpill):
                  amount_uncertainty_scale=0.0,
                  **kwargs):
         """
-        Spills used by the gnome model. It contains a release object, which
-        releases elements. It also contains a Substance which
-        contains the type of substance spilled and it initializes data arrays
-        to non-default values (non-zero).
+        Spills used by the gnome model.
+
+        :param on=True: Whether this spill is turned on (used at run time)
+
+        :param num_elements=1000: number of elements to use
+
+        :param amount=0: Amount of the release -- can be volume or mass.
+                         which is determined by the units
+        :type amount: float (volume or mass)
+
+        :param units: units of the amount: can be volume or mass, any units
+                      supported by nucos. (e.g. tonnes, kg, bbl, gal, )
+        :type units: str
 
         :param release: an object defining how elements are to be released
         :type release: derived from :class:`~gnome.spills.release.Release`
 
-        :param substance: an object defining the substance of this spill. Defaults to :class:`~gnome.spills.substance.NonWeatheringSubstance`
+        :param substance: an object defining the substance of this spill. Defaults to
+                          :class:`~gnome.spills.substance.NonWeatheringSubstance`
         :type substance: derived from :class:`~gnome.spills.substance.Substance`
 
-        **Optional parameters (kwargs):**
+        **Optional parameters:**
 
         :param name: Human-usable Name of this spill
         :type name: str
-
-        :param on=True: Toggles the spill on/off.
-        :type on: bool
-
-        :param amount=None: mass or volume of oil spilled.
-        :type amount: double (volume or mass)
-
-        :param units=None: must provide units for amount spilled.
-        :type units: str
 
         :param amount_uncertainty_scale=0.0: scale value in range 0-1
                                              that adds uncertainty to the
@@ -331,8 +332,8 @@ class Spill(BaseSpill):
             return True
         else:
             msg = ('Units for amount spilled must be in volume or mass units. '
-                   '{} was provided.'
-                   'Valid units for volume: {0}, for mass: {1} ').format(
+                   '{0} was provided.'
+                   'Valid units for volume: {1}, for mass: {2} ').format(
                          units,
                          self.valid_vol_units,
                          self.valid_mass_units)
