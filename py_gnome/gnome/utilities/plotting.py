@@ -249,12 +249,9 @@ class GridGeoGenerator(object):
         l0_lat = np.linspace(node_lats[0], node_lats[1], subsample)
         l2_lon = np.linspace(node_lons[3], node_lons[2], subsample)
         l2_lat = np.linspace(node_lats[3], node_lats[2], subsample)
-        print(l0_lon)
-        print(l2_lon)
         mesh_lons = np.stack([np.linspace(l0_lon[i], l2_lon[i], subsample) for i in range(0,subsample)], axis=1)
         mesh_lats = np.stack([np.linspace(l0_lat[i], l2_lat[i], subsample) for i in range(0,subsample)], axis=1)
         mesh_pts = np.stack((mesh_lons, mesh_lats), axis=-1)
-        print (mesh_pts)
         return mesh_pts
         
         
