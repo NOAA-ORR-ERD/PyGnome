@@ -569,9 +569,10 @@ def point_line_spill(num_elements,
     :param units=None: units for amount spilled
     :type units: str
 
-    :param tuple windage_range=(.01, .04): Percentage range for windage.
-                                           Active only for surface particles
-                                           when a wind mover is added
+    :param windage_range: Percentage range for windage.
+                          Active only for surface particles
+                          when a wind mover is added.
+                          Default windage_range = (.01, .04)
     :type windage_range: 2-tuple in fraction of wind speed the elements will move.
 
     :param windage_persist=900: Persistence for windage values in seconds.
@@ -579,7 +580,7 @@ def point_line_spill(num_elements,
                                 randomly reset on this time scale
     :type windage_persist: int seconds.
 
-    :param name='Point-Line Spill': a name for the spill
+    :param name='Point-Line-Spill': a name for the spill
     :type name: str
     '''
     # make positions 3d, with depth = 0 if they are not already
@@ -652,17 +653,18 @@ def surface_point_line_spill(num_elements,
     :param units=None: units for amount spilled
     :type units: str
 
-    :param tuple windage_range=(.01, .04): Percentage range for windage.
-                                           Active only for surface particles
-                                           when a mind mover is added
-    :type windage_range: tuple
+    :param windage_range: Percentage range for windage.
+                          Active only for surface particles
+                          when a wind mover is added.
+                          Default windage_range = (.01, .04)
+    :type windage_range: 2-tuple in fraction of wind speed the elements will move.
 
     :param windage_persist=900: Persistence for windage values in seconds.
-                                    Use -1 for inifinite, otherwise it is
+                                    Use -1 for infinite, otherwise it is
                                     randomly reset on this time scale
-    :type windage_persist: int
+    :type windage_persist: int seconds.
 
-    :param name='Surface Point/Line Spill': a name for the spill
+    :param name='Surface-Point-or-Line-Release': a name for the spill
     :type name: str
     '''
     warn('The `surface_point_line_spill` helper function is deprecated in favor of point_line_spill.',
@@ -726,14 +728,18 @@ def grid_spill(bounds,
     :param release_time: time the LEs are released (datetime object)
     :type release_time: datetime.datetime
 
-    :param tuple windage_range=(.01, .04): Percentage range for windage.
-                                           Active only for surface particles
-                                           when a mind mover is added
+    :param windage_range: Percentage range for windage.
+                          Active only for surface particles
+                          when a wind mover is added.
+                          Default windage_range = (.01, .04)
+    :type windage_range: 2-tuple in fraction of wind speed the elements will move.
 
     :param int windage_persist=900: Persistence for windage values in seconds.
-                                    Use -1 for inifinite, otherwise it is
+                                    Use -1 for infinite, otherwise it is
                                     randomly reset on this time scale
-    :param str name='Surface Point/Line Release': a name for the spill
+    :type windage_persist: int seconds.
+
+    :param str name='Surface-Grid-Spill': a name for the spill
     '''
 
     release = GridRelease(release_time,
@@ -813,15 +819,18 @@ def subsurface_spill(num_elements,
 
     :param str units=None: must provide units for amount spilled.
 
-    :param tuple windage_range=(.01, .04): Percentage range for windage.
-                                           Active only for surface particles
-                                           when a mind mover is added
+    :param windage_range: Percentage range for windage.
+                          Active only for surface particles
+                          when a wind mover is added.
+                          Default windage_range = (.01, .04)
+    :type windage_range: 2-tuple in fraction of wind speed the elements will move.
 
     :param windage_persist=900: Persistence for windage values in seconds.
-                                Use -1 for inifinite, otherwise it is
+                                Use -1 for infinite, otherwise it is
                                 randomly reset on this time scale.
+    :type windage_persist: int seconds.
 
-    :param str name='Subsurface Release': a name for the spill.
+    :param str name='Subsurface-Plume': a name for the spill.
     '''
 
     release = SubsurfaceRelease(distribution_type=distribution_type,
