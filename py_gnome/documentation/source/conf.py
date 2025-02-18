@@ -42,7 +42,7 @@ version = release
 # ones.
 extensions = [#'nbsphinx',
 #              'sphinx.ext.autodoc',
-              #'sphinx.ext.napoleon',
+              'sphinx.ext.napoleon',
               'sphinx.ext.todo',
               #'sphinx.ext.coverage',
               #'sphinx.ext.mathjax',
