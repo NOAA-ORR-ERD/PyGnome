@@ -235,13 +235,14 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
     ATOL = 1e-38  # this will only let tiny float32 values be takes as close to zero.
 
     def __init__(self, name=None, _appearance=None, *args, **kwargs):
-        super(GnomeId, self).__init__(*args, **kwargs)
         self.__class__._instance_count += 1
+        self._instance_count = self.__class__._instance_count
 
         if name:
             self.name = name
         self._appearance = _appearance
         self.array_types = dict()
+        super(GnomeId, self).__init__(*args, **kwargs)
 
     @property
     def all_array_types(self):
@@ -331,7 +332,7 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
         '''
         if not hasattr(self, '_name') or self._name is None:
             return '{}_{}'.format(self.__class__.__name__.split('.')[-1],
-                                  str(self.__class__._instance_count))
+                                  str(self._instance_count))
         else:
             return self._name
 
@@ -522,13 +523,13 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
                 if not updated and self._attr_changed(getattr(self, k),
                                                       attrs[k]):
                     updated = True
-
-                try:
-                    setattr(self, k, attrs[k])
-                except AttributeError:
-                    self.logger.error('Failed to set {} on {} to {}'
-                                      .format(k, self, attrs[k]))
-                    raise
+                if not getattr(self, k) is attrs[k] or getattr(self, k) != attrs[k]:
+                    try:
+                        setattr(self, k, attrs[k])
+                    except AttributeError:
+                        self.logger.error('Failed to set {} on {} to {}'
+                                        .format(k, self, attrs[k]))
+                        raise
                 attrs.pop(k)
 
         # process all remaining items in any order...can't wait to see where

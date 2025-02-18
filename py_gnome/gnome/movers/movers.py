@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 
 import numpy as np
 
-from colander import (SchemaNode, TupleSchema, Bool, drop, String)
+from colander import (SchemaNode, TupleSchema, Bool, drop, String, Float)
 
 from gnome.basic_types import (world_point,
                                world_point_type,
@@ -39,6 +39,11 @@ class ProcessSchema(ObjTypeSchema):
 
 
 class PyMoverSchema(ProcessSchema):
+    scale_value = SchemaNode(Float(), save=True, update=True, missing=drop)
+    data_start = SchemaNode(LocalDateTime(), read_only=True)
+    data_stop = SchemaNode(LocalDateTime(), read_only=True)
+    uncertain_duration = SchemaNode(Float())
+    uncertain_time_delay = SchemaNode(Float())
     default_num_method = SchemaNode(String(), missing=drop, save=True, update=True)
 
 class Process(GnomeId):
@@ -214,7 +219,8 @@ class PyMover(Mover):
 
     _schema = PyMoverSchema
 
-    def __init__(self, default_num_method='RK2',
+    def __init__(self,
+                 default_num_method='RK2',
                  **kwargs):
         super(PyMover, self).__init__(**kwargs)
 

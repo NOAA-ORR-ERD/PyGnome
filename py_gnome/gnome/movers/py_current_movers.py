@@ -11,6 +11,8 @@ from gnome.basic_types import oil_status
 #                                status_code_type)
 
 from gnome.utilities.projections import FlatEarthProjection
+from gnome.utilities.time_utils import TZOffset
+
 
 from gnome.environment import GridCurrent
 from gnome.environment.gridded_objects_base import Grid_U, VectorVariableSchema
@@ -30,11 +32,6 @@ class CurrentMoverSchema(PyMoverSchema):
                                        acceptable_schemas=[VectorVariableSchema,
                                                            GridCurrent._schema]
                                        )
-    scale_value = SchemaNode(Float(), save=True, update=True, missing=drop)
-    data_start = SchemaNode(LocalDateTime(), read_only=True)
-    data_stop = SchemaNode(LocalDateTime(), read_only=True)
-    uncertain_duration = SchemaNode(Float())
-    uncertain_time_delay = SchemaNode(Float())
     uncertain_along = SchemaNode(
         Float(), missing=drop, save=True, update=True
     )
@@ -56,7 +53,6 @@ class CurrentMover(movers.PyMover):
 
     def __init__(self,
                  current=None,
-                 time_offset=0,
                  scale_value=1,
                  uncertain_duration= 24 * 3600,
                  uncertain_time_delay=0,
@@ -84,14 +80,11 @@ class CurrentMover(movers.PyMover):
         :param uncertain_time_delay: when does the uncertainly kick in in seconds
         :param uncertain_cross: Scale for uncertainty perpendicular to the flow
         :param uncertain_along: Scale for uncertainty parallel to the flow
-        :param time_offset: Time zone shift: not functional
         :param default_num_method: Numerical method for calculating movement delta.
                                    Choices:('Euler', 'RK2', 'RK4')
                                    Default: RK2
         """
 
-        (super(CurrentMover, self).__init__(default_num_method=default_num_method,
-                                              **kwargs))
         self.filename = filename
         self.current = current
 
@@ -99,11 +92,11 @@ class CurrentMover(movers.PyMover):
         if self.current is None:
             raise ValueError("Must provide a current object")
         if isinstance(self.current, (str, os.PathLike)):
-            warnings.warn("The behavior of providing a filename to a CurrentMover __init__ is deprecated. Please pass a current or use a helper function", DeprecationWarning)
+            warnings.warn("The behavior of providing a filename to a CurrentMover "
+                          "__init__ is deprecated. Please pass a current or use a "
+                          "helper function", DeprecationWarning)
             self.current = GridCurrent.from_netCDF(filename=self.current,
                                                  **kwargs)
-        if filename is not None:
-            warnings.warn("The behavior of providing a filename to a CurrentMover __init__ is deprecated. Please pass a current or use a helper function", DeprecationWarning)
 
         self.scale_value = scale_value
 
@@ -121,13 +114,14 @@ class CurrentMover(movers.PyMover):
         self.time_uncertainty_was_set = 0
         self.shape = (2,)
         self._uncertainty_list = np.zeros((0,)+self.shape, dtype=np.float64)
+        
+        (super(CurrentMover, self).__init__(default_num_method=default_num_method, **kwargs))
 
     #fixme: we have the defaults on the from_netCDF init -- they should be lower down!
     @classmethod
     def from_netCDF(cls,
                     filename=None,
                     name=None,
-                    time_offset=0,
                     scale_value=1,
                     uncertain_duration=24 * 3600,
                     uncertain_time_delay=0,
@@ -137,14 +131,14 @@ class CurrentMover(movers.PyMover):
         """
         Function for specifically creating a CurrentMover from a file
         """
-        warnings.warn("CurrentMover.from_netCDF is deprecated. Please create the current separately or use a helper function", DeprecationWarning)
         current = GridCurrent.from_netCDF(filename, **kwargs)
 
         return cls(name=name,
                    current=current,
                    filename=filename,
-                   time_offset=time_offset,
                    scale_value=scale_value,
+                   uncertain_duration=uncertain_duration,
+                   uncertain_time_delay=uncertain_time_delay,
                    uncertain_along=uncertain_along,
                    #uncertain_across=uncertain_across,
                    uncertain_cross=uncertain_cross,
@@ -320,7 +314,7 @@ class CurrentMover(movers.PyMover):
 
         :param deltas: the movement for the current time step
         """
-        if self._uncertainty_list is None:
+        if self._uncertainty_list is None or len(self._uncertainty_list)==0:
             return deltas  # this is our clue to not add uncertainty
 
         if len(self._uncertainty_list) > 0:

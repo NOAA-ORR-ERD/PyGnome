@@ -4,16 +4,15 @@ the Wind object defines the Wind conditions for the spill
 """
 
 import copy
-
 from functools import lru_cache
 
 from colander import SchemaNode, MappingSchema, Float, String, drop, OneOf
 
 import gsw
-
 import nucos as uc
 
 from gnome import constants
+from gnome.utilities.time_utils import TZOffset
 from gnome.persist import base_schema
 from gnome.gnomeobject import GnomeObjMeta, GnomeId
 
@@ -46,16 +45,42 @@ class Environment(GnomeId):
     __metaclass__ = EnvironmentMeta
 
     # fixme: are there any **kwargs to be passed on?
-    def __init__(self, make_default_refs=True, **kwargs):
+    def __init__(self,
+                 make_default_refs=True,
+                 *,
+                 timezone_offset=TZOffset(),
+                 **kwargs):
         '''
         base class for environment objects
 
         :param name=None:
         '''
         self.make_default_refs = make_default_refs
-        self.array_types = {}
         super().__init__(**kwargs)
+        self._timezone_offset=timezone_offset
+        self.array_types = {}
 
+    @property
+    def timezone_offset(self):
+        return self._get_timezone_offset()
+    
+    def _get_timezone_offset(self):
+        return self._timezone_offset
+    
+    @timezone_offset.setter
+    def timezone_offset(self, value):
+        #Due to the possibility of multiple time objects, we need to check for and set the offset
+        #for all of them. Subclasses should re-implement this as necessary to maintain consistency
+        if value is None or isinstance(value, TZOffset):
+            self._set_timezone_offset(value)
+        else:
+            raise ValueError("timezone_offset must be set with a TZOffset object or None")
+    
+    def _set_timezone_offset(self, tzo):
+        if tzo is None:
+            tzo = TZOffset(offset=None, title="No Timezone Specified")
+        self._timezone_offset = tzo
+        
     def at(self, points, time, *, units=None, extrapolate=None, **kwargs):
         """
         Find the value of the property at positions P at time T

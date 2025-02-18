@@ -50,6 +50,12 @@ Demonstration of adding uncertainty to a model, and adjusting the uncertainty pa
 A script that demonstrates how to create a spill from a shape file or list of polygons.
 
 
+``ice_example.py``
+---------------------
+
+A script that demonstrates how to use ice information from netcdf files to create ice aware movers.
+
+
 Testing Scripts
 ===============
 
@@ -109,6 +115,11 @@ This script uses the current cycle mover for Passamaquoddy Bay - a set of repres
 ``script_sf_wind``
 ------------------
 This script uses a gridded wind.
+
+
+``script_plume_HI``
+------------------
+This script sets up a subsurface spill and uses the rise velocity mover and 3D diffusion.
 
 
 ``script_weatherers``

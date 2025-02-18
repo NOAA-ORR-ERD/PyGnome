@@ -32,7 +32,7 @@ def sg_topology():
 
 @pytest.fixture()
 def sg(sg_data, sg_topology):
-    return PyGrid.from_netCDF(sg_data[0], sg_data[1],
+    return PyGrid.from_netCDF(filename=sg_data[0], dataset=sg_data[1],
                               grid_topology=sg_topology)
 
 
@@ -54,7 +54,7 @@ def ug_topology():
 
 @pytest.fixture()
 def ug(ug_data, ug_topology):
-    return PyGrid.from_netCDF(ug_data[0], ug_data[1],
+    return PyGrid.from_netCDF(filename=ug_data[0], dataset=ug_data[1],
                               grid_topology=ug_topology)
 
 
@@ -63,10 +63,10 @@ class TestPyGrid_S(object):
         filename = sg_data[0]
         dataset = sg_data[1]
         grid_topology = sg_topology
-
         sg = Grid_S.from_netCDF(filename, dataset,
                                 grid_topology=grid_topology)
         assert sg.filename == filename
+        assert sg.grid_topology == grid_topology
 
         sg2 = Grid_S.from_netCDF(filename)
         assert sg2.filename == filename
@@ -123,6 +123,7 @@ class TestPyGrid_U(object):
         print(ug4.shape)
         assert ug == ug3
         assert ug2 == ug4
+        assert ug2.grid_topology == ug4.grid_topology
 
     def test_serialize(self, ug, ug_data, ug_topology):
         filename = ug_data[0]

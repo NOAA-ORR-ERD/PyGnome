@@ -22,8 +22,12 @@ import nucos
 # just so it will be in the namespace.
 from .gnomeobject import GnomeId, AddLogger
 
-__version__ = "1.1.15"
+__version__ = "1.1.16"
 
+# set up to show DeprecationWarnings that come from PyGNOME
+warnings.filterwarnings("default",
+                        category=DeprecationWarning,
+                        module="gnome.*")
 
 if os.name == 'nt':
     # In Windows, we need to add the location of our lib_gnome.dll to the
@@ -66,10 +70,10 @@ def check_dependency_versions():
         else:
             return True
 
-    libs = [('gridded', '0.6.10', ''),
+    libs = [('gridded', '0.7.1', ''),
             ('nucos', '3.3.0', ''),
             ('py_gd', '2.3.0', ''),
-            ('adios_db', '1.2.4', 'Only required to use the ADIOS Database '
+            ('adios_db', '1.2.5', 'Only required to use the ADIOS Database '
                                   'JSON format for oil data.')
             ]
 

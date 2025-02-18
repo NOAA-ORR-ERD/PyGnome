@@ -17,6 +17,7 @@ from gnome.array_types import gat
 
 from gnome.utilities import rand
 from gnome.utilities.projections import FlatEarthProjection
+from gnome.utilities.time_utils import TZOffset
 
 from gnome.environment import GridWind
 
@@ -37,12 +38,6 @@ class WindMoverSchema(PyMoverSchema):
                                     acceptable_schemas=[VectorVariableSchema,
                                                         GridWind._schema,
                                                         Wind._schema])
-    scale_value = SchemaNode(Float(), save=True, update=True, missing=drop)
-    #time_offset = SchemaNode(Float(), save=True, update=True, missing=drop)
-    data_start = SchemaNode(LocalDateTime(), read_only=True)
-    data_stop = SchemaNode(LocalDateTime(), read_only=True)
-    uncertain_duration = SchemaNode(Float())
-    uncertain_time_delay = SchemaNode(Float())
     uncertain_speed_scale = SchemaNode(
         Float(), missing=drop, save=True, update=True
     )
@@ -64,7 +59,6 @@ class WindMover(movers.PyMover):
 
     def __init__(self,
                  wind=None,
-                 time_offset=0,
                  uncertain_duration=3.* 3600,
                  uncertain_time_delay=0,
                  uncertain_speed_scale=2.,
@@ -89,14 +83,11 @@ class WindMover(movers.PyMover):
         :param uncertain_time_delay: when does the uncertainly kick in.
         :param uncertain_speed_scale: Scale for uncertainty of wind speed
         :param uncertain_angle_scale: Scale for uncertainty of wind angle
-        :param time_offset: Time zone shift if data is in GMT
         :param num_method: Numerical method for calculating movement delta.
                            Choices:('Euler', 'RK2', 'RK4')
                            Default: RK2
 
         """
-
-        (super(WindMover, self).__init__(default_num_method=default_num_method, **kwargs))
         self.wind = wind
         self.make_default_refs = False
 
@@ -107,9 +98,6 @@ class WindMover(movers.PyMover):
                           "Please pass a wind or use a helper function", DeprecationWarning)
             self.wind = GridWind.from_netCDF(filename=self.wind,
                                                  **kwargs)
-        if filename is not None:
-            warnings.warn("The behavior of providing a filename to a WindMover __init__ is deprecated. "
-                          "Please pass a wind or use a helper function", DeprecationWarning)
 
         self.uncertain_duration = uncertain_duration
         self.uncertain_time_delay = uncertain_time_delay
@@ -118,7 +106,6 @@ class WindMover(movers.PyMover):
         self.uncertain_diffusion = 0
 
         self.scale_value = scale_value
-        #self.time_offset = time_offset
 
         self.sigma_theta = 0
         self.sigma2 = 0
@@ -127,6 +114,7 @@ class WindMover(movers.PyMover):
         self.shape = (2,)
         self.uncertainty_list = np.zeros((0,)+self.shape, dtype=np.float64)
 
+        (super(WindMover, self).__init__(default_num_method=default_num_method, **kwargs))
         self.array_types.update({'windages': gat('windages'),
                                  'windage_range': gat('windage_range'),
                                  'windage_persist': gat('windage_persist')})
@@ -134,7 +122,6 @@ class WindMover(movers.PyMover):
     @classmethod
     def from_netCDF(cls,
                     filename=None,
-                    time_offset=0,
                     scale_value=1,
                     uncertain_duration=3 * 3600,
                     uncertain_time_delay=0,
@@ -142,14 +129,11 @@ class WindMover(movers.PyMover):
                     uncertain_angle_scale=.4,
                     default_num_method='RK2',
                     **kwargs):
-        warnings.warn("WindMover.from_netCDF is deprecated. "
-                      "Please create the wind separately or use a helper function", DeprecationWarning)
 
         wind = GridWind.from_netCDF(filename, **kwargs)
 
         return cls(wind=wind,
                    filename=filename,
-                   time_offset=time_offset,
                    scale_value=scale_value,
                    uncertain_speed_scale=uncertain_speed_scale,
                    uncertain_angle_scale=uncertain_angle_scale,
@@ -162,7 +146,7 @@ class WindMover(movers.PyMover):
     @property
     def data_stop(self):
         return self.wind.data_stop
-
+        
     def prepare_for_model_run(self):
         """
         reset uncertainty
@@ -185,21 +169,21 @@ class WindMover(movers.PyMover):
         super(WindMover, self).prepare_for_model_step(sc, time_step,
                                                         model_time_datetime)
 
-        # if no particles released, then no need for windage
-        # TODO: revisit this since sc.num_released shouldn't be None
-        if sc.num_released is None or sc.num_released == 0:
-            return
-
         if self.active:
+            seconds = self.datetime_to_seconds(model_time_datetime)
+            if self.is_first_step:
+                self.model_start_time = seconds
+
+            # if no particles released, then no need for windage
+            # TODO: revisit this since sc.num_released shouldn't be None
+            if sc.num_released is None or sc.num_released == 0:
+                return
+
             rand.random_with_persistance(sc['windage_range'][:, 0],
                                     sc['windage_range'][:, 1],
                                     sc['windages'],
                                     sc['windage_persist'],
                                     time_step)
-
-            seconds = self.datetime_to_seconds(model_time_datetime)
-            if self.is_first_step:
-                self.model_start_time = seconds	#check units on this
 
             if sc.uncertain:
                 elapsed_time = abs(seconds - self.model_start_time)
@@ -372,7 +356,7 @@ class WindMover(movers.PyMover):
 
         :param deltas: the movement for the current time step
         """
-        if self.uncertainty_list is None:
+        if self.uncertainty_list is None or len(self.uncertainty_list)==0:
             return deltas # this is our clue to not add uncertainty
 
         num_les = len(self.uncertainty_list)

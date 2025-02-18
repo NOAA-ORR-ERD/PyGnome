@@ -3,12 +3,11 @@ tests for kmz outputter
 '''
 
 import os
-from glob import glob
+# from glob import glob
 from datetime import datetime, timedelta
+from pathlib import Path
 
-import numpy as np
 import pytest
-from pytest import raises
 
 from gnome.outputters import KMZOutput
 from gnome.outputters import kmz_templates
@@ -24,13 +23,9 @@ from gnome.model import Model
 #  this is used by the output_filename fixture in conftest:
 FILE_EXTENSION = ".kmz"
 
-
-def local_dirname():
-    dirname = os.path.split(__file__)[0]
-    dirname = os.path.join(dirname, "output_kmz")
-    if not os.path.exists(dirname):
-        os.mkdir(dirname)
-    return dirname
+HERE = Path(__file__).parent
+OUTPUT_DIR = HERE / "output_kmz"
+OUTPUT_DIR.mkdir(exist_ok=True)
 
 
 @pytest.fixture(scope='function')
@@ -43,9 +38,9 @@ def model(sample_model, output_filename):
     model.uncertain = True
 
     model.spills += point_line_spill(2,
-                                             start_position=rel_start_pos,
-                                             release_time=model.start_time,
-                                             end_position=rel_end_pos)
+                                     start_position=rel_start_pos,
+                                     release_time=model.start_time,
+                                     end_position=rel_end_pos)
 
     model.time_step = 3600
     model.duration = timedelta(hours=1)
@@ -56,7 +51,7 @@ def model(sample_model, output_filename):
 
 def test_init(output_dir):
     'simple initialization passes'
-    kmz = KMZOutput(os.path.join(output_dir, 'test.kmz'))
+    kmz = KMZOutput(output_dir / 'test.kmz')
 
 # check_filename now happens in prepare_for_model_run
 # def test_init_exceptions():
@@ -78,29 +73,29 @@ def test_exceptions(output_filename):
     kmz.rewind()  # delete temporary files
 
 #     this test is now moot since kmz extension is added to the filename on init
-#     with raises(ValueError):
+#     with pytest.raises(ValueError):
 #         # must be filename, not dir name
 #         file_path = os.path.abspath(os.path.dirname(__file__))
 #         KMZOutput(file_path).prepare_for_model_run(datetime.now(), spill_pair)
 
-    with raises(ValueError):
+    with pytest.raises(ValueError):
         file_path = 'invalid_path_to_file/file.kmz'
         KMZOutput(file_path).prepare_for_model_run(datetime.now(), spill_pair)
 
-    with raises(TypeError):
+    with pytest.raises(TypeError):
         # need to pass in model start time
         kmz.prepare_for_model_run(num_time_steps=4)
 
-    with raises(TypeError):
+    with pytest.raises(TypeError):
         # need to pass in model start time and spills
         kmz.prepare_for_model_run()
 
-    with raises(ValueError):
+    with pytest.raises(ValueError):
         # need a cache object
         kmz.write_output(0)
 
 #    Maybe add ability to specify which data later on..
-#    with raises(ValueError):
+#    with pytest.raises(ValueError):
 #        kmz.which_data = 'some random string'
 
     # changed renderer and netcdf ouputter to delete old files in
@@ -116,12 +111,12 @@ def test_exceptions(output_filename):
                                  num_time_steps=4)
 
 
-    # with raises(AttributeError):
+    # with pytest.raises(AttributeError):
     #     'cannot change after prepare_for_model_run has been called'
     #     kmz.which_data = 'most'
 
 def test_timesteps(model):
-    filename = os.path.join(local_dirname(), "multi_timesteps.kml")
+    filename = OUTPUT_DIR / "multi_timesteps.kml"
 
     kmz = KMZOutput(filename)
     model.outputters += kmz

@@ -7,7 +7,7 @@ Uses NonweatheringSubstance. Sets windage range and uncertainty values
 import os
 from datetime import datetime, timedelta
 
-from gnome import scripting
+from gnome import scripting as gs
 from gnome.spills.substance import NonWeatheringSubstance
 #from gnome.spills.elements import floating
 
@@ -15,7 +15,6 @@ from gnome.utilities.remote_data import get_datafile
 
 from gnome.model import Model
 from gnome.maps import MapFromBNA
-from gnome.spills import surface_point_line_spill
 from gnome.movers import c_GridWindMover
 
 from gnome.outputters import Renderer
@@ -44,19 +43,16 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     model.outputters += renderer
 
     netcdf_file = os.path.join(base_dir, 'script_sf_bay.nc')
-    scripting.remove_netcdf(netcdf_file)
+    gs.remove_netcdf(netcdf_file)
     model.outputters += NetCDFOutput(netcdf_file, which_data='all')
 
     print('adding a spill')
-    spill = surface_point_line_spill(num_elements=1000,
-                                     start_position=(-123.57152, 37.369436,
-                                                     0.0),
-                                     release_time=start_time,
-                                     substance=NonWeatheringSubstance(windage_range=(0.01,.04))
-                                     #element_type=floating(windage_range=(0.01,
-                                     #                                     0.04)
-                                     #                      )
-                                     )
+    spill = gs.point_line_spill(
+        num_elements=1000,
+        start_position=(-123.57152, 37.369436, 0.0),
+        release_time=start_time,
+        substance=NonWeatheringSubstance(windage_range=(0.01, .04))
+    )
     model.spills += spill
 
     # print 'adding a RandomMover:'
@@ -80,6 +76,6 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     return model
 
 if __name__ == "__main__":
-    scripting.make_images_dir()
+    gs.make_images_dir()
     model = make_model()
     model.full_run()

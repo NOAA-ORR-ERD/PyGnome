@@ -31,6 +31,13 @@ Now we create a :class:`gnome.movers.PointWindMover` by passing the Wind Object 
 
 Even though we didn't explicitly add the wind to the model environment, when the mover is added to the model, the wind object will also be added. Any weatherers subsequently added to the model will use that wind by default (see next section).
 
+To set uncertainty parameters if you are running with model uncertainty on::
+
+    w_mover = gs.PointWindMover(wind, uncertain_duration=3.0 * 3600, uncertain_time_delay=0,
+                              uncertain_speed_scale=2.0, uncertain_angle_scale=0.4)
+
+The uncertain_time_delay is in seconds from the model start_time. Only parameters that are set different from the defaults need to be included.
+
 Some helper functions are available in :mod:`gnome.scripting` for creating wind movers.
 Many of these helper functions automatically create and add environment objects to the model.
 For example, to create a wind mover from a single point time series in a text file::
@@ -78,6 +85,16 @@ The work flow is identical for adding a current. Alternatively, we could skip ex
 
 In both cases, the corresponding environment object is also added to the model.
 
+To set uncertainty parameters if you are running with model uncertainty on::
+
+    wind_mover = gs.WindMover(wind, uncertain_duration=3.0 * 3600, uncertain_time_delay=0,
+                              uncertain_speed_scale=2.0, uncertain_angle_scale=0.4)
+
+    current_mover = gs.CurrentMover(current, uncertain_duration=3.0 * 3600, uncertain_time_delay=0,
+                              uncertain_along=0.25, uncertain_cross=0.1)
+
+The uncertain_time_delay is in seconds from the model start_time. Only parameters that are set different from the defaults need to be included.
+
 To use a current or wind in multiple files pass in a Python list with the file names::
  
     file_list = ['day1.nc',
@@ -109,11 +126,15 @@ Randoms movers can be added to simulate both horizontal and vertical turbulent m
     random_mover = gs.RandomMover(diffusion_coef=10000) #in cm/s
     model.movers += random_mover
 
-    #Or, for  a 3D simulation
+    # Or, for a 3D simulation
     random_mover_3d = gs.RandomMover3D(vertical_diffusion_coef_above_ml=10,vertical_diffusion_coef_below_ml=0.2,\
     mixed_layer_depth=10, horizontal_diffusion_coef_above_ml=10000,\
     horizontal_diffusion_coef_below_ml=100) #diffusion coefficients in cm/s, MLD in meters
     model.movers += random_mover_3d
+
+    # With model uncertainty turned on, change the diffusion uncertainty, default = 2
+    random_mover = gs.RandomMover(diffusion_coef=10000, uncertain_factor = 3) #diffusion coefficients in cm/s
+    model.movers += random_mover
 
 Rise velocity movers
 --------------------
@@ -162,6 +183,51 @@ The presence of ice modifies the movement of the oil on the water surface. For e
 
     ice_aware_current = gs.IceAwareCurrent.from_netCDF('file_with_currents_ice.nc')
     ice_current_mover = gs.CurrentMover(ice_aware_current)
+
+
+Here's a more complete example with ice modified movers:
+
+.. code-block:: python
+
+    import gnome.scripting as gs
+
+    start_time = "1985-01-01T13:31"
+    model = gs.Model(start_time=start_time,
+                     duration=gs.days(2),
+                     time_step=60 * 15, #seconds
+                     )
+    spill = gs.surface_point_line_spill(num_elements=1000,
+                                start_position=(-163.75,69.75,0),
+                                release_time=start_time)
+
+    model.spills += spill
+
+    fn = [gs.get_datafile(data_dir / 'arctic_avg2_0001_gnome.nc'),
+          gs.get_datafile(data_dir / 'arctic_avg2_0002_gnome.nc'),
+          ]
+    gt = {'node_lon': 'lon',
+          'node_lat': 'lat'}
+
+    ice_aware_curr = gs.IceAwareCurrent.from_netCDF(filename=fn,
+                                                    grid_topology=gt)
+    ice_aware_wind = gs.IceAwareWind.from_netCDF(filename=fn,
+                                                 grid=ice_aware_curr.grid,)
+    i_c_mover = gs.CurrentMover(current=ice_aware_curr)
+    i_w_mover = gs.WindMover(wind=ice_aware_wind)
+
+    model.movers += i_c_mover
+    model.movers += i_w_mover
+
+    model.movers += gs.IceAwareRandomMover(ice_concentration=ice_aware_curr.ice_concentration,
+                                           diffusion_coef=50000)
+    model.full_run()
+
+You can find a complete script using ice modified movers in:
+
+``pygnome/py_gnome/scripts/example_scripts/ice_example.py``
+
+Or download it here:
+:download:`ice_example.py <../../../scripts/example_scripts/ice_example.py>`
 
 CATS  Movers
 ------------

@@ -136,7 +136,7 @@ class Release(GnomeId):
         :type release_mass: integer
 
         :param retain_initial_positions: Optional. If True, each LE will retain
-            information about it's originally released position
+            information about its originally released position
         :type retain_initial_positions: boolean
         """
         self._num_elements = self._num_per_timestep = None
@@ -316,14 +316,14 @@ class Release(GnomeId):
             # This is a special case, when the release is short enough a single
             # timestep encompasses the whole thing.
             if self.release_duration == 0:
-                t = Time([self.release_time,
-                          self.end_release_time + timedelta(seconds=1)])
+                t = Time(data=[self.release_time, self.end_release_time + timedelta(seconds=1)])
             else:
-                t = Time([self.release_time, self.end_release_time])
+                t = Time(data=[self.release_time, self.end_release_time])
         else:
-            t = Time([self.release_time + timedelta(seconds=ts * step)
+            t = Time(data=[self.release_time + timedelta(seconds=ts * step)
                       for step in range(0, num_ts + 1)])
             t.data[-1] = self.end_release_time
+        
         if self.release_duration == 0:
             self._release_ts = TimeseriesData(name=self.name+'_release_ts',
                                               time=t,
@@ -808,7 +808,7 @@ class PolygonRelease(Release):
                 del feat.properties['weight']
             return
         if self.thicknesses is not None:
-            raise ValueError('Cannot assign thicknesses to {} due to previously assigned weights'.format(self.name))
+            raise ValueError('Cannot assign weights to {} due to previously assigned thicknesses'.format(self.name))
         for feat, w in zip(self.features[:], vals):
             feat.properties['weight'] = w
 
@@ -976,7 +976,7 @@ class NESDISReleaseSchema(PolygonReleaseSchema):
         SchemaNode(Float()), save=False, read_only=True, update=False
     )
     oil_types = SequenceSchema(
-        SchemaNode(String()), save=False
+        SchemaNode(String()), save=False, read_only=True
     )
 
 

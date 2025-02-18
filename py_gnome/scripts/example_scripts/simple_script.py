@@ -36,7 +36,7 @@ model.movers += uniform_vel_mover
 model.movers += random_mover
 
 # create spill
-spill = gs.surface_point_line_spill(release_time=start_time,
+spill = gs.point_line_spill(release_time=start_time,
                                     start_position=(-144, 48.5),
                                     num_elements=1000)
 # add it to the model

@@ -36,7 +36,7 @@ To run the model backwards, include run_backwards=True. The model will start at 
 Configuring the Model
 ---------------------
 
-To set up your simulation, you need to add various items to teh model: maps, movers, weatherers, ...
+To set up your simulation, you need to add various items to the model: maps, movers, weatherers, ...
 
 .. note: This is where we add note
 
@@ -44,6 +44,11 @@ To set up your simulation, you need to add various items to teh model: maps, mov
 Running the Model
 -----------------
 
+The simplest way to run the model is::
+
+    model.full_run()
+
+and use outputters to write the trajectory or weathering results to a file as it runs.
 
 Capturing Results As the Model Runs
 ...................................
