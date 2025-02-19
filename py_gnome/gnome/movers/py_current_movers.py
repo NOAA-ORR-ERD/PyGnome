@@ -75,7 +75,7 @@ class CurrentMover(movers.PyMover):
         :type active_range: 2-tuple of datetimes
 
         :param scale_value: Value to scale current data
-        :param uncertain_duration: how often a given uncertain element
+        :param uncertain_duration: (seconds) how often a given uncertain element
                                    gets reset in seconds
         :param uncertain_time_delay: when the uncertainty kicks in in seconds from model start
         :param uncertain_cross: Scale for uncertainty perpendicular to the flow

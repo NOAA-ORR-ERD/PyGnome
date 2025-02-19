@@ -173,7 +173,7 @@ class Model(GnomeId):
         Load a model instance from a save file
 
         :param filename: the filename of the save file -- usually a zip file,
-                         but can also be a directry with the full contents of
+                         but can also be a directory with the full contents of
                          a zip file
 
         :return: a model instance all set up from the savefile.
@@ -349,16 +349,16 @@ class Model(GnomeId):
         """
         Add the weatherers
 
-        :param which='standard': which weatheres to add. Default is 'standard',
-                                 which will add all the standard weathering algorithms
-                                 if you don't want them all, you can specify a list:
+        :param which='standard': which weatherers to add. Default is 'standard',
+                                 which will add all the standard weathering algorithms. 
+                                 If you don't want them all, you can specify a list:
                                  ['evaporation', 'dispersion'].
 
                                  Options are:
                                   - 'evaporation'
                                   - 'dispersion'
                                   - 'emulsification'
-                                  - 'dissolution': Dissolution,
+                                  - 'dissolution'
                                   - 'half_life_weatherer'
 
                                  see: ``gnome.weatherers.__init__.py`` for the full list
@@ -788,7 +788,7 @@ class Model(GnomeId):
     def setup_model_run(self):
         '''
         Runs the setup procedure preceding a model run. When complete, the
-        model should be ready to run to completion without additional prep
+        model should be ready to run to completion without additional prep. 
         Currently this function consists of the following operations:
 
         1. Set up special objects.
@@ -972,7 +972,7 @@ class Model(GnomeId):
     def move_elements(self):
         '''
         Moves elements:
-         - loops through all the movers. and moves the elements
+         - loops through all the movers and moves the elements
          - sets new_position array for each spill
          - calls the beaching code to beach the elements that need beaching.
          - sets the new position
@@ -1098,7 +1098,7 @@ class Model(GnomeId):
         '''
         Loop through movers and weatherers and call model_step_is_done
 
-        Remove elements that marked for removal
+        Remove elements that are marked for removal
 
         Output data
         '''
@@ -1427,9 +1427,10 @@ class Model(GnomeId):
         save the model state in saveloc. If self.zipsave is True, then a
         zip archive is created and model files are saved to the archive.
 
-        :param saveloc=".": a directory or filename. If a directory, then either
+        :param saveloc: a directory or filename. If a directory, then either
                         the model is saved into that dir, or a zip archive is
-                        created in that dir (with a .gnome extension).
+                        created in that dir (with a .gnome extension). 
+                        Defaults to ".".
 
                         The file(s) are clobbered when save() is called.
         :type saveloc: A dir or file name (relative or full path) as a string.
@@ -1507,7 +1508,7 @@ class Model(GnomeId):
 
         :param filename: If saveloc is an open zipfile or folder,
                          this indicates the name of the file to be loaded.
-                         If saveloc is a filename, is parameter is ignored.
+                         If saveloc is a filename, this parameter is ignored.
 
         :param refs: A dictionary of id -> object instances that will be used
                      to complete references, if available.
@@ -1616,12 +1617,10 @@ class Model(GnomeId):
 
     def check_inputs(self):
         '''
-        check the user inputs before running the model
-        raise an exception if user can't run the model
+        check the user inputs before running the model and 
+        raise an exception if the user can't run the model
 
-        todo: check if all spills start after model ends
-
-        fixme: This should probably be broken out into its
+        fixme: This should probably be broken out into its \
                own module, class, something -- with each test independent.
         '''
         (msgs, isValid) = self.validate()
@@ -1800,6 +1799,7 @@ class Model(GnomeId):
     def validate(self):
         '''
         invoke validate for all gnome objects contained in model
+
         todo: should also check wind, water, waves are defined if weatherers
         are defined
         '''

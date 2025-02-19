@@ -45,6 +45,12 @@ class WindMoversBaseSchema(ProcessSchema):
 
 
 class WindMoversBase(CyMover):
+    """
+    Base class for C wind movers
+
+    It defines the base functionality and uncertainty.
+
+    """
 
     _schema = WindMoversBaseSchema
 
@@ -65,7 +71,7 @@ class WindMoversBase(CyMover):
 
         :param uncertain_duration: (seconds) the randomly generated uncertainty
             array gets recomputed based on 'uncertain_duration'
-        :param uncertain_time_delay: when does the uncertainly kick in.
+        :param uncertain_time_delay: when the uncertainty kicks in in seconds from model start.
         :param uncertain_speed_scale: Scale for uncertainty in wind speed
             non-dimensional number
         :param uncertain_angle_scale: Scale for uncertainty in wind direction.
@@ -122,7 +128,7 @@ class WindMoversBase(CyMover):
 
     def prepare_for_model_step(self, sc, time_step, model_time_datetime):
         """
-        Call base class method using super
+        Call base class method using super. 
         Also updates windage for this timestep
 
         :param sc: an instance of gnome.spill_container.SpillContainer class
@@ -269,7 +275,7 @@ class PointWindMover(WindMoversBase):
 
     def prepare_for_model_run(self):
         '''
-        if wind attribute is not set, raise ReferencedObjectNotSet excpetion
+        if wind attribute is not set, raise ReferencedObjectNotSet exception
         '''
         super(PointWindMover, self).prepare_for_model_run()
 
@@ -281,13 +287,13 @@ WindMover = PointWindMover
 
 def point_wind_mover_from_file(filename, **kwargs):
     """
-    Creates a wind mover from a wind time-series file (OSM long wind format)
+    Creates a wind mover from a wind time-series file (OSSM long wind format)
 
     :param filename: The full path to the data file
     :param kwargs: All keyword arguments are passed on to the WindMover
         constructor
 
-    :returns mover: returns a wind mover, built from the file
+    :returns: returns a wind mover, built from the file
     """
     w = Wind(filename=filename, coord_sys='r-theta')
 
@@ -332,6 +338,11 @@ class c_GridWindMoverSchema(WindMoversBaseSchema):
 
 
 class c_GridWindMover(WindMoversBase):
+    """
+    Gridded Wind Mover for deprecated wind formats.
+
+    Ported from old desktop GNOME.
+    """
 
     _schema = c_GridWindMoverSchema
 
@@ -438,8 +449,8 @@ class c_GridWindMover(WindMoversBase):
         Right now the cython mover only gets the triangular center points,
         so we need to calculate centers based on the cells themselves.
 
-        Cells will have the format (tl, tr, bl, br)
-        We need to get the rectangular centers
+        Cells will have the format (tl, tr, bl, br). 
+        We need to get the rectangular centers. 
         Center will be: (tl + ((br - tl) / 2.))
         '''
         return (self.mover._get_center_points()
@@ -501,6 +512,9 @@ class IceWindMoverSchema(WindMoversBaseSchema):
 
 
 class IceWindMover(WindMoversBase):
+    """
+    Ice Wind Mover from old desktop GNOME
+    """
 
     _schema = IceWindMoverSchema
 
