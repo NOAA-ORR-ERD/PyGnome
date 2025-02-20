@@ -240,7 +240,7 @@ class PyMover(Mover):
         '''
             Returns a delta function based on its registered name
 
-            Usage: delta = self.delta_method('RK2')(**kwargs)
+            Usage: delta = self.delta_method('RK2')(\*\*kwargs)
 
             Note: We do not handle any key errors resulting from passing in
             a bad registered name.
@@ -300,7 +300,7 @@ class CyMover(Mover):
     def __init__(self, **kwargs):
         """
         Base class for python wrappers around cython movers.
-        Uses ``super(CyMover, self).__init__(**kwargs)`` to call Mover class
+        Uses ``super(CyMover, self).__init__(\*\*kwargs)`` to call Mover class
         __init__ method
 
         All cython movers (CyWindMover, CyRandomMover) are instantiated by a

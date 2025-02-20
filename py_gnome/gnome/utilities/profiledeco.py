@@ -5,6 +5,9 @@ by adding decorators where profiling is desired.
 
 @profile
 def foo():
+
+::
+
     sleep(1)
 
 this should profile foo whenever it is called and add it to the

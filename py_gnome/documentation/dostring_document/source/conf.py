@@ -35,6 +35,7 @@ extensions = [#'nbsphinx',
               #'sphinx.ext.coverage',
               #'sphinx.ext.mathjax',
               # 'sphinx.ext.viewcode',
+              'sphinxcontrib.jquery',
               ]
 
 # to make autodoc include __init__:

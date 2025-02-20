@@ -284,8 +284,10 @@ def WriteBNA(filename, polyset):
     """
     Writes a BNA file to filename
 
-    polyset must be a A geometry.polygons.PolygonSet object,
-              with metadata- (poly_type, name, secondary name)
+    :param filename: A filename to write to.
+    :param polyset: A geometry.polygons.PolygonSet object, with metadata
+                    (poly_type, name, secondary name)
+
     (such as returned by ReadBNA)
     """
     outfile = open(filename, 'w')
@@ -303,14 +305,18 @@ def ReadBNA(filename, polytype="list", dtype=np.float64):
     """
     Read a bna file.
 
-    Results are returned as one of:
-    - "list": A list of tuples:
-              (points, poly_type, name, secondary name)
+    :param filename: A filename to write to.
 
-    - "PolygonSet": A geometry.polygons.PolygonSet object,
-                    with metadata- (poly_type, name, secondary name)
+    :param polytype: The type of polygon structure to return.
+    :type polytype: one of: ("list", "PolygonSet", "BNADataClass")
 
-    - "BNADataClass": A BNAData class object -- this may be broken now!
+    :return: returns the BNA data contents
+    :rtype: Results are returned as one of:
+
+            :list: A list of tuples (points, poly_type, name, secondary name)
+            :PolygonSet: A geometry.polygons.PolygonSet object,
+                         with metadata (poly_type, name, secondary name)
+            :BNADataClass: A BNAData class object.  This may be broken now!
 
     The dtype parameter specifies what numpy data type you want the points
     data in -- it defaults to float (C double)

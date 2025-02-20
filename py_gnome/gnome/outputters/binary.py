@@ -19,30 +19,28 @@ from gnome.basic_types import oil_status
 from .outputter import Outputter, OutputterFilenameMixin, BaseOutputterSchema
 
 
-le_dtype = np.dtype(np.dtype([('Lat', np.float32),
-                              ('Lon', np.float32),
-                              ('Release_time', np.float32),
-                              ('AgeWhenReleased', np.float32),
-                              ('BeachHeight', np.float32),
-                              ('nMap', np.int32),
-                              ('pollutant', np.int32),
-                              ('WindKey', np.int32),
-                              ]))
+le_dtype = (np.dtype(np.dtype([('Lat', np.float32),
+                               ('Lon', np.float32),
+                               ('Release_time', np.float32),
+                               ('AgeWhenReleased', np.float32),
+                               ('BeachHeight', np.float32),
+                               ('nMap', np.int32),
+                               ('pollutant', np.int32),
+                               ('WindKey', np.int32),
+                               ]))
+            .newbyteorder('B'))  # or ">"
 
-le_dtype = le_dtype.newbyteorder('B') # or ">"
-
-header_dtype = np.dtype(np.dtype([('name', np.bytes_, 10),
-                              ('day', np.int16),
-                              ('month', np.int16),
-                              ('year', np.int16),
-                              ('hour', np.int16),
-                              ('minute', np.int16),
-                              ('current_time', np.float32),
-                              ('version', np.float32),
-                              ('num_LE', np.int32),
-                              ]))
-
-header_dtype = header_dtype.newbyteorder('B') # or ">"
+header_dtype = (np.dtype(np.dtype([('name', np.bytes_, 10),
+                                   ('day', np.int16),
+                                   ('month', np.int16),
+                                   ('year', np.int16),
+                                   ('hour', np.int16),
+                                   ('minute', np.int16),
+                                   ('current_time', np.float32),
+                                   ('version', np.float32),
+                                   ('num_LE', np.int32),
+                                   ]))
+                .newbyteorder('B'))  # or ">"
 
 
 class BinaryOutputSchema(BaseOutputterSchema):

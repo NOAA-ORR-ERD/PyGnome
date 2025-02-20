@@ -166,7 +166,7 @@ class GnomeOil(Substance):
             ``GnomeOil(filename="adios_oil.json")`` usually records from the
             ADIOS Oil Database (https://adios.orr.noaa.gov)
 
-         3) From the json : ``GnomeOil.new_from_dict(**json_)`` for loading
+         3) From the json : ``GnomeOil.new_from_dict(\*\*json_)`` for loading
             save files, etc. (this is usually done under the hood)
 
 
@@ -176,7 +176,7 @@ class GnomeOil(Substance):
 
         GnomeOil(filename="oil.json")      ---load from file using adios_db
 
-        GnomeOil.new_from_dict(**json\_)    ---webgnomeclient, savefiles, etc.
+        GnomeOil.new_from_dict(\*\*json\_)    ---webgnomeclient, savefiles, etc.
 
         GnomeOil("invalid_name")           ---ValueError (not in sample oils)
         """
@@ -496,6 +496,7 @@ class GnomeOil(Substance):
                       - To estimate density at temp, we need to estimate pour point
 
                       - ...and then we recurse
+
                       For this case we need to make an exception.
             .. note:: If we have a pour point that is higher than one or more
                   of our reference temperatures, then the lowest reference

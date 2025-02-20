@@ -480,8 +480,9 @@ class Variable(gridded.Variable, Environment):
         :param units: string such as 'm/s'
         :type units: string
 
-        :param time: Time axis of the data. May be a constructed ``gridded.Time``
-                     object, or collection of datetime.datetime objects
+        :param time: Time axis of the data. May be a constructed
+                     "gridded.Time" object, or collection of datetime.datetime
+                     objects
         :type time: [] of datetime.datetime, netCDF4 Variable, or Time object
 
         :param data: Underlying data object. May be any array-like,
@@ -495,19 +496,22 @@ class Variable(gridded.Variable, Environment):
                          e.g. "node", "face"
         :type location: string
 
-        :param depth: Depth axis object from ``gridded.depth``
+        :param depth: Depth axis object from "gridded.depth"
         :type depth: Depth, S_Depth or L_Depth
 
         :param dataset: Instance of open netCDF4.Dataset
         :type dataset: netCDF4.Dataset
 
-        :param data_file: Name of data source file, if data and grid files are separate
+        :param data_file: Name of data source file, if data and grid files
+                          are separate
         :type data_file: string
 
-        :param grid_file: Name of grid source file, if data and grid files are separate
+        :param grid_file: Name of grid source file, if data and grid files
+                          are separate
         :type grid_file: string
 
         :param extrapolation_is_allowed:
+
         '''
         Grid = self._default_component_types['grid']
         Time = self._default_component_types['time']
@@ -851,31 +855,33 @@ class VectorVariable(gridded.VectorVariable, Environment):
 
         :param filename: Default data source. Parameters below take precedence
         :type filename: string
-        
+
         :param dataset: Instance of open Dataset
         :type dataset: netCDF4.Dataset
-        
+
         :param data_file: Name of data source file
         :type data_file: string
-        
+
         :param grid_file: Name of grid source file
         :type grid_file: string
-        
-        :param grid_topology: Description of the relationship between grid attributes and variable names.
+
+        :param grid_topology: Description of the relationship between
+                              grid attributes and variable names.
         :type grid_topology: {string : string, ...}
-        
+
         :param grid: Grid that the data corresponds with
         :type grid: pysgrid or pyugrid
-        
+
         :param varnames: Names of the variables in the data source file
-        :type varnames: [] of string. Order of the names in the list would be order of vector components
-        
+        :type varnames: [] of string. Order of the names in the list would be
+                        order of vector components
+
         :param time: Time axis of the data
         :type time: [] of datetime.datetime, netCDF4 Variable, or Time object
-        
+
         :param name: Name of property
         :type name: string
-        
+
         :param units: Units
         :type units: string
         '''
@@ -986,31 +992,33 @@ class VectorVariable(gridded.VectorVariable, Environment):
 
         :param filename: Default data source. Parameters below take precedence
         :type filename: string
-        
+
         :param dataset: Instance of open Dataset
         :type dataset: netCDF4.Dataset
-        
+
         :param data_file: Name of data source file
         :type data_file: string
-        
+
         :param grid_file: Name of grid source file
         :type grid_file: string
-        
-        :param grid_topology: Description of the relationship between grid attributes and variable names.
+
+        :param grid_topology: Description of the relationship between
+                              grid attributes and variable names.
         :type grid_topology: {string : string, ...}
-        
+
         :param grid: Grid that the data corresponds with
         :type grid: pysgrid or pyugrid
-        
+
         :param varnames: Names of the variables in the data source file
-        :type varnames: [] of string. Order of the names in the list would be order of vector components
-        
+        :type varnames: [] of string. Order of the names in the list would be
+                        order of vector components
+
         :param time: Time axis of the data
         :type time: [] of datetime.datetime, netCDF4 Variable, or Time object
-        
+
         :param name: Name of property
         :type name: string
-        
+
         :param units: Units
         :type units: string
         '''
@@ -1035,8 +1043,8 @@ class VectorVariable(gridded.VectorVariable, Environment):
                  name=None,
                  units=None):
         '''
-        Sets a VectorVariable up to represent a constant vector field. The result
-        will return a constant value for all times and places.
+        Sets a VectorVariable up to represent a constant vector field.
+        The result will return a constant value for all times and places.
 
         :param values: vector of values
         :type values: array-like

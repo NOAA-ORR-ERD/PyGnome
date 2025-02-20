@@ -175,8 +175,11 @@ class SpillContainerData(object):
         :param uncertain=False: flag indicating whether this holds uncertainty
                                 elements or not
         :param data_arrays=None: A dict of all the data arrays you want to hold
-                                 NOTE: no error checking! they should be
-                                       correctly aligned, etc.
+
+                                 ::
+
+                                   NOTE: no error checking! they should be
+                                         correctly aligned, etc.
 
         The common use-case for this is for loading from cache for
         re-rendering, etc.
@@ -737,12 +740,14 @@ class SpillContainer(AddLogger, SpillContainerData):
         In the rewind operation, we:
         - rewind all the spills
         - restore _array_types to contain only defaults
+
           - movers/weatherers could have been deleted and we don't want to
             carry associated data_arrays
           - prepare_for_model_run() will be called before the next run and
             new arrays can be given
 
         - purge the data arrays
+
           - we gather data arrays for each contained spill
           - the stored arrays are cleared, then replaced with appropriate
             empty arrays
@@ -1030,9 +1035,15 @@ class SpillContainerPairData(object):
 
         if uncertainty is off, just one is in the tuple
         if uncertainly is on -- then it is a two-tuple:
+
+        ::
+
             (certain_container, uncertain_container)
 
         To act on both:
+
+        ::
+
             for sc in spill_container_pair.items():
                 do_something_with(sc)
 
@@ -1253,7 +1264,7 @@ class SpillContainerPair(SpillContainerPairData):
             'uncertain_spills': call to_dict() on spills ordered collection
             stored in uncertain spill container
 
-        The input param json_ is not used. It is there to keep the same
+        The input param json\_ is not used. It is there to keep the same
         interface for all to_dict() functions
         """
         dict_ = {'spills':
@@ -1272,7 +1283,7 @@ class SpillContainerPair(SpillContainerPairData):
         It also creates a copy of the different spill and replaces the
         corresponding spill in _u_spill_container
 
-        This is primarily intended for the webapp so the dict_ will only
+        This is primarily intended for the webapp so the dict\_ will only
         contain a list of forecast spills
         '''
         l_spills = dict_['spills']

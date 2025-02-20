@@ -486,6 +486,7 @@ def sanitize_filename(fname):
 
           and/or should we replace with a placeholder,
           rather than simply remove?
+
     Also -- maybe replace spaces with underscores ...
     '''
     return re.sub(r'[\\\\/*?:"<>|]', "", fname)
