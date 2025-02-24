@@ -58,22 +58,6 @@ def vol_expansion_coeff(rho_0, t_0, rho_1, t_1):
     return k_rho_t
 
 
-def kvis_at_temp(ref_kvis, ref_temp_k, temp_k, k_v2=2100):
-    '''
-        Source: Adios2
-
-        If we have an oil kinematic viscosity at a reference temperature,
-        then we can estimate what its viscosity might be at
-        another temperature.
-
-        .. note::
-              An analysis of the
-              multi-KVis oils in our oil library suggest that a value of
-              2100 would be a good default value for k_v2.
-    '''
-    return ref_kvis * np.exp((k_v2 / temp_k) - (k_v2 / ref_temp_k))
-
-
 class GnomeOilSchema(SubstanceSchema):
     """
     Schema for Gnome Oil
@@ -166,7 +150,7 @@ class GnomeOil(Substance):
             ``GnomeOil(filename="adios_oil.json")`` usually records from the
             ADIOS Oil Database (https://adios.orr.noaa.gov)
 
-         3) From the json : ``GnomeOil.new_from_dict(\*\*json_)`` for loading
+         3) From the json : ``GnomeOil.new_from_dict(**json_)`` for loading
             save files, etc. (this is usually done under the hood)
 
 
