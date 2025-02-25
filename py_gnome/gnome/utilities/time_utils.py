@@ -208,6 +208,7 @@ def sec_to_date(seconds):
     Note: time_utils.sec_to_timestruct(...)
           to test that it works in the same way as the lib_gnome C++
           cython wrapper
+
     FIXME: this may be broken there!!!!!
     """
     t_array = np.asarray(seconds, dtype=np.uint32).reshape(-1)

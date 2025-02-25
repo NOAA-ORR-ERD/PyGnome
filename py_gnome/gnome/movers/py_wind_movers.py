@@ -69,8 +69,8 @@ class WindMover(movers.PyMover):
                  **kwargs):
         """
         Initialize a WindMover
-        :param wind: Environment object representing wind to be
-                        used.
+
+        :param wind: Environment object representing wind to be used.
         :type wind: Any Wind or Wind-like that implements the .at() function
 
         :param active_range: Range of datetimes for when the mover should be

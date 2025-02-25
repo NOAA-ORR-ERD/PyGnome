@@ -88,6 +88,7 @@ class Beaching(RemoveMass, Weatherer):
 
         .. note:: Assumes the model's
             time_step is smaller than the timeseries timestep, meaning the
+
         fixme: water is never used -- it should be removed.
         '''
         super(Beaching, self).__init__(active_range=active_range, **kwargs)

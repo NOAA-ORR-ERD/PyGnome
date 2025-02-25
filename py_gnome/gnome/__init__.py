@@ -5,7 +5,7 @@ import various names, and provides:
 
 initialize_console_log(level='debug')
 
-  set up the logger to dump to console.
+set up the logger to dump to console.
 """
 import sys
 import os
@@ -51,11 +51,15 @@ def check_dependency_versions():
 
     These are checked, as they are maintained by NOAA ERD, so may be installed
     from source, rather than managed by conda, etc.
+
+    ::
+
         gridded
         oillibrary
         nucos
         py_gd
         adios_db
+
     If the version is not at least as current as what's defined here
     a warning is displayed
     """

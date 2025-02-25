@@ -238,6 +238,23 @@ class GridGeoGenerator(object):
         pts = np.stack((lons, lats), axis=-1)
         points = gpd.GeoSeries([sgeom.Point(lon, lat) for lon, lat in np.reshape(pts, (-1, 2))], crs=self.crs)
         return points
+    
+    def gen_quad_subsample_grid(self, grid_obj, quad_index, subsample=10):
+        #given the index of a grid cell, return the subsampled grid of the cell
+        #returns a numpy array of shape (subsample, subsample, 2)
+        node_lons = grid_obj.get_variable_by_index(grid_obj.node_lon, quad_index.reshape(-1,2))[0]
+        node_lats = grid_obj.get_variable_by_index(grid_obj.node_lat, quad_index.reshape(-1,2))[0]
+        
+        l0_lon = np.linspace(node_lons[0], node_lons[1], subsample)
+        l0_lat = np.linspace(node_lats[0], node_lats[1], subsample)
+        l2_lon = np.linspace(node_lons[3], node_lons[2], subsample)
+        l2_lat = np.linspace(node_lats[3], node_lats[2], subsample)
+        mesh_lons = np.stack([np.linspace(l0_lon[i], l2_lon[i], subsample) for i in range(0,subsample)], axis=1)
+        mesh_lats = np.stack([np.linspace(l0_lat[i], l2_lat[i], subsample) for i in range(0,subsample)], axis=1)
+        mesh_pts = np.stack((mesh_lons, mesh_lats), axis=-1)
+        return mesh_pts
+        
+        
 
     def index_query(self, grid_obj, position):
         #Returns the index of the grid cell that contains the given position
@@ -288,6 +305,13 @@ class GridGeoGenerator(object):
                     
             rv['node_lons'] = grid_obj.get_variable_by_index(grid_obj.node_lon, index.reshape(-1,2))[0]
             rv['node_lats'] = grid_obj.get_variable_by_index(grid_obj.node_lat, index.reshape(-1,2))[0]
+            
+            rv['subsample_mesh'] = self.gen_quad_subsample_grid(grid_obj, index)
+            
+            pts = rv['subsample_mesh'].reshape(-1,2)
+            
+            rv['subsample_uv'] = self.gc.at(pts, self.gc.time.min_time)
+            
             return rv
        
 
@@ -492,6 +516,15 @@ class ApplicationWindow(QtWidgets.QMainWindow):
                     "ec": "white",
                 },
         )
+        
+        #plot the subsampled grid
+        subsample_mesh = query_result['subsample_mesh'].reshape(-1,2)
+        subsample_mesh_coords = self.ctrans.transform(*subsample_mesh.T)
+        self.map_ax.scatter(*subsample_mesh_coords, s=1, color='purple', marker='.')
+        
+        #plot the subsampled uv
+        self.map_ax.quiver(*subsample_mesh_coords, *query_result['subsample_uv'].T, scale=10, color='purple')
+        
         self.fig.canvas.draw()
         pass
     
