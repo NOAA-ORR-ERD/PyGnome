@@ -949,8 +949,12 @@ def GridRelease(release_time, bounds, resolution):
     Only 2-d for now
 
     :param bounds: bounding box of region you want the elements in:
-                   ((min_lon, min_lat),
-                    (max_lon, max_lat))
+
+                   ::
+
+                     ((min_lon, min_lat),
+                      (max_lon, max_lat))
+
     :type bounds: 2x2 numpy array or equivalent
 
     :param resolution: resolution of grid -- it will be a resolution X resolution grid
@@ -1409,6 +1413,9 @@ def release_from_splot_data(release_time, filename):
     '''
     Initialize a release object from a text file containing splots.
     The file contains 3 columns with following data:
+
+    ::
+
         [longitude, latitude, num_LEs_per_splot/5000]
 
     For each (longitude, latitude) release num_LEs_per_splot points

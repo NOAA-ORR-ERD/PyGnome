@@ -390,9 +390,12 @@ class Dissolution(Weatherer):
                 for now, we are receiving a single average droplet size,
                 which we assume will account for 100% of the oil volume.
                 In the future we will need to work with something like::
+
+                ::
+
                     [(drop_size, vol_fraction, k_w_drop),
                      ...
-                    ]
+                     ]
 
                 This is because each droplet bin will represent a fraction
                 of the total oil volume (or mass?), and will have its own

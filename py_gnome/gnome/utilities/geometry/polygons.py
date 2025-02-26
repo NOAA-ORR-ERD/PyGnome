@@ -279,6 +279,9 @@ class PolygonSet(object):
 
         It can be useful for setting the data in one PolygonSet to the same as
         another set:
+
+        ::
+
             set1.SetPointsData(set2.GetPointsData)
 
         A copy is made, so the two sets will be distinct
@@ -317,7 +320,7 @@ class PolygonSet(object):
         the optional arguments, args or kwargs are passed through to
         the TransformFuntion, so it is called as:
 
-        NewPoints = TransformFunction(OldPoints, *args, **kwargs)
+        NewPoints = TransformFunction(OldPoints, \*args, \*\*kwargs)
 
         """
         self._PointsArray = TransformFunction(self._PointsArray, *args,

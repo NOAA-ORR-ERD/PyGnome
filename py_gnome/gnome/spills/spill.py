@@ -710,8 +710,12 @@ def grid_spill(bounds,
     Helper function returns a Grid Spill object
 
     :param bounds: bounding box of region you want the elements in:
-                   ((min_lon, min_lat),
-                   (max_lon, max_lat))
+
+                   ::
+
+                     ((min_lon, min_lat),
+                      (max_lon, max_lat))
+
     :type bounds: 2x2 numpy array or equivalent
 
     :param resolution: resolution of grid -- it will be a resoluiton X

@@ -47,6 +47,7 @@ extensions = [#'nbsphinx',
               #'sphinx.ext.coverage',
               #'sphinx.ext.mathjax',
               # 'sphinx.ext.viewcode',
+              'sphinxcontrib.jquery',
               ]
 
 # to make autodoc include __init__:
@@ -61,7 +62,15 @@ extensions.append('autoapi.extension')
 autoapi_type = 'python'
 autoapi_dirs = ['../../gnome/']
 autoapi_python_class_content = 'both'
-autoapi_keep_files = True
+autoapi_keep_files = False
+autoapi_options = ['members',
+                   'undoc-members',
+                   #'private-members',
+                   'show-inheritance',
+                   'show-module-summary',
+                   #'special-members',
+                   'imported-members',
+                   ]
 
 
 def skip_schema_classes(app, what, name, obj, skip, options):

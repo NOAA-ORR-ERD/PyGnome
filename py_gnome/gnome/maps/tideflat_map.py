@@ -120,8 +120,9 @@ class TideflatBase(GnomeId):
         :param time: time at which to check for wet/dry
 
         :return: numpy array of bools one for each point
+
         This should be over-ridden -- this version always returns
-        FAlse for all points
+        False for all points
         """
         points = np.asarray(points, dtype=np.float64)
         if points.shape[1] != 3:

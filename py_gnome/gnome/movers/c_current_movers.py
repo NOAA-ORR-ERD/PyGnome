@@ -865,8 +865,11 @@ class IceMover(CurrentMoversBase):
                                  with our grid data.  This allows us to pad
                                  the bounding box that we generate.
             :type box_to_merge: A bounding box (extent) of the form:
-                                ((left, bottom),
-                                 (right, top))
+
+                                ::
+
+                                  ((left, bottom),
+                                   (right, top))
         '''
         if grid_data is None:
             grid_data = self.get_grid_data()
@@ -1044,7 +1047,7 @@ class CurrentCycleMover(c_GridCurrentMover):
                             before and after file data
         :param time_offset: Time zone shift if data is in GMT
 
-        uses super: super(CurrentCycleMover,self).__init__(**kwargs)
+        uses super: super(CurrentCycleMover,self).__init__(\*\*kwargs)
         """
 
         # NOTE: will need to add uncertainty parameters
