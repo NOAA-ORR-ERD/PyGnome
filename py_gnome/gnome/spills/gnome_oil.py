@@ -166,19 +166,19 @@ class GnomeOil(Substance):
             ``GnomeOil(filename="adios_oil.json")`` usually records from the
             ADIOS Oil Database (https://adios.orr.noaa.gov)
 
-         3) From the json : ``GnomeOil.new_from_dict(**json_)`` for loading
+         3) From the json : ``GnomeOil.new_from_dict(json_)`` for loading
             save files, etc. (this is usually done under the hood)
 
 
-        GnomeOil("sample_oil_name")        ---works for test oils from sample_oils only
+        ``GnomeOil("sample_oil_name")``  ---works for test oils from sample_oils only
 
-        GnomeOil(oil_name="sample_oil_name")
+        ``GnomeOil(oil_name="sample_oil_name")``
 
-        GnomeOil(filename="oil.json")      ---load from file using adios_db
+        ``GnomeOil(filename="oil.json")``  ---load from file using adios_db
 
-        GnomeOil.new_from_dict(**json\_)    ---webgnomeclient, savefiles, etc.
+        ``GnomeOil.new_from_dict(**json_)``  ---webgnomeclient, savefiles, etc.
 
-        GnomeOil("invalid_name")           ---ValueError (not in sample oils)
+        ``GnomeOil("invalid_name")`` ---ValueError (not in sample oils)
         """
         try:
             super_kwargs = self._init_from_json(**kwargs)
