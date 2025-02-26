@@ -74,7 +74,7 @@ class ArrayType(AddLogger):
     def initialize_null(self, shape=None):
         """
         initialize array with 0 elements. Used so SpillContainer can
-        initializes all arrays with 0 elements. Used when the model is rewound.
+        initialize all arrays with 0 elements. Used when the model is rewound.
         The purpose is to show all data_arrays even if model is not yet running
         or no particles have been released
         """

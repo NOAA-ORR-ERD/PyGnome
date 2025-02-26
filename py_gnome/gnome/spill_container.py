@@ -738,6 +738,7 @@ class SpillContainer(AddLogger, SpillContainerData):
     def rewind(self):
         """
         In the rewind operation, we:
+
         - rewind all the spills
         - restore _array_types to contain only defaults
 
@@ -1177,7 +1178,7 @@ class SpillContainerPair(SpillContainerPairData):
         Add spill to spill_container and make copy in u_spill_container
         if uncertainty is on
 
-        Note: Method can take either a list, tuple, or list of tuples
+        Note: Method can take either a list, tuple, or list of tuples \
               with following assumptions:
 
         1. spills = Spill()    # A spill object, if uncertainty is on, make a

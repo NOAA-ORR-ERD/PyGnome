@@ -647,10 +647,10 @@ def surface_point_line_spill(num_elements,
     :param substance=None: Type of oil spilled.
     :type substance: Substance object
 
-    :param amount=None: mass or volume of oil spilled
+    :param amount: mass or volume of oil spilled, defaults to None
     :type amount: float
 
-    :param units=None: units for amount spilled
+    :param units: units for amount spilled, defaults to None
     :type units: str
 
     :param windage_range: Percentage range for windage.

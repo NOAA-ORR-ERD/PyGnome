@@ -678,9 +678,13 @@ class GnomeOil(Substance):
 
         The constants, A and k_v2 are determined from the viscosity data:
 
-        If only one data point, a default value for k_vs is used:
+        If only one data point, a default value for k_v2 is used:
 
            2100 K, based on analysis of data in the ADIOS database as of 2018
+
+        .. note::
+              The analysis for default k_v2 has been updated leading to new defaults in the oil database.
+              And now Gnome oils from the database should all have at least two viscosity data points
 
         If two data points, the two constants are directly computed
 

@@ -196,7 +196,7 @@ class GnomeMap(GnomeId):
 
     def _attr_from_list_to_array(self, l_):
         '''
-        dict returned as list of tuples to be converted to numpy array
+        dict returned as list of tuples to be converted to numpy array.
         Again used to update_from_dict map_bounds and spillable_area
         '''
         return np.asarray(l_, dtype=np.float64).reshape(-1, 2)
@@ -1346,7 +1346,7 @@ class MapFromBNA(RasterMap):
         object -- keeping the door open to that data coming from something
         other than a bna file.
 
-        FIXME: Technically, geojson recommends ccw polygons -- but putting that
+        FIXME: Technically, geojson recommends ccw polygons -- but putting that \
                check in was pretty slow, so it's commented out.
 
         FIXME: This really should export the map_bounds and spillable_area
