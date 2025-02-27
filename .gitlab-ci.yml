@@ -69,8 +69,9 @@ compile_pygnome:
 
     # need extra requirements for the docs
     - conda install -y --file conda_requirements_docs.txt
+    - conda list |grep -i sphinx
     - cd documentation && make html  # build the docs
-    - ls documentation/build/html/_static/jquery.js
+    - ls documentation/build/html/_static/jquery.js || true
   artifacts:
     when: always
     expire_in: 15 days
@@ -237,7 +238,7 @@ build_main:
 
     # build the docs image
     - ls ./py_gnome/documentation/build/html/_static/jquery.js
-    - |
+    - >
         docker build ./py_gnome/documentation/build/html
         -f dockerfile-docs
         -t registry.orr.noaa.gov/gnome/pygnome/docs
@@ -246,7 +247,7 @@ build_main:
 
     # build the py_gnome image
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - |
+    - >
         docker build .
         --build-arg PYTHON_VER=$PYTHON_VER
         -t registry.orr.noaa.gov/gnome/pygnome:main
