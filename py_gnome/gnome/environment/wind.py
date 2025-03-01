@@ -690,14 +690,18 @@ def constant_wind(speed, direction, units='m/s'):
 
 def wind_from_values(values, units='m/s'):
     """
-    Creates a Wind object directly from data.
+
+    Creates a `Wind` object (Point Wind) directly from data.
 
     :param values: list of (datetime, speed, direction) tuples
-    :param units='m/s': speed units.
+
+    :param units: speed units - defaults to "m/s" Any speed unit defined
+                  in nucos is acceptable (e.g. knot, mph)
+
 
     Direction is the where the wind is coming from in degrees from North
 
-    :returns: A Wind timeseries object that can be used for a wind mover, etc.
+    :returns: A :py:class:`gnome.environment.wind.Wind` object that can be used for a wind mover, etc.
     """
     wind_vel = np.zeros((len(values), ), dtype=datetime_value_2d)
 
