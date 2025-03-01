@@ -1047,7 +1047,7 @@ class CurrentCycleMover(c_GridCurrentMover):
                             before and after file data
         :param time_offset: Time zone shift if data is in GMT
 
-        uses super: super(CurrentCycleMover,self).__init__(\*\*kwargs)
+        uses super: ``super(CurrentCycleMover,self).__init__(**kwargs)``
         """
 
         # NOTE: will need to add uncertainty parameters

@@ -33,10 +33,6 @@ These are the full set:
 
 """
 
-
-
-
-
 from datetime import datetime, timedelta
 
 now = datetime.now
@@ -44,9 +40,11 @@ now = datetime.now
 
 def seconds(seconds=1):
     """
-    returns a datetime.timedelta object representing the specified number of seconds"
+    returns a datetime.timedelta object representing the specified number of seconds
 
-    :param seconds=1:
+    :param seconds: number of seconds -- defaults to 1 second.
+    :type seconds: int or float
+
     """
     return timedelta(seconds=seconds)
 
@@ -55,7 +53,8 @@ def minutes(minutes=1):
     """
     returns a datetime.timedelta object representing the specified number of minutes
 
-    :param minutes=1:
+    :param minutes: number of minutes -- defaults to 1 day.
+    :type minutes: int or float
     """
     return timedelta(minutes=minutes)
 
@@ -64,24 +63,27 @@ def hours(hours=1):
     """
     returns a datetime.timedelta object representing the specified number of hours
 
-    :param hours=1:
+    :param hours: number of hours -- defaults to 1 hour.
+    :type hours: int or float
     """
     return timedelta(hours=hours)
 
 
 def days(days=1):
     """
-    returns a datetime.timedelta object representing the specified number of hours"
+    returns a datetime.timedelta object representing the specified number of days
 
-    :param hours=1:
+    :param days: number of days -- defaults to 1 day.
+    :type days: int or float
     """
     return timedelta(days=days)
 
 
 def weeks(weeks=1):
     """
-    returns a datetime.timedelta object representing the specified number of weeks"
+    Returns a datetime.timedelta object representing the specified number of weeks
 
-    :param weeks=1:
+    :param weeks: number of weeks -- defaults to 1 week.
+    :type weeks: int or float
     """
     return timedelta(days=weeks * 7)
