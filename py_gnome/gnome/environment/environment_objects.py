@@ -190,6 +190,7 @@ class VelocityGrid(VectorVariable):
     def __init__(self, angle=None, **kwargs):
         """
             :param angle: scalar field of cell rotation angles (for rotated/distorted grids)
+            :type angle: gridded_objects_base.Variable or None
         """
 
         if 'variables' in kwargs:
@@ -501,10 +502,13 @@ class GridCurrent(VelocityGrid):
 
         :param points: Coordinates to be queried (P)
         :type points: Nx2 or Nx3 array of double
+        
         :param time: The time at which to query these points (T)
         :type time: datetime.datetime object
+        
         :param units: units the values will be returned in (or converted to)
         :type units: string such as ('m/s', 'knots', etc)
+        
         :param extrapolate: if True, extrapolation will be supported
         :type extrapolate: boolean (True or False)
 
@@ -596,7 +600,7 @@ class GridWind(VelocityGrid):
         '''
         Find the value of the property at positions P at time T
 
-        :param points: Coordinates to be queried (P)
+        :param points: Array of coordinates [(lon0, lat0), (lon1, lat1), ...] to be queried (P)
         :type points: Nx2 array of double
 
         :param time: The time at which to query these points (T)

@@ -109,6 +109,7 @@ class VectorVariableSchema(VariableSchemaBase):
 
 
 class Time(gridded.time.Time, GnomeId):
+    '''Object to represent a time axis in a Variable.'''
 
     _schema = TimeSchema
     def __repr__(self):
@@ -116,6 +117,11 @@ class Time(gridded.time.Time, GnomeId):
             return super().__repr__()
         except ValueError:
             return object.__repr__(self)
+
+    @combine_signatures
+    @classmethod
+    def from_netCDF(cls, *args, **kwargs):
+        return super(Time, cls).from_netCDF(*args, **kwargs)
 
     @classmethod
     def from_file(cls, filename=None, **kwargs):
@@ -140,8 +146,48 @@ class Time(gridded.time.Time, GnomeId):
 # GnomeId class tricks to break. Once past gridded 0.7.0  we should be able to change 
 # all to (parent, GnomeId)
 class Grid_U(gridded.grids.Grid_U, GnomeId):
+    '''Object to represent a triangle unstructured grid in a Variable.'''
 
     _schema = GridSchema
+    
+    def __init__(self, *args, **kwargs):
+        '''
+        It is not recommended to use the __init__ directly, use .from_netCDF instead
+        See gridded.pyugrid.ugrid.UGrid for full __init__ documentation
+        '''
+        super(Grid_U, self).__init__(*args, **kwargs)
+
+    @combine_signatures
+    @classmethod
+    def from_netCDF(filename=None,
+                    dataset=None,
+                    data_file=None,
+                    grid_file=None,
+                    grid_topology=None,
+                    *args,
+                    **kwargs):
+        '''
+        :param filename: File containing a grid
+        :type filename: string or list of string
+
+        :param dataset: Takes precedence over filename, if provided.
+        :type dataset: netCDF4.Dataset
+
+        :param grid_type: Must be provided if Dataset does not have a 'grid_type' attribute, or valid topology variable
+
+        :param grid_topology: A dictionary mapping of grid attribute to variable name.
+                              Takes precedence over discovered attributes
+                              See https://ugrid-conventions.github.io/ugrid-conventions/#2d-triangular-mesh-topology
+
+        :returns: Instance of Grid_U
+        '''
+        super(Grid_U, cls).from_netCDF(filename=filename,
+                                        dataset=dataset,
+                                        data_file=data_file,
+                                        grid_file=grid_file,
+                                        grid_type=grid_type,
+                                        grid_topology=grid_topology,
+                                        *args, **kwargs)
 
     def draw_to_plot(self, ax, features=None, style=None):
         import matplotlib
@@ -168,6 +214,10 @@ class Grid_U(gridded.grids.Grid_U, GnomeId):
         return rv
 
     def get_cells(self):
+        '''
+        returns a Nx3x2 array. N = number of cells, 3 = nodes of each triangle, 2 = (lon, lat)
+        [[[lon1, lat1], [lon2, lat2], [lon3, lat3]], ...]
+        '''
         return self.nodes[self.faces]
 
     def get_lines(self):
@@ -188,9 +238,11 @@ class Grid_U(gridded.grids.Grid_U, GnomeId):
         return (lengths, [closed_cells])
 
     def get_nodes(self):
+        '''returns a Nx2 array of nodes. N = number of nodes, 2 = (lon, lat)'''
         return self.nodes[:]
 
     def get_centers(self):
+        '''returns a Nx2 array of centers. N = number of centers, 2 = (lon, lat)'''
         if self.face_coordinates is None:
             self.build_face_coordinates()
         return self.face_coordinates
@@ -208,13 +260,22 @@ class Grid_U(gridded.grids.Grid_U, GnomeId):
 # GnomeId class tricks to break. Once past gridded 0.7.0  we should be able to change 
 # all to (parent, GnomeId)
 class Grid_S(gridded.grids.Grid_S, GnomeId):
+    '''Object to represent a structured quad grid in a Variable.'''
 
     _schema = GridSchema
 
     def __init__(self, use_masked_boundary=True, *args, **kwargs):
+        '''
+        It is not recommended to use the __init__ directly, use .from_netCDF instead
+        See gridded.pyugrid.sgrid.SGrid for full __init__ documentation
+        '''
         #set use_masked_boundary to True by default (gridded is False)
         super(Grid_S, self).__init__(*args, use_masked_boundary=use_masked_boundary, *args, **kwargs)
-    
+ 
+    @combine_signatures
+    @classmethod
+    def from_netCDF(cls, *args, **kwargs):
+        return super(Grid_S, cls).from_netCDF(*args, **kwargs)   
     
     @property
     def non_grid_variables(self):
@@ -254,6 +315,11 @@ class Grid_S(gridded.grids.Grid_S, GnomeId):
         return rv
 
     def get_cells(self):
+        '''
+        returns a Nx4x2 array. N = number of cells, 4 = nodes of each quad, 2 = (lon, lat)
+        Only returns the cells that are not masked by node_mask
+        [[[lon1, lat1], [lon2, lat2], [lon3, lat3], [lon4, lat4]], ...]
+        '''
         if self._cell_tree is None:
             self.build_celltree()
 
@@ -334,6 +400,14 @@ class Grid_R(gridded.grids.Grid_R, GnomeId):
 
     _schema = GridSchema
 
+    def __init__(self, *args, **kwargs):
+        '''
+        It is not recommended to use the __init__ directly, use .from_netCDF instead
+        See gridded.pyugrid.sgrid.SGrid for full __init__ documentation
+        '''
+        #set use_masked_boundary to True by default (gridded is False)
+        super(Grid_R, self).__init__(*args, **kwargs)
+        
     @classmethod
     def new_from_dict(cls, dict_):
         read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
