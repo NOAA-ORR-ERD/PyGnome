@@ -47,7 +47,7 @@ The "spill" is a conservative substance, i.e. a "passive tracer."
 
 This example is in the PyGNOME source under "scripts/example_scripts", or can be downloaded here:
 
-:download:`simple_script.py <../../../../../scripts/example_scripts/simple_script.py>`
+:download:`simple_script.py <../../../scripts/example_scripts/simple_script.py>`
 
 Initialize the Model
 --------------------

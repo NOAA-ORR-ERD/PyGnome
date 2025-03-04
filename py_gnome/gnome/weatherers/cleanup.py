@@ -106,7 +106,7 @@ class CleanUpBase(RemoveMass, Weatherer):
                  efficiency=1.0,
                  **kwargs):
         '''
-        add 'frac_water' to array_types and pass **kwargs to base class
+        add 'frac_water' to array_types and pass \*\*kwargs to base class
         __init__ using super
         '''
         self._efficiency = None

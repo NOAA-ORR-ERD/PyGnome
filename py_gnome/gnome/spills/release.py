@@ -47,6 +47,8 @@ from gnome.weatherers.spreading import FayGravityViscous
 from gnome.environment import Water
 from gnome.constants import gravity
 from gnome.ops import default_constants
+
+from gnome.utilities.time_utils import TZOffset, TZOffsetSchema
 #from gnome.exceptions import ReferencedObjectNotSet
 from .initializers import (InitRiseVelFromDropletSizeFromDist,
                            InitRiseVelFromDist)
@@ -69,6 +71,7 @@ class BaseReleaseSchema(ObjTypeSchema):
     )
     custom_positions = StartPositions(save=True, update=True)
     centroid = WorldPoint(save=False, update=False, read_only=True)
+    timezone_offset = TZOffsetSchema()
 
 
 class PointLineReleaseSchema(BaseReleaseSchema):
@@ -105,6 +108,7 @@ class Release(GnomeId):
                  custom_positions=None,
                  release_mass=0,
                  retain_initial_positions=False,
+                 timezone_offset=TZOffset(),
                  **kwargs):
         """
         Required Arguments:
@@ -159,6 +163,7 @@ class Release(GnomeId):
         self.retain_initial_positions = retain_initial_positions
         self.rewind()
         super(Release, self).__init__(**kwargs)
+        self._timezone_offset=timezone_offset
         self.array_types.update({'positions': gat('positions'),
                                  'mass': gat('mass'),
                                  'init_mass': gat('mass'),
@@ -173,7 +178,28 @@ class Release(GnomeId):
 
         self._previously_released = 0.0
         self.cumulative_time_scale = SPREADING_CUMULATIVE_TIME_SCALE
-
+        
+    @property
+    def timezone_offset(self):
+        return self._get_timezone_offset()
+    
+    def _get_timezone_offset(self):
+        return self._timezone_offset
+    
+    @timezone_offset.setter
+    def timezone_offset(self, value):
+        #Due to the possibility of multiple time objects, we need to check for and set the offset
+        #for all of them. Subclasses should re-implement this as necessary to maintain consistency
+        if value is None or isinstance(value, TZOffset):
+            self._set_timezone_offset(value)
+        else:
+            raise ValueError("timezone_offset must be set with a TZOffset object or None")
+    
+    def _set_timezone_offset(self, tzo):
+        if tzo is None:
+            tzo = TZOffset(offset=None, title="No Timezone Specified")
+        self._timezone_offset = tzo
+        
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
                 'release_time={0.release_time!r}, '
@@ -949,8 +975,12 @@ def GridRelease(release_time, bounds, resolution):
     Only 2-d for now
 
     :param bounds: bounding box of region you want the elements in:
-                   ((min_lon, min_lat),
-                    (max_lon, max_lat))
+
+                   ::
+
+                     ((min_lon, min_lat),
+                      (max_lon, max_lat))
+
     :type bounds: 2x2 numpy array or equivalent
 
     :param resolution: resolution of grid -- it will be a resolution X resolution grid
@@ -1409,6 +1439,9 @@ def release_from_splot_data(release_time, filename):
     '''
     Initialize a release object from a text file containing splots.
     The file contains 3 columns with following data:
+
+    ::
+
         [longitude, latitude, num_LEs_per_splot/5000]
 
     For each (longitude, latitude) release num_LEs_per_splot points
