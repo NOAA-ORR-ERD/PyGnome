@@ -37,6 +37,7 @@ from gnome.persist.validators import convertible_to_seconds
 
 from .environment import Environment
 from gnome.environment.gridded_objects_base import Time, TimeSchema
+from gnome.utilities.time_utils import TZOffset, TZOffsetSchema
 from .. import _valid_units
 
 
@@ -120,6 +121,8 @@ class WindSchema(base_schema.ObjTypeSchema):
         #this is only for duck-typing the new-style environment objects,
         #so only provide to the client
         save=False, update=False, save_reference=False, read_only=True,
+    )
+    timezone_offset = TZOffsetSchema(
     )
 
 
