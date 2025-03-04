@@ -37,7 +37,7 @@ from gnome.persist.validators import convertible_to_seconds
 
 from .environment import Environment
 from gnome.environment.gridded_objects_base import Time, TimeSchema
-from gnome.utilities.time_utils import TZOffset, TZOffsetSchema
+from gnome.utilities.time_utils import TZOffsetSchema
 from .. import _valid_units
 
 
