@@ -19,7 +19,7 @@ from gnome.utilities.time_utils import asdatetime
 from gnome.utilities.appearance import SpillAppearanceSchema
 
 from colander import (SchemaNode, Bool, String, Float, drop)
-from warnings import warn
+import warnings
 
 from gnome.gnomeobject import GnomeId
 from gnome.persist.base_schema import ObjTypeSchema, GeneralGnomeObjectSchema
@@ -27,6 +27,7 @@ from gnome.persist.base_schema import ObjTypeSchema, GeneralGnomeObjectSchema
 from gnome import _valid_units
 
 from gnome.environment.water import WaterSchema
+
 
 from .release import (Release,
                       PointLineRelease,
@@ -172,6 +173,12 @@ class Spill(BaseSpill):
             num_elements = release.num_elements
         self.num_elements = num_elements
 
+        if units not in ['bbl', 'gal', 'm³', 'kg', 'ton', 'mt']:
+            msg = ('The spill amount unit {0} is outside of the standard set: '
+                   '["bbl", "gal", "m³", "kg", "ton", "mt"] and will not work correctly '
+                   'in WebGNOME.'.format(units))
+            #self.logger.warning(msg)
+            warnings.warn('warning: ' + msg)
         self.units = units
         self.amount = amount
 
@@ -664,7 +671,7 @@ def surface_point_line_spill(num_elements,
     :param name='Surface Point/Line Spill': a name for the spill
     :type name: str
     '''
-    warn('The `surface_point_line_spill` helper function is deprecated in favor of point_line_spill.',
+    warnings.warn('The `surface_point_line_spill` helper function is deprecated in favor of point_line_spill.',
          DeprecationWarning)
     # make positions 3d, with depth = 0 if they are not already
     start_position = *start_position[:2], 0
