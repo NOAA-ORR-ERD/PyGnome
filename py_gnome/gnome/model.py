@@ -230,10 +230,15 @@ class Model(GnomeId):
 
         :param weathering_substeps=1: How many weathering substeps to
                                           run inside a single model time step.
+                                          NOTE: using a value other than 1 has not been well tested.
 
-        :param map=gnome.map.GnomeMap(): The land-water map.
+        :param map=gnome.map.GnomeMap(): The land-water map, defaults to all water map.
 
-        :param uncertain=False: Flag for setting uncertainty.
+        :param uncertain=False: Flag for turning on uncertainty.
+
+        :param run_backwards=False: Flag for running backwards.
+
+        :param timezone_offset: Time zone the model is in.
 
         :param cache_enabled=False: Flag for setting whether the model should
                                     cache results to disk.
@@ -792,12 +797,12 @@ class Model(GnomeId):
         Currently this function consists of the following operations:
 
         1. Set up special objects.
-            Some weatherers currently require other weatherers to exist. This
-            step satisfies those requirements
+           Some weatherers currently require other weatherers to exist. This
+           step satisfies those requirements
         2. Remake collections in case ordering constraints apply (weatherers)
-        3. Compile array_types and run setup procedure on spills
-            array_types defines what data arrays are required by the various
-            components of the model
+        3. Compile array_types and run setup procedure on spills -
+           array_types defines what data arrays are required by the various
+           components of the model
         4. Attach default references
         5. Call prepare_for_model_run on all relevant objects
         6. Conduct miscellaneous prep items. See section in code for details.
@@ -1149,10 +1154,8 @@ class Model(GnomeId):
 
     def step(self):
         '''
-        Steps the model forward in time.
+        Steps the model forward in time (or backward if run_backwards = True).
 
-        NOTE: in theory, it could also go backward with a negative time step,
-        for hindcasting, but that has not been tested.
         '''
         isValid = True
         for sc in self.spills.items():

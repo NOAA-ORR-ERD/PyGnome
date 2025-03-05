@@ -106,7 +106,7 @@ class IceAwareRandomMover(RandomMover):
     "Random Walk" diffusion mover adjusted for ice concentration
 
     Moves the elements each time step in a random direction, according to the
-    specified diffusion coefficient and ice concentration.
+    specified diffusion coefficient and ice concentration (using 80-20 rule).
     """
 
     _schema = IceAwareRandomMoverSchema
