@@ -173,13 +173,18 @@ class Spill(BaseSpill):
             num_elements = release.num_elements
         self.num_elements = num_elements
 
-        if units not in ['bbl', 'gal', 'm³', 'kg', 'ton', 'mt']:
+        self.units = uc.get_abbreviation(units)
+        # special cases until pynucos is updated
+        if self.units == 'tons':
+            self.units = 'ton'
+        elif self.units == 'tonne':
+            self.units = 'mt'
+        if self.units not in ['bbl', 'gal', 'm³', 'kg', 'ton', 'mt']:
             msg = ('The spill amount unit {0} is outside of the standard set: '
                    '["bbl", "gal", "m³", "kg", "ton", "mt"] and will not work correctly '
-                   'in WebGNOME.'.format(units))
+                   'in WebGNOME.'.format(self.units))
             #self.logger.warning(msg)
             warnings.warn('warning: ' + msg)
-        self.units = units
         self.amount = amount
 
 #         self.data = LEData()
