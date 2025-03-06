@@ -57,8 +57,8 @@ shapely>=2.0.6 # older one broken with numpy2
 
 # NOAA maintained packages
 gridded=0.7.1
-pynucos>=3.3.0
+pynucos>=3.4.0
 cell_tree2d
 py_gd>=2.3
-adios_db>=1.2.4
+adios_db>=1.2.5
 

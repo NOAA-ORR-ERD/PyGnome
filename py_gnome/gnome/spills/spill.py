@@ -11,15 +11,15 @@ Substance -- what the types of the elements are.
 
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime
 import copy
 
-import nucos as uc
+import nucos
 from gnome.utilities.time_utils import asdatetime
 from gnome.utilities.appearance import SpillAppearanceSchema
 
 from colander import (SchemaNode, Bool, String, Float, drop)
-from warnings import warn
+import warnings
 
 from gnome.gnomeobject import GnomeId
 from gnome.persist.base_schema import ObjTypeSchema, GeneralGnomeObjectSchema
@@ -27,6 +27,7 @@ from gnome.persist.base_schema import ObjTypeSchema, GeneralGnomeObjectSchema
 from gnome import _valid_units
 
 from gnome.environment.water import WaterSchema
+
 
 from .release import (Release,
                       PointLineRelease,
@@ -36,17 +37,20 @@ from .release import (Release,
                       BaseReleaseSchema,
                       PointLineReleaseSchema,
                       PolygonReleaseSchema,
-                      SubsurfaceReleaseSchema)
+                      )
 
-from .substance import (Substance,
-                        SubstanceSchema,
-                        NonWeatheringSubstance,
+from .substance import (NonWeatheringSubstance,
                         NonWeatheringSubstanceSchema
                         )
 from .gnome_oil import (GnomeOil, GnomeOilSchema)
 
-from .initializers import plume_initializers
+# from .initializers import plume_initializers
 
+# this is the list of units WebGNOME understands.
+# In PyGNOME, you'll get a warning if you don't use one of these.
+WEBGNOME_UNITS_FOR_RELEASE = {'bbl', 'gal', 'm³', 'kg', 'ton', 'mt'}
+# special case in case of an old nucos
+WEBGNOME_UNIT_MAP = {'tons': 'ton', 'tonne': 'mt'}
 
 class SpillSchema(ObjTypeSchema):
     'Spill class schema'
@@ -103,8 +107,8 @@ class Spill(BaseSpill):
     """
     _schema = SpillSchema
 
-    valid_vol_units = _valid_units('Volume')
-    valid_mass_units = _valid_units('Mass')
+    # valid_vol_units = _valid_units('Volume')
+    # valid_mass_units = _valid_units('Mass')
     # attributes that need to be there for the __setattr__ magic to work
     # release = None  # just to make sure it's there.
     # element_type = None
@@ -173,9 +177,21 @@ class Spill(BaseSpill):
         self.num_elements = num_elements
 
         self.units = units
+
+        # self.units = nucos.get_abbreviation(units)
+        # # special cases until pynucos is updated
+        # if self.units == 'tons':
+        #     self.units = 'ton'
+        # elif self.units == 'tonne':
+        #     self.units = 'mt'
+        # if self.units not in ['bbl', 'gal', 'm³', 'kg', 'ton', 'mt']:
+        #     msg = ('The spill amount unit {0} is outside of the standard set: '
+        #            '["bbl", "gal", "m³", "kg", "ton", "mt"] and will not work correctly '
+        #            'in WebGNOME.'.format(self.units))
+        #     #self.logger.warning(msg)
+        #     warnings.warn('warning: ' + msg)
         self.amount = amount
 
-#         self.data = LEData()
         self.water = water
 
         self.amount_uncertainty_scale = amount_uncertainty_scale
@@ -214,7 +230,6 @@ class Spill(BaseSpill):
         if val is None:
             self._substance = NonWeatheringSubstance()
             return
-        #elif isinstance(val, Substance):
         elif isinstance(val, NonWeatheringSubstance):
             self._substance = val
             return
@@ -259,14 +274,6 @@ class Spill(BaseSpill):
     def num_elements(self, ne):
         self.release.num_elements = ne
 
-    # doesn't seem like this should be set on the spill object!
-#     @property
-#     def num_released(self):
-#         return len(self.data)
-    # @num_released.setter
-    # def num_released(self, ne):
-    #     self.release.num_released = ne
-
     @property
     def start_position(self):
         return self.release.centroid if not hasattr(self.release, 'start_position') else self.release.start_position
@@ -289,28 +296,26 @@ class Spill(BaseSpill):
     def amount(self):
         rel_mass = self.release.release_mass #kg
 
-        if self.units in self.valid_vol_units:
-            std_density = self.substance.standard_density #kg/m3
-            vol = rel_mass / std_density
-            return uc.convert('m^3', self.units, vol)
+        try:
+            amount = nucos.convert('kg', self.units, rel_mass)
+        except nucos.InvalidUnitError:  # must be volume
+            vol = rel_mass / self.substance.standard_density # kg/m3
+            amount = nucos.convert('m^3', self.units, vol)
 
-        if self.units in self.valid_mass_units:
-            return uc.convert('kg', self.units, rel_mass)
+        return amount
 
     @amount.setter
-    def amount(self, val):
-        if val < 0:
+    def amount(self, amount):
+        if amount < 0:
             raise ValueError('amount cannot be less than 0')
-        rel_mass = val
 
-        if self.units in self.valid_vol_units:
-            #need to get mass
-            vol = uc.convert(self.units, 'm^3', val)
-            std_density = self.substance.standard_density #kg/m3
-            rel_mass = vol * std_density
+        try:
+            rel_mass = nucos.convert(self.units, 'kg', amount)
+        except nucos.InvalidUnitError:
+            # need to convert to mass
+            vol = nucos.convert(self.units, 'm^3', amount)
+            rel_mass = vol * self.substance.standard_density # kg/m3
 
-        if self.units in self.valid_mass_units:
-            rel_mass = uc.convert(self.units, 'kg', val)
         self.release.release_mass = rel_mass
 
     def __repr__(self):
@@ -326,16 +331,13 @@ class Spill(BaseSpill):
         Checks the user provided units are in list of valid volume
         or mass units
         """
-        if (units in self.valid_vol_units or
-                units in self.valid_mass_units):
+        if (units in _valid_units('Volume')
+            or units in _valid_units('Mass')):
             return True
         else:
-            msg = ('Units for amount spilled must be in volume or mass units. '
-                   '{} was provided.'
-                   'Valid units for volume: {0}, for mass: {1} ').format(
-                         units,
-                         self.valid_vol_units,
-                         self.valid_mass_units)
+            msg = ("Units for amount spilled must be in volume or mass units. "
+                   f"{units} was provided."
+                   f"Recommended units are:{WEBGNOME_UNITS_FOR_RELEASE}")
             ex = ValueError(msg)
             self.logger.exception(ex, exc_info=True)
             raise ex  # this should be raised since run will fail otherwise
@@ -343,8 +345,8 @@ class Spill(BaseSpill):
     @property
     def units(self):
         """
-        Default units in which amount of oil spilled was entered by user.
-        The 'amount' property is returned in these 'units'
+        Units in which amount of oil spilled was entered by user.
+        The `amount` property is returned in these units.
         """
         return self._units
 
@@ -354,7 +356,14 @@ class Spill(BaseSpill):
         set default units in which volume data is returned
         """
         if units is not None:
-            self._check_units(units)  # check validity before setting
+            units = nucos.get_abbreviation(units)
+            # special case in case of an old nucos
+            units = WEBGNOME_UNIT_MAP.get(units, units)
+            self._check_units(units)
+            if units not in WEBGNOME_UNITS_FOR_RELEASE:
+                msg = (f'The spill amount unit: "{units}" is outside of the standard set: '
+                       f'{WEBGNOME_UNITS_FOR_RELEASE} and will not work correctly in WebGNOME.')
+                warnings.warn('warning: ' + msg)
         self._units = units
 
     def get_mass(self):
@@ -664,7 +673,7 @@ def surface_point_line_spill(num_elements,
     :param name='Surface Point/Line Spill': a name for the spill
     :type name: str
     '''
-    warn('The `surface_point_line_spill` helper function is deprecated in favor of point_line_spill.',
+    warnings.warn('The `surface_point_line_spill` helper function is deprecated in favor of point_line_spill.',
          DeprecationWarning)
     # make positions 3d, with depth = 0 if they are not already
     start_position = *start_position[:2], 0
