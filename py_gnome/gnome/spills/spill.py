@@ -361,9 +361,8 @@ class Spill(BaseSpill):
             units = WEBGNOME_UNIT_MAP.get(units, units)
             self._check_units(units)
             if units not in WEBGNOME_UNITS_FOR_RELEASE:
-                msg = ('The spill amount unit {0} is outside of the standard set: '
-                       '["bbl", "gal", "m³", "kg", "ton", "mt"] and will not work correctly '
-                       'in WebGNOME.'.format(units))
+                msg = (f'The spill amount unit: "{units}" is outside of the standard set: '
+                       f'{WEBGNOME_UNITS_FOR_RELEASE} and will not work correctly in WebGNOME.')
                 warnings.warn('warning: ' + msg)
         self._units = units
 
