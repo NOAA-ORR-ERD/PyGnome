@@ -159,7 +159,8 @@ class Grid_U(gridded.grids.Grid_U, GnomeId):
 
     @combine_signatures
     @classmethod
-    def from_netCDF(filename=None,
+    def from_netCDF(cls,
+                    filename=None,
                     dataset=None,
                     data_file=None,
                     grid_file=None,
@@ -181,11 +182,10 @@ class Grid_U(gridded.grids.Grid_U, GnomeId):
 
         :returns: Instance of Grid_U
         '''
-        super(Grid_U, cls).from_netCDF(filename=filename,
+        return super(Grid_U, cls).from_netCDF(filename=filename,
                                         dataset=dataset,
                                         data_file=data_file,
                                         grid_file=grid_file,
-                                        grid_type=grid_type,
                                         grid_topology=grid_topology,
                                         *args, **kwargs)
 
@@ -1037,7 +1037,12 @@ class VectorVariable(gridded.VectorVariable, Environment):
                                                           dataset=ds,
                                                           load_all=load_all,
                                                           location=None,
-                                                          **kwargs))
+                                                          #**kwargs 
+                                                          # commented this because args for the VV (eg 'angle') are getting passed to the Variable
+                                                          # in cases such as IceAwareCurrent where init_from_netCDF calls from_netCDF
+                                                          # on subcomponent environment objects such as IceVelocity
+                                                          # only non-derived VV are args compatible with Variable
+                                                          ))
         if units is None:
             units = [v.units for v in variables]
             if all(u == units[0] for u in units):

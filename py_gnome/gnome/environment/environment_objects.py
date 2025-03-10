@@ -859,12 +859,13 @@ class IceAwareCurrent(GridCurrent):
             kwargs['time'] = self.time
             kwargs['grid'] = self.grid
             kwargs['depth'] = self.depth
-            kwargs['angle'] = self.angle
             if ice_concentration is None:
                 ice_concentration = IceConcentration.from_netCDF(**kwargs)
-
+                
+            kwargs['angle'] = self.angle
             if ice_velocity is None:
                 ice_velocity = IceVelocity.from_netCDF(**kwargs)
+
         
         self.ice_concentration = ice_concentration
         self.ice_velocity = ice_velocity
@@ -937,7 +938,6 @@ class IceAwareWind(GridWind):
         kwargs['time'] = iaw.time
         kwargs['grid'] = iaw.grid
         kwargs['depth'] = iaw.depth
-        kwargs['angle'] = iaw.angle
         if ice_concentration is None:
             ice_concentration = IceConcentration.from_netCDF(**kwargs)
         iaw.ice_concentration = ice_concentration
