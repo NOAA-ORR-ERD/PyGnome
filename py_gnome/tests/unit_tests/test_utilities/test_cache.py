@@ -20,7 +20,10 @@ from gnome.spill_container import SpillContainerPairData
 
 from ..conftest import sample_sc_release
 
-pytestmark = pytest.mark.skip("These Cause confusing errors!")
+# getting erros with accessing zip files that are closed
+#  seems to be a test anomoly -- never had and issue operationally
+pytestmark = [pytest.mark.skip("These Cause confusing errors!"),
+              pytest.mark.filterwarnings("ignore:.*function ZipFile.__del__")]
 
 # some sample datetimes for tests:
 

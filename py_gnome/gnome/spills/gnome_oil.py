@@ -98,6 +98,9 @@ class GnomeOilSchema(SubstanceSchema):
     emulsion_water_fraction_max = SchemaNode(
         Float(), missing=drop, save=True, update=True
     )
+    original_emulsion_water_fraction_max = SchemaNode(
+        Float(), missing=drop, save=True, update=True
+    )
     densities = NumpyArraySchema(missing=drop, save=True, update=True)
     density_ref_temps = NumpyArraySchema(missing=drop, save=True, update=True)
     density_weathering = NumpyArraySchema(missing=drop, save=True, update=True)
@@ -229,6 +232,7 @@ class GnomeOil(Substance):
                         bullwinkle_time=None,
                         original_bullwinkle_time=None,
                         emulsion_water_fraction_max,
+                        original_emulsion_water_fraction_max=None,
                         densities,
                         density_ref_temps,
                         density_weathering,
@@ -269,6 +273,9 @@ class GnomeOil(Substance):
                                          else original_bullwinkle_time)
 
         self.emulsion_water_fraction_max = emulsion_water_fraction_max
+        self.original_emulsion_water_fraction_max = (emulsion_water_fraction_max
+                                             if original_emulsion_water_fraction_max is None
+                                             else original_emulsion_water_fraction_max)
         self.pour_point = pour_point
         self.solubility = solubility
         self._k_v2 = None
