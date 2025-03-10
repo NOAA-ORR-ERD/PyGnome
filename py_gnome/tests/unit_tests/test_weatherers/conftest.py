@@ -23,7 +23,7 @@ def weathering_data_arrays(n_arrays,
                            substance=None,
                            langmuir=False,
                            num_elements=2,
-                           units='g',
+                           units='kg',
                            amount_per_element=1.0):
     '''
     function to initialize data_arrays set by WeatheringData. Weatherer tests
