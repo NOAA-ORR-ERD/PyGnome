@@ -1265,7 +1265,7 @@ class SpillContainerPair(SpillContainerPairData):
             'uncertain_spills': call to_dict() on spills ordered collection
             stored in uncertain spill container
 
-        The input param json\_ is not used. It is there to keep the same
+        The input param ``json_`` is not used. It is there to keep the same
         interface for all to_dict() functions
         """
         dict_ = {'spills':
@@ -1284,7 +1284,7 @@ class SpillContainerPair(SpillContainerPairData):
         It also creates a copy of the different spill and replaces the
         corresponding spill in _u_spill_container
 
-        This is primarily intended for the webapp so the dict\_ will only
+        This is primarily intended for the webapp so the ``dict_`` will only
         contain a list of forecast spills
         '''
         l_spills = dict_['spills']

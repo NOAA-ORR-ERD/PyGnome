@@ -3,6 +3,7 @@
 import os
 from datetime import datetime, timedelta
 import shutil
+from pathlib import Path
 
 import pytest
 from pytest import raises
@@ -29,6 +30,9 @@ from gnome.environment.gridded_objects_base import Grid_S, Variable
 
 wind_file = testdata['timeseries']['wind_ts']
 
+# note: the testdata dict is too confusing for me:
+#       so using a local data dir instead.
+SAMPLE_DATA = Path(__file__).parent / "sample_data"
 
 def test_exceptions():
     """
@@ -63,6 +67,29 @@ def test_read_file_init():
 
     # have to test something:
     assert wm.units == 'knots'
+
+
+def test_read_file_meterspersecond():
+    """
+    m/s was recently added -- making sure it works.
+    """
+    print(wind_file)
+
+    wm = Wind(filename = SAMPLE_DATA / "wind_data_5line_header.osm")
+
+    # have to test something:
+    assert wm.units == 'meters per second'
+
+def test_read_3_line_file_meterspersecond():
+    """
+    m/s was recently added -- making sure it works.
+    """
+    print(wind_file)
+
+    wm = Wind(filename = SAMPLE_DATA / "wind_data_5line_header.osm")
+
+    # have to test something:
+    assert wm.units == 'meters per second'
 
 
 # tolerance for np.allclose(..) function.
