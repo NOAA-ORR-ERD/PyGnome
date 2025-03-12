@@ -21,6 +21,9 @@ If you input an On-Scene Spill Model (OSSM) format wind file into GNOME, a heade
  * The first line lists the station name.
  * The second line lists the station position.
  * The third line provides the units.
+ * The fourth line provides the time zone offset, and optional name for the timezone.
+   e.g. "-8, Pacific Standard Time". The name is only informational.
+
 
 The data then follows, one line per timestamp, as comma-separated values:
 
@@ -59,7 +62,7 @@ Note: Direction can also be  string: N, NE, NNE, etc. -- though that is discoura
     NDBC Buoy 46028
     -121.903, 35.770 N
     knots
-    -8
+    -8, PST
     5, 3, 2025, 13,  0, 13.61, 340
     5, 3, 2025, 13, 10, 13.61, 330
     5, 3, 2025, 13, 20, 11.66, 340

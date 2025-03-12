@@ -713,3 +713,7 @@ def wind_from_values(values, units='m/s'):
         wind_vel['value'][i] = tuple(record[1:3])
 
     return Wind(timeseries=wind_vel, coord_sys='r-theta', units=units)
+
+def read_ossm_format(filename):
+    pass
+

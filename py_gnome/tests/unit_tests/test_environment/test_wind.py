@@ -4,6 +4,7 @@ import os
 from datetime import datetime, timedelta
 import shutil
 from pathlib import Path
+from math import isclose
 
 import pytest
 from pytest import raises
@@ -17,7 +18,7 @@ from gnome.utilities.time_utils import (zero_time,
                                         sec_to_date)
 from gnome.utilities.timeseries import TimeseriesError
 # from gnome.utilities.inf_datetime import InfDateTime
-from gnome.environment import Wind, constant_wind, wind_from_values
+from gnome.environment.wind import Wind, constant_wind, wind_from_values
 
 import gnome.scripting as gs
 
@@ -90,6 +91,31 @@ def test_read_3_line_file_meterspersecond():
 
     # have to test something:
     assert wm.units == 'meters per second'
+
+
+def test_read_4_line_file_everything():
+    """
+    4 line header -- with all features
+
+    This is a new format, but the old ones should work.
+    """
+    print(wind_file)
+
+    wind = Wind(filename = SAMPLE_DATA / "wind_data_4line_header.osm")
+
+    # have to test something:
+    print(wind.timezone_offset)
+    assert wind.units == 'knots'
+    print(wind.timeseries)
+    assert str(wind.timeseries[0][0]) == "2025-03-05T13:00:00"
+    assert isclose(wind.timeseries[0][1][0], 13.60883595)
+    assert isclose(wind.timeseries[0][1][1], 340)
+
+    assert str(wind.timeseries[1][0]) == "2025-03-05T13:10:00"
+    assert isclose(wind.timeseries[1][1][0], 13.60883595)
+    assert isclose(wind.timeseries[1][1][1], 330)
+
+    assert False
 
 
 # tolerance for np.allclose(..) function.
