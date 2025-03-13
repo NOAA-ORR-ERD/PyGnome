@@ -127,6 +127,19 @@ def test_read_4_line_file_everything():
     assert isclose(wind.timeseries[1][1][0], 13.61)
     assert isclose(wind.timeseries[1][1][1], 330)
 
+def test_read_4_line_file_no_units():
+    """
+    4 line header -- with all features
+
+    This is a new format, but the old ones should work.
+    """
+    print(wind_file)
+
+    with pytest.raises(ValueError, match="must have units"):
+        wind = Wind(filename = SAMPLE_DATA / "wind_data_4line_header_no_units.osm")
+
+
+
 def test_read_ossm_format_bad():
     """
     Test of the ossm format reader when you pass it an odd file
@@ -197,7 +210,7 @@ def test_read_ossm_header_no_units():
     # NOTE: when reading the header, the first line after the header
     #       must be parsable (e.g. have data.)
     header = io.StringIO(header)
-    with pytest.raises(ValueError, match="Wind files much have units"):
+    with pytest.raises(ValueError, match="Wind files must have units"):
         (data, line_no, name, coords, units, timezone_offset,
          timezone_name) = _read_ossm_header(header)
 

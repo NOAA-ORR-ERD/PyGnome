@@ -753,7 +753,7 @@ def read_ossm_format(filename):
                     speeds.append(data[1])
                     directions.append(data[2])
         except Exception as err:
-            raise ValueError("File is a malformed OSSM file") from err
+            raise ValueError(f"File is a malformed OSSM file: {err.args}") from err
 
     return (name, coords, units, timezone_offset, timezone_name, times, speeds, directions)
 
@@ -782,7 +782,7 @@ def _read_ossm_header(infile):
     units = infile.readline().strip()
     line_no += 1
     if not units:
-        raise ValueError("Wind files much have units: "
+        raise ValueError("Wind files must have units: "
                          "It should be the third line of the Header")
 
     # Is the header done?
