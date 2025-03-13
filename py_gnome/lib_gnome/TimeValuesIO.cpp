@@ -6,11 +6,12 @@
 
 /////////////////////////////////////////////////
 // OSSM supports what Bushy calls a "Long Wind File"
-// A Long Wind file is a wind file with a 4 line 
+// A Long Wind file is a wind file with a 4 line
 // header. Here is the info from Bushy
+// Note: This has been updated so bounding box is optional
 /////////////////////////////////////////////////
-// 
-//INCHON    
+//
+//INCHON
 //37,30,126,38
 //knots
 //LTIME
@@ -33,12 +34,12 @@
 //centimeters per second
 //miles per hour
 //
-//Time zone label is used to correct time offset if the data is not in local time 
-//and the user is running in local time.  Often times wind data comes in GMT or local standard time.  
+//Time zone label is used to correct time offset if the data is not in local time
+//and the user is running in local time.  Often times wind data comes in GMT or local standard time.
 //In TAP we convert it all to local standard time and never bother with daylight savings time.
 //
-//Bounding box is an interpolation option for dealing with multiple wind files.  
-//There are 4 wind interpolation options in OSSM and bounding boxes that can overlap is one.  
+//Bounding box is an interpolation option for dealing with multiple wind files.
+//There are 4 wind interpolation options in OSSM and bounding boxes that can overlap is one.
 //If you chose another scheme, the bounding box data is ignored, that's why you see all the zeros.
 //Upper left latitude, Lower right latitude, Upper left longitude, Lower Right Longitude
 //
@@ -52,7 +53,7 @@
 // that the 3rd line contains the units
 // that the 4th line is either LTIME, GMTTIME, or a valid date entry.
 // that the 6th line can scan 7 values
-bool IsLongWindFile(vector<string> &linesInFile, short *selectedUnitsOut, bool *dataInGMTOut)
+bool IsLongWindFile(vector<string> &linesInFile, short *selectedUnitsOut, bool *dataInGMTOut, long *numHeaderLines)
 {
 	long line = 0;
 	string currentLine, val1Str, val2Str;
@@ -88,11 +89,11 @@ bool IsLongWindFile(vector<string> &linesInFile, short *selectedUnitsOut, bool *
 				   ::tolower);
 	if (currentLine == "ltime")
 		dataInGMT = false;
-	else if (currentLine == "gmt")
+	else if (currentLine == "gmt" || currentLine == "utc")
 		dataInGMT = true;
 	else {
-		dataInGMT = false;
-		
+		dataInGMT = false; // scan for a number to get time zone, otherwise its 'unknown'
+
 		// If we don't choose the ltime or gmtime, I guess we need to have
 		// a specific date/time entry on this line.  I would like to have good
 		// examples of these entries, but it looks like it's probably in the
@@ -100,20 +101,36 @@ bool IsLongWindFile(vector<string> &linesInFile, short *selectedUnitsOut, bool *
 		// Bushy says the flags can be things like PST, but they all boil down to local time
 		// check if this is a valid data line, then it is probably a valid tide file
 		// tide files with header have same first 3 lines as long wind files, followed by data
-		
+
 		std::replace(currentLine.begin(), currentLine.end(), ',', ' ');
 
 		if (!ParseLine(currentLine, time, val1Str, val2Str))
 		{
 			// not a data line so keep checking
 		}
-		else 
-			return false; // not a long wind file since it has a 3 line header 
+		else
+			return false; // not a long wind file since it has a 3 line header
 
 	}
 
 	// fifth line, grid.  For now we ignore this.
-	line++;
+	// fifth line, potential first line of data. Now we are allowing 4 line header -
+	currentLine = trim(linesInFile[line++]);
+	std::replace(currentLine.begin(), currentLine.end(), ',', ' ');
+	if (!ParseLine(currentLine, time, val1Str, val2Str))
+	{
+		// not a data line, assume it is the bounding box line and keep checking
+	}
+	else
+	{
+		// a four line header
+		*selectedUnitsOut = selectedUnits;
+		*dataInGMTOut = dataInGMT;
+		*numHeaderLines = 4;
+		return true;
+		//return false;
+	}
+	//line++;
 
 	// sixth line, first line of data
 	currentLine = trim(linesInFile[line++]);
@@ -125,17 +142,18 @@ bool IsLongWindFile(vector<string> &linesInFile, short *selectedUnitsOut, bool *
 
 	*selectedUnitsOut = selectedUnits;
 	*dataInGMTOut = dataInGMT;
+	*numHeaderLines = 5;
 
 	return true;
 }
 
 
-Boolean IsLongWindFile(char *path, short *selectedUnitsOut, Boolean *dataInGMTOut)
+Boolean IsLongWindFile(char *path, short *selectedUnitsOut, Boolean *dataInGMTOut, long *numHeaderLines)
 {
 	vector<string> linesInFile;
 
 	if (ReadLinesInFile(path, linesInFile))
-		return IsLongWindFile(linesInFile, selectedUnitsOut, (bool *)dataInGMTOut);
+		return IsLongWindFile(linesInFile, selectedUnitsOut, (bool *)dataInGMTOut, numHeaderLines);
 	else
 		return false;
 }
@@ -400,12 +418,12 @@ Boolean IsTimeFile(char* path)
 	char	strLine [512];
 	char	firstPartOfFile [512];
 	long lenToRead,fileLength;
-	
+
 	err = MyGetFileSize(0,0,path,&fileLength);
 	if(err) return false;
-	
+
 	lenToRead = _min(512,fileLength);
-	
+
 	err = ReadSectionOfFile(0,0,path,0,lenToRead,firstPartOfFile,0);
 	firstPartOfFile[lenToRead-1] = 0; // make sure it is a cString
 	if (!err)
@@ -418,7 +436,7 @@ Boolean IsTimeFile(char* path)
 		numScanned = sscanf(strLine, "%hd %hd %hd %hd %hd %s %s",
 					  &time.day, &time.month, &time.year,
 					  &time.hour, &time.minute, value1S, value2S);
-		if (numScanned == 7)	
+		if (numScanned == 7)
 			bIsValid = true;
 	}
 	return bIsValid;
