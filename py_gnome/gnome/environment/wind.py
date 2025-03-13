@@ -202,6 +202,7 @@ class Wind(Timeseries, Environment):
 
             self.name = kwargs.pop('name', name)
             self.units = units
+            self._filename = filename
 
             self.timezone_offset = TZOffset(timezone_offset, timezone_name)
 
