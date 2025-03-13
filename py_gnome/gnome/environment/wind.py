@@ -198,7 +198,8 @@ class Wind(Timeseries, Environment):
                 wind_vel['value'][i] = tuple(record[1:3])
 
             self.units = units
-            self.new_set_timeseries(wind_vel, coord_sys='uv')
+            #self.new_set_timeseries(wind_vel, coord_sys='uv')
+            self.new_set_timeseries(wind_vel, coord_sys=coord_sys)
 
             self.name = kwargs.pop('name', name)
             self.units = units
@@ -721,7 +722,6 @@ def wind_from_values(values, units='m/s'):
         wind_vel['value'][i] = tuple(record[1:3])
 
     return Wind(timeseries=wind_vel, coord_sys='r-theta', units=units)
-
 
 def read_ossm_format(filename):
     """
