@@ -34,7 +34,7 @@ from gnome.persist.validators import convertible_to_seconds
 
 from .environment import Environment
 from gnome.environment.gridded_objects_base import Time, TimeSchema
-from gnome.utilities.time_utils import TZOffsetSchema
+from gnome.utilities.time_utils import TZOffset, TZOffsetSchema
 from .. import _valid_units
 
 
@@ -203,7 +203,7 @@ class Wind(Timeseries, Environment):
             self.name = kwargs.pop('name', name)
             self.units = units
 
-            # self.timezone_offset =
+            self.timezone_offset = TZOffset(timezone_offset, timezone_name)
 
         else:
             if kwargs.get('source_type') in wind_datasources.__members__.keys():
@@ -780,6 +780,7 @@ def _read_ossm_header(infile):
     # line 3: units
     # should we check that validity of the units here?
     units = infile.readline().strip()
+    units = 'm/s' if units.lower() == 'mps' else units  # "mps" not a NUCOS unit.
     line_no += 1
     if not units:
         raise ValueError("Wind files must have units: "
@@ -806,6 +807,10 @@ def _read_ossm_header(infile):
                 timezone_name = fields[1].strip()
             except IndexError:
                 timezone_name = ""
+    else:
+        # 3 line header -- no timezone info
+        timezone_offset = None
+        timezone_name = ""
     line = infile.readline().strip()
     line_no += 1
     data = _read_ossm_data_line(line)

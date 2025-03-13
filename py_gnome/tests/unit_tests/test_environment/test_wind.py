@@ -72,19 +72,23 @@ def test_read_file_init():
     assert wm.units == 'knots'
 
 
-def test_read_file_meterspersecond():
+def test_read_3line_file_mps():
     """
     m/s was recently added -- making sure it works.
     """
     print(wind_file)
 
-    wm = Wind(filename = SAMPLE_DATA / "wind_data_5line_header.osm")
+    wind = Wind(filename = SAMPLE_DATA / "wind_data_3line_header.osm")
 
     # C++ code normalized the units
     # assert wm.units == 'meters per second'
-    assert wm.units == 'm/s'
+    # Python code changes "MPS" to m/s -- "MPS" not accepted by NUCOS
+    assert wind.units == 'm/s'
 
-def test_read_3_line_file_meterspersecond():
+    assert wind.timezone_offset.offset is None
+    assert wind.timezone_offset.title == 'No Timezone Specified'
+
+def test_read_5_line_file_meterspersecond():
     """
     m/s was recently added -- making sure it works.
     """
@@ -103,6 +107,9 @@ def test_read_3_line_file_meterspersecond():
     assert str(wind.timeseries[1][0]) == "2025-03-05T13:10:00"
     assert isclose(wind.timeseries[1][1][0], 13.61)
     assert isclose(wind.timeseries[1][1][1], 330)
+
+    assert wind.timezone_offset.offset == -7.0
+    assert wind.timezone_offset.title == '-07:00'
 
 
 def test_read_4_line_file_everything():
@@ -126,6 +133,9 @@ def test_read_4_line_file_everything():
     assert str(wind.timeseries[1][0]) == "2025-03-05T13:10:00"
     assert isclose(wind.timeseries[1][1][0], 13.61)
     assert isclose(wind.timeseries[1][1][1], 330)
+
+    assert wind.timezone_offset.offset == -8.0
+    assert wind.timezone_offset.title == 'US Pacific Standard Time'
 
 def test_read_4_line_file_no_units():
     """
