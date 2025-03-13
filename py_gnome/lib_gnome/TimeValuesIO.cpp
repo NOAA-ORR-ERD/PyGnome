@@ -63,6 +63,7 @@ bool IsLongWindFile(vector<string> &linesInFile, short *selectedUnitsOut, bool *
 
 	short selectedUnits = kUndefined;
 	bool dataInGMT = false;
+	*numHeaderLines = 0;
 
 	// size check
 	if (linesInFile.size() < 5)
