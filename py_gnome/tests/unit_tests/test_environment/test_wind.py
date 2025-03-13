@@ -80,8 +80,9 @@ def test_read_file_meterspersecond():
 
     wm = Wind(filename = SAMPLE_DATA / "wind_data_5line_header.osm")
 
-    # have to test something:
-    assert wm.units == 'meters per second'
+    # C++ code normalized the units
+    # assert wm.units == 'meters per second'
+    assert wm.units == 'm/s'
 
 def test_read_3_line_file_meterspersecond():
     """
@@ -89,10 +90,19 @@ def test_read_3_line_file_meterspersecond():
     """
     print(wind_file)
 
-    wm = Wind(filename = SAMPLE_DATA / "wind_data_5line_header.osm")
+    wind = Wind(filename = SAMPLE_DATA / "wind_data_5line_header.osm")
 
     # have to test something:
-    assert wm.units == 'meters per second'
+    # assert wm.units == 'meters per second'
+    assert wind.units == 'm/s'
+
+    assert str(wind.timeseries[0][0]) == "2025-03-05T13:00:00"
+    assert isclose(wind.timeseries[0][1][0], 13.61)
+    assert isclose(wind.timeseries[0][1][1], 340)
+
+    assert str(wind.timeseries[1][0]) == "2025-03-05T13:10:00"
+    assert isclose(wind.timeseries[1][1][0], 13.61)
+    assert isclose(wind.timeseries[1][1][1], 330)
 
 
 def test_read_4_line_file_everything():
@@ -110,14 +120,12 @@ def test_read_4_line_file_everything():
     assert wind.units == 'knots'
     print(wind.timeseries)
     assert str(wind.timeseries[0][0]) == "2025-03-05T13:00:00"
-    assert isclose(wind.timeseries[0][1][0], 13.60883595)
+    assert isclose(wind.timeseries[0][1][0], 13.61)
     assert isclose(wind.timeseries[0][1][1], 340)
 
     assert str(wind.timeseries[1][0]) == "2025-03-05T13:10:00"
-    assert isclose(wind.timeseries[1][1][0], 13.60883595)
+    assert isclose(wind.timeseries[1][1][0], 13.61)
     assert isclose(wind.timeseries[1][1][1], 330)
-
-    assert False
 
 def test_read_ossm_format_bad():
     """
@@ -805,9 +813,9 @@ def test_wind_from_values():
     """
     simple test for the utility
     """
-    values = [(datetime(2016, 5, 10, 12,  0), 5, 45),
-              (datetime(2016, 5, 10, 12, 20), 6, 50),
-              (datetime(2016, 5, 10, 12, 40), 7, 55),
+    values = [(datetime(2025, 5, 10, 12,  0), 5, 45),
+              (datetime(2025, 5, 10, 12, 20), 6, 50),
+              (datetime(2025, 5, 10, 12, 40), 7, 55),
               ]
 
     wind = wind_from_values(values)

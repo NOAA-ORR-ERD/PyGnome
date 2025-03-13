@@ -152,6 +152,9 @@ class Wind(Timeseries, Environment):
         Create a uniform Wind object, representing a time series of wind at a single
         location, applied over all space.
 
+        If ``filename`` is specified, then the data will be read from a file.
+        otherwise, all the other attributes must be set.
+
         :param timeseries=None:
         :param units=None:
         :param filename=None:
@@ -177,25 +180,37 @@ class Wind(Timeseries, Environment):
         #       just pass it into the base __init__() function.
         #       As it is, we are losing arguments that we then need to
         #       explicitly handle.
-        if filename is not None:
+        if filename is not None:  # load from file
+            # fixme: what is this? is it ever used?
             self.source_type = kwargs.pop('source_type', 'file')
 
-            super(Wind, self).__init__(filename=filename, coord_sys=coord_sys, **kwargs)
+            # create this as an empty default object
+            super(Wind, self).__init__(**kwargs)
 
-            self.name = kwargs.pop('name', os.path.split(self.filename)[1])
-            # set _user_units attribute to match user_units read from file.
-            self._user_units = self.ossm.user_units
-            self._timeseries = self.get_wind_data(units=self._user_units)
+            # Assume it's an OSSM file
+            name, coords, units, timezone_offset, timezone_name, times, speeds, directions = \
+                    read_ossm_format(filename)
 
-            if units is not None:
-                self.units = units
+            # create the timeseries
+            wind_vel = np.zeros((len(times), ), dtype=datetime_value_2d)
+            for i, record in enumerate(zip(times, speeds, directions)):
+                wind_vel['time'][i] = record[0]
+                wind_vel['value'][i] = tuple(record[1:3])
+
+            self.units = units
+            self.new_set_timeseries(wind_vel, coord_sys='uv')
+
+            self.name = kwargs.pop('name', name)
+            self.units = units
+
+            # self.timezone_offset =
+
         else:
             if kwargs.get('source_type') in wind_datasources.__members__.keys():
                 self.source_type = kwargs.pop('source_type')
             else:
                 self.source_type = 'undefined'
 
-            # either timeseries is given or nothing is given
             # create an empty default object
             super(Wind, self).__init__(coord_sys=coord_sys, **kwargs)
 
