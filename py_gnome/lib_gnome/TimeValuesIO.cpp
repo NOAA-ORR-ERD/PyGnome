@@ -59,7 +59,7 @@ bool IsLongWindFile(vector<string> &linesInFile, short *selectedUnitsOut, bool *
 	string currentLine, val1Str, val2Str;
 
 	DateTimeRec time;
-	memset(&time,0,sizeof(time))
+	memset(&time,0,sizeof(time));
 	//VelocityRec velocity;
 
 	short selectedUnits = kUndefined;
