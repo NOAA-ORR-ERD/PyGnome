@@ -2,9 +2,6 @@
 import os
 from datetime import datetime
 
-import pytest
-from pytest import raises
-
 import numpy as np
 from math import isclose
 
@@ -174,8 +171,6 @@ def test_past_hours_to_average():
     assert av.past_hours_to_average == 3
     av.past_hours_to_average = 6
     assert av.past_hours_to_average == 6
-
-    assert False
 
 
 def test_default_init():
