@@ -21,62 +21,53 @@ If you input an On-Scene Spill Model (OSSM) format wind file into GNOME, a heade
  * The first line lists the station name.
  * The second line lists the station position.
  * The third line provides the units.
+ * The fourth line provides the time zone offset, and optional name for the timezone.
+   e.g. "-8, Pacific Standard Time". The name is only informational.
+
+
+The data then follows, one line per timestamp, as comma-separated values:
+
+``Day, Month, Year, Hour, Minute, Speed, Direction``
+
+of type:
+
+``integer, integer, integer, integer, integer, float, float``
+
+Times must be in increasing order. They do not need to be regularly spaced.
+
+``Direction`` is the direction the wind is coming from, in degrees from North:
+
+
+Allowed units are:
+
++--------------------+-------------------+
+| Unit               |  Synonyms         |
++====================+===================+
+| knots              |                   |
++--------------------+-------------------+
+| meters per second  | m/s, MPS,         |
++--------------------+-------------------+
+| miles per hour     | MPH, MilesPerHour |
++--------------------+-------------------+
+| kilometer per hour | kph, km/hr        |
++--------------------+-------------------+
+
+
+Note: Direction can also be  string: N, NE, NNE, etc. -- though that is discouraged.
 
 .. rubric:: Example – Filename: OSSM Format.WND
 
 .. code-block:: none
 
-    Inchon
-    -126.63,37.5
+    NDBC Buoy 46028
+    -121.903, 35.770 N
     knots
-    8,4,99,01,00,10,S
-    8,4,99,05,00,10,S
-    8,4,99,09,00,10,S
-    8,4,99,11,00,10,S
-    8,4,99,15,00,10,SW
-    8,4,99,21,00,10,SW
-    9,4,99,01,00,10,SW
-    9,4,99,05,00,10,SW
-    9,4,99,09,00,10,SW
-    9,4,99,11,00,10,SW
-    9,4,99,15,00,10,SW
-    9,4,99,21,00,10,SW
-    10,4,99,01,00,10,SW
-    10,4,99,05,00,05,S
-    10,4,99,09,00,05,S
-    10,4,99,11,00,05,S
-    10,4,99,15,00,05,S
-    10,4,99,21,00,05,S
-    11,4,99,01,00,10,SW
-    11,4,99,05,00,10,SW
-    11,4,99,09,00,10,SW
-    11,4,99,11,00,10,W
-    11,4,99,15,00,10,W
-    11,4,99,21,00,10,W
-    12,4,99,01,00,25,NW
-    12,4,99,05,00,25,NW
-    12,4,99,09,00,25,NW
-    12,4,99,11,00,25,NW
-    12,4,99,15,00,25,NW
-    12,4,99,21,00,25,NW
-
-Annotated Version of the File
-
-.. code-block:: none
-
-    Inchon # location (any text)
-    -126.63, 37.5 # longitude, latitude
-    knots # units
-
-    # Day,    Month,  Year,   Hour,   Min.,   Speed,  Direction
-    8,  4,  99, 01, 00, 0,  S
-    8,  4,  99, 05, 00, 10, S
-    8,  4,  99, 09, 00, 10, S
-    8,  4,  99, 11, 00, 10, S
-    8,  4,  99, 15, 00, 10, SW
-    . . .
-
-Note: Direction can also be in degrees.
+    -8, PST
+    5, 3, 2025, 13,  0, 13.61, 340
+    5, 3, 2025, 13, 10, 13.61, 330
+    5, 3, 2025, 13, 20, 11.66, 340
+    5, 3, 2025, 13, 30, 13.61, 340
+    5, 3, 2025, 13, 40, 13.61, 340
 
 Winds: Rectangular Grid, Time Series [GridWindTime]
 ...................................................

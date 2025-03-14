@@ -161,7 +161,7 @@ def date_to_sec(date_times):
     The epoch is as defined in python: Jan 1, 1970
     """
 
-    # Can accept either a scalar datetime or a scalr datetime64 or
+    # Can accept either a scalar datetime or a scalar datetime64 or
     # an array of datetime64 or list of datetimes -- messy!
 
     try:

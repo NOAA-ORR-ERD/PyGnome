@@ -40,6 +40,13 @@ class CurrentMoversBaseSchema(ProcessSchema):
 
 
 class CurrentMoversBase(CyMover):
+    """
+    Base class for C current movers
+
+    It defines the base functionality and uncertainty.
+
+    """
+
     _ref_as = 'c_current_movers'
 
     def __init__(self,
@@ -110,8 +117,8 @@ class CurrentMoversBase(CyMover):
         Right now the cython mover only gets the triangular center points,
         so we need to calculate centers based on the cells themselves.
 
-        Cells will have the format (tl, tr, bl, br)
-        We need to get the rectangular centers
+        Cells will have the format (tl, tr, bl, br). 
+        We need to get the rectangular centers. 
         Center will be: (tl + ((br - tl) / 2.))
         '''
         return self.mover._get_center_points().view(dtype='<f8').reshape(-1, 2)
@@ -176,6 +183,11 @@ class CatsMoverSchema(CurrentMoversBaseSchema):
 
 
 class CatsMover(CurrentMoversBase):
+    """
+    Current Mover created using currents from NOAA's CATS program
+
+    Mainly used for Location Files.
+    """
 
     _schema = CatsMoverSchema
 
@@ -192,7 +204,7 @@ class CatsMover(CurrentMoversBase):
         Optional parameters (kwargs).
         Defaults are defined by CyCatsMover object.
 
-        :param tide: a gnome.environment.Tide object to be attached to
+        :param tide: a gnome.environment. Tide object to be attached to
                      CatsMover
         :param scale: a boolean to indicate whether to scale value at
                       reference point or not
@@ -201,9 +213,9 @@ class CatsMover(CurrentMoversBase):
                                applied to all data is determined by scaling
                                the raw value at this location.
 
-        :param uncertain_duration: how often does a given uncertain element
+        :param uncertain_duration: (seconds) how often a given uncertain element
                                    gets reset
-        :param uncertain_time_delay: when does the uncertainly kick in.
+        :param uncertain_time_delay: when the uncertainty kicks in in seconds from model start.
         :param up_cur_uncertain: Scale for uncertainty along the flow
         :param down_cur_uncertain: Scale for uncertainty along the flow
         :param right_cur_uncertain: Scale for uncertainty across the flow
@@ -446,6 +458,11 @@ class c_GridCurrentMoverSchema(CurrentMoversBaseSchema):
 
 
 class c_GridCurrentMover(CurrentMoversBase):
+    """
+    Gridded Current Mover for deprecated current formats.
+
+    Ported from old desktop GNOME.
+    """
 
     _schema = c_GridCurrentMoverSchema
 
@@ -473,16 +490,16 @@ class c_GridCurrentMover(CurrentMoversBase):
         :type active_range: 2-tuple of datetimes
 
         :param current_scale: Value to scale current data
-        :param uncertain_duration: how often does a given uncertain element
-                                   get reset
-        :param uncertain_time_delay: when does the uncertainly kick in.
+        :param uncertain_duration: (seconds) how often a given uncertain element
+                                   gets reset
+        :param uncertain_time_delay: when the uncertainty kicks in in seconds from model start.
         :param uncertain_cross: Scale for uncertainty perpendicular to the flow
         :param uncertain_along: Scale for uncertainty parallel to the flow
         :param extrapolate: Allow current data to be extrapolated
                             before and after file data
         :param time_offset: Time zone shift if data is in GMT
         :param num_method: Numerical method for calculating movement delta.
-                           Default Euler
+                           Default: Euler
                            option: Runga-Kutta 4 (RK4)
 
         uses super, ``super(c_GridCurrentMover,self).__init__(**kwargs)``
@@ -672,13 +689,13 @@ class c_GridCurrentMover(CurrentMoversBase):
 
     def get_start_time(self):
         """
-        :this will be the real_data_start time (seconds).
+        this will be the real_data_start time (seconds).
         """
         return self.mover.get_start_time()
 
     def get_end_time(self):
         """
-        :this will be the real_data_stop time (seconds).
+        this will be the real_data_stop time (seconds).
         """
         return self.mover.get_end_time()
 
@@ -708,6 +725,9 @@ class IceMoverSchema(CurrentMoversBaseSchema):
 
 
 class IceMover(CurrentMoversBase):
+    """
+    Ice Current Mover from old desktop GNOME
+    """
 
     _schema = IceMoverSchema
 
@@ -734,9 +754,9 @@ class IceMover(CurrentMoversBase):
         :type active_range: 2-tuple of datetimes
 
         :param current_scale: Value to scale current data
-        :param uncertain_duration: how often does a given uncertain element
-                                   get reset
-        :param uncertain_time_delay: when does the uncertainly kick in.
+        :param uncertain_duration: (seconds) how often a given uncertain element
+                                   gets reset
+        :param uncertain_time_delay: when the uncertainty kicks in in seconds from model start.
         :param uncertain_cross: Scale for uncertainty perpendicular to the flow
         :param uncertain_along: Scale for uncertainty parallel to the flow
         :param extrapolate: Allow current data to be extrapolated
@@ -985,6 +1005,12 @@ class CurrentCycleMoverSchema(c_GridCurrentMoverSchema):
 
 
 class CurrentCycleMover(c_GridCurrentMover):
+    """
+    Current Cycle Mover implemented in C, ported from old desktop GNOME
+
+    Mainly used for Location Files.
+    """
+
     _schema = CurrentCycleMoverSchema
 
     _ref_as = 'current_cycle_mover'
@@ -1012,16 +1038,16 @@ class CurrentCycleMover(c_GridCurrentMover):
         :type active_range: 2-tuple of datetimes
 
         :param current_scale: Value to scale current data
-        :param uncertain_duration: How often does a given uncertain element
-                                   get reset
-        :param uncertain_time_delay: when does the uncertainly kick in.
+        :param uncertain_duration: (seconds) how often a given uncertain element
+                                   gets reset
+        :param uncertain_time_delay: when the uncertainty kicks in in seconds from model start.
         :param uncertain_cross: Scale for uncertainty perpendicular to the flow
         :param uncertain_along: Scale for uncertainty parallel to the flow
         :param extrapolate: Allow current data to be extrapolated
                             before and after file data
         :param time_offset: Time zone shift if data is in GMT
 
-        uses super: super(CurrentCycleMover,self).__init__(\*\*kwargs)
+        uses super: ``super(CurrentCycleMover,self).__init__(**kwargs)``
         """
 
         # NOTE: will need to add uncertainty parameters
@@ -1176,6 +1202,12 @@ class ComponentMoverSchema(ProcessSchema):
 
 
 class ComponentMover(CurrentMoversBase):
+    """
+    Component Mover implemented in C, ported from old desktop GNOME
+
+    Mainly used for Location Files.
+    """
+
     _schema = ComponentMoverSchema
 
     _ref_as = 'component_mover'

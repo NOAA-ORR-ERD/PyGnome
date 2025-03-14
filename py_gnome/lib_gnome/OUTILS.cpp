@@ -227,7 +227,8 @@ long StrToSpeedUnits(char* str)
 {
 	if (!strcmpnocase(str,"knots")) return kKnots;
 	if (!strncmpnocase(str,"MetersPerSec",strlen("MetersPerSec"))) return kMetersPerSec;
-	if (!strcmpnocase(str,"MPS")) return kMetersPerSec;
+    if (!strcmpnocase(str,"MPS")) return kMetersPerSec;
+    if (!strcmpnocase(str,"m/s")) return kMetersPerSec;
 	if (!strcmpnocase(str,"MilesPerHour")) return kMilesPerHour;
 	if (!strcmpnocase(str,"MPH")) return kMilesPerHour;
 	if (!strcmpnocase(str,"kilometer per hour")) return kKilometersPerHour;

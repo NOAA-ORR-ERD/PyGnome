@@ -68,7 +68,7 @@ class Waves(Environment):
 
         :param wind: A wind object to get the wind speed.
                      This should be a moving average wind object.
-        :type wind: A Wind type, or equivelent
+        :type wind: A Wind type, or equivalent
 
         :param water: water properties, specifically fetch and wave height
         :type water: environment.Water object.
@@ -180,10 +180,10 @@ class Waves(Environment):
 
         The idea here is that if there is a low wind, but the user specified
         waves, we really want emulsification that makes sense for the waves.
-        But if the actual wind is stronger than that for the wave height give,
+        But if the actual wind is stronger than the wave height pseudo wind,
         we should use the actual wind.
 
-        fixme: I'm not sure this is right -- if we stick with the wave energy
+        fixme: I'm not sure this is right -- if we stick with the wave energy \
                given by the user for dispersion, why not for emulsification?
         """
         wave_height = self.water.get('wave_height')
