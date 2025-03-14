@@ -867,7 +867,7 @@ def _read_ossm_data_line(line):
         try:
             speed, cardinal_direction = [float(data[5]), data[6].strip()]
             direction = cardinal_directions[cardinal_direction]
-        except ValueError:
+        except (ValueError, KeyError):
             return None
     time = datetime.datetime(dt[2], dt[1], dt[0], dt[3], dt[4])
     return time, speed, direction
