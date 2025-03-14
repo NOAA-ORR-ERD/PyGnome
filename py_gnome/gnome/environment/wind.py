@@ -723,12 +723,31 @@ def wind_from_values(values, units='m/s'):
 
     return Wind(timeseries=wind_vel, coord_sys='r-theta', units=units)
 
+cardinal_directions = {
+    "N": 0,
+    "NNE": 22.5,
+    "NE": 45,
+    "ENE": 67.5,
+    "E": 90,
+    "ESE": 112.5,
+    "SE": 135,
+    "SSE": 157.5,
+    "S": 180,
+    "SSW": 202.5,
+    "SW": 225,
+    "WSW": 247.5,
+    "W": 270,
+    "WNW": 292.5,
+    "NW": 315,
+    "NNW": 337.5
+}
+
 def read_ossm_format(filename):
     """
     Read any of the three OSSM formats:
 
     3 line header
-    4 line header -- preffered
+    4 line header -- preferred
     5 line header
 
     :returns: Times, data, name,  timezone offset, timezone, units.
@@ -818,6 +837,7 @@ def _read_ossm_header(infile):
     if data is None:
         # must be a five line file -- get the next one
         line = infile.readline().strip()
+        line_no += 1
         data = _read_ossm_data_line(line)
         if data is None:
             raise ValueError(f"Something wrong with file on line: {line_no}")
@@ -843,6 +863,11 @@ def _read_ossm_data_line(line):
     try:
         speed, direction = [float(f) for f in data[5:]]
     except ValueError:
-        return None
+        # or might be cardinal direction
+        try:
+            speed, cardinal_direction = [float(data[5]), data[6].strip()]
+            direction = cardinal_directions[cardinal_direction]
+        except ValueError:
+            return None
     time = datetime.datetime(dt[2], dt[1], dt[0], dt[3], dt[4])
     return time, speed, direction
