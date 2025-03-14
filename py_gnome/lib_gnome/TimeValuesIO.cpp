@@ -59,6 +59,7 @@ bool IsLongWindFile(vector<string> &linesInFile, short *selectedUnitsOut, bool *
 	string currentLine, val1Str, val2Str;
 
 	DateTimeRec time;
+	memset(&time,0,sizeof(time))
 	//VelocityRec velocity;
 
 	short selectedUnits = kUndefined;
@@ -124,12 +125,19 @@ bool IsLongWindFile(vector<string> &linesInFile, short *selectedUnitsOut, bool *
 	}
 	else
 	{
-		// a four line header
-		*selectedUnitsOut = selectedUnits;
-		*dataInGMTOut = dataInGMT;
-		*numHeaderLines = 4;
-		return true;
-		//return false;
+		if (time.month == 0 || time.day == 0)
+		{
+			// assume this is a bounding box
+		}
+		else
+		{
+			// a four line header
+			*selectedUnitsOut = selectedUnits;
+			*dataInGMTOut = dataInGMT;
+			*numHeaderLines = 4;
+			return true;
+			//return false;
+		}
 	}
 	//line++;
 

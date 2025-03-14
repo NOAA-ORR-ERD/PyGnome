@@ -1016,12 +1016,13 @@ OSErr OSSMTimeValue_c::ReadTimeValues(char *path, short format,
 
 	this->SetUserUnits(selectedUnits);
 
+#ifndef pyGNOME
 	if (dataInGMT) {
 		printError("GMT data is not yet implemented.");
 		err = -2;
 		goto done;
 	}
-
+#endif
 	// ask for a scale factor
 	if (isHydrologyFile) {
 		if ((err = ReadHydrologyHeader(path)) != 0)

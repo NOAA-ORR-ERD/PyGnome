@@ -350,7 +350,6 @@ def test_z_greater_than_0():
     assert np.all((cw.delta['z'])[2:] == 0)
 
 
-@pytest.mark.skip("Temp skip")
 class TestObjectSerialization(object):
     '''
         Test all the serialization and deserialization methods that are
