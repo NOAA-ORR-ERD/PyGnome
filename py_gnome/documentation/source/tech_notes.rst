@@ -9,7 +9,7 @@ These are often responses to questions from users.
 Coding Issues
 =============
 
-Here are some known issues, errors, etc. you may encounter when workign with PyGNOME.
+Here are some known issues, errors, etc. you may encounter when working with PyGNOME.
 
 
 Issues with xarray
@@ -94,7 +94,7 @@ Stokes Drift
 
 PyGNOME currently does not include Stokes drift. In a future version, we are likely to add it, but in the meantime:
 
-A number of other oil spill and surface drift models do add a stokes drift component -- but it is challenging to do correctly.
+A number of other oil spill and surface drift models do add a Stokes drift component -- but it is challenging to do correctly.
 
 Stokes drift is the net Eulerian flow integrated over the entire wave in space and time -- in the vertical, it's almost entirely in the trough-crest region.
 

@@ -42,7 +42,7 @@ version = release
 # ones.
 extensions = [#'nbsphinx',
 #              'sphinx.ext.autodoc',
-              #'sphinx.ext.napoleon',
+              'sphinx.ext.napoleon',
               'sphinx.ext.todo',
               #'sphinx.ext.coverage',
               #'sphinx.ext.mathjax',
@@ -62,7 +62,10 @@ extensions.append('autoapi.extension')
 autoapi_type = 'python'
 autoapi_dirs = ['../../gnome/']
 autoapi_python_class_content = 'both'
+# helpful for debugging docs!
+# but problematic  when things change
 autoapi_keep_files = False
+# autoapi_keep_files = True
 autoapi_options = ['members',
                    'undoc-members',
                    #'private-members',

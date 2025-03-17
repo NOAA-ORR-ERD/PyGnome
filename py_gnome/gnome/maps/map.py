@@ -104,10 +104,10 @@ class GnomeMap(GnomeId):
     """
     The very simplest map for GNOME -- all water
     with only a bounding box for the map bounds.
-
-    This also serves as a description of the interface and
-    base class for more complex maps
     """
+    # This also serves as a description of the interface and
+    # base class for more complex maps
+
     _schema = GnomeMapSchema
 
     refloat_halflife = None  # note -- no land, so never used
@@ -118,22 +118,23 @@ class GnomeMap(GnomeId):
                  spillable_area=None,
                  land_polys=None,
                  **kwargs):
+
+        # The __init__ will be different for other implementations
         """
-        The __init__ will be different for other implementations
+        :param map_bounds: The polygon bounding the map.
+                           If any elements are outside the map bounds,
+                           they are removed from the simulation.
 
-        :param map_bounds: The polygon bounding the map if any elements are
-                           outside the map bounds, they are removed from the
-                           simulation.
-
-        :param spillable_area: The PolygonSet bounding the spillable_area.
-        :type spillable_area: Either a PolygonSet object or a list of lists
-            from which a polygon set can be created. Each element in the list
-            is a list of points defining a polygon.
+        :param spillable_area: The `PolygonSet` bounding the spillable_area.
+        :type spillable_area: Either a `PolygonSet` object or a list of lists
+                              from which a polygon set can be created. Each
+                              element in the list is a list of points defining
+                              a polygon.
 
         :param land_polys: The PolygonSet holding the land polygons
-        :type land_polys: Either a PolygonSet object or a list of lists
-            from which a polygon set can be created. Each element in the list
-            is a list of points defining a polygon.
+        :type land_polys: Either a PolygonSet object or a list of lists from
+                          which a polygon set can be created. Each element in
+                          the list is a list of points defining a polygon.
 
         Note on 'map_bounds':
             ``[(lon, lat), (lon, lat), (lon, lat), ..``
@@ -195,7 +196,7 @@ class GnomeMap(GnomeId):
 
     def _attr_from_list_to_array(self, l_):
         '''
-        dict returned as list of tuples to be converted to numpy array
+        dict returned as list of tuples to be converted to numpy array.
         Again used to update_from_dict map_bounds and spillable_area
         '''
         return np.asarray(l_, dtype=np.float64).reshape(-1, 2)
@@ -1345,7 +1346,7 @@ class MapFromBNA(RasterMap):
         object -- keeping the door open to that data coming from something
         other than a bna file.
 
-        FIXME: Technically, geojson recommends ccw polygons -- but putting that
+        FIXME: Technically, geojson recommends ccw polygons -- but putting that \
                check in was pretty slow, so it's commented out.
 
         FIXME: This really should export the map_bounds and spillable_area

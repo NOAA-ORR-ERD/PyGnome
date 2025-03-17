@@ -103,7 +103,7 @@ class BaseSpill(GnomeId):
 
 class Spill(BaseSpill):
     """
-    Models a spill by combining Release and Substance objects
+    Provides a complete spill object as needed by the model.
     """
     _schema = SpillSchema
 
@@ -126,30 +126,31 @@ class Spill(BaseSpill):
                  amount_uncertainty_scale=0.0,
                  **kwargs):
         """
-        Spills used by the gnome model. It contains a release object, which
-        releases elements. It also contains a Substance which
-        contains the type of substance spilled and it initializes data arrays
-        to non-default values (non-zero).
+        Spills used by the gnome model.
+
+        :param on=True: Whether this spill is turned on (used at run time)
+
+        :param num_elements=1000: number of elements to use
+
+        :param amount=0: Amount of the release -- can be volume or mass.
+                         which is determined by the units
+        :type amount: float (volume or mass)
+
+        :param units: units of the amount: can be volume or mass, any units
+                      supported by nucos. (e.g. tonnes, kg, bbl, gal, )
+        :type units: str
 
         :param release: an object defining how elements are to be released
         :type release: derived from :class:`~gnome.spills.release.Release`
 
-        :param substance: an object defining the substance of this spill. Defaults to :class:`~gnome.spills.substance.NonWeatheringSubstance`
+        :param substance: an object defining the substance of this spill. Defaults to
+                          :class:`~gnome.spills.substance.NonWeatheringSubstance`
         :type substance: derived from :class:`~gnome.spills.substance.Substance`
 
-        **Optional parameters (kwargs):**
+        **Optional parameters:**
 
         :param name: Human-usable Name of this spill
         :type name: str
-
-        :param on=True: Toggles the spill on/off.
-        :type on: bool
-
-        :param amount=None: mass or volume of oil spilled.
-        :type amount: double (volume or mass)
-
-        :param units=None: must provide units for amount spilled.
-        :type units: str
 
         :param amount_uncertainty_scale=0.0: scale value in range 0-1
                                              that adds uncertainty to the
@@ -577,9 +578,10 @@ def point_line_spill(num_elements,
     :param units=None: units for amount spilled
     :type units: str
 
-    :param tuple windage_range=(.01, .04): Percentage range for windage.
-                                           Active only for surface particles
-                                           when a wind mover is added
+    :param windage_range: Percentage range for windage.
+                          Active only for surface particles
+                          when a wind mover is added.
+                          Default windage_range = (.01, .04)
     :type windage_range: 2-tuple in fraction of wind speed the elements will move.
 
     :param windage_persist=900: Persistence for windage values in seconds.
@@ -587,7 +589,7 @@ def point_line_spill(num_elements,
                                 randomly reset on this time scale
     :type windage_persist: int seconds.
 
-    :param name='Point-Line Spill': a name for the spill
+    :param name='Point-Line-Spill': a name for the spill
     :type name: str
     '''
     # make positions 3d, with depth = 0 if they are not already
@@ -654,23 +656,24 @@ def surface_point_line_spill(num_elements,
     :param substance=None: Type of oil spilled.
     :type substance: Substance object
 
-    :param amount=None: mass or volume of oil spilled
+    :param amount: mass or volume of oil spilled, defaults to None
     :type amount: float
 
-    :param units=None: units for amount spilled
+    :param units: units for amount spilled, defaults to None
     :type units: str
 
-    :param tuple windage_range=(.01, .04): Percentage range for windage.
-                                           Active only for surface particles
-                                           when a mind mover is added
-    :type windage_range: tuple
+    :param windage_range: Percentage range for windage.
+                          Active only for surface particles
+                          when a wind mover is added.
+                          Default windage_range = (.01, .04)
+    :type windage_range: 2-tuple in fraction of wind speed the elements will move.
 
     :param windage_persist=900: Persistence for windage values in seconds.
-                                    Use -1 for inifinite, otherwise it is
+                                    Use -1 for infinite, otherwise it is
                                     randomly reset on this time scale
-    :type windage_persist: int
+    :type windage_persist: int seconds.
 
-    :param name='Surface Point/Line Spill': a name for the spill
+    :param name='Surface-Point-or-Line-Release': a name for the spill
     :type name: str
     '''
     warnings.warn('The `surface_point_line_spill` helper function is deprecated in favor of point_line_spill.',
@@ -738,14 +741,18 @@ def grid_spill(bounds,
     :param release_time: time the LEs are released (datetime object)
     :type release_time: datetime.datetime
 
-    :param tuple windage_range=(.01, .04): Percentage range for windage.
-                                           Active only for surface particles
-                                           when a mind mover is added
+    :param windage_range: Percentage range for windage.
+                          Active only for surface particles
+                          when a wind mover is added.
+                          Default windage_range = (.01, .04)
+    :type windage_range: 2-tuple in fraction of wind speed the elements will move.
 
     :param int windage_persist=900: Persistence for windage values in seconds.
-                                    Use -1 for inifinite, otherwise it is
+                                    Use -1 for infinite, otherwise it is
                                     randomly reset on this time scale
-    :param str name='Surface Point/Line Release': a name for the spill
+    :type windage_persist: int seconds.
+
+    :param str name='Surface-Grid-Spill': a name for the spill
     '''
 
     release = GridRelease(release_time,
@@ -825,15 +832,18 @@ def subsurface_spill(num_elements,
 
     :param str units=None: must provide units for amount spilled.
 
-    :param tuple windage_range=(.01, .04): Percentage range for windage.
-                                           Active only for surface particles
-                                           when a mind mover is added
+    :param windage_range: Percentage range for windage.
+                          Active only for surface particles
+                          when a wind mover is added.
+                          Default windage_range = (.01, .04)
+    :type windage_range: 2-tuple in fraction of wind speed the elements will move.
 
     :param windage_persist=900: Persistence for windage values in seconds.
-                                Use -1 for inifinite, otherwise it is
+                                Use -1 for infinite, otherwise it is
                                 randomly reset on this time scale.
+    :type windage_persist: int seconds.
 
-    :param str name='Subsurface Release': a name for the spill.
+    :param str name='Subsurface-Plume': a name for the spill.
     '''
 
     release = SubsurfaceRelease(distribution_type=distribution_type,

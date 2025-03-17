@@ -98,17 +98,13 @@ class RemoveMass(object):
 
 
 class CleanUpBase(RemoveMass, Weatherer):
-    '''
-    Just need to add a few internal methods for Skimmer + Burn common code
-    Currently defined as a base class.
-    '''
+    # '''
+    # Just need to add a few internal methods for Skimmer + Burn common code
+    # Currently defined as a base class.
+    # '''
     def __init__(self,
                  efficiency=1.0,
                  **kwargs):
-        '''
-        add 'frac_water' to array_types and pass \*\*kwargs to base class
-        __init__ using super
-        '''
         self._efficiency = None
         self.efficiency = efficiency
 

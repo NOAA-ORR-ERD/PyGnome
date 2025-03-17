@@ -72,12 +72,20 @@ env_objs = [Water,
 # schemas = list(schemas)
 schemas = list({cls._schema for cls in env_objs if hasattr(cls, '_schema')})
 
-#This hack is for backwards compat on save files...should probably
-#remove at some point
+# This hack is for backwards compat on save files...should probably
+# remove at some point
 import sys
 if ('gnome.environment.ts_property' not in sys.modules):
     sys.modules['gnome.environment.ts_property'] = timeseries_objects_base
 ts_property = timeseries_objects_base
 
-__all__ = [cls.__name__ for cls in base_classes]
-__all__.extend([cls.__name__ for cls in env_objs])
+# __ all__ is used by autoAPI to decide what to document
+#  we don't want all these import documented here, as they are already documented elsewhere
+# otherwise, it's used for "import *", which we really don't need to support.
+__all__ = []
+# __all__ = [cls.__name__ for cls in base_classes]
+# __all__.extend([cls.__name__ for cls in env_objs])
+
+
+
+

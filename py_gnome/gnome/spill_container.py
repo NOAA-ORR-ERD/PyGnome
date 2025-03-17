@@ -738,6 +738,7 @@ class SpillContainer(AddLogger, SpillContainerData):
     def rewind(self):
         """
         In the rewind operation, we:
+
         - rewind all the spills
         - restore _array_types to contain only defaults
 
@@ -1177,7 +1178,7 @@ class SpillContainerPair(SpillContainerPairData):
         Add spill to spill_container and make copy in u_spill_container
         if uncertainty is on
 
-        Note: Method can take either a list, tuple, or list of tuples
+        Note: Method can take either a list, tuple, or list of tuples \
               with following assumptions:
 
         1. spills = Spill()    # A spill object, if uncertainty is on, make a
@@ -1264,7 +1265,7 @@ class SpillContainerPair(SpillContainerPairData):
             'uncertain_spills': call to_dict() on spills ordered collection
             stored in uncertain spill container
 
-        The input param json\_ is not used. It is there to keep the same
+        The input param ``json_`` is not used. It is there to keep the same
         interface for all to_dict() functions
         """
         dict_ = {'spills':
@@ -1283,7 +1284,7 @@ class SpillContainerPair(SpillContainerPairData):
         It also creates a copy of the different spill and replaces the
         corresponding spill in _u_spill_container
 
-        This is primarily intended for the webapp so the dict\_ will only
+        This is primarily intended for the webapp so the ``dict_`` will only
         contain a list of forecast spills
         '''
         l_spills = dict_['spills']

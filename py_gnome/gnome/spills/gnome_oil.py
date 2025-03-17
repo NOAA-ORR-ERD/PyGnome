@@ -153,19 +153,19 @@ class GnomeOil(Substance):
             ``GnomeOil(filename="adios_oil.json")`` usually records from the
             ADIOS Oil Database (https://adios.orr.noaa.gov)
 
-         3) From the json : ``GnomeOil.new_from_dict(**json_)`` for loading
+         3) From the json : ``GnomeOil.new_from_dict(json_)`` for loading
             save files, etc. (this is usually done under the hood)
 
 
-        GnomeOil("sample_oil_name")        ---works for test oils from sample_oils only
+        ``GnomeOil("sample_oil_name")``  ---works for test oils from sample_oils only
 
-        GnomeOil(oil_name="sample_oil_name")
+        ``GnomeOil(oil_name="sample_oil_name")``
 
-        GnomeOil(filename="oil.json")      ---load from file using adios_db
+        ``GnomeOil(filename="oil.json")``  ---load from file using adios_db
 
-        GnomeOil.new_from_dict(\*\*json\_)    ---webgnomeclient, savefiles, etc.
+        ``GnomeOil.new_from_dict(**json_)``  ---webgnomeclient, savefiles, etc.
 
-        GnomeOil("invalid_name")           ---ValueError (not in sample oils)
+        ``GnomeOil("invalid_name")`` ---ValueError (not in sample oils)
         """
         try:
             super_kwargs = self._init_from_json(**kwargs)
@@ -685,9 +685,13 @@ class GnomeOil(Substance):
 
         The constants, A and k_v2 are determined from the viscosity data:
 
-        If only one data point, a default value for k_vs is used:
+        If only one data point, a default value for k_v2 is used:
 
            2100 K, based on analysis of data in the ADIOS database as of 2018
+
+        .. note::
+              The analysis for default k_v2 has been updated leading to new defaults in the oil database.
+              And now Gnome oils from the database should all have at least two viscosity data points
 
         If two data points, the two constants are directly computed
 

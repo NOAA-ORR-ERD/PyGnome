@@ -12,7 +12,7 @@ def init_viscosity(sc, num_released, water=None, aggregate=True):
     taking into account environmental conditions.
     
     :param sc: spill container
-    :param num_rel: int
+    :param int num_released: number of elements to be initialized
     :param water: Water object to use. If None, uses default values
     :param aggregate: Flag for whether to trigger mass balance updates in spill container
     '''
@@ -35,6 +35,7 @@ def init_viscosity(sc, num_released, water=None, aggregate=True):
 def recalc_viscosity(sc, water=None, aggregate=True):
     '''
     Recalculates the viscosity of the elements in a spill container.
+
     :param sc: spill container
     :param water: Water object to use. If None, uses default
     :param aggregate: Flag for whether to trigger mass balance updates in spill container
@@ -74,13 +75,13 @@ def recalc_viscosity(sc, water=None, aggregate=True):
 def _get_kv1_weathering_visc_update(v0, visc_curvfit_param):
     '''
     kv1 is constant.
-    It defining the exponential change in viscosity as it weathers due to
+    It defines the exponential change in viscosity as it weathers due to
     the fraction lost to evaporation/dissolution:
         v(t) = v' * exp(kv1 * f_lost_evap_diss)
 
-    kv1 = sqrt(v0) * 1500
-    if kv1 < 1, then return 1
-    if kv1 > 10, then return 10
+    | kv1 = sqrt(v0) * 1500
+    | if kv1 < 1, then return 1
+    | if kv1 > 10, then return 10
 
     Since this is fixed for an oil, it only needs to be computed once. Use
     lru_cache on this function to cache the result for a given initial

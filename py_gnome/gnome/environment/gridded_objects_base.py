@@ -532,7 +532,7 @@ class Variable(gridded.Variable, Environment):
         '''
         Initialize a Variable from a netcdf file.
 
-        This is use in subclasses, to it can be done after object creation
+        This is used in subclasses, so it can be done after object creation
 
         :param filename: Default data source. Has lowest priority.
                          If dataset, grid_file, or data_file are provided,
@@ -548,15 +548,14 @@ class Variable(gridded.Variable, Environment):
                               attributes and variable names that hold the grid.
         :type grid_topology: {string : string, ...}
 
-        :param name: Name of this object (GNome Object name)
+        :param name: Name of this object (Gnome Object name)
         :type name: string
 
         :param units: string such as 'm/s'
         :type units: string
 
-        :param time: Time axis of the data. May be a constructed
-                     "gridded.Time" object, or collection of datetime.datetime
-                     objects
+        :param time: Time axis of the data. May be a constructed ``gridded.Time``
+                     object, or collection of datetime.datetime objects
         :type time: [] of datetime.datetime, netCDF4 Variable, or Time object
 
         :param data: Underlying data object. May be any array-like,
@@ -570,7 +569,7 @@ class Variable(gridded.Variable, Environment):
                          e.g. "node", "face"
         :type location: string
 
-        :param depth: Depth axis object from "gridded.depth"
+        :param depth: Depth axis object from ``gridded.depth``
         :type depth: Depth, S_Depth or L_Depth
 
         :param dataset: Instance of open netCDF4.Dataset
