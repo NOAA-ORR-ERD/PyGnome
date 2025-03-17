@@ -1019,6 +1019,7 @@ class NESDISRelease(PolygonRelease):
     def __init__(self,
                  filename=None,
                  features=None,
+                 timezone_offset=TZOffset(offset=0, title='UTC'),
                  **kwargs):
         """
         :param filename: NESDIS shapefile
@@ -1026,6 +1027,9 @@ class NESDISRelease(PolygonRelease):
 
         :param feature: FeatureCollection representation of a NESDIS shapefile
         :type feature: geojson.FeatureCollection
+        
+        :param timezone_offset:
+        :type timezone_offset: gnome.environment.time.TZOffset defaults to UTC
 
         """
 
@@ -1049,6 +1053,7 @@ class NESDISRelease(PolygonRelease):
 
         super(NESDISRelease, self).__init__(
             features=features,
+            timezone_offset=timezone_offset,
             **kwargs
         )
 
