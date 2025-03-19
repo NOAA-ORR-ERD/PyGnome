@@ -578,7 +578,6 @@ class Wind(Timeseries, Environment):
         else:  # otherwise probably set on the wind_mover
             if self.extrapolation_is_allowed is None:  # shouldn't happen
                 self.extrapolation_is_allowed = False
-        #print(f"{self.extrapolation_is_allowed=}")
         try:
             data = self.get_wind_data(time, 'm/s', cs)[0]['value']
         except IndexError:
@@ -856,7 +855,7 @@ def _read_ossm_data_line(line):
         return None
     # first 5 should be integers
     try:
-        dt = [int(f) for f in data[:5]]
+        day, month, year, hour, second = [int(f) for f in data[:5]]
     except ValueError:
         return None
     # last two should be floats
@@ -867,7 +866,10 @@ def _read_ossm_data_line(line):
         try:
             speed, cardinal_direction = [float(data[5]), data[6].strip()]
             direction = cardinal_directions[cardinal_direction]
-        except ValueError:
+        except (ValueError, KeyError):
             return None
-    time = datetime.datetime(dt[2], dt[1], dt[0], dt[3], dt[4])
+    # fix for two digit year:
+    if year < 100:
+        year += (2000 if year < 70 else 1900)
+    time = datetime.datetime(year, month, day, hour, second)
     return time, speed, direction
