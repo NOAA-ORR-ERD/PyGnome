@@ -313,6 +313,20 @@ class Wind(Timeseries, Environment):
             self.time.data = self._timeseries['time'].astype(datetime.datetime)
         else:
             raise ValueError('Bad timeseries as input')
+    
+    def _set_timezone_offset(self, tzo):
+        if tzo is None:
+            tzo = TZOffset(offset=None, title="No Timezone Specified")
+        if self._timezone_offset and self._timezone_offset.offset is not None:
+            if tzo.offset is not None:
+                off = tzo.offset - self._timezone_offset.offset
+                off = np.timedelta64(off, 'h')
+                new_ts = np.zeros((len(self.timeseries), ), dtype=datetime_value_2d)
+                new_ts['time'] = self.timeseries['time'] + off
+                new_ts['value'] = self.timeseries['value']
+                self.new_set_timeseries(new_ts, 'r-theta')
+                
+        self._timezone_offset = tzo
 
     @property
     def data_start(self):
