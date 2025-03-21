@@ -122,8 +122,10 @@ def test_timesteps(model):
     model.outputters += kmz
 
     #run the model
-    model.full_run()
-
+    for step in model:
+        print(step)
+        # making sure -- this was a bug at one point
+        assert isinstance(step['KMZOutput']['output_filename'], str)
 
 
 ## test the kml templates
@@ -155,9 +157,40 @@ def test_on_timestep_kml():
                                            )
     assert True
 
+def test_serialize():
+    """
+    Can we serialize / deserialize a kmz outputter?
+    """
+    kmzo = KMZOutput(Path(__file__).parent / "example_kmz.kmz")
 
+    print(repr(kmzo.filename))
 
+    json = kmzo.serialize()
 
+    print(json)
+
+    {
+        'obj_type':
+        'gnome.outputters.kmz.KMZOutput',
+        'id':
+        '414ce584-0480-11f0-bcb0-acde48001122',
+        'name':
+        'KMZOutput_5',
+        'on':
+        True,
+        'output_zero_step':
+        True,
+        'output_last_step':
+        True,
+        'output_single_step':
+        False,
+        'filename':
+        '/Users/chris.barker/Hazmat/GitLab/pygnome/py_gnome/tests/unit_tests/test_outputters/example_kmz.kmz'
+    }
+
+    kmzo2 = KMZOutput.deserialize(json)
+
+    assert kmzo == kmzo2
 
 
 # def test_rewind(model, output_dir):

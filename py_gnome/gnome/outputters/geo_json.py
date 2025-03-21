@@ -163,8 +163,7 @@ class TrajectoryGeoJsonOutput(Outputter):
                        'uncertain': uc_geojson}
 
         if self.output_dir:
-            output_info['output_filename'] = self.output_to_file(c_geojson,
-                                                                 step_num)
+            output_info['output_filename'] = str(self.output_to_file(c_geojson, step_num))
             self.output_to_file(uc_geojson, step_num)
 
         return output_info
