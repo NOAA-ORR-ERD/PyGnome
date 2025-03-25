@@ -202,7 +202,7 @@ class Release(GnomeId):
             #original offset is non-None value, so we need to adjust the release time
             if tzo.offset is not None:
                 #but only if the new value is not None
-                off =  datetime.timedelta(hours=tzo.offset) - datetime.timedelta(hours=self._timezone_offset.offset)
+                off =  timedelta(hours=tzo.offset) - timedelta(hours=self._timezone_offset.offset)
                 self.release_time = self.release_time + off
                 self.end_release_time = self.end_release_time + off
         self._timezone_offset = tzo

@@ -20,6 +20,7 @@ from gnome.spills import (Release,
                           )
 from gnome.spills.release import release_from_splot_data
 from gnome.spills.le import LEData
+from gnome.utilities.time_utils import TZOffset
 
 
 def test_init():
@@ -457,8 +458,29 @@ class TestPolygonRelease:
         sr1.prepare_for_model_run(900)
         ser = sr1.serialize()
         deser = PolygonRelease.deserialize(ser)
-        assert deser == sr1
-
+        assert deser == sr1\
+    
+    def test_timezone_offset(self, sr1):
+        assert sr1.timezone_offset.offset is None
+        o_rel_time = sr1.release_time
+        o_end_rel_time = sr1.end_release_time
+        
+        # None -> Offset (no change)
+        sr1.timezone_offset = TZOffset(offset=1)
+        assert sr1.release_time == o_rel_time
+        assert sr1.end_release_time == o_end_rel_time
+        
+        #Offset -> offset (change)
+        sr1.timezone_offset = TZOffset(offset=2)
+        assert sr1.release_time == o_rel_time + timedelta(hours=1)
+        assert sr1.end_release_time == o_end_rel_time + timedelta(hours=1)
+        sr1.timezone_offset = TZOffset(offset=1)
+        
+        #Offset -> None (no change)
+        sr1.timezone_offset = None
+        assert sr1.release_time == o_rel_time
+        assert sr1.end_release_time == o_end_rel_time
+        
 
 def test_release_from_splot_data():
     '''
