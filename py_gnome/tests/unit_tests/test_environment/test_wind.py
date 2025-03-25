@@ -18,6 +18,7 @@ from gnome.basic_types import datetime_value_2d
 from gnome.utilities.time_utils import (zero_time,
                                         sec_to_date)
 from gnome.utilities.timeseries import TimeseriesError
+from gnome.utilities.time_utils import TZOffset
 # from gnome.utilities.inf_datetime import InfDateTime
 from gnome.environment.wind import (Wind, constant_wind, wind_from_values, read_ossm_format,
                                     _read_ossm_header)
@@ -638,6 +639,20 @@ class TestWind(object):
         # assert get_rq.value[0, 1] > all_winds['rq'].value[1, 0] \
         #    and get_rq.value[0, 1] < all_winds['rq'].value[1, 1]
         # =====================================================================
+        
+    def test_timezone_offset(self, all_winds):
+        wind = all_winds['wind']
+        assert wind.timezone_offset.offset is None
+        orig = wind.get_start_time()
+        #Test None -> offset
+        wind.timezone_offset = TZOffset(offset=-8)
+        assert wind.timezone_offset.offset == -8
+        assert orig == wind.get_start_time()
+        # Test Offset -> Offset
+        breakpoint()
+        wind.timezone_offset = TZOffset(offset=0)
+        assert wind.timezone_offset.offset == 0
+        assert orig + 8*3600 == wind.get_start_time()
 
 
 def test_data_start(wind_circ):
