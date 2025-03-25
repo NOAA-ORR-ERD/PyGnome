@@ -21,7 +21,7 @@ from gnome.utilities.timeseries import TimeseriesError
 from gnome.utilities.time_utils import TZOffset
 # from gnome.utilities.inf_datetime import InfDateTime
 from gnome.environment.wind import (Wind, constant_wind, wind_from_values, read_ossm_format,
-                                    _read_ossm_header)
+                                    _read_ossm_header, _read_ossm_data_line)
 
 import gnome.scripting as gs
 
@@ -112,6 +112,18 @@ def test_read_5_line_file_meterspersecond():
     assert wind.timezone_offset.offset == -7.0
     assert wind.timezone_offset.title == '-07:00'
 
+    # results for "2025-03-05T13:10:00"
+    v = - np.cos(np.radians(330)) * 13.61
+    u = - np.sin(np.radians(330)) * 13.61
+    print(u, v)
+    # test actual results of at()
+    vel = wind.at(((1,2,3),), datetime(2025, 3, 5, 13, 10))
+
+    print(vel)
+
+    assert isclose(vel[0,0], u)
+    assert isclose(vel[0,1], v)
+
 
 def test_read_4_line_file_everything():
     """
@@ -162,7 +174,7 @@ def test_read_ossm_format_bad():
         results = read_ossm_format(filename)
 
 
-def test_read_ossm_format():
+def test_read_ossm_format_4_line_header():
     """
     Direct test of the ossm format reader
     """
@@ -171,8 +183,6 @@ def test_read_ossm_format():
     results = read_ossm_format(filename)
 
     name, coords, units, timezone_offset, timezone_name, times, speeds, directions = results
-
-    print(results)
 
     assert name == 'NDBC Buoy 46028'
     assert coords == (-121.903, 35.77)
@@ -191,6 +201,36 @@ def test_read_ossm_format():
     assert times[-1] == datetime(2025, 3, 5, 13, 40)
     assert speeds[-1] == 13.61
     assert directions[-1] == 350
+
+
+def test_read_ossm_format_2digit_year():
+    """
+    Direct test of the ossm format reader
+    """
+    filename = SAMPLE_DATA / "wind_data_2digit_year.WND"
+
+    results = read_ossm_format(filename)
+
+    name, coords, units, timezone_offset, timezone_name, times, speeds, directions = results
+
+    assert name == 'Inchon'
+    assert coords == (-126.63, 37.5)
+    assert units == 'knots'
+    assert timezone_offset == -8.0
+    assert timezone_name == 'PST'
+
+    assert len(times) == 5
+    assert len(speeds) == 5
+    assert len(directions) == 5
+
+    assert times[0] == datetime(1999, 4, 8, 1, 0)
+    assert speeds[0] == 10
+    assert directions[0] == 180
+
+    assert times[-1] == datetime(1999, 4, 8, 15, 0)
+    assert speeds[-1] == 10
+    assert directions[-1] == 225
+
 
 def test_read_ossm_header():
     header = """NDBC Buoy 46028
@@ -225,6 +265,16 @@ def test_read_ossm_header_no_units():
         (data, line_no, name, coords, units, timezone_offset,
          timezone_name) = _read_ossm_header(header)
 
+@pytest.mark.parametrize("line, data", [
+                         ('5, 3, 2025, 13, 10, 13.61, 330', (datetime(2025, 3, 5, 13, 10), 13.61, 330)),
+                         ('5, 3, 25, 13, 10, 13.61, 330', (datetime(2025, 3, 5, 13, 10), 13.61, 330)),
+                         ('5, 3, 98, 13, 10, 13.61, 330', (datetime(1998, 3, 5, 13, 10), 13.61, 330)),
+                         ('5, 3, 2025, 13, 10, 13.61, E', (datetime(2025, 3, 5, 13, 10), 13.61, 90)),
+                                   ])
+def test_read_read_ossm_data_line(line, data):
+    result = _read_ossm_data_line(line)
+    assert result == data
+
 # tolerance for np.allclose(..) function.
 # Results are almost the same but not quite so needed to add tolerance.
 # numpy defaults:
@@ -232,6 +282,9 @@ def test_read_ossm_header_no_units():
 # atol = 1e-08
 rtol = 1e-14  # most of a float64's precision
 atol = 0  # zero must be exact in this case
+
+
+
 
 
 def test_units():

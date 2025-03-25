@@ -158,7 +158,7 @@ class KMZOutput(OutputterFilenameMixin, Outputter):
             return None
 
         output_info = {'time_stamp': sc.current_time_stamp.isoformat(),
-                       'output_filename': self.filename}
+                       'output_filename': str(self.filename)}
 
         return output_info
 

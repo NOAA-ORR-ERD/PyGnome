@@ -163,6 +163,7 @@ class NetCDFOutputSchema(BaseOutputterSchema):
     filename = FilenameSchema(
         missing=drop, save=True, update=False, test_equal=False
     )
+    ## fixme -- this should (also?) be saving the arrays_to_output set.
     which_data = SchemaNode(
         String(), default='standard', missing=drop, save=True, update=True
     )

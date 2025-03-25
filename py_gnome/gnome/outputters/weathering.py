@@ -94,7 +94,7 @@ class WeatheringOutput(BaseMassBalanceOutputter):
 
         if self.output_dir:
             output_filename = self.output_to_file(output_info, step_num)
-            output_info.update({'output_filename': output_filename})
+            output_info.update({'output_filename': str(output_filename)})
 
         return output_info
 
