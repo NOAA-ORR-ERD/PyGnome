@@ -319,8 +319,8 @@ class Wind(Timeseries, Environment):
             tzo = TZOffset(offset=None, title="No Timezone Specified")
         if self._timezone_offset and self._timezone_offset.offset is not None:
             if tzo.offset is not None:
-                off = int(tzo.offset - self._timezone_offset.offset)
-                off = np.timedelta64(off, 'h')
+                off = int(tzo.offset - self._timezone_offset.offset * 3600)
+                off = np.timedelta64(off, 's')
                 new_ts = np.zeros((len(self.timeseries), ), dtype=datetime_value_2d)
                 new_ts['time'] = self.timeseries['time'] + off
                 new_ts['value'] = self.timeseries['value']
