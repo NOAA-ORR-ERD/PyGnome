@@ -697,15 +697,23 @@ class TestWind(object):
         wind = all_winds['wind']
         assert wind.timezone_offset.offset is None
         orig = wind.get_start_time()
-        #Test None -> offset
+
+        #Test None -> offset (no timeseries change)
         wind.timezone_offset = TZOffset(offset=-8)
         assert wind.timezone_offset.offset == -8
         assert orig == wind.get_start_time()
-        # Test Offset -> Offset
-        breakpoint()
+
+        # Test Offset -> Offset (changes timeseries)
         wind.timezone_offset = TZOffset(offset=0)
         assert wind.timezone_offset.offset == 0
         assert orig + 8*3600 == wind.get_start_time()
+        wind.timezone_offset = TZOffset(offset=-8)
+        assert orig == wind.get_start_time()
+
+        # Test Offest -> None (no timeseries change)
+        wind.timezone_offset = None
+        assert wind.timezone_offset.offset is None
+        assert orig == wind.get_start_time()
 
 
 def test_data_start(wind_circ):
