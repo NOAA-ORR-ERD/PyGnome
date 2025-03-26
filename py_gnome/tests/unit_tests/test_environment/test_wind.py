@@ -265,6 +265,32 @@ def test_read_ossm_header_no_units():
         (data, line_no, name, coords, units, timezone_offset,
          timezone_name) = _read_ossm_header(header)
 
+def test_read_ossm_header_four_num_coords():
+    """
+    some old files have the coords in four numbers.
+
+    This is actually from a tide file example,
+    and not sure what the units are: decimal degrees, degrees, mnutes, somethign else?
+
+    So it's returning (None, None) for now
+    """
+    header = """FAKE HEADER
+27,35,82,40
+MPS
+15,1,1993,00,0,0,0.00"""
+    # NOTE: when reading the header, the first line after the header
+    #       must be parsable (e.g. have data.)
+    header = io.StringIO(header)
+    (data, line_no, name, coords, units, timezone_offset,
+         timezone_name) = _read_ossm_header(header)
+
+    assert name == "FAKE HEADER"
+    assert units == 'm/s'  # they are translated from MPS
+    assert coords == (None, None)
+    assert data == (datetime(1993, 1, 15, 0, 0), 0.0, 0.0)
+
+
+
 @pytest.mark.parametrize("line, data", [
                          ('5, 3, 2025, 13, 10, 13.61, 330', (datetime(2025, 3, 5, 13, 10), 13.61, 330)),
                          ('5, 3, 25, 13, 10, 13.61, 330', (datetime(2025, 3, 5, 13, 10), 13.61, 330)),

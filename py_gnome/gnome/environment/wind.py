@@ -813,8 +813,8 @@ def _read_ossm_header(infile):
     # line 3: units
     # should we check that validity of the units here?
     units = infile.readline().strip()
-    units = 'm/s' if units.lower() == 'mps' else units  # "mps" not a NUCOS unit.
     line_no += 1
+    units = 'm/s' if units.lower() == 'mps' else units  # "mps" not a NUCOS unit.
     if not units:
         raise ValueError("Wind files must have units: "
                          "It should be the third line of the Header")
@@ -844,6 +844,7 @@ def _read_ossm_header(infile):
         # 3 line header -- no timezone info
         timezone_offset = None
         timezone_name = ""
+        return (data, line_no, name, coords, units, timezone_offset, timezone_name)
     line = infile.readline().strip()
     line_no += 1
     data = _read_ossm_data_line(line)
@@ -854,6 +855,7 @@ def _read_ossm_header(infile):
         data = _read_ossm_data_line(line)
         if data is None:
             raise ValueError(f"Something wrong with file on line: {line_no}")
+
     return (data, line_no, name, coords, units, timezone_offset, timezone_name)
 
 
