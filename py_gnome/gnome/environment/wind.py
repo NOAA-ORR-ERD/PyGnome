@@ -805,7 +805,7 @@ def _read_ossm_header(infile):
     line = infile.readline().strip()
     line_no += 1
     try:
-        lon, lat = [float(i) for i in line.split(",")]
+        lat, lon = [float(i) for i in line.split(",")]
         coords = (lon, lat)
     except ValueError:  # somethings wrong with the line.
         coords = (None, None)

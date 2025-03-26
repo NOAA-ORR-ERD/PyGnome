@@ -234,7 +234,7 @@ def test_read_ossm_format_2digit_year():
 
 def test_read_ossm_header():
     header = """NDBC Buoy 46028
-    -121.903, 35.770
+    35.770, -121.903
     knots
     -8, US Pacific Standard Time
     5, 3, 2025, 13, 0, 13.61, 340
@@ -253,7 +253,7 @@ def test_read_ossm_header():
 
 def test_read_ossm_header_no_units():
     header = """NDBC Buoy 46028
-    -121.903, 35.770
+    35.770, -121.903
 
     -8, US Pacific Standard Time
     5, 3, 2025, 13, 0, 13.61, 340
@@ -275,17 +275,13 @@ def test_read_read_ossm_data_line(line, data):
     result = _read_ossm_data_line(line)
     assert result == data
 
-# tolerance for np.allclose(..) function.
+# Tolerance for np.allclose(..) function.
 # Results are almost the same but not quite so needed to add tolerance.
 # numpy defaults:
 # rtol = 1e-05
 # atol = 1e-08
 rtol = 1e-14  # most of a float64's precision
 atol = 0  # zero must be exact in this case
-
-
-
-
 
 def test_units():
     """
