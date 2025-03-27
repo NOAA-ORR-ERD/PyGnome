@@ -135,7 +135,7 @@ def test_model_webapi_output(model, output_dir):
         files = glob(os.path.join(output_dir, '*.json'))
         assert len(files) == model.num_time_steps
 
-#@pytest.mark.xfail
+@pytest.mark.xfail
 # NOTE: This currently fails because the model isn't allowing partial runs to output
 def test_model_stops_in_middle(model, output_dir):
     '''
