@@ -17,6 +17,7 @@ from gnome.weatherers import Evaporation, ChemicalDispersion, Skimmer, Burn
 from gnome.spills.spill import point_line_spill
 
 from gnome.outputters import WeatheringOutput
+import gnome.scripting as gs
 
 from ..conftest import test_oil
 
@@ -133,3 +134,30 @@ def test_model_webapi_output(model, output_dir):
     if output_dir is not None:
         files = glob(os.path.join(output_dir, '*.json'))
         assert len(files) == model.num_time_steps
+
+#@pytest.mark.xfail
+# NOTE: This currently fails because the model isn't allowing partial runs to output
+def test_model_stops_in_middle(model, output_dir):
+    '''
+    If the model stops in the middle of a run:
+    e.g. runs out of data, it should still output results.
+    '''
+    model.outputters[-1].output_dir = output_dir
+    model.rewind()
+
+    # set up a WindMover that's too short.
+    times = [model.start_time + (gs.minutes(30) * i) for i in range(3)]
+    # long enough record
+    # times = [model.start_time + (gs.minutes(30) * i) for i in range(5)]
+
+    winds = gs.wind_from_values([(dt, 5, 90) for dt in times])
+
+    model.movers += gs.WindMover(winds)
+
+    model.full_run()
+
+    # removed last test and do the assertion here itself instead of writing to
+    # file again which takes awhile!
+    if output_dir is not None:
+        files = glob(os.path.join(output_dir, '*.json'))
+        assert len(files) == 5	# 1 hour of wind, with 15 minute model timestep
