@@ -203,6 +203,15 @@ class Grid_U(gridded.grids.Grid_U, GnomeId):
 
         ax.add_collection(lines)
 
+    def to_dict(self, json_=None):
+        dict_ = super().to_dict(json_=json_)
+        if 'grid_topology' in dict_:
+            for k, v in dict_['grid_topology'].items():
+                # Convert any numpy arrays to lists for JSON serialization
+                if isinstance(v, np.generic):
+                    dict_['grid_topology'][k] = v.item()
+        return dict_
+
     @classmethod
     @combine_signatures
     def new_from_dict(cls, dict_):
@@ -304,6 +313,15 @@ class Grid_S(gridded.grids.Grid_S, GnomeId):
 
             ax.plot(lon, lat, **s)
             ax.plot(lon.T, lat.T, **s)
+
+    def to_dict(self, json_=None):
+        dict_ = super().to_dict(json_=json_)
+        if 'grid_topology' in dict_:
+            for k, v in dict_['grid_topology'].items():
+                # Convert any numpy arrays to lists for JSON serialization
+                if isinstance(v, np.generic):
+                    dict_['grid_topology'][k] = v.item()
+        return dict_
 
     @classmethod
     @combine_signatures
@@ -1190,8 +1208,7 @@ class VectorVariable(gridded.VectorVariable, Environment):
 
     def get_data_vectors(self):
         '''
-        return array of shape (time_slices, len_linearized_data,2)
-        first is magnitude, second is direction
+        return array of shape (2, time_slices, len_linearized_data)
         '''
 
         raw_u = self.variables[0].data[:]
@@ -1207,7 +1224,7 @@ class VectorVariable(gridded.VectorVariable, Environment):
             v_padding_slice = (np.s_[:],) + self.grid.get_padding_slices(self.grid.edge2_padding)
             raw_u = np.ma.filled(raw_u[u_padding_slice], 0)
             raw_v = np.ma.filled(raw_v[v_padding_slice], 0)
-            raw_u = (raw_u[:, :, 0:-1, ] + raw_u[:, :, 1:]) / 2
+            raw_u = (raw_u[:, :, 0:-1] + raw_u[:, :, 1:]) / 2
             raw_v = (raw_v[:, 0:-1, :] + raw_v[:, 1:, :]) / 2
         #u/v should be interpolated to centers at this point. Now apply appropriate mask
 
@@ -1232,15 +1249,15 @@ class VectorVariable(gridded.VectorVariable, Environment):
             y = np.ma.MaskedArray(y, mask = np.tile(ctr_mask.reshape(-1), yt))
             x = x.compressed().reshape(xt, -1)
             y = y.compressed().reshape(yt,-1)
+            r = np.ma.concatenate((x[None,:], y[None,:]))
+            #r = np.ma.stack((x, y)) change to this when numpy 1.15 becomes norm.
+            return np.ascontiguousarray(r.astype(np.float32)) # r.compressed().astype(np.float32)
         else:
             raw_u = np.ma.filled(raw_u, 0).reshape(raw_u.shape[0], -1)
             raw_v = np.ma.filled(raw_v, 0).reshape(raw_v.shape[0], -1)
             r = np.stack((raw_u, raw_v))
             return np.ascontiguousarray(r, np.float32)
 
-        #r = np.ma.stack((x, y)) change to this when numpy 1.15 becomes norm.
-        r = np.ma.concatenate((x[None,:], y[None,:]))
-        return np.ascontiguousarray(r.astype(np.float32)) # r.compressed().astype(np.float32)
 
     def get_metadata(self):
         json_ = {}
