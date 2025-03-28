@@ -60,8 +60,8 @@ class BinaryOutput(OutputterFilenameMixin,Outputter):
     _schema = BinaryOutputSchema
 
     def __init__(self,
-                 filename,   
-                 zip_output=True,   
+                 filename,
+                 zip_output=True,
                  **kwargs):
         '''
         :param str filename: full path and basename of the zip file
@@ -82,6 +82,7 @@ class BinaryOutput(OutputterFilenameMixin,Outputter):
         self.zip_output = zip_output
         self.filedir = os.path.dirname(filename)
         self.file_num = 0
+        self.cleaned_up = False  # so that we can guard against post_model_run being called twice.
 
 
     def prepare_for_model_run(self,
@@ -132,7 +133,7 @@ class BinaryOutput(OutputterFilenameMixin,Outputter):
 
     def write_output(self, step_num, islast_step=False):
         '''
-        Write data from time step to binary file 
+        Write data from time step to binary file
         '''
         super(BinaryOutput, self).write_output(step_num, islast_step)
 
@@ -159,12 +160,13 @@ class BinaryOutput(OutputterFilenameMixin,Outputter):
         if islast_step:
             num_files = self.file_num + 1
             self._zip_binary_files(num_files)
- 
+            self.cleaned_up = True
+
         if not self._write_step:
             return None
 
         self.file_num += 1
-        
+
         output_info = {'time_stamp': sc.current_time_stamp.isoformat(),
                        'output_filename': str(self.filename)}
 
@@ -185,7 +187,7 @@ class BinaryOutput(OutputterFilenameMixin,Outputter):
         num_LE = len(sc['positions'])
 
         refYear = year - (year % 4)
-	
+
         ref_day = 0o1
         ref_month = 0o1
         ref_year = refYear	#back to 4 digit year
@@ -225,7 +227,7 @@ class BinaryOutput(OutputterFilenameMixin,Outputter):
 
         LEs['Lat'] = latitude
         LEs['Lon'] = longitude
-        LEs['Release_time'] = release_time 
+        LEs['Release_time'] = release_time
         LEs['AgeWhenReleased'] = release_age
         LEs['nMap'] = 1 #the off map LEs are not included, would be set to 7
         LEs['BeachHeight'][sc['status_codes'] == oil_status.on_land] = -50 #ossm value
@@ -273,6 +275,16 @@ class BinaryOutput(OutputterFilenameMixin,Outputter):
                     os.remove(f)
                 except:
                     pass
+
+    def post_model_run(self):
+        """
+        This is where to clean up -- close files, etc.
+        """
+
+        if not self.cleaned_up:
+            self._zip_binary_files(self.file_num)
+        self.cleaned_up = True
+
 
     def __getstate__(self):
         '''

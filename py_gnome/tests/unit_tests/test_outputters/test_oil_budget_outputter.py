@@ -164,3 +164,43 @@ def test_model_full_run_output_short_interval(model, output_dir):
     #     print()
 
     # assert False
+
+
+@pytest.mark.xfail
+# NOTE: This currently fails because the model isn't allowing partial runs to output
+def test_model_stops_in_middle(model, output_dir):
+    '''
+    If the model stops in the middle of a run:
+    e.g. runs out of data, it should still output results.
+
+    '''
+
+    outfilename = os.path.join(output_dir, "stop_in_middle.csv")
+
+    # set up a WindMover that's too short.
+    times = [model.start_time + (gs.minutes(30) * i) for i in range(3)]
+    # long enough record
+    # times = [model.start_time + (gs.minutes(30) * i) for i in range(5)]
+
+    winds = gs.wind_from_values([(dt, 5, 90) for dt in times])
+
+    model.movers += gs.WindMover(winds)
+
+    model.outputters += OilBudgetOutput(outfilename,
+                                        output_timestep=gs.minutes(30))
+
+
+    model.rewind()
+
+    model.full_run()
+
+    # check file was created
+
+    out_filename = os.path.join(output_dir, outfilename)
+    assert os.path.isfile(out_filename)
+
+
+    # read the file in and check it is the right length
+    csv_file = open(out_filename).readlines()
+
+    assert len(csv_file) == 4
