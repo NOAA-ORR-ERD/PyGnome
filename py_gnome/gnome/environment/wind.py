@@ -147,6 +147,7 @@ class Wind(Timeseries, Environment):
                  longitude=None,
                  speed_uncertainty_scale=0.0,
                  extrapolation_is_allowed=False,
+                 timezone_offset=None,
                  **kwargs):
         """
         Create a uniform Wind object, representing a time series of wind at a single
@@ -156,13 +157,22 @@ class Wind(Timeseries, Environment):
         otherwise, all the other attributes must be set.
 
         :param timeseries=None:
+
         :param units=None:
+
         :param filename=None:
+
         :param coord_sys='r-theta':
+
         :param latitude=None:
+
         :param longitude=None:
+
         :param speed_uncertainty_scale=0.0:
+
         :param extrapolation_is_allowed=False:
+
+        :param timezone_offset:
         """
         self._timeseries = np.array([(sec_to_date(zero_time()), [0.0, 0.0])],
                                     dtype=datetime_value_2d)
@@ -201,6 +211,10 @@ class Wind(Timeseries, Environment):
             #self.new_set_timeseries(wind_vel, coord_sys='uv')
             self.new_set_timeseries(wind_vel, coord_sys=coord_sys)
 
+            if coords != (None, None):
+                self.longitude = coords[1]
+                self.latitude = coords[0]
+
             self.name = kwargs.pop('name', name)
             self.units = units
             self._filename = filename
@@ -224,7 +238,61 @@ class Wind(Timeseries, Environment):
                 self.units = units
                 self.new_set_timeseries(timeseries, coord_sys)
 
+            self.timezone_offset = timezone_offset
+
         self.extrapolation_is_allowed = extrapolation_is_allowed
+
+    @classmethod
+    def from_file(cls, filename, format=None):
+        """
+        create an object from a file.
+
+        currently only the OSSM format is supported
+
+        :param filename: Path to the data file
+        :type PathLike:
+
+        :param format: File format of data -- only 'ossm' currently supported.
+                       If None: it will attempt to auto-detect the format.
+        :type format: str
+        """
+        if format is None:
+            # auto detect code some day ...
+            format = 'ossm'
+        if format not in {'ossm'}:
+            raise ValueError(f"format: {format} not supported -- only 'ossm'")
+
+        source_type = 'file'  # need this??
+
+        # Assume it's an OSSM file
+        name, coords, units, timezone_offset, timezone_name, times, speeds, directions = \
+            read_ossm_format(filename)
+
+        # create the timeseries
+        wind_vel = np.zeros((len(times), ), dtype=datetime_value_2d)
+        for i, record in enumerate(zip(times, speeds, directions)):
+            wind_vel['time'][i] = record[0]
+            wind_vel['value'][i] = tuple(record[1:3])
+
+        wind = cls(timeseries=wind_vel,
+                   units=units,
+                   filename=None,
+                   coord_sys='r-theta',
+                   latitude=coords[1],
+                   longitude=coords[0],
+                   name=name,
+                   timezone_offset = TZOffset(timezone_offset, timezone_name)
+                   )
+            # self.units = units
+            # #self.new_set_timeseries(wind_vel, coord_sys='uv')
+            # self.new_set_timeseries(wind_vel, coord_sys=coord_sys)
+
+            # self.name = kwargs.pop('name', name)
+            # self.units = units
+        wind._filename = filename
+
+        return wind
+
 
     def update_from_dict(self, dict_, refs=None):
         if 'units' in dict_:
@@ -313,6 +381,20 @@ class Wind(Timeseries, Environment):
             self.time.data = self._timeseries['time'].astype(datetime.datetime)
         else:
             raise ValueError('Bad timeseries as input')
+    
+    def _set_timezone_offset(self, tzo):
+        if tzo is None:
+            tzo = TZOffset(offset=None, title="No Timezone Specified")
+        if self._timezone_offset and self._timezone_offset.offset is not None:
+            if tzo.offset is not None:
+                off = int((tzo.offset - self._timezone_offset.offset) * 3600)
+                off = np.timedelta64(off, 's')
+                new_ts = np.zeros((len(self.timeseries), ), dtype=datetime_value_2d)
+                new_ts['time'] = self.timeseries['time'] + off
+                new_ts['value'] = self.timeseries['value']
+                self.new_set_timeseries(new_ts, 'r-theta')
+                
+        self._timezone_offset = tzo
 
     @property
     def data_start(self):
@@ -791,7 +873,7 @@ def _read_ossm_header(infile):
     line = infile.readline().strip()
     line_no += 1
     try:
-        lon, lat = [float(i) for i in line.split(",")]
+        lat, lon = [float(i) for i in line.split(",")]
         coords = (lon, lat)
     except ValueError:  # somethings wrong with the line.
         coords = (None, None)
@@ -799,8 +881,8 @@ def _read_ossm_header(infile):
     # line 3: units
     # should we check that validity of the units here?
     units = infile.readline().strip()
-    units = 'm/s' if units.lower() == 'mps' else units  # "mps" not a NUCOS unit.
     line_no += 1
+    units = 'm/s' if units.lower() == 'mps' else units  # "mps" not a NUCOS unit.
     if not units:
         raise ValueError("Wind files must have units: "
                          "It should be the third line of the Header")
@@ -830,6 +912,7 @@ def _read_ossm_header(infile):
         # 3 line header -- no timezone info
         timezone_offset = None
         timezone_name = ""
+        return (data, line_no, name, coords, units, timezone_offset, timezone_name)
     line = infile.readline().strip()
     line_no += 1
     data = _read_ossm_data_line(line)
@@ -840,6 +923,7 @@ def _read_ossm_header(infile):
         data = _read_ossm_data_line(line)
         if data is None:
             raise ValueError(f"Something wrong with file on line: {line_no}")
+
     return (data, line_no, name, coords, units, timezone_offset, timezone_name)
 
 

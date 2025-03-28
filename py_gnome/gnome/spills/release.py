@@ -198,6 +198,13 @@ class Release(GnomeId):
     def _set_timezone_offset(self, tzo):
         if tzo is None:
             tzo = TZOffset(offset=None, title="No Timezone Specified")
+        if self._timezone_offset is not None and self._timezone_offset.offset is not None:
+            #original offset is non-None value, so we need to adjust the release time
+            if tzo.offset is not None:
+                #but only if the new value is not None
+                off =  timedelta(hours=tzo.offset) - timedelta(hours=self._timezone_offset.offset)
+                self.release_time = self.release_time + off
+                self.end_release_time = self.end_release_time + off
         self._timezone_offset = tzo
         
     def __repr__(self):

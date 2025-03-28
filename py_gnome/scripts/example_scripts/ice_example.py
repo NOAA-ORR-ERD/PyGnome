@@ -8,9 +8,10 @@ All files will be downloaded from https://gnome.orr.noaa.gov/py_gnome_testdata
 if they are not available in the example_files directory
 """
 
-
 import gnome.scripting as gs
 from pathlib import Path
+
+HERE = Path(__file__)
 
 data_dir = Path('example_files')
 output_dir = Path('output')
@@ -43,10 +44,10 @@ model.outputters += gs.NetCDFOutput(netcdf_file,
 
 print('adding a spill')
 spill1 = gs.point_line_spill(num_elements=1000,
-                                     start_position=(-163.75,
-                                                     69.75,
-                                                     0.0),
-                                     release_time=start_time)
+                             start_position=(-163.75,
+                                             69.75,
+                                             0.0),
+                             release_time=start_time)
 
 model.spills += spill1
 
@@ -69,8 +70,8 @@ ice_aware_wind = gs.IceAwareWind.from_netCDF(filename=fn,
 i_c_mover = gs.CurrentMover(current=ice_aware_curr)
 i_w_mover = gs.WindMover(wind=ice_aware_wind)
 
-# shifting to -360 to 0 longitude (to match the coordinate system of the map)
-ice_aware_curr.grid.node_lon = ice_aware_curr.grid.node_lon[:] - 360
+# shifting to -180 to 180 longitude (to match the coordinate system of the map)
+ice_aware_curr.grid.node_lon = gs.convert_longitude(ice_aware_curr.grid.node_lon[:], coord_system='-180--180')
 model.movers += i_c_mover
 model.movers += i_w_mover
 
@@ -85,9 +86,12 @@ model.movers += gs.IceAwareRandomMover(ice_concentration=ice_aware_curr.ice_conc
 # renderer.add_grid(ice_aware_curr.grid)
 # renderer.add_vec_prop(ice_aware_curr)
 
-print("running the model: see output in the output dir")
+print("running the model:")
 
 model.full_run()
+
+print("Finished running the model: see output in the output dir")
+
 
 # Save it as a gnome save file:
 model.save('ice_example.gnome')

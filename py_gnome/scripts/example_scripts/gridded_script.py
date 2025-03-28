@@ -10,7 +10,7 @@ model results in netcdf files
 import gnome.scripting as gs
 from pathlib import Path
 
-data_dir = Path('example_files')
+data_dir = Path(__file__).parent / 'example_files'
 
 # setup the model
 model = gs.Model(start_time="2023-03-03",
@@ -36,17 +36,11 @@ wind = gs.GridWind.from_netCDF(filename=fn)
 wind_mover = gs.WindMover(wind)
 model.movers += wind_mover
 
-# # create a current mover (auto creates and adds environment object)
+# create a current mover (auto creates and adds environment object)
 fn = data_dir / 'gridded_current.nc'
 current_mover = gs.CurrentMover.from_netCDF(filename=fn)
 model.movers += current_mover
 
-# create current object and associated mover;
-# add to model (also adds environment object)
-# fn = data_dir / 'gridded_current.nc'
-# current = gs.GridCurrent.from_netCDF(filename=fn)
-# current_mover = gs.CurrentMover(current)
-# model.movers += current_mover
 
 # Add random walk Diffusion
 model.movers += gs.RandomMover(diffusion_coef=1e5)
@@ -58,7 +52,7 @@ renderer = gs.Renderer(mymap,
                        # set part of map to view
                        viewport=((-125.5, 47.5),
                                  (-124.0, 48.5)),
-                       formats=['gif']
+                       formats=['gif']  # animated gif
                        )
 
 model.outputters += renderer
@@ -70,6 +64,8 @@ model.outputters += kmzout
 print("running the model: see output in the output dir")
 
 model.full_run()
+
+print("model done running")
 
 # Save it as a gnome save file:
 model.save('gridded_example.gnome')

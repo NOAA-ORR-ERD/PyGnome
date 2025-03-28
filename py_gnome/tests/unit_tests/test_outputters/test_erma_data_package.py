@@ -169,3 +169,48 @@ def test_simple_package(model, output_dir):
         with zipper.open(layer2_json_path) as layer2_json_file:
             uncertain_json =  json.load(layer2_json_file)
             # Need to come up with some good validation of the json here
+
+def count_files_in_zip(zip_filepath):
+    """
+    Counts the number of files in a ZIP archive.
+
+    Args:
+        zip_filepath (str): The path to the ZIP file.
+
+    Returns:
+        int: The number of files in the ZIP archive.
+             Returns -1 if the file is not found or is not a valid ZIP file.
+    """
+    try:
+        with zipfile.ZipFile(zip_filepath, 'r') as zip_file:
+            return len(zip_file.namelist())
+    except FileNotFoundError:
+        print(f"Error: File not found: {zip_filepath}")
+        return -1
+    except zipfile.BadZipFile:
+         print(f"Error: Not a valid ZIP file: {zip_filepath}")
+         return -1
+
+@pytest.mark.xfail
+# NOTE: This currently fails because the model isn't allowing partial runs to output
+def test_model_stops_in_middle(model, output_dir):
+    filename = os.path.join(output_dir, "stop_in_middle.zip")
+    # set up a WindMover that's too short.
+    times = [model.start_time + (gs.minutes(30) * i) for i in range(3)]
+    # long enough record
+    # times = [model.start_time + (gs.minutes(30) * i) for i in range(5)]
+
+    winds = gs.wind_from_values([(dt, 5, 90) for dt in times])
+
+    model.movers += gs.WindMover(winds)
+
+    package = ERMADataPackageOutput(filename)
+    model.outputters += package
+
+    print(model.movers)
+    # Run the model
+    model.full_run()
+
+    # check the zipfile has expected number of files
+    len_zip = count_files_in_zip(filename)
+    assert len_zip == 11

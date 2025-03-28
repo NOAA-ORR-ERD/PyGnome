@@ -19,10 +19,13 @@ Winds: Single Point, Time Series [OSSM]
 If you input an On-Scene Spill Model (OSSM) format wind file into GNOME, a header including the units is required –
 
  * The first line lists the station name.
+   - any string
  * The second line lists the station position.
+   - lat, lon
  * The third line provides the units.
+   - string -- see below for allowable units
  * The fourth line provides the time zone offset, and optional name for the timezone.
-   e.g. "-8, Pacific Standard Time". The name is only informational.
+   - number, string  e.g. "-8, Pacific Standard Time". The name is only informational.
 
 
 The data then follows, one line per timestamp, as comma-separated values:
@@ -60,7 +63,7 @@ Note: Direction can also be  string: N, NE, NNE, etc. -- though that is discoura
 .. code-block:: none
 
     NDBC Buoy 46028
-    -121.903, 35.770
+    35.770, -121.903
     knots
     -8, US Pacific Standard Time
     5, 3, 2025, 13,  0, 13.61, 340

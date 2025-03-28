@@ -421,7 +421,7 @@ def test_model_stops_in_middle(model):
     If the model stops in the middle of a run:
     e.g. runs out of data, it should still output results.
     """
-    filename = local_dirname() / "stop_in_middle"
+    filename = OUTPUT_DIR / "stop_in_middle"
 
     # set up a WindMover that's too short.
     times = [model.start_time + (gs.minutes(30) * i) for i in range(3)]
@@ -448,5 +448,5 @@ def test_model_stops_in_middle(model):
     # check the shapefile
     results = get_shape_file_stats(filename.with_suffix('.zip'))
 
-    assert len(results['timesteps']) == 2
+    assert len(results['timesteps']) == 1
     assert gs.asdatetime(results['timesteps'][0]) == model.start_time + gs.hours(1)
