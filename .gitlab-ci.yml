@@ -98,7 +98,7 @@ test_pygnome:
 # but once in a while we refactor something that breaks something.
 # So it would be good to get a warning from the CI.
 # This shouldn't be a "it has to pass" job.
-test_pygnome_scripts_testing_scripts:
+test_pygnome_testing_scripts:
   stage: test
   tags:
     - docker
@@ -110,7 +110,7 @@ test_pygnome_scripts_testing_scripts:
 
 # make sure the example scripts run without error
 # this can fail, but we want to be warned ...
-test_pygnome_scripts_example_scripts:
+test_pygnome_example_scripts:
   stage: test
   tags:
     - docker
