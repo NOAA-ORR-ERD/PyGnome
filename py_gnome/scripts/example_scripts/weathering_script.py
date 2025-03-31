@@ -36,13 +36,14 @@ model.outputters += gs.NetCDFOutput(filename=save_dir / 'weathering_run.nc',
 print('adding a spill')
 # We need a spill at the very least
 oil_file = example_files / 'alaska-north-slope_AD00020.json'
-spill = gs.surface_point_line_spill(num_elements=10,  # no need for a lot of elements for a instantaneous release
-                                    start_position=(0.0, 0.0),  # position isn't important for this.
-                                    release_time=model.start_time,
-                                    amount=1000,
-                                    units='bbl',
-                                    substance=gs.GnomeOil(filename=oil_file),
-                                    )
+spill = gs.point_line_spill(
+    num_elements=10,  # no need for a lot of elements for a instantaneous release
+    start_position=(0.0, 0.0),  # position isn't important for this.
+    release_time=model.start_time,
+    amount=1000,
+    units='bbl',
+    substance=gs.GnomeOil(filename=oil_file),
+)
 
 model.spills += spill
 
