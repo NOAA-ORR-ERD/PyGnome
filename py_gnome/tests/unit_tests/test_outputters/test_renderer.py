@@ -431,7 +431,7 @@ def test_animation_in_model(output_dir):
 
     model.full_run()
 
-@pytest.mark.xfail
+#@pytest.mark.xfail
 # NOTE: This currently fails because the model isn't allowing partial runs to output
 def test_model_stops_in_middle(output_dir):
     """
@@ -462,7 +462,8 @@ def test_model_stops_in_middle(output_dir):
 
     print(model.movers)
     # run the model
-    model.full_run()
+    with pytest.raises(Exception):
+        model.full_run()
 
     # check the gif has been created
     assert os.path.exists(os.path.join(odir, "anim.gif"))
