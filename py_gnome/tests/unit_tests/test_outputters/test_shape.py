@@ -413,7 +413,7 @@ def test_timesteps2(model, output_dir):
     # assert False
 
 
-@pytest.mark.xfail
+#@pytest.mark.xfail
 # NOTE: This currently fails because the model isn't
 #       calling post_model_run after a failure -- it's just crashing out.
 def test_model_stops_in_middle(model):
@@ -443,7 +443,8 @@ def test_model_stops_in_middle(model):
 
     print(model.movers)
     # run the model
-    model.full_run()
+    with pytest.raises(Exception):
+        model.full_run()
 
     # check the shapefile
     results = get_shape_file_stats(filename.with_suffix('.zip'))

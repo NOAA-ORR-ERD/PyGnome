@@ -6,18 +6,13 @@ which can be found in the example_scripts/example_files directory
 
 """
 import gnome.scripting as gs
-from gnome.basic_types import datetime_value_2d
 
 from pathlib import Path
-import numpy as np
-
-import geopandas as gpd
-import datetime
 
 # Define base directory
 base_dir = Path(__file__).parent
-data_dir = Path('example_files')
-output_dir = Path('output')
+data_dir = base_dir / 'example_files'
+output_dir = base_dir / 'output'
 
 # Setup the model
 start_time = "2024-10-28 11:00"
@@ -32,15 +27,18 @@ gnome_map = gs.MapFromBNA(mapfile, refloat_halflife=6)  # hours
 model.map = gnome_map
 
 # Create wind object and associated mover; add to model
-series = np.zeros((5, ), dtype=datetime_value_2d)
+# series = np.zeros((5, ), dtype=datetime_value_2d)
 start_time = gs.asdatetime(start_time)
-series[0] = (start_time, (10, 45))
-series[1] = (start_time + gs.hours(18), (10, 90))
-series[2] = (start_time + gs.hours(30), (10, 135))
-series[3] = (start_time + gs.hours(42), (10, 180))
-series[4] = (start_time + gs.hours(54), (10, 225))
+series = [(start_time, 10, 45),
+          (start_time + gs.hours(18), 10, 90),
+          (start_time + gs.hours(30), 10, 135),
+          (start_time + gs.hours(42), 10, 180),
+          (start_time + gs.hours(54), 10, 225),
+          ]
 
-wind = gs.Wind(timeseries=series, units='m/s')
+wind = gs.wind_from_values(series, units='m/s')
+
+# wind = gs.Wind(timeseries=series, units='m/s')
 model.movers += gs.PointWindMover(wind)
 
 # create current object and associated mover; add to model
@@ -57,15 +55,11 @@ model.movers += random_mover
 shapefile_path = data_dir / 'spatial_example.zip'
 images_dir = output_dir / 'images'
 
-# use filename or get list of polygons from the shapefile
-#gdf = gpd.read_file(shapefile_path)
-#polygons = gdf.geometry.tolist()
 
 release = gs.PolygonRelease(filename=shapefile_path,
                             release_time=start_time,
-                            #polygons=polygons
                             )
-spill = gs.Spill(release=release,amount=1000,units='bbl')
+spill = gs.Spill(release=release, amount=1000, units='bbl')
 model.spills += spill
 
 # Option to use gs.polygon_release_spill utility to make it easier.
@@ -82,7 +76,9 @@ model.outputters += gs.Renderer(mapfile,
                                  (-124., 49.))
 )
 
+print("running model")
 model.full_run()
+print("run complete: results written to the output directory")
 
 # Save it as a gnome save file:
 #model.save('polygon_spill_example.gnome')

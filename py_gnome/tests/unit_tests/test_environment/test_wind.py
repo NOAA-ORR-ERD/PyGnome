@@ -73,6 +73,34 @@ def test_read_file_init():
     assert wm.units == 'knots'
 
 
+def test_wind_from_file():
+    """
+    check that the from_file constructor works
+
+    Note: this isn't checking much about it working correctly ...
+    """
+    wind = Wind.from_file(SAMPLE_DATA / "wind_data_4line_header.osm")
+
+    assert str(wind.data_start) == "2025-03-05 13:00:00"
+    assert str(wind.data_stop) == "2025-03-05 13:40:00"
+
+    print(wind.timeseries)
+
+    # results for "2025-03-05T13:10:00"
+    # this file is in knots
+    speed_mps = nucos.convert('knot', 'm/s', 13.61)
+    v = - np.cos(np.radians(330)) * speed_mps
+    u = - np.sin(np.radians(330)) * speed_mps
+    print(u, v)
+    # test actual results of at()
+    vel = wind.at(((1,2,3),), datetime(2025, 3, 5, 13, 10))
+
+    print(vel)
+
+    assert isclose(vel[0,0], u)
+    assert isclose(vel[0,1], v)
+
+
 def test_read_3line_file_mps():
     """
     m/s was recently added -- making sure it works.
@@ -270,7 +298,9 @@ def test_read_ossm_header_four_num_coords():
     some old files have the coords in four numbers.
 
     This is actually from a tide file example,
-    and not sure what the units are: decimal degrees, degrees, mnutes, somethign else?
+
+    The units are: decimal degrees, minutes -- and assuming the western hemisphere
+    e.g. longitude is negative
 
     So it's returning (None, None) for now
     """

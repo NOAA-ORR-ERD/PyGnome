@@ -56,33 +56,23 @@ def model():
     Utility to setup up a simple, but complete model for tests
 
     has a point wind and a single spill.
+    no map.
     '''
     start_time = "2025-03-26T9:00:00"
+
+    pos1 = (-122.423, 47.608)
+    pos2 = (-122.449, 47.645)
 
     model = Model(start_time = start_time,
                   time_step = gs.hours(1),
                   duration = gs.days(2),
                   )
 
-    model.spills += gs.point_line_spill(
-    num_elements=100,
-    start_position=(),
-    release_time=start_time,
-    end_position=None,
-    end_release_time=None,
-    substance=None,
-    amount=0,
-    units='kg',
-    water=None,
-    on=True,
-    windage_range=None,
-    windage_persist=None,
-    name='Point-Line Spill',
-)
-
-    # for weatherers and environment objects, make referenced to default
-    # wind/water/waves
-    model.set_make_default_refs(True)
+    model.spills += gs.point_line_spill(num_elements=100,
+                                        start_position=pos1,
+                                        release_time=start_time,
+                                        end_position=pos2,
+                                        )
 
     return model
 

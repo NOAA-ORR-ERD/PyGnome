@@ -166,7 +166,7 @@ def test_model_full_run_output_short_interval(model, output_dir):
     # assert False
 
 
-@pytest.mark.xfail
+#@pytest.mark.xfail
 # NOTE: This currently fails because the model isn't allowing partial runs to output
 def test_model_stops_in_middle(model, output_dir):
     '''
@@ -190,9 +190,8 @@ def test_model_stops_in_middle(model, output_dir):
                                         output_timestep=gs.minutes(30))
 
 
-    model.rewind()
-
-    model.full_run()
+    with pytest.raises(Exception):
+        model.full_run()
 
     # check file was created
 
