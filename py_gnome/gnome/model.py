@@ -355,7 +355,7 @@ class Model(GnomeId):
         Add the weatherers
 
         :param which='standard': which weatherers to add. Default is 'standard',
-                                 which will add all the standard weathering algorithms. 
+                                 which will add all the standard weathering algorithms.
                                  If you don't want them all, you can specify a list:
                                  ['evaporation', 'dispersion'].
 
@@ -793,7 +793,7 @@ class Model(GnomeId):
     def setup_model_run(self):
         '''
         Runs the setup procedure preceding a model run. When complete, the
-        model should be ready to run to completion without additional prep. 
+        model should be ready to run to completion without additional prep.
         Currently this function consists of the following operations:
 
         1. Set up special objects.
@@ -1197,22 +1197,31 @@ class Model(GnomeId):
             raise StopIteration("Run complete for {0}".format(self.name))
 
         else:
-            # release half the LEs for this time interval
-            half_step = timedelta(seconds=self.time_step / 2)
-            self.release_elements(self.model_time,
-                                  self.model_time + half_step)
-            self.setup_time_step()
-            self.move_elements()
-            self.weather_elements()
-            self.step_is_done()
-            self.current_time_step += 1
-            for sc in self.spills.items():
-                sc.current_time_stamp = self.model_time
-            # Release the remaining half of the LEs in this time interval
-            self.release_elements(self.model_time - half_step,
-                                  self.model_time)
-            output_info = self.output_step(isValid)
-            return output_info
+            # catch mid run errors so outputters can still write files
+            try:
+                # release half the LEs for this time interval
+                half_step = timedelta(seconds=self.time_step / 2)
+                self.release_elements(self.model_time,
+                                      self.model_time + half_step)
+                self.setup_time_step()
+                self.move_elements()
+                self.weather_elements()
+                self.step_is_done()
+                self.current_time_step += 1
+                for sc in self.spills.items():
+                    sc.current_time_stamp = self.model_time
+                # Release the remaining half of the LEs in this time interval
+                self.release_elements(self.model_time - half_step,
+                                      self.model_time)
+                output_info = self.output_step(isValid)
+                return output_info
+            except Exception as ex:
+                self.post_model_run()
+                # might only want to write files for out of time errors
+                #if "not within the bounds" in str(ex):
+                    #self.post_model_run()
+                    #raise GnomeRuntimeError(str(ex))
+                raise
 
     def output_step(self, isvalid):
         self._cache.save_timestep(self.current_time_step, self.spills)
@@ -1432,7 +1441,7 @@ class Model(GnomeId):
 
         :param saveloc: a directory or filename. If a directory, then either
                         the model is saved into that dir, or a zip archive is
-                        created in that dir (with a .gnome extension). 
+                        created in that dir (with a .gnome extension).
                         Defaults to ".".
 
                         The file(s) are clobbered when save() is called.
@@ -1620,7 +1629,7 @@ class Model(GnomeId):
 
     def check_inputs(self):
         '''
-        check the user inputs before running the model and 
+        check the user inputs before running the model and
         raise an exception if the user can't run the model
 
         fixme: This should probably be broken out into its \

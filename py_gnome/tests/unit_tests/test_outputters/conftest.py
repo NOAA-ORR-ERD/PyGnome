@@ -4,6 +4,7 @@ common fixture for output_dirs required by different outputters
 
 import os
 import pytest
+import zipfile
 from pathlib import Path
 
 
@@ -57,3 +58,25 @@ def output_filename(output_dir, request):
         file_name = "{}_sample{}".format(file_name, extension)
 
     return os.path.join(output_dir, file_name)
+
+
+def count_files_in_zip(zip_filepath):
+    """
+    Counts the number of files in a ZIP archive.
+
+    Args:
+        zip_filepath (str): The path to the ZIP file.
+
+    Returns:
+        int: The number of files in the ZIP archive.
+             Returns -1 if the file is not found or is not a valid ZIP file.
+    """
+    try:
+        with zipfile.ZipFile(zip_filepath, 'r') as zip_file:
+            return len(zip_file.namelist())
+    except FileNotFoundError:
+        print(f"Error: File not found: {zip_filepath}")
+        return -1
+    except zipfile.BadZipFile:
+         print(f"Error: Not a valid ZIP file: {zip_filepath}")
+         return -1

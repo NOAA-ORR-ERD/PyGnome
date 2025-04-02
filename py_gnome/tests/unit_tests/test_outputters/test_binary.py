@@ -13,13 +13,14 @@ from pytest import raises
 
 from gnome.outputters.binary import BinaryOutput
 import gnome.scripting as gs
-import zipfile
 
 from gnome.spills.spill import Spill, point_line_spill
 from gnome.spills.release import PolygonRelease
 from gnome.spill_container import SpillContainerPair
 from gnome.movers import RandomMover, constant_point_wind_mover
 from gnome.model import Model
+
+from .conftest import count_files_in_zip
 
 # file extension to use for test output files
 #  this is used by the output_filename fixture in conftest:
@@ -119,28 +120,7 @@ def test_timesteps(model):
     assert outfilename.is_file()
 
 
-def count_files_in_zip(zip_filepath):
-    """
-    Counts the number of files in a ZIP archive.
-
-    Args:
-        zip_filepath (str): The path to the ZIP file.
-
-    Returns:
-        int: The number of files in the ZIP archive.
-             Returns -1 if the file is not found or is not a valid ZIP file.
-    """
-    try:
-        with zipfile.ZipFile(zip_filepath, 'r') as zip_file:
-            return len(zip_file.namelist())
-    except FileNotFoundError:
-        print(f"Error: File not found: {zip_filepath}")
-        return -1
-    except zipfile.BadZipFile:
-         print(f"Error: Not a valid ZIP file: {zip_filepath}")
-         return -1
-
-@pytest.mark.xfail
+#@pytest.mark.xfail
 # NOTE: This currently fails because the model isn't allowing partial runs to output
 def test_model_stops_in_middle(model):
     """
@@ -168,7 +148,8 @@ def test_model_stops_in_middle(model):
 
     print(model.movers)
     # run the model
-    model.full_run()
+    with pytest.raises(ValueError, match="not within the bounds"):
+        model.full_run()
 
     # check the zipfile has certain and uncertain for 1 output
     len_zip = count_files_in_zip(filename.with_suffix('.zip'))

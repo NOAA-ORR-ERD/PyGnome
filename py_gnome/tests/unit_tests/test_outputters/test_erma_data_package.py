@@ -16,6 +16,8 @@ import gnome.scripting as gs
 from gnome.spills.spill import point_line_spill
 from gnome.spill_container import SpillContainerPair
 
+from .conftest import count_files_in_zip
+
 # file extension to use for test output files
 #  this is used by the output_filename fixture in conftest:
 FILE_EXTENSION = ""
@@ -170,35 +172,15 @@ def test_simple_package(model, output_dir):
             uncertain_json =  json.load(layer2_json_file)
             # Need to come up with some good validation of the json here
 
-def count_files_in_zip(zip_filepath):
-    """
-    Counts the number of files in a ZIP archive.
 
-    Args:
-        zip_filepath (str): The path to the ZIP file.
-
-    Returns:
-        int: The number of files in the ZIP archive.
-             Returns -1 if the file is not found or is not a valid ZIP file.
-    """
-    try:
-        with zipfile.ZipFile(zip_filepath, 'r') as zip_file:
-            return len(zip_file.namelist())
-    except FileNotFoundError:
-        print(f"Error: File not found: {zip_filepath}")
-        return -1
-    except zipfile.BadZipFile:
-         print(f"Error: Not a valid ZIP file: {zip_filepath}")
-         return -1
-
-@pytest.mark.xfail
+#@pytest.mark.xfail
 # NOTE: This currently fails because the model isn't allowing partial runs to output
 def test_model_stops_in_middle(model, output_dir):
     filename = os.path.join(output_dir, "stop_in_middle.zip")
     # set up a WindMover that's too short.
     times = [model.start_time + (gs.minutes(30) * i) for i in range(3)]
     # long enough record
-    # times = [model.start_time + (gs.minutes(30) * i) for i in range(5)]
+    # times = [model.start_time + (gs.minutes(30) * i) for i in range(21)]
 
     winds = gs.wind_from_values([(dt, 5, 90) for dt in times])
 
@@ -209,7 +191,8 @@ def test_model_stops_in_middle(model, output_dir):
 
     print(model.movers)
     # Run the model
-    model.full_run()
+    with pytest.raises(Exception):
+        model.full_run()
 
     # check the zipfile has expected number of files
     len_zip = count_files_in_zip(filename)
