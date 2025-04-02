@@ -236,7 +236,6 @@ class VelocityGrid(VectorVariable):
     def get_data_vectors(self):
         '''
         return array of shape (2, time_slices, len_linearized_data)
-        first is magnitude, second is direction
         '''
 
         if(hasattr(self, 'angle') and self.angle):

@@ -155,6 +155,14 @@ class GridGeoGenerator(object):
         lats = getattr(grid_obj, lat_var_name)
         return lons, lats
 
+    def check_for_mask(self, grid_obj, location_name):
+        #Check if the grid object has a mask for the given location
+        mask_var_name = location_name+'_mask'
+        if hasattr(grid_obj, mask_var_name) and getattr(grid_obj, mask_var_name) is not None:
+            return True
+        else:
+            return False
+
     def get_mask_raw(self, grid_obj, location_name, scale=30):
         mask_var_name = location_name+'_mask'
         mask = getattr(grid_obj, mask_var_name)
@@ -380,7 +388,11 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         
         #add the node lines
         print("Drawing node lines")
-        self.masked_node_lines = g3.draw_grid_lines(self.map_ax, grid_obj, location='node', appearance=g3.node_line_appearance, plot_crs=self.plot_crs)
+        if g3.check_for_mask(grid_obj, 'node'):
+            breakpoint()
+            self.masked_node_lines = g3.draw_grid_lines(self.map_ax, grid_obj, location='node', use_mask=True, appearance=g3.node_line_appearance, plot_crs=self.plot_crs)
+        else:
+            self.masked_node_lines = g3.draw_grid_lines(self.map_ax, grid_obj, location='node', use_mask=False, appearance=g3.node_line_masked_appearance, plot_crs=self.plot_crs)
         
         #add the node markers callbacks. Perhaps move markerscale to the appearances?
         self.markerscale = 60
