@@ -25,6 +25,7 @@ from gnome.outputters import KMZOutput
 HERE = Path(__file__).parent
 data_dir = Path(__file__).parent / "sample_data"
 output_dir = Path(__file__).parent / "output_dir"
+output_dir.mkdir(exist_ok=True)
 
 
 @pytest.fixture(scope='function')
