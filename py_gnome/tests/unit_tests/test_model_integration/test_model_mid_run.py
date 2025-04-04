@@ -11,43 +11,20 @@ import numpy as np
 
 import pytest
 
-
 import gnome.scripting as gs
+import zipfile
 
 from gnome.environment import Wind
 from gnome.model import Model
 
 from gnome.spills.spill import Spill, point_line_spill
 
-from gnome.outputters import Renderer, TrajectoryGeoJsonOutput
+from gnome.outputters import KMZOutput
 
-from gnome.exceptions import ReferencedObjectNotSet, GnomeRuntimeError
 
 HERE = Path(__file__).parent
-
-# def test_exceptions():
-#     """
-#     Test GnomeRuntimeError exception thrown if setup has errors
-#     time_step < 0 with duration > 0
-#     weathering on for backwards run (time_step < 0, duration < 0)
-
-#     outputters shouldn't output in this case.
-
-#     """
-#     model = Model()
-#     model.time_step = -900
-#     with raises(GnomeRuntimeError):
-#         model.check_inputs()
-
-#     model.duration = -timedelta(days=1)
-#     model.check_inputs()
-
-#     wind = constant_wind(10, 270, units='knots')
-#     water = Water()
-#     model.weatherers += Evaporation(water, wind)
-#     model.spills += Spill(Release(release_time=model.start_time), substance=test_oil)
-#     with raises(GnomeRuntimeError):
-#         model.check_inputs()
+data_dir = Path(__file__).parent / "sample_data"
+output_dir = Path(__file__).parent / "output_dir"
 
 
 @pytest.fixture(scope='function')
@@ -55,20 +32,19 @@ def model():
     '''
     Utility to setup up a simple, but complete model for tests
 
-    has a point wind and a single spill.
-    no map.
+    has a single spill and no movers or map.
     '''
-    start_time = "2025-03-26T9:00:00"
+    start_time = "2023-03-02T12:00:00"
 
-    pos1 = (-122.423, 47.608)
-    pos2 = (-122.449, 47.645)
+    pos1 = (-125.16, 48.41)
+    pos2 = (-126.01, 48.79)
 
     model = Model(start_time = start_time,
                   time_step = gs.hours(1),
-                  duration = gs.days(2),
+                  duration = gs.hours(2),
                   )
 
-    model.spills += gs.point_line_spill(num_elements=100,
+    model.spills += gs.point_line_spill(num_elements=10,
                                         start_position=pos1,
                                         release_time=start_time,
                                         end_position=pos2,
@@ -76,61 +52,168 @@ def model():
 
     return model
 
-# def test_run_out_of_data_full_run(model):
-#     """
-#     see what happens when the model runs out of data before the run is done
-#     """
 
-#     print(model.movers)
+def test_run_out_of_data_point_wind(model):
+    """
+    see what happens when the model runs out of data before the run is done
+    use different methods of running the model - full_run, step, and next
+    """
 
-#     assert False
+    print(model.movers)
+
+    filename = output_dir / "stop_in_middle"
+
+    start_time = model.start_time
+
+    # set up a WindMover that's too short.
+    times = [model.start_time + (gs.minutes(30) * i) for i in range(3)]
+    # long enough record
+    # times = [model.start_time + (gs.minutes(30) * i) for i in range(5)]
+
+    winds = gs.wind_from_values([(dt, 5, 90) for dt in times])
+
+    model.movers += gs.WindMover(winds)
+
+    assert len(model.movers) == 1
+
+    kmz = KMZOutput(filename,
+                      output_timestep=gs.hours(1),
+                      output_zero_step=False,
+                      output_last_step=False,
+                      output_single_step=False,
+                      output_start_time=model.start_time,
+                      )
+    model.outputters += kmz
+
+    with pytest.raises(ValueError, match="not within the bounds"):
+        for step in model:
+            print('just ran time step: %s' % model.current_time_step)
+            assert step['step_num'] == model.current_time_step
+
+    len_zip = count_files_in_zip(filename.with_suffix('.kmz'))
+    assert len_zip == 3	# two icons and kml, just check it got created
+
+    # rewind and run again using full_run:
+    print('rewinding')
+    model.rewind()
+    with pytest.raises(ValueError, match="not within the bounds"):
+        model.full_run()
+
+    len_zip = count_files_in_zip(filename.with_suffix('.kmz'))
+    assert len_zip == 3	# two icons and kml, just check it got created
+
+    # rewind and run again using next:
+    print('rewinding')
+    model.rewind()
+    with pytest.raises(ValueError, match="not within the bounds"):
+        while True:
+            next(model)
+
+    len_zip = count_files_in_zip(filename.with_suffix('.kmz'))
+    assert len_zip == 3	# two icons and kml, just check it got created
 
 
+def count_files_in_zip(zip_filepath):
+    """
+    Counts the number of files in a ZIP archive.
+
+    Args:
+        zip_filepath (str): The path to the ZIP file.
+
+    Returns:
+        int: The number of files in the ZIP archive.
+             Returns -1 if the file is not found or is not a valid ZIP file.
+    """
+    try:
+        with zipfile.ZipFile(zip_filepath, 'r') as zip_file:
+            return len(zip_file.namelist())
+    except FileNotFoundError:
+        print(f"Error: File not found: {zip_filepath}")
+        return -1
+    except zipfile.BadZipFile:
+         print(f"Error: Not a valid ZIP file: {zip_filepath}")
+         return -1
 
 
-# def test_simple_run_backward_rewind():
-#     '''
-#     Pretty much all this tests is that the model will run
-#     and the seed is set during first run, then set correctly
-#     after it is rewound and run again
-#     '''
+def test_run_out_of_data_gridded_movers(model):
+    '''
+    This tests that the model will output files if the
+    model stops mid run (out of data error) with gridded movers
+    there are six hours of data starting at model start time
+    '''
 
-#     start_time = datetime(2012, 9, 15, 12, 0)
+    filename = output_dir / "stop_in_middle_gridded"
 
-#     model = Model(time_step = -900, duration = -timedelta(days=1))
+    model.duration = gs.hours(8)
+    start_time = model.start_time
 
-#     model.map = GnomeMap()
-#     a_mover = SimpleMover(velocity=(1., 2., 0.))
+    fn = data_dir / 'gridded_wind.nc'
+    wind = gs.GridWind.from_netCDF(filename=fn)
+    wind_mover = gs.WindMover(wind)
+    model.movers += wind_mover
 
-#     model.movers += a_mover
-#     assert len(model.movers) == 1
+    # create a current mover that's too short
+    fn = data_dir / 'gridded_current.nc'
+    current_mover = gs.CurrentMover.from_netCDF(filename=fn)
+    model.movers += current_mover
 
-#     spill = point_line_spill(num_elements=10,
-#                                      start_position=(0., 0., 0.),
-#                                      release_time=start_time)
+    assert len(model.spills) == 1
 
-#     model.spills += spill
-#     assert len(model.spills) == 1
+    kmz = KMZOutput(filename,
+                      output_timestep=gs.hours(1),
+                      output_zero_step=False,
+                      output_last_step=False,
+                      output_single_step=False,
+                      output_start_time=model.start_time,
+                      )
+    model.outputters += kmz
 
-#     # model.add_spill(spill)
+    with pytest.raises(ValueError, match="not within the bounds"):
+        for step in model:
+            print('just ran time step: %s' % model.current_time_step)
+            assert step['step_num'] == model.current_time_step
 
-#     model.start_time = spill.release.release_time
+    len_zip = count_files_in_zip(filename.with_suffix('.kmz'))
+    assert len_zip == 3	# two icons and kml, just check it got created
 
-#     # test iterator
-#     for step in model:
-#         print('just ran time step: %s' % model.current_time_step)
-#         assert step['step_num'] == model.current_time_step
 
-#     pos = np.copy(model.spills.LE('positions'))
+def test_run_out_of_data_backwards(model):
+    '''
+    This tests that the model will output files if the
+    model stops mid run (out of data error) in a backward run
+    '''
 
-#     # rewind and run again:
-#     print('rewinding')
-#     model.rewind()
+    filename = output_dir / "stop_in_middle_backwards"
+    model.run_backwards = True
 
-#     # test iterator is repeatable
-#     for step in model:
-#         print('just ran time step: %s' % model.current_time_step)
-#         assert step['step_num'] == model.current_time_step
+    start_time = model.start_time
 
-#     assert np.all(model.spills.LE('positions') == pos)
+    # set up a WindMover that's too short.
+    times = [(model.start_time - gs.minutes(60)) + (gs.minutes(30) * i) for i in range(3)]
+    # long enough record
+    # times = [(start_time - gs.minutes(60*2)) + (gs.minutes(30) * i) for i in range(5)]
+
+    winds = gs.wind_from_values([(dt, 5, 90) for dt in times])
+
+    model.movers += gs.WindMover(winds)
+
+    assert len(model.movers) == 1
+
+    kmz = KMZOutput(filename,
+                      output_timestep=gs.hours(1),
+                      output_zero_step=False,
+                      output_last_step=False,
+                      output_single_step=False,
+                      output_start_time=model.start_time,
+                      )
+    model.outputters += kmz
+
+    with pytest.raises(ValueError, match="not within the bounds"):
+        for step in model:
+            print('just ran time step: %s' % model.current_time_step)
+            assert step['step_num'] == model.current_time_step
+
+    len_zip = count_files_in_zip(filename.with_suffix('.kmz'))
+    assert len_zip == 3	# two icons and kml, just check it got created
+
 
