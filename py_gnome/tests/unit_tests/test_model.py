@@ -57,6 +57,11 @@ def test_exceptions():
     model.duration = -timedelta(days=1)
     model.check_inputs()
 
+    # use run_backwards flag
+    model.time_step = 900
+    model.duration = timedelta(days=1)
+    model.run_backwards = True
+
     wind = constant_wind(10, 270, units='knots')
     water = Water()
     model.weatherers += Evaporation(water, wind)
@@ -352,7 +357,8 @@ def test_simple_run_backward_rewind():
 
     start_time = datetime(2012, 9, 15, 12, 0)
 
-    model = Model(time_step = -900, duration = -timedelta(days=1))
+    #model = Model(time_step = -900, duration = -timedelta(days=1))
+    model = Model(run_backwards = True)
 
     model.map = GnomeMap()
     a_mover = SimpleMover(velocity=(1., 2., 0.))
@@ -827,8 +833,10 @@ def test_model_release_after_start_backwards():
     seconds_in_minute = 60
     start_time = datetime(2013, 2, 22, 0)
 
-    model = Model(time_step=-30 * seconds_in_minute,
-                  start_time=start_time, duration=timedelta(hours=-3))
+#     model = Model(time_step=-30 * seconds_in_minute,
+#                   start_time=start_time, duration=timedelta(hours=-3))
+    model = Model(time_step=30 * seconds_in_minute,
+                  start_time=start_time, duration=timedelta(hours=3), run_backwards = True)
 
     # add a spill that starts after the run begins.
     release_time = start_time - timedelta(hours=1)
