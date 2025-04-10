@@ -23,13 +23,12 @@ from gnome.utilities.time_utils import sec_to_datetime
 from gnome.utilities.inf_datetime import InfTime, MinusInfTime
 
 from gnome.persist.validators import convertible_to_seconds
-from gnome.persist.extend_colander import LocalDateTime
+from gnome.persist.extend_colander import LocalDateTime, FilenameSchema
 
 from gnome.environment import Tide, TideSchema, Wind, WindSchema
 from gnome.movers import CyMover, ProcessSchema
 
 from gnome.persist.base_schema import WorldPoint
-from gnome.persist.extend_colander import FilenameSchema
 
 
 class CurrentMoversBaseSchema(ProcessSchema):
@@ -117,8 +116,8 @@ class CurrentMoversBase(CyMover):
         Right now the cython mover only gets the triangular center points,
         so we need to calculate centers based on the cells themselves.
 
-        Cells will have the format (tl, tr, bl, br). 
-        We need to get the rectangular centers. 
+        Cells will have the format (tl, tr, bl, br).
+        We need to get the rectangular centers.
         Center will be: (tl + ((br - tl) / 2.))
         '''
         return self.mover._get_center_points().view(dtype='<f8').reshape(-1, 2)
@@ -1156,13 +1155,11 @@ class CurrentCycleMover(c_GridCurrentMover):
 
 class ComponentMoverSchema(ProcessSchema):
     '''static schema for ComponentMover'''
-    filename1 = SchemaNode(
-        String(), missing=drop,
-        save=True, update=True, isdatafile=True, test_equal=False
+    filename1 = FilenameSchema(
+        save=True, update=False, isdatafile=True, test_equal=False
     )
-    filename2 = SchemaNode(
-        String(), missing=drop,
-        save=True, update=True, isdatafile=True, test_equal=False
+    filename2 = FilenameSchema(
+        save=True, update=False, isdatafile=True, test_equal=False
     )
     scale_refpoint = WorldPoint(
         missing=drop, save=True, update=True
