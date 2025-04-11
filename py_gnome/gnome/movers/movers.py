@@ -52,7 +52,7 @@ class Process(GnomeId):
 
     It defines the base functionality for mover/weatherer.
 
-    NOTE: Since base class is not Serializable, it does not need
+    NOTE: Since base class is not Serializable, it does not need \
           a class level _schema attribute.
     """
 
@@ -134,14 +134,13 @@ class Process(GnomeId):
 
     def prepare_for_model_step(self, sc, time_step, model_time_datetime):
         """
-        sets active flag based on time_span and on flag.
-        Object is active if following hold and 'on' is True:
+        Sets active flag based on time_span and on flag.
+        Object is active if the following hold and 'on' is True:
 
         1. active start <= (model_time + time_step/2) so object is on for
-           more than half the timestep
-        2. (model_time + time_step/2) <= active_stop so again the object is
+           more than half the time step
+        2. (model_time + time_step/2) <= active_stop so the object is
            on for at least half the time step
-           flag to true.
 
         :param sc: an instance of gnome.spill_container.SpillContainer class
         :param time_step: time step in seconds
@@ -159,8 +158,8 @@ class Process(GnomeId):
 
     def model_step_is_done(self, sc=None):
         """
-        This method gets called by the model when after everything else is done
-        in a time step. Put any code need for clean-up, etc in here in
+        This method gets called by the model after everything else is done
+        in a time step. Put any code needed for clean-up, etc in here in
         subclassed movers.
         """
         pass
@@ -182,7 +181,12 @@ class Process(GnomeId):
 
 
 class Mover(Process):
+    """
+    Base class from which all Python movers can inherit
 
+    It defines the base functionality for a mover.
+
+    """
     def get_move(self, sc, time_step, model_time_datetime):
         """
         Compute the move in (long,lat,z) space. It returns the delta move
@@ -192,7 +196,7 @@ class Mover(Process):
         Base class returns an array of numpy.nan for delta to indicate the
         get_move is not implemented yet.
 
-        Each class derived from Mover object must implement it's own get_move
+        Each class derived from Mover object must implement its own get_move
 
         :param sc: an instance of gnome.spill_container.SpillContainer class
         :param time_step: time step in seconds
@@ -216,12 +220,24 @@ class Mover(Process):
 
 
 class PyMover(Mover):
+    """
+    Base class for pure Python movers
+    """
 
     _schema = PyMoverSchema
 
     def __init__(self,
                  default_num_method='RK2',
                  **kwargs):
+        """
+        Uses ``super(PyMover, self).__init__(**kwargs)`` to call Mover class
+        __init__ method
+
+        We assume any derived class will instantiate a 'mover' object that
+        has methods like: prepare_for_model_run, prepare_for_model_step,
+
+        All kwargs passed on to super class
+        """
         super(PyMover, self).__init__(**kwargs)
 
         self.num_methods = {'RK4': self.get_delta_RK4,
@@ -238,12 +254,12 @@ class PyMover(Mover):
 
     def delta_method(self, method_name=None):
         '''
-            Returns a delta function based on its registered name
+        Returns a delta function based on its registered name
 
-            Usage: delta = self.delta_method('RK2')(**kwargs)
+        Usage: ``delta = self.delta_method('RK2')(**kwargs)``
 
-            Note: We do not handle any key errors resulting from passing in
-            a bad registered name.
+        Note: We do not handle any key errors resulting from passing in
+        a bad registered name.
         '''
         if method_name is None:
             method_name = self.default_num_method
@@ -297,6 +313,10 @@ class PyMover(Mover):
 
 
 class CyMover(Mover):
+    """
+    Base class for all Cython/C based movers 
+    """
+
     def __init__(self, **kwargs):
         """
         Base class for python wrappers around cython movers.
@@ -307,7 +327,7 @@ class CyMover(Mover):
         derived class, and then contained by this class in the member 'movers'.
         They will need to extract info from spill object.
 
-        We assumes any derived class will instantiate a 'mover' object that
+        We assume any derived class will instantiate a 'mover' object that
         has methods like: prepare_for_model_run, prepare_for_model_step,
 
         All kwargs passed on to super class
@@ -388,7 +408,7 @@ class CyMover(Mover):
 
     def get_move(self, sc, time_step, model_time_datetime):
         """
-        Base implementation of Cython wrapped C++ movers
+        Base implementation of Cython wrapped C++ movers. 
         Override for things like the PointWindMover since it has a different
         implementation
 

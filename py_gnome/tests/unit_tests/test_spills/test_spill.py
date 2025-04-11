@@ -104,14 +104,28 @@ class TestSpill:
         with pytest.raises(ValueError):
             sp.amount = -1
 
-    def test_units(self, sp):
+    def test_units_change(self, sp):
         assert sp.units == 'kg'
-        sp.units = 'lb'
-        assert sp.units == 'lb'
+        sp.units = 'mt'
+        assert sp.units == 'mt'
+
+    def test_units_change_to_volume(self, sp):
         sp.units = 'gal'
         assert sp.units == 'gal'
+
+    def test_units_invalid(self, sp):
         with pytest.raises(ValueError):
             sp.units = 'inches'
+
+    def test_units_normalize(self, sp):
+        sp.units = 'metric ton'
+        assert sp.units == 'mt'
+
+    def test_units_not_webgnome(self, sp):
+        assert sp.units == 'kg'
+        # with pytest.warns(UserWarning, match='must be 0 or None'):
+        with pytest.warns(UserWarning, match="will not work correctly in WebGNOME"):
+            sp.units = 'lb'
 
 
 

@@ -209,7 +209,7 @@ def sample_sc_release(num_elements=10,
                          current_time=None,
                          arr_types=None,
                          windage_range=None,
-                         units='g',
+                         units='kg',
                          amount_per_element=1.0,
                          environment = None):
     """
@@ -217,8 +217,7 @@ def sample_sc_release(num_elements=10,
     Invoke release_elements on SpillContainer, then return the spill container
     object
 
-    If 'spill' is None, define a Spill object with a PointLineRelease type
-    of release
+    If 'spill' is None, define a Spill object with a PointLineRelease
     """
     if current_time is None:
         current_time = release_time

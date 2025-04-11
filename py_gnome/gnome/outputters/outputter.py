@@ -413,6 +413,7 @@ class Outputter(GnomeId):
         self._is_first_output = True
         self._surf_conc_computed = True
         self._middle_of_run = False
+        self.cleaned_up = False
 
         if self.surface_conc:
             self.array_types['surface_concentration'] = gat('surface_concentration')

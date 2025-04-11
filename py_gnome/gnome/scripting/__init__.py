@@ -38,6 +38,7 @@ from .utilities import (make_images_dir,
                         set_verbose,
                         PrintFinder,
                         )
+from gnome.utilities import convert_longitude
 
 from gnome.utilities.time_utils import asdatetime
 

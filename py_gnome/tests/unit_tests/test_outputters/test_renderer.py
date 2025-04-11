@@ -431,6 +431,44 @@ def test_animation_in_model(output_dir):
 
     model.full_run()
 
+#@pytest.mark.xfail
+# NOTE: This currently fails because the model isn't allowing partial runs to output
+def test_model_stops_in_middle(output_dir):
+    """
+    If the model stops in the middle of a run:
+    e.g. runs out of data, it should still output results.
+    """
+    model = gs.Model()
+
+    model.spills += gs.point_line_spill(num_elements=100,
+                                                start_position=(0, 0),
+                                                release_time=model.start_time,
+                                                )
+    odir = os.path.join(output_dir, "stop_in_middle")
+
+    # set up a WindMover that's too short.
+    times = [model.start_time + (gs.minutes(30) * i) for i in range(3)]
+    # long enough record
+    # times = [model.start_time + (gs.minutes(30) * i) for i in range(5)]
+
+    winds = gs.wind_from_values([(dt, 5, 90) for dt in times])
+
+    model.movers += gs.WindMover(winds)
+    model.outputters += Renderer(output_dir=odir,
+                                 image_size=(400, 400),
+                                 viewport=(((-0.02, -0.02), (0.02, 0.02))),
+                                 formats=['gif']
+                                 )
+
+    print(model.movers)
+    # run the model
+    with pytest.raises(Exception):
+        model.full_run()
+
+    # check the gif has been created
+    assert os.path.exists(os.path.join(odir, "anim.gif"))
+
+
 def test_particle_color_with_depth(output_dir):
     """
     render the basemap

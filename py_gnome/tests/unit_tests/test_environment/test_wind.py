@@ -1,8 +1,11 @@
 #!/usr/bin/env python
 
+import io
 import os
 from datetime import datetime, timedelta
 import shutil
+from pathlib import Path
+from math import isclose
 
 import pytest
 from pytest import raises
@@ -15,8 +18,10 @@ from gnome.basic_types import datetime_value_2d
 from gnome.utilities.time_utils import (zero_time,
                                         sec_to_date)
 from gnome.utilities.timeseries import TimeseriesError
+from gnome.utilities.time_utils import TZOffset
 # from gnome.utilities.inf_datetime import InfDateTime
-from gnome.environment import Wind, constant_wind, wind_from_values
+from gnome.environment.wind import (Wind, constant_wind, wind_from_values, read_ossm_format,
+                                    _read_ossm_header, _read_ossm_data_line)
 
 import gnome.scripting as gs
 
@@ -29,6 +34,9 @@ from gnome.environment.gridded_objects_base import Grid_S, Variable
 
 wind_file = testdata['timeseries']['wind_ts']
 
+# note: the testdata dict is too confusing for me:
+#       so using a local data dir instead.
+SAMPLE_DATA = Path(__file__).parent / "sample_data"
 
 def test_exceptions():
     """
@@ -65,14 +73,271 @@ def test_read_file_init():
     assert wm.units == 'knots'
 
 
-# tolerance for np.allclose(..) function.
+def test_wind_from_file():
+    """
+    check that the from_file constructor works
+
+    Note: this isn't checking much about it working correctly ...
+    """
+    wind = Wind.from_file(SAMPLE_DATA / "wind_data_4line_header.osm")
+
+    assert str(wind.data_start) == "2025-03-05 13:00:00"
+    assert str(wind.data_stop) == "2025-03-05 13:40:00"
+
+    print(wind.timeseries)
+
+    # results for "2025-03-05T13:10:00"
+    # this file is in knots
+    speed_mps = nucos.convert('knot', 'm/s', 13.61)
+    v = - np.cos(np.radians(330)) * speed_mps
+    u = - np.sin(np.radians(330)) * speed_mps
+    print(u, v)
+    # test actual results of at()
+    vel = wind.at(((1,2,3),), datetime(2025, 3, 5, 13, 10))
+
+    print(vel)
+
+    assert isclose(vel[0,0], u)
+    assert isclose(vel[0,1], v)
+
+
+def test_read_3line_file_mps():
+    """
+    m/s was recently added -- making sure it works.
+    """
+    print(wind_file)
+
+    wind = Wind(filename = SAMPLE_DATA / "wind_data_3line_header.osm")
+
+    # C++ code normalized the units
+    # assert wm.units == 'meters per second'
+    # Python code changes "MPS" to m/s -- "MPS" not accepted by NUCOS
+    assert wind.units == 'm/s'
+
+    assert wind.timezone_offset.offset is None
+    assert wind.timezone_offset.title == 'No Timezone Specified'
+
+def test_read_5_line_file_meterspersecond():
+    """
+    m/s was recently added -- making sure it works.
+    """
+    print(wind_file)
+
+    wind = Wind(filename = SAMPLE_DATA / "wind_data_5line_header.osm")
+
+    # have to test something:
+    # assert wm.units == 'meters per second'
+    assert wind.units == 'm/s'
+
+    assert str(wind.timeseries[0][0]) == "2025-03-05T13:00:00"
+    assert isclose(wind.timeseries[0][1][0], 13.61)
+    assert isclose(wind.timeseries[0][1][1], 340)
+
+    assert str(wind.timeseries[1][0]) == "2025-03-05T13:10:00"
+    assert isclose(wind.timeseries[1][1][0], 13.61)
+    assert isclose(wind.timeseries[1][1][1], 330)
+
+    assert wind.timezone_offset.offset == -7.0
+    assert wind.timezone_offset.title == '-07:00'
+
+    # results for "2025-03-05T13:10:00"
+    v = - np.cos(np.radians(330)) * 13.61
+    u = - np.sin(np.radians(330)) * 13.61
+    print(u, v)
+    # test actual results of at()
+    vel = wind.at(((1,2,3),), datetime(2025, 3, 5, 13, 10))
+
+    print(vel)
+
+    assert isclose(vel[0,0], u)
+    assert isclose(vel[0,1], v)
+
+
+def test_read_4_line_file_everything():
+    """
+    4 line header -- with all features
+
+    This is a new format, but the old ones should work.
+    """
+    print(wind_file)
+
+    wind = Wind(filename = SAMPLE_DATA / "wind_data_4line_header.osm")
+
+    # have to test something:
+    print(wind.timezone_offset)
+    assert wind.units == 'knots'
+    print(wind.timeseries)
+    assert str(wind.timeseries[0][0]) == "2025-03-05T13:00:00"
+    assert isclose(wind.timeseries[0][1][0], 13.61)
+    assert isclose(wind.timeseries[0][1][1], 340)
+
+    assert str(wind.timeseries[1][0]) == "2025-03-05T13:10:00"
+    assert isclose(wind.timeseries[1][1][0], 13.61)
+    assert isclose(wind.timeseries[1][1][1], 330)
+
+    assert wind.timezone_offset.offset == -8.0
+    assert wind.timezone_offset.title == 'US Pacific Standard Time'
+
+def test_read_4_line_file_no_units():
+    """
+    4 line header -- with all features
+
+    This is a new format, but the old ones should work.
+    """
+    print(wind_file)
+
+    with pytest.raises(ValueError, match="must have units"):
+        wind = Wind(filename = SAMPLE_DATA / "wind_data_4line_header_no_units.osm")
+
+
+
+def test_read_ossm_format_bad():
+    """
+    Test of the ossm format reader when you pass it an odd file
+    """
+    # a test file that is decidedly not an OSSM format file
+    filename = SAMPLE_DATA / "example_gridcur_on_cells.cur"
+
+    with pytest.raises(ValueError):
+        results = read_ossm_format(filename)
+
+
+def test_read_ossm_format_4_line_header():
+    """
+    Direct test of the ossm format reader
+    """
+    filename = SAMPLE_DATA / "wind_data_4line_header.osm"
+
+    results = read_ossm_format(filename)
+
+    name, coords, units, timezone_offset, timezone_name, times, speeds, directions = results
+
+    assert name == 'NDBC Buoy 46028'
+    assert coords == (-121.903, 35.77)
+    assert units == 'knots'
+    assert timezone_offset == -8.0
+    assert timezone_name == 'US Pacific Standard Time'
+
+    assert len(times) == 5
+    assert len(speeds) == 5
+    assert len(directions) == 5
+
+    assert times[0] == datetime(2025, 3, 5, 13, 0)
+    assert speeds[0] == 13.61
+    assert directions[0] == 340
+
+    assert times[-1] == datetime(2025, 3, 5, 13, 40)
+    assert speeds[-1] == 13.61
+    assert directions[-1] == 350
+
+
+def test_read_ossm_format_2digit_year():
+    """
+    Direct test of the ossm format reader
+    """
+    filename = SAMPLE_DATA / "wind_data_2digit_year.WND"
+
+    results = read_ossm_format(filename)
+
+    name, coords, units, timezone_offset, timezone_name, times, speeds, directions = results
+
+    assert name == 'Inchon'
+    assert coords == (-126.63, 37.5)
+    assert units == 'knots'
+    assert timezone_offset == -8.0
+    assert timezone_name == 'PST'
+
+    assert len(times) == 5
+    assert len(speeds) == 5
+    assert len(directions) == 5
+
+    assert times[0] == datetime(1999, 4, 8, 1, 0)
+    assert speeds[0] == 10
+    assert directions[0] == 180
+
+    assert times[-1] == datetime(1999, 4, 8, 15, 0)
+    assert speeds[-1] == 10
+    assert directions[-1] == 225
+
+
+def test_read_ossm_header():
+    header = """NDBC Buoy 46028
+    35.770, -121.903
+    knots
+    -8, US Pacific Standard Time
+    5, 3, 2025, 13, 0, 13.61, 340
+    """
+    # NOTE: when reading the header, the first line after the header
+    #       must be parsable (e.g. have data.)
+    header = io.StringIO(header)
+    (data, line_no, name, coords, units, timezone_offset,
+     timezone_name) = _read_ossm_header(header)
+
+    assert name == 'NDBC Buoy 46028'
+    assert coords == (-121.903, 35.77)
+    assert units == 'knots'
+    assert timezone_offset == -8.0
+    assert timezone_name == 'US Pacific Standard Time'
+
+def test_read_ossm_header_no_units():
+    header = """NDBC Buoy 46028
+    35.770, -121.903
+
+    -8, US Pacific Standard Time
+    5, 3, 2025, 13, 0, 13.61, 340
+    """
+    # NOTE: when reading the header, the first line after the header
+    #       must be parsable (e.g. have data.)
+    header = io.StringIO(header)
+    with pytest.raises(ValueError, match="Wind files must have units"):
+        (data, line_no, name, coords, units, timezone_offset,
+         timezone_name) = _read_ossm_header(header)
+
+def test_read_ossm_header_four_num_coords():
+    """
+    some old files have the coords in four numbers.
+
+    This is actually from a tide file example,
+
+    The units are: decimal degrees, minutes -- and assuming the western hemisphere
+    e.g. longitude is negative
+
+    So it's returning (None, None) for now
+    """
+    header = """FAKE HEADER
+27,35,82,40
+MPS
+15,1,1993,00,0,0,0.00"""
+    # NOTE: when reading the header, the first line after the header
+    #       must be parsable (e.g. have data.)
+    header = io.StringIO(header)
+    (data, line_no, name, coords, units, timezone_offset,
+         timezone_name) = _read_ossm_header(header)
+
+    assert name == "FAKE HEADER"
+    assert units == 'm/s'  # they are translated from MPS
+    assert coords == (None, None)
+    assert data == (datetime(1993, 1, 15, 0, 0), 0.0, 0.0)
+
+
+
+@pytest.mark.parametrize("line, data", [
+                         ('5, 3, 2025, 13, 10, 13.61, 330', (datetime(2025, 3, 5, 13, 10), 13.61, 330)),
+                         ('5, 3, 25, 13, 10, 13.61, 330', (datetime(2025, 3, 5, 13, 10), 13.61, 330)),
+                         ('5, 3, 98, 13, 10, 13.61, 330', (datetime(1998, 3, 5, 13, 10), 13.61, 330)),
+                         ('5, 3, 2025, 13, 10, 13.61, E', (datetime(2025, 3, 5, 13, 10), 13.61, 90)),
+                                   ])
+def test_read_read_ossm_data_line(line, data):
+    result = _read_ossm_data_line(line)
+    assert result == data
+
+# Tolerance for np.allclose(..) function.
 # Results are almost the same but not quite so needed to add tolerance.
 # numpy defaults:
 # rtol = 1e-05
 # atol = 1e-08
 rtol = 1e-14  # most of a float64's precision
 atol = 0  # zero must be exact in this case
-
 
 def test_units():
     """
@@ -479,6 +744,28 @@ class TestWind(object):
         # assert get_rq.value[0, 1] > all_winds['rq'].value[1, 0] \
         #    and get_rq.value[0, 1] < all_winds['rq'].value[1, 1]
         # =====================================================================
+        
+    def test_timezone_offset(self, all_winds):
+        wind = all_winds['wind']
+        assert wind.timezone_offset.offset is None
+        orig = wind.get_start_time()
+
+        #Test None -> offset (no timeseries change)
+        wind.timezone_offset = TZOffset(offset=-8)
+        assert wind.timezone_offset.offset == -8
+        assert orig == wind.get_start_time()
+
+        # Test Offset -> Offset (changes timeseries)
+        wind.timezone_offset = TZOffset(offset=0)
+        assert wind.timezone_offset.offset == 0
+        assert orig + 8*3600 == wind.get_start_time()
+        wind.timezone_offset = TZOffset(offset=-8)
+        assert orig == wind.get_start_time()
+
+        # Test Offest -> None (no timeseries change)
+        wind.timezone_offset = None
+        assert wind.timezone_offset.offset is None
+        assert orig == wind.get_start_time()
 
 
 def test_data_start(wind_circ):
@@ -677,9 +964,9 @@ def test_wind_from_values():
     """
     simple test for the utility
     """
-    values = [(datetime(2016, 5, 10, 12,  0), 5, 45),
-              (datetime(2016, 5, 10, 12, 20), 6, 50),
-              (datetime(2016, 5, 10, 12, 40), 7, 55),
+    values = [(datetime(2025, 5, 10, 12,  0), 5, 45),
+              (datetime(2025, 5, 10, 12, 20), 6, 50),
+              (datetime(2025, 5, 10, 12, 40), 7, 55),
               ]
 
     wind = wind_from_values(values)

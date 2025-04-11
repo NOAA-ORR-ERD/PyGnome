@@ -12,13 +12,15 @@ import pytest
 from pytest import raises
 
 from gnome.outputters.binary import BinaryOutput
-
+import gnome.scripting as gs
 
 from gnome.spills.spill import Spill, point_line_spill
 from gnome.spills.release import PolygonRelease
 from gnome.spill_container import SpillContainerPair
 from gnome.movers import RandomMover, constant_point_wind_mover
 from gnome.model import Model
+
+from .conftest import count_files_in_zip
 
 # file extension to use for test output files
 #  this is used by the output_filename fixture in conftest:
@@ -118,6 +120,40 @@ def test_timesteps(model):
     assert outfilename.is_file()
 
 
+#@pytest.mark.xfail
+# NOTE: This currently fails because the model isn't allowing partial runs to output
+def test_model_stops_in_middle(model):
+    """
+    If the model stops in the middle of a run:
+    e.g. runs out of data, it should still output results.
+    """
+    filename = local_dirname() / "stop_in_middle"
+
+    # set up a WindMover that's too short.
+    times = [model.start_time + (gs.minutes(30) * i) for i in range(3)]
+    # long enough record
+    # times = [model.start_time + (gs.minutes(30) * i) for i in range(5)]
+
+    winds = gs.wind_from_values([(dt, 5, 90) for dt in times])
+
+    model.movers += gs.WindMover(winds)
+    bin_ = BinaryOutput(filename,
+                      output_timestep=gs.hours(1),
+                      output_zero_step=False,
+                      output_last_step=False,
+                      output_single_step=False,
+                      output_start_time=model.start_time,
+                      )
+    model.outputters += bin_
+
+    print(model.movers)
+    # run the model
+    with pytest.raises(ValueError, match="not within the bounds"):
+        model.full_run()
+
+    # check the zipfile has certain and uncertain for 1 output
+    len_zip = count_files_in_zip(filename.with_suffix('.zip'))
+    assert len_zip == 2
 
 
 # def test_rewind(model, output_dir):

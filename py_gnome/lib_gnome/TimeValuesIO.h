@@ -40,5 +40,5 @@ Boolean IsNDBCWindFile(char *path, long *numHeaderLines);
 bool IsNCDCWindFile(vector<string> &linesInFile);
 Boolean IsNCDCWindFile(char *path);
 
-bool IsLongWindFile(vector<string> &linesInFile, short *selectedUnitsOut, bool *dataInGMTOut);
-Boolean IsLongWindFile(char *path, short *selectedUnitsOut, Boolean *dataInGMTOut);
+bool IsLongWindFile(vector<string> &linesInFile, short *selectedUnitsOut, bool *dataInGMTOut, long *numHeaderLines);
+Boolean IsLongWindFile(char *path, short *selectedUnitsOut, Boolean *dataInGMTOut, long *numHeaderLines);

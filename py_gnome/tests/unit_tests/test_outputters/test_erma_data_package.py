@@ -16,6 +16,8 @@ import gnome.scripting as gs
 from gnome.spills.spill import point_line_spill
 from gnome.spill_container import SpillContainerPair
 
+from .conftest import count_files_in_zip
+
 # file extension to use for test output files
 #  this is used by the output_filename fixture in conftest:
 FILE_EXTENSION = ""
@@ -169,3 +171,29 @@ def test_simple_package(model, output_dir):
         with zipper.open(layer2_json_path) as layer2_json_file:
             uncertain_json =  json.load(layer2_json_file)
             # Need to come up with some good validation of the json here
+
+
+#@pytest.mark.xfail
+# NOTE: This currently fails because the model isn't allowing partial runs to output
+def test_model_stops_in_middle(model, output_dir):
+    filename = os.path.join(output_dir, "stop_in_middle.zip")
+    # set up a WindMover that's too short.
+    times = [model.start_time + (gs.minutes(30) * i) for i in range(3)]
+    # long enough record
+    # times = [model.start_time + (gs.minutes(30) * i) for i in range(21)]
+
+    winds = gs.wind_from_values([(dt, 5, 90) for dt in times])
+
+    model.movers += gs.WindMover(winds)
+
+    package = ERMADataPackageOutput(filename)
+    model.outputters += package
+
+    print(model.movers)
+    # Run the model
+    with pytest.raises(Exception):
+        model.full_run()
+
+    # check the zipfile has expected number of files
+    len_zip = count_files_in_zip(filename)
+    assert len_zip == 11

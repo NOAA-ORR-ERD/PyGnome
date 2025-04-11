@@ -173,7 +173,7 @@ class Model(GnomeId):
         Load a model instance from a save file
 
         :param filename: the filename of the save file -- usually a zip file,
-                         but can also be a directry with the full contents of
+                         but can also be a directory with the full contents of
                          a zip file
 
         :return: a model instance all set up from the savefile.
@@ -230,10 +230,15 @@ class Model(GnomeId):
 
         :param weathering_substeps=1: How many weathering substeps to
                                           run inside a single model time step.
+                                          NOTE: using a value other than 1 has not been well tested.
 
-        :param map=gnome.map.GnomeMap(): The land-water map.
+        :param map=gnome.map.GnomeMap(): The land-water map, defaults to all water map.
 
-        :param uncertain=False: Flag for setting uncertainty.
+        :param uncertain=False: Flag for turning on uncertainty.
+
+        :param run_backwards=False: Flag for running backwards.
+
+        :param timezone_offset: Time zone the model is in.
 
         :param cache_enabled=False: Flag for setting whether the model should
                                     cache results to disk.
@@ -349,16 +354,16 @@ class Model(GnomeId):
         """
         Add the weatherers
 
-        :param which='standard': which weatheres to add. Default is 'standard',
-                                 which will add all the standard weathering algorithms
-                                 if you don't want them all, you can specify a list:
+        :param which='standard': which weatherers to add. Default is 'standard',
+                                 which will add all the standard weathering algorithms.
+                                 If you don't want them all, you can specify a list:
                                  ['evaporation', 'dispersion'].
 
                                  Options are:
                                   - 'evaporation'
                                   - 'dispersion'
                                   - 'emulsification'
-                                  - 'dissolution': Dissolution,
+                                  - 'dissolution'
                                   - 'half_life_weatherer'
 
                                  see: ``gnome.weatherers.__init__.py`` for the full list
@@ -788,16 +793,16 @@ class Model(GnomeId):
     def setup_model_run(self):
         '''
         Runs the setup procedure preceding a model run. When complete, the
-        model should be ready to run to completion without additional prep
+        model should be ready to run to completion without additional prep.
         Currently this function consists of the following operations:
 
         1. Set up special objects.
-            Some weatherers currently require other weatherers to exist. This
-            step satisfies those requirements
+           Some weatherers currently require other weatherers to exist. This
+           step satisfies those requirements
         2. Remake collections in case ordering constraints apply (weatherers)
-        3. Compile array_types and run setup procedure on spills
-            array_types defines what data arrays are required by the various
-            components of the model
+        3. Compile array_types and run setup procedure on spills -
+           array_types defines what data arrays are required by the various
+           components of the model
         4. Attach default references
         5. Call prepare_for_model_run on all relevant objects
         6. Conduct miscellaneous prep items. See section in code for details.
@@ -972,7 +977,7 @@ class Model(GnomeId):
     def move_elements(self):
         '''
         Moves elements:
-         - loops through all the movers. and moves the elements
+         - loops through all the movers and moves the elements
          - sets new_position array for each spill
          - calls the beaching code to beach the elements that need beaching.
          - sets the new position
@@ -1098,7 +1103,7 @@ class Model(GnomeId):
         '''
         Loop through movers and weatherers and call model_step_is_done
 
-        Remove elements that marked for removal
+        Remove elements that are marked for removal
 
         Output data
         '''
@@ -1149,10 +1154,8 @@ class Model(GnomeId):
 
     def step(self):
         '''
-        Steps the model forward in time.
+        Steps the model forward in time (or backward if run_backwards = True).
 
-        NOTE: in theory, it could also go backward with a negative time step,
-        for hindcasting, but that has not been tested.
         '''
         isValid = True
         for sc in self.spills.items():
@@ -1194,22 +1197,31 @@ class Model(GnomeId):
             raise StopIteration("Run complete for {0}".format(self.name))
 
         else:
-            # release half the LEs for this time interval
-            half_step = timedelta(seconds=self.time_step / 2)
-            self.release_elements(self.model_time,
-                                  self.model_time + half_step)
-            self.setup_time_step()
-            self.move_elements()
-            self.weather_elements()
-            self.step_is_done()
-            self.current_time_step += 1
-            for sc in self.spills.items():
-                sc.current_time_stamp = self.model_time
-            # Release the remaining half of the LEs in this time interval
-            self.release_elements(self.model_time - half_step,
-                                  self.model_time)
-            output_info = self.output_step(isValid)
-            return output_info
+            # catch mid run errors so outputters can still write files
+            try:
+                # release half the LEs for this time interval
+                half_step = timedelta(seconds=self.time_step / 2)
+                self.release_elements(self.model_time,
+                                      self.model_time + half_step)
+                self.setup_time_step()
+                self.move_elements()
+                self.weather_elements()
+                self.step_is_done()
+                self.current_time_step += 1
+                for sc in self.spills.items():
+                    sc.current_time_stamp = self.model_time
+                # Release the remaining half of the LEs in this time interval
+                self.release_elements(self.model_time - half_step,
+                                      self.model_time)
+                output_info = self.output_step(isValid)
+                return output_info
+            except Exception as ex:
+                self.post_model_run()
+                # might only want to write files for out of time errors
+                #if "not within the bounds" in str(ex):
+                    #self.post_model_run()
+                    #raise GnomeRuntimeError(str(ex))
+                raise
 
     def output_step(self, isvalid):
         self._cache.save_timestep(self.current_time_step, self.spills)
@@ -1427,9 +1439,10 @@ class Model(GnomeId):
         save the model state in saveloc. If self.zipsave is True, then a
         zip archive is created and model files are saved to the archive.
 
-        :param saveloc=".": a directory or filename. If a directory, then either
+        :param saveloc: a directory or filename. If a directory, then either
                         the model is saved into that dir, or a zip archive is
                         created in that dir (with a .gnome extension).
+                        Defaults to ".".
 
                         The file(s) are clobbered when save() is called.
         :type saveloc: A dir or file name (relative or full path) as a string.
@@ -1507,7 +1520,7 @@ class Model(GnomeId):
 
         :param filename: If saveloc is an open zipfile or folder,
                          this indicates the name of the file to be loaded.
-                         If saveloc is a filename, is parameter is ignored.
+                         If saveloc is a filename, this parameter is ignored.
 
         :param refs: A dictionary of id -> object instances that will be used
                      to complete references, if available.
@@ -1616,12 +1629,10 @@ class Model(GnomeId):
 
     def check_inputs(self):
         '''
-        check the user inputs before running the model
-        raise an exception if user can't run the model
+        check the user inputs before running the model and
+        raise an exception if the user can't run the model
 
-        todo: check if all spills start after model ends
-
-        fixme: This should probably be broken out into its
+        fixme: This should probably be broken out into its \
                own module, class, something -- with each test independent.
         '''
         (msgs, isValid) = self.validate()
@@ -1800,6 +1811,7 @@ class Model(GnomeId):
     def validate(self):
         '''
         invoke validate for all gnome objects contained in model
+
         todo: should also check wind, water, waves are defined if weatherers
         are defined
         '''

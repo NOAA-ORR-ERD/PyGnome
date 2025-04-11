@@ -13,6 +13,7 @@ from pytest import raises
 import numpy as np
 
 import netCDF4 as nc
+import gnome.scripting as gs
 
 from gnome.spills.spill import point_line_spill, Spill
 from gnome.spills.release import Release
@@ -774,6 +775,39 @@ def test_surface_concentration_output(model):
             surface_conc = dv['surface_concentration']
             # FIXME -- maybe should test something more robust...
             assert not np.all(surface_conc[:] == 0.0)
+
+
+def test_model_stops_in_middle(model):
+    """
+    If the model stops in the middle of a run:
+    e.g. runs out of data, it should still output results.
+    """
+
+    model.duration = gs.hours(2)
+
+    # set up a WindMover that's too short.
+    times = [model.start_time + (gs.minutes(30) * i) for i in range(3)]
+    # long enough record
+    # times = [model.start_time + (gs.minutes(30) * i) for i in range(5)]
+
+    winds = gs.wind_from_values([(dt, 5, 90) for dt in times])
+
+    model.movers += gs.WindMover(winds)
+
+    print(model.movers)
+    # run the model
+    with pytest.raises(Exception):
+        model.full_run()
+
+    # check there are certain and uncertain files with 5 times
+    o_put = model.outputters[0]
+    for file_ in (o_put.filename, o_put._u_filename):
+        assert os.path.exists(file_)
+        with nc.Dataset(file_) as data:
+            dv = data.variables
+            time_ = nc.num2date(dv['time'][:], dv['time'].units,
+                                calendar=dv['time'].calendar)
+            assert len(time_) == 5
 
 
 def _run_model(model):

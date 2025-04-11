@@ -1,6 +1,9 @@
 '''
 This file is documentation and a demonstration of how to use Schema objects to
 allow Gnome objects to do the following tasks:
+
+::
+
     Save the object to a zip file
     Load the object from a zip file
     Get a serialization of the object (JSON)

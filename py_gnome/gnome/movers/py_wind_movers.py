@@ -69,8 +69,8 @@ class WindMover(movers.PyMover):
                  **kwargs):
         """
         Initialize a WindMover
-        :param wind: Environment object representing wind to be
-                        used.
+
+        :param wind: Environment object representing wind to be used.
         :type wind: Any Wind or Wind-like that implements the .at() function
 
         :param active_range: Range of datetimes for when the mover should be
@@ -78,9 +78,9 @@ class WindMover(movers.PyMover):
         :type active_range: 2-tuple of datetimes
 
         :param scale_value: Value to scale wind data
-        :param uncertain_duration: how often does a given uncertain element
-                                   get reset
-        :param uncertain_time_delay: when does the uncertainly kick in.
+        :param uncertain_duration: (seconds) how often a given uncertain element
+                                   gets reset
+        :param uncertain_time_delay: when the uncertainty kicks in in seconds from model start.
         :param uncertain_speed_scale: Scale for uncertainty of wind speed
         :param uncertain_angle_scale: Scale for uncertainty of wind angle
         :param num_method: Numerical method for calculating movement delta.
@@ -196,6 +196,9 @@ class WindMover(movers.PyMover):
     def model_step_is_done(self, sc):
         """
         remove any off map les
+
+        :param sc: an instance of gnome.spill_container.SpillContainer class
+
         """
         if not self.active or not self.on:
             return

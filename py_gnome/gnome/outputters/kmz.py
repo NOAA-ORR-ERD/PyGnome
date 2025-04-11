@@ -47,6 +47,7 @@ class KMZOutput(OutputterFilenameMixin, Outputter):
         filename = Path(filename)  # make sure it's a Path object
         filename = filename.with_suffix(".kmz")
         self.kml_name = filename.with_suffix(".kml").parts[-1]
+        self.cleaned_up = False  # so that we can guard against post_model_run being called twice.
 
         super(KMZOutput, self).__init__(filename=filename,
                                         **kwargs)
@@ -152,15 +153,34 @@ class KMZOutput(OutputterFilenameMixin, Outputter):
                 kmzfile.writestr('x.png', base64.b64decode(X))
                 kmzfile.writestr(self.kml_name,
                                  "".join(self.kml).encode('utf8'))
+            self.cleaned_up = True
 
 
         if not self._write_step:
             return None
 
         output_info = {'time_stamp': sc.current_time_stamp.isoformat(),
-                       'output_filename': self.filename}
+                       'output_filename': str(self.filename)}
 
         return output_info
+
+
+    def post_model_run(self):
+        """
+        This is where to clean up -- close files, etc.
+        """
+
+        if not self.cleaned_up:
+            self.kml.append(kmz_templates.footer)
+
+            with zipfile.ZipFile(self.filename, 'w',
+                                 compression=zipfile.ZIP_DEFLATED) as kmzfile:
+                kmzfile.writestr('dot.png', base64.b64decode(DOT))
+                kmzfile.writestr('x.png', base64.b64decode(X))
+                kmzfile.writestr(self.kml_name,
+                                 "".join(self.kml).encode('utf8'))
+            self.cleaned_up = True
+
 
     def rewind(self):
         '''

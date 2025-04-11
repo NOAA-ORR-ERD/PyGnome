@@ -1,17 +1,6 @@
 
-
-
-
-
-# from future import standard_library
-# standard_library.install_aliases()
-# from builtins import *
-
 import os
 from datetime import datetime
-
-import pytest
-from pytest import raises
 
 import numpy as np
 from math import isclose
@@ -19,7 +8,8 @@ from math import isclose
 from gnome.utilities.time_utils import (zero_time,
                                         sec_to_date)
 from gnome.basic_types import datetime_value_2d
-from gnome.environment import Wind, constant_wind, RunningAverage
+from gnome.environment.running_average import RunningAverage
+from gnome.environment.wind import Wind, constant_wind
 
 from ..conftest import testdata
 
@@ -124,29 +114,29 @@ def test_full_run_extended():
     '''
     test algorithm resets two day running average with a new time
     '''
-    ts = np.zeros((20,), dtype=datetime_value_2d)
-    ts[:] = [(datetime(2015, 1, 1, 1, 0), (10, 0)),
-             (datetime(2015, 1, 1, 2, 0), (20, 0)),
-             (datetime(2015, 1, 1, 3, 0), (10, 0)),
-             (datetime(2015, 1, 1, 4, 0), (20, 0)),
-             (datetime(2015, 1, 1, 5, 0), (10, 0)),
-             (datetime(2015, 1, 1, 6, 0), (20, 0)),
-             (datetime(2015, 1, 1, 7, 0), (10, 0)),
-             (datetime(2015, 1, 1, 8, 0), (20, 0)),
-             (datetime(2015, 1, 1, 9, 0), (10, 0)),
-             (datetime(2015, 1, 1, 10, 0), (20, 0)),
-             (datetime(2015, 1, 5, 1, 0), (10, 0)),
-             (datetime(2015, 1, 5, 2, 0), (20, 0)),
-             (datetime(2015, 1, 5, 3, 0), (10, 0)),
-             (datetime(2015, 1, 5, 4, 0), (20, 0)),
-             (datetime(2015, 1, 5, 5, 0), (10, 0)),
-             (datetime(2015, 1, 5, 6, 0), (20, 0)),
-             (datetime(2015, 1, 5, 7, 0), (10, 0)),
-             (datetime(2015, 1, 5, 8, 0), (20, 0)),
-             (datetime(2015, 1, 5, 9, 0), (10, 0)),
-             (datetime(2015, 1, 5, 10, 0), (20, 0))]
+    # ts = np.zeros((20,), dtype=datetime_value_2d)
+    # ts[:] = [(datetime(2015, 1, 1, 1, 0), (10, 0)),
+    #          (datetime(2015, 1, 1, 2, 0), (20, 0)),
+    #          (datetime(2015, 1, 1, 3, 0), (10, 0)),
+    #          (datetime(2015, 1, 1, 4, 0), (20, 0)),
+    #          (datetime(2015, 1, 1, 5, 0), (10, 0)),
+    #          (datetime(2015, 1, 1, 6, 0), (20, 0)),
+    #          (datetime(2015, 1, 1, 7, 0), (10, 0)),
+    #          (datetime(2015, 1, 1, 8, 0), (20, 0)),
+    #          (datetime(2015, 1, 1, 9, 0), (10, 0)),
+    #          (datetime(2015, 1, 1, 10, 0), (20, 0)),
+    #          (datetime(2015, 1, 5, 1, 0), (10, 0)),
+    #          (datetime(2015, 1, 5, 2, 0), (20, 0)),
+    #          (datetime(2015, 1, 5, 3, 0), (10, 0)),
+    #          (datetime(2015, 1, 5, 4, 0), (20, 0)),
+    #          (datetime(2015, 1, 5, 5, 0), (10, 0)),
+    #          (datetime(2015, 1, 5, 6, 0), (20, 0)),
+    #          (datetime(2015, 1, 5, 7, 0), (10, 0)),
+    #          (datetime(2015, 1, 5, 8, 0), (20, 0)),
+    #          (datetime(2015, 1, 5, 9, 0), (10, 0)),
+    #          (datetime(2015, 1, 5, 10, 0), (20, 0))]
 
-    wm = Wind(filename=wind_file, units='mps')
+    wm = Wind(filename=wind_file)
 
     start_time = datetime(2015, 1, 1, 1)
     model_time = start_time
@@ -166,6 +156,8 @@ def test_full_run_extended():
     print("running_av2")
     print(running_av.ossm.timeseries[:])
 
+    print(wind_file)
+
     assert np.all(running_av.ossm.timeseries['value']['u'][:] == 15)
 
 
@@ -173,6 +165,7 @@ def test_past_hours_to_average():
     """
     just make sure there are no errors
     """
+    print(wind_file)
     wm = Wind(filename=wind_file)
     av = RunningAverage(wm)
     assert av.past_hours_to_average == 3
