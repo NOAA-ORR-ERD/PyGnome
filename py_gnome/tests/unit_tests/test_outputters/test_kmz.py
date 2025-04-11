@@ -11,6 +11,7 @@ import pytest
 
 from gnome.outputters import KMZOutput
 from gnome.outputters import kmz_templates
+import gnome.scripting as gs
 
 
 from gnome.spills.spill import Spill, point_line_spill
@@ -18,6 +19,8 @@ from gnome.spills.release import PolygonRelease
 from gnome.spill_container import SpillContainerPair
 from gnome.movers import RandomMover, constant_point_wind_mover
 from gnome.model import Model
+
+from .conftest import count_files_in_zip
 
 # file extension to use for test output files
 #  this is used by the output_filename fixture in conftest:
@@ -43,7 +46,7 @@ def model(sample_model, output_filename):
                                      end_position=rel_end_pos)
 
     model.time_step = 3600
-    model.duration = timedelta(hours=1)
+    model.duration = timedelta(hours=2)
     model.rewind()
 
     return model
@@ -122,8 +125,10 @@ def test_timesteps(model):
     model.outputters += kmz
 
     #run the model
-    model.full_run()
-
+    for step in model:
+        print(step)
+        # making sure -- this was a bug at one point
+        assert isinstance(step['KMZOutput']['output_filename'], str)
 
 
 ## test the kml templates
@@ -155,9 +160,76 @@ def test_on_timestep_kml():
                                            )
     assert True
 
+def test_serialize():
+    """
+    Can we serialize / deserialize a kmz outputter?
+    """
+    kmzo = KMZOutput(Path(__file__).parent / "example_kmz.kmz")
+
+    print(repr(kmzo.filename))
+
+    json = kmzo.serialize()
+
+    print(json)
+
+    {
+        'obj_type':
+        'gnome.outputters.kmz.KMZOutput',
+        'id':
+        '414ce584-0480-11f0-bcb0-acde48001122',
+        'name':
+        'KMZOutput_5',
+        'on':
+        True,
+        'output_zero_step':
+        True,
+        'output_last_step':
+        True,
+        'output_single_step':
+        False,
+        'filename':
+        '/Users/chris.barker/Hazmat/GitLab/pygnome/py_gnome/tests/unit_tests/test_outputters/example_kmz.kmz'
+    }
+
+    kmzo2 = KMZOutput.deserialize(json)
+
+    assert kmzo == kmzo2
 
 
+#@pytest.mark.xfail
+# NOTE: This currently fails because the model isn't allowing partial runs to output
+def test_model_stops_in_middle(model):
+    """
+    If the model stops in the middle of a run:
+    e.g. runs out of data, it should still output results.
+    """
+    filename = OUTPUT_DIR / "stop_in_middle"
 
+    # set up a WindMover that's too short.
+    times = [model.start_time + (gs.minutes(30) * i) for i in range(3)]
+    # long enough record
+    # times = [model.start_time + (gs.minutes(30) * i) for i in range(5)]
+
+    winds = gs.wind_from_values([(dt, 5, 90) for dt in times])
+
+    model.movers += gs.WindMover(winds)
+    kmz = KMZOutput(filename,
+                      output_timestep=gs.hours(1),
+                      output_zero_step=False,
+                      output_last_step=False,
+                      output_single_step=False,
+                      output_start_time=model.start_time,
+                      )
+    model.outputters += kmz
+
+    print(model.movers)
+    # run the model
+    with pytest.raises(Exception):
+        model.full_run()
+
+    # check the zipfile has certain and uncertain for 1 output
+    len_zip = count_files_in_zip(filename.with_suffix('.kmz'))
+    assert len_zip == 3	# two icons and kml, just check it got created
 
 
 # def test_rewind(model, output_dir):

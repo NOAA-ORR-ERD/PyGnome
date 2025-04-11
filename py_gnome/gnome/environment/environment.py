@@ -1,6 +1,5 @@
 """
-module contains objects that contain weather related data. For example,
-the Wind object defines the Wind conditions for the spill
+Environment objects
 """
 
 import copy
@@ -83,7 +82,7 @@ class Environment(GnomeId):
         
     def at(self, points, time, *, units=None, extrapolate=None, **kwargs):
         """
-        Find the value of the property at positions P at time T
+        Find the value of the property at positions P and time T
 
         :param points: Coordinates to be queried (lon, lat, depth)
         :type points: Nx3 numpy array
@@ -91,8 +90,8 @@ class Environment(GnomeId):
         :param time: The time at which to query these points (T)
         :type time: datetime.datetime object
 
-        :param units=None: units the values will be returned in (or converted to)
-                           if None, the default units for the environment type will be used.
+        :param units=None: units the values will be returned in (or converted to).
+                           If None, the default units for the environment type will be used.
         :type units: string such as ('m/s', 'knots', etc)
 
         :param extrapolate=False: if True, extrapolation will be supported
@@ -101,7 +100,7 @@ class Environment(GnomeId):
         :return: returns a Nx2 or Nx3 array of interpolated values
         :rtype: Nx2 or Nx3 numpy array of values
         """
-        raise NotImplementedError("Environment subclasses must impliment"
+        raise NotImplementedError("Environment subclasses must implement"
                                   "an at() method")
 
     # These are properties so they can raise NotImplementedError
@@ -132,7 +131,7 @@ class Environment(GnomeId):
     def prepare_for_model_step(self, model_time):
         """
         Override this method if a derived environment class needs to perform
-        any actions prior to a model run
+        any actions prior to a model step
         """
         pass
 
@@ -155,11 +154,11 @@ def env_from_netCDF(filename=None, dataset=None,
         For example, if an IceAwareWind can find an existing IceConcentration,
         it will use it instead of instantiating another. This function tries
         ALL gridded types by default. This means if a particular subclass
-        of object is possible to be built, it is likely that all it's parents
+        of object is possible to be built, it is likely that all its parents
         will be built and included as well.
 
         If you wish to limit the types of environment objects that will
-        be used, pass a list of the types using "_cls_list" kwarg
+        be used, pass a list of the types using "_cls_list"
     '''
     def attempt_from_netCDF(cls, **klskwargs):
         obj = None
@@ -418,7 +417,7 @@ class Water(Environment):
     def get(self, attr, unit=None):
         '''
         return value in desired unit. If None, then return the value in SI
-        units. The user_unit are given in 'units' attribute and each attribute
+        units. The user_units are given in 'units' attribute and each attribute
         carries the value in as given in these user_units.
         '''
         val = getattr(self, attr)

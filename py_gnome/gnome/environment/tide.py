@@ -1,6 +1,5 @@
 """
-module contains objects that contain weather related data. For example,
-the Wind object defines the Wind conditions for the spill
+Tide environment objects for OSSM or Shio tides.
 """
 
 import string

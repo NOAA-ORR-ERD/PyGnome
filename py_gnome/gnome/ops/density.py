@@ -12,7 +12,7 @@ def init_density(sc, num_released, water=None, substance=None, aggregate=True):
     taking into account environmental conditions.
 
     :param sc: spill container
-    :param num_rel: int
+    :param int num_released: number of elements to be initialized
     :param water: Water object to use. If None, uses default values
     :param substance: gnome.spills.substance.Substance or subclass thereof
     :param aggregate: Flag for whether to trigger mass balance updates in spill container
@@ -50,6 +50,7 @@ def recalc_density(sc, water=None, aggregate=True):
     '''
     Recalculates the density of the elements in a spill container. This is necessary
     if 'mass_components' have changed.
+
     :param sc: spill container
     :param water: Water object to use. If None, uses default
     :param aggregate: Flag for whether to trigger mass balance updates in spill container
@@ -111,8 +112,8 @@ def recalc_density(sc, water=None, aggregate=True):
 
 def _get_k_rho_weathering_dens_update(substance, temp_in_k):
     '''
-    use lru_cache on substance. substance is expected to be a GnomeOil,
-    if this object stays the same, then return the cached value for k_rho
+    Use lru_cache on substance. Substance is expected to be a GnomeOil.
+    if this object stays the same, then return the cached value for k_rho.
     This depends on initial mass fractions, initial density and fixed
     component densities
     '''

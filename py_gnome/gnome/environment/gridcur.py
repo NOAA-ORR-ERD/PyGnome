@@ -46,7 +46,7 @@ data_type_tags = {val: key for key, val in data_types.items()}
 
 class GridCurReadError(Exception):
     """
-    custom class so that we canknow the error was in reading GridCur
+    custom class so that we can know what the error was in reading GridCur
     file
     """
     pass
@@ -63,7 +63,7 @@ def from_gridcur(filename,
 
     :param extrapolation_is_allowed=False:
 
-    passes other keyword arguments on to GridCurrent initilizer
+    passes other keyword arguments on to GridCurrent initializer
     """
     # import here to avoide circular import
     from .environment_objects import GridCurrent
@@ -79,8 +79,8 @@ def init_from_gridcur(gc,
     """
     utility function to initialize a GridCurrent
 
-    :param gc=None: the GridCur object to be initialized
-                    if None, then a new one will be created.
+    :param gc=None: the GridCur object to be initialized.
+                    If None, then a new one will be created.
 
     :param filename: name (full path) of the gridcur file to load
 

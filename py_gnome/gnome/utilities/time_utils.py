@@ -161,7 +161,7 @@ def date_to_sec(date_times):
     The epoch is as defined in python: Jan 1, 1970
     """
 
-    # Can accept either a scalar datetime or a scalr datetime64 or
+    # Can accept either a scalar datetime or a scalar datetime64 or
     # an array of datetime64 or list of datetimes -- messy!
 
     try:
@@ -208,6 +208,7 @@ def sec_to_date(seconds):
     Note: time_utils.sec_to_timestruct(...)
           to test that it works in the same way as the lib_gnome C++
           cython wrapper
+
     FIXME: this may be broken there!!!!!
     """
     t_array = np.asarray(seconds, dtype=np.uint32).reshape(-1)

@@ -75,9 +75,9 @@ class CurrentMover(movers.PyMover):
         :type active_range: 2-tuple of datetimes
 
         :param scale_value: Value to scale current data
-        :param uncertain_duration: how often does a given uncertain element
-                                   get reset in seconds
-        :param uncertain_time_delay: when does the uncertainly kick in in seconds
+        :param uncertain_duration: (seconds) how often a given uncertain element
+                                   gets reset in seconds
+        :param uncertain_time_delay: when the uncertainty kicks in in seconds from model start
         :param uncertain_cross: Scale for uncertainty perpendicular to the flow
         :param uncertain_along: Scale for uncertainty parallel to the flow
         :param default_num_method: Numerical method for calculating movement delta.
@@ -129,7 +129,7 @@ class CurrentMover(movers.PyMover):
                     uncertain_cross=.25,
                     **kwargs):
         """
-        Function for specifically creating a CurrentMover from a file
+        Function for creating a CurrentMover from a file
         """
         current = GridCurrent.from_netCDF(filename, **kwargs)
 
@@ -353,6 +353,11 @@ class CurrentMover(movers.PyMover):
     def prepare_for_model_step(self, sc, time_step, model_time_datetime):
         """
         add uncertainty
+
+        :param sc: an instance of gnome.spill_container.SpillContainer class
+        :param int time_step: the model time step in seconds
+        :param model_time_datetime: the current model time as a datetime object
+
         """
         super(CurrentMover, self).prepare_for_model_step(sc, time_step,
                                                            model_time_datetime)
@@ -373,6 +378,9 @@ class CurrentMover(movers.PyMover):
     def model_step_is_done(self, sc):
         """
         remove any off map les
+
+        :param sc: an instance of gnome.spill_container.SpillContainer class
+
         """
         if not self.active or not self.on:
             return

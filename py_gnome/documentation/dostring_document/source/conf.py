@@ -35,6 +35,7 @@ extensions = [#'nbsphinx',
               #'sphinx.ext.coverage',
               #'sphinx.ext.mathjax',
               # 'sphinx.ext.viewcode',
+              'sphinxcontrib.jquery',
               ]
 
 # to make autodoc include __init__:
@@ -99,7 +100,6 @@ exclude_patterns = []
 
 import sphinx_rtd_theme
 html_theme = "sphinx_rtd_theme"
-html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
 html_style = 'css/custom.css'
 
@@ -107,6 +107,10 @@ html_style = 'css/custom.css'
 # of the sidebar.
 html_logo = "_static/GNOME_logo_225px-wide.png"
 html_favicon = "_static/GNOME_favicon_32x32.png"
+
+html_js_files = [
+    'https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js',
+]
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,

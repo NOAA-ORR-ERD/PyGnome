@@ -7,13 +7,13 @@ Each one has one method:
 
 get_color(value_list,range=(0,255),out_type='int')
 
-  value_list: is a list (or any sequence) of values that you want a color to
-              correspond to.
-  range:      is the range of values that define the two ends of the colormap
-
-  out_type: is the type that the RGB triple it output in. The two options are:
-           'int'  : integers between 0 and 255
-           'float': floats between 0 and 1
+  :param value_list: A list (or any sequence) of values that you want a color
+                     to correspond to.
+  :param range: The range of values that define the two ends of the colormap
+  :param out_type: The type that the RGB triple it output in.
+                   The two options are:
+                   'int': integers between 0 and 255
+                   'float': floats between 0 and 1
 
   returned is a list of tuples, each one an RGB triple that corresponds
   to the values in value_list, with each value between 0 and 255.

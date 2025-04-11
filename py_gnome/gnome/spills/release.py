@@ -47,6 +47,8 @@ from gnome.weatherers.spreading import FayGravityViscous
 from gnome.environment import Water
 from gnome.constants import gravity
 from gnome.ops import default_constants
+
+from gnome.utilities.time_utils import TZOffset, TZOffsetSchema
 #from gnome.exceptions import ReferencedObjectNotSet
 from .initializers import (InitRiseVelFromDropletSizeFromDist,
                            InitRiseVelFromDist)
@@ -69,6 +71,7 @@ class BaseReleaseSchema(ObjTypeSchema):
     )
     custom_positions = StartPositions(save=True, update=True)
     centroid = WorldPoint(save=False, update=False, read_only=True)
+    timezone_offset = TZOffsetSchema()
 
 
 class PointLineReleaseSchema(BaseReleaseSchema):
@@ -105,6 +108,7 @@ class Release(GnomeId):
                  custom_positions=None,
                  release_mass=0,
                  retain_initial_positions=False,
+                 timezone_offset=TZOffset(),
                  **kwargs):
         """
         Required Arguments:
@@ -159,6 +163,7 @@ class Release(GnomeId):
         self.retain_initial_positions = retain_initial_positions
         self.rewind()
         super(Release, self).__init__(**kwargs)
+        self._timezone_offset=timezone_offset
         self.array_types.update({'positions': gat('positions'),
                                  'mass': gat('mass'),
                                  'init_mass': gat('mass'),
@@ -173,7 +178,35 @@ class Release(GnomeId):
 
         self._previously_released = 0.0
         self.cumulative_time_scale = SPREADING_CUMULATIVE_TIME_SCALE
-
+        
+    @property
+    def timezone_offset(self):
+        return self._get_timezone_offset()
+    
+    def _get_timezone_offset(self):
+        return self._timezone_offset
+    
+    @timezone_offset.setter
+    def timezone_offset(self, value):
+        #Due to the possibility of multiple time objects, we need to check for and set the offset
+        #for all of them. Subclasses should re-implement this as necessary to maintain consistency
+        if value is None or isinstance(value, TZOffset):
+            self._set_timezone_offset(value)
+        else:
+            raise ValueError("timezone_offset must be set with a TZOffset object or None")
+    
+    def _set_timezone_offset(self, tzo):
+        if tzo is None:
+            tzo = TZOffset(offset=None, title="No Timezone Specified")
+        if self._timezone_offset is not None and self._timezone_offset.offset is not None:
+            #original offset is non-None value, so we need to adjust the release time
+            if tzo.offset is not None:
+                #but only if the new value is not None
+                off =  timedelta(hours=tzo.offset) - timedelta(hours=self._timezone_offset.offset)
+                self.release_time = self.release_time + off
+                self.end_release_time = self.end_release_time + off
+        self._timezone_offset = tzo
+        
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
                 'release_time={0.release_time!r}, '
@@ -654,11 +687,10 @@ class PolygonRelease(Release):
     """
     A release of elements into a set of provided polygons.
 
-    When X particles are determined to be released, they are into the polygons
-    randomly. For each LE, pick a polygon, weighted by it's proportional area
-    and place the LE randomly within it. By default the PolygonRelease uses
-    simple area for polygon weighting. Other classes (NESDISRelease for example)
-    may use other weighting functions.
+    When X particles are determined to be released, they are placed into the polygons
+    randomly. For each LE, pick a polygon, weighted by its proportional area and
+    place the LE randomly within it. By default the PolygonRelease uses simple area
+    for polygon weighting. Weights may be passed in instead.
     """
     _schema = PolygonReleaseSchema
 
@@ -670,20 +702,22 @@ class PolygonRelease(Release):
                  thicknesses=None,
                  **kwargs):
         """
-        Required Arguments:
+        Required Arguments - either a filename, or features, or polygons
 
-        :param release_time: time the LEs are released (datetime object)
-        :type release_time: datetime.datetime
+        :param filename: shapefile
+        :type filename: string name of a zip file.
 
         :param polygons: polygons to use in this release
         :type polygons: list of shapely.Polygon or shapely.MultiPolygon.
 
+        :param features: feature collection from a shapefile
+
+        :param release_time: time the LEs are released (datetime object)
+        :type release_time: datetime.datetime
+
         Optional arguments:
 
-        :param filename: (optional) shapefile
-        :type filename: string name of a zip file. Polygons loaded are concatenated after polygons from kwarg
-
-        :param weights: (optional) LE placement probability weighting for each polygon. Must be the same length as the polygons kwarg, and must sum to 1. If None, weights are generated at runtime based on area proportion.
+        :param weights: LE placement probability weighting for each polygon. Must be the same length as the polygons kwarg, and must sum to 1. If None, weights are generated at runtime based on area proportion.
 
         :param num_elements: total number of elements to be released
         :type num_elements: integer default 1000
@@ -691,10 +725,10 @@ class PolygonRelease(Release):
         :param num_per_timestep: fixed number of LEs released at each timestep
         :type num_elements: integer
 
-        :param end_release_time=None: optional -- for a time varying release, the end release time. If None, then release is instantaneous
+        :param end_release_time=None: for a time varying release, the end release time. If None, then release is instantaneous
         :type end_release_time: datetime.datetime
 
-        :param release_mass=0: optional. This is the mass released in kilograms.
+        :param release_mass=0: This is the mass released in kilograms.
         :type release_mass: integer
         """
         if filename is not None and features is not None:
@@ -950,8 +984,12 @@ def GridRelease(release_time, bounds, resolution):
     Only 2-d for now
 
     :param bounds: bounding box of region you want the elements in:
-                   ((min_lon, min_lat),
-                    (max_lon, max_lat))
+
+                   ::
+
+                     ((min_lon, min_lat),
+                      (max_lon, max_lat))
+
     :type bounds: 2x2 numpy array or equivalent
 
     :param resolution: resolution of grid -- it will be a resolution X resolution grid
@@ -990,6 +1028,7 @@ class NESDISRelease(PolygonRelease):
     def __init__(self,
                  filename=None,
                  features=None,
+                 timezone_offset=TZOffset(offset=0, title='UTC'),
                  **kwargs):
         """
         :param filename: NESDIS shapefile
@@ -997,6 +1036,9 @@ class NESDISRelease(PolygonRelease):
 
         :param feature: FeatureCollection representation of a NESDIS shapefile
         :type feature: geojson.FeatureCollection
+        
+        :param timezone_offset:
+        :type timezone_offset: gnome.environment.time.TZOffset defaults to UTC
 
         """
 
@@ -1020,6 +1062,7 @@ class NESDISRelease(PolygonRelease):
 
         super(NESDISRelease, self).__init__(
             features=features,
+            timezone_offset=timezone_offset,
             **kwargs
         )
 
@@ -1410,6 +1453,9 @@ def release_from_splot_data(release_time, filename):
     '''
     Initialize a release object from a text file containing splots.
     The file contains 3 columns with following data:
+
+    ::
+
         [longitude, latitude, num_LEs_per_splot/5000]
 
     For each (longitude, latitude) release num_LEs_per_splot points

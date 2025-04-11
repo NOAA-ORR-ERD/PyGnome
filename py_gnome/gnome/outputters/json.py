@@ -262,8 +262,7 @@ class SpillJsonOutput(Outputter):
                        'uncertain_bounds': uncertain_bounds_scs}
 
         if self.output_dir:
-            output_info['output_filename'] = self.output_to_file(certain_scs,
-                                                                 step_num)
+            output_info['output_filename'] = str(self.output_to_file(certain_scs, step_num))
             self.output_to_file(uncertain_scs, step_num)
 
         return output_info
