@@ -29,7 +29,7 @@ using namespace std;
 
 short GetTideHeight(	DateTimeRec *BeginDate,DateTimeRec *EndDate,
 						double* XODE, double* VPU, 	// Year correction
-						short numOfConstituents, 
+						short numOfConstituents,
 						CONSTITUENT *constituent,	// Amplitude-phase array structs
 						HEIGHTOFFSET *htOffset,		// Height offset data
 						COMPHEIGHTS *answers,		// Height-time struc with answers
@@ -39,7 +39,7 @@ short GetTideHeight(	DateTimeRec *BeginDate,DateTimeRec *EndDate,
 						//long nminmax,					// number of entries
 						//CONTROLVAR *cntrlvars,			// custom control vars
 						Boolean DaylightSavings)		// Daylight Savings Flag.
-						
+
 // Here we compute several arrays containing
 // the reference curve and the highs and lows
 // the reference curve is computed at user specified dt
@@ -56,7 +56,7 @@ short GetTideHeight(	DateTimeRec *BeginDate,DateTimeRec *EndDate,
 
 
 	/* Variables to overlay reference curve */
-	//EXTFLAG		*reftimeHdl=0; 
+	//EXTFLAG		*reftimeHdl=0;
 	//double		*refheightHdl=0;
 	double		tval=0.0,ehour=0.0,julianoffset=0.0,grafBeginHour=0.0,grafEndHour=0.0;
 	long		i=0,size1=0,size2=0,numpnts=0;
@@ -83,7 +83,7 @@ short GetTideHeight(	DateTimeRec *BeginDate,DateTimeRec *EndDate,
 
 	endDay		= EndDate->day;
 	endMonth	= EndDate->month;
-	endYear		= EndDate->year;	
+	endYear		= EndDate->year;
 
 	errorFlag	= GetJulianDayHr(endDay,endMonth,endYear,&endHour);
 	if(errorFlag!=0){ goto Error; }
@@ -106,10 +106,10 @@ short GetTideHeight(	DateTimeRec *BeginDate,DateTimeRec *EndDate,
 	// OK now adjust beginning and ending hour so
 	// that when we apply offsets, we still span the
 	// requested days
-	
+
 	biggestOffset = htOffset->HighTime.val;
 	absBiggestOffset = fabs(biggestOffset);
-	
+
 	if( absBiggestOffset < fabs( htOffset->LowTime.val) ){
 		biggestOffset = htOffset->LowTime.val;
 		absBiggestOffset = fabs(biggestOffset);
@@ -136,15 +136,15 @@ short GetTideHeight(	DateTimeRec *BeginDate,DateTimeRec *EndDate,
 	// offset.  This way, we don't have to worry about
 	// what the offset is for, where it falls on the
 	// curve and if it positive or negative.
-	
+
 	endHour = endHour + absBiggestOffset;
 	beginHour = beginHour - absBiggestOffset;
-	
+
 	// Pick up on extra time step at either end
 	// just incase the first high or low is within
 	// the first time step ... can't compute
 	// gradient in first time step
-	
+
 	beginHour -= dt;
 	endHour += dt;
 
@@ -152,7 +152,7 @@ short GetTideHeight(	DateTimeRec *BeginDate,DateTimeRec *EndDate,
 		errorFlag=1;
 		goto Error;
 	}
-	
+
 	deltaTime = endHour - beginHour;
 	if( deltaTime <= dt ){
 		errorFlag=2;
@@ -160,19 +160,19 @@ short GetTideHeight(	DateTimeRec *BeginDate,DateTimeRec *EndDate,
 	}
 
 	numberOfSteps = (long)( ((endHour-beginHour)/dt) + 1.0 );
-	
+
 	// OK go get year data
 	// Begin by declaring space for the two arrays we need
 	// Note the number we get should match the number of
 	// constituents Andy is sending me.
-	
+
 	//if(constituent->kPrime) numOfConstituents = (short)( (long)GetHandleSize((Handle)constituent->kPrime) / (long)sizeof(float) );
 	if( numOfConstituents < 5 ){
 		errorFlag=6;
 		goto Error;
 	}
-	
-	
+
+
 
 	/////errorFlag = GetYearData(XODEPtr,VPUPtr,beginYear);
 	/////if(errorFlag!=0){ goto Error; }
@@ -202,25 +202,25 @@ short GetTideHeight(	DateTimeRec *BeginDate,DateTimeRec *EndDate,
 	// actually, the reference curve data is simply appended onto the offset station curve
 	// would need to redo this to eliminate handles
 
-	
 
-	
+
+
 
 	/***********************************************************
 
 	if( gOverlayReferenceCurve ){
 		ehour=(grafEndHour-grafBeginHour);
-		
-		// Make space for ref curve, then append it to offset curve data 
+
+		// Make space for ref curve, then append it to offset curve data
 		numpnts = (long)( (long)GetHandleSize((Handle)(answers->timeHdl)) / (long)sizeof(EXTFLAG) );
 		reftimeHdl=(EXTFLAG **)NewHandleClear( numpnts * sizeof(EXTFLAG) );
 		errorFlag = (short)MemError(); if( errorFlag != 0 ){ goto Error; }
 
 		for(i=0;i<numpnts;i++){
 			(*reftimeHdl)[i]=(*answers->timeHdl)[i]; (*reftimeHdl)[i].flag=1;
-			(*reftimeHdl)[i].val -= grafBeginHour; 
+			(*reftimeHdl)[i].val -= grafBeginHour;
 			tval=(*reftimeHdl)[i].val;
-			
+
 			if( (tval > 0.0) && (tval < ehour)){ (*reftimeHdl)[i].flag=2; }
 		}
 		(*reftimeHdl)[0].flag=1;
@@ -244,12 +244,12 @@ short GetTideHeight(	DateTimeRec *BeginDate,DateTimeRec *EndDate,
 	/* Reset time arrays to start from midnight of first day */
 	ResetTime(answers,oldBeginHour);
 
-	
+
 
 	/***************************************
 
 	if( gOverlayReferenceCurve && reftimeHdl && refheightHdl ){
-		// Append time data 
+		// Append time data
 		size1=GetHandleSize((Handle)reftimeHdl);
 		size2=GetHandleSize((Handle)answers->timeHdl);
 
@@ -265,12 +265,12 @@ short GetTideHeight(	DateTimeRec *BeginDate,DateTimeRec *EndDate,
 			(*answers->timeHdl)[numpnts+i]=(*reftimeHdl)[i];
 		}
 
-		//get rid of reftimeHdl 
+		//get rid of reftimeHdl
 		HUnlock((Handle)answers->timeHdl); HUnlock((Handle)reftimeHdl);
 		DisposeHandle((Handle)reftimeHdl); reftimeHdl=nil;
 
 
-		// Append height data 
+		// Append height data
 		size1=GetHandleSize((Handle)refheightHdl);
 		size2=GetHandleSize((Handle)answers->heightHdl);
 
@@ -286,7 +286,7 @@ short GetTideHeight(	DateTimeRec *BeginDate,DateTimeRec *EndDate,
 		}
 		HUnlock((Handle)answers->heightHdl); HUnlock((Handle)refheightHdl);
 		DisposeHandle((Handle)refheightHdl); refheightHdl=nil;
-	}// End reference curve overlay 
+	}// End reference curve overlay
 	*************************************************************/
 
 
@@ -316,7 +316,7 @@ short CheckHeightOffsets(HEIGHTOFFSET *htOffset)
 	double maxAddFac = 26.0;
 	double minMultFac = 0.0;
 	double maxMultFac = 6.0;
-	
+
 
 	if (!htOffset)
 	{
@@ -344,23 +344,23 @@ short CheckHeightOffsets(HEIGHTOFFSET *htOffset)
 	if(!htOffset->LowHeight_Add.dataAvailFlag){		/* Low water height additive	*/
 		err=29;
 	}
-	
+
 	if(err!=0)  return err;
 
 	// OK if we have value, check it to see if it is within range
-	
+
 	// check High water time correction
 	if( htOffset->HighTime.val < minTimeDiff ) err = 30;
 	if( htOffset->HighTime.val > maxTimeDiff ) err = 30;
-	
+
 	// check Low water time correction
 	if( htOffset->LowTime.val < minTimeDiff ) err = 31;
 	if( htOffset->LowTime.val > maxTimeDiff ) err = 31;
-	
+
 	// check High water additive correction
 	if( htOffset->HighHeight_Add.val < minAddFac ) err = 32;
 	if( htOffset->HighHeight_Add.val > maxAddFac ) err = 32;
-	
+
 	// check Low water additive correction
 	if( htOffset->LowHeight_Add.val < minAddFac ) err = 33;
 	if( htOffset->LowHeight_Add.val > maxAddFac ) err = 33;
@@ -368,11 +368,11 @@ short CheckHeightOffsets(HEIGHTOFFSET *htOffset)
 	// check High water mult correction
 	if( htOffset->HighHeight_Mult.val < minMultFac ) err = 34;
 	if( htOffset->HighHeight_Mult.val > maxMultFac ) err = 34;
-	
+
 	// check Low water mult correction
 	if( htOffset->LowHeight_Mult.val < minMultFac ) err = 35;
 	if( htOffset->LowHeight_Mult.val > maxMultFac ) err = 35;
-	
+
 	return(err);
 }
 
@@ -381,19 +381,19 @@ void CleanUpCompHeights (COMPHEIGHTS *cPtr)
 	double		*hHdl,*HLHHdl;
 	EXTFLAG	*tHdl,*HLTHdl;
 	short		*HLHdl;
-	
+
 	tHdl	= cPtr->time;
 	hHdl	= cPtr->height;
 	HLHHdl	= cPtr->HighLowHeights;
 	HLTHdl	= cPtr->HighLowTimes;
 	HLHdl	= cPtr->HighLow;
-	
+
 	/*if(tHdl) DisposeHandle((Handle)tHdl);
 	if(hHdl) DisposeHandle((Handle)hHdl);
 	if(HLHHdl) DisposeHandle((Handle)HLHHdl);
 	if(HLTHdl) DisposeHandle((Handle)HLTHdl);
 	if(HLHdl) DisposeHandle((Handle)HLHdl);*/
-	
+
 	if(tHdl) {delete [] tHdl; tHdl = 0;}
 	if(hHdl) {delete [] hHdl; hHdl = 0;}
 	if(HLHHdl) {delete [] HLHHdl; HLHHdl = 0;}
@@ -405,7 +405,7 @@ void CleanUpCompHeights (COMPHEIGHTS *cPtr)
 	cPtr->HighLowHeights	= 0;
 	cPtr->HighLowTimes	= 0;
 	cPtr->HighLow			= 0;
-	
+
 	return;
 }
 
@@ -413,10 +413,10 @@ void CleanUpCompHeights (COMPHEIGHTS *cPtr)
 void CompErrors(short errorNum,char *errStr)
 {
 	switch (errorNum){
-	
+
 		case 0:
 			break;
-			
+
 		case 1:
 			strcpy(errStr,"start hour later than end hour!");
 			break;
@@ -553,20 +553,20 @@ short DoOffSetCorrection (COMPHEIGHTS *answers,  // Hdl to reference station hei
 	short		*HLFlagHdl = 0;
 	double		*HArrayPtr = 0;
 	EXTFLAG		*TArrayPtr = 0;
-	
+
 	errorFlag=0;
-	
+
 	// Get handles just to make code more readable
-	
+
 	HLHeightHdl	= answers->HighLowHeights;
 	HLTimeHdl	= answers->HighLowTimes;
 	HLFlagHdl	= answers->HighLow;
 	ValHdl		= answers->height;
 	TimeHdl		= answers->time;
-	
-	// Begin by declaring temp space on heap 
+
+	// Begin by declaring temp space on heap
 	// for a copy of the highs and lows
-	
+
 	NoOfHighsLows = answers->numHighLows;
 	if(NoOfHighsLows<1){
 		errorFlag=19;
@@ -576,7 +576,7 @@ short DoOffSetCorrection (COMPHEIGHTS *answers,  // Hdl to reference station hei
 	{
 		HArrayPtr = new double[NoOfHighsLows];
 		TArrayPtr = new EXTFLAG[NoOfHighsLows + 2];
-		
+
 		// davew: Andy used NewPtrClear & NewHandleClear and it looks like he relied
 		// on it, in at least some cases, to initialize his arrays
 	}
@@ -585,7 +585,7 @@ short DoOffSetCorrection (COMPHEIGHTS *answers,  // Hdl to reference station hei
 		errorFlag=20;
 		goto Error;
 	}
-	
+
 	/*HArrayPtr = (double *)NewPtrClear(sizeof(double)*NoOfHighsLows);
 	if(HArrayPtr==0){
 		errorFlag=20;
@@ -596,7 +596,7 @@ short DoOffSetCorrection (COMPHEIGHTS *answers,  // Hdl to reference station hei
 	//if (HArrayPtr==NULL) {errorFlag=20; goto Error;}
 	// Note the two extra high/low times used for interpolation
 	// are stored at the end of the Time array
-	
+
 	/*TArrayPtr = (EXTFLAGPTR)NewPtrClear(sizeof(EXTFLAG)*(NoOfHighsLows+2) );
 	if(TArrayPtr==0){
 		errorFlag=21;
@@ -605,10 +605,10 @@ short DoOffSetCorrection (COMPHEIGHTS *answers,  // Hdl to reference station hei
 	//TArrayPtr = (EXTFLAG *)calloc(NoOfHighsLows+2,sizeof(EXTFLAG));
 	//TArrayPtr = new EXTFLAG[NoOfHighsLows + 2];
 	//if (TArrayPtr==NULL) {errorFlag=21; goto Error;}
-	
+
 	//OK now make copy of reference station data before
 	// doing correction to it
-	
+
 	for (i=0; i<NoOfHighsLows; i++){
 		HArrayPtr[i] = HLHeightHdl[i];
 		TArrayPtr[i].val = HLTimeHdl[i].val;
@@ -616,37 +616,37 @@ short DoOffSetCorrection (COMPHEIGHTS *answers,  // Hdl to reference station hei
 		TArrayPtr[i].flag = 0;
 		TArrayPtr[i].xtra = 0;
 	}
-	
+
 	// OK grab extra two values in time array
-	
+
 	TArrayPtr[NoOfHighsLows].val = HLTimeHdl[NoOfHighsLows].val;
 	TArrayPtr[NoOfHighsLows+1].val = HLTimeHdl[NoOfHighsLows+1].val;
-	
-	
+
+
 	// davew: init other fields
 	TArrayPtr[NoOfHighsLows].flag = 0;
 	TArrayPtr[NoOfHighsLows].xtra = 0;
 	TArrayPtr[NoOfHighsLows+1].flag = 0;
 	TArrayPtr[NoOfHighsLows+1].xtra = 0;
-	
+
 	//OK do the high and low arrays first
-	
+
 	// Begin by applying the High and Low time offsets
-	
+
 	// Check to make sure we got offset data before using it
-	
+
 	if( htOffset->HighTime.dataAvailFlag!=1){
 		errorFlag=22;
 		goto Error;
 	}
 	highOffset = htOffset->HighTime.val;
-	
+
 	if( htOffset->LowTime.dataAvailFlag!=1){
 		errorFlag=23;
 		goto Error;
 	}
 	lowOffset = htOffset->LowTime.val;
-	
+
 	if( htOffset->HighHeight_Mult.dataAvailFlag!=1){
 		HighMult=1.0;
 	}
@@ -674,10 +674,10 @@ short DoOffSetCorrection (COMPHEIGHTS *answers,  // Hdl to reference station hei
 	else {
 		LowAdd = htOffset->LowHeight_Add.val;
 	}
-	
+
 	for(i=0; i<NoOfHighsLows + 2; i++){
 	//for(i=0; i<NoOfHighsLows; i++){
-		
+
 		if( HLFlagHdl[i] == low){
 			HLTimeHdl[i].val = HLTimeHdl[i].val + lowOffset;
 			HLHeightHdl[i]= LowMult * HLHeightHdl[i] + LowAdd;
@@ -687,17 +687,17 @@ short DoOffSetCorrection (COMPHEIGHTS *answers,  // Hdl to reference station hei
 			HLHeightHdl[i]= HighMult * HLHeightHdl[i] + HighAdd;
 		}
 	}
-	
+
 	// now check times to make sure they are still in order
 	// if not, kick out and flag error
-	
+
 	for(i=1;i<NoOfHighsLows; i++){
 		if( HLTimeHdl[i].val < HLTimeHdl[i-1].val ){
 			errorFlag=24;
 			goto Error;
 		}
 	}
-	
+
 	// OK we are OK with high and low corrections
 	// We now need to fix the full array
 
@@ -707,7 +707,7 @@ short DoOffSetCorrection (COMPHEIGHTS *answers,  // Hdl to reference station hei
 	// of the point and apply it.
 	// The points that are at the ends and don't fall
 	// between a high and low will have to be handled as special cases
-	
+
 
 	// 02/04/2013 - Modified to use hermite interpolation instead of
     // linear one for multiple and add offest factors
@@ -717,11 +717,11 @@ short DoOffSetCorrection (COMPHEIGHTS *answers,  // Hdl to reference station hei
     // but fixes most bad ones - will see and test more
 
 	numOfPoints = answers->nPts;
-		
+
 	for (i=0; i<numOfPoints; i++){
 		t = TimeHdl[i].val;
 		if(i==0)index=-99;
-		
+
 		errorFlag = GetWeights(t,TArrayPtr,&w1,&w2,&index,NoOfHighsLows);
 		flag = lowToHigh;
 		if(index==-99){
@@ -732,9 +732,9 @@ short DoOffSetCorrection (COMPHEIGHTS *answers,  // Hdl to reference station hei
 		else {
 			if( HLFlagHdl[index]==high){
 				flag = highToLow;
-			}		
+			}
 		}
-		
+
 		if(errorFlag == 0){
 			if(flag==lowToHigh){
 				timeCorrection = lowOffset*w1 + highOffset*w2;
@@ -749,7 +749,7 @@ short DoOffSetCorrection (COMPHEIGHTS *answers,  // Hdl to reference station hei
 			TimeHdl[i].val = TimeHdl[i].val + timeCorrection;
 			//ValHdl[i] = (ValHdl[i]) * HeightCorrectionMult + HeightCorrectionAdd;
 		}
-		
+
 	}
 
     double *pSlopesMult, *pSlopesAdd;
@@ -763,7 +763,7 @@ short DoOffSetCorrection (COMPHEIGHTS *answers,  // Hdl to reference station hei
 	pSlopesAdd[NoOfHighsLows-1]  =0.;			// use slope = 0 for start end end points
 
 	// calculate slopes
-    for(i=1; i<NoOfHighsLows-1; i++)	    
+    for(i=1; i<NoOfHighsLows-1; i++)
     {
         if(HLFlagHdl[i] == low)
         {
@@ -788,7 +788,7 @@ short DoOffSetCorrection (COMPHEIGHTS *answers,  // Hdl to reference station hei
 	for(i=0, j=0; i<numOfPoints && j<NoOfHighsLows; i++)
 	{
         t = TimeHdl[i].val;
-        
+
         if(t > HLTimeHdl[j].val)
             j++;
 
@@ -833,7 +833,7 @@ short DoOffSetCorrection (COMPHEIGHTS *answers,  // Hdl to reference station hei
         }
 		ValHdl[i] = ValHdl[i] * HeightCorrectionMult + HeightCorrectionAdd;
     }
-	
+
 Error:
 	//if(HArrayPtr) DisposePtr((Ptr)HArrayPtr);
 	//if(TArrayPtr) DisposePtr((Ptr)TArrayPtr);
@@ -867,26 +867,26 @@ short FindExtraHL(double *AMPA,					// amplitude corrected for year
 	double		*HHdl=0;
 	EXTFLAG		*THdl=0;
 	short		*tHdl=0;
-	
+
 	// OK begin by looking for first one before our data
-	
+
 	// Check first high-low to see if it is a high or low
-	
+
 	tHdl = answers->HighLow;
 	THdl = answers->time;
 	HHdl = answers->height;
 	nPts = answers->nPts;
 	nHL  = answers->numHighLows;
-	
+
 	firstTime = THdl[0].val;
 	lastValue = HHdl[0];
-	
+
 	dt = 1.0/60.0;
-	
+
 	// go for max of 24 hours at 1 minute intervals
 	// and look for max or min
-	
-	if( tHdl[0]==0){ 
+
+	if( tHdl[0]==0){
 		//look for high
 		for(i=1;i<1441;i++){
 			t = firstTime - (dt*i);
@@ -906,16 +906,16 @@ short FindExtraHL(double *AMPA,					// amplitude corrected for year
 	}
 	*zeroTime = t + dt/2.0;
 
-	
+
 	// Now find the time after the last time
-	
+
 	lastTime = THdl[nPts-1].val;
 	lastValue = HHdl[nPts-1];
-			
+
 	// go for max of 24 hours at 1 minute intervals
 	// and look for max or min
-	
-	if( tHdl[nHL-1]==0){ 
+
+	if( tHdl[nHL-1]==0){
 		//look for high
 		for(i=1;i<1441;i++){
 			t = lastTime + (dt*i);
@@ -934,8 +934,8 @@ short FindExtraHL(double *AMPA,					// amplitude corrected for year
 		}
 	}
 	*extraTime = t - dt/2.0;
-		
-		
+
+
 	return 0;
 }
 
@@ -950,7 +950,7 @@ short FindHighLow(double startTime,				// start time in hrs from begining of yea
 					double *theHeight,			// the high or low tide value
 					double *theTime,			// the high or low tide time
 					double datum)				// height datum
-					
+
 // routine to take start time, end time and solve for
 // height at 1 minute intervals.  It picks out the low or high
 // value and returns it and its time.
@@ -958,10 +958,10 @@ short FindHighLow(double startTime,				// start time in hrs from begining of yea
 	double timeSpan,t=0.0,h=0.0;
 	double t0,t1,h0,h1;
 	long low=0,findFlag,numOfSteps,i;
-	 
+
 	// compute number of time steps ... if start time and end time
 	// less than or equal to 3 minutes apart, interpolate and return
-	
+
 	timeSpan = endTime - startTime;
 	if(timeSpan<= .05) {  // less than 3 minutes
 		t = (startTime + endTime)/2.0;
@@ -970,7 +970,7 @@ short FindHighLow(double startTime,				// start time in hrs from begining of yea
 		*theTime = t;
 		return 0;
 	}
-	
+
 	// Now if we get here, we gotta step through time and search
 	// for high or low on 1 minute intervals
 	// The plan is that if we are looking for a low, then
@@ -980,11 +980,11 @@ short FindHighLow(double startTime,				// start time in hrs from begining of yea
 	// We do just the opposite for searching for high values.
 
 	numOfSteps = (long)(timeSpan * 60.0 + 1);
-	
+
 	t0 = startTime;
 	h0 = RStatHeight(t0,AMPA,epoch,numOfConstituents,datum);
 	findFlag=0;
-	
+
 	for (i=1; i<numOfSteps; i++){
 		t1 = t0 + 1.0/60.0;
 		h1 = RStatHeight(t1,AMPA,epoch,numOfConstituents,datum);
@@ -1036,17 +1036,17 @@ void FixHEnds(COMPHEIGHTS *answers,double beginTime, double endTime)
 	long numberOfPoints,i,startCross,endCross,numberOfHighLows;
 	double w1,w2,dt,dt1;
 	double firstPointValue,lastPointValue;
-	
+
 	numberOfPoints	= answers->nPts;
 	theTimeHdl		= answers->time;
 	theHeightHdl	= answers->height;
-	
+
 	numberOfHighLows = answers->numHighLows;
 	theHLTimeHdl    = answers->HighLowTimes;
-	
+
 	// begin by finding where it crosses beginTime
 	// and endTime
-	
+
 	startCross = -1;
 	endCross = -1;
 	for (i=1;i<numberOfPoints;i++){
@@ -1061,34 +1061,34 @@ void FixHEnds(COMPHEIGHTS *answers,double beginTime, double endTime)
 			}
 		}
 	}
-	
+
 	if(startCross==-1)startCross = 0;
 	if(endCross==-1)endCross = numberOfPoints-2;
-	
-	
+
+
 	// Now gotta get interpolated values
-	
+
 	dt = theTimeHdl[startCross+1].val - theTimeHdl[startCross].val;
 	dt1 = beginTime - theTimeHdl[startCross].val;
 	w2 = dt1/dt;
 	w1 = 1.0 - w2;
-	
-	firstPointValue = w1 * theHeightHdl[startCross] + 
+
+	firstPointValue = w1 * theHeightHdl[startCross] +
 	                  w2 * theHeightHdl[startCross+1];
-					  
+
 
 	dt = theTimeHdl[endCross+1].val - theTimeHdl[endCross].val;
 	dt1 = endTime - theTimeHdl[endCross].val;
 	w2 = dt1/dt;
 	w1 = 1.0 - w2;
-	
-	lastPointValue = w1 * theHeightHdl[endCross] + 
+
+	lastPointValue = w1 * theHeightHdl[endCross] +
 	                 w2 * theHeightHdl[endCross+1];
-					  
+
 	// Now reset two array values and times if the overshoot
 	// If more than one value overshoots on either end, we
 	// flag those points a non plotters
-	
+
 	for (i=0;i<(startCross+1);i++){
 		if(i<startCross){
 			theTimeHdl[i].flag = 1;
@@ -1112,7 +1112,7 @@ void FixHEnds(COMPHEIGHTS *answers,double beginTime, double endTime)
 
 	// OK now check all the high-low values and mark the ones that
 	// are outside of our plotting range
-	
+
 	for (i=0;i<numberOfHighLows;i++){
 		if( theHLTimeHdl[i].val < beginTime) {
 			theHLTimeHdl[i].flag = 1;
@@ -1120,7 +1120,7 @@ void FixHEnds(COMPHEIGHTS *answers,double beginTime, double endTime)
 		else if( theHLTimeHdl[i].val > endTime) {
 			theHLTimeHdl[i].flag = 1;
 		}
-	
+
 	}
 	return;
 }
@@ -1129,40 +1129,40 @@ void FixHEnds(COMPHEIGHTS *answers,double beginTime, double endTime)
 
 short GetJulianDayHr(short day,		// day of month (1 - 31)
 					short month,	// month (1- 12)
-					short year,		// year (1904 - 2020)
+					short year,		// year (1904 - 2035)
 					double *hour)	// returns hours from beginning of year
 {
 	double	DaysInMonth[13] = {0.0,31.0,28.0,31.0,30.0,31.0,30.0,31.0,31.0,30.0,31.0,30.0,31.0};
 	double	theHour=0.0;
 	short	i=0,err=0;
-	
+
 // Check for Leap year. This is out of Kernighan and Ritchie, page 41.
-	
+
 	if( (year % 4 == 0 && year % 100 != 0) || year % 400 == 0) DaysInMonth[2]=29.0;
-	
+
 // error check
 	if((month<1) || (month>12) ){ err=3; goto Error; } // Bad month
-	
+
 	if( (day<1) || (day>DaysInMonth[month] ) ){ err=4; goto Error; } // Bad day
-	
-	if( (year<1904) || (year>2025) ){ err=5; goto Error; } // Bad year
-	
+
+	if( (year<1904) || (year>2035) ){ err=5; goto Error; } // Bad year
+
 	// Compute the hour now
 	for(i=1;i<month; i++){
 		theHour = theHour + ( DaysInMonth[i] * 24.0 );
 	}
 	theHour = theHour + (24.0 * (double)day);
-	
+
 	// correct to beginning of day instead of end
-	
+
 	theHour -= 24.0;
-	
+
 	(*hour) = theHour;
 
 
-Error:	
+Error:
 
-	return(err);	
+	return(err);
 }
 
 /***************************************************************************************/
@@ -1175,7 +1175,7 @@ short GetReferenceCurve(CONSTITUENT *constituent,	// Amplitude-phase array struc
 						double endHour,					// ending hr from start of year
 						double timestep,				// time step in minutes
 					    COMPHEIGHTS *answers)			// Height-time struc with answers
-// Function to compute reference curve at caller specified delta t and 
+// Function to compute reference curve at caller specified delta t and
 // also return highs and lows correct to the minute
 
 // OK here is the algorithm, we step along computing heights at delta t intervals
@@ -1205,15 +1205,15 @@ short GetReferenceCurve(CONSTITUENT *constituent,	// Amplitude-phase array struc
 
 	// OK begin by figuring out how many time steps we gotta do
 	NumOfSteps = (long)( ((endHour-beginHour)*60.0) / timestep );
-	
+
 	// Add two incase timestep not even into hour
 	// and because we start at begin time
-	NumOfSteps += 2; 
-	
+	NumOfSteps += 2;
+
 	// OK we will allow for 4 highs and lows per day plus one
-	
+
 	maxPeaks = (long)( ((endHour - beginHour)/24.0) * 4.0 ) + 4;
-	
+
 	// Allocate memory
 	try
 	{
@@ -1226,10 +1226,10 @@ short GetReferenceCurve(CONSTITUENT *constituent,	// Amplitude-phase array struc
 													// Note we store two extra values for the time before the
 													// the first and the time after the last
 		tHdl = new short[maxPeaks];					// This one is the array for high and low types
-		
+
 		// davew: Andy used NewPtrClear & NewHandleClear and it looks like he relied
 		// on it, in at least some cases, to initialize his arrays
-		
+
 		// davew: AMPA & epoch get set below, lets init the others to be safe
 		for (i = 0; i < NumOfSteps; i++)
 		{
@@ -1258,9 +1258,9 @@ short GetReferenceCurve(CONSTITUENT *constituent,	// Amplitude-phase array struc
 		errorFlag=13;
 		goto Error;
 	}
-	
+
 	// compute amplitude and phase arrays corrected for year
-	
+
 	/*AMPAPtr = (double *)NewPtrClear( numOfConstituents*sizeof(double) ); errorFlag=(short)MemError();
 	if( errorFlag != 0 ){
 		errorFlag=9;
@@ -1276,30 +1276,30 @@ short GetReferenceCurve(CONSTITUENT *constituent,	// Amplitude-phase array struc
 	}*/
 	//epochPtr = (double *)calloc(numOfConstituents,sizeof(double));
 	//if (epochPtr==NULL) {errorFlag=10; goto Error;}
-	
+
 	for (i=0; i<numOfConstituents; i++){
 		AMPAPtr[i]	= (double)constituent[i].H * (double)XODE[i];
 		epochPtr[i]	= (double)VPU[i] - (double)constituent[i].kPrime;
 	}
-	
+
 	// OK now time step and compute heights for reference
-	
+
 	// Begin by allocating space for solution arrays
-	
+
 	// This one is the height array
 	/*HHdl = (double **)NewHandleClear( NumOfSteps*sizeof(double) ); errorFlag=(short)MemError();
 	if( errorFlag != 0 ){
 		errorFlag=11;
 		goto Error;
 	}*/
-	
+
 	// This one is the time array
 	/*THdl = (EXTFLAG **)NewHandleClear( NumOfSteps*sizeof(EXTFLAG) ); errorFlag=(short)MemError();
 	if( errorFlag != 0 ){
 		errorFlag=12;
 		goto Error;
 	}*/
-	
+
 	// This one is the array for high and low heights
 	/*HLHHdl = (double **)NewHandleClear( maxPeaks*sizeof(double) ); errorFlag=(short)MemError();
 	if( errorFlag != 0 ){
@@ -1314,14 +1314,14 @@ short GetReferenceCurve(CONSTITUENT *constituent,	// Amplitude-phase array struc
 		errorFlag=14;
 		goto Error;
 	}*/
-	
+
 	// This one is the array for high and low types
 	/*tHdl = (short **)NewHandleClear( maxPeaks*sizeof(short) ); errorFlag=(short)MemError();
 	if( errorFlag != 0 ){
 		errorFlag=15;
 		goto Error;
 	}*/
-	
+
 	theTime = beginHour;
 	oldHeight = 0;
 	t0 = theTime;
@@ -1330,7 +1330,7 @@ short GetReferenceCurve(CONSTITUENT *constituent,	// Amplitude-phase array struc
 	slope1 = 1.0;
 	slope2 = 1.0;
 	HighLowCount = 0;
-	
+
 	// Get reference height
 	referenceHeight = GetDatum(constituent);
 	stop=false;
@@ -1367,14 +1367,14 @@ short GetReferenceCurve(CONSTITUENT *constituent,	// Amplitude-phase array struc
 				t1 = t2;
 				t2 = theTime;
 			}
-		
+
 			// OK let's see the deal with highs and lows
-			
+
 			// By the time we get here, we have solved for
 			// at least 2 points.  The first time is in t0,
 			// the second time is in t1, and the third time,
 			// if we have one is in t2
-			
+
 			// special case ... never happen
 			if(slope1==0){
 				// We we got zero slope, split the difference
@@ -1400,18 +1400,18 @@ short GetReferenceCurve(CONSTITUENT *constituent,	// Amplitude-phase array struc
 				HLTHdl[HighLowCount].val = MaxMinTime;
 				HighLowCount = HighLowCount + 1;
 			}
-			
+
 			// special case ... never happen
 			else if(slope2==0){
 				// here we don't do anything, we just move on
 				// the computation will take place when we get to
 				// next step and slope1 become slope2
 			}
-			
+
 			// OK for these normal cases, here is what we do
-			// We recompute with a 1 minute time step and 
-			// take the max or min value .. 
-			
+			// We recompute with a 1 minute time step and
+			// take the max or min value ..
+
 			// low tide case
 			else if( (slope1<0) && (slope2>0) ){
 				errorFlag = FindHighLow(t0,theTime,0,AMPAPtr,epochPtr,numOfConstituents,
@@ -1436,11 +1436,11 @@ short GetReferenceCurve(CONSTITUENT *constituent,	// Amplitude-phase array struc
 			}
 
 		}
-		
+
 		oldHeight = theHeight;
 	//	theTime = ( theTime + (timestep/60.0) );
 		theTime = beginHour + ( ( ((double)(i+1)) * timestep ) / 60.0 );
-	
+
 	}
 
 	/////SetCursor(*GetCursor(watchCursor));
@@ -1449,7 +1449,7 @@ short GetReferenceCurve(CONSTITUENT *constituent,	// Amplitude-phase array struc
 #endif
 	// ******* OK ALL DONE
 	// set the answers into the solution structure and return
-	
+
 	answers->nPts				= NumOfSteps;
 	answers->time				= THdl;
 	answers->height				= HHdl;
@@ -1459,17 +1459,17 @@ short GetReferenceCurve(CONSTITUENT *constituent,	// Amplitude-phase array struc
 	answers->HighLow			= tHdl;
 
 	// Get extra high and low times for interpolation
-	
+
 	errorFlag=FindExtraHL(AMPAPtr,epochPtr,numOfConstituents,answers,&zeroTime,&lastTime,referenceHeight);
 	if(errorFlag!=0){
 		goto Error;
 	}
-	
+
 	// OK store the values into the last two slots of the time array for highs and lows
-	
+
 	HLTHdl[HighLowCount].val=zeroTime;
 	HLTHdl[HighLowCount+1].val=lastTime;
-	
+
 Error:
 	/////DisposeProgressBox();
 	if(errorFlag){
@@ -1500,16 +1500,16 @@ short GetWeights(double t,
 				double *w2,
 				short *index,
 				short NoOfHighsLows)
-				
+
 	// Function to get interpolation weight functions for t
 	// Note that it is assumed that TArray has two extra
 	// values for first and last values
 {
 	double t0=0.0,t1=0.0;
 	short start,i;
-		
+
 		start = *index;
-		
+
 		if(start<-1){  // first time through
 			if(t<TArray[0].val){
 				if(t<TArray[NoOfHighsLows].val){
@@ -1523,7 +1523,7 @@ short GetWeights(double t,
 				start = 0;
 			}
 		}
-		
+
 		if(start>=0){
 			if(t>TArray[NoOfHighsLows-1].val){
 				t0 = TArray[NoOfHighsLows-1].val;
@@ -1535,7 +1535,7 @@ short GetWeights(double t,
 				t1 = TArray[0].val;
 				*index = -99;
 			}
-			
+
 			else {
 				for(i=(NoOfHighsLows-1);i>=start;i--){
 					if( t>=TArray[i].val){
@@ -1546,14 +1546,14 @@ short GetWeights(double t,
 					}
 				}
 			}
-			
+
 		}
-		
+
 		// OK we got t0 < t < t1, get weight functions
-		
+
 		*w1 = (t1-t)/(t1-t0);
 		*w2 = 1.0 - (t1-t)/(t1-t0);
-		
+
 	return 0;
 }
 
@@ -1564,7 +1564,7 @@ double RStatHeight(double	theTime,	// time in hrs from begin of year
 					 double	*epoch,		// epoch corrected for year
 					 short	ncoeff,		// number of coefficients to use
 					 double	datum)		// datum in feet
-					                       
+
 {
 /*  Compute cosine stuff and return value */
 
@@ -1576,7 +1576,7 @@ double RStatHeight(double	theTime,	// time in hrs from begin of year
 					30.0000000,   // S(2)        2   12.000 hrs  Principal solar
 					28.4397295,   // N(2)        3   12.685 hrs  Larger lunar elliptic
 					15.0410686,   // K(1)        4   23.934 hrs  Luni-solar diurnal
-					57.9682084,   // M(4)        5    6.210 hrs  
+					57.9682084,   // M(4)        5    6.210 hrs
 					13.9430356,   // O(1)        6   25.819 hrs  Principal lunar diurnal
 					86.9523127,   // M(6)        7    4.14  hrs
 					44.0251729,   // MK(3)       8    8.11  hrs
@@ -1586,7 +1586,7 @@ double RStatHeight(double	theTime,	// time in hrs from begin of year
 					90.0000000,   // S(6)       12    4.000 hrs
 					27.9682084,   // Mu(2)      13   12.872 hrs  Variational
 					27.8953548,   // 2N(2)      14   12.905 hrs  Lunar ellipic second order
-					16.1391017,   // OO(1)      15   22.306 hrs  
+					16.1391017,   // OO(1)      15   22.306 hrs
 					29.4556253,   // Lambda(2)  16   12.222 hrs  Smaller lunar elliptic
 					15.0000000,   // S(1)       17   24.000 hrs
 					14.4966939,   // M(1)       18   24.833 hrs
@@ -1688,16 +1688,16 @@ double RStatHeight(double	theTime,	// time in hrs from begin of year
 					175.9364169   // 4M2S(12)  114    4.741
 	};
 
-	double DegreesToRadians = 0.01745329252;		
+	double DegreesToRadians = 0.01745329252;
 	double height,argu,degrees;
-	long i;					   
+	long i;
 
 /* OK do the computational loop */
 
 	height = 0.0;
 	if(ncoeff<37) ncoeff=37;
 	if(ncoeff>114)ncoeff = 114;
-	
+
 	for (i=0; i<ncoeff; i++){
 	  // Don't do math if we don't have to.
 	  if(AMPA[i]!=0){
@@ -1721,21 +1721,21 @@ void ResetTime(COMPHEIGHTS *answers,double beginHour)
 	EXTFLAG *theTimeHdl;
 	long numberOfPoints,i;
 	//double theTime;
-	
+
 	numberOfPoints = answers->nPts;
 	theTimeHdl = answers->time;
 
 	// Reset Time array for plotting points
-	
+
 	for(i=0;i<numberOfPoints;i++){
 	  	theTimeHdl[i].val = theTimeHdl[i].val - beginHour;
 	}
 
 	// OK now reset time array for highs and lows
-	
+
 	numberOfPoints = answers->numHighLows;
 	theTimeHdl = answers->HighLowTimes;
-	
+
 	for(i=0;i<numberOfPoints;i++){
 		//theTime = theTimeHdl[i].val;
 	  	theTimeHdl[i].val = theTimeHdl[i].val - beginHour;
