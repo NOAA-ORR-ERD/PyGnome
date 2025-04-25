@@ -866,8 +866,9 @@ class Langmuir(Weatherer):
                 # of oil released at same time, from same spill, sum
                 # the 'fay_area' array for elements that belong to same oil
                 # blob.
-                thickness = (data['bulk_init_volume'][s_mask][0] /
-                             data['fay_area'][s_mask].sum())
+                with np.errstate(divide='ignore'): # OK to get inf -- it will do the right thing later.
+                    thickness = (data['bulk_init_volume'][s_mask][0]
+                                 / data['fay_area'][s_mask].sum())
 
                 # assume only one type of oil is modeled so thickness_limit is
                 # already set and constant for all

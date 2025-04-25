@@ -11,6 +11,7 @@ import pandas as pd
 import pathlib
 from shapely.geometry import Point, Polygon, MultiPoint, MultiPolygon
 import shutil
+from slugify import slugify
 import tempfile
 import zipfile
 
@@ -31,7 +32,12 @@ class ERMADataPackageSchema(BaseOutputterSchema):
         missing=drop, save=True, update=True, test_equal=False
     )
     # ERMA folder
-    folder_name = SchemaNode(String(), save=True, update=True)
+    base_folder_name = SchemaNode(String(), save=True, update=True)
+    model_folder_name = SchemaNode(String(), save=True, update=True)
+    # Default styling
+    default_erma_styling = SchemaNode(
+        Boolean(), missing=drop, save=True, update=True
+    )
     # Certain layer
     certain_layer_name = SchemaNode(String(), save=True, update=True)
     include_certain_particles = SchemaNode(
@@ -65,6 +71,9 @@ class ERMADataPackageSchema(BaseOutputterSchema):
     # Uncertain boundary
     uncertain_boundary_layer_name = SchemaNode(String(), save=True, update=True)
     include_uncertain_boundary = SchemaNode(
+        Boolean(), missing=drop, save=True, update=True
+    )
+    include_certain_in_uncertain_boundary = SchemaNode(
         Boolean(), missing=drop, save=True, update=True
     )
     uncertain_boundary_separate_by_spill = SchemaNode(
@@ -108,6 +117,13 @@ class ERMADataPackageSchema(BaseOutputterSchema):
         Int(), missing=drop, save=True, update=True
     )
     time_unit_override = SchemaNode(String(), save=True, update=True)
+    # Currently we do not support timezone, but instead stick with static
+    # time offset.
+    # timezone = SchemaNode(String(), save=True, update=True)
+    timeoffset = SchemaNode(Float(), save=True, update=True)
+    enable_each_timestep_as_layer = SchemaNode(
+        Boolean(), save=True, update=True
+    )
 
 class ERMADataPackageOutput(Outputter):
     '''
@@ -118,7 +134,8 @@ class ERMADataPackageOutput(Outputter):
 
     time_formatter = '%m/%d/%Y %H:%M'
 
-    def __init__(self, filename, folder_name=None,
+    def __init__(self, filename, base_folder_name='', model_folder_name='',
+                 default_erma_styling=True,
                  # Certain layer
                  certain_layer_name=None, include_certain_particles=True,
                  # Uncertain layer
@@ -126,16 +143,17 @@ class ERMADataPackageOutput(Outputter):
                  # Certain boundary
                  certain_boundary_layer_name=None, include_certain_boundary=False,
                  certain_boundary_separate_by_spill=True,
-                 certain_boundary_hull_ratio=0.5, certain_boundary_hull_allow_holes=False,
+                 certain_boundary_hull_ratio=0.8, certain_boundary_hull_allow_holes=False,
                  certain_boundary_color=None, certain_boundary_size=None,
                  # Certain contours
                  certain_contours_layer_name=None, include_certain_contours=False,
-                 certain_contours_hull_ratio=0.5, certain_contours_hull_allow_holes=False,
+                 certain_contours_hull_ratio=0.8, certain_contours_hull_allow_holes=False,
                  certain_contours_size=None,
                  # Uncertain boundary
                  uncertain_boundary_layer_name=None, include_uncertain_boundary=True,
+                 include_certain_in_uncertain_boundary=True,
                  uncertain_boundary_separate_by_spill=True,
-                 uncertain_boundary_hull_ratio=0.5, uncertain_boundary_hull_allow_holes=False,
+                 uncertain_boundary_hull_ratio=0.8, uncertain_boundary_hull_allow_holes=False,
                  uncertain_boundary_color=None, uncertain_boundary_size=None,
                  # Map bounds
                  map_bounds_layer_name=None, include_map_bounds=False,
@@ -152,6 +170,10 @@ class ERMADataPackageOutput(Outputter):
                  disable_legend_collapse=False,
                  # Time settings
                  time_step_override=None, time_unit_override=None,
+                 # timezone='',
+                 # Default to None
+                 timeoffset=None,
+                 enable_each_timestep_as_layer=False,
                  # Other
                  surface_conc="kde", **kwargs):
         '''
@@ -168,12 +190,19 @@ class ERMADataPackageOutput(Outputter):
         self.filedir = str(pathlib_path.parent)
         # A temp dir used to do our work...
         self.tempdir = tempfile.TemporaryDirectory(prefix='gnome.')
+        # We dont know the model_start_time right off the bat, but we will fill in
+        # when the model run starts.
+        self.model_start_time = None
 
         # Default some vars if they are null
-        if not folder_name:
-            self.folder_name =  "Testing Layers > Trajectories > " + self.filenamestem + '-' + self.id
+        if not base_folder_name:
+            self.base_folder_name =  "Testing Layers > Trajectories > " + self.filenamestem + '-' + self.id
         else:
-            self.folder_name = folder_name
+            self.base_folder_name = base_folder_name
+        self.model_folder_name = model_folder_name
+        self.folder_name = self.base_folder_name + ' > ' + self.model_folder_name
+        # Default styling
+        self.default_erma_styling = default_erma_styling
         # Certain layer
         self.certain_layer_name = certain_layer_name
         self.include_certain_particles = include_certain_particles
@@ -200,6 +229,7 @@ class ERMADataPackageOutput(Outputter):
         # Uncertain boundary
         self.uncertain_boundary_layer_name = uncertain_boundary_layer_name
         self.include_uncertain_boundary = include_uncertain_boundary
+        self.include_certain_in_uncertain_boundary = include_certain_in_uncertain_boundary
         self.uncertain_boundary_separate_by_spill = uncertain_boundary_separate_by_spill
         self.uncertain_boundary_hull_ratio = uncertain_boundary_hull_ratio
         self.uncertain_boundary_hull_allow_holes = uncertain_boundary_hull_allow_holes
@@ -227,8 +257,8 @@ class ERMADataPackageOutput(Outputter):
         # Time settings
         self.time_step_override = time_step_override
         self.time_unit_override = time_unit_override
-
-
+        self.timeoffset = timeoffset
+        self.enable_each_timestep_as_layer = enable_each_timestep_as_layer
         # We will be building shapefiles, so come up with names in the temp dir
         # These are names without ext... as those get added when deciding to zip or not
         base_shapefile_name = os.path.join(self.tempdir.name, self.filenamestem)
@@ -238,11 +268,16 @@ class ERMADataPackageOutput(Outputter):
         self.shapefile_name_uncertain = base_shapefile_name+'_uncertain'
         self.shapefile_name_uncertain_boundary = base_shapefile_name+'_uncertain_boundary'
         # Our shapefile builders
-        self.shapefile_builder_certain = ParticleShapefileBuilder(self.shapefile_name_certain)
-        self.shapefile_builder_certain_boundary = BoundaryShapefileBuilder(self.shapefile_name_certain_boundary)
-        self.shapefile_builder_certain_contours = ContourShapefileBuilder(self.shapefile_name_certain_contours)
-        self.shapefile_builder_uncertain = ParticleShapefileBuilder(self.shapefile_name_uncertain)
-        self.shapefile_builder_uncertain_boundary = BoundaryShapefileBuilder(self.shapefile_name_uncertain_boundary)
+        self.shapefile_builder_certain = ParticleShapefileBuilder(self.shapefile_name_certain,
+                                                                  timeoffset=self.timeoffset)
+        self.shapefile_builder_certain_boundary = BoundaryShapefileBuilder(self.shapefile_name_certain_boundary,
+                                                                           timeoffset=self.timeoffset)
+        self.shapefile_builder_certain_contours = ContourShapefileBuilder(self.shapefile_name_certain_contours,
+                                                                          timeoffset=self.timeoffset)
+        self.shapefile_builder_uncertain = ParticleShapefileBuilder(self.shapefile_name_uncertain,
+                                                                    timeoffset=self.timeoffset)
+        self.shapefile_builder_uncertain_boundary = BoundaryShapefileBuilder(self.shapefile_name_uncertain_boundary,
+                                                                             timeoffset=self.timeoffset)
 
         # Build some mappings for styling
         self.default_unit_map = {'Mass':{'column': 'mass',
@@ -254,6 +289,7 @@ class ERMADataPackageOutput(Outputter):
                                  'Viscosity': {'column': 'viscosity',
                                                'unit': 'm^2/s'}
                                  }
+        self.output_timesteps = []
 
     def __del__(self):
         self.tempdir.cleanup()
@@ -261,7 +297,7 @@ class ERMADataPackageOutput(Outputter):
     def prepare_for_model_run(self,
                               model_start_time,
                               spills,
-                              uncertain = False,
+                              uncertain=False,
                               **kwargs):
         """ Setup before we run the model. """
         if not self.on:
@@ -270,12 +306,21 @@ class ERMADataPackageOutput(Outputter):
                                                                  spills,
                                                                  **kwargs)
         self.model_start_time = model_start_time
+        # By default we want to name the folder for the output based on the model
+        # start time.  Since we are just finding that out now (if it was not
+        # explicitily set by the user), we need to set the folder_name here as well
+        if not self.model_folder_name:
+            self.model_folder_name =  self.model_start_time.strftime(self.time_formatter)
+            self.folder_name = self.base_folder_name + ' > ' + self.model_folder_name
         self.spills = spills
         # This generates a cutoff struct for contours based
         # on our spills
         self.cutoff_struct = self.generate_cutoff_struct()
         self.uncertain = uncertain
         self.hull_info = []
+        self.output_timesteps = []
+        self.model_name_slug = slugify(self.model_name, separator='_') if self.model_name else ''
+        self.filename_timestamp = self.model_start_time.strftime('%Y%m%d_%H%M%S')
 
     def write_output(self, step_num, islast_step=False):
         """Dump a timestep's data into the shapefile """
@@ -283,7 +328,8 @@ class ERMADataPackageOutput(Outputter):
             return None
         super(ERMADataPackageOutput, self).write_output(step_num, islast_step)
         self.logger.debug(f'erma_data_package step_num: {step_num}')
-        for sc in self.cache.load_timestep(step_num).items():
+        sp = self.cache.load_timestep(step_num).items()
+        for sc in sp:
             if self._write_step:
                 # If this is just a step... append the data
                 if sc.uncertain:
@@ -293,8 +339,17 @@ class ERMADataPackageOutput(Outputter):
                                 'hull_ratio': self.uncertain_boundary_hull_ratio,
                                 'hull_allow_holes': self.uncertain_boundary_hull_allow_holes
                                 }
-                        self.shapefile_builder_uncertain_boundary.append(sc, **karg)
+                        if self.include_certain_in_uncertain_boundary:
+                            # If we want to include certain in the uncertain boundary
+                            # we need to pass in the spill pair, not just the uncertain
+                            # spill container.
+                            self.shapefile_builder_uncertain_boundary.append(sp, **karg)
+                        else:
+                            self.shapefile_builder_uncertain_boundary.append(sc, **karg)
                 else:
+                    # We want to keep track of timesteps that have particles...
+                    if len(sc['positions']) > 0:
+                        self.output_timesteps.append(sc.current_time_stamp)
                     self.shapefile_builder_certain.append(sc)
                     if self.include_certain_boundary:
                         karg = {'separate_by_spill': self.certain_boundary_separate_by_spill,
@@ -348,6 +403,7 @@ class ERMADataPackageOutput(Outputter):
         layer_json = []
         if self.include_spill_location:
             layer_json.append(self.make_spill_location_package_layer(next(id)))
+        # Start with the certain and uncertain full layers
         if self.include_certain_particles:
             layer_name = self.certain_layer_name if self.certain_layer_name else 'Certain Particles'
             layer_json.append(self.make_particle_package_layer(next(id), layer_name, False,
@@ -386,14 +442,14 @@ class ERMADataPackageOutput(Outputter):
             layer_size = self.certain_boundary_size if self.certain_boundary_size else 3
             layer_json.append(self.make_boundary_polygon_package_layer(next(id), False,
                                                                        self.shapefile_builder_certain_boundary.filename,
-                                                                       layer_name, 'Certain Particles Boundary',
+                                                                       layer_name, 'Best Estimate Boundary',
                                                                        layer_color, layer_size))
         if self.include_certain_contours:
             layer_name = self.certain_contours_layer_name if self.certain_contours_layer_name else 'Certain Particles Contours'
             layer_size = self.certain_contours_size if self.certain_contours_size else 3
             layer_json.append(self.make_contour_polygon_package_layer(next(id),
                                                                       self.shapefile_builder_certain_contours.filename,
-                                                                      layer_name, 'Certain Particles Contour',
+                                                                      layer_name, 'Best Estimate Contours',
                                                                       layer_size))
         if self.include_uncertain_boundary and self.uncertain:
             layer_name = self.uncertain_boundary_layer_name if self.uncertain_boundary_layer_name else 'Uncertain Particles Boundary'
@@ -401,14 +457,55 @@ class ERMADataPackageOutput(Outputter):
             layer_size = self.uncertain_boundary_size if self.uncertain_boundary_size else 3
             layer_json.append(self.make_boundary_polygon_package_layer(next(id), True,
                                                                        self.shapefile_builder_uncertain_boundary.filename,
-                                                                       layer_name, 'Uncertain Particles Boundary',
+                                                                       layer_name, 'Uncertainty Boundary',
                                                                        layer_color, layer_size))
+        # If we need to also include per-step layers, do it here
+        strftime_format = '%Y-%m-%d %H:%M:%S'
+        if self.enable_each_timestep_as_layer:
+            for timestep in self.output_timesteps:
+                if self.include_certain_particles:
+                    layer_name = f'Certain Particles - {timestep.strftime(strftime_format)}'
+                    layer_json.append(self.make_particle_package_layer(next(id), layer_name, False,
+                                                                       self.shapefile_builder_certain.filename,
+                                                                       timestep))
+                if self.include_certain_boundary:
+                    layer_name = f'Certain Particles Boundary - {timestep.strftime(strftime_format)}'
+                    layer_color = self.certain_boundary_color if self.certain_boundary_color else '#0000FF'
+                    layer_size = self.certain_boundary_size if self.certain_boundary_size else 3
+                    layer_json.append(self.make_boundary_polygon_package_layer(next(id), False,
+                                                                               self.shapefile_builder_certain_boundary.filename,
+                                                                               layer_name, 'Best Estimate Boundary',
+                                                                               layer_color, layer_size, timestep))
+                if self.include_certain_contours:
+                    layer_name = f'Certain Particles Contours - {timestep.strftime(strftime_format)}'
+                    layer_size = self.certain_contours_size if self.certain_contours_size else 3
+                    layer_json.append(self.make_contour_polygon_package_layer(next(id),
+                                                                              self.shapefile_builder_certain_contours.filename,
+                                                                              layer_name, 'Best Estimate Contours',
+                                                                              layer_size, timestep))
+                if self.include_uncertain_particles and self.uncertain:
+                    layer_name = f'Uncertain Particles - {timestep.strftime(strftime_format)}'
+                    layer_json.append(self.make_particle_package_layer(next(id), layer_name, True,
+                                                                       self.shapefile_builder_uncertain.filename,
+                                                                       timestep))
+                if self.include_uncertain_boundary and self.uncertain:
+                    layer_name = f'Uncertain Particles Boundary - {timestep.strftime(strftime_format)}'
+                    layer_color = self.uncertain_boundary_color if self.uncertain_boundary_color else '#FF0000'
+                    layer_size = self.uncertain_boundary_size if self.uncertain_boundary_size else 3
+                    layer_json.append(self.make_boundary_polygon_package_layer(next(id), True,
+                                                                               self.shapefile_builder_uncertain_boundary.filename,
+                                                                               layer_name, 'Uncertainty Boundary',
+                                                                               layer_color, layer_size, timestep))
+
         # Now we can zip it all up
         zipf = zipfile.ZipFile(self.filename, 'w')
+        already_written_shapefiles = []
         for layer in layer_json:
-            dir, file_to_zip = os.path.split(layer['shapefile_filename'])
-            zipf.write(layer['shapefile_filename'],
-                       arcname='source_files/'+file_to_zip)
+            if layer['shapefile_filename'] not in already_written_shapefiles:
+                dir, file_to_zip = os.path.split(layer['shapefile_filename'])
+                zipf.write(layer['shapefile_filename'],
+                           arcname='source_files/'+file_to_zip)
+                already_written_shapefiles.append(layer['shapefile_filename'])
             dir, file_to_zip = os.path.split(layer['json_filename'])
             zipf.write(layer['json_filename'],
                        arcname='layers/'+file_to_zip)
@@ -424,11 +521,16 @@ class ERMADataPackageOutput(Outputter):
 
     def make_contour_polygon_package_layer(self, id, shapefile_filename,
                                            layer_title, style_name,
-                                           style_width):
+                                           style_width, timestamp=None):
+        time_expression = f'time__in={timestamp.isoformat()}' if timestamp is not None else None
         dir, basefile = os.path.split(shapefile_filename)
         output_path = os.path.join(self.tempdir.name, str(id)+".json")
         generic_name = 'contour_certain'
         generic_description = 'Contour Certain'
+        erma_shapefile_name = self.model_name_slug + '_' + generic_name + '_' + self.filename_timestamp + '_shapefile'
+        # When ERMA allows more than 50 characters for the mapfile layer name
+        # erma_mapfilelayer_name = self.model_name_slug + '_' + generic_name + '_' + self.filename_timestamp + '_mapfilelayer'
+        erma_mapfilelayer_name = generic_name + '_' + self.filename_timestamp + '_mapfilelayer'
         layer_template = None
 
         layer_template_path = erma_data_package_data_dir / 'layer_template.json'
@@ -479,11 +581,21 @@ class ERMADataPackageOutput(Outputter):
             # Folder name
             layer_template['folder_path'] = self.folder_name
             layer_template['title'] = layer_title
+            layer_template['additional_param'] = time_expression
             layer_template['mapfile_layer']['layer_type'] = 'line'
-            layer_template['mapfile_layer']['shapefile']['name'] = generic_name + '_shapefile'
+            layer_template['mapfile_layer']['shapefile']['name'] = erma_shapefile_name
             layer_template['mapfile_layer']['shapefile']['description'] = generic_description + ' Shapefile'
             layer_template['mapfile_layer']['shapefile']['file'] = "file://source_files/" + basefile
-            layer_template['mapfile_layer']['layer_name'] = generic_name
+            if timestamp is not None:
+                layer_template['mapfile_layer']['shapefile']['timezone_fields'] = None
+                layer_template['mapfile_layer']['time_column'] = None
+            elif self.timeoffset is not None:
+                layer_template['mapfile_layer']['shapefile']['timezone_fields'] = {"time_utc": "UTC"}
+                layer_template['mapfile_layer']['time_column'] = "time_utc"
+            else:
+                layer_template['mapfile_layer']['shapefile']['timezone_fields'] = {"time": "UTC"}
+                layer_template['mapfile_layer']['time_column'] = "time"
+            layer_template['mapfile_layer']['layer_name'] = erma_mapfilelayer_name
             layer_template['mapfile_layer']['layer_desc'] = generic_description
             layer_template['mapfile_layer']['classitem'] = 'cutoff_id'
             layer_template['mapfile_layer']['labelitem'] = 'label'
@@ -491,14 +603,16 @@ class ERMADataPackageOutput(Outputter):
             # Loop through self.cutoff_struct and build classes...
             #{0: {'param': 'surf_conc', 'cutoffs': [{'cutoff': 0.0005280305158615599, 'label': 'Low'}, {'cutoff': 0.001544090616505013, 'label': 'Medium'}, {'cutoff': 0.0038150665966212825, 'label': 'High'}]}}
             classcounter = itertools.count()
-            for spill_num, spill in enumerate(self.spills):
+            for spill_num, spill in reversed(list(enumerate(self.spills))):
                 if spill_num in self.cutoff_struct:
                     cutoff_element = self.cutoff_struct[spill_num]
                     param = cutoff_element['param']
-                    for cutoff in cutoff_element['cutoffs']:
+                    for cutoff in reversed(cutoff_element['cutoffs']):
+                        thiscount = next(classcounter)
                         contour_template_solid = copy.deepcopy(contour_template)
-                        contour_template_solid['name'] = style_name+f'_{spill_num}_{next(classcounter)}'
-                        contour_template_solid['expression'] = cutoff['cutoff_id']
+                        contour_template_solid['name'] = style_name+f' {spill.name} {cutoff["label"]}'
+                        contour_template_solid['expression'] = f'[cutoff_id] = {cutoff["cutoff_id"]}'
+                        contour_template_solid['ordering'] = thiscount
                         contour_template_solid['styles'][0]['outlinesymbol'] = None
                         contour_template_solid['styles'][0]['color'] = cutoff['color']
                         contour_template_solid['styles'][0]['style_width'] = style_width
@@ -514,13 +628,18 @@ class ERMADataPackageOutput(Outputter):
 
     def make_boundary_polygon_package_layer(self, id, uncertain, shapefile_filename,
                                             layer_title, style_name,
-                                            color, style_width):
+                                            color, style_width, timestamp=None):
+        time_expression = f'time__in={timestamp.isoformat()}' if timestamp is not None else None
         dir, basefile = os.path.split(shapefile_filename)
         output_path = os.path.join(self.tempdir.name, str(id)+".json")
         #shz_name = os.path.join(self.tempdir.name, shapefile_name+'.shz')
         #shapefile_pathlib_path = pathlib.Path(shz_name)
         generic_name = f'boundary_{"uncertain" if uncertain else "certain"}'
         generic_description = f'Boundary {"Uncertain" if uncertain else "Certain"}'
+        erma_shapefile_name = self.model_name_slug + '_' + generic_name + '_' + self.filename_timestamp + '_shapefile'
+        # When ERMA allows more than 50 characters for the mapfile layer name
+        # erma_mapfilelayer_name = self.model_name_slug + '_' + generic_name + '_' + self.filename_timestamp + '_mapfilelayer'
+        erma_mapfilelayer_name = generic_name + '_' + self.filename_timestamp + '_mapfilelayer'
         layer_template = None
         layer_template_path = erma_data_package_data_dir / 'layer_template.json'
         polygon_template = None
@@ -569,30 +688,32 @@ class ERMADataPackageOutput(Outputter):
             # Folder name
             layer_template['folder_path'] = self.folder_name
             layer_template['title'] = layer_title
+            layer_template['additional_param'] = time_expression
             layer_template['mapfile_layer']['layer_type'] = 'polygon'
-            layer_template['mapfile_layer']['shapefile']['name'] = generic_name + '_shapefile'
+            layer_template['mapfile_layer']['shapefile']['name'] = erma_shapefile_name
             layer_template['mapfile_layer']['shapefile']['description'] = generic_description + ' Shapefile'
             layer_template['mapfile_layer']['shapefile']['file'] = "file://source_files/" + basefile
-            layer_template['mapfile_layer']['layer_name'] = generic_name
+            if timestamp is not None:
+                layer_template['mapfile_layer']['shapefile']['timezone_fields'] = None
+                layer_template['mapfile_layer']['time_column'] = None
+            elif self.timeoffset is not None:
+                layer_template['mapfile_layer']['shapefile']['timezone_fields'] = {"time_utc": "UTC"}
+                layer_template['mapfile_layer']['time_column'] = "time_utc"
+            else:
+                layer_template['mapfile_layer']['shapefile']['timezone_fields'] = {"time": "UTC"}
+                layer_template['mapfile_layer']['time_column'] = "time"
+            layer_template['mapfile_layer']['layer_name'] = erma_mapfilelayer_name
             layer_template['mapfile_layer']['layer_desc'] = generic_description
-            layer_template['mapfile_layer']['classitem'] = 'area'
             # Modify the style object
             polygon_template_cartoline = copy.deepcopy(polygon_template)
-            polygon_template_solid = copy.deepcopy(polygon_template)
-            polygon_template_cartoline['name'] = style_name+'_cartoline'
-            polygon_template_cartoline['expression'] = '[area] > 10'
-            polygon_template_cartoline['expression_type'] = 'M'
+            polygon_template_cartoline['name'] = style_name
+            layer_template['mapfile_layer']['classitem'] = None
+            polygon_template_cartoline['expression'] = None
+            polygon_template_cartoline['expression_type'] = None
             polygon_template_cartoline['styles'][0]['outlinecolor'] = color
             polygon_template_cartoline['styles'][0]['outlinesymbol'] = 'dashedcartoline'
             polygon_template_cartoline['styles'][0]['style_width'] = style_width
-            polygon_template_solid['name'] = style_name+'_solid'
-            polygon_template_solid['expression'] = '[area] <= 10'
-            polygon_template_solid['expression_type'] = 'M'
-            polygon_template_solid['styles'][0]['outlinesymbol'] = None
-            polygon_template_solid['styles'][0]['outlinecolor'] = color
-            polygon_template_solid['styles'][0]['style_width'] = style_width * 3
             layer_template['mapfile_layer']['layer_classes'].append(polygon_template_cartoline)
-            layer_template['mapfile_layer']['layer_classes'].append(polygon_template_solid)
         else:
             raise ValueError("Can not write ERMA Data Package without template!!!")
 
@@ -607,6 +728,11 @@ class ERMADataPackageOutput(Outputter):
         output_path = os.path.join(self.tempdir.name, str(id)+".json")
         shz_name = os.path.join(self.tempdir.name, shapefile_name+'.shz')
         shapefile_pathlib_path = pathlib.Path(shz_name)
+        generic_name = 'map_polygon'
+        erma_shapefile_name = self.model_name_slug + '_' + generic_name + '_' + self.filename_timestamp + '_shapefile'
+        # When ERMA allows more than 50 characters for the mapfile layer name
+        # erma_mapfilelayer_name = self.model_name_slug + '_' + generic_name + '_' + self.filename_timestamp + '_mapfilelayer'
+        erma_mapfilelayer_name = generic_name + '_' + self.filename_timestamp + '_mapfilelayer'
         layer_template = None
         layer_template_path = erma_data_package_data_dir / 'layer_template.json'
         polygon_template = None
@@ -639,10 +765,10 @@ class ERMADataPackageOutput(Outputter):
             layer_template['folder_path'] = self.folder_name
             layer_template['title'] = layer_title
             layer_template['mapfile_layer']['layer_type'] = 'polygon'
-            layer_template['mapfile_layer']['shapefile']['name'] = 'map_polygon_shapefile'
+            layer_template['mapfile_layer']['shapefile']['name'] = erma_shapefile_name
             layer_template['mapfile_layer']['shapefile']['description'] = 'Map Polygon Shapefile'
             layer_template['mapfile_layer']['shapefile']['file'] = "file://source_files/" + shapefile_name + '.zip'
-            layer_template['mapfile_layer']['layer_name'] = 'map_polygon'
+            layer_template['mapfile_layer']['layer_name'] = erma_mapfilelayer_name
             layer_template['mapfile_layer']['layer_desc'] = 'Map Polygon'
             # Get rid of a few things we dont want
             layer_template['mapfile_layer']['shapefile']['timezone_fields'] = None
@@ -666,6 +792,11 @@ class ERMADataPackageOutput(Outputter):
         output_path = os.path.join(self.tempdir.name, str(id)+".json")
         shz_name = os.path.join(self.tempdir.name, shapefile_name+'.shz')
         shapefile_pathlib_path = pathlib.Path(shz_name)
+        generic_name = 'spill_location'
+        erma_shapefile_name = self.model_name_slug + '_' + generic_name + '_' + self.filename_timestamp + '_shapefile'
+        # When ERMA allows more than 50 characters for the mapfile layer name
+        # erma_mapfilelayer_name = self.model_name_slug + '_' + generic_name + '_' + self.filename_timestamp + '_mapfilelayer'
+        erma_mapfilelayer_name = generic_name + '_' + self.filename_timestamp + '_mapfilelayer'
         layer_template = None
         layer_template_path = erma_data_package_data_dir / 'layer_template.json'
         default_spill_location_template = None
@@ -693,10 +824,10 @@ class ERMADataPackageOutput(Outputter):
             # Folder name
             layer_template['folder_path'] = self.folder_name
             layer_template['title'] = 'Spill Location'
-            layer_template['mapfile_layer']['shapefile']['name'] = 'spill_location_shapefile'
+            layer_template['mapfile_layer']['shapefile']['name'] = erma_shapefile_name
             layer_template['mapfile_layer']['shapefile']['description'] = 'Spill Location Shapefile'
             layer_template['mapfile_layer']['shapefile']['file'] = "file://source_files/" + shapefile_name + '.zip'
-            layer_template['mapfile_layer']['layer_name'] = 'spill_location'
+            layer_template['mapfile_layer']['layer_name'] = erma_mapfilelayer_name
             layer_template['mapfile_layer']['layer_desc'] = 'Spill Location'
             # Get rid of a few things we dont want
             layer_template['mapfile_layer']['shapefile']['timezone_fields'] = None
@@ -801,7 +932,7 @@ class ERMADataPackageOutput(Outputter):
                                             'cutoffs': cutoffs}
         return cutoff_struct
 
-    def make_particle_package_layer(self, id, layer_name, uncertain, shapefile_filename):
+    def make_particle_package_layer(self, id, layer_name, uncertain, shapefile_filename, timestamp=None):
         dir, basefile = os.path.split(shapefile_filename)
         output_path = dir+"/"+str(id)+".json"
         layer_template_path = erma_data_package_data_dir / 'layer_template.json'
@@ -809,6 +940,12 @@ class ERMADataPackageOutput(Outputter):
         default_beached_template_path = erma_data_package_data_dir / 'default_beached_template.json'
         layer_template = None
         default_floating_template = default_beached_template = None
+        generic_name = f'{"uncertain" if uncertain else "certain"}'
+        erma_shapefile_name = self.model_name_slug + '_' + generic_name + '_' + self.filename_timestamp + '_shapefile'
+        # When ERMA allows more than 50 characters for the mapfile layer name
+        # erma_mapfilelayer_name = self.model_name_slug + '_' + generic_name + '_' + self.filename_timestamp + '_mapfilelayer'
+        erma_mapfilelayer_name = generic_name + '_' + self.filename_timestamp + '_mapfilelayer'
+        time_expression = f'time__in={timestamp.isoformat()}' if timestamp is not None else None
         with open(layer_template_path) as f:
             layer_template = json.load(f)
         with open(default_floating_template_path) as f:
@@ -820,12 +957,23 @@ class ERMADataPackageOutput(Outputter):
             # Folder name
             layer_template['folder_path'] = self.folder_name
             layer_template['title'] = layer_name
+            layer_template['additional_param'] = time_expression
+            layer_template['mapfile_layer']['layer_name'] = erma_mapfilelayer_name
             if uncertain:
                 layer_template['opacity'] = '0.75'
 
-            layer_template['mapfile_layer']['shapefile']['name'] = basefile
+            layer_template['mapfile_layer']['shapefile']['name'] = erma_shapefile_name
             layer_template['mapfile_layer']['shapefile']['description'] = basefile
             layer_template['mapfile_layer']['shapefile']['file'] = "file://source_files/" + basefile
+            if timestamp is not None:
+                layer_template['mapfile_layer']['shapefile']['timezone_fields'] = None
+                layer_template['mapfile_layer']['time_column'] = None
+            elif self.timeoffset is not None:
+                layer_template['mapfile_layer']['shapefile']['timezone_fields'] = {"time_utc": "UTC"}
+                layer_template['mapfile_layer']['time_column'] = "time_utc"
+            else:
+                layer_template['mapfile_layer']['shapefile']['timezone_fields'] = {"time": "UTC"}
+                layer_template['mapfile_layer']['time_column'] = "time"
             # Check the timestep and set the time override for ERMA time slider
             if self.time_step_override and self.time_unit_override:
                 layer_template['time_step_override'] = self.time_step_override
@@ -861,198 +1009,228 @@ class ERMADataPackageOutput(Outputter):
                     # More than a year, use year
                     layer_template['time_step_override'] = int(timestepseconds / year)
                     layer_template['time_units_override'] = 'year'
-            classorder = itertools.count()
-            spills_grouped_by_style = []
-            if self.disable_legend_collapse:
-                # In the case we dont want to collapse, we just group
-                # each spill on its own
-                for s_id, s in enumerate(self.spills):
-                    spills_grouped_by_style.append([s_id])
-            else:
-                # We can try to group spills with like styling...
-                spills_grouped_by_style = self.group_like_spills()
-            # Now we loop through the spill groups and style them
-            for spill_group in spills_grouped_by_style:
-                # Since we are styling by group, we grab the first spill
-                # from this group
-                spill_id = spill_group[0]
-                spill = self.spills[spill_id]
-                # Build a string indicating the ids in this group for
-                # the mapserver expression
-                spill_group_string = (',').join([str(s) for s in spill_group])
-                # For the legend, we group the names
-                name_string_list = []
-                for s_id in spill_group:
-                    spill_name = (f'{self.spills[s_id].name} '
-                                  f'({self.spills[s_id].amount}'
-                                  f'{self.spills[s_id].units})')
-                    name_string_list.append(spill_name)
-                # In ERMA the pipe puts them on separate lines in the legend
-                spill_names = ('|').join(name_string_list)
-                # If we have an appearance, we use that
-                if spill._appearance and spill._appearance.colormap:
-                    appearance = spill._appearance.to_dict()
-                    colormap = spill._appearance.colormap.to_dict()
-                    requested_display_param = appearance['data']
-                    requested_display_unit = appearance['units']
-                    unit_map = {}
-                    if requested_display_param in self.default_unit_map:
-                        unit_map = self.default_unit_map[requested_display_param]
+            if not self.default_erma_styling:
+                classorder = itertools.count()
+                spills_grouped_by_style = []
+                if self.disable_legend_collapse:
+                    # In the case we dont want to collapse, we just group
+                    # each spill on its own
+                    for s_id, s in enumerate(self.spills):
+                        spills_grouped_by_style.append([s_id])
+                else:
+                    # We can try to group spills with like styling...
+                    spills_grouped_by_style = self.group_like_spills()
+                # Now we loop through the spill groups and style them
+                for spill_group in spills_grouped_by_style:
+                    # Since we are styling by group, we grab the first spill
+                    # from this group
+                    spill_id = spill_group[0]
+                    spill = self.spills[spill_id]
+                    # Build a string indicating the ids in this group for
+                    # the mapserver expression
+                    spill_group_string = (',').join([str(s) for s in spill_group])
+                    # For the legend, we group the names
+                    name_string_list = []
+                    for s_id in spill_group:
+                        spill_name = (f'{self.spills[s_id].name} '
+                                      f'({self.spills[s_id].amount}'
+                                      f'{self.spills[s_id].units})')
+                        name_string_list.append(spill_name)
+                    # In ERMA the pipe puts them on separate lines in the legend
+                    spill_names = ('|').join(name_string_list)
+                    # If we have an appearance, we use that
+                    if spill._appearance and spill._appearance.colormap and not self.default_erma_styling:
+                        appearance = spill._appearance.to_dict()
+                        colormap = spill._appearance.colormap.to_dict()
+                        requested_display_param = appearance['data']
+                        requested_display_unit = appearance['units']
+                        unit_map = {}
+                        if requested_display_param in self.default_unit_map:
+                            unit_map = self.default_unit_map[requested_display_param]
+                        else:
+                            raise ValueError(f'Style requested is not supported!!! {requested_display_param}')
+                        # Looks like the domains are always in the base units...
+                        number_scale_domain = [val for val in colormap['numberScaleDomain']]
+                        color_scale_domain = [val for val in colormap['colorScaleDomain']]
+                        #number_scale_domain = [uc.convert(requested_display_unit,
+                        #                                  unit_map['unit'], val) for val in colormap['numberScaleDomain']]
+                        #color_scale_domain = [uc.convert(requested_display_unit,
+                        #                                 unit_map['unit'], val) for val in colormap['colorScaleDomain']]
+                        min = float(number_scale_domain[0])
+                        max = None
+                        data_column = unit_map['column']
+                        style_size = 8 * appearance['scale']
+                        if uncertain:
+                            uncertain_color = '#FF0000'
+                            # In the uncertain case, we just color everything red
+                            floating_class_template = copy.deepcopy(default_floating_template)
+                            beached_class_template = copy.deepcopy(default_beached_template)
+                            floating_class_template['expression'] = ('[statuscode] = 2 AND '
+                                                                     f'[spill_id] IN "{spill_group_string}"')
+                            floating_class_template['styles'][0]['color'] = uncertain_color
+                            floating_class_template['styles'][0]['style_size'] = style_size
+                            floating_class_template['name'] = f'{spill_names}|Floating Uncertain'
+                            beached_class_template['expression'] = ('[statuscode] = 3 AND '
+                                                                    f'[spill_id] IN "{spill_group_string}"')
+                            beached_class_template['styles'][0]['color'] = uncertain_color
+                            beached_class_template['styles'][0]['outlinecolor'] = uncertain_color
+                            beached_class_template['styles'][0]['style_size'] = style_size
+                            beached_class_template['name'] = f'{spill_names}|Beached Uncertain'
+                            layer_template['mapfile_layer']['layer_classes'].append(floating_class_template)
+                            layer_template['mapfile_layer']['layer_classes'].append(beached_class_template)
+                        else:
+                            # Loop through the color scale and make classes
+                            for idx, color in enumerate(colormap['colorScaleRange']):
+                                if (idx+1) > len(color_scale_domain):
+                                    max = float(number_scale_domain[1])
+                                else:
+                                    max = float(color_scale_domain[idx])
+                                # Convert our min/max with unit conversion for labeling
+                                if requested_display_param == 'Mass':
+                                    converted_min = convert_mass_to_mass_or_volume(unit_map['unit'],
+                                                                                   requested_display_unit,
+                                                                                   spill.substance.standard_density,
+                                                                                   min)
+                                    converted_max = convert_mass_to_mass_or_volume(unit_map['unit'],
+                                                                                   requested_display_unit,
+                                                                                   spill.substance.standard_density,
+                                                                                   max)
+                                elif requested_display_param == 'Surface Concentration':
+                                    converted_min = uc.convert('oil concentration',
+                                                               unit_map['unit'],
+                                                               requested_display_unit,
+                                                               min)
+                                    converted_max = uc.convert('oil concentration',
+                                                               unit_map['unit'],
+                                                               requested_display_unit,
+                                                               max)
+                                elif requested_display_param == 'Viscosity':
+                                    converted_min = uc.convert('kinematic viscosity',
+                                                               unit_map['unit'],
+                                                               requested_display_unit,
+                                                               min)
+                                    converted_max = uc.convert('kinematic viscosity',
+                                                               unit_map['unit'],
+                                                               requested_display_unit,
+                                                               max)
+                                else:
+                                    converted_min = uc.convert(unit_map['unit'],
+                                                               requested_display_unit,
+                                                               min)
+                                    converted_max = uc.convert(unit_map['unit'],
+                                                               requested_display_unit,
+                                                               max)
+                                # A mapserver class per color
+                                floating_class_template = copy.deepcopy(default_floating_template)
+                                beached_class_template = copy.deepcopy(default_beached_template)
+                                units = unit_map['unit']
+                                class_label = ''
+                                if idx == 0 and len(colormap['colorScaleRange']) == 1:
+                                    # Special case that we only have one range... so we show ALL
+                                    # particles, but still label it with the range
+                                    floating_class_template['expression'] = ('[statuscode] = 2 AND '
+                                                                             f'[spill_id] IN "{spill_group_string}"')
+                                    beached_class_template['expression'] = ('[statuscode] = 3 AND '
+                                                                            f'[spill_id] IN "{spill_group_string}"')
+                                    class_label = f'<{converted_min:#.4g} - {data_column} - {converted_max:#.4g}+ ({requested_display_unit})'
+                                elif idx == 0:
+                                    # First one... open ended lower range
+                                    floating_class_template['expression'] = ('[statuscode] = 2 AND '
+                                                                             f'[spill_id] IN "{spill_group_string}" AND '
+                                                                             f'[{data_column}] <= {max}')
+                                    beached_class_template['expression'] = ('[statuscode] = 3 AND '
+                                                                            f'[spill_id] IN "{spill_group_string}" AND '
+                                                                            f'[{data_column}] <= {max}')
+                                    class_label = f'<{converted_min:#.4g} - {data_column} - {converted_max:#.4g} ({requested_display_unit})'
+                                elif idx == len(colormap['colorScaleRange'])-1:
+                                    # Last one... open ended upper range
+                                    floating_class_template['expression'] = ('[statuscode] = 2 AND '
+                                                                             f'[spill_id] IN "{spill_group_string}" AND '
+                                                                             f'{min} <= [{data_column}]')
+                                    beached_class_template['expression'] = ('[statuscode] = 3 AND '
+                                                                            f'[spill_id] IN "{spill_group_string}" AND '
+                                                                            f'{min} <= [{data_column}]')
+                                    class_label = f'{converted_min:#.4g} - {data_column} - {converted_max:#.4g}+ ({requested_display_unit})'
+                                else:
+                                    floating_class_template['expression'] = ('[statuscode] = 2 AND '
+                                                                             f'[spill_id] IN "{spill_group_string}" AND '
+                                                                             f'({min} < [{data_column}] AND '
+                                                                             f'[{data_column}] <= {max})')
+                                    beached_class_template['expression'] = ('[statuscode] = 3 AND '
+                                                                            f'[spill_id] IN "{spill_group_string}" AND '
+                                                                            f'({min} < [{data_column}] AND '
+                                                                            f'[{data_column}] <= {max})')
+                                    class_label = f'{converted_min:#.4g} - {data_column} - {converted_max:#.4g} ({requested_display_unit})'
+                                colorblocklabel = colormap['colorBlockLabels'][idx]
+                                floating_class_template['name'] = f'{spill_names}|{colorblocklabel if colorblocklabel else class_label}'
+                                floating_class_template['ordering'] = next(classorder)
+                                floating_class_template['styles'][0]['color'] = color
+                                floating_class_template['styles'][0]['style_size'] = style_size
+                                beached_class_template['name'] = f'{spill_names}|Beached'
+                                beached_class_template['ordering'] = next(classorder)
+                                beached_class_template['styles'][0]['color'] = color
+                                beached_class_template['styles'][0]['outlinecolor'] = color
+                                beached_class_template['styles'][0]['style_size'] = style_size
+                                min = max
+                                layer_template['mapfile_layer']['layer_classes'].append(floating_class_template)
+                                layer_template['mapfile_layer']['layer_classes'].append(beached_class_template)
+                            ## # Loop through the classes... and set "ordering" in reverse order
+                            ## for idx, layer_class in enumerate(list(reversed(layer_template['mapfile_layer']['layer_classes']))):
+                            ##     layer_class['ordering'] = idx
                     else:
-                        raise ValueError(f'Style requested is not supported!!! {requested_display_param}')
-                    # Looks like the domains are always in the base units...
-                    number_scale_domain = [val for val in colormap['numberScaleDomain']]
-                    color_scale_domain = [val for val in colormap['colorScaleDomain']]
-                    #number_scale_domain = [uc.convert(requested_display_unit,
-                    #                                  unit_map['unit'], val) for val in colormap['numberScaleDomain']]
-                    #color_scale_domain = [uc.convert(requested_display_unit,
-                    #                                 unit_map['unit'], val) for val in colormap['colorScaleDomain']]
-                    min = float(number_scale_domain[0])
-                    max = None
-                    data_column = unit_map['column']
-                    style_size = 8 * appearance['scale']
-                    if uncertain:
-                        uncertain_color = '#FF0000'
-                        # In the uncertain case, we just color everything red
+                        # No appearance data... use a default
                         floating_class_template = copy.deepcopy(default_floating_template)
                         beached_class_template = copy.deepcopy(default_beached_template)
                         floating_class_template['expression'] = ('[statuscode] = 2 AND '
                                                                  f'[spill_id] IN "{spill_group_string}"')
-                        floating_class_template['styles'][0]['color'] = uncertain_color
-                        floating_class_template['styles'][0]['style_size'] = style_size
-                        floating_class_template['name'] = f'{spill_names}|Floating Uncertain'
                         beached_class_template['expression'] = ('[statuscode] = 3 AND '
                                                                 f'[spill_id] IN "{spill_group_string}"')
-                        beached_class_template['styles'][0]['color'] = uncertain_color
-                        beached_class_template['styles'][0]['outlinecolor'] = uncertain_color
-                        beached_class_template['styles'][0]['style_size'] = style_size
-                        beached_class_template['name'] = f'{spill_names}|Beached Uncertain'
+                        if uncertain:
+                            uncertain_color = '#FF0000'
+                            floating_class_template['styles'][0]['color'] = uncertain_color
+                            floating_class_template['styles'][0]['outlinecolor'] = uncertain_color
+                            floating_class_template['name'] = f'{spill_names}|Floating'
+                            beached_class_template['styles'][0]['color'] = uncertain_color
+                            beached_class_template['styles'][0]['outlinecolor'] = uncertain_color
+                            beached_class_template['name'] = f'{spill_names}|Beached'
+                        else:
+                            floating_class_template['name'] = f'{spill_names}|Floating'
+                            beached_class_template['name'] = f'{spill_names}|Beached'
                         layer_template['mapfile_layer']['layer_classes'].append(floating_class_template)
                         layer_template['mapfile_layer']['layer_classes'].append(beached_class_template)
-                    else:
-                        # Loop through the color scale and make classes
-                        for idx, color in enumerate(colormap['colorScaleRange']):
-                            if (idx+1) > len(color_scale_domain):
-                                max = float(number_scale_domain[1])
-                            else:
-                                max = float(color_scale_domain[idx])
-                            # Convert our min/max with unit conversion for labeling
-                            if requested_display_param == 'Mass':
-                                converted_min = convert_mass_to_mass_or_volume(unit_map['unit'],
-                                                                               requested_display_unit,
-                                                                               spill.substance.standard_density,
-                                                                               min)
-                                converted_max = convert_mass_to_mass_or_volume(unit_map['unit'],
-                                                                               requested_display_unit,
-                                                                               spill.substance.standard_density,
-                                                                               max)
-                            elif requested_display_param == 'Surface Concentration':
-                                converted_min = uc.convert('oil concentration',
-                                                           unit_map['unit'],
-                                                           requested_display_unit,
-                                                           min)
-                                converted_max = uc.convert('oil concentration',
-                                                           unit_map['unit'],
-                                                           requested_display_unit,
-                                                           max)
-                            elif requested_display_param == 'Viscosity':
-                                converted_min = uc.convert('kinematic viscosity',
-                                                           unit_map['unit'],
-                                                           requested_display_unit,
-                                                           min)
-                                converted_max = uc.convert('kinematic viscosity',
-                                                           unit_map['unit'],
-                                                           requested_display_unit,
-                                                           max)
-                            else:
-                                converted_min = uc.convert(unit_map['unit'],
-                                                           requested_display_unit,
-                                                           min)
-                                converted_max = uc.convert(unit_map['unit'],
-                                                           requested_display_unit,
-                                                           max)
-                            # A mapserver class per color
-                            floating_class_template = copy.deepcopy(default_floating_template)
-                            beached_class_template = copy.deepcopy(default_beached_template)
-                            units = unit_map['unit']
-                            class_label = ''
-                            if idx == 0 and len(colormap['colorScaleRange']) == 1:
-                                # Special case that we only have one range... so we show ALL
-                                # particles, but still label it with the range
-                                floating_class_template['expression'] = ('[statuscode] = 2 AND '
-                                                                         f'[spill_id] IN "{spill_group_string}"')
-                                beached_class_template['expression'] = ('[statuscode] = 3 AND '
-                                                                        f'[spill_id] IN "{spill_group_string}"')
-                                class_label = f'<{converted_min:#.4g} - {data_column} - {converted_max:#.4g}+ ({requested_display_unit})'
-                            elif idx == 0:
-                                # First one... open ended lower range
-                                floating_class_template['expression'] = ('[statuscode] = 2 AND '
-                                                                         f'[spill_id] IN "{spill_group_string}" AND '
-                                                                         f'[{data_column}] <= {max}')
-                                beached_class_template['expression'] = ('[statuscode] = 3 AND '
-                                                                        f'[spill_id] IN "{spill_group_string}" AND '
-                                                                        f'[{data_column}] <= {max}')
-                                class_label = f'<{converted_min:#.4g} - {data_column} - {converted_max:#.4g} ({requested_display_unit})'
-                            elif idx == len(colormap['colorScaleRange'])-1:
-                                # Last one... open ended upper range
-                                floating_class_template['expression'] = ('[statuscode] = 2 AND '
-                                                                         f'[spill_id] IN "{spill_group_string}" AND '
-                                                                         f'{min} <= [{data_column}]')
-                                beached_class_template['expression'] = ('[statuscode] = 3 AND '
-                                                                        f'[spill_id] IN "{spill_group_string}" AND '
-                                                                        f'{min} <= [{data_column}]')
-                                class_label = f'{converted_min:#.4g} - {data_column} - {converted_max:#.4g}+ ({requested_display_unit})'
-                            else:
-                                floating_class_template['expression'] = ('[statuscode] = 2 AND '
-                                                                         f'[spill_id] IN "{spill_group_string}" AND '
-                                                                         f'({min} < [{data_column}] AND '
-                                                                         f'[{data_column}] <= {max})')
-                                beached_class_template['expression'] = ('[statuscode] = 3 AND '
-                                                                        f'[spill_id] IN "{spill_group_string}" AND '
-                                                                        f'({min} < [{data_column}] AND '
-                                                                        f'[{data_column}] <= {max})')
-                                class_label = f'{converted_min:#.4g} - {data_column} - {converted_max:#.4g} ({requested_display_unit})'
-                            colorblocklabel = colormap['colorBlockLabels'][idx]
-                            floating_class_template['name'] = f'{spill_names}|{colorblocklabel if colorblocklabel else class_label}'
-                            floating_class_template['ordering'] = next(classorder)
-                            floating_class_template['styles'][0]['color'] = color
-                            floating_class_template['styles'][0]['style_size'] = style_size
-                            beached_class_template['name'] = f'{spill_names}|Beached'
-                            beached_class_template['ordering'] = next(classorder)
-                            beached_class_template['styles'][0]['color'] = color
-                            beached_class_template['styles'][0]['outlinecolor'] = color
-                            beached_class_template['styles'][0]['style_size'] = style_size
-                            min = max
-                            layer_template['mapfile_layer']['layer_classes'].append(floating_class_template)
-                            layer_template['mapfile_layer']['layer_classes'].append(beached_class_template)
-                        # Loop through the classes... and set "ordering" in reverse order
-                        for idx, layer_class in enumerate(list(reversed(layer_template['mapfile_layer']['layer_classes']))):
-                            layer_class['ordering'] = idx
-                else:
-                    # No appearance data... use a default
-                    floating_class_template = copy.deepcopy(default_floating_template)
-                    beached_class_template = copy.deepcopy(default_beached_template)
-                    floating_class_template['expression'] = ('[statuscode] = 2 AND '
-                                                             f'[spill_id] IN "{spill_group_string}"')
-                    beached_class_template['expression'] = ('[statuscode] = 3 AND '
-                                                            f'[spill_id] IN "{spill_group_string}"')
-                    if uncertain:
-                        uncertain_color = '#FF0000'
-                        floating_class_template['styles'][0]['color'] = uncertain_color
-                        floating_class_template['styles'][0]['outlinecolor'] = uncertain_color
-                        floating_class_template['name'] = f'{spill_names}|Floating'
-                        beached_class_template['styles'][0]['color'] = uncertain_color
-                        beached_class_template['styles'][0]['outlinecolor'] = uncertain_color
-                        beached_class_template['name'] = f'{spill_names}|Beached'
-                    else:
-                        floating_class_template['name'] = f'{spill_names}|Floating'
-                        beached_class_template['name'] = f'{spill_names}|Beached'
+                # Loop through the classes... and set "ordering" in reverse order
+                for idx, layer_class in enumerate(list(reversed(layer_template['mapfile_layer']['layer_classes']))):
+                    layer_class['ordering'] = idx
+                with open(output_path, "w") as o:
+                    json.dump(layer_template, o, indent=4)
+                return {'shapefile_filename': shapefile_filename,
+                        'json_filename': dir+"/"+str(id)+".json"}
+            else:
+                # Default styling was selected... collapse everything to simple styling
+                # No appearance data... use a default
+                floating_class_template = copy.deepcopy(default_floating_template)
+                beached_class_template = copy.deepcopy(default_beached_template)
+                floating_class_template['expression'] = '[statuscode] = 2'
+                beached_class_template['expression'] = '[statuscode] = 3'
+                if uncertain:
+                    uncertain_color = '#FF0000'
+                    floating_class_template['styles'][0]['color'] = uncertain_color
+                    floating_class_template['styles'][0]['outlinecolor'] = uncertain_color
+                    floating_class_template['name'] = 'Floating'
+                    beached_class_template['styles'][0]['color'] = uncertain_color
+                    beached_class_template['styles'][0]['outlinecolor'] = uncertain_color
+                    beached_class_template['name'] = 'Beached'
                     layer_template['mapfile_layer']['layer_classes'].append(floating_class_template)
                     layer_template['mapfile_layer']['layer_classes'].append(beached_class_template)
-            with open(output_path, "w") as o:
-                json.dump(layer_template, o, indent=4)
-            return {'shapefile_filename': shapefile_filename,
-                    'json_filename': dir+"/"+str(id)+".json"}
+                else:
+                    floating_class_template['name'] = 'Floating'
+                    beached_class_template['name'] = 'Beached'
+                    layer_template['mapfile_layer']['layer_classes'].append(floating_class_template)
+                    layer_template['mapfile_layer']['layer_classes'].append(beached_class_template)
+                with open(output_path, "w") as o:
+                    json.dump(layer_template, o, indent=4)
+                return {'shapefile_filename': shapefile_filename,
+                        'json_filename': dir+"/"+str(id)+".json"}
         else:
             raise ValueError("Can not write ERMA Data Package without template!!!")
 

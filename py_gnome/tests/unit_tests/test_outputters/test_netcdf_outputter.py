@@ -13,8 +13,10 @@ from pytest import raises
 import numpy as np
 
 import netCDF4 as nc
+import gnome.scripting as gs
 
-from gnome.spills import surface_point_line_spill, Spill, Release
+from gnome.spills.spill import point_line_spill, Spill
+from gnome.spills.release import Release
 from gnome.spill_container import SpillContainerPair
 from gnome.weatherers import Evaporation
 from gnome.environment import Water
@@ -38,7 +40,7 @@ def model(sample_model_fcn, output_filename):
 
     model.cache_enabled = True
     model.spills += \
-        surface_point_line_spill(num_elements=5,
+        point_line_spill(num_elements=5,
                                  start_position=sample_model_fcn['release_start_pos'],
                                  release_time=model.start_time,
                                  end_release_time=model.start_time + model.duration,
@@ -564,7 +566,7 @@ def test_read_all_arrays(model):
         # 2nd time around, look at uncertain filename so toggle uncertain flag
         uncertain = True
 
-
+@pytest.mark.filterwarnings("ignore: Outputter output timestep")
 @pytest.mark.slow
 @pytest.mark.parametrize("output_ts_factor", [1, 2])
 def test_write_output_post_run(model, output_ts_factor):
@@ -665,7 +667,7 @@ def test_serialize_deserialize(output_filename):
     '''
     s_time = datetime(2014, 1, 1, 1, 1, 1)
     model = Model(start_time=s_time)
-    model.spills += surface_point_line_spill(num_elements=5,
+    model.spills += point_line_spill(num_elements=5,
                                              start_position=(0, 0, 0),
                                              release_time=model.start_time)
 
@@ -773,6 +775,39 @@ def test_surface_concentration_output(model):
             surface_conc = dv['surface_concentration']
             # FIXME -- maybe should test something more robust...
             assert not np.all(surface_conc[:] == 0.0)
+
+
+def test_model_stops_in_middle(model):
+    """
+    If the model stops in the middle of a run:
+    e.g. runs out of data, it should still output results.
+    """
+
+    model.duration = gs.hours(2)
+
+    # set up a WindMover that's too short.
+    times = [model.start_time + (gs.minutes(30) * i) for i in range(3)]
+    # long enough record
+    # times = [model.start_time + (gs.minutes(30) * i) for i in range(5)]
+
+    winds = gs.wind_from_values([(dt, 5, 90) for dt in times])
+
+    model.movers += gs.WindMover(winds)
+
+    print(model.movers)
+    # run the model
+    with pytest.raises(Exception):
+        model.full_run()
+
+    # check there are certain and uncertain files with 5 times
+    o_put = model.outputters[0]
+    for file_ in (o_put.filename, o_put._u_filename):
+        assert os.path.exists(file_)
+        with nc.Dataset(file_) as data:
+            dv = data.variables
+            time_ = nc.num2date(dv['time'][:], dv['time'].units,
+                                calendar=dv['time'].calendar)
+            assert len(time_) == 5
 
 
 def _run_model(model):

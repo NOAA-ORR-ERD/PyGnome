@@ -185,6 +185,7 @@ class Outputter(GnomeId):
                               spills=None,
                               model_time_step=None,
                               map=None,
+                              model_name=None,
                               **kwargs):
         """
         This method gets called by the model at the beginning of a new run.
@@ -250,6 +251,7 @@ class Outputter(GnomeId):
             self.cache = cache
 
         self.map = map
+        self.model_name = model_name
         if self.output_timestep is None:
             self._write_step = True
 
@@ -411,6 +413,7 @@ class Outputter(GnomeId):
         self._is_first_output = True
         self._surf_conc_computed = True
         self._middle_of_run = False
+        self.cleaned_up = False
 
         if self.surface_conc:
             self.array_types['surface_concentration'] = gat('surface_concentration')

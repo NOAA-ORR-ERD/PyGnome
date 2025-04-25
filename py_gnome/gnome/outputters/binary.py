@@ -19,30 +19,28 @@ from gnome.basic_types import oil_status
 from .outputter import Outputter, OutputterFilenameMixin, BaseOutputterSchema
 
 
-le_dtype = np.dtype(np.dtype([('Lat', np.float32),
-                              ('Lon', np.float32),
-                              ('Release_time', np.float32),
-                              ('AgeWhenReleased', np.float32),
-                              ('BeachHeight', np.float32),
-                              ('nMap', np.int32),
-                              ('pollutant', np.int32),
-                              ('WindKey', np.int32),
-                              ]))
+le_dtype = (np.dtype(np.dtype([('Lat', np.float32),
+                               ('Lon', np.float32),
+                               ('Release_time', np.float32),
+                               ('AgeWhenReleased', np.float32),
+                               ('BeachHeight', np.float32),
+                               ('nMap', np.int32),
+                               ('pollutant', np.int32),
+                               ('WindKey', np.int32),
+                               ]))
+            .newbyteorder('B'))  # or ">"
 
-le_dtype = le_dtype.newbyteorder('B') # or ">"
-
-header_dtype = np.dtype(np.dtype([('name', np.string_, 10),
-                              ('day', np.int16),
-                              ('month', np.int16),
-                              ('year', np.int16),
-                              ('hour', np.int16),
-                              ('minute', np.int16),
-                              ('current_time', np.float32),
-                              ('version', np.float32),
-                              ('num_LE', np.int32),
-                              ]))
-
-header_dtype = header_dtype.newbyteorder('B') # or ">"
+header_dtype = (np.dtype(np.dtype([('name', np.bytes_, 10),
+                                   ('day', np.int16),
+                                   ('month', np.int16),
+                                   ('year', np.int16),
+                                   ('hour', np.int16),
+                                   ('minute', np.int16),
+                                   ('current_time', np.float32),
+                                   ('version', np.float32),
+                                   ('num_LE', np.int32),
+                                   ]))
+                .newbyteorder('B'))  # or ">"
 
 
 class BinaryOutputSchema(BaseOutputterSchema):
@@ -62,8 +60,8 @@ class BinaryOutput(OutputterFilenameMixin,Outputter):
     _schema = BinaryOutputSchema
 
     def __init__(self,
-                 filename,   
-                 zip_output=True,   
+                 filename,
+                 zip_output=True,
                  **kwargs):
         '''
         :param str filename: full path and basename of the zip file
@@ -73,7 +71,7 @@ class BinaryOutput(OutputterFilenameMixin,Outputter):
         other arguments as defined in the Outputter class
         '''
         super(BinaryOutput, self).__init__(filename=filename,
-                                               **kwargs)
+                                                    **kwargs)
 
         name, ext = os.path.splitext(self.filename)
         self.name = name
@@ -84,6 +82,7 @@ class BinaryOutput(OutputterFilenameMixin,Outputter):
         self.zip_output = zip_output
         self.filedir = os.path.dirname(filename)
         self.file_num = 0
+        self.cleaned_up = False  # so that we can guard against post_model_run being called twice.
 
 
     def prepare_for_model_run(self,
@@ -126,19 +125,19 @@ class BinaryOutput(OutputterFilenameMixin,Outputter):
             return
 
         super(BinaryOutput, self).prepare_for_model_run(model_start_time,
-                                                       spills,
-                                                       **kwargs)
+                                                        spills,
+                                                        **kwargs)
         self.file_num = 0
         self.uncertain = uncertain
 
 
     def write_output(self, step_num, islast_step=False):
         '''
-        Write data from time step to binary file 
+        Write data from time step to binary file
         '''
         super(BinaryOutput, self).write_output(step_num, islast_step)
 
-        #if not self._write_step:
+        # if not self._write_step:
         if self.on is False:
             return None
 
@@ -161,14 +160,15 @@ class BinaryOutput(OutputterFilenameMixin,Outputter):
         if islast_step:
             num_files = self.file_num + 1
             self._zip_binary_files(num_files)
- 
+            self.cleaned_up = True
+
         if not self._write_step:
             return None
 
         self.file_num += 1
-        
+
         output_info = {'time_stamp': sc.current_time_stamp.isoformat(),
-                       'output_filename': self.filename}
+                       'output_filename': str(self.filename)}
 
         return output_info
 
@@ -187,7 +187,7 @@ class BinaryOutput(OutputterFilenameMixin,Outputter):
         num_LE = len(sc['positions'])
 
         refYear = year - (year % 4)
-	
+
         ref_day = 0o1
         ref_month = 0o1
         ref_year = refYear	#back to 4 digit year
@@ -202,7 +202,7 @@ class BinaryOutput(OutputterFilenameMixin,Outputter):
         current_time = seconds/3600.0;
 
         LE_header = np.zeros((1,), dtype=header_dtype)
-        LE_header['name'] = name
+        LE_header['name'] = name.encode(errors='replace')  # just in case there's a Unicode char
         LE_header['day'] = day
         LE_header['month'] = month
         LE_header['year'] = year
@@ -227,7 +227,7 @@ class BinaryOutput(OutputterFilenameMixin,Outputter):
 
         LEs['Lat'] = latitude
         LEs['Lon'] = longitude
-        LEs['Release_time'] = release_time 
+        LEs['Release_time'] = release_time
         LEs['AgeWhenReleased'] = release_age
         LEs['nMap'] = 1 #the off map LEs are not included, would be set to 7
         LEs['BeachHeight'][sc['status_codes'] == oil_status.on_land] = -50 #ossm value
@@ -275,6 +275,16 @@ class BinaryOutput(OutputterFilenameMixin,Outputter):
                     os.remove(f)
                 except:
                     pass
+
+    def post_model_run(self):
+        """
+        This is where to clean up -- close files, etc.
+        """
+
+        if not self.cleaned_up:
+            self._zip_binary_files(self.file_num)
+        self.cleaned_up = True
+
 
     def __getstate__(self):
         '''

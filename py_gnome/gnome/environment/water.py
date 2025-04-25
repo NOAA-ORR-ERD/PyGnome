@@ -2,7 +2,7 @@
 The Water environment object.
 The Water object defines the Water conditions for the spill
 
-TEmerature, Salinity, etc.
+Temperature, Salinity, etc.
 
 NOTE: this is simple, constant water conditions -- at some point, we will make it a proper Environment object
 '''
@@ -44,7 +44,7 @@ class WaterProperty(Environment):
     """
     Base class for making an Environment object for a water property
 
-    These one uses a Water object for the data itself
+    This one uses a Water object for the data itself
 
     Needs to be wrapped with the make_water_property decorator to be functional
     """
@@ -140,12 +140,12 @@ class Water(Environment):
     '''
     Define the environmental conditions for a spill, like water_temperature,
 
-    Single values for all all time and space
+    Single values for all time and space
 
     Defined in a Serializable class since user will need to set/get some of
     these properties through the client
 
-    Includes attributes with a Environment interface:
+    Includes attributes with an Environment interface:
 
     Temperature
     Salinity
@@ -278,8 +278,8 @@ class Water(Environment):
     def get(self, attr, unit=None):
         '''
         return value in desired unit. If None, then return the value in SI
-        units. The user_unit are given in 'units' attribute and each attribute
-        carries the value in as given in these user_units.
+        units. The user_units are given in 'units' attribute and each attribute
+        carries the value as given in these user_units.
         '''
         val = getattr(self, attr)
 
@@ -310,7 +310,7 @@ class Water(Environment):
 
     def set(self, attr, value, unit):
         '''
-        provide a corresponding set method that requires value and units
+        provide a corresponding set method that requires value and units.
         The attributes can be directly set. This function just sets the
         desired property and also updates the units dict
         '''

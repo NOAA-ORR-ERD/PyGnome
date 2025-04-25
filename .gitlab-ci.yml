@@ -44,15 +44,16 @@ compile_pygnome:
 
     - apt-get install git g++ make libxext-dev libsm-dev libxrender-dev -y
 
-    # get the adios_db code: needed for tests and requirements
-    - git clone --depth 1 -b develop https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.orr.noaa.gov/gnome/oil_database/oil_database.git
+    # # get the adios_db code: needed for tests and requirements
+    # no longer needed -- pygnome is pulling adios_db from conda-forge
+    # - git clone --depth 1 -b develop https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.orr.noaa.gov/gnome/oil_database/oil_database.git
     - cd ./py_gnome
     - conda install -y python=$PYTHON_VER --file conda_requirements.txt
                                           --file conda_requirements_build.txt
-                                          --file ../oil_database/adios_db/conda_requirements.txt
+    #                                       --file ../oil_database/adios_db/conda_requirements.txt
 
-    # install adios_db
-    - pip install ../oil_database/adios_db/
+    # # install adios_db
+    # - pip install ../oil_database/adios_db/
 
     # Install pygnome
     # If you want verbose output including the compiler/linker commands,
@@ -62,12 +63,15 @@ compile_pygnome:
     # And there may be times we want to build a wheel file (.whl)
     # The following command will build a wheel in the current directory:
     #   python -m pip wheel ./
+
     - echo "compiling PyGNOME"
     - python -m pip install ./
 
     # need extra requirements for the docs
     - conda install -y --file conda_requirements_docs.txt
+    - conda list |grep -i sphinx
     - cd documentation && make html  # build the docs
+    - ls documentation/build/html/_static/jquery.js || true
   artifacts:
     when: always
     expire_in: 15 days
@@ -94,7 +98,7 @@ test_pygnome:
 # but once in a while we refactor something that breaks something.
 # So it would be good to get a warning from the CI.
 # This shouldn't be a "it has to pass" job.
-test_pygnome_scripts:
+test_pygnome_testing_scripts:
   stage: test
   tags:
     - docker
@@ -104,6 +108,17 @@ test_pygnome_scripts:
   script:
     - cd ./py_gnome/scripts/testing_scripts && python run_all.py 2<&1
 
+# make sure the example scripts run without error
+# this can fail, but we want to be warned ...
+test_pygnome_example_scripts:
+  stage: test
+  tags:
+    - docker
+    - linux
+  allow_failure: true
+  image: registry.orr.noaa.gov/erd/centos-conda/$IMAGE_NAME$PYTHON_VER
+  script:
+    - cd ./py_gnome/scripts/example_scripts && python run_all.py 2<&1
 
 # We will not build a windows docker image, but we do want to know if there are
 # any windows specific problems.
@@ -169,8 +184,9 @@ test_pygnome_windows:
   script:
     - echo "Building and testing PyGNOME"
 
+    # pulled from conda-forge now
     # get the adios_db code: needed for tests and requirements
-    - git clone --depth 1 -b develop https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.orr.noaa.gov/gnome/oil_database/oil_database.git
+    # - git clone --depth 1 -b develop https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.orr.noaa.gov/gnome/oil_database/oil_database.git
 
     - conda install -y python=$PYTHON_VER mamba
     - cd ./py_gnome
@@ -178,10 +194,10 @@ test_pygnome_windows:
     - mamba install -y python=$PYTHON_VER --file conda_requirements.txt
                                           --file conda_requirements_build.txt
                                           --file conda_requirements_test.txt
-                                          --file ../oil_database/adios_db/conda_requirements.txt
+                                          # --file ../oil_database/adios_db/conda_requirements.txt
 
     # install adios_db
-    - pip install ../oil_database/adios_db/
+    # - pip install ../oil_database/adios_db/
 
     # Install pygnome
     # If you want verbose output including the compiler/linker commands,
@@ -208,8 +224,8 @@ build_develop:
     - echo '' # manual override of before_script because we're on runner 12.3 and inherit options are only 12.9+
   script:
     # get the adios_db code, so we can install it in the docker image
-    # note -- is should already be there
-    - git clone --depth 1 -b develop https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.orr.noaa.gov/gnome/oil_database/oil_database.git
+    # note -- is should already be there from conda-forge
+    # - git clone --depth 1 -b develop https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.orr.noaa.gov/gnome/oil_database/oil_database.git
 
     # build the py_gnome image
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
@@ -228,17 +244,24 @@ build_main:
     - echo '' # manual override of before_script because we're on runner 12.3 and inherit options are only 12.9+
   script:
     # get the adios_db code, so we can install it in the docker image
-    # note -- is should already be there
-    - git clone --depth 1 -b production https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.orr.noaa.gov/gnome/oil_database/oil_database.git
+    # note -- is should already be there -- from conda-forge
+    # - git clone --depth 1 -b production https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.orr.noaa.gov/gnome/oil_database/oil_database.git
 
     # build the docs image
-    - docker build -f dockerfile-docs ./py_gnome/documentation/build/html -t registry.orr.noaa.gov/gnome/pygnome/docs
+    - ls ./py_gnome/documentation/build/html/_static/jquery.js
+    - >
+        docker build ./py_gnome/documentation/build/html
+        -f dockerfile-docs
+        -t registry.orr.noaa.gov/gnome/pygnome/docs
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker push registry.orr.noaa.gov/gnome/pygnome/docs
 
     # build the py_gnome image
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker build . --build-arg PYTHON_VER=$PYTHON_VER -t registry.orr.noaa.gov/gnome/pygnome:main
+    - >
+        docker build .
+        --build-arg PYTHON_VER=$PYTHON_VER
+        -t registry.orr.noaa.gov/gnome/pygnome:main
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker push registry.orr.noaa.gov/gnome/pygnome:main
 
@@ -253,7 +276,8 @@ build_production:
     - echo ''
   script:
     # get the adios_db code, so we can install it in the docker image
-    - git clone --depth 1 -b production https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.orr.noaa.gov/gnome/oil_database/oil_database.git
+    # should be there from conda-forge
+    # - git clone --depth 1 -b production https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.orr.noaa.gov/gnome/oil_database/oil_database.git
 
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker build . --build-arg PYTHON_VER=$PYTHON_VER -t registry.orr.noaa.gov/gnome/pygnome:production

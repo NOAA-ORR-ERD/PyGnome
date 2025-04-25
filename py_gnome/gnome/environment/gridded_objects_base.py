@@ -9,7 +9,7 @@ from functools import wraps
 
 from colander import (SchemaNode, SequenceSchema,
                       String, Boolean, DateTime,
-                      drop, Int)
+                      drop, Int, Float)
 
 import gridded
 from gridded.utilities import get_dataset
@@ -18,10 +18,12 @@ import nucos as uc
 from gnome.gnomeobject import combine_signatures
 from gnome.persist import base_schema
 from gnome.gnomeobject import GnomeId
+from gnome.environment.environment import Environment
 from gnome.persist import (GeneralGnomeObjectSchema, SchemaNode, SequenceSchema,
-                           String, Boolean, DateTime, drop, FilenameSchema)
-from gnome.persist.extend_colander import LocalDateTime
+                           String, Boolean, DateTime, TimeDelta, drop, FilenameSchema)
+from gnome.persist.extend_colander import LocalDateTime, UnknownMappingSchema
 from gnome.utilities.inf_datetime import InfDateTime
+from gnome.utilities.time_utils import TZOffset, TZOffsetSchema
 
 
 class TimeSchema(base_schema.ObjTypeSchema):
@@ -42,13 +44,19 @@ class TimeSchema(base_schema.ObjTypeSchema):
     max_time = SchemaNode(
         DateTime(default_tzinfo=None), read_only=True
     )
-
+    tz_offset = SchemaNode(
+        Float(), save=True, update=True, missing=drop
+    )
+    tz_offset_name = SchemaNode(
+        String(), save=True, update=True, missing=drop
+    )
 
 class GridSchema(base_schema.ObjTypeSchema):
     name = SchemaNode(String(), test_equal=False)
     filename = FilenameSchema(
         isdatafile=True, test_equal=False, update=False
     )
+    grid_topology = UnknownMappingSchema(save=True, update=False)
 
 class DepthSchema(base_schema.ObjTypeSchema):
     filename = FilenameSchema(
@@ -66,6 +74,8 @@ class VariableSchemaBase(base_schema.ObjTypeSchema):
     time = TimeSchema(
         save_reference=True
     )
+    timezone_offset = TZOffsetSchema(
+    )
     grid = GridSchema(
         save_reference=True
     )
@@ -82,7 +92,7 @@ class VariableSchemaBase(base_schema.ObjTypeSchema):
 
 class VariableSchema(VariableSchemaBase):
     varname = SchemaNode(
-        String(), missing=drop, read_only=True
+        String(), missing=drop
     )
 
 
@@ -99,6 +109,7 @@ class VectorVariableSchema(VariableSchemaBase):
 
 
 class Time(gridded.time.Time, GnomeId):
+    '''Object to represent a time axis in a Variable.'''
 
     _schema = TimeSchema
     def __repr__(self):
@@ -106,6 +117,11 @@ class Time(gridded.time.Time, GnomeId):
             return super().__repr__()
         except ValueError:
             return object.__repr__(self)
+
+    @combine_signatures
+    @classmethod
+    def from_netCDF(cls, *args, **kwargs):
+        return super(Time, cls).from_netCDF(*args, **kwargs)
 
     @classmethod
     def from_file(cls, filename=None, **kwargs):
@@ -121,11 +137,57 @@ class Time(gridded.time.Time, GnomeId):
                     t.append(datetime.datetime.strptime(line, '%c'))
 
         return Time(t)
+    
 
 
+# NOTE some classes inherit from (GnomeId, parent) while some from (parent, GnomeId)
+# at the moment. This is because the classes that inherit from GnomeId first do not 
+# properly super-chain their __init__ currently (as of gridded 0.7.0). This causes certain
+# GnomeId class tricks to break. Once past gridded 0.7.0  we should be able to change 
+# all to (parent, GnomeId)
 class Grid_U(gridded.grids.Grid_U, GnomeId):
+    '''Object to represent a triangle unstructured grid in a Variable.'''
 
     _schema = GridSchema
+    
+    def __init__(self, *args, **kwargs):
+        '''
+        It is not recommended to use the __init__ directly, use .from_netCDF instead
+        See gridded.pyugrid.ugrid.UGrid for full __init__ documentation
+        '''
+        super(Grid_U, self).__init__(*args, **kwargs)
+
+    @combine_signatures
+    @classmethod
+    def from_netCDF(cls,
+                    filename=None,
+                    dataset=None,
+                    data_file=None,
+                    grid_file=None,
+                    grid_topology=None,
+                    *args,
+                    **kwargs):
+        '''
+        :param filename: File containing a grid
+        :type filename: string or list of string
+
+        :param dataset: Takes precedence over filename, if provided.
+        :type dataset: netCDF4.Dataset
+
+        :param grid_type: Must be provided if Dataset does not have a 'grid_type' attribute, or valid topology variable
+
+        :param grid_topology: A dictionary mapping of grid attribute to variable name.
+                              Takes precedence over discovered attributes
+                              See https://ugrid-conventions.github.io/ugrid-conventions/#2d-triangular-mesh-topology
+
+        :returns: Instance of Grid_U
+        '''
+        return super(Grid_U, cls).from_netCDF(filename=filename,
+                                        dataset=dataset,
+                                        data_file=data_file,
+                                        grid_file=grid_file,
+                                        grid_topology=grid_topology,
+                                        *args, **kwargs)
 
     def draw_to_plot(self, ax, features=None, style=None):
         import matplotlib
@@ -141,14 +203,30 @@ class Grid_U(gridded.grids.Grid_U, GnomeId):
 
         ax.add_collection(lines)
 
+    def to_dict(self, json_=None):
+        dict_ = super().to_dict(json_=json_)
+        if 'grid_topology' in dict_:
+            for k, v in dict_['grid_topology'].items():
+                # Convert any numpy arrays to lists for JSON serialization
+                if isinstance(v, np.generic):
+                    dict_['grid_topology'][k] = v.item()
+        return dict_
+
     @classmethod
     @combine_signatures
     def new_from_dict(cls, dict_):
+        read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
+
+        [dict_.pop(n, None) for n in read_only_attrs]
         rv = cls.from_netCDF(**dict_)
 
         return rv
 
     def get_cells(self):
+        '''
+        returns a Nx3x2 array. N = number of cells, 3 = nodes of each triangle, 2 = (lon, lat)
+        [[[lon1, lat1], [lon2, lat2], [lon3, lat3]], ...]
+        '''
         return self.nodes[self.faces]
 
     def get_lines(self):
@@ -169,9 +247,11 @@ class Grid_U(gridded.grids.Grid_U, GnomeId):
         return (lengths, [closed_cells])
 
     def get_nodes(self):
+        '''returns a Nx2 array of nodes. N = number of nodes, 2 = (lon, lat)'''
         return self.nodes[:]
 
     def get_centers(self):
+        '''returns a Nx2 array of centers. N = number of centers, 2 = (lon, lat)'''
         if self.face_coordinates is None:
             self.build_face_coordinates()
         return self.face_coordinates
@@ -183,23 +263,29 @@ class Grid_U(gridded.grids.Grid_U, GnomeId):
         json_['num_cells'] = self.faces.shape[0]
         return json_
 
-
-class Grid_S(GnomeId, gridded.grids.Grid_S):
+# NOTE some classes inherit from (GnomeId, parent) while some from (parent, GnomeId)
+# at the moment. This is because the classes that inherit from GnomeId first do not 
+# properly super-chain their __init__ currently (as of gridded 0.7.0). This causes certain
+# GnomeId class tricks to break. Once past gridded 0.7.0  we should be able to change 
+# all to (parent, GnomeId)
+class Grid_S(gridded.grids.Grid_S, GnomeId):
+    '''Object to represent a structured quad grid in a Variable.'''
 
     _schema = GridSchema
 
     def __init__(self, use_masked_boundary=True, *args, **kwargs):
-        super(Grid_S, self).__init__(*args, use_masked_boundary=use_masked_boundary, **kwargs)
-
         '''
-        #This is for the COOPS case, where their coordinates go from 0-360 starting at prime meridian
-        for lon in [self.node_lon, self.center_lon, self.edge1_lon, self.edge2_lon]:
-            if lon is not None and lon.max() > 180:
-                self.logger.warning('Detected longitudes > 180 in {0}. Rotating -360 degrees'.format(self.name))
-                lon -= 360
+        It is not recommended to use the __init__ directly, use .from_netCDF instead
+        See gridded.pyugrid.sgrid.SGrid for full __init__ documentation
         '''
-
-    '''hack to avoid problems when registering object in webgnome'''
+        #set use_masked_boundary to True by default (gridded is False)
+        super(Grid_S, self).__init__(*args, use_masked_boundary=use_masked_boundary, *args, **kwargs)
+ 
+    @combine_signatures
+    @classmethod
+    def from_netCDF(cls, *args, **kwargs):
+        return super(Grid_S, cls).from_netCDF(*args, **kwargs)   
+    
     @property
     def non_grid_variables(self):
         return None
@@ -228,13 +314,30 @@ class Grid_S(GnomeId, gridded.grids.Grid_S):
             ax.plot(lon, lat, **s)
             ax.plot(lon.T, lat.T, **s)
 
+    def to_dict(self, json_=None):
+        dict_ = super().to_dict(json_=json_)
+        if 'grid_topology' in dict_:
+            for k, v in dict_['grid_topology'].items():
+                # Convert any numpy arrays to lists for JSON serialization
+                if isinstance(v, np.generic):
+                    dict_['grid_topology'][k] = v.item()
+        return dict_
+
     @classmethod
     @combine_signatures
     def new_from_dict(cls, dict_):
+        read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
+
+        [dict_.pop(n, None) for n in read_only_attrs]
         rv = cls.from_netCDF(**dict_)
         return rv
 
     def get_cells(self):
+        '''
+        returns a Nx4x2 array. N = number of cells, 4 = nodes of each quad, 2 = (lon, lat)
+        Only returns the cells that are not masked by node_mask
+        [[[lon1, lat1], [lon2, lat2], [lon3, lat3], [lon4, lat4]], ...]
+        '''
         if self._cell_tree is None:
             self.build_celltree()
 
@@ -257,7 +360,7 @@ class Grid_S(GnomeId, gridded.grids.Grid_S):
             lats = (self.node_lat[0:-1, 0:-1] + self.node_lat[1:, 1:]) / 2
             return np.stack((lons, lats), axis=-1).reshape(-1, 2)
         else:
-            if self._get_geo_mask('center'):
+            if self._get_geo_mask('center') is not None:
                 if not self._cell_tree:
                     self.build_celltree(use_mask=True)
                 ctr_padding_slice = self.get_padding_slices(self.center_padding)
@@ -315,8 +418,19 @@ class Grid_R(gridded.grids.Grid_R, GnomeId):
 
     _schema = GridSchema
 
+    def __init__(self, *args, **kwargs):
+        '''
+        It is not recommended to use the __init__ directly, use .from_netCDF instead
+        See gridded.pyugrid.sgrid.SGrid for full __init__ documentation
+        '''
+        #set use_masked_boundary to True by default (gridded is False)
+        super(Grid_R, self).__init__(*args, **kwargs)
+        
     @classmethod
     def new_from_dict(cls, dict_):
+        read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
+
+        [dict_.pop(n, None) for n in read_only_attrs]
         rv = cls.from_netCDF(**dict_)
         return rv
 
@@ -366,6 +480,9 @@ class PyGrid(gridded.grids.Grid):
 
     @staticmethod
     def new_from_dict(dict_):
+        # read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
+
+        # [dict_.pop(n, None) for n in read_only_attrs]
         return PyGrid.from_netCDF(**dict_)
 
     @staticmethod
@@ -377,7 +494,7 @@ class PyGrid(gridded.grids.Grid):
         return gridded.grids.Grid._get_grid_type(*args, **kwargs)
 
 
-class Variable(gridded.Variable, GnomeId):
+class Variable(gridded.Variable, Environment):
     _schema = VariableSchema
 
     default_names = []
@@ -399,10 +516,10 @@ class Variable(gridded.Variable, GnomeId):
                  bottom_boundary_condition='mask',
                  *args,
                  **kwargs):
-        super(Variable, self).__init__(*args,
-                                       surface_boundary_condition=surface_boundary_condition,
-                                       bottom_boundary_condition=bottom_boundary_condition,
-                                       **kwargs)
+        super().__init__(*args,
+                         surface_boundary_condition=surface_boundary_condition,
+                         bottom_boundary_condition=bottom_boundary_condition,
+                         **kwargs)
         self.extrapolation_is_allowed = extrapolation_is_allowed
 
     def __repr__(self):
@@ -433,7 +550,7 @@ class Variable(gridded.Variable, GnomeId):
         '''
         Initialize a Variable from a netcdf file.
 
-        This is use in subclasses, to it can be done after object creation
+        This is used in subclasses, so it can be done after object creation
 
         :param filename: Default data source. Has lowest priority.
                          If dataset, grid_file, or data_file are provided,
@@ -449,7 +566,7 @@ class Variable(gridded.Variable, GnomeId):
                               attributes and variable names that hold the grid.
         :type grid_topology: {string : string, ...}
 
-        :param name: Name of this object (GNome Object name)
+        :param name: Name of this object (Gnome Object name)
         :type name: string
 
         :param units: string such as 'm/s'
@@ -476,13 +593,16 @@ class Variable(gridded.Variable, GnomeId):
         :param dataset: Instance of open netCDF4.Dataset
         :type dataset: netCDF4.Dataset
 
-        :param data_file: Name of data source file, if data and grid files are separate
+        :param data_file: Name of data source file, if data and grid files
+                          are separate
         :type data_file: string
 
-        :param grid_file: Name of grid source file, if data and grid files are separate
+        :param grid_file: Name of grid source file, if data and grid files
+                          are separate
         :type grid_file: string
 
         :param extrapolation_is_allowed:
+
         '''
         Grid = self._default_component_types['grid']
         Time = self._default_component_types['time']
@@ -521,9 +641,6 @@ class Variable(gridded.Variable, GnomeId):
                 raise NameError('Default current names are not in the data file, '
                                 'must supply variable name')
         data = ds[varname]
-        if name is None:
-            name = self.__class__.__name__ + str(self._def_count)
-            self._def_count += 1
         if units is None:
             try:
                 units = data.units
@@ -588,8 +705,27 @@ class Variable(gridded.Variable, GnomeId):
         var.init_from_netCDF(*args, **kwargs)
         return var
 
+    def _get_timezone_offset(self):
+        if not hasattr(self, 'time') or self.time is None:
+            return TZOffset()
+        return TZOffset(offset=self.time.tz_offset, title=self.time.tz_offset_name)
+
+    def _set_timezone_offset(self, tzo):
+        if not hasattr(self, 'time') or self.time is None:
+            return
+        if tzo is None:
+            tzo = TZOffset(offset=None, title="No Timezone Specified")
+        self.time.tz_offset = tzo.offset
+        self.time.tz_offset_name = tzo.title
+        if self.depth and hasattr(self.depth, 'time') and self.depth.time is not None:
+            self.depth.time.tz_offset = tzo.offset
+            self.depth.time.tz_offset_name = tzo.title
+            
     @combine_signatures
-    def at(self, points, time, *, units=None, extrapolate=False, unmask=True, **kwargs):
+    def at(self, points, time, *, units=None, extrapolate=None, unmask=True, **kwargs):
+
+        if extrapolate is None:
+            extrapolate = self.extrapolation_is_allowed
 
         value = super(Variable, self).at(points, time,
                                          units=units,
@@ -616,6 +752,9 @@ class Variable(gridded.Variable, GnomeId):
     @classmethod
     @combine_signatures
     def new_from_dict(cls, dict_):
+        read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
+
+        [dict_.pop(n, None) for n in read_only_attrs]
         if 'data' not in dict_:
             return cls.from_netCDF(**dict_)
 
@@ -625,6 +764,7 @@ class Variable(gridded.Variable, GnomeId):
     def constant(cls, value, **kwargs):
         #Sets a Variable up to represent a constant scalar field. The result
         #will return a constant value for all times and places.
+        #This object currently (12/31/24) does not serialize/deserialize properly due to the Grid_S
         Grid = Grid_S
         Time = cls._default_component_types['time']
         _data = np.full((3,3), value)
@@ -668,6 +808,9 @@ class DepthBase(gridded.depth.DepthBase, GnomeId):
 
     @classmethod
     def new_from_dict(cls, dict_):
+        read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
+
+        [dict_.pop(n, None) for n in read_only_attrs]
         rv = cls.from_netCDF(**dict_)
         return rv
 
@@ -683,6 +826,9 @@ class L_Depth(gridded.depth.L_Depth, GnomeId):
 
     @classmethod
     def new_from_dict(cls, dict_):
+        read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
+
+        [dict_.pop(n, None) for n in read_only_attrs]
         rv = cls.from_netCDF(**dict_)
         return rv
 
@@ -699,6 +845,9 @@ class ROMS_Depth(gridded.depth.ROMS_Depth, GnomeId):
 
     @classmethod
     def new_from_dict(cls, dict_):
+        read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
+
+        [dict_.pop(n, None) for n in read_only_attrs]
         rv = cls.from_netCDF(**dict_)
         return rv
 
@@ -715,6 +864,9 @@ class FVCOM_Depth(gridded.depth.FVCOM_Depth, GnomeId):
 
     @classmethod
     def new_from_dict(cls, dict_):
+        read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
+
+        [dict_.pop(n, None) for n in read_only_attrs]
         rv = cls.from_netCDF(**dict_)
         return rv
 
@@ -725,7 +877,7 @@ class Depth(gridded.depth.Depth):
 
 Variable._default_component_types['depth'] = Depth
 
-class VectorVariable(gridded.VectorVariable, GnomeId):
+class VectorVariable(gridded.VectorVariable, Environment):
 
     _schema = VectorVariableSchema
 
@@ -740,11 +892,19 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
 
     def __init__(self,
                  extrapolation_is_allowed=False,
+                 surface_boundary_condition='extrapolate',
+                 bottom_boundary_condition='mask',
                  *args,
                  **kwargs):
-        super(VectorVariable, self).__init__(*args, **kwargs)
-        self.extrapolation_is_allowed = extrapolation_is_allowed
         
+        super(VectorVariable, self).__init__(
+            *args,
+            surface_boundary_condition=surface_boundary_condition,
+            bottom_boundary_condition=bottom_boundary_condition,
+            **kwargs
+        )
+        self.extrapolation_is_allowed = extrapolation_is_allowed
+
         #Adding this so unit conversion happens properly in the components
         #I really don't think we will be doing mixed units in one of these
         #anytime soon.
@@ -755,8 +915,8 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
                         warnings.warn("Variable {0} has units {1} which are not the same as the VectorVariable {2} units {3}.".format(var.name, var._gnome_unit, self.name, self._gnome_unit))
                 else:
                     var._gnome_unit = self._gnome_unit
-                
-            
+
+
 
     def __repr__(self):
         try:
@@ -785,27 +945,36 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
         Allows one-function initialization of a VectorVariable from a file.
 
         :param filename: Default data source. Parameters below take precedence
-        :param varnames: Names of the variables in the data source file
-        :param grid_topology: Description of the relationship between grid attributes and variable names.
-        :param name: Name of property
-        :param units: Units
-        :param time: Time axis of the data
-        :param data: Underlying data source
-        :param grid: Grid that the data corresponds with
-        :param dataset: Instance of open Dataset
-        :param data_file: Name of data source file
-        :param grid_file: Name of grid source file
         :type filename: string
-        :type varnames: [] of string
-        :type grid_topology: {string : string, ...}
-        :type name: string
-        :type units: string
-        :type time: [] of datetime.datetime, netCDF4 Variable, or Time object
-        :type data: netCDF4.Variable or numpy.array
-        :type grid: pysgrid or pyugrid
+
+        :param dataset: Instance of open Dataset
         :type dataset: netCDF4.Dataset
+
+        :param data_file: Name of data source file
         :type data_file: string
+
+        :param grid_file: Name of grid source file
         :type grid_file: string
+
+        :param grid_topology: Description of the relationship between
+                              grid attributes and variable names.
+        :type grid_topology: {string : string, ...}
+
+        :param grid: Grid that the data corresponds with
+        :type grid: pysgrid or pyugrid
+
+        :param varnames: Names of the variables in the data source file
+        :type varnames: [] of string. Order of the names in the list would be
+                        order of vector components
+
+        :param time: Time axis of the data
+        :type time: [] of datetime.datetime, netCDF4 Variable, or Time object
+
+        :param name: Name of property
+        :type name: string
+
+        :param units: Units
+        :type units: string
         '''
         Grid = self._default_component_types['grid']
         Time = self._default_component_types['time']
@@ -841,9 +1010,6 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
                                          dataset=ds)
             if all([v is None for v in varnames]):
                 raise ValueError('No compatible variable names found!')
-        if name is None:
-            name = self.__class__.__name__ + str(self._def_count)
-            self._def_count += 1
         data = ds[varnames[0]]
         if time is None:
             time = Time.from_netCDF(filename=data_file,
@@ -854,7 +1020,8 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
         if depth is None:
             if (isinstance(grid, (Grid_S, Grid_R)) and len(data.shape) == 4 or
                     isinstance(grid, Grid_U) and len(data.shape) == 3):
-                depth = Depth.from_netCDF(grid_file=grid_file,
+                depth = Depth.from_netCDF(data_file=data_file,
+                                          grid_file=grid_file,
                                           grid=grid,
                                           dataset=dg,
                                           )
@@ -887,7 +1054,12 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
                                                           dataset=ds,
                                                           load_all=load_all,
                                                           location=None,
-                                                          **kwargs))
+                                                          #**kwargs 
+                                                          # commented this because args for the VV (eg 'angle') are getting passed to the Variable
+                                                          # in cases such as IceAwareCurrent where init_from_netCDF calls from_netCDF
+                                                          # on subcomponent environment objects such as IceVelocity
+                                                          # only non-derived VV are args compatible with Variable
+                                                          ))
         if units is None:
             units = [v.units for v in variables]
             if all(u == units[0] for u in units):
@@ -908,19 +1080,53 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
                     load_all=load_all,
                     **kwargs)
 
+    @combine_signatures
     @classmethod
     def from_netCDF(cls, *args, **kwargs):
-        """
-        create a new VectorVariable object from a netcdf file
+        '''
+        Allows one-function initialization of a VectorVariable from a file.
 
-        See init_from_netcdf for signature
-        """
+        :param filename: Default data source. Parameters below take precedence
+        :type filename: string
+
+        :param dataset: Instance of open Dataset
+        :type dataset: netCDF4.Dataset
+
+        :param data_file: Name of data source file
+        :type data_file: string
+
+        :param grid_file: Name of grid source file
+        :type grid_file: string
+
+        :param grid_topology: Description of the relationship between
+                              grid attributes and variable names.
+        :type grid_topology: {string : string, ...}
+
+        :param grid: Grid that the data corresponds with
+        :type grid: pysgrid or pyugrid
+
+        :param varnames: Names of the variables in the data source file
+        :type varnames: [] of string. Order of the names in the list would be
+                        order of vector components
+
+        :param time: Time axis of the data
+        :type time: [] of datetime.datetime, netCDF4 Variable, or Time object
+
+        :param name: Name of property
+        :type name: string
+
+        :param units: Units
+        :type units: string
+        '''
         var = cls.__new__(cls)
         var.init_from_netCDF(*args, **kwargs)
         return var
 
     @classmethod
     def new_from_dict(cls, dict_, **kwargs):
+        read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
+
+        [dict_.pop(n, None) for n in read_only_attrs]
         if not dict_.get('variables', False):
             return super(VectorVariable, cls).new_from_dict(cls.from_netCDF(**dict_).to_dict(), **kwargs)
         else:
@@ -933,13 +1139,14 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
                  name=None,
                  units=None):
         '''
-        Sets a VectorVariable up to represent a constant vector field. The result
-        will return a constant value for all times and places.
+        Sets a VectorVariable up to represent a constant vector field.
+        The result will return a constant value for all times and places.
 
         :param values: vector of values
         :type values: array-like
         '''
-        
+        #This object currently (12/31/24) does not serialize/deserialize properly due to the Grid_S
+
         Grid = Grid_S
         Time = cls._default_component_types['time']
         _node_lon = np.array(([-360, 0, 360], [-360, 0, 360], [-360, 0, 360]))
@@ -952,9 +1159,27 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
         _vars = [Variable(grid=_grid, units=units[i], time=_time, data=d) for i, d in enumerate(_datas)]
         return cls(name=name, grid=_grid, time=_time, variables=_vars)
 
-    def at(self, points, time, *, units=None, extrapolate=False, unmask=True, **kwargs):
+    def _get_timezone_offset(self):
+        if not hasattr(self, 'time') or self.time is None:
+            return TZOffset()
+        return TZOffset(offset=self.time.tz_offset, title=self.time.tz_offset_name)
+    
+    def _set_timezone_offset(self, tzo):
+        if not hasattr(self, 'time') or self.time is None:
+            return
+        if tzo is None:
+            tzo = TZOffset(offset=None, title="No Timezone Specified")
+        self.time.tz_offset = tzo.offset
+        self.time.tz_offset_name = tzo.title
+        if self.depth and hasattr(self.depth, 'time') and self.depth.time is not None:
+            self.depth.time.tz_offset = tzo.offset
+            self.depth.time.tz_offset_name = tzo.title
+            
+    def at(self, points, time, *, units=None, extrapolate=None, unmask=True, **kwargs):
         units = units if units else self._gnome_unit #no need to convert here, its handled in the subcomponents
-        value = super(VectorVariable, self).at(points, time, 
+        if extrapolate is None:
+            extrapolate = self.extrapolation_is_allowed
+        value = super(VectorVariable, self).at(points, time,
                                                units=units,
                                                extrapolate=extrapolate,
                                                unmask=unmask,
@@ -983,8 +1208,7 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
 
     def get_data_vectors(self):
         '''
-        return array of shape (time_slices, len_linearized_data,2)
-        first is magnitude, second is direction
+        return array of shape (2, time_slices, len_linearized_data)
         '''
 
         raw_u = self.variables[0].data[:]
@@ -1000,7 +1224,7 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
             v_padding_slice = (np.s_[:],) + self.grid.get_padding_slices(self.grid.edge2_padding)
             raw_u = np.ma.filled(raw_u[u_padding_slice], 0)
             raw_v = np.ma.filled(raw_v[v_padding_slice], 0)
-            raw_u = (raw_u[:, :, 0:-1, ] + raw_u[:, :, 1:]) / 2
+            raw_u = (raw_u[:, :, 0:-1] + raw_u[:, :, 1:]) / 2
             raw_v = (raw_v[:, 0:-1, :] + raw_v[:, 1:, :]) / 2
         #u/v should be interpolated to centers at this point. Now apply appropriate mask
 
@@ -1013,7 +1237,7 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
             xt = x.shape[0]
             y = raw_v[:]
             yt = y.shape[0]
-            if raw_u.shape[-2:] == raw_v.shape[-2:] and raw_u.shape[-2:] == self.grid.center_mask.shape: 
+            if raw_u.shape[-2:] == raw_v.shape[-2:] and raw_u.shape[-2:] == self.grid.center_mask.shape:
                 #raw u/v are same shape and on center
                 #need to padding_slice the variable since they are not interpolated from u/v
                 x = x[(np.s_[:],) + ctr_padding_slice]
@@ -1025,15 +1249,15 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
             y = np.ma.MaskedArray(y, mask = np.tile(ctr_mask.reshape(-1), yt))
             x = x.compressed().reshape(xt, -1)
             y = y.compressed().reshape(yt,-1)
+            r = np.ma.concatenate((x[None,:], y[None,:]))
+            #r = np.ma.stack((x, y)) change to this when numpy 1.15 becomes norm.
+            return np.ascontiguousarray(r.astype(np.float32)) # r.compressed().astype(np.float32)
         else:
             raw_u = np.ma.filled(raw_u, 0).reshape(raw_u.shape[0], -1)
             raw_v = np.ma.filled(raw_v, 0).reshape(raw_v.shape[0], -1)
             r = np.stack((raw_u, raw_v))
             return np.ascontiguousarray(r, np.float32)
 
-        #r = np.ma.stack((x, y)) change to this when numpy 1.15 becomes norm.
-        r = np.ma.concatenate((x[None,:], y[None,:]))
-        return np.ascontiguousarray(r.astype(np.float32)) # r.compressed().astype(np.float32)
 
     def get_metadata(self):
         json_ = {}
@@ -1080,6 +1304,8 @@ class VectorVariable(gridded.VectorVariable, GnomeId):
             @wraps(func)
             def wrapper(*args, **kws):
                 def _mod(n):
+                    #helper to check if a kwarg name is in the shared list
+                    #and has NOT been assigned a value yet
                     k = kws
                     s = shared
                     return (n in s) and ((n not in k) or (n in k and k[n] is None))

@@ -9,10 +9,16 @@ import os
 import numpy as np
 
 from colander import (Float, DateTime, Sequence, Tuple, List,
-                      TupleSchema, SequenceSchema, null, SchemaNode, String, Invalid)
+                      TupleSchema, SequenceSchema, null, SchemaNode, String, Invalid, MappingSchema, Mapping)
 
 import gnome.basic_types
 from gnome.utilities import inf_datetime, round_sf_array
+
+class UnknownMappingSchema(MappingSchema):
+    # identical to MappingSchema except it preserves unknown entries
+    # This is useful for serializing *simple* dicts (meaning no custom types)
+    def schema_type(self, **kw):
+        return Mapping(unknown='preserve')
 
 class LocalDateTime(DateTime):
     def __init__(self, *args, **kwargs):

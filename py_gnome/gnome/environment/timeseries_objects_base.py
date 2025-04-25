@@ -122,9 +122,8 @@ class TimeseriesData(GnomeId):
     @time.setter
     def time(self, t):
         if self.data is not None and len(t) != len(self.data):
-            warnings.warn("Data/time interval mismatch, doing nothing")
-            return
-
+            raise ValueError("Data/time interval mismatch")
+        
         if isinstance(t, Time) or issubclass(t.__class__, gridded.time.Time):
             self._time = t
         elif isinstance(t, abc.Iterable):

@@ -6,9 +6,9 @@ Units used in GNOME / PyGNOME
 
 GNOME is a model of physical processes, and thus most of the things computed are in various physical units.
 
-To keep things clean, the internal computational code is all handled in a consistent set of units. All values are stored in floating point types, generally 64 bit (``double``) unless otherwise noted. Almost all units are SI, but a few exceptions (legacy reasons...)
+To keep things clean, the internal computational code is all handled in a consistent set of units. All values are stored in floating point types, generally 64 bit (``double``) unless otherwise noted. Almost all units are SI, but there are a few exceptions (legacy reasons...).
 
-Conversion is done on I/O or occasionally within a class (i.e the class may store data in the units the user gave, but return values in the standard unit to other parts of the code) So unless otherwise noted, pass data into methods in the following standard units:
+Conversion is done on I/O or occasionally within a class (i.e the class may store data in the units the user gave, but return values in the standard unit to other parts of the code). So unless otherwise noted, pass data into methods in the following standard units:
 
 Time
     In most places, time is represented by Python `datetime` and `timedelta` objects.

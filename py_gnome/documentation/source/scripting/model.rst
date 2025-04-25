@@ -30,13 +30,13 @@ Wind, currents, and diffusion all have uncertainty parameters with default value
 You can set the coefficients that control the size and distribution of the uncertainty on the individual movers.
 The uncertainty only applies to the model transport. Uncertainty for weathering is under development.
 
-To run the model backwards, set both the time_step and the duration to negative values
+To run the model backwards, include run_backwards=True. The model will start at the start_time and step backwards through the duration.
 
 
 Configuring the Model
 ---------------------
 
-To set up your simulation, you need to add various items to teh model: maps, movers, weatherers, ...
+To set up your simulation, you need to add various items to the model: maps, movers, weatherers, ...
 
 .. note: This is where we add note
 
@@ -44,6 +44,11 @@ To set up your simulation, you need to add various items to teh model: maps, mov
 Running the Model
 -----------------
 
+The simplest way to run the model is::
+
+    model.full_run()
+
+and use outputters to write the trajectory or weathering results to a file as it runs.
 
 Capturing Results As the Model Runs
 ...................................

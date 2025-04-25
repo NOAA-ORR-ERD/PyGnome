@@ -15,18 +15,19 @@
 # if you want a full development environment,
 # you can install the whole thing at once:
 #
-# conda create -n gnome python=3.10 --file conda_requirements.txt --file conda_requirements_build.txt --file conda_requirements_test.txt --file conda_requirements_docs.txt
+# conda create -n gnome python=3.12 --file conda_requirements.txt --file conda_requirements_build.txt --file conda_requirements_test.txt --file conda_requirements_docs.txt
 
 
 # These packages should all be in one of the following channels:
 # defaults
 # conda-forge
 
-# it'll probably work with 3.9 -- 3.11, but CI is testing with 3.10
+# it'll probably work with 3.9 -- 3.13, but CI is testing with 3.10
 
 python>=3.9,<3.12
 
 ## System libs
+awesome-slugify
 colander <2
 progressbar
 psutil
@@ -38,7 +39,7 @@ pyzmq
 # tblib
 
 ## Base numerical libs
-numpy <2
+numpy >=1.24,<3  # works with numpy 1 and 2
 scipy
 
 ## Modeling libs
@@ -52,11 +53,12 @@ geopandas
 mapbox_earcut
 pyogrio
 pyproj
-shapely
+shapely>=2.0.6 # older one broken with numpy2
 
 # NOAA maintained packages
-gridded=0.6.*
-pynucos=3.3.*
+gridded=0.7.1
+pynucos>=3.4.0
 cell_tree2d
-py_gd>=2.2
-adios_db>=1.1
+py_gd>=2.3
+adios_db>=1.2.5
+

@@ -10,7 +10,7 @@ import pytest
 import numpy as np
 
 from gnome.model import Model
-from gnome.spills import surface_point_line_spill
+from gnome.spills.spill import point_line_spill
 from gnome.movers import SimpleMover
 from gnome.movers import RandomMover
 
@@ -19,16 +19,16 @@ from gnome.utilities.orderedcollection import OrderedCollection
 
 
 
-l_spills = [surface_point_line_spill(10, (0, 0, 0),
+l_spills = [point_line_spill(10, (0, 0, 0),
                                      datetime.now().replace(microsecond=0),
                                      name='sp1'),
-            surface_point_line_spill(15, (0, 0, 0),
+            point_line_spill(15, (0, 0, 0),
                                      datetime.now().replace(microsecond=0),
                                      name='sp2'),
-            surface_point_line_spill(20, (0, 0, 0),
+            point_line_spill(20, (0, 0, 0),
                                      datetime.now().replace(microsecond=0),
                                      name='sp3'),
-            surface_point_line_spill(5, (0, 0, 0),
+            point_line_spill(5, (0, 0, 0),
                                      datetime.now().replace(microsecond=0),
                                      name='sp4')]
 l_mv = [SimpleMover(velocity=(1, 2, 3)), RandomMover()]

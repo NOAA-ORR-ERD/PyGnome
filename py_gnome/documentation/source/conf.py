@@ -42,11 +42,12 @@ version = release
 # ones.
 extensions = [#'nbsphinx',
 #              'sphinx.ext.autodoc',
-              #'sphinx.ext.napoleon',
+              'sphinx.ext.napoleon',
               'sphinx.ext.todo',
               #'sphinx.ext.coverage',
               #'sphinx.ext.mathjax',
               # 'sphinx.ext.viewcode',
+              'sphinxcontrib.jquery',
               ]
 
 # to make autodoc include __init__:
@@ -61,7 +62,18 @@ extensions.append('autoapi.extension')
 autoapi_type = 'python'
 autoapi_dirs = ['../../gnome/']
 autoapi_python_class_content = 'both'
-autoapi_keep_files = True
+# helpful for debugging docs!
+# but problematic  when things change
+autoapi_keep_files = False
+# autoapi_keep_files = True
+autoapi_options = ['members',
+                   'undoc-members',
+                   #'private-members',
+                   'show-inheritance',
+                   'show-module-summary',
+                   #'special-members',
+                   'imported-members',
+                   ]
 
 
 def skip_schema_classes(app, what, name, obj, skip, options):
@@ -111,15 +123,13 @@ exclude_patterns = []
 
 import sphinx_rtd_theme
 html_theme = "sphinx_rtd_theme"
-html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
-
 
 html_theme_options = {
     # 'analytics_id': 'G-XXXXXXXXXX',  #  Provided by Google in your dashboard
     # 'analytics_anonymize_ip': False,
     'logo_only': False,
     # this doesn't seem to work :-(
-    'display_version': True,
+    # 'display_version': True,  # deprecated as of sphinx_rtd_theme v3.x
     'prev_next_buttons_location': 'both',
     'style_external_links': False,
     'vcs_pageview_mode': '',
@@ -136,6 +146,10 @@ html_theme_options = {
 html_logo = "_static/GNOME_logo_225px-wide.png"
 html_favicon = "_static/GNOME_favicon_32x32.png"
 
+html_js_files = [
+    'https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js',
+]
+
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
@@ -143,5 +157,3 @@ html_static_path = ['_static']
 
 # If true, "(C) Copyright ..." is shown in the HTML footer. Default is True.
 html_show_copyright = False
-
-

@@ -1,6 +1,6 @@
 """Shapefile Outputter"""
 
-from colander import SchemaNode, Boolean, drop, Float
+from colander import SchemaNode, Boolean, drop, Float, Int
 import os
 import pathlib
 import shutil
@@ -30,11 +30,18 @@ class ShapeSchema(BaseOutputterSchema):
     include_uncertain_boundary = SchemaNode(
         Boolean(), missing=drop, save=True, update=True
     )
+    include_certain_in_uncertain_boundary = SchemaNode(
+        Boolean(), missing=drop, save=True, update=True
+    )
     uncertain_boundary_separate_by_spill = SchemaNode(
         Boolean(), missing=drop, save=True, update=True
     )
     uncertain_boundary_hull_ratio = SchemaNode(Float(), save=True, update=True)
     uncertain_boundary_hull_allow_holes = SchemaNode(Boolean(), save=True, update=True)
+    # Currently we do not support timezone, but instead stick with static
+    # time offset.
+    # timezone = SchemaNode(String(), save=True, update=True)
+    timeoffset = SchemaNode(Float(), save=True, update=True)
 
 
 class ShapeOutput(Outputter):
@@ -47,8 +54,10 @@ class ShapeOutput(Outputter):
                  certain_boundary_separate_by_spill=True,
                  certain_boundary_hull_ratio=0.5, certain_boundary_hull_allow_holes=False,
                  include_uncertain_boundary=True,
+                 include_certain_in_uncertain_boundary=True,
                  uncertain_boundary_separate_by_spill=True,
                  uncertain_boundary_hull_ratio=0.5, uncertain_boundary_hull_allow_holes=False,
+                 timeoffset=None,
                  surface_conc="kde", **kwargs):
         """
         :param filename: Full path and basename of the shape file.
@@ -76,16 +85,7 @@ class ShapeOutput(Outputter):
         self.shapefile_name_certain_boundary = base_shapefile_name+'_certain_boundary'
         self.shapefile_name_uncertain = base_shapefile_name+'_uncertain'
         self.shapefile_name_uncertain_boundary = base_shapefile_name+'_uncertain_boundary'
-        # Our shapefile builders
-        self.shapefile_builder_certain = ParticleShapefileBuilder(self.shapefile_name_certain,
-                                                                  zip_output=zip_output)
-        self.shapefile_builder_certain_boundary = BoundaryShapefileBuilder(self.shapefile_name_certain_boundary,
-                                                                           zip_output=zip_output)
-        self.shapefile_builder_uncertain = ParticleShapefileBuilder(self.shapefile_name_uncertain,
-                                                                    zip_output=zip_output)
-        self.shapefile_builder_uncertain_boundary = BoundaryShapefileBuilder(self.shapefile_name_uncertain_boundary,
-                                                                             zip_output=zip_output)
-
+        self.timeoffset = timeoffset
         # Should we be zipping the output
         self.zip_output = zip_output
         self.include_certain_boundary = include_certain_boundary
@@ -93,9 +93,25 @@ class ShapeOutput(Outputter):
         self.certain_boundary_hull_ratio = certain_boundary_hull_ratio
         self.certain_boundary_hull_allow_holes = certain_boundary_hull_allow_holes
         self.include_uncertain_boundary = include_uncertain_boundary
+        self.include_certain_in_uncertain_boundary = include_certain_in_uncertain_boundary
         self.uncertain_boundary_separate_by_spill = uncertain_boundary_separate_by_spill
         self.uncertain_boundary_hull_ratio = uncertain_boundary_hull_ratio
         self.uncertain_boundary_hull_allow_holes = uncertain_boundary_hull_allow_holes
+
+        # Our shapefile builders
+        self.shapefile_builder_certain = ParticleShapefileBuilder(self.shapefile_name_certain,
+                                                                  zip_output=zip_output,
+                                                                  timeoffset=self.timeoffset)
+        self.shapefile_builder_certain_boundary = BoundaryShapefileBuilder(self.shapefile_name_certain_boundary,
+                                                                           zip_output=zip_output,
+                                                                           timeoffset=self.timeoffset)
+        self.shapefile_builder_uncertain = ParticleShapefileBuilder(self.shapefile_name_uncertain,
+                                                                    zip_output=zip_output,
+                                                                    timeoffset=self.timeoffset)
+        self.shapefile_builder_uncertain_boundary = BoundaryShapefileBuilder(self.shapefile_name_uncertain_boundary,
+                                                                             zip_output=zip_output,
+                                                                             timeoffset=self.timeoffset)
+
 
     def __del__(self):
         self.tempdir.cleanup()
@@ -130,7 +146,8 @@ class ShapeOutput(Outputter):
         if not self.on:
             return None
 
-        for sc in self.cache.load_timestep(step_num).items():
+        sp = self.cache.load_timestep(step_num).items()
+        for sc in sp:
             if self._write_step:
                 # If this is just a step... append the data
                 if sc.uncertain:
@@ -140,7 +157,13 @@ class ShapeOutput(Outputter):
                                 'hull_ratio': self.uncertain_boundary_hull_ratio,
                                 'hull_allow_holes': self.uncertain_boundary_hull_allow_holes
                                 }
-                        self.shapefile_builder_uncertain_boundary.append(sc, **karg)
+                        if self.include_certain_in_uncertain_boundary:
+                            # If we want to include certain in the uncertain boundary
+                            # we need to pass in the spill pair, not just the uncertain
+                            # spill container.
+                            self.shapefile_builder_uncertain_boundary.append(sp, **karg)
+                        else:
+                            self.shapefile_builder_uncertain_boundary.append(sc, **karg)
                 else:
                     self.shapefile_builder_certain.append(sc)
                     if self.include_certain_boundary:

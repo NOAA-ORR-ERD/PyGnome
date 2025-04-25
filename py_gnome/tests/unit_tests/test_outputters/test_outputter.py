@@ -7,7 +7,7 @@ from datetime import timedelta, datetime
 
 import pytest
 
-from gnome.spills import surface_point_line_spill
+from gnome.spills.spill import point_line_spill
 from gnome.outputters import Outputter
 
 import gnome.scripting as gs
@@ -23,7 +23,7 @@ def model(sample_model):
 
     model.cache_enabled = True
 
-    model.spills += surface_point_line_spill(
+    model.spills += point_line_spill(
         num_elements=10,
         start_position=sample_model['release_start_pos'],
         release_time=model.start_time,
@@ -58,8 +58,8 @@ output_ts = [(model_ts, 1, 1),          # model_ts = output_ts
 params = [(model_ts, item) for item in output_ts]
 params.extend([(timedelta(hours=6), (timedelta(days=1), 4, 1))])
 
-
-
+# this is testing out-of-sync timesteps, so we ignore the warning.
+@pytest.mark.filterwarnings("ignore: Outputter output timestep")
 @pytest.mark.parametrize(("model_ts", "output_ts"), params)
 def test_output_timestep(model, model_ts, output_ts):
     """

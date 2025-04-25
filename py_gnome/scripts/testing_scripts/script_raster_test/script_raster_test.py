@@ -4,9 +4,8 @@ Eventually update to use Grid Map rather than BNA
 """
 
 import os
+from pathlib import Path
 from datetime import datetime, timedelta
-
-import numpy as np
 
 from gnome import scripting
 from gnome import utilities
@@ -18,15 +17,12 @@ from gnome.utilities.remote_data import get_datafile
 from gnome.model import Model
 
 from gnome.maps import MapFromBNA
-from gnome.environment import Wind
-from gnome.spills import surface_point_line_spill
-from gnome.movers import RandomMover, constant_point_wind_mover, c_GridCurrentMover
+from gnome.movers import RandomMover, constant_point_wind_mover
 
 from gnome.outputters import Renderer
-from gnome.outputters.animated_gif import Animation
 
 # define base directory
-base_dir = os.path.dirname(__file__)
+base_dir = Path(__file__).parent
 
 
 def make_model(images_dir=os.path.join(base_dir, 'images')):
@@ -64,11 +60,9 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # - will need diffusion and rise velocity
     # - wind doesn't act
     # - start_position = (-76.126872, 37.680952, 5.0),
-    spill1 = surface_point_line_spill(num_elements=5000,
-                                     start_position=(0.0,
-                                                     0.0,
-                                                     0.0),
-                                     release_time=start_time)
+    spill1 = scripting.point_line_spill(num_elements=5000,
+                                        start_position=(0.0, 0.0, 0.0),
+                                        release_time=start_time)
 
     model.spills += spill1
 
@@ -98,7 +92,7 @@ if __name__ == "__main__":
     print("doing full run")
     rend = model.outputters[0]
     rend.graticule.set_DMS(True)
-    model.map.save_as_image('raster.bmp')
+    model.map.save_as_image(base_dir / 'raster.bmp')
     for step in model:
         if step['step_num'] == 12:
             rend.set_timestamp_attrib(on=False)

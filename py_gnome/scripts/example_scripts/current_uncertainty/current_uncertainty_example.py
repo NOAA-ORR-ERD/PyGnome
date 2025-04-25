@@ -10,7 +10,9 @@ in the example_scripts/example_files directory
 import gnome.scripting as gs
 from pathlib import Path
 
-data_dir = Path('../example_files')
+base_dir = Path(__file__).parent
+data_dir = base_dir / '../example_files'
+#data_dir = Path('../example_files')
 
 # setup the model
 model = gs.Model(start_time="2023-03-03",
@@ -25,7 +27,7 @@ mymap = gs.MapFromBNA(map_filename)
 model.map = mymap
 
 # create and add a spill
-spill = gs.surface_point_line_spill(release_time="2023-03-03",
+spill = gs.point_line_spill(release_time="2023-03-03",
                                     start_position=(-125, 48.0, 0),
                                     num_elements=1000)
 model.spills += spill
@@ -33,20 +35,19 @@ model.spills += spill
 # create a current mover
 
 cur_file = data_dir / 'gridded_current.nc'
-current_mover = gs.CurrentMover.from_netCDF(filename=cur_file,
-                                            uncertain_along=0.25,
-                                            uncertain_cross=0.1,
-                                            )
+# current_mover = gs.CurrentMover.from_netCDF(filename=cur_file,
+#                                             uncertain_along=0.25,
+#                                             uncertain_cross=0.1,
+#                                             )
 
 # cur = gs.SteadyUniformCurrent(speed=0.2,
 #                               direction=135,
 #                               )
-# current_mover = gs.CurrentMover(current=cur,
-#                                 uncertain_along=0.25,
-#                                 # uncertain_along=0.0,
-#                                 uncertain_cross=0.25,
-#                                 # uncertain_cross=0.0,
-#                                 )
+cur = gs.GridCurrent.from_netCDF(filename=cur_file)
+current_mover = gs.CurrentMover(current=cur,
+                                uncertain_along=0.25,
+                                uncertain_cross=0.1,
+                                )
 model.movers += current_mover
 
 # Turn Diffusion down to see the effects of the uncertainty

@@ -8,7 +8,8 @@ There are two versions:
 is_clockwise_convex only works for convex polygons -- but is faster,
 it only needs to check three points.
 
-is_clockwise checks all points, but works for convex and cocave
+is_clockwise checks all points, but works for convex and concave
+
   (note: that's the same as the area calculation)
 
 from:

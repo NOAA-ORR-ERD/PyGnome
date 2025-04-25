@@ -53,8 +53,7 @@ class SimpleMover(Mover):
 
     a really simple mover -- moves all LEs a constant speed and direction
 
-    (not all that different than a constant wind mover, now that I
-     think about it)
+    (not all that different than a constant wind mover, now that I think about it)
     """
 
     _schema = SimpleMoverSchema

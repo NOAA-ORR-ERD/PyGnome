@@ -5,6 +5,7 @@ Movers using currents and tides as forcing functions
 import os
 
 import numpy as np
+import warnings
 
 from colander import (SchemaNode, Bool, String, Float, Int, drop)
 
@@ -22,13 +23,12 @@ from gnome.utilities.time_utils import sec_to_datetime
 from gnome.utilities.inf_datetime import InfTime, MinusInfTime
 
 from gnome.persist.validators import convertible_to_seconds
-from gnome.persist.extend_colander import LocalDateTime
+from gnome.persist.extend_colander import LocalDateTime, FilenameSchema
 
 from gnome.environment import Tide, TideSchema, Wind, WindSchema
 from gnome.movers import CyMover, ProcessSchema
 
 from gnome.persist.base_schema import WorldPoint
-from gnome.persist.extend_colander import FilenameSchema
 
 
 class CurrentMoversBaseSchema(ProcessSchema):
@@ -39,6 +39,13 @@ class CurrentMoversBaseSchema(ProcessSchema):
 
 
 class CurrentMoversBase(CyMover):
+    """
+    Base class for C current movers
+
+    It defines the base functionality and uncertainty.
+
+    """
+
     _ref_as = 'c_current_movers'
 
     def __init__(self,
@@ -109,8 +116,8 @@ class CurrentMoversBase(CyMover):
         Right now the cython mover only gets the triangular center points,
         so we need to calculate centers based on the cells themselves.
 
-        Cells will have the format (tl, tr, bl, br)
-        We need to get the rectangular centers
+        Cells will have the format (tl, tr, bl, br).
+        We need to get the rectangular centers.
         Center will be: (tl + ((br - tl) / 2.))
         '''
         return self.mover._get_center_points().view(dtype='<f8').reshape(-1, 2)
@@ -175,6 +182,11 @@ class CatsMoverSchema(CurrentMoversBaseSchema):
 
 
 class CatsMover(CurrentMoversBase):
+    """
+    Current Mover created using currents from NOAA's CATS program
+
+    Mainly used for Location Files.
+    """
 
     _schema = CatsMoverSchema
 
@@ -191,7 +203,7 @@ class CatsMover(CurrentMoversBase):
         Optional parameters (kwargs).
         Defaults are defined by CyCatsMover object.
 
-        :param tide: a gnome.environment.Tide object to be attached to
+        :param tide: a gnome.environment. Tide object to be attached to
                      CatsMover
         :param scale: a boolean to indicate whether to scale value at
                       reference point or not
@@ -200,9 +212,9 @@ class CatsMover(CurrentMoversBase):
                                applied to all data is determined by scaling
                                the raw value at this location.
 
-        :param uncertain_duration: how often does a given uncertain element
+        :param uncertain_duration: (seconds) how often a given uncertain element
                                    gets reset
-        :param uncertain_time_delay: when does the uncertainly kick in.
+        :param uncertain_time_delay: when the uncertainty kicks in in seconds from model start.
         :param up_cur_uncertain: Scale for uncertainty along the flow
         :param down_cur_uncertain: Scale for uncertainty along the flow
         :param right_cur_uncertain: Scale for uncertainty across the flow
@@ -266,7 +278,7 @@ class CatsMover(CurrentMoversBase):
                 self.scale_refpoint is None):
             raise TypeError("Provide a reference point in 'scale_refpoint'.")
 
-        self.mover.compute_velocity_scale()
+        #self.mover.compute_velocity_scale()
 
     def __repr__(self):
         return 'CatsMover(filename={0})'.format(self.filename)
@@ -338,6 +350,12 @@ class CatsMover(CurrentMoversBase):
         else:
             self.mover.ref_point = val
 
+        err = self.mover.compute_velocity_scale()  # make sure ref_scale is up to date
+        if err:
+            msg = ('CATS reference point not valid: {0}'.format(self.mover.ref_point))
+            self.logger.warning(msg)
+            warnings.warn(msg, UserWarning)
+
     @property
     def tide(self):
         return self._tide
@@ -392,6 +410,7 @@ class CatsMover(CurrentMoversBase):
         """
         velocities = self.mover._get_velocity_handle()
         self.mover.compute_velocity_scale()  # make sure ref_scale is up to date
+
         ref_scale = self.ref_scale
 
         if self._tide is not None:
@@ -425,9 +444,9 @@ class c_GridCurrentMoverSchema(CurrentMoversBaseSchema):
     extrapolate = SchemaNode(
         Bool(), missing=drop, save=True, update=True
     )
-    time_offset = SchemaNode(
-        Float(), missing=drop, save=True, update=True
-    )
+    # time_offset = SchemaNode(
+    #     Float(), missing=drop, save=True, update=True
+    # )
     is_data_on_cells = SchemaNode(
         Bool(), missing=drop, read_only=True
     )
@@ -438,6 +457,11 @@ class c_GridCurrentMoverSchema(CurrentMoversBaseSchema):
 
 
 class c_GridCurrentMover(CurrentMoversBase):
+    """
+    Gridded Current Mover for deprecated current formats.
+
+    Ported from old desktop GNOME.
+    """
 
     _schema = c_GridCurrentMoverSchema
 
@@ -465,16 +489,16 @@ class c_GridCurrentMover(CurrentMoversBase):
         :type active_range: 2-tuple of datetimes
 
         :param current_scale: Value to scale current data
-        :param uncertain_duration: how often does a given uncertain element
-                                   get reset
-        :param uncertain_time_delay: when does the uncertainly kick in.
+        :param uncertain_duration: (seconds) how often a given uncertain element
+                                   gets reset
+        :param uncertain_time_delay: when the uncertainty kicks in in seconds from model start.
         :param uncertain_cross: Scale for uncertainty perpendicular to the flow
         :param uncertain_along: Scale for uncertainty parallel to the flow
         :param extrapolate: Allow current data to be extrapolated
                             before and after file data
         :param time_offset: Time zone shift if data is in GMT
         :param num_method: Numerical method for calculating movement delta.
-                           Default Euler
+                           Default: Euler
                            option: Runga-Kutta 4 (RK4)
 
         uses super, ``super(c_GridCurrentMover,self).__init__(**kwargs)``
@@ -664,13 +688,13 @@ class c_GridCurrentMover(CurrentMoversBase):
 
     def get_start_time(self):
         """
-        :this will be the real_data_start time (seconds).
+        this will be the real_data_start time (seconds).
         """
         return self.mover.get_start_time()
 
     def get_end_time(self):
         """
-        :this will be the real_data_stop time (seconds).
+        this will be the real_data_stop time (seconds).
         """
         return self.mover.get_end_time()
 
@@ -700,6 +724,9 @@ class IceMoverSchema(CurrentMoversBaseSchema):
 
 
 class IceMover(CurrentMoversBase):
+    """
+    Ice Current Mover from old desktop GNOME
+    """
 
     _schema = IceMoverSchema
 
@@ -726,9 +753,9 @@ class IceMover(CurrentMoversBase):
         :type active_range: 2-tuple of datetimes
 
         :param current_scale: Value to scale current data
-        :param uncertain_duration: how often does a given uncertain element
-                                   get reset
-        :param uncertain_time_delay: when does the uncertainly kick in.
+        :param uncertain_duration: (seconds) how often a given uncertain element
+                                   gets reset
+        :param uncertain_time_delay: when the uncertainty kicks in in seconds from model start.
         :param uncertain_cross: Scale for uncertainty perpendicular to the flow
         :param uncertain_along: Scale for uncertainty parallel to the flow
         :param extrapolate: Allow current data to be extrapolated
@@ -837,8 +864,11 @@ class IceMover(CurrentMoversBase):
                                  with our grid data.  This allows us to pad
                                  the bounding box that we generate.
             :type box_to_merge: A bounding box (extent) of the form:
-                                ((left, bottom),
-                                 (right, top))
+
+                                ::
+
+                                  ((left, bottom),
+                                   (right, top))
         '''
         if grid_data is None:
             grid_data = self.get_grid_data()
@@ -974,6 +1004,12 @@ class CurrentCycleMoverSchema(c_GridCurrentMoverSchema):
 
 
 class CurrentCycleMover(c_GridCurrentMover):
+    """
+    Current Cycle Mover implemented in C, ported from old desktop GNOME
+
+    Mainly used for Location Files.
+    """
+
     _schema = CurrentCycleMoverSchema
 
     _ref_as = 'current_cycle_mover'
@@ -1001,16 +1037,16 @@ class CurrentCycleMover(c_GridCurrentMover):
         :type active_range: 2-tuple of datetimes
 
         :param current_scale: Value to scale current data
-        :param uncertain_duration: How often does a given uncertain element
-                                   get reset
-        :param uncertain_time_delay: when does the uncertainly kick in.
+        :param uncertain_duration: (seconds) how often a given uncertain element
+                                   gets reset
+        :param uncertain_time_delay: when the uncertainty kicks in in seconds from model start.
         :param uncertain_cross: Scale for uncertainty perpendicular to the flow
         :param uncertain_along: Scale for uncertainty parallel to the flow
         :param extrapolate: Allow current data to be extrapolated
                             before and after file data
         :param time_offset: Time zone shift if data is in GMT
 
-        uses super: super(CurrentCycleMover,self).__init__(**kwargs)
+        uses super: ``super(CurrentCycleMover,self).__init__(**kwargs)``
         """
 
         # NOTE: will need to add uncertainty parameters
@@ -1119,13 +1155,11 @@ class CurrentCycleMover(c_GridCurrentMover):
 
 class ComponentMoverSchema(ProcessSchema):
     '''static schema for ComponentMover'''
-    filename1 = SchemaNode(
-        String(), missing=drop,
-        save=True, update=True, isdatafile=True, test_equal=False
+    filename1 = FilenameSchema(
+        save=True, update=False, isdatafile=True, test_equal=False
     )
-    filename2 = SchemaNode(
-        String(), missing=drop,
-        save=True, update=True, isdatafile=True, test_equal=False
+    filename2 = FilenameSchema(
+        save=True, update=False, isdatafile=True, test_equal=False
     )
     scale_refpoint = WorldPoint(
         missing=drop, save=True, update=True
@@ -1165,6 +1199,12 @@ class ComponentMoverSchema(ProcessSchema):
 
 
 class ComponentMover(CurrentMoversBase):
+    """
+    Component Mover implemented in C, ported from old desktop GNOME
+
+    Mainly used for Location Files.
+    """
+
     _schema = ComponentMoverSchema
 
     _ref_as = 'component_mover'

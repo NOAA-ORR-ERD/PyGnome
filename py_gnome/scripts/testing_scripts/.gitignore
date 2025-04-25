@@ -1,5 +1,7 @@
 /script*/images/*
 
+script_raster_test/raster.bmp
+
 script_boston/EbbTides.cur
 script_boston/EbbTidesShio.txt
 script_boston/MassBayMap.bna

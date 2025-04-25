@@ -6,14 +6,10 @@ unit tests for cy_wind_mover wrapper
 designed to be run with py.test
 """
 
-
-
-
 import os
 
 import numpy as np
-
-from pytest import raises
+import pytest
 
 from gnome.basic_types import (spill_type, ts_format,
                                velocity_rec,
@@ -79,7 +75,8 @@ def test_eq():
 
 
 # use following constant wind for testing
-const_wind = np.zeros((1, ), dtype=velocity_rec)
+# can't figure out how to get a scalar other than create a array and extract ...
+const_wind = np.zeros((1, ), dtype=velocity_rec)[0]
 const_wind['u'] = 50  # meters per second?
 const_wind['v'] = 100
 
@@ -294,7 +291,7 @@ class TestVariableWind(object):
         self.wm.set_ossm(ossm)
 
         # this should fail because our time series is not set to extrapolate
-        with raises(OSError):
+        with pytest.raises(OSError):
             self.wm.prepare_for_model_step(self.cm.model_time,
                                            self.cm.time_step)
 

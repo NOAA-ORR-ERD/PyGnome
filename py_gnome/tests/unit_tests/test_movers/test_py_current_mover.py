@@ -139,7 +139,6 @@ def test_default_props():
     assert py_cur.uncertain_along == 0.5
     assert py_cur.uncertain_cross == 0.25
     assert py_cur.scale_value == 1
-    #assert py_cur.time_offset == 0
     assert py_cur.default_num_method == 'RK2'
     #assert py_cur.grid_topology == None
 

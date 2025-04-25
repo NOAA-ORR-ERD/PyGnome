@@ -6,8 +6,9 @@ movers needs
 ** NOTE: **
     These are global declarations
 
-    For instance: If the PointWindMover that uses array_types.PointWindMover updates
-    the properties of 'windages' ArrayType, it will change it universally.
+    For instance: If the PointWindMover that uses array_types.PointWindMover
+    updates the properties of 'windages' ArrayType, it will change it
+    universally.
 
     The user/mover should not need to change dtype or shape internally. If
     these need to change, it should be done here.
@@ -73,7 +74,7 @@ class ArrayType(AddLogger):
     def initialize_null(self, shape=None):
         """
         initialize array with 0 elements. Used so SpillContainer can
-        initializes all arrays with 0 elements. Used when the model is rewound.
+        initialize all arrays with 0 elements. Used when the model is rewound.
         The purpose is to show all data_arrays even if model is not yet running
         or no particles have been released
         """
@@ -121,7 +122,8 @@ class ArrayType(AddLogger):
         :param value: the current value that is replicated
         :type value: this must have shape and dtype equal to self.shape
             and self.dtype
-        :param *args: accept more arguments as derived class may divide LE on
+
+        ``*args``: accept more arguments as derived class may divide LE on
             split and in this case, user can specify a list of fractions for
             this division.
         '''
@@ -166,7 +168,7 @@ class IdArrayType(ArrayType):
         This is only used for 'id' of particle.
         shape attribute and initial_value are ignored
         since you always get an array of shape (num_elements,)
-        Define *args to keep method signature the same
+        Define ``*args`` to keep method signature the same
         '''
         array = np.arange(self.initial_value,
                           num_elements + self.initial_value, dtype=self.dtype)

@@ -69,6 +69,7 @@ class Renderer(Outputter, MapCanvas):
                   ('raster_map_outline', (0, 0, 0)),  # black
                   ('grid_1', (51, 78, 0)),
                   ('grid_2', (175, 175, 175)),
+                  ('on_tidal_flat', (0, 255, 0)),  # green
                   ]
 
     background_map_name = 'background_map.'
@@ -542,13 +543,19 @@ class Renderer(Outputter, MapCanvas):
                              diameter=self.point_size,
                              color=color,
                              shape="x")
-            # draw the four pixels for the elements not on land and
-            # not off the map
-            points_in_water = positions[~on_land]
+
+            # which particles are on a tidal flat?
+            on_tidal_flat = sc['status_codes'] == oil_status.on_tideflat
+            self.draw_points(positions[on_tidal_flat],
+                             diameter=2,
+                             color='on_tidal_flat',
+                             shape="round")
+
+            points_in_water = positions[~on_land & ~on_tidal_flat]
             if self.depth_colors is not None:
                 color = self._color_ramp.get_color_indices(points_in_water[:, 2])
 
-            self.draw_points(positions[~on_land],
+            self.draw_points(points_in_water,
                              diameter=self.point_size,
                              color=color,
                              shape="round")

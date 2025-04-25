@@ -205,10 +205,13 @@ class MapCanvas(object):
     def add_color_ramp(self, color_scheme, min_val, max_val):
         """
         generate depth colors to the gd images
+
         :param color_scheme: color scheme to render images
-        type: 'magma', 'inferno', 'plasma', 'viridis', 'cividis',
-              'twilight', 'twilight_shifted', 'turbo'
+        :type color_scheme: ("magma", "inferno", "plasma", "viridis", "cividis",
+                            "twilight", "twilight_shifted", "turbo")
+
         :param min_val: value to map to the first color in the scheme
+
         :param max_val: value to map to the last color in the scheme
         """
         existing_colors = self.fore_image.get_color_names()

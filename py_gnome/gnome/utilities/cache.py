@@ -23,16 +23,21 @@ from gnome.spill_container import (SpillContainerData,
 # this should happen once, on first import
 # it will get cleaned up when python exits
 # all individual cache dirs go in this one.
+# FixME: why have one temp dir per Python instance,
+#        rather than one per cache instance?
 
-_cache_dir = tempfile.mkdtemp(prefix='gnome.')
 
+# global_cache_dir = tempfile.mkdtemp(prefix='gnome_cache.')
+_CacheDirObject = tempfile.TemporaryDirectory(prefix='gnome_cache.')
+global_cache_dir = _CacheDirObject.name
 
 class CacheError(Exception):
     'Here so we can be sure the user knows the error is coming from here'
     pass
 
-
-def clean_up_cache(dir_name=_cache_dir):
+# No longer needed -- tempfile.TemporaryDirectory takes care of this for us
+# but it's used in a test, so ...
+def clean_up_cache(dir_name=global_cache_dir):
     """
     Deletes a cache dir.
 
@@ -52,13 +57,11 @@ def clean_up_cache(dir_name=_cache_dir):
         warnings.warn(repr(excp))
 
 
-# need to clean up temp directories at exit:
-# this will clean up the master temp dir, and anything in it if
-# something went wrong with __del__ in the individual objects
-atexit.register(clean_up_cache)
+# no longer needed -- tempfile.TempDir takes care of this
+# atexit.register(clean_up_cache)
 
 
-class ElementCache(object):
+class ElementCache():
     """
     Cache for element data -- i.e. the data associated with the particles.
     This caches UncertainSpillContainerPair
@@ -78,7 +81,9 @@ class ElementCache(object):
                                If not provided, a temp dir will be created by
                                the python tempfile module
         """
-        self.create_new_dir(cache_dir)
+        # if cache_dir is None:
+        #     cache_dir = tempfile.mkdtemp(dir=global_cache_dir)
+        self._create_new_dir(cache_dir)
 
         # dict to hold recent data so we don't need to pull from the
         # file system
@@ -110,9 +115,11 @@ class ElementCache(object):
             return os.path.join(self._cache_dir,
                                 'step_%06i.npz' % step_num)
 
-    def create_new_dir(self, cache_dir=None):
+    def _create_new_dir(self, cache_dir=None):
         if cache_dir is None:
-            self._cache_dir = tempfile.mkdtemp(dir=_cache_dir)
+            self.cache_dir_obj = tempfile.TemporaryDirectory(dir=global_cache_dir)
+            self._cache_dir = self.cache_dir_obj.name
+            # self._cache_dir = tempfile.mkdtemp(dir=global_cache_dir)
         else:
             self._cache_dir = cache_dir
         return True
@@ -245,4 +252,4 @@ class ElementCache(object):
         # clean out the disk cache
         if os.path.isdir(self._cache_dir):
             shutil.rmtree(self._cache_dir)
-        self.create_new_dir()
+        self._create_new_dir()

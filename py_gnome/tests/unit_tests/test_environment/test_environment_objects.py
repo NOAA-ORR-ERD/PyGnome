@@ -10,6 +10,7 @@ import pytest
 
 from gnome.environment.environment_objects import SteadyUniformCurrent, GridCurrent, FileGridCurrent
 from gnome.spill_container import SpillContainer
+from gnome.utilities.time_utils import TZOffset
 
 import gnome.scripting as gs
 
@@ -125,7 +126,7 @@ def test_SteadyUniformCurrent_in_model():
                      duration=gs.hours(1),
                      time_step=gs.minutes(10),
                      )
-    model.spills += gs.surface_point_line_spill(num_elements=10,
+    model.spills += gs.point_line_spill(num_elements=10,
                                                 release_time=start_time,
                                                 start_position=(0,0))
     suc = SteadyUniformCurrent(math.sqrt(2), 45, units='knots')
@@ -182,6 +183,20 @@ def test_GridCurrent_angle():
     assert grid_cur_degrees.angle._gnome_unit == "radians"
     assert grid_cur_radians.angle.units == "radians"
     assert grid_cur_radians.angle._gnome_unit == "radians"
+
+
+def test_GridCurrent_timezone_offset():
+    roms_file_degrees = TEST_DATA_DIR / "example_roms_degrees.nc"
+    grid_cur_degrees = GridCurrent.from_netCDF(filename=roms_file_degrees)
+    
+    assert grid_cur_degrees.timezone_offset.offset == 0.0
+    assert grid_cur_degrees.angle.time is not None
+    assert grid_cur_degrees.angle.time.tz_offset is None # angle gets a constant time object with no timezone offset by default
+    grid_cur_degrees.timezone_offset = TZOffset(offset=5.0, title="Eastern")
+    assert grid_cur_degrees.timezone_offset.offset == 5.0
+    assert grid_cur_degrees.angle.timezone_offset.offset == 5.0
+    assert grid_cur_degrees.angle.time.tz_offset == 5.0
+    
 
 
 def test_GridCurrent_single_time():

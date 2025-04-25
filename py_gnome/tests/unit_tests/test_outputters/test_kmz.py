@@ -3,33 +3,32 @@ tests for kmz outputter
 '''
 
 import os
-from glob import glob
+# from glob import glob
 from datetime import datetime, timedelta
+from pathlib import Path
 
-import numpy as np
 import pytest
-from pytest import raises
 
 from gnome.outputters import KMZOutput
 from gnome.outputters import kmz_templates
+import gnome.scripting as gs
 
 
-from gnome.spills import PolygonRelease, Spill, surface_point_line_spill
+from gnome.spills.spill import Spill, point_line_spill
+from gnome.spills.release import PolygonRelease
 from gnome.spill_container import SpillContainerPair
 from gnome.movers import RandomMover, constant_point_wind_mover
 from gnome.model import Model
+
+from .conftest import count_files_in_zip
 
 # file extension to use for test output files
 #  this is used by the output_filename fixture in conftest:
 FILE_EXTENSION = ".kmz"
 
-
-def local_dirname():
-    dirname = os.path.split(__file__)[0]
-    dirname = os.path.join(dirname, "output_kmz")
-    if not os.path.exists(dirname):
-        os.mkdir(dirname)
-    return dirname
+HERE = Path(__file__).parent
+OUTPUT_DIR = HERE / "output_kmz"
+OUTPUT_DIR.mkdir(exist_ok=True)
 
 
 @pytest.fixture(scope='function')
@@ -41,13 +40,13 @@ def model(sample_model, output_filename):
     model.cache_enabled = True
     model.uncertain = True
 
-    model.spills += surface_point_line_spill(2,
-                                             start_position=rel_start_pos,
-                                             release_time=model.start_time,
-                                             end_position=rel_end_pos)
+    model.spills += point_line_spill(2,
+                                     start_position=rel_start_pos,
+                                     release_time=model.start_time,
+                                     end_position=rel_end_pos)
 
     model.time_step = 3600
-    model.duration = timedelta(hours=1)
+    model.duration = timedelta(hours=2)
     model.rewind()
 
     return model
@@ -55,7 +54,7 @@ def model(sample_model, output_filename):
 
 def test_init(output_dir):
     'simple initialization passes'
-    kmz = KMZOutput(os.path.join(output_dir, 'test.kmz'))
+    kmz = KMZOutput(output_dir / 'test.kmz')
 
 # check_filename now happens in prepare_for_model_run
 # def test_init_exceptions():
@@ -77,29 +76,29 @@ def test_exceptions(output_filename):
     kmz.rewind()  # delete temporary files
 
 #     this test is now moot since kmz extension is added to the filename on init
-#     with raises(ValueError):
+#     with pytest.raises(ValueError):
 #         # must be filename, not dir name
 #         file_path = os.path.abspath(os.path.dirname(__file__))
 #         KMZOutput(file_path).prepare_for_model_run(datetime.now(), spill_pair)
 
-    with raises(ValueError):
+    with pytest.raises(ValueError):
         file_path = 'invalid_path_to_file/file.kmz'
         KMZOutput(file_path).prepare_for_model_run(datetime.now(), spill_pair)
 
-    with raises(TypeError):
+    with pytest.raises(TypeError):
         # need to pass in model start time
         kmz.prepare_for_model_run(num_time_steps=4)
 
-    with raises(TypeError):
+    with pytest.raises(TypeError):
         # need to pass in model start time and spills
         kmz.prepare_for_model_run()
 
-    with raises(ValueError):
+    with pytest.raises(ValueError):
         # need a cache object
         kmz.write_output(0)
 
 #    Maybe add ability to specify which data later on..
-#    with raises(ValueError):
+#    with pytest.raises(ValueError):
 #        kmz.which_data = 'some random string'
 
     # changed renderer and netcdf ouputter to delete old files in
@@ -115,19 +114,21 @@ def test_exceptions(output_filename):
                                  num_time_steps=4)
 
 
-    # with raises(AttributeError):
+    # with pytest.raises(AttributeError):
     #     'cannot change after prepare_for_model_run has been called'
     #     kmz.which_data = 'most'
 
 def test_timesteps(model):
-    filename = os.path.join(local_dirname(), "multi_timesteps.kml")
+    filename = OUTPUT_DIR / "multi_timesteps.kml"
 
     kmz = KMZOutput(filename)
     model.outputters += kmz
 
     #run the model
-    model.full_run()
-
+    for step in model:
+        print(step)
+        # making sure -- this was a bug at one point
+        assert isinstance(step['KMZOutput']['output_filename'], str)
 
 
 ## test the kml templates
@@ -159,9 +160,76 @@ def test_on_timestep_kml():
                                            )
     assert True
 
+def test_serialize():
+    """
+    Can we serialize / deserialize a kmz outputter?
+    """
+    kmzo = KMZOutput(Path(__file__).parent / "example_kmz.kmz")
+
+    print(repr(kmzo.filename))
+
+    json = kmzo.serialize()
+
+    print(json)
+
+    {
+        'obj_type':
+        'gnome.outputters.kmz.KMZOutput',
+        'id':
+        '414ce584-0480-11f0-bcb0-acde48001122',
+        'name':
+        'KMZOutput_5',
+        'on':
+        True,
+        'output_zero_step':
+        True,
+        'output_last_step':
+        True,
+        'output_single_step':
+        False,
+        'filename':
+        '/Users/chris.barker/Hazmat/GitLab/pygnome/py_gnome/tests/unit_tests/test_outputters/example_kmz.kmz'
+    }
+
+    kmzo2 = KMZOutput.deserialize(json)
+
+    assert kmzo == kmzo2
 
 
+#@pytest.mark.xfail
+# NOTE: This currently fails because the model isn't allowing partial runs to output
+def test_model_stops_in_middle(model):
+    """
+    If the model stops in the middle of a run:
+    e.g. runs out of data, it should still output results.
+    """
+    filename = OUTPUT_DIR / "stop_in_middle"
 
+    # set up a WindMover that's too short.
+    times = [model.start_time + (gs.minutes(30) * i) for i in range(3)]
+    # long enough record
+    # times = [model.start_time + (gs.minutes(30) * i) for i in range(5)]
+
+    winds = gs.wind_from_values([(dt, 5, 90) for dt in times])
+
+    model.movers += gs.WindMover(winds)
+    kmz = KMZOutput(filename,
+                      output_timestep=gs.hours(1),
+                      output_zero_step=False,
+                      output_last_step=False,
+                      output_single_step=False,
+                      output_start_time=model.start_time,
+                      )
+    model.outputters += kmz
+
+    print(model.movers)
+    # run the model
+    with pytest.raises(Exception):
+        model.full_run()
+
+    # check the zipfile has certain and uncertain for 1 output
+    len_zip = count_files_in_zip(filename.with_suffix('.kmz'))
+    assert len_zip == 3	# two icons and kml, just check it got created
 
 
 # def test_rewind(model, output_dir):

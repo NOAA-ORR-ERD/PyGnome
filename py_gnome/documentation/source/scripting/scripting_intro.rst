@@ -46,8 +46,8 @@ This example does not load any external data, but creates a simple map and mover
 The "spill" is a conservative substance, i.e. a "passive tracer."
 
 This example is in the PyGNOME source under "scripts/example_scripts", or can be downloaded here:
-.. this download link is getting rendered oddly -- and why do I need so many ../?
-:download:`simple_script.py <../../../../../scripts/example_scripts/simple_script.py`
+
+:download:`simple_script.py <../../../scripts/example_scripts/simple_script.py>`
 
 Initialize the Model
 --------------------

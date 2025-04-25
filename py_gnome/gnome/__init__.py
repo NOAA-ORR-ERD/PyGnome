@@ -5,7 +5,7 @@ import various names, and provides:
 
 initialize_console_log(level='debug')
 
-  set up the logger to dump to console.
+set up the logger to dump to console.
 """
 import sys
 import os
@@ -22,8 +22,12 @@ import nucos
 # just so it will be in the namespace.
 from .gnomeobject import GnomeId, AddLogger
 
-__version__ = '1.1.12'
+__version__ = "1.1.16"
 
+# set up to show DeprecationWarnings that come from PyGNOME
+warnings.filterwarnings("default",
+                        category=DeprecationWarning,
+                        module="gnome.*")
 
 if os.name == 'nt':
     # In Windows, we need to add the location of our lib_gnome.dll to the
@@ -47,11 +51,15 @@ def check_dependency_versions():
 
     These are checked, as they are maintained by NOAA ERD, so may be installed
     from source, rather than managed by conda, etc.
+
+    ::
+
         gridded
         oillibrary
         nucos
         py_gd
         adios_db
+
     If the version is not at least as current as what's defined here
     a warning is displayed
     """
@@ -66,10 +74,10 @@ def check_dependency_versions():
         else:
             return True
 
-    libs = [('gridded', '0.6.5', ''),
-            ('nucos', '3.2.0', ''),
-            ('py_gd', '2.2.0', ''),
-            ('adios_db', '1.2.0', 'Only required to use the ADIOS Database '
+    libs = [('gridded', '0.7.1', ''),
+            ('nucos', '3.4.0', ''),
+            ('py_gd', '2.3.0', ''),
+            ('adios_db', '1.2.5', 'Only required to use the ADIOS Database '
                                   'JSON format for oil data.')
             ]
 

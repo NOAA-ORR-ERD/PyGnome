@@ -200,6 +200,9 @@ cdef class CyCatsMover(CyCurrentMover):
         Takes a CyShioTime object as input and sets C++ Cats mover properties
         from the Shio object.
         """
+        # print("in set_shio")
+        # print("CyShioTime:", CyShioTime)
+        # print("cy_shio:", cy_shio)
         self.cats.SetTimeDep(cy_shio.shio)
 
         if cy_shio.station_location is not None and self.ref_point is None:
@@ -258,12 +261,17 @@ cdef class CyCatsMover(CyCurrentMover):
         cdef OSErr err
 
         err = self.cats.InitMover()
-        if err is not False:
-            raise ValueError('CATSMover.compute_velocity_scale(..) '
-                             'returned an error. Reference point not valid. OSErr: {0}'
-                             .format(err))
+        if err:
+            return err
 
-        return True
+# Make this a runtime error or warning, let calling function decide
+#         if err is not False:
+#             raise ValueError('CATSMover.compute_velocity_scale(..) '
+#                              'returned an error. Reference point not valid. OSErr: {0}'
+#                              .format(err))
+
+        #return True
+        return 0
 
     def get_move(self,
                  model_time,

@@ -218,6 +218,7 @@ class ExampleObject(GnomeId):
         self.a_bool = a_bool
         self.a_str = a_str
         self.a_ndarray = a_ndarray
+        super().__init__() #Super is required for id, name, etc....
 
 class DummySchema(ObjTypeSchema):
 
@@ -464,6 +465,10 @@ def test_diff_multiple_differrences():
 
 # FIXME: there should be a test of weird arrays, like DatetimeValue2dArray
 
+def test_name_incrementing():
+    start_idx = ExampleObject._instance_count + 1
+    a = [ExampleObject() for i in range(10)]
+    assert all([a[i].name == f'ExampleObject_{start_idx + i}' for i in range(10)])
 
 def test_AddLogger_bad_kwargs():
     """

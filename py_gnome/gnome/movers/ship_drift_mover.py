@@ -33,6 +33,9 @@ class ShipDriftMoverSchema(ProcessSchema):
 
 
 class ShipDriftMover(Mover):
+    """
+    mover to model ship drift
+    """
 
     _schema = ShipDriftMoverSchema
 

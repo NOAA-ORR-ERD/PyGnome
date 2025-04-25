@@ -15,7 +15,7 @@ from gnome.basic_types import oil_status, status_code_type  # .in_water
 from gnome.environment import gridcur
 
 from gnome.movers import CurrentMover
-from gnome.spills import grid_spill
+from gnome.spills.spill import grid_spill
 
 import gnome.scripting as gs
 

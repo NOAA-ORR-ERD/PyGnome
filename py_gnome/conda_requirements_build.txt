@@ -4,9 +4,10 @@
 cython=3.*
 pip
 setuptools>=62  # older versions uses different build dirs
-setuptools-scm>=6.2
+# setuptools-scm>=6.2
+pip
 gitpython
 python-build
 cmake
 ninja
-scikit-build-core>=0.7.*
+scikit-build-core>=0.9.9

@@ -22,9 +22,8 @@ from gnome.maps import GnomeMap, MapFromBNA
 from gnome.environment import Wind, Tide, constant_wind, Water, Waves, GridWind
 from gnome.model import Model
 
-from gnome.spills import (Spill,
-                         surface_point_line_spill,
-                         Release)
+from gnome.spills.spill import Spill, point_line_spill
+from gnome.spills.release import Release
 
 from gnome.movers import SimpleMover, RandomMover, PointWindMover, CatsMover, WindMover
 
@@ -39,7 +38,7 @@ from gnome.outputters import Renderer, TrajectoryGeoJsonOutput
 
 from .conftest import sample_model_weathering, testdata, test_oil
 from gnome.spills.substance import NonWeatheringSubstance
-from gnome.utilities.time_utils import date_to_sec
+from gnome.utilities.time_utils import date_to_sec, TZOffset
 
 from gnome.exceptions import ReferencedObjectNotSet, GnomeRuntimeError
 
@@ -57,6 +56,11 @@ def test_exceptions():
 
     model.duration = -timedelta(days=1)
     model.check_inputs()
+
+    # use run_backwards flag
+    model.time_step = 900
+    model.duration = timedelta(days=1)
+    model.run_backwards = True
 
     wind = constant_wind(10, 270, units='knots')
     water = Water()
@@ -246,7 +250,7 @@ def test_release_end_of_step(duration):
                   duration=timedelta(hours=duration))
 
     end_release_time = model.start_time + model.duration
-    model.spills += surface_point_line_spill(10, (0.0, 0.0, 0.0),
+    model.spills += point_line_spill(10, (0.0, 0.0, 0.0),
                                              model.start_time,
                                              end_release_time=end_release_time)
 
@@ -314,7 +318,7 @@ def test_simple_run_rewind():
     model.movers += a_mover
     assert len(model.movers) == 1
 
-    spill = surface_point_line_spill(num_elements=10,
+    spill = point_line_spill(num_elements=10,
                                      start_position=(0., 0., 0.),
                                      release_time=start_time)
 
@@ -353,7 +357,8 @@ def test_simple_run_backward_rewind():
 
     start_time = datetime(2012, 9, 15, 12, 0)
 
-    model = Model(time_step = -900, duration = -timedelta(days=1))
+    #model = Model(time_step = -900, duration = -timedelta(days=1))
+    model = Model(run_backwards = True)
 
     model.map = GnomeMap()
     a_mover = SimpleMover(velocity=(1., 2., 0.))
@@ -361,7 +366,7 @@ def test_simple_run_backward_rewind():
     model.movers += a_mover
     assert len(model.movers) == 1
 
-    spill = surface_point_line_spill(num_elements=10,
+    spill = point_line_spill(num_elements=10,
                                      start_position=(0., 0., 0.),
                                      release_time=start_time)
 
@@ -406,7 +411,7 @@ def test_simple_run_with_map():
     model.movers += a_mover
     assert len(model.movers) == 1
 
-    spill = surface_point_line_spill(num_elements=10,
+    spill = point_line_spill(num_elements=10,
                                      start_position=(0., 0., 0.),
                                      release_time=start_time)
 
@@ -638,7 +643,7 @@ def test_all_movers(start_time, release_delay, duration):
 
     release_time = (start_time +
                     timedelta(seconds=model.time_step * release_delay))
-    model.spills += surface_point_line_spill(num_elements=10,
+    model.spills += point_line_spill(num_elements=10,
                                              start_position=start_loc,
                                              release_time=release_time)
 
@@ -723,7 +728,7 @@ def test_linearity_of_wind_movers(wind_persist):
     model1.duration = timedelta(hours=1)
     model1.time_step = timedelta(hours=1)
     model1.start_time = start_time
-    sp = surface_point_line_spill(num_elements=num_LEs,
+    sp = point_line_spill(num_elements=num_LEs,
                                  start_position=(1., 2., 0.),
                                  release_time=start_time,
                                  substance=NonWeatheringSubstance(windage_persist=wind_persist))
@@ -737,7 +742,7 @@ def test_linearity_of_wind_movers(wind_persist):
     model2.duration = timedelta(hours=10)
     model2.time_step = timedelta(hours=1)
     model2.start_time = start_time
-    model2.spills += surface_point_line_spill(num_elements=num_LEs,
+    model2.spills += point_line_spill(num_elements=num_LEs,
                                               start_position=(1., 2., 0.),
                                               release_time=start_time,
                                               substance=NonWeatheringSubstance(windage_persist=wind_persist))
@@ -795,13 +800,13 @@ def test_model_release_after_start():
 
     # add a spill that starts after the run begins.
     release_time = start_time + timedelta(hours=1)
-    model.spills += surface_point_line_spill(num_elements=5,
+    model.spills += point_line_spill(num_elements=5,
                                              start_position=(0, 0, 0),
                                              release_time=release_time)
 
     # and another that starts later..
 
-    model.spills += surface_point_line_spill(num_elements=4,
+    model.spills += point_line_spill(num_elements=4,
                                              start_position=(0, 0, 0),
                                              release_time=(start_time +
                                                            timedelta(hours=2))
@@ -828,18 +833,20 @@ def test_model_release_after_start_backwards():
     seconds_in_minute = 60
     start_time = datetime(2013, 2, 22, 0)
 
-    model = Model(time_step=-30 * seconds_in_minute,
-                  start_time=start_time, duration=timedelta(hours=-3))
+#     model = Model(time_step=-30 * seconds_in_minute,
+#                   start_time=start_time, duration=timedelta(hours=-3))
+    model = Model(time_step=30 * seconds_in_minute,
+                  start_time=start_time, duration=timedelta(hours=3), run_backwards = True)
 
     # add a spill that starts after the run begins.
     release_time = start_time - timedelta(hours=1)
-    model.spills += surface_point_line_spill(num_elements=5,
+    model.spills += point_line_spill(num_elements=5,
                                              start_position=(0, 0, 0),
                                              release_time=release_time)
 
     # and another that starts later..
 
-    model.spills += surface_point_line_spill(num_elements=4,
+    model.spills += point_line_spill(num_elements=4,
                                              start_position=(0, 0, 0),
                                              release_time=(start_time -
                                                            timedelta(hours=2))
@@ -867,10 +874,6 @@ def test_release_at_right_time():
     supposed to be released then.  Particularly for the
     first time step of the model.
     '''
-    # default to now, rounded to the nearest hour
-    # seconds_in_minute = 60
-    # minutes_in_hour = 60
-    # seconds_in_hour = seconds_in_minute * minutes_in_hour
 
     start_time = datetime(2013, 1, 1, 0)
     time_step = gs.hours(2)
@@ -881,7 +884,7 @@ def test_release_at_right_time():
 
     # add a spill that starts right when the run begins
 
-    model.spills += surface_point_line_spill(num_elements=12,
+    model.spills += point_line_spill(num_elements=12,
                                              start_position=(0, 0, 0),
                                              release_time=start_time,
                                              end_release_time=start_time + gs.hours(6),
@@ -1060,7 +1063,7 @@ def test_all_weatherers_in_model(model, add_langmuir):
 
 @pytest.mark.xfail()
 def test_setup_model_run(model):
-    'turn of movers/weatherers and ensure data_arrays change'
+    'turn off movers/weatherers and ensure data_arrays change'
     model.environment += Water()
     model.rewind()
     model.step()
@@ -1102,7 +1105,7 @@ def test_contains_object(sample_model_fcn):
     water, wind = Water(), constant_wind(1., 0)
     model.environment += [water, wind]
 
-    sp = surface_point_line_spill(500, (0, 0, 0),
+    sp = point_line_spill(500, (0, 0, 0),
                                   rel_time + timedelta(hours=1),
                                   substance=model.spills[0].substance,
                                   amount=100,
@@ -1200,7 +1203,7 @@ def test_staggered_spills_weathering(sample_model_fcn, delay):
     model.cache = True
     model.outputters += gnome.outputters.WeatheringOutput()
 
-    cs = surface_point_line_spill(500, (0, 0, 0),
+    cs = point_line_spill(500, (0, 0, 0),
                                   rel_time + delay,
                                   end_release_time=(rel_time + delay +
                                                     timedelta(hours=1)),
@@ -1278,7 +1281,7 @@ def test_two_substance_same(sample_model_fcn, s0=test_oil, s1=test_oil):
     rel_time = model.spills[0].release_time
     model.duration = timedelta(days=1)
 
-    cs = surface_point_line_spill(500, (0, 0, 0),
+    cs = point_line_spill(500, (0, 0, 0),
                                   rel_time,
                                   end_release_time=(rel_time +
                                                     timedelta(hours=1)),
@@ -1359,7 +1362,7 @@ def test_two_substance_different(sample_model_fcn, s0=test_oil, s1="oil_crude"):
     rel_time = model.spills[0].release_time
     model.duration = timedelta(days=1)
 
-    cs = surface_point_line_spill(500, (0, 0, 0),
+    cs = point_line_spill(500, (0, 0, 0),
                                   rel_time,
                                   end_release_time=(rel_time +
                                                     timedelta(hours=1)),
@@ -1402,8 +1405,8 @@ def test_weathering_data_attr():
     s1_rel = datetime.now().replace(microsecond=0)
     s2_rel = s1_rel + timedelta(seconds=ts)
 
-    s = [surface_point_line_spill(10, (0, 0, 0), s1_rel),
-         surface_point_line_spill(10, (0, 0, 0), s2_rel)]
+    s = [point_line_spill(10, (0, 0, 0), s1_rel),
+         point_line_spill(10, (0, 0, 0), s2_rel)]
 
     model = Model(time_step=ts, start_time=s1_rel)
     model.spills += s
@@ -1483,6 +1486,8 @@ class TestMergeModels:
             for item in getattr(m, oc):
                 assert item in getattr(model, oc)
 
+
+    @pytest.mark.filterwarnings("ignore:Provided map bounds superscede map bounds")
     def test_load_location_file(self, saveloc_, model):
         '''
         create a model
@@ -1493,7 +1498,7 @@ class TestMergeModels:
         m.environment += [Water(), constant_wind(1., 0.)]
         m.weatherers += Evaporation(m.environment[0], m.environment[-1])
         # has to have the same substance as the sample model
-        m.spills += surface_point_line_spill(10, (0, 0, 0),
+        m.spills += point_line_spill(10, (0, 0, 0),
                                              datetime(2014, 1, 1, 12, 0),
                                              substance=test_oil)
 
@@ -1703,7 +1708,7 @@ class Test_add_weathering(object):
 
 def test_get_spill_property():
     model = Model()
-    model.spills += gs.surface_point_line_spill(num_elements=10,
+    model.spills += gs.point_line_spill(num_elements=10,
                                                 start_position=(0.0, 0.0),
                                                 release_time=model.start_time,
                                                 )
@@ -1732,10 +1737,35 @@ def test_get_spill_property():
     print(repr(prop))
     assert np.array_equal(prop, [0., 0., 0., 0., 0., 0., 0., 0., 0., 0.])
 
-# if __name__ == '__main__':
+def test_step_output():
+    """
+    tests that the basic output from step is what we want
+    """
+    model = Model() # all the defaults
 
-    # test_all_movers()
-    # test_release_at_right_time()
-    # test_simple_run_with_image_output()
+    step1 = model.step()
 
-    # test_simple_run_with_image_output_uncertainty()
+    assert step1['step_num'] == 0
+    assert step1['step_time'] == model.start_time.isoformat(timespec='minutes')
+
+def test_model_tz_offset():
+    """
+    all the time zone offset does is sit there for info
+    and save and reload from a save file
+
+    make sure it at least does that.
+    """
+
+    model = Model()
+
+    assert model.timezone_offset.offset == None
+
+    model = Model(timezone_offset=TZOffset(-3.5, "half hour tz"))
+
+    assert model.timezone_offset.offset == -3.5
+
+    assert model.timezone_offset.title == "half hour tz"
+
+
+
+

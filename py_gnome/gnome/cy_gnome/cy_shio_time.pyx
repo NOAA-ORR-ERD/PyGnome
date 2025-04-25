@@ -144,25 +144,27 @@ cdef class CyShioTime(CyOSSMTime):
                 'yeardata={0.yeardata!r}'
                 ')'.format(self))
 
-    def __str__(self):
-        """Return string representation of this object"""
-        """info = {'Long': round(g_wp[0]['long'], 2),
-                   'Lat': round( g_wp[0]['lat'], 2),
-                   'StationName': sName, 'StationType': sType,
-                   'DaylightSavingsOff': self.shio.daylight_savings_off}
-        """
+    # this is broken -- no get_info method ????
+    # def __str__(self):
+    #     """Return string representation of this object"""
+    #     """info = {'Long': round(g_wp[0]['long'], 2),
+    #                'Lat': round( g_wp[0]['lat'], 2),
+    #                'StationName': sName, 'StationType': sType,
+    #                'DaylightSavingsOff': self.shio.daylight_savings_off}
+    #     """
 
-        info = ("CyShioTime object - Info read from file:\n"
-                "  File: {1.path_filename} \n"
-                "  StationName : {0[StationName]},"
-                "  StationType : {0[StationType]}\n"
-                "  (Long, Lat) : ({0[Long]}, {0[Lat]})\n"
-                "  DaylightSavingsOff : {0[DaylightSavingsOff]}"
-                "".format(self.get_info(), self))
+    #     info = ("CyShioTime object - Info read from file:\n"
+    #             "  File: {1.path_filename} \n"
+    #             "  StationName : {0[StationName]},"
+    #             "  StationType : {0[StationType]}\n"
+    #             "  (Long, Lat) : ({0[Long]}, {0[Lat]})\n"
+    #             "  DaylightSavingsOff : {0[DaylightSavingsOff]}"
+    #             "".format(self.get_info(), self))
 
-        return info
+    #     return info
 
     def __eq(self, CyShioTime other):
+        # used by __richcmp__
         attrs = ('filename', 'daylight_savings_off', 'scale_factor',
                  'station', 'station_type', 'station_location',
                  'yeardata')

@@ -3,6 +3,7 @@
 import pathlib
 import shutil
 import warnings
+import datetime
 
 import geopandas as gpd
 import pandas as pd
@@ -10,19 +11,23 @@ from shapely.geometry import Point
 
 from gnome.utilities.hull import calculate_hull, calculate_contours
 
+import logging
+logger = logging.getLogger(__name__)
+
 # Ignore a pyogrio warning that we dont care about
 warnings.filterwarnings('ignore', message='.*Possibly due to too larger',
                         category=RuntimeWarning, module='pyogrio')
 
 
 class ShapefileBuilder(object):
-    def __init__(self, filename, zip_output=True, **kwargs):
+    def __init__(self, filename, zip_output=True, timeoffset=None, **kwargs):
         '''
         :param filename: Full path and basename of the shape file.
         :param zip: If we should zip the final shapefile results.
         '''
         pathlib_path = pathlib.Path(filename)
         self.zip_output = zip_output
+        self.timeoffset = timeoffset
         if zip_output:
             self.fullfilename = pathlib_path.with_suffix('.zip')
         else:
@@ -68,13 +73,13 @@ class ShapefileBuilder(object):
 
 
 class ParticleShapefileBuilder(ShapefileBuilder):
-    def __init__(self, filename, zip_output=True, **kwargs):
+    def __init__(self, filename, zip_output=True, timeoffset=None, **kwargs):
         '''
         :param filename: Full path and basename of the shape file.
         :param zip: If we should zip the final shapefile results.
         '''
         super(ParticleShapefileBuilder, self).__init__(filename, zip_output,
-                                                       **kwargs)
+                                                       timeoffset, **kwargs)
 
     def append(self, sc):
         """
@@ -82,6 +87,11 @@ class ParticleShapefileBuilder(ShapefileBuilder):
         data frame
         """
         super(ParticleShapefileBuilder, self).append(sc)
+        current_datetime_utc = None
+        if self.timeoffset is not None:
+            current_timezone_by_offset = datetime.timezone(datetime.timedelta(minutes=int(self.timeoffset*60)))
+            current_datetime_with_offset = sc.current_time_stamp.replace(tzinfo=current_timezone_by_offset)
+            current_datetime_utc = current_datetime_with_offset.astimezone(datetime.timezone.utc).isoformat()
         frame_data = {
             'LE_id': sc['id'],
             'Spill_id': sc['spill_num'],
@@ -92,7 +102,9 @@ class ParticleShapefileBuilder(ShapefileBuilder):
             'Time': sc.current_time_stamp.strftime('%Y-%m-%dT%H:%M:%S'),
             'Position': [Point(pt) for pt in sc['positions']]
         }
-
+        # Only add UTC datetime if we have it...
+        if current_datetime_utc is not None:
+            frame_data['Time_UTC'] = current_datetime_utc
         # Some elements are optional... check those here:
         if 'surface_concentration' in sc and not sc.uncertain:
             frame_data['Surf_Conc'] = sc['surface_concentration']
@@ -129,13 +141,13 @@ def area_in_meters(this_hull):
 
 
 class BoundaryShapefileBuilder(ShapefileBuilder):
-    def __init__(self, filename, zip_output=True, **kwargs):
+    def __init__(self, filename, zip_output=True, timeoffset=None, **kwargs):
         '''
         :param filename: Full path and basename of the shape file.
         :param zip: If we should zip the final shapefile results.
         '''
         super(BoundaryShapefileBuilder, self).__init__(filename, zip_output,
-                                                       **kwargs)
+                                                       timeoffset, **kwargs)
 
     def append(self, sc, separate_by_spill=True, hull_ratio=0.5,
                hull_allow_holes=False):
@@ -144,19 +156,48 @@ class BoundaryShapefileBuilder(ShapefileBuilder):
         data frame
         """
         super(BoundaryShapefileBuilder, self).append(sc)
+        # If we have a tuple or list for sc, we need to grab the timestep
+        # out of the first
+        current_time_stamp = None
+        if isinstance(sc, (tuple, list)):
+            current_time_stamp = sc[0].current_time_stamp
+        else:
+            current_time_stamp = sc.current_time_stamp
+        current_datetime_utc = None
+        if self.timeoffset is not None:
+            current_timezone_by_offset = datetime.timezone(datetime.timedelta(minutes=int(self.timeoffset*60)))
+            current_datetime_with_offset = current_time_stamp.replace(tzinfo=current_timezone_by_offset)
+            current_datetime_utc = current_datetime_with_offset.astimezone(datetime.timezone.utc).isoformat()
+
+        #TODO - Need to make this a variable
+        union_results = True
         # Calculate a concave hull
         hull = calculate_hull(sc, separate_by_spill=separate_by_spill,
-                              ratio=hull_ratio,
+                              ratio=hull_ratio, union_results=union_results,
                               allow_holes=hull_allow_holes)
+
         # Only process it if we get a hull back.
         # There are cases where the hull is not a polygon, and we skip those.
-        if hull:
-            frame_data = {
-                'geometry': [hull],
-                'area': [area_in_meters(hull)],
-                'time': sc.current_time_stamp.strftime('%Y-%m-%dT%H:%M:%S')
-            }
-
+        if len(hull['hulls']):
+            # make area array
+            areas = []
+            for h in hull['hulls']:
+                areas.append(area_in_meters(h))
+            if separate_by_spill:
+                frame_data = {
+                    'geometry': hull['hulls'],
+                    'spill_num': hull['spill_num'],
+                    'area': areas,
+                    'time': current_time_stamp.strftime('%Y-%m-%dT%H:%M:%S')
+                }
+            else:
+                frame_data = {
+                    'geometry': hull['hulls'],
+                    'area': areas,
+                    'time': current_time_stamp.strftime('%Y-%m-%dT%H:%M:%S')
+                }
+            if current_datetime_utc is not None:
+                frame_data['time_utc'] = current_datetime_utc
             gdf = gpd.GeoDataFrame(frame_data, crs='epsg:4326',
                                    geometry='geometry')
             self.data_frames.append(gdf)
@@ -173,13 +214,13 @@ class BoundaryShapefileBuilder(ShapefileBuilder):
 
 
 class ContourShapefileBuilder(ShapefileBuilder):
-    def __init__(self, filename, zip_output=True, **kwargs):
+    def __init__(self, filename, zip_output=True, timeoffset=None, **kwargs):
         '''
         :param filename: Full path and basename of the shape file.
         :param zip: If we should zip the final shapefile results.
         '''
         super(ContourShapefileBuilder, self).__init__(filename, zip_output,
-                                                      **kwargs)
+                                                      timeoffset, **kwargs)
 
     def append(self, sc, cutoff_struct=None, hull_ratio=0.5,
                hull_allow_holes=False):
@@ -219,6 +260,19 @@ class ContourShapefileBuilder(ShapefileBuilder):
         #   Create a geodataframe based on the array of generated hulls
         #   Append to the data_frames
 
+        # If we have a tuple or list for sc, we need to grab the timestep
+        # out of the first
+        current_time_stamp = None
+        if isinstance(sc, (tuple, list)):
+            current_time_stamp = sc[0].current_time_stamp
+        else:
+            current_time_stamp = sc.current_time_stamp
+        current_datetime_utc = None
+        if self.timeoffset is not None:
+            current_timezone_by_offset = datetime.timezone(datetime.timedelta(minutes=int(self.timeoffset*60)))
+            current_datetime_with_offset = current_time_stamp.replace(tzinfo=current_timezone_by_offset)
+            current_datetime_utc = current_datetime_with_offset.astimezone(datetime.timezone.utc).isoformat()
+
         # Calculate the contours
         contours = calculate_contours(sc, cutoff_struct=cutoff_struct,
                                       ratio=hull_ratio,
@@ -231,8 +285,10 @@ class ContourShapefileBuilder(ShapefileBuilder):
                 'cutoff_id': [c['cutoff_id'] for c in contours],
                 'color': [c['color'] for c in contours],
                 'label': [c['label'] for c in contours],
-                'time': sc.current_time_stamp.strftime('%Y-%m-%dT%H:%M:%S')
+                'time': current_time_stamp.strftime('%Y-%m-%dT%H:%M:%S')
             }
+            if current_datetime_utc is not None:
+                frame_data['time_utc'] = current_datetime_utc
             gdf = gpd.GeoDataFrame(frame_data, crs='epsg:4326',
                                    geometry='geometry')
             self.data_frames.append(gdf)

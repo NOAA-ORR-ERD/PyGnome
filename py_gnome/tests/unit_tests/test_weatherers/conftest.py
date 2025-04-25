@@ -6,7 +6,7 @@ from gnome.environment import constant_wind, Water, Waves
 
 from gnome.weatherers import FayGravityViscous
 
-from ..conftest import test_oil, sample_sc_release
+from ..conftest import sample_sc_release
 
 # fixtures used by test_weatherers module - import it here so py.test will find
 # when tests are run from test_weatherers/subdirectory
@@ -15,6 +15,7 @@ from ..conftest import sample_model_fcn, sample_model_fcn2
 from gnome.spills.gnome_oil import GnomeOil
 from gnome.ops import weathering_array_types
 
+test_oil = 'oil_ans_mp'
 
 def weathering_data_arrays(n_arrays,
                            water=None,
@@ -22,7 +23,7 @@ def weathering_data_arrays(n_arrays,
                            substance=None,
                            langmuir=False,
                            num_elements=2,
-                           units='g',
+                           units='kg',
                            amount_per_element=1.0):
     '''
     function to initialize data_arrays set by WeatheringData. Weatherer tests
