@@ -269,4 +269,10 @@ class ShapeOutput(Outputter):
         here in case it needs to be called from elsewhere
         '''
         super(ShapeOutput, self).clean_output_files()
+
+        self.shapefile_builder_certain.rewind()
+        self.shapefile_builder_certain_boundary.rewind()
+        #if self.uncertain:
+        self.shapefile_builder_uncertain.rewind()
+        self.shapefile_builder_uncertain_boundary.rewind()
         # pathlib.Path(self.filename).unlink(missing_ok=True)

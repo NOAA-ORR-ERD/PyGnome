@@ -67,6 +67,9 @@ class ShapefileBuilder(object):
                              geometry_type=self.geometry_type)
         return self.fullfilename
 
+    def rewind(self):
+        self.data_frames = []
+
     @property
     def filename(self):
         return self.fullfilename
@@ -175,7 +178,7 @@ class BoundaryShapefileBuilder(ShapefileBuilder):
         hull = calculate_hull(sc, separate_by_spill=separate_by_spill,
                               ratio=hull_ratio, union_results=union_results,
                               allow_holes=hull_allow_holes)
-        
+
         # Only process it if we get a hull back.
         # There are cases where the hull is not a polygon, and we skip those.
         if len(hull['hulls']):
@@ -186,7 +189,7 @@ class BoundaryShapefileBuilder(ShapefileBuilder):
             if separate_by_spill:
                 frame_data = {
                     'geometry': hull['hulls'],
-                    'spill_num': hull['spill_num'], 
+                    'spill_num': hull['spill_num'],
                     'area': areas,
                     'time': current_time_stamp.strftime('%Y-%m-%dT%H:%M:%S')
                 }
