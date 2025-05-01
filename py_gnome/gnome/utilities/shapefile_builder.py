@@ -67,6 +67,9 @@ class ShapefileBuilder(object):
                              geometry_type=self.geometry_type)
         return self.fullfilename
 
+    def rewind(self):
+        self.data_frames = []
+
     @property
     def filename(self):
         return self.fullfilename

@@ -1251,3 +1251,9 @@ class ERMADataPackageOutput(Outputter):
         here in case it needs to be called from elsewhere
         '''
         super(ERMADataPackageOutput, self).clean_output_files()
+
+        self.shapefile_builder_certain.rewind()
+        self.shapefile_builder_certain_boundary.rewind()
+        self.shapefile_builder_certain_contours.rewind()
+        self.shapefile_builder_uncertain.rewind()
+        self.shapefile_builder_uncertain_boundary.rewind()
