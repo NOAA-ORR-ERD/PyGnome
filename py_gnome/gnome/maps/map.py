@@ -109,14 +109,15 @@ class GnomeMap(GnomeId):
     # base class for more complex maps
 
     _schema = GnomeMapSchema
-
-    refloat_halflife = None  # note -- no land, so never used
     _ref_as = 'map'
+
+    instant_refloat = False
 
     def __init__(self,
                  map_bounds=None,
                  spillable_area=None,
                  land_polys=None,
+
                  **kwargs):
 
         # The __init__ will be different for other implementations
@@ -153,6 +154,14 @@ class GnomeMap(GnomeId):
 
         self.spillable_area = spillable_area
         self.land_polys = land_polys
+
+    @property
+    def refloat_halflife(self):
+        return self._refloat_halflife / self.seconds_in_hour
+
+    @refloat_halflife.setter
+    def refloat_halflife(self, value):
+        self._refloat_halflife = value * self.seconds_in_hour
 
     def __add__(self, other):
         # Just so pyghnome users will get a helpful message
@@ -868,13 +877,13 @@ class RasterMap(GnomeMap):
         self._raster = np.ascontiguousarray(arr)
         self.build_coarser_rasters()
 
-    @property
-    def refloat_halflife(self):
-        return self._refloat_halflife / self.seconds_in_hour
+    # @property
+    # def refloat_halflife(self):
+    #     return self._refloat_halflife / self.seconds_in_hour
 
-    @refloat_halflife.setter
-    def refloat_halflife(self, value):
-        self._refloat_halflife = value * self.seconds_in_hour
+    # @refloat_halflife.setter
+    # def refloat_halflife(self, value):
+    #     self._refloat_halflife = value * self.seconds_in_hour
 
     @property
     def approximate_raster_interval(self):
@@ -1034,6 +1043,14 @@ class RasterMap(GnomeMap):
             self.projection.to_lonlat(next_pos_pixel[beached])
         last_water_positions[beached, :2] = \
             self.projection.to_lonlat(last_water_pos_pixel[beached, :2])
+
+        # if instance_refloat is set -- zero half-life will not stick at all.
+        # so put the back to last water postion right away.
+        if self.instant_refloat and self.refloat_halflife == 0.0:
+            # set the beached elements to the last water position
+            next_pos[beached, :2] = last_water_positions[beached, :2]
+            # set them back to in_water
+            status_codes[beached] = oil_status.in_water
 
         self._set_off_map_status(sc)
 
