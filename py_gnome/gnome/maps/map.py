@@ -111,8 +111,6 @@ class GnomeMap(GnomeId):
     _schema = GnomeMapSchema
     _ref_as = 'map'
 
-    instant_refloat = False
-
     def __init__(self,
                  map_bounds=None,
                  spillable_area=None,
@@ -1044,9 +1042,9 @@ class RasterMap(GnomeMap):
         last_water_positions[beached, :2] = \
             self.projection.to_lonlat(last_water_pos_pixel[beached, :2])
 
-        # if instance_refloat is set -- zero half-life will not stick at all.
-        # so put the back to last water postion right away.
-        if self.instant_refloat and self.refloat_halflife == 0.0:
+        # zero half-life will not stick at all.
+        # so put the back to last water position right away.
+        if self.refloat_halflife == 0.0:
             # set the beached elements to the last water position
             next_pos[beached, :2] = last_water_positions[beached, :2]
             # set them back to in_water
