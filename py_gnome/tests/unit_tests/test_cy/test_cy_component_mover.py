@@ -1,7 +1,3 @@
-
-
-
-
 import os
 
 import numpy as np
@@ -14,6 +10,7 @@ from . import cy_fixtures
 
 from ..conftest import testdata
 
+import pytest
 
 class ComponentMove(cy_fixtures.CyTestMove):
 
@@ -104,6 +101,7 @@ def test_certain_move():
     print('--------------')
     print('test_certain_move')
     tgt = ComponentMove()
+
     tgt.certain_move()
 
     assert np.all(tgt.delta['lat'] != 0)
@@ -172,6 +170,46 @@ def test_ref_point():
     assert c_component.ref_point == tuple(tgt)
     c_component.ref_point = list(tgt)  # can be a list or a tuple
     assert c_component.ref_point == tuple(tgt)
+
+
+@pytest.mark.xfail(reason="component mover can't take negative integer")
+def test_run_backwards():
+    """
+    test that a component mover can work running backwards.
+    """
+    tgt = ComponentMove()
+
+    # same as the regular one, except with negative timestep.
+    tgt.component.get_move(
+            tgt.model_time,
+            - tgt.time_step,
+            tgt.ref,
+            tgt.delta,
+            tgt.status,
+            basic_types.spill_type.forecast,
+            )
+    deltas = tgt.delta
+    tgt.component.model_step_is_done()
+
+    print(deltas)
+
+    # deltas when running forward:
+    # [(4.42500067e-06, 9.92425248e-07, 0.)
+    #  (4.42500067e-06, 9.92425248e-07, 0.)
+    #  (4.42500067e-06, 9.92425248e-07, 0.)
+    #  (4.42500067e-06, 9.92425248e-07, 0.)]
+
+    # Not sure how to test that it's correct, but maybe:
+    # deltas should be all the same:
+    for d in deltas:
+        assert d == deltas[0]
+
+    # They should be negative (frontwards are positive)
+    assert deltas['lat'][0] < 0.0
+    assert deltas['long'][0] < 0.0
+    assert deltas['z'][0] == 0.0
+
+    assert False
 
 
 if __name__ == '__main__':
