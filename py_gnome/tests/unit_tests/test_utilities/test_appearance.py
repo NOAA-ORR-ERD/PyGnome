@@ -30,3 +30,24 @@ def test_spill_appearance_save_load():
     assert json_['foo'] == 'bar'
     assert '.json' in json_['colormap']
 
+def test_appearance_attr_not_there():
+    """
+    Appearance object create themselves
+    with whatever attribute are passed in.
+
+    But as WebGnome develops, we add attributes
+    -- but then newer code may expect attributes that
+       aren't there in older save files.
+
+    So when an attribute is accessed that doesn't
+    exist -- it should return None, rather than raising an error
+    """
+    cm = Colormap(k1='v1')
+    sa_attribs = {'foo': 'bar', 'baz': 'bin', 'colormap': cm}
+    app = SpillAppearance(**sa_attribs)
+
+    print(dir(app))
+
+    assert False
+
+
