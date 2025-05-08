@@ -132,8 +132,7 @@ test_pygnome_windows:
   stage: test
   when: manual
   tags:
-    - windows
-    - visual-studio-22
+    - windows-build-image
   allow_failure: true
   cache: []
   before_script:
