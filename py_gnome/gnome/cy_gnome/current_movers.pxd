@@ -73,7 +73,7 @@ cdef extern from "ComponentMover_c.h":
         void            SetRefPosition(WorldPoint3D p)
         WorldPoint3D    GetRefPosition()
 
-        OSErr get_move(int n, unsigned long model_time, long step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spillID)
+        OSErr get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spillID)
         void  SetTimeFile(OSSMTimeValue_c *ossm)
 
         LongPointHdl  GetPointsHdl()
@@ -103,7 +103,7 @@ cdef extern from "GridCurrentMover_c.h":
 
         GridCurrentMover_c ()
         WorldPoint3D    GetMove(Seconds&,Seconds&,Seconds&,Seconds&, long, long, LERec *, LETYPE)
-        OSErr           get_move(int n, unsigned long model_time, long step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spillID)
+        OSErr           get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spillID)
         void            SetTimeGrid(TimeGridVel_c *newTimeGrid)
         OSErr           TextRead(char *path,char *topFilePath)
         OSErr           ExportTopology(char *topFilePath)
@@ -148,10 +148,8 @@ cdef extern from "CurrentCycleMover_c.h":
         WorldPoint      refP
 
         CurrentCycleMover_c ()
-        # from: CurrentCycleMover_c.h
-        #   virtual WorldPoint3D       GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *thisLE,LETYPE leType);
-        WorldPoint3D    GetMove(Seconds&, Seconds&, Seconds&, Seconds&, long, long, LERec *, LETYPE)
-        #OSErr             get_move(int n, unsigned long model_time, long step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spillID)
+        WorldPoint3D    GetMove(Seconds&,Seconds&,Seconds&,Seconds&, long, long, LERec *, LETYPE)
+        #OSErr             get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spillID)
         #void             SetTimeGrid(TimeGridVel_c *newTimeGrid)
         #OSErr           TextRead(char *path,char *topFilePath)
         #OSErr           ExportTopology(char *topFilePath)
