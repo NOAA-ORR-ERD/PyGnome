@@ -172,14 +172,26 @@ def test_ref_point():
     assert c_component.ref_point == tuple(tgt)
 
 
-@pytest.mark.xfail(reason="component mover can't take negative integer")
+# @pytest.mark.xfail(reason="component mover can't take negative integer")
 def test_run_backwards():
     """
     test that a component mover can work running backwards.
     """
     tgt = ComponentMove()
 
-    # same as the regular one, except with negative timestep.
+    # run forward first:
+    tgt.component.get_move(
+            tgt.model_time,
+            tgt.time_step,
+            tgt.ref,
+            tgt.delta,
+            tgt.status,
+            basic_types.spill_type.forecast,
+            )
+    front_deltas = tgt.delta
+    tgt.component.model_step_is_done()
+
+    # now backward:
     tgt.component.get_move(
             tgt.model_time,
             - tgt.time_step,
@@ -204,12 +216,10 @@ def test_run_backwards():
     for d in deltas:
         assert d == deltas[0]
 
-    # They should be negative (frontwards are positive)
-    assert deltas['lat'][0] < 0.0
-    assert deltas['long'][0] < 0.0
-    assert deltas['z'][0] == 0.0
-
-    assert False
+    # They should be the negative of the forward values
+    assert deltas['lat'][0] == -front_deltas['lat'][0]
+    assert deltas['long'][0] == -front_deltas['long'][0]
+    assert deltas['z'][0] == -front_deltas['z'][0]
 
 
 if __name__ == '__main__':
