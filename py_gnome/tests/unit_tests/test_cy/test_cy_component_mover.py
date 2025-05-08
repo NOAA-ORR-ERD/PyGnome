@@ -61,7 +61,6 @@ class ComponentMove(cy_fixtures.CyTestMove):
         """
         get_move for forecast LEs
         """
-
         self.component.get_move(
             self.model_time,
             self.time_step,
@@ -188,7 +187,7 @@ def test_ref_point():
 #             tgt.status,
 #             basic_types.spill_type.forecast,
 #             )
-#     front_deltas = tgt.delta
+#     front_deltas = tgt.delta.copy()
 #     tgt.component.model_step_is_done()
 
 #     # now backward:
