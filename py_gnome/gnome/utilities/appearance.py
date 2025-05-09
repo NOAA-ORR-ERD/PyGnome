@@ -117,6 +117,15 @@ class Appearance(GnomeId):
             data[k] = getattr(self, k)
         return data
 
+    def __getattr__(self, att):
+        """
+        will get called whenever an attribute doesn't exist
+
+        this will always return None, so that old save files
+        won't barf out if they don't include something
+        """
+        return None
+
 
 
 class Colormap(Appearance):
