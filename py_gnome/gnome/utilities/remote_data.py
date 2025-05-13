@@ -11,12 +11,12 @@ from urllib.error import HTTPError
 from progressbar import (ProgressBar, Percentage, FileTransferSpeed,
                          ETA, Bar)
 
-data_server = 'https://gnome.orr.noaa.gov/py_gnome_testdata/'
+DATA_SERVER = 'https://gnome.orr.noaa.gov/py_gnome_testdata/'
 
 CHUNKSIZE = 1024 * 1024
 
 
-def get_datafile(filename):
+def get_datafile(filename, subdir=""):
     """
     Looks to see if filename exists in local directory. If it exists,
     then it simply returns the 'filename' back as a string.
@@ -24,6 +24,7 @@ def get_datafile(filename):
     If 'filename' does not exist in the local filesystem, then it tries to
     download it from the gnome server
     (http://gnome.orr.noaa.gov/py_gnome_testdata).
+
     If it successfully downloads the file, it puts it in the user specified
     path given in filename and returns the 'filename' string.
 
@@ -32,6 +33,11 @@ def get_datafile(filename):
 
     :param filename: path to the file including filename
     :type filename: string
+
+    :param subdir: If subdir is provided, tehn the file will be looked for
+                   in a subdirectory within the test data server. Example:
+
+                   get_datafile('3D_ROMS_example.nc', subdir='gridded_test_files')
 
     :exception: raises HTTPError if server is down or file not found
                 on server
@@ -46,6 +52,11 @@ def get_datafile(filename):
     else:
 
         # download file, then return filename path
+
+        if subdir:
+            subdir = subdir if subdir[-1] == "/" else subdir + "/"
+
+        data_server = DATA_SERVER + subdir
 
         (path_, fname) = os.path.split(filename)
         if path_ == '':

@@ -96,8 +96,6 @@ test_pygnome:
 
 # Ideally, all the scripts in "testing_scripts" should run without errors,
 # but once in a while we refactor something that breaks something.
-# So it would be good to get a warning from the CI.
-# This shouldn't be a "it has to pass" job.
 test_pygnome_testing_scripts:
   stage: test
   tags:
@@ -107,6 +105,19 @@ test_pygnome_testing_scripts:
   image: registry.orr.noaa.gov/erd/centos-conda/$IMAGE_NAME$PYTHON_VER
   script:
     - cd ./py_gnome/scripts/testing_scripts && python run_all.py 2<&1
+
+# All the scripts in "input_file_examples" should run without errors,
+# But once in a while we refactor something that breaks something.
+test_pygnome_input_file_examples:
+  stage: test
+  tags:
+    - docker
+    - linux
+  allow_failure: true
+  image: registry.orr.noaa.gov/erd/centos-conda/$IMAGE_NAME$PYTHON_VER
+  script:
+    - cd ./py_gnome/input_file_examples && python run_all.py 2<&1
+
 
 # make sure the example scripts run without error
 # this can fail, but we want to be warned ...
