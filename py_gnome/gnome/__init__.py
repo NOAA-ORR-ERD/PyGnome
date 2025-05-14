@@ -74,7 +74,7 @@ def check_dependency_versions():
         else:
             return True
 
-    libs = [('gridded', '0.7.1', ''),
+    libs = [('gridded', '0.7.2', ''),
             ('nucos', '3.4.0', ''),
             ('py_gd', '2.3.0', ''),
             ('adios_db', '1.2.5', 'Only required to use the ADIOS Database '
