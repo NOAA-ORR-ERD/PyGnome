@@ -116,7 +116,7 @@ test_pygnome_input_file_examples:
   allow_failure: true
   image: registry.orr.noaa.gov/erd/centos-conda/$IMAGE_NAME$PYTHON_VER
   script:
-    - cd ./py_gnome/input_file_examples && python run_all.py 2<&1
+    - cd ./py_gnome/scripts/input_file_examples && python run_all.py 2<&1
 
 
 # make sure the example scripts run without error
