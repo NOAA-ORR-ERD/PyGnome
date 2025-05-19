@@ -1,6 +1,6 @@
 variables:
   PYTHON_VER: "3.10"
-  IMAGE_NAME: "erd/environments/ubuntu/ubuntuforge-python"
+  IMAGE_NAME: "/erd/environments/ubuntu/ubuntuforge-python"
   GIT_DEPTH: 2
 
 stages:
