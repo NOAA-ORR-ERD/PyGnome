@@ -9,7 +9,7 @@
 version: "3"
 services:
     test:
-        image: registry.orr.noaa.gov/erd/centos-conda/miniforge-python3.11
+        image: registry.orr.noaa.gov/erd/environments/miniforge-python3.11
         volumes:
             - ./:/pygnome
         entrypoint: ['/bin/bash', '/pygnome/test_setup.sh']
