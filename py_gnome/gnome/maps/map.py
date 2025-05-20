@@ -9,10 +9,8 @@ The module includes a base map that is all water -- no land,
 As well as a few implementations of actual maps
 """
 
-# This is a re-write of the C++ raster map approach
-
-# Features:
-#  - Map now handles spillable area and map bounds as polygons
+# RasterMap is the primary implimentation:
+#  - Map handles spillable area and map bounds as polygons
 #  - raster is the same aspect ratio as the land
 #  - internally, raster is a numpy array
 #  - land raster is only as big as the land -- if the map bounds are bigger,
@@ -21,7 +19,6 @@ As well as a few implementations of actual maps
 # NOTES:
 #  - Perhaps we just use non-projected coordinates for the raster map?
 #    It makes for a little less computation at every step.
-
 
 import os
 import math
@@ -104,13 +101,13 @@ class GnomeMap(GnomeId):
     """
     The very simplest map for GNOME -- all water
     with only a bounding box for the map bounds.
-    """
+
+    Also the base class for all maps.
     # This also serves as a description of the interface and
     # base class for more complex maps
+    """
 
     _schema = GnomeMapSchema
-
-    refloat_halflife = None  # note -- no land, so never used
     _ref_as = 'map'
 
     def __init__(self,
@@ -153,6 +150,14 @@ class GnomeMap(GnomeId):
 
         self.spillable_area = spillable_area
         self.land_polys = land_polys
+
+    @property
+    def refloat_halflife(self):
+        return self._refloat_halflife / self.seconds_in_hour
+
+    @refloat_halflife.setter
+    def refloat_halflife(self, value):
+        self._refloat_halflife = value * self.seconds_in_hour
 
     def __add__(self, other):
         # Just so pyghnome users will get a helpful message
@@ -868,13 +873,13 @@ class RasterMap(GnomeMap):
         self._raster = np.ascontiguousarray(arr)
         self.build_coarser_rasters()
 
-    @property
-    def refloat_halflife(self):
-        return self._refloat_halflife / self.seconds_in_hour
+    # @property
+    # def refloat_halflife(self):
+    #     return self._refloat_halflife / self.seconds_in_hour
 
-    @refloat_halflife.setter
-    def refloat_halflife(self, value):
-        self._refloat_halflife = value * self.seconds_in_hour
+    # @refloat_halflife.setter
+    # def refloat_halflife(self, value):
+    #     self._refloat_halflife = value * self.seconds_in_hour
 
     @property
     def approximate_raster_interval(self):
@@ -1035,6 +1040,14 @@ class RasterMap(GnomeMap):
         last_water_positions[beached, :2] = \
             self.projection.to_lonlat(last_water_pos_pixel[beached, :2])
 
+        # zero half-life will not stick at all.
+        # so put the back to last water position right away.
+        if self.refloat_halflife == 0.0:
+            # set the beached elements to the last water position
+            next_pos[beached, :2] = last_water_positions[beached, :2]
+            # set them back to in_water
+            status_codes[beached] = oil_status.in_water
+
         self._set_off_map_status(sc)
 
         # # todo: need a prepare_for_model_run() so map adds these keys to
@@ -1130,16 +1143,18 @@ class RasterMap(GnomeMap):
         return self.projection.to_pixel(coords)
 
 
+# Fixme -- use utilities.convert_longitude
+
 def ShiftLon360(points):
     try:
-        points[points[:,0]<0,0] = points[:,0]+360
+        points[points[:,0] < 0, 0] = points[:, 0] + 360
     except ValueError:
         pass
     return points
 
 def ShiftLon180(points):
     try:
-        points[points[:,0]>180,0] = points[:,0]-360
+        points[points[:,0] > 180, 0] = points[:, 0] - 360
     except ValueError:
         pass
     return points
@@ -1157,6 +1172,7 @@ class MapFromBNA(RasterMap):
                  raster_size=4096 * 4096,
                  map_bounds=None,
                  spillable_area=None,
+                 land_polys=None,
                  shift_lons=0,
                  **kwargs):
         """
@@ -1177,7 +1193,9 @@ class MapFromBNA(RasterMap):
                           180, or 360 are valid inputs
         :type shiftLons: integer
 
-        Optional arguments (kwargs):
+        :param shift_lons=0: Whether to shift the longitude reference frame:
+                           Accepted values:
+                           0: do nothing. 180: shift to -180--180. 360: shift to 0--360
 
         :param refloat_halflife: the half-life (in hours) for the re-floating.
 
@@ -1185,6 +1203,8 @@ class MapFromBNA(RasterMap):
                            smaller than the land raster
 
         :param spillable_area: The polygon bounding the spillable_area
+
+        Optional arguments (kwargs):
 
         :param id: unique ID of the object. Using UUID as a string.
                    This is only used when loading object from save file.
@@ -1208,7 +1228,7 @@ class MapFromBNA(RasterMap):
         land_polys = PolygonSet()  # and lakes....
         spillable_area_bna = PolygonSet()
 
-        #add if based on input param
+        # add if based on input param
         tf = ShiftLon360 if shift_lons == 360 else ShiftLon180 if shift_lons == 180 else None
         if tf is not None:
             polygons.TransformData(tf)
@@ -1257,7 +1277,7 @@ class MapFromBNA(RasterMap):
         # get the raster as a numpy array:
         raster, projection = self.build_raster(land_polys, BB)
 
-        super(MapFromBNA, self).__init__(
+        super().__init__(
             raster=raster,
             projection=projection,
             map_bounds=map_bounds,
@@ -1299,7 +1319,6 @@ class MapFromBNA(RasterMap):
 
         # draw the land to the background
         for poly in land_polys:
-            # fixme -- this should be something like "land"
             if poly.metadata[2] == '1':
                 canvas.draw_polygon(poly,
                                     line_color='land',
@@ -1391,6 +1410,8 @@ class MapFromBNA(RasterMap):
 class MapFromUGrid(RasterMap):
     """
     A raster land-water map, created from netcdf File of a UGrid
+
+    NOTE: not complete or well tested
     """
     _schema = MapFromUGridSchema
 

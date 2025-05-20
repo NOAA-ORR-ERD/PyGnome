@@ -30,3 +30,29 @@ def test_spill_appearance_save_load():
     assert json_['foo'] == 'bar'
     assert '.json' in json_['colormap']
 
+def test_missing_attribute():
+    """
+    Since the Appearance objects add
+    attributes dynamically according to what's passed in,
+    newer versions of the code might expect ones that weren't
+    there in older save files.
+
+    so if you ask for something that's not there, you should
+    get None, rather than an error
+    """
+    cm = Colormap(k1='v1')
+    sa_attribs = {'foo': 'bar', 'baz': 'bin', 'colormap': cm}
+    app = SpillAppearance(**sa_attribs)
+
+    assert app.foo == 'bar'
+    assert app.baz == 'bin'
+
+    assert app.some_random_attribute is None
+
+
+
+
+
+
+
+

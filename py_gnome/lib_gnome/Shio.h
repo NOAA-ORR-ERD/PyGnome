@@ -45,7 +45,7 @@ typedef struct dblflagstruct
 			short		HFlag;
 			short		RotFlag;
 		}CONTROLVAR,*CONTROLVARPTR, **CONTROLVARHDL;
-		
+
 		typedef struct constiuentstruct
 		{
 			CONTROLVAR		DatumControls;
@@ -77,7 +77,7 @@ typedef struct heightcompstruct
 	short			numHighLows;			// Number of high and low tide occurrences.
 	short			xtra;					// padding for power pc
 	double			*HighLowHeights;	// double feet
-	EXTFLAG			*HighLowTimes;		// double hours, flag=0 means plot 
+	EXTFLAG			*HighLowTimes;		// double hours, flag=0 means plot
 	short			*HighLow;			// 0 -> low tide.
 												// 1 -> high tide.
 }COMPHEIGHTS,*COMPHEIGHTSPTR, **COMPHEIGHTSHDL;
@@ -92,11 +92,11 @@ typedef struct currentcompstruct
 	double			*u;					// u velocities ... east positive
 	double			*v;					// v velocities ... north positive
 	double			*uMinor;			// velocity projection on minor axis
-	double			*vMajor;			// velocity projection on major axis 
+	double			*vMajor;			// velocity projection on major axis
 	short           speedKey;				// speedKey = 0 no smoothing for rotary currents
 											// speedKey = 1 hermite smoothing for rotary currents
 
-	short			numEbbFloods;			// Number of ebb and flood occurrences.								
+	short			numEbbFloods;			// Number of ebb and flood occurrences.
 	double			*EbbFloodSpeeds;	// double knots
 	EXTFLAG			*EbbFloodTimes;		// double hours, flag=0 means plot
 	short			*EbbFlood;			// 0 -> Min Before Flood.
@@ -259,7 +259,7 @@ typedef struct stationinfostruct
 
 
 	/* Region File Information */
-	char				filename[128];			// name of region file.					
+	char				filename[128];			// name of region file.
 	short				refnum;					// refNum for region file.
 
 	/* units for height and speed */
@@ -337,7 +337,7 @@ short CheckHeightOffsets(HEIGHTOFFSET *htOffset);
 
 
 
-void CleanUpCompHeights (COMPHEIGHTS *cPtr);        
+void CleanUpCompHeights (COMPHEIGHTS *cPtr);
 
 void CompErrors(short errorNum,                       // error number
 				char *errStr);                        // error string returned
@@ -380,12 +380,12 @@ short GetReferenceCurve(CONSTITUENT *constituent,	// Amplitude-phase array struc
 
 short GetJulianDayHr(short day,		// day of month (1 - 31)
 					short month,	// month (1- 12)
-					short year,		// year (1993 - 2025)
+					short year,		// year (1993 - 2035)
 					double *hour);	// returns hours from beginning of year
 
 short GetTideHeight(	DateTimeRec *BeginDate,DateTimeRec *EndDate,
 						double* XODE, double* VPU, 		// Year correction
-						short numOfConstituents, 
+						short numOfConstituents,
 						CONSTITUENT *constituent,	// Amplitude-phase array structs
 						HEIGHTOFFSET *htOffset,		// Height offset data
 						COMPHEIGHTS *answers,		// Height-time struc with answers
@@ -401,7 +401,7 @@ short GetWeights(double t,                 // the time to interpolate at hrs
 				double *w2,                // weight factor 2
 				short *index1,               // index of last high low hour
 				short NoOfHighsLows);        // number of members in high low array
-					
+
 //short GetYearData(double *XODE,double *VPU, short year);
 
 void ResetTime(COMPHEIGHTS *answers,double beginHour);
@@ -436,12 +436,12 @@ short CurveFitOffsetCurve(COMPCURRENTS *AnswerHdl,
 
 void DoHermite(double v0,     // value at t0
 			   double t0,     // time t0
-			   double v1,     
-			   double t1,     
-			   double v2,     
-			   double t2,     
-			   double v3,    
-			   double t3,    
+			   double v1,
+			   double t1,
+			   double v2,
+			   double t2,
+			   double v3,
+			   double t3,
 			   double time,   // time for interpolation
 			   double *vTime, // returns value at time
 			   short flag);  // if flag == 0 then compute slope
@@ -450,7 +450,7 @@ void DoHermite(double v0,     // value at t0
 								// if flag == 3 then v0 and v3 contain slopes
 
 short DoOffSetCurrents (COMPCURRENTS *Answer,  // Hdl to reference station heights
-					CURRENTOFFSET *offset,     
+					CURRENTOFFSET *offset,
 					double OldBeginHour,
 					double OldEndHour,
 					double timeStep,
@@ -480,7 +480,7 @@ short FindExtraFERot(double				*AMPA,				// amplitude corrected for year
 						double			*lastTime,			// last max-min value
 						double			*lastValue,			// last max-min value
 						short			*lastFlag,			// last max-min flag
-						CONSTITUENT		*constituent);	// Handle to constituent data               
+						CONSTITUENT		*constituent);	// Handle to constituent data
 
 short FindFloodEbb(	double	startTime,			// start time in hrs from begining of year
 					double	endTime,			// end time in hrs from begining of year
@@ -534,7 +534,7 @@ short GetControlFlagsAlternate(	CONTROLVAR *cntrlvars,	// Control variables stru
 						short *L2Flag,					// L2 frequency flag
 						short *HFlag,					// Hydraulic station flag
 						short *RotFlag);				// Rotary station flag.........if any flag = 1 we got anomaly
-			  
+
 double GetDatum(CONSTITUENT *constituent);  // returns datum field
 
 double GetDatum2(CONSTITUENT *constituent,short index); // return data for rotary currents
@@ -583,11 +583,11 @@ short GetSlackRatio(double t,                        // Time in hours
 					double *newRatio);               // new interpolated ratio
 
 short GetTideCurrent(DateTimeRec *BeginDate,DateTimeRec *EndDate,
-						short numOfConstituents, 
+						short numOfConstituents,
 						CONSTITUENT *constituent,	// Amplitude-phase array structs
 						CURRENTOFFSET *offset,		// Current offset data
 						COMPCURRENTS *answers,		// Current-time struc with answers
-						double* XODE, double* VPU, 
+						double* XODE, double* VPU,
 						Boolean DaylightSavings,		// Daylight Savings Flag
 						char *staname);					// Station name
 
@@ -608,7 +608,7 @@ short GetVelDir(CONSTITUENT *constituent,  // return 1 if flood, -1 if ebb
 //			 double *vTime);// returns value at time
 
 short OffsetReferenceCurve(COMPCURRENTS *AnswerHdl,    // Hdl to reference station heights
-						   CURRENTOFFSET *offset);  
+						   CURRENTOFFSET *offset);
 
 short OffsetUV ( COMPCURRENTS *answers,		// Current-time struc with answers
 			     CURRENTOFFSET *offset);   	// Current offset data

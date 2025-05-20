@@ -8,5 +8,6 @@ to get what you want to work on.
 
 > make html
 
-should work to build the docs.
+should work to build this doc.
+
 
