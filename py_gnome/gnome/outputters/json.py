@@ -277,7 +277,7 @@ class CurrentJsonSchema(BaseOutputterSchema):
                                 CurrentCycleMoverSchema,
                                 PointWindMoverSchema]
         ),
-        save=True, update=True, save_reference=True
+        save=False, update=True, save_reference=False
     )
     '''
     Nothing is required for initialization
