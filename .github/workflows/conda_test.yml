@@ -25,11 +25,12 @@ jobs:
         matrix:
             os: ["ubuntu", "windows","macos"]
             # os: ["windows-latest","macos-latest"]
-            pyver: ["3.9", "3.10", "3.11", "3.12"]
+            pyver: ["3.10", "3.11", "3.12", "3.13"]
     steps:
       - uses: actions/checkout@v4
       - uses: conda-incubator/setup-miniconda@v3
         with:
+          auto-update-conda: true
           activate-environment: test
           miniforge-version: latest
           # environment-file: environment.yml
@@ -82,7 +83,7 @@ jobs:
       - uses: conda-incubator/setup-miniconda@v3
         with:
           activate-environment: lint
-          python-version: 3.12
+          python-version: 3.10
           auto-activate-base: false
       - shell: bash -l {0}
         run: |
