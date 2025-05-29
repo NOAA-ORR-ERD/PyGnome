@@ -6,6 +6,7 @@ from gnome.persist.base_schema import ObjTypeSchema, ObjType
 from gnome.gnomeobject import GnomeId
 from colander import drop
 
+
 class AppearanceSchema(ObjTypeSchema):
     def __init__(self, unknown='preserve', *args, **kwargs):
         super(AppearanceSchema, self).__init__(*args, **kwargs)
@@ -15,8 +16,10 @@ class AppearanceSchema(ObjTypeSchema):
 class ColormapSchema(AppearanceSchema):
     pass
 
+
 class SpillAppearanceSchema(AppearanceSchema):
     colormap = ColormapSchema(test_equal=False, missing=drop)
+
 
 '''
 class Appearance(object):
@@ -87,8 +90,11 @@ class Appearance(object):
     def deserialize(cls, json_, refs=None):
         return cls.new_from_dict(json_)
 '''
+
+
 class Appearance(GnomeId):
     _schema = AppearanceSchema
+
     def __init__(self, **kwargs):
         keys = Appearance._schema().get_nodes_by_attr('all')
         k2 = dict([(key, kwargs.get(key)) for key in keys])
@@ -127,27 +133,33 @@ class Appearance(GnomeId):
         return None
 
 
-
 class Colormap(Appearance):
     _schema = ColormapSchema
 
+
 class SpillAppearance(Appearance):
     _schema = SpillAppearanceSchema
+
     def __init__(self, colormap=None, **kwargs):
         self.colormap = colormap
         super(SpillAppearance, self).__init__(**kwargs)
 
+
 class MapAppearance(Appearance):
     _schema = AppearanceSchema
+
 
 class VectorAppearance(Appearance):
     _schema = AppearanceSchema
 
+
 class GridAppearance(Appearance):
     _schema = AppearanceSchema
 
+
 class MoverAppearance(Appearance):
     _schema = AppearanceSchema
+
 
 class PolygonReleaseSchema(Appearance):
     _schema = AppearanceSchema

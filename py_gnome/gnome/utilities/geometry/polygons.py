@@ -6,7 +6,6 @@ Assorted stuff for working with polygons
 FIXME: should this support polygons with holes??? (i.e multiple rings?)
 
 """
-
 import copy
 
 import numpy as np
@@ -21,7 +20,6 @@ class Polygon(np.ndarray):
     This is a subclass of np.ndarray, so that it can be used in place of a
     simple array of points, but also can hold extra meta-data in a "metadata"
     dict.
-
     """
     def __new__(Polygon, points, metadata=None, copy=True, dtype=np.float64):
         # fixme: this needs a better way to index and loop to get a point
@@ -229,10 +227,12 @@ class PolygonSet(object):
         old_length = self._PointsArray.shape[0]
 
         added_length = polygon.shape[0]
-        self._PointsArray.resize((old_length + added_length, 2), refcheck=False)
+        self._PointsArray.resize((old_length + added_length, 2),
+                                 refcheck=False)
         self._PointsArray[-added_length:, :] = polygon
 
-        self._IndexArray.resize((self._IndexArray.shape[0] + 1), refcheck=False)
+        self._IndexArray.resize((self._IndexArray.shape[0] + 1),
+                                refcheck=False)
         self._IndexArray[-1] = self._PointsArray.shape[0]
         self._MetaDataList.append(metadata)
 

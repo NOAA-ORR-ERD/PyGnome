@@ -14,13 +14,15 @@ import numpy as np
 #     from .filescanner import scan
 #     FILESCANNER = True
 # except:
-FILESCANNER = False #because py3
+FILESCANNER = False  # because py3
 
-## fixme: It would be MUCH cleaner to internally store VerDat data with
-## Python style slicing and indexing, including storing a 0 at the beginning
-##
-## It would also be good to re-factor so that the attributes (depths,
-## etc) generally are stored in the same array as the point coordinates.
+#
+# fixme: It would be MUCH cleaner to internally store VerDat data with
+# Python style slicing and indexing, including storing a 0 at the beginning
+#
+# It would also be good to re-factor so that the attributes (depths,
+# etc) generally are stored in the same array as the point coordinates.
+#
 
 
 class FileToolsException(Exception):
@@ -38,7 +40,7 @@ class BNAData:
     '''
         Class to store the full set of data in a BNA file
     '''
-    ##fixme: This needs methods to add polygons one by one
+    # fixme: This needs methods to add polygons one by one
     def __init__(self, PointsData=None, Names=None, Types=None, Filename=None):
         '''
             :param PointsData: A sequence of numpy Nx2 arrays
@@ -87,8 +89,8 @@ class BNAData:
         fd = open(filename, 'w')
         for i, points in enumerate(self.PointsData):
             fd.write('"%s","%s", %i\n' % (self.Names[i],
-                                            self.Types[i],
-                                            len(points)))
+                                          self.Types[i],
+                                          len(points)))
             for p in points:
                 fd.write("%.12f,%.12f\n" % (tuple(p)))
 
@@ -265,16 +267,19 @@ def GetNextBNAPolygon(f, dtype=np.float64):
         for i in range(num_points):
             line = f.readline()
             if not line:
-                raise ValueError(f"empty coords line in {header.strip()}. check number of vertices")
+                raise ValueError(f"empty coords line in {header.strip()}. "
+                                 "check number of vertices")
             try:
-                points[i,:] = [float(j) for j in line.split(',')]
+                points[i, :] = [float(j) for j in line.split(',')]
             except ValueError as err:
-                raise ValueError(f"incorrect coords in line: {line} in poly: {header}") from err
+                raise ValueError(f"incorrect coords in line: {line} "
+                                 f"in poly: {header}") from err
 
-    if poly_type == 'polygon':  # first and last points are the same in BNA,
-                                # but we don't want the duplicate point.
+    if poly_type == 'polygon':
+        # first and last points are the same in BNA,
+        # but we don't want the duplicate point.
         if (points[0, 0] == points[-1, 0] and
-            points[0, 1] == points[-1, 1]):
+                points[0, 1] == points[-1, 1]):
             points = points[0:-1]
 
     return (points, poly_type, name, sname)
@@ -297,7 +302,7 @@ def WriteBNA(filename, polyset):
         outfile.write('"%s","%s", %i\n' % (m[1], m[2], len(poly)))
 
         for point in poly:
-            #point = np.asarray(point)
+            # point = np.asarray(point)
             outfile.write('%.8f, %.8f \n' % (point[0], point[1]))
 
 
@@ -362,7 +367,8 @@ def ReadBNA(filename, polytype="list", dtype=np.float64):
             polygon = np.zeros((num_points, 2), np.float64)
 
             for i in range(num_points):
-                polygon[i, :] = (float(val) for val in fd.readline().split(','))
+                polygon[i, :] = (float(val)
+                                 for val in fd.readline().split(','))
             polys.append(polygon)
 
         Output = BNAData(polys, Names, Types, os.path.abspath(filename))
