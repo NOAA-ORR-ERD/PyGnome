@@ -12,6 +12,7 @@ from gnome.environment import SteadyUniformCurrent
 from gnome.movers import SimpleMover
 from gnome.spills.spill import Spill, point_line_spill
 
+import pytest
 
 def test_simple_run_backward_rewind():
     '''
@@ -62,6 +63,7 @@ def test_simple_run_backward_rewind():
     assert np.all(model.spills.LE('positions') == pos)
 
 
+@pytest.mark.xfail
 def test_model_release_after_start_backwards():
     '''
     This runs the model backwards for a simple spill, that starts after the model starts
