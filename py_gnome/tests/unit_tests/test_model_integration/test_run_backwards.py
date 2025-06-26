@@ -107,6 +107,7 @@ def test_model_release_after_start_backwards():
             assert num_LEs == 0
         elif step_num < 4:
             assert num_LEs == 5
-        else: num_LEs == 15
+        else:
+            num_LEs == 15
 
     assert False
