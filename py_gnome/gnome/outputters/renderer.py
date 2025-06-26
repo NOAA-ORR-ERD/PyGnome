@@ -25,8 +25,7 @@ from gnome.utilities.projections import ProjectionSchema
 
 from gnome.environment.gridded_objects_base import Grid_S
 
-from gnome.persist import base_schema
-from gnome.persist.extend_colander import FilenameSchema
+from gnome.persist import base_schema, FilenameSchema, StringListSchema, List
 
 from . import Outputter, BaseOutputterSchema
 
@@ -45,7 +44,10 @@ class RendererSchema(BaseOutputterSchema):
     image_size = base_schema.ImageSize(save=True, update=False, missing=drop)
     output_dir = SchemaNode(String(), save=True, update=True, test_equal=False)
     draw_ontop = SchemaNode(String(), save=True, update=True)
-
+    formats = StringListSchema(save=True, update=True, missing=drop)
+    # formats = SchemaNode(
+    #     List(), missing=drop,
+    # )
 
 class Renderer(Outputter, MapCanvas):
     """
