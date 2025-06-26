@@ -96,10 +96,10 @@ Spills in ``gnome`` specify what, when, where, and how many elements are release
 
 There are a number of "helper" functions and classes that can initialize various types of spills (for example, at a point or over a spatial area, at the surface or subsurface). See: :ref:`scripting_spills` for more details.
 
-A common spill type is created by the `surface_point_line_spill`. To set up an instantaneous release of a conservative substance at a point, it can be called with most of the defaults::
+A common spill type is created by the `point_line_spill`. To set up an instantaneous release of a conservative substance at a point, it can be called with most of the defaults::
 
 
-    spill = gs.surface_point_line_spill(release_time=start_time,
+    spill = gs.point_line_spill(release_time=start_time,
                                         start_position=(-144, 48.5),
                                         num_elements=500)
     model.spills += spill
