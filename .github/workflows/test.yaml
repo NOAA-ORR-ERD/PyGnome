@@ -28,16 +28,18 @@ jobs:
       - name: setup_env
         shell: bash -l {0}
         run: |
+          cd py_gnome
           conda install --file conda_requirements.txt --file conda_requirements_build.txt --file conda_requirements_test.txt
           conda list
       - name: build
         shell: bash -l {0}
         run: |
+          cd py_gnome
           pip install .
       - name: test
         shell: bash -l {0}
         run: |
-          cd tests/unit_tests
+          cd py_gnome/tests/unit_tests
           pytest
 
 
