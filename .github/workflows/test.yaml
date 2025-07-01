@@ -3,7 +3,8 @@ on: [push]
 
 jobs:
   test:
-    name: Test: (${{ matrix.python-version }}, ${{ matrix.os }})
+    # name: Test: (${{ matrix.python-version }}, ${{ matrix.os }})
+    name: Test
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
