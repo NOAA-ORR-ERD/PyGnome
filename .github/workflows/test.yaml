@@ -17,17 +17,15 @@ jobs:
       - uses: actions/checkout@v4
       - uses: conda-incubator/setup-miniconda@v3
         with:
-          auto-update-conda: true
-          python-version: ${{ matrix.python-version }}
+          miniforge-version: latest
       - name: Conda info
-        shell: bash -l {0}
         run: conda info
       - name: Conda list
-        shell: pwsh
         run: conda list
       - name: setup_env
         shell: bash -l {0}
         run: |
+          shell: bash -l {0}
           cd py_gnome
           conda install --file conda_requirements.txt --file conda_requirements_build.txt --file conda_requirements_test.txt
           conda list
