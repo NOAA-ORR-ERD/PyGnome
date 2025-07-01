@@ -25,7 +25,6 @@ jobs:
       - name: setup_env
         shell: bash -l {0}
         run: |
-          shell: bash -l {0}
           cd py_gnome
           conda install --file conda_requirements.txt --file conda_requirements_build.txt --file conda_requirements_test.txt
           conda list
@@ -39,6 +38,4 @@ jobs:
         run: |
           cd py_gnome/tests/unit_tests
           pytest
-
-
 
