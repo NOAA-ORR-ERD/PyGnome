@@ -1,0 +1,41 @@
+name: Run tests with miniforge
+on: [push]
+
+jobs:
+  test:
+    # name: Test: (${{ matrix.python-version }}, ${{ matrix.os }})
+    name: Test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # os: ["ubuntu-latest", "macos-latest", "windows-latest"]
+        # python-version: ["3.10", "3.11", "3.12", "3.13"]
+        os: ["macos-latest"]
+        python-version: ["3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniforge-version: latest
+      - name: Conda info
+        run: conda info
+      - name: Conda list
+        run: conda list
+      - name: setup_env
+        shell: bash -l {0}
+        run: |
+          cd py_gnome
+          conda install --file conda_requirements.txt --file conda_requirements_build.txt --file conda_requirements_test.txt
+          conda list
+      - name: build
+        shell: bash -l {0}
+        run: |
+          cd py_gnome
+          pip install .
+      - name: test
+        shell: bash -l {0}
+        run: |
+          cd py_gnome/tests/unit_tests
+          pytest
+
