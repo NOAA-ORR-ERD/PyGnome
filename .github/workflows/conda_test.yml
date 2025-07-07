@@ -1,21 +1,6 @@
 name: Run tests with miniforge
 on: [push]
 
-# jobs:
-#   example-10-miniforge:
-#     name: Ex10 (${{ matrix.os }}, Miniforge)
-#     runs-on: ${{ matrix.os }}-latest
-#     strategy:
-#       matrix:
-#         os: ["ubuntu", "macos", "windows"]
-#     steps:
-#       - uses: actions/checkout@v4
-#       - uses: conda-incubator/setup-miniconda@v3
-#         with:
-#           environment-file: etc/example-environment.yml
-#           miniforge-version: latest
-
-
 jobs:
   test:
     name: Miniforge tests ${{ matrix.os }} Py${{ matrix.pyver }}
@@ -24,7 +9,6 @@ jobs:
         fail-fast: false
         matrix:
             os: ["ubuntu", "windows","macos"]
-            # os: ["windows-latest","macos-latest"]
             pyver: ["3.10", "3.11", "3.12", "3.13"]
     steps:
       - uses: actions/checkout@v4
@@ -36,6 +20,8 @@ jobs:
           # environment-file: environment.yml
           python-version: ${{ matrix.pyver }}
           auto-activate-base: false
+          conda-remove-defaults: true
+
       # - shell: bash -l {0}
         # run: |
         #   conda config --add channels conda-forge
@@ -58,22 +44,6 @@ jobs:
         run: |
             cd ./py_gnome/tests/unit_tests
             pytest --runslow
-      # - name: Build wheel file
-      #   shell: bash -l {0}
-      #   run: |
-      #       cd ./py_gnome
-      #       python -m pip wheel ./
-      # - name: Copy files to artifact folder
-      #   shell: bash -l {0}
-      #   run: |
-      #       mkdir installable_wheel_${{ matrix.os }}_Py${{ matrix.pyver }}
-      #       cp ./py_gnome/*.whl installable_wheel_${{ matrix.os }}_Py${{ matrix.pyver }}
-      #       cp ./py_gnome/conda_requirements.txt installable_wheel_${{ matrix.os }}_Py${{ matrix.pyver }}
-      # - name: Upload Artifact
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: installable-wheel-${{ matrix.os }}-Py${{ matrix.pyver }}
-      #     path: installable_wheel_${{ matrix.os }}_Py${{ matrix.pyver }}
 
   lint:
     name: Flake8 linting
@@ -85,9 +55,7 @@ jobs:
           activate-environment: lint
           python-version: 3.10
           auto-activate-base: false
-      - shell: bash -l {0}
-        run: |
-          conda config --add channels conda-forge
+          conda-remove-defaults: true
       - name: Lint
         shell: bash -l {0}
         run: |
