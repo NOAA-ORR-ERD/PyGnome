@@ -40,8 +40,13 @@ def make_model():
     renderer = gs.Renderer(output_dir=images_dir,
                            image_size=(800, 600),
                            output_timestep=timedelta(hours=1),
-                           draw_ontop='uncertain')
-    renderer.viewport = ((-76.5, 37.), (-75.8, 38.))
+                           formats=['gif', 'png'],
+                           point_size=6,
+                           depth_colors='turbo',
+                           min_color_depth=0,
+                           max_color_depth=1700,
+                           viewport = ((-77.0, 36.75), (-76.0, 37.75)),
+                           )
 
     print('adding outputters')
     model.outputters += renderer
@@ -101,22 +106,12 @@ def make_model():
                                      vertical_diffusion_coef_below_ml=.11,
                                      mixed_layer_depth=10)
 
-    # print 'adding a wind mover:'
-
-    # series = np.zeros((2, ), dtype=gnome.basic_types.datetime_value_2d)
-    # series[0] = (start_time, (30, 90))
-    # series[1] = (start_time + timedelta(hours=23), (30, 90))
-
-    # wind = Wind(timeseries=series, units='knot')
-    #
-    # default is .4 radians
-    # w_mover = gnome.movers.PointWindMover(wind, uncertain_angle_scale=0)
-    #
-    # model.movers += w_mover
+    print('adding a wind mover:')
+    model.movers += gs.constant_point_wind_mover(speed=30, direction=90, units='knot')
 
     print('adding a steady uniform current:')
-    s_mover = gs.SimpleMover(velocity=(0.0, -.3, 0.0))
-    model.movers += s_mover
+    curr = gs.constant_point_current_mover(speed=.3, direction=180)
+    model.movers += curr
 
     return model
 

@@ -122,7 +122,9 @@ def load_model(filename):
 
 def constant_point_current_mover(speed, direction, units='m/s'):
     """
-    utility function to create a point current mover with a constant uniform current
+    utility function to create a point current mover with a constant uniform current:
+
+    a single velocity at all time and space.
 
     :param speed: current speed
     :param direction: direction of the current (direction to, not from), in degrees CCW from north

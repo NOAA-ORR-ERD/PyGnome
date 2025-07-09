@@ -202,13 +202,16 @@ class MapCanvas(object):
         self.fore_image.add_colors(color_list)
         self.back_image.add_colors(color_list)
 
+    AVAILABLE_COLORAMPS = set(py_gd.color_ramp.colorschemes.keys())
+    AVAILABLE_COLORAMPS = AVAILABLE_COLORAMPS.difference({'xkcd', 'BW', 'web', 'css4', 'tableau', 'transparent'})
+
     def add_color_ramp(self, color_scheme, min_val, max_val):
         """
         generate depth colors to the gd images
 
         :param color_scheme: color scheme to render images
         :type color_scheme: ("magma", "inferno", "plasma", "viridis", "cividis",
-                            "twilight", "twilight_shifted", "turbo")
+                             "twilight", "twilight_shifted", "turbo")
 
         :param min_val: value to map to the first color in the scheme
 
@@ -218,9 +221,15 @@ class MapCanvas(object):
 
         # print(existing_colors)
 
-        cr = py_gd.color_ramp.ColorRamp(color_scheme,
-                                        min_val, max_val,
-                                        base_colorscheme=len(existing_colors))
+        try:
+            cr = py_gd.color_ramp.ColorRamp(color_scheme,
+                                            min_val, max_val,
+                                            base_colorscheme=len(existing_colors))
+        except KeyError:
+            raise ValueError(f"Invalid color scheme: {color_scheme}. options are:\n"
+                             f"{self.AVAILABLE_COLORAMPS}"
+                             )
+
 
         self.fore_image.add_colors(cr.colorlist)
         self.back_image.add_colors(cr.colorlist)
