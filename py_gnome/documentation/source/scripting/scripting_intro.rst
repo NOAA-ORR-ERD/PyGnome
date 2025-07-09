@@ -41,7 +41,8 @@ Simplest Example
 ----------------
 
 For a first introduction to scripting with ``gnome``,
-the example below will demonstrate how to set up and run the very simplest model possible.
+the example below demonstrates how to set up and run the very simplest model possible.
+
 This example does not load any external data, but creates a simple map and movers manually.
 The "spill" is a conservative substance, i.e. a "passive tracer."
 
@@ -51,7 +52,8 @@ This example is in the PyGNOME source under "scripts/example_scripts", or can be
 
 Initialize the Model
 --------------------
-The model is initialized to begin on New Years Day 2015 and run for 3 days with a model time step of 15 minutes::
+The model is initialized to begin at midnight (00:00 hours) on New Years Day 2015
+and run for 3 days with a model time step of 15 minutes::
 
     import gnome.scripting as gs
     start_time = "2015-01-01"
@@ -65,22 +67,27 @@ Create and Add a Map
 --------------------
 Create a very simple map which is all water with a rectangle defined by four longitude/latitude points to specify the boundary of the model::
 
-    model.map = gs.GnomeMap(map_bounds=((-145, 48), (-145, 49),
-                                        (-143, 49), (-143, 48))
-                                        )
+    model.map = gs.GnomeMap(map_bounds=[(-145, 48),
+                                        (-145, 49),
+                                        (-143, 49),
+                                        (-143, 48)]
+                        )
 
 Create and Add Movers
 ---------------------
 The model needs one or more "Movers" to move the elements. In this case, a steady uniform current and random walk diffusion are demonstrated.
 
-The `SimpleMover` class is used to specify a 0.2 m/s eastward current.
+The ``constant_point_current_mover`` utility creates a steady, uniform current (same everywhere for all time) of 0.2 m/s eastward (90 degrees from north).
 
-The `RandomMover` class simulates spreading due to turbulent motion via a random walk algorithm:
+The ``RandomMover`` class simulates spreading due to turbulent motion via a random walk algorithm:
 
 .. code-block:: python
 
-    velocity = (.2, 0, 0)  # (u, v, w) in m/s
-    uniform_vel_mover = gs.SimpleMover(velocity)
+    # The very simplest mover: a steady uniform current
+    uniform_vel_mover = gs.constant_point_current_mover(speed=.2,
+                                                        direction=90,
+                                                        units='m/s')
+
     #  random walk diffusion -- diffusion_coef in units of cm^2/s
     random_mover = gs.RandomMover(diffusion_coef=2e4)
 
@@ -92,27 +99,32 @@ The `RandomMover` class simulates spreading due to turbulent motion via a random
 Create and Add a Spill
 ----------------------
 
-Spills in ``gnome`` specify what, when, where, and how many elements are released into the model. The properties of the substance spilled (e.g. oil chemistry) are provided by a ``Substance`` Object. PyGNOME currently has two Substances available: ``NonWeatheringSubstance`` representing passive drifters, and ``GnomeOil``, representing petroleum products with all the properties required for the oil weathering algorithms supplied with GNOME.
+Spills in ``gnome`` specify what, when, where, and how many elements are released into the model.
+The properties of the substance spilled (e.g. oil chemistry) are provided by a ``Substance`` Object.
+PyGNOME currently has two Substances available: ``NonWeatheringSubstance`` representing passive drifters, and ``GnomeOil``, representing petroleum products with all the properties required for the oil weathering algorithms supplied with GNOME.
 
-There are a number of "helper" functions and classes that can initialize various types of spills (for example, at a point or over a spatial area, at the surface or subsurface). See: :ref:`scripting_spills` for more details.
+There are a number of "helper" functions and classes that can initialize various types of spills (for example, at a point or over a spatial area, at the surface or subsurface).
+See: :ref:`scripting_spills` for more details.
 
-A common spill type is created by the `point_line_spill`. To set up an instantaneous release of a conservative substance at a point, it can be called with most of the defaults::
+A common spill type is created by the `point_line_spill`. To set up an instantaneous release of a conservative substance at a point, it can be called with most of the defaults.::
 
-
+    # create spill
     spill = gs.point_line_spill(release_time=start_time,
-                                        start_position=(-144, 48.5),
-                                        num_elements=500)
+                                start_position=(-144, 48.5),
+                                num_elements=1000)
+    # add it to the model
     model.spills += spill
 
 * The release time is set to the start_time previously defined to start the model.
-* The release location (start_position) is set to a (longitude, latitude) position.
+* The release location (start_position) is set to a (longitude, latitude) position (in decimal degrees).
 * The number of Lagrangian elements (particles) can be defined (defaults to 1000).
 
 Create and Add an Outputter
 ---------------------------
 
 Outputters save the model results in a variety of formats.
-Options include PNG images and saving the element information into netCDF files, shapefiles, or KML for further visualization and analysis. See :ref:`scripting_outputters` for more details.
+Options include PNG images and saving the element information into netCDF files, shapefiles, or KML for further visualization and analysis.
+See :ref:`scripting_outputters` for more details.
 
 In this example, the ``Renderer`` class is used to save to an animated gif every 2 hours::
 
@@ -147,8 +159,9 @@ Results will be written to files based on the outputters added to the model -- i
 View the results
 ----------------
 
-The renderer added to the model generates an animated GIF with a frame every 8 hours as specified in its creation.
+The Renderer added to the model generates an animated GIF with a frame every 8 hours as specified in its creation.
 
 It will have been saved in ``output`` dir relative to the directory that the script was executed from, as specified in the ``Renderer`` creation.
-The animation should show a cloud of elements moving east and spreading.
+The animation should show a cloud of elements moving east (the direction of the current) and spreading out (due to the diffusion/RandomMover).
+
 
