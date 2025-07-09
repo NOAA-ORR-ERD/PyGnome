@@ -317,10 +317,10 @@ class PolygonSet(object):
         function needs to accept a NX2 NumPy array of Floats, and return
         a NX2 NumPy array of floats
 
-        the optional arguments, args or kwargs are passed through to
+        the optional arguments, ``args`` or ``kwargs`` are passed through to
         the TransformFuntion, so it is called as:
 
-        NewPoints = TransformFunction(OldPoints, \*args, \*\*kwargs)
+        ``NewPoints = TransformFunction(OldPoints, *args, **kwargs)``
 
         """
         self._PointsArray = TransformFunction(self._PointsArray, *args,

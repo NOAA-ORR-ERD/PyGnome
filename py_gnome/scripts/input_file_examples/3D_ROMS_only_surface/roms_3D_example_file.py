@@ -7,6 +7,8 @@ But it works in surface only mode.
 from pathlib import Path
 import gnome.scripting as gs
 
+gs.PrintFinder()
+
 HERE = Path(__file__).parent
 
 # download the example file, if it's not already there
@@ -22,7 +24,7 @@ max_lon = curr.grid.node_lon.max()
 
 
 bounds = ((min_lon, min_lat), (max_lon, max_lat))
-print("bounds: ", bounds)
+# print("bounds: ", bounds)
 
 spill_location = (-157.9, 21.2)
 
