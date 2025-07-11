@@ -17,11 +17,13 @@ import numpy as np
 
 import py_gd
 import py_gd.color_ramp
+from py_gd.colors import colorscheme_names
 
 import nucos as uc
 
 from gnome.utilities.projections import FlatEarthProjection
 
+AVAILABLE_COLORAMPS = [name[0] for name in colorscheme_names if name[1] == 'continuous']
 
 class MapCanvas(object):
     """
@@ -202,8 +204,6 @@ class MapCanvas(object):
         self.fore_image.add_colors(color_list)
         self.back_image.add_colors(color_list)
 
-    AVAILABLE_COLORAMPS = set(py_gd.color_ramp.colorschemes.keys())
-    AVAILABLE_COLORAMPS = AVAILABLE_COLORAMPS.difference({'xkcd', 'BW', 'web', 'css4', 'tableau', 'transparent'})
 
     def add_color_ramp(self, color_scheme, min_val, max_val):
         """

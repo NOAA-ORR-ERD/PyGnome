@@ -321,7 +321,7 @@ class Renderer(Outputter, MapCanvas):
         return os.path.abspath(self.output_dir)
 
     def start_animation(self, filename):
-        self.animation = py_gd.Animation(filename, self.delay)
+        self.animation = py_gd.Animation(filename, self.delay, global_colormap=0)
         looping = 0 if self.repeat else -1
 
         self.logger.info('Starting Animation')
