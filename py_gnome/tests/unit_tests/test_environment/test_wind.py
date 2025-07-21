@@ -882,7 +882,7 @@ def test_update_from_dict_with_dst_spring_transition():
     """
     checking a time series crossing over a DST transition.
 
-    NOTE: the ofset is ignored! so there is no way to do this "right"
+    NOTE: the offset is ignored! so there is no way to do this "right"
     """
     timeseries = gen_timeseries_for_dst('spring')
     wind_json = {'obj_type': 'gnome.environment.Wind',
@@ -1024,4 +1024,46 @@ c_var.setflags(write=False)
 e2_var.setflags(write=False)
 e1_var.setflags(write=False)
 n_var.setflags(write=False)
+
+def test_constant_wind_serialize_deserialize():
+    """
+    checking the round trip serializing a constant wind
+
+    this was a bug on Windows at some point with a newer numpy
+    """
+    from pprint import pprint
+    wind = constant_wind(10, 45, 'knots')
+
+    ser = wind.serialize()
+
+    pprint(ser)
+
+        # {'data_start': '2025-07-17T16:00:00',
+        #  'data_stop': '2025-07-17T16:00:00',
+        #  'description': 'Wind Object',
+        #  'extrapolation_is_allowed': False,
+        #  'id': '927a0026-6363-11f0-a4d3-acde48001122',
+        #  'name': 'Wind_33',
+        #  'obj_type': 'gnome.environment.wind.Wind',
+        #  'source_id': 'undefined',
+        #  'source_type': 'undefined',
+        #  'speed_uncertainty_scale': 0.0,
+        #  'time': {'data': ['2025-07-17T16:00:00'],
+        #           'id': '927a0828-6363-11f0-a4d3-acde48001122',
+        #           'max_time': '2025-07-17T16:00:00',
+        #           'min_time': '2025-07-17T16:00:00',
+        #           'name': 'Time_28',
+        #           'obj_type': 'gnome.environment.gridded_objects_base.Time',
+        #           'tz_offset_name': ''},
+        #  'timeseries': [('2025-07-17T16:00:00', (10.0, 45.0))],
+        #  'timezone_offset': {'offset': None, 'title': 'No Timezone Specified'},
+        #  'units': 'knots'}
+    # remove the time key -- why is it even there???
+    #   - to be compatible with other things in the client, but ???
+    del ser['time']
+
+    wind2 = Wind.deserialize(ser)
+
+    assert wind2 == wind
+
 

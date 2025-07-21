@@ -112,6 +112,9 @@ class WindSchema(base_schema.ObjTypeSchema):
     extrapolation_is_allowed = SchemaNode(Boolean())
     data_start = SchemaNode(LocalDateTime(), read_only=True, validator=convertible_to_seconds)
     data_stop = SchemaNode(LocalDateTime(), read_only=True, validator=convertible_to_seconds)
+    # Fixme: do they need to be duck-typed to this degree???
+    #         Why? the .time variable should not be part of the public API
+    #         It's an implementation detail, and this leads to weird serialization
     time = TimeSchema(
         #this is only for duck-typing the new-style environment objects,
         #so only provide to the client

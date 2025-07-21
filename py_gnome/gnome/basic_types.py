@@ -7,6 +7,8 @@ Imports all the symbols from cy_basic_types.pyx
 
 Adds some for Python-only use
 
+See the docs for gnome.cy_gnome.cy_basic_types for a bit more detail
+
 """
 
 import sys
