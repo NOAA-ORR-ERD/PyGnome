@@ -73,13 +73,13 @@ Create and Add Movers
 ---------------------
 The model needs one or more "Movers" to move the elements. In this case, a steady uniform current and random walk diffusion are demonstrated.
 
-The `SimpleMover` class is used to specify a 0.2 m/s eastward current.
+The `SteadyUniformCurrent` class is used to specify a 0.2 m/s eastward current.
 
 The `RandomMover` class simulates spreading due to turbulent motion via a random walk algorithm:
 
 .. code-block:: python
 
-    velocity = (.2, 0, 0)  # (u, v, w) in m/s
+    currrent = gs.SteadyUniformCurrent()  # (u, v, w) in m/s
     uniform_vel_mover = gs.SimpleMover(velocity)
     #  random walk diffusion -- diffusion_coef in units of cm^2/s
     random_mover = gs.RandomMover(diffusion_coef=2e4)
