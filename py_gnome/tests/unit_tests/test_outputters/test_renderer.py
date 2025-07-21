@@ -18,6 +18,8 @@ import numpy as np
 
 from datetime import datetime
 
+import pprint
+
 import pytest
 import numpy.random as random
 
@@ -366,13 +368,23 @@ def test_serialize_deserialize(output_dir):
                  output_dir=output_dir,
                  image_size=(1000, 800),
                  viewport=((-126.5, 47.5),
-                           (-126.0, 48.0)))
+                           (-126.0, 48.0)),
+                 formats=['gif'],
+                 )
 
     toserial = r.serialize()
+
+    pprint.pp(toserial)
+    print(toserial.keys())
+
+    assert 'formats' in toserial
 
     r2 = Renderer.deserialize(toserial)
 
     assert r == r2
+
+    assert r2.formats == ['gif']
+
 
 def fake_run_for_animation(rend):
 

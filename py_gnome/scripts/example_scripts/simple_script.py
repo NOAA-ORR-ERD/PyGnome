@@ -25,8 +25,9 @@ model.map = gs.GnomeMap(map_bounds=((-145, 48), (-145, 49),
 
 # The very simplest mover: a steady uniform current
 velocity = (.2, 0, 0)  # (u, v, w) in m/s
-uniform_vel_mover = gs.SimpleMover(velocity)
-
+uniform_vel_mover = gs.constant_point_current_mover(speed=.2,
+                                                    direction=90,
+                                                    units='m/s')
 
 #  random walk diffusion -- diffusion_coef in units of cm^2/s
 random_mover = gs.RandomMover(diffusion_coef=2e4)

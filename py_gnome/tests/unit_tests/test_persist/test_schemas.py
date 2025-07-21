@@ -7,6 +7,8 @@ from colander import DateTime, SequenceSchema, SchemaNode
 
 from cftime import DatetimeGregorian as cfdatetime
 
+from gnome.persist.base_schema import StringListSchema, Invalid
+
 import pytest
 
 # class TimeSequenceSchema(base_schema.ObjTypeSchema):
@@ -48,4 +50,28 @@ def test_cfdatetimes():
     print(dt2)
 
     assert dt == dt2
+
+def test_StringListSchema():
+    schema = StringListSchema()
+
+    list_of_str = ['fred', 'bob', 'jim']
+
+    ser = schema.serialize(list_of_str)
+
+    assert ser == list_of_str  # in this case, it's the same :-)
+
+    deser = schema.deserialize(ser)
+
+    assert deser == list_of_str  # it should round trip
+
+    print(ser)
+
+    # it converts to str for you
+    ser = schema.serialize(['string', 5])
+    assert ser == ['string', '5']
+
+    with pytest.raises(Invalid):  # should fail if not a list of strings
+        deser = schema.deserialize(['string', 5])
+
+        print(deser)
 

@@ -24,7 +24,7 @@ max_lon = curr.grid.node_lon.max()
 
 
 bounds = ((min_lon, min_lat), (max_lon, max_lat))
-print("bounds: ", bounds)
+# print("bounds: ", bounds)
 
 spill_location = (146.0, 15.0)
 

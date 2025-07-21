@@ -835,6 +835,31 @@ class GeneralGnomeObjectSchema(ObjTypeSchema):
         return substitute_schema.typ.load(substitute_schema, obj_json,
                                           saveloc=saveloc, refs=refs)
 
+# import colander
+
+# class StringListSchema(colander.SequenceSchema):
+#     text_item = colander.SchemaNode(colander.String())
+
+# # Example usage:
+# schema = StringListSchema()
+
+# # Deserializing a list of strings
+# data_to_deserialize = ['apple', 'banana', 'cherry']
+# deserialized_data = schema.deserialize(data_to_deserialize)
+# print(f"Deserialized data: {deserialized_data}")
+
+# # Serializing a list of strings
+# data_to_serialize = ['grape', 'kiwi', 'mango']
+# serialized_data = schema.serialize(data_to_serialize)
+# print(f"Serialized data: {serialized_data}")
+
+class StringListSchema(SequenceSchema):
+    """
+    schema for a list of strings
+    """
+    text_item = SchemaNode(String())
+
+
 
 class CollectionItemMap(MappingSchema):
     '''

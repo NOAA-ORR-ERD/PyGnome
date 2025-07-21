@@ -1,39 +1,32 @@
 """
-Example of a ROMS 3D file with depth info that PYGNOME doesn't understand
+Example of a file from FVCOM in which teh UGRID-complinant grid spec was added.
 
-But it works in surface only mode.
+IMPortnatnly, this need to be able to be saved to a save file and reloaded.
+ - that was a bug at some point
+
 """
 
 from pathlib import Path
 import gnome.scripting as gs
 
-gs.PrintFinder()
-
 HERE = Path(__file__).parent
 
+current_filename = 'SSCOFS.ugrid.nc'
+map_filename = 'DeceptionPass.bna'
+
 # download the example file, if it's not already there
-cur_file = gs.get_datafile(HERE / '3D_ROMS_example.nc', 'gridded_test_files')
+cur_file = gs.get_datafile(HERE / current_filename, 'gridded_test_files')
 
 curr = gs.GridCurrent.from_netCDF(HERE / cur_file)
 
-# some grid info
-min_lat = curr.grid.node_lat.min()
-min_lon = curr.grid.node_lon.min()
-max_lat = curr.grid.node_lat.max()
-max_lon = curr.grid.node_lon.max()
-
-
-bounds = ((min_lon, min_lat), (max_lon, max_lat))
-# print("bounds: ", bounds)
-
-spill_location = (-157.9, 21.2)
+spill_location = (-122.6149358, 48.41271330)
 
 # make sure it runs in gnome
 model = gs.Model(start_time=curr.data_start,
-                 duration=gs.days(2),
-                 # duration=curr.data_stop - curr.data_start,
+                 time_step=gs.minutes(10),
+                 duration=curr.data_stop - curr.data_start,
                  )
-model.map = gs.MapFromBNA(HERE / "oahu_coast.bna")
+model.map = gs.MapFromBNA(HERE / map_filename)
 model.movers += gs.CurrentMover(curr)
 model.movers += gs.RandomMover()
 model.spills += gs.point_line_spill(num_elements=100,
@@ -43,7 +36,7 @@ model.spills += gs.point_line_spill(num_elements=100,
 
 model.outputters += gs.Renderer(
     map_filename=model.map,
-    output_timestep=gs.hours(1),
+    output_timestep=gs.minutes(10),
     output_dir=HERE,
     image_size=(800, 600),
     projection=None,
@@ -51,4 +44,13 @@ model.outputters += gs.Renderer(
     formats=['gif'],
     )
 
-model.full_run()
+# model.full_run()
+
+# save it out:
+
+model.save("ugrid_compliant.gnome")
+
+# and reload it:
+model2 = gs.Model.load_savefile("ugrid_compliant.gnome")
+
+model2.full_run()
