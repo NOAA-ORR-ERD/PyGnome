@@ -13,6 +13,8 @@ import numpy as np
 import random
 
 geod = pyproj.Geod(ellps='WGS84')
+
+
 def geo_area_of_polygon(poly):
     '''
     :param poly:
@@ -23,6 +25,7 @@ def geo_area_of_polygon(poly):
     if isinstance(poly, (geojson.MultiPolygon, geojson.Polygon)):
         poly = shape(poly)
     return abs(geod.geometry_area_perimeter(poly)[0])
+
 
 def triangulate_poly(poly):
     '''
@@ -35,12 +38,16 @@ def triangulate_poly(poly):
     retval = []
     if isinstance(poly, MultiPolygon):
         for p in poly.geoms:
-            pts, tris = trimesh.creation.triangulate_polygon(p, engine='earcut')
+            pts, tris = trimesh.creation.triangulate_polygon(
+                p,
+                engine='earcut'
+            )
             retval = retval + [Polygon(k) for k in pts[tris]]
     else:
         pts, tris = trimesh.creation.triangulate_polygon(poly, engine='earcut')
         retval = [Polygon(k) for k in pts[tris]]
     return retval
+
 
 def poly_area_weight(polys, geo_area=False):
     '''
@@ -56,6 +63,7 @@ def poly_area_weight(polys, geo_area=False):
     weights = [s/t_area for s in areas]
     return weights
 
+
 def mixed_polys_to_polygon(polys):
     '''
     :param polys: iterable containing mixed Polygon and MultiPolygon
@@ -63,7 +71,7 @@ def mixed_polys_to_polygon(polys):
     '''
     rv = []
     for p in polys:
-        p = shape(p) #to handle geojson.(Multi)Polygon objects
+        p = shape(p)  # to handle geojson.(Multi)Polygon objects
         if isinstance(p, MultiPolygon):
             for subp in p.geoms:
                 rv.append(subp)
@@ -71,9 +79,11 @@ def mixed_polys_to_polygon(polys):
             rv.append(p)
     return rv
 
+
 def check_valid_polygon(poly):
     """
-    checks that a shapely Polygon object at least has valid values for coordinates
+    checks that a shapely Polygon object at least has valid values
+    for coordinates
     """
     if isinstance(poly, MultiPolygon):
         for p in poly.geoms:
@@ -85,8 +95,9 @@ def check_valid_polygon(poly):
             assert -360 < point[0] < 360
             assert -90 < point[1] < 90
 
-#tri is a Shapely.Polygon, or 3x2 array of coords
-#returns a 2D coordinate
+
+# tri is a Shapely.Polygon, or 3x2 array of coords
+# returns a 2D coordinate
 def random_pt_in_tri(tri):
     coords = None
     if isinstance(tri, Polygon):
@@ -105,12 +116,14 @@ def random_pt_in_tri(tri):
     RPP = A + R*AB + S*AC
     return RPP
 
+
 def load_shapefile(filename, transform_crs=True):
     """
     Use GeoPandas to load up a shapefile into a FeatureCollection
 
     :param filename: string path of a zip file
-    :param transform_crs: attempts to read the .prj file if any and convert to EPSG:4326
+    :param transform_crs: attempts to read the .prj file if any
+                          and convert to EPSG:4326
 
     :return: geojson.FeatureCollection
     """
@@ -118,16 +131,21 @@ def load_shapefile(filename, transform_crs=True):
     with zipfile.ZipFile(filename, 'r') as zipper:
         # Use the namelist to find any shapefiles in the zip
         # We also reject any that have 'point' in the name
-        shapefiles = [f for f in zipper.namelist() if f.split('.')[-1] == 'shp' and 'point' not in f.lower()]
+        shapefiles = [f for f in zipper.namelist()
+                      if f.split('.')[-1] == 'shp'
+                      and 'point' not in f.lower()]
         # If we did not find any, we need to toss an error
         if not shapefiles:
             raise ValueError(f'No shapefile found in zip {filename}!')
         # If we found more than one, we issue a warning and use the first one.
         if len(shapefiles) > 1:
-            warnings.warn(f'More than one shapefile found in zip {filename}! Using {shapefiles[0]}')
+            warnings.warn(f'More than one shapefile found in zip {filename}! '
+                          f'Using {shapefiles[0]}')
         # Use GeoPandas to read the shapefile out of the zip
-        shapefile = gpd.read_file(f'zip://{str(filename)}!{shapefiles[0]}', engine="pyogrio")
-        # Force convert to 4326 if requested.  This will be a Noop if already in 4326
+        shapefile = gpd.read_file(f'zip://{str(filename)}!{shapefiles[0]}',
+                                  engine="pyogrio")
+        # Force convert to 4326 if requested.
+        # This will be a Noop if already in 4326
         if transform_crs:
             shapefile = shapefile.to_crs('epsg:4326')
         # Dump to json (dataframe -> json string -> json object)
@@ -136,4 +154,3 @@ def load_shapefile(filename, transform_crs=True):
         shapefile_json['bbox'] = list(shapefile.total_bounds)
         # Finally, hand the geojson back to the caller
         return shapefile_json
-

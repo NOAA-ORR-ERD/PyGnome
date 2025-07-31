@@ -22,6 +22,7 @@ Random_c::Random_c () : Mover_c()
 {
 	Init();
 }
+
 #ifndef pyGNOME
 Random_c::Random_c (TMap *owner, char *name) : Mover_c (owner, name)
 {
@@ -29,6 +30,7 @@ Random_c::Random_c (TMap *owner, char *name) : Mover_c (owner, name)
 	SetClassName (name);
 }
 #endif
+
 // Initialize local variables the same way for all constructors
 void Random_c::Init()
 {

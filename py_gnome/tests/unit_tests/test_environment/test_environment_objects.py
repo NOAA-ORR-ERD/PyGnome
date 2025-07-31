@@ -5,6 +5,8 @@ import math
 from datetime import datetime, timedelta
 from pathlib import Path
 
+import pprint
+
 import numpy as np
 import pytest
 
@@ -265,3 +267,45 @@ def test_FileGridCurrent():
 
     grid_cur2 = FileGridCurrent(filename=roms_file,extrapolation_is_allowed=True)
     assert grid_cur2.extrapolation_is_allowed == True
+
+
+def test_GridCurrent_UGRID_compliant():
+    """
+    Makes sure we can get a UGRID compliant file loaded and working
+
+    In particular, that it can be saved and re-loaded
+    """
+    # download the test file, if it's not already there
+    cur_file = gs.get_datafile(TEST_DATA_DIR / 'SSCOFS.ugrid.nc', 'gridded_test_files')
+
+    curr = GridCurrent.from_netCDF(cur_file)
+
+    # make sure it works
+    points = np.array([(-122.6149358, 48.41271330),])
+    time = curr.data_start + ((curr.data_stop - curr.data_start) / 2)
+
+    vels = curr.at(points, time)
+    print(vels)
+    # Just to make sure it's working
+    assert np.allclose(vels, [[-1.29538738, -0.62726747, 0.0]])
+
+    # breakpoint()
+
+    # now save it out:
+    save_json, zipfile_, _refs = curr.save(OUTPUT_DIR)
+
+    # pprint.pp(save_json)
+
+    # print(zipfile_)
+
+    curr2 = GridCurrent.load(zipfile_)
+
+    assert curr2 == curr
+
+    vels2 = curr2.at(points, time)
+
+    print(vels2)
+    # Just to make sure it's still working
+    assert np.allclose(vels, [[-1.29538738, -0.62726747, 0.0]])
+
+    print("YES! it was able to save and reload!")

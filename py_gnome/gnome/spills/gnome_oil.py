@@ -32,6 +32,7 @@ class Density(object):
                 'w={0.weathering}>'
                 .format(self))
 
+
 def density_at_temp(ref_density, ref_temp_k, temp_k, k_rho_t=0.0008):
     '''
         Source: Adios2
@@ -137,17 +138,19 @@ class GnomeOil(Substance):
                               ``gnome.spills.sample_oils``
 
 
-        :param filename=None: filename (Path) of JSON file in the Adios Oil Database format.
+        :param filename=None: filename (Path) of JSON file in the
+                              Adios Oil Database format.
 
-        :param water=None: Water object with environmental conditions -- Deprecated.
+        :param water=None: Water object with environmental conditions
+                           -- Deprecated.
 
         Additional keyword arguments will be passed to Substance: e.g.:
         ``windage_range``, ``windage_persist=None``,
 
         A GnomeOil can be initialized in three ways:
 
-         1) From a sample oil name : ``GnomeOil(oil_name="sample_oil_name")`` the oils are available
-            in gnome.spills.sample_oils
+         1) From a sample oil name : ``GnomeOil(oil_name="sample_oil_name")``
+            the oils are available in gnome.spills.sample_oils
 
          2) From a JSON file in the ADIOS Oil Database format:
             ``GnomeOil(filename="adios_oil.json")`` usually records from the
@@ -176,7 +179,8 @@ class GnomeOil(Substance):
                     oil_dict = _sample_oils[oil_name]
                     kwargs.update(oil_dict)
                 else:
-                    raise ValueError(f"{oil_name} not in sample_oils: options are:\n {_sample_oils.keys()} ")
+                    raise ValueError(f"{oil_name} not in sample_oils: "
+                                     f"options are:\n {_sample_oils.keys()} ")
             elif filename:
                 self.from_adiosdb_file(filename, kwargs)
 
@@ -193,12 +197,13 @@ class GnomeOil(Substance):
     def from_adiosdb_file(self, filename, kwargs):
         try:
             import adios_db
-        except ImportError as err:
-            msg = "the adios_db package must be installed to use its json format"
-            raise ImportError(msg) from err
 
-        from adios_db.models.oil.oil import Oil as Oil_db
-        from adios_db.computation.gnome_oil import make_gnome_oil
+            from adios_db.models.oil.oil import Oil as Oil_db
+            from adios_db.computation.gnome_oil import make_gnome_oil
+        except ImportError as err:
+            msg = ("the adios_db package must be installed to use its "
+                   "json format")
+            raise ImportError(msg) from err
 
         oil_obj = Oil_db.from_file(filename)
         oil_name = oil_obj.metadata.name
@@ -211,14 +216,15 @@ class GnomeOil(Substance):
         oil_dict['name'] = oil_name
         kwargs.update(oil_dict)
 
-
     def _set_up_array_types(self):
         # add the array types that this substance DIRECTLY initializes
         self.array_types.update({'density': gat('density'),
                                  'viscosity': gat('viscosity'),
                                  'mass_components': gat('mass_components')})
         self.array_types['mass_components'].shape = (self.num_components,)
-        self.array_types['mass_components'].initial_value = (self.mass_fraction,)
+        self.array_types['mass_components'].initial_value = (
+            self.mass_fraction,
+        )
 
     def _init_from_json(self,
                         # Physical properties
@@ -274,8 +280,8 @@ class GnomeOil(Substance):
 
         self.emulsion_water_fraction_max = emulsion_water_fraction_max
         self.original_emulsion_water_fraction_max = (emulsion_water_fraction_max
-                                             if original_emulsion_water_fraction_max is None
-                                             else original_emulsion_water_fraction_max)
+                                                     if original_emulsion_water_fraction_max is None
+                                                     else original_emulsion_water_fraction_max)
         self.pour_point = pour_point
         self.solubility = solubility
         self._k_v2 = None
@@ -285,11 +291,13 @@ class GnomeOil(Substance):
         self._set_pc_values('molecular_weight', molecular_weight)
         self._set_pc_values('boiling_point', boiling_point)
         self._set_pc_values('component_density', component_density)
-#         if len(sara_type) == self.num_components:
-#             self.sara_type = sara_type
-#         else:
-#             raise ValueError("You must have the same number of sara_type as PCs")
-#
+
+        # if len(sara_type) == self.num_components:
+        #     self.sara_type = sara_type
+        # else:
+        #     raise ValueError("You must have the same number of sara_type "
+        #                      "as PCs")
+
         self._k_v2 = None  # decay constant for viscosity curve
         self._visc_A = None  # constant for viscosity curve
         self.k0y = k0y
@@ -319,7 +327,6 @@ class GnomeOil(Substance):
         '''
         return GnomeOil(oil_info)
 
-
     def to_dict(self, json_=None):
         json_ = super(GnomeOil, self).to_dict(json_=json_)
 
@@ -342,13 +349,13 @@ class GnomeOil(Substance):
         water = self._pick_water(environment)
         init_viscosity(arrs, to_rel, water=water, aggregate=False)
 
-
         sl = slice(-to_rel, None, 1)
 
         fates = np.logical_and(arrs['positions'][sl, 2] == 0,
                                arrs['status_codes'][sl] == oil_status.in_water)
         if ('fate_status' in arrs):
-            arrs['fate_status'][sl] = np.choose(fates, [fate.subsurf_weather, fate.surface_weather])
+            arrs['fate_status'][sl] = np.choose(fates, [fate.subsurf_weather,
+                                                        fate.surface_weather])
 
         # initialize mass_components
         arrs['mass_components'][sl] = (np.asarray(self.mass_fraction, dtype=np.float64) * (arrs['mass'][sl].reshape(len(arrs['mass'][sl]), -1)))
@@ -365,7 +372,6 @@ class GnomeOil(Substance):
             raise ValueError("must be the same number of {} as there "
                              "are pseudo components".format(prop))
         setattr(self, prop, np.array(values, dtype=np.float64))
-
 
     @lru_cache(2)
     def vapor_pressure(self, temp, atmos_pressure=101325.0):
@@ -405,13 +411,13 @@ class GnomeOil(Substance):
 
                 - We want the ones that immediately bound our temperature.
 
-                - If our temperature is high and out of bounds of the temperatures
-                  in our obj_list, then we return a range containing only the
-                  highest temperature.
+                - If our temperature is high and out of bounds of the
+                  temperatures in our obj_list, then we return a range
+                  containing only the highest temperature.
 
-                - If our temperature is low and out of bounds of the temperatures
-                  in our obj_list, then we return a range containing only the
-                  lowest temperature.
+                - If our temperature is low and out of bounds of the
+                  temperatures in our obj_list, then we return a range
+                  containing only the lowest temperature.
 
             We accept only a scalar temperature or a sequence of temperatures
         '''
@@ -434,8 +440,7 @@ class GnomeOil(Substance):
         rho_idxs1[low_and_oob] = 0
 
         return list(zip([obj_list[i] for i in rho_idxs0],
-                   [obj_list[i] for i in rho_idxs1]))
-
+                        [obj_list[i] for i in rho_idxs1]))
 
     def get_densities(self):
         '''
@@ -460,7 +465,7 @@ class GnomeOil(Substance):
         new_densities = []
 
         for x in range(0, len(densities)):
-            if weathering[x] == 0: # also check None
+            if weathering[x] == 0:  # also check None
                 new_densities.append(Density(kg_m_3=densities[x],
                                              ref_temp_k=density_ref_temps[x],
                                              weathering=0.0))
@@ -468,7 +473,7 @@ class GnomeOil(Substance):
         return sorted(new_densities, key=lambda d: d.ref_temp_k)
 
     def density_at_temp(self, temperature=288.15):
-        ## fixme: this should use the Density object!
+        # fixme: this should use the Density object!
         '''
             Get the oil density at a temperature or temperatures.
 
@@ -484,7 +489,8 @@ class GnomeOil(Substance):
                       - If we need to convert dynamic viscosities to
                         kinematic, we need density at 15C
 
-                      - To estimate density at temp, we need to estimate pour point
+                      - To estimate density at temp, we need to estimate
+                        pour point
 
                       - ...and then we recurse
 
@@ -507,7 +513,9 @@ class GnomeOil(Substance):
                      if np.isclose(d.weathering, 0.0)]
 
         # set the minimum temperature to be the oil's pour point
-        min_temp = np.min([d.ref_temp_k for d in densities] + [self.pour_point])
+        min_temp = np.min(
+            [d.ref_temp_k for d in densities] + [self.pour_point]
+        )
 
         if hasattr(temperature, '__iter__'):
             temperature = np.clip(temperature, min_temp, 1000.0)
@@ -604,7 +612,6 @@ class GnomeOil(Substance):
         else:
             return k_rho_t
 
-
     @classmethod
     def closest_to_temperature(cls, obj_list, temperature, num=1):
         '''
@@ -656,8 +663,8 @@ class GnomeOil(Substance):
         """
         Compute the kinematic viscosity of the oil as a function of temperature
 
-        :param temp_k: temperatures to compute at: can be scalar or array of values.
-                       should be in Kelvin
+        :param temp_k: temperatures to compute at: can be scalar or
+                       array of values.  Should be in Kelvin
 
         :param weathering: fraction weathered -- currently not implemented
 
@@ -690,14 +697,15 @@ class GnomeOil(Substance):
            2100 K, based on analysis of data in the ADIOS database as of 2018
 
         .. note::
-              The analysis for default k_v2 has been updated leading to new defaults in the oil database.
-              And now Gnome oils from the database should all have at least two viscosity data points
+              The analysis for default k_v2 has been updated leading to
+              new defaults in the oil database.  And now Gnome oils from the
+              database should all have at least two viscosity data points
 
         If two data points, the two constants are directly computed
 
         If three or more, the constants are computed by a least squares fit.
         '''
-        self._k_v2 = None # decay constant for viscosity curve
+        self._k_v2 = None  # decay constant for viscosity curve
         self._visc_A = None
 
         kvis = [k for k, w in zip(self.kvis, self.kvis_weathering) if w == 0.0]
@@ -705,10 +713,12 @@ class GnomeOil(Substance):
                                             self.kvis_weathering) if w == 0.0]
 
         if len(kvis) == 1:  # use default k_v2
-            self.logger.warning("Using an oil with a single viscosity value is deprecated. "
-                          "For best results please update your oil.")
-            warnings.warn("Using an oil with a single viscosity value is deprecated. "
-                          "For best results please update your oil.")
+            self.logger.warning("Using an oil with a single viscosity value "
+                                "is deprecated.  For best results please "
+                                "update your oil.")
+            warnings.warn("Using an oil with a single viscosity value "
+                          "is deprecated.  For best results please update "
+                          "your oil.")
             self._k_v2 = 2100.0
             self._visc_A = kvis[0] * np.exp(-self._k_v2 / kvis_ref_temps[0])
         else:

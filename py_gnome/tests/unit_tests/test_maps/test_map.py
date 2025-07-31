@@ -494,7 +494,7 @@ class TestRefloat:
 
 class Test_MapfromBNA:
 
-    print("instaniating map:", testbnamap)
+    print("instantiating map:", testbnamap)
     # NOTE: this is a pretty course map -- for testing
     bna_map = MapFromBNA(testbnamap, refloat_halflife=6, raster_size=1000)
 
@@ -909,6 +909,181 @@ def test_bna_no_map_bounds():
                                          (6., 11.),
                                          (6., 10.),
                                          ])
+
+class TestZeroRefloat():
+    """
+    some tests for setting refloat to zero
+
+    Depending on the flag set -- it should
+    either refloat them all at the next timestep, or right away
+
+    """
+    # a very simple raster:
+    (w, h) = (20, 10)
+    raster = np.zeros((w, h), dtype=np.uint8)
+    # a single skinny vertical line:
+    raster[10, :] = 1
+
+    # old style no longer exists ...
+    # def test_zero_refloat_old_style(self):
+    #     """
+    #     test a few LEs
+    #     """
+    #     time_step = 900  # 15 minutes in seconds
+    #     gmap = RasterMap(refloat_halflife=0,
+    #                      raster=self.raster,
+    #                      map_bounds=((-50, -30), (-50, 30),
+    #                                  (50, 30), (50, -30)),
+    #                      projection=NoProjection())
+
+    #     gmap.instant_refloat=False
+    #     # all moving left to right:
+
+    #     spill = sample_sc_release(2)
+
+    #     spill['positions'] = np.array(((5.0, 5.0, 0.),
+    #                                    (5.0, 7.0, 0.),
+    #                                    ),
+    #                                  dtype=np.float64)
+    #     spill['next_positions'] = np.array(((15.0, 5.0, 0.),
+    #                                         (15.0, 7.0, 0.),
+    #                                         ),
+    #                                        dtype=np.float64)
+
+    #     gmap.beach_elements(spill)
+
+    #     pos = spill['positions']
+    #     npos = spill['next_positions']
+    #     lwp = spill['last_water_positions']
+    #     sc = spill['status_codes']
+
+    #     print("after beaching")
+    #     print("before refloating")
+
+    #     print(f"{pos=}")
+    #     print(f"{npos=}")
+    #     print(f"{lwp=}")
+    #     print(f"{sc=}")
+
+    #     # elements should be beached
+    #     assert np.all(sc == oil_status.on_land)
+    #     # last water position should be set to right before the land
+    #     assert np.all(lwp == [[9., 5., 0.],
+    #                          [9., 7., 0.]])
+    #     # next positions are on land
+    #     assert np.all(npos == [[10., 5., 0.],
+    #                           [10., 7., 0.]])
+
+    #     # positions are unchanged
+    #     assert np.all(pos == [[5., 5., 0.],
+    #                           [5., 7., 0.]])
+
+    #     gmap.refloat_elements(spill, time_step)
+
+    #     pos2 = spill['positions']
+    #     npos2 = spill['next_positions']
+    #     lwp2 = spill['last_water_positions']
+    #     sc2 = spill['status_codes']
+
+    #     print("after refloating")
+    #     print(f"{pos2=}")
+    #     print(f"{npos2=}")
+    #     print(f"{lwp2=}")
+    #     print(f"{sc2=}")
+
+    #     # after refloating:
+    #     # elements should not be beached
+    #     assert np.all(sc2 == oil_status.in_water)
+    #     # last water position should still be set to right before the land
+    #     assert np.all(lwp2 == [[9., 5., 0.],
+    #                            [9., 7., 0.]])
+    #     # next positions are irrelevent
+    #     # assert np.all(npos2 == [[10., 5., 0.],
+    #     #                       [10., 7., 0.]])
+
+    #     # positions are at last water position
+    #     assert np.all(pos2 == [[9., 5., 0.],
+    #                            [9., 7., 0.]])
+
+    def test_zero_refloat_instant_refloat(self):
+        """
+        test a few LEs
+        """
+        time_step = 900  # 15 minutes in seconds
+        gmap = RasterMap(refloat_halflife=0,
+                         raster=self.raster,
+                         map_bounds=((-50, -30), (-50, 30),
+                                     (50, 30), (50, -30)),
+                         projection=NoProjection())
+
+        gmap.instant_refloat=True
+
+        # all moving left to right:
+
+        spill = sample_sc_release(2)
+
+        spill['positions'] = np.array(((5.0, 5.0, 0.),
+                                       (5.0, 7.0, 0.),
+                                       ),
+                                     dtype=np.float64)
+        spill['next_positions'] = np.array(((15.0, 5.0, 0.),
+                                            (15.0, 7.0, 0.),
+                                            ),
+                                           dtype=np.float64)
+
+        gmap.beach_elements(spill)
+
+        pos = spill['positions']
+        npos = spill['next_positions']
+        lwp = spill['last_water_positions']
+        sc = spill['status_codes']
+
+        print("after beaching")
+        print("before refloating")
+
+        print(f"{pos=}")
+        print(f"{npos=}")
+        print(f"{lwp=}")
+        print(f"{sc=}")
+
+        # no elements should be beached
+        assert np.all(sc == oil_status.in_water)
+        # last water position should be set to right before the land
+        assert np.all(lwp == [[9., 5., 0.],
+                              [9., 7., 0.]])
+        # next positions are at last water position
+        assert np.all(npos == [[9., 5., 0.],
+                               [9., 7., 0.]])
+        # positions are unchanged
+        assert np.all(pos == [[5., 5., 0.],
+                              [5., 7., 0.]])
+
+        # refloat should not make a difference:
+        gmap.refloat_elements(spill, time_step)
+
+        pos2 = spill['positions']
+        npos2 = spill['next_positions']
+        lwp2 = spill['last_water_positions']
+        sc2 = spill['status_codes']
+
+        print("after refloating")
+        print(f"{pos2=}")
+        print(f"{npos2=}")
+        print(f"{lwp2=}")
+        print(f"{sc2=}")
+
+        # after refloating: -- no difference if none beached
+        # no elements should be beached
+        assert np.all(sc2 == oil_status.in_water)
+        # last water position should be set to right before the land
+        assert np.all(lwp2 == [[9., 5., 0.],
+                              [9., 7., 0.]])
+        # next positions are at last water position
+        assert np.all(npos2 == [[9., 5., 0.],
+                               [9., 7., 0.]])
+        # positions are unchanged
+        assert np.all(pos2 == [[5., 5., 0.],
+                              [5., 7., 0.]])
 
 
 class Test_lake():

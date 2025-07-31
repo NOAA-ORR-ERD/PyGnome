@@ -24,6 +24,7 @@ def get_distribution_by_name(dist_name):
         raise ValueError(f"Distributiuon: {dist_name} doesn't exist.\n"
                          f"options are: {list(ALL_DISTS.keys())}")
 
+
 class DistributionBase(GnomeId):
     """
     Base class for distributions, just to make it easier to know
@@ -192,7 +193,8 @@ class WeibullDistribution(DistributionBase):
     Rosin Rammler distribution
     """
 
-    def __init__(self, alpha=None, lambda_=1.0, min_=None, max_=None, **kwargs):
+    def __init__(self, alpha=None, lambda_=1.0, min_=None, max_=None,
+                 **kwargs):
         '''
         :param alpha: The shape parameter 'alpha' - labeled as 'a' in
                       numpy.random.weibull distribution
@@ -283,7 +285,7 @@ ALL_DISTS = {name: obj for name, obj in vars().items()
 
 if __name__ == '__main__':
     # generates TypeError
-    #DistributionBase()
+    # DistributionBase()
 
     UniformDistribution(low=0, high=0.1)
 

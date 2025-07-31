@@ -1,7 +1,3 @@
-
-
-
-
 import os
 
 import numpy as np
@@ -14,6 +10,7 @@ from . import cy_fixtures
 
 from ..conftest import testdata
 
+import pytest
 
 class ComponentMove(cy_fixtures.CyTestMove):
 
@@ -48,7 +45,6 @@ class ComponentMove(cy_fixtures.CyTestMove):
         """
         get_move for uncertain LEs
         """
-
         self.component.get_move(
             self.model_time,
             self.time_step,
@@ -57,14 +53,13 @@ class ComponentMove(cy_fixtures.CyTestMove):
             self.status,
             basic_types.spill_type.forecast,
             )
-        print()
-        print(self.delta)
+        # print()
+        # print(self.delta)
 
     def uncertain_move(self):
         """
         get_move for forecast LEs
         """
-
         self.component.get_move(
             self.model_time,
             self.time_step,
@@ -73,8 +68,21 @@ class ComponentMove(cy_fixtures.CyTestMove):
             self.status,
             basic_types.spill_type.uncertainty,
             )
-        print()
-        print(self.u_delta)
+        # print()
+        # print(self.u_delta)
+
+    def backward_move(self):
+        """
+        get_move with negative timestep
+        """
+        self.component.get_move(
+            self.model_time,
+            - self.time_step,
+            self.ref,
+            self.delta,
+            self.status,
+            basic_types.spill_type.forecast,
+            )
 
 
 def test_move():
@@ -104,6 +112,7 @@ def test_certain_move():
     print('--------------')
     print('test_certain_move')
     tgt = ComponentMove()
+
     tgt.certain_move()
 
     assert np.all(tgt.delta['lat'] != 0)
@@ -129,6 +138,31 @@ def test_uncertain_move():
     assert np.all(tgt.u_delta['long'] != 0)
     assert np.all(tgt.u_delta['z'] == 0)
 
+def test_run_backwards():
+    """
+    test that a component mover can work running backwards.
+    """
+    # first run forward
+    tgt = ComponentMove()
+    tgt.certain_move()
+    front_deltas = tgt.delta.copy()
+
+    # then run backward
+    tgt = ComponentMove()
+    tgt.backward_move()
+    back_deltas = tgt.delta.copy()
+
+    print(back_deltas)
+
+    # Not sure how to test that it's correct, but here's something:
+    # deltas should be all the same:
+    for d in back_deltas:
+        assert d == back_deltas[0]
+
+    # They should be the negative of the forward values
+    assert back_deltas['lat'][0] == -front_deltas['lat'][0]
+    assert back_deltas['long'][0] == -front_deltas['long'][0]
+    assert back_deltas['z'][0] == -front_deltas['z'][0]
 
 c_component = cy_component_mover.CyComponentMover()
 
@@ -172,7 +206,6 @@ def test_ref_point():
     assert c_component.ref_point == tuple(tgt)
     c_component.ref_point = list(tgt)  # can be a list or a tuple
     assert c_component.ref_point == tuple(tgt)
-
 
 if __name__ == '__main__':
     test_move()

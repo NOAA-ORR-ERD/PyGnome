@@ -22,7 +22,7 @@ import nucos
 # just so it will be in the namespace.
 from .gnomeobject import GnomeId, AddLogger
 
-__version__ = "1.1.17"
+__version__ = "1.1.18"
 
 # set up to show DeprecationWarnings that come from PyGNOME
 warnings.filterwarnings("default",
@@ -30,16 +30,14 @@ warnings.filterwarnings("default",
                         module="gnome.*")
 
 if os.name == 'nt':
-    # In Windows, we need to add the location of our lib_gnome.dll to the
-    # .dll search path.
-    here = getattr(sys, '_stdlib_dir', None)
-    if not here and hasattr(os, '__file__'):
-        here = os.path.dirname(os.__file__)
+    # Get site-packages path from the current Python environment
+    import site
+    site_packages = next((p for p in site.getsitepackages() if 'site-packages' in p), None)
 
-    if here:
-        os.add_dll_directory(
-            pathlib.Path(here) / 'site-packages' / 'bin'
-        )
+    if site_packages:
+        dll_path = pathlib.Path(site_packages) / 'bin'
+        if dll_path.exists():
+            os.add_dll_directory(dll_path)
 
 #
 # A few imports so that the basic stuff is there

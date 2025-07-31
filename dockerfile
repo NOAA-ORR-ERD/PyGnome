@@ -1,5 +1,5 @@
 ARG PYTHON_VER
-FROM registry.orr.noaa.gov/erd/centos-conda/ubuntu/ubuntuforge-python$PYTHON_VER
+FROM registry.orr.noaa.gov/erd/environments/ubuntu/ubuntuforge-python$PYTHON_VER
 
 # Args declared before the FROM need to be redeclared, don't delete this
 ARG PYTHON_VER

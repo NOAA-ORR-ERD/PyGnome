@@ -1,2 +1,6 @@
 output/*
 script_results.txt
+
+example_files/ak_arctic.bna
+example_files/arctic_avg2_0001_gnome.nc
+

@@ -28,5 +28,5 @@ from .validators import (convertible_to_seconds, ascending_datetime,
                          no_duplicate_datetime, positive)
 
 from .base_schema import (ObjType, ObjTypeSchema, GeneralGnomeObjectSchema, LongLatBounds, PolygonSetSchema,
-                          WorldPoint, ImageSize, now)
+                          WorldPoint, ImageSize, now, StringListSchema)
 

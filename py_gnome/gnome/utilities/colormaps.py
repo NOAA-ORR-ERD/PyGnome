@@ -91,11 +91,12 @@ class ColorMap:
         elif out_type == 'float':
             map_list = self.map_list[values] / 255.0
         else:
-            raise("invalid out_type in colormap")
+            raise ValueError("invalid out_type in colormap")
 
         return map_list
 
 # And now the colormaps are created.
+
 
 # fixme: these should get created as needed, not by default -- maybe
 # even from a data file, so that they don't always get loaded into
