@@ -31,16 +31,16 @@ dt = datetime(2013, 4, 15, 12)
 tdelta = timedelta(hours=1)
 
 
-  # unraisableexception.py:80: PytestUnraisableExceptionWarning: Exception ignored in: <function ZipFile.__del__ at 0x10b847760>
+# unraisableexception.py:80: PytestUnraisableExceptionWarning: Exception ignored in: <function ZipFile.__del__ at 0x10b847760>
 
-  # Traceback (most recent call last):
-  #   File "/Users/chris.barker/miniforge3/envs/gnome-dev/lib/python3.10/zipfile.py", line 1833, in __del__
-  #     self.close()
-  #   File "/Users/chris.barker/miniforge3/envs/gnome-dev/lib/python3.10/zipfile.py", line 1850, in close
-  #     self.fp.seek(self.start_dir)
-  #   File "/Users/chris.barker/miniforge3/envs/gnome-dev/lib/python3.10/tempfile.py", line 795, in seek
-  #     return self._file.seek(*args)
-  # ValueError: I/O operation on closed file.
+# Traceback (most recent call last):
+#   File "/Users/chris.barker/miniforge3/envs/gnome-dev/lib/python3.10/zipfile.py", line 1833, in __del__
+#     self.close()
+#   File "/Users/chris.barker/miniforge3/envs/gnome-dev/lib/python3.10/zipfile.py", line 1850, in close
+#     self.fp.seek(self.start_dir)
+#   File "/Users/chris.barker/miniforge3/envs/gnome-dev/lib/python3.10/tempfile.py", line 795, in seek
+#     return self._file.seek(*args)
+# ValueError: I/O operation on closed file.
 # only happens when run alongside other utilities tests ...
 @pytest.mark.skip("this is raising mysterious errors -- particularly on Windows")
 def test_init():

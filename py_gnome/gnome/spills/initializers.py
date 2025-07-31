@@ -20,11 +20,14 @@ from gnome.cy_gnome.cy_rise_velocity_mover import rise_velocity_from_drop_size
 from gnome.persist import base_schema
 from gnome.gnomeobject import GnomeId
 from gnome.persist.base_schema import GeneralGnomeObjectSchema
-from gnome.utilities.distributions import (DistributionBase,
-                                           NormalDistributionSchema,
-                                           WeibullDistributionSchema,
-                                           LogNormalDistributionSchema,
-                                           UniformDistributionSchema)
+from gnome.utilities.distributions import (
+    # DistributionBase,
+    NormalDistributionSchema,
+    WeibullDistributionSchema,
+    LogNormalDistributionSchema,
+    UniformDistributionSchema
+)
+
 
 class InitBaseClass(GnomeId):
     """
@@ -81,7 +84,8 @@ class WindagesSchema(base_schema.ObjTypeSchema):
 class InitWindages(InitBaseClass):
     _schema = WindagesSchema
 
-    def __init__(self, windage_range=(0.01, 0.04), windage_persist=900, *args, **kwargs):
+    def __init__(self, windage_range=(0.01, 0.04), windage_persist=900,
+                 *args, **kwargs):
         """
         Initializes the windages, windage_range, windage_persist data arrays.
         Initial values for windages use infinite persistence. These are updated
@@ -94,8 +98,8 @@ class InitWindages(InitBaseClass):
         :type windage_range: tuple: (min, max)
 
         :param windage_persist: Default is 900s, so windage is updated every
-            900 seconds. -1 means the persistence is infinite so it is only set at
-            the beginning of the run.
+            900 seconds. -1 means the persistence is infinite so it is
+            only set at the beginning of the run.
         :type windage_persist: integer seconds
         """
         super(InitWindages, self).__init__(*args, **kwargs)
@@ -134,8 +138,8 @@ class InitWindages(InitBaseClass):
 
 # do following two classes work for a time release spill?
 
-#TODO: Get the distribution objects into this as first class objects, not
-#shoehorned in the initialize()
+# TODO: Get the distribution objects into this as first class objects, not
+#       shoehorned in the initialize()
 class InitMassFromPlume(InitBaseClass):
     """
     Initialize the 'mass' array based on mass flux from the plume spilled
@@ -210,7 +214,7 @@ class InitRiseVelFromDist(DistributionBase):
         """
         super(InitRiseVelFromDist, self).__init__(**kwargs)
 
-        if distribution and hasattr(distribution,"set_values"):
+        if distribution and hasattr(distribution, "set_values"):
             self.distribution = distribution
         else:
             raise TypeError('InitRiseVelFromDist requires a distribution for '
@@ -228,7 +232,7 @@ class InitRiseVelFromDist(DistributionBase):
 
 
 class InitRiseVelFromDropletSizeFromDist(DistributionBase):
-    #fixme: this does not seem to be tested.
+    # fixme: this does not seem to be tested.
     def __init__(self,
                  distribution=None,
                  water_density=1020.0, water_viscosity=1.0e-6,
@@ -341,7 +345,8 @@ def plume_initializers(distribution_type='droplet_size',
     Helper function returns an ElementType object containing 'rise_vel'
     and 'windages' initialized with user specified parameters for distribution.
 
-    :param str distribution_type: type of distribution, 'droplet_size' or 'rise_velocity'
+    :param str distribution_type: type of distribution, 'droplet_size' or
+                                  'rise_velocity'
 
     :param gnome.utilities.distributions distribution=None:
 
@@ -382,19 +387,21 @@ def plume_initializers(distribution_type='droplet_size',
     # Add docstring from called classes
     # Note: following gives sphinx warnings on build, ignore for now.
 
-    plume_initializers.__doc__ += ("\nInitRiseVelFromDropletSizeFromDist Documentation:\n" +
-                      InitRiseVelFromDropletSizeFromDist.__init__.__doc__ +
-                      "\nInitRiseVelFromDist Documentation:\n" +
-                      InitRiseVelFromDist.__init__.__doc__ +
-                      "\nInitWindages Documentation:\n" +
-                      InitWindages.__init__.__doc__
-                      )
+    plume_initializers.__doc__ += (
+        "\nInitRiseVelFromDropletSizeFromDist Documentation:\n" +
+        InitRiseVelFromDropletSizeFromDist.__init__.__doc__ +
+        "\nInitRiseVelFromDist Documentation:\n" +
+        InitRiseVelFromDist.__init__.__doc__ +
+        "\nInitWindages Documentation:\n" +
+        InitWindages.__init__.__doc__
+    )
 
     if distribution_type == 'droplet_size':
-        return [InitRiseVelFromDropletSizeFromDist(distribution=distribution, **kwargs),
+        return [InitRiseVelFromDropletSizeFromDist(distribution=distribution,
+                                                   **kwargs),
                 InitWindages(windage_range, windage_persist)]
     elif distribution_type == 'rise_velocity':
-        return [InitRiseVelFromDist(distribution=distribution,**kwargs),
+        return [InitRiseVelFromDist(distribution=distribution, **kwargs),
                 InitWindages(windage_range, windage_persist)]
     else:
         raise TypeError('distribution_type must be either droplet_size or '
@@ -412,7 +419,8 @@ def plume_from_model_initializers(distribution_type='droplet_size',
     initializer with user specified parameters for distribution.
     """
     if distribution_type == 'droplet_size':
-        return [InitRiseVelFromDropletSizeFromDist(distribution=distribution, **kwargs),
+        return [InitRiseVelFromDropletSizeFromDist(distribution=distribution,
+                                                   **kwargs),
                 InitWindages(windage_range, windage_persist),
                 InitMassFromPlume()]
     elif distribution_type == 'rise_velocity':
