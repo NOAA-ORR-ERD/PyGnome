@@ -8,7 +8,7 @@ from gnome.array_types import gat
 from gnome.ops.viscosity import init_viscosity
 from .sample_oils import _sample_oils
 from .substance import Substance, SubstanceSchema
-
+from gnome.persist import SequenceSchema
 
 from gnome.persist import (NumpyArraySchema,
                            Int,
