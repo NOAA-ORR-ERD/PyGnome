@@ -291,11 +291,14 @@ class GnomeOil(Substance):
         self._set_pc_values('boiling_point', boiling_point)
         self._set_pc_values('component_density', component_density)
 
-        if len(sara_type) == self.num_components:
-            self.sara_type = sara_type
+        if sara_type is None:
+            self.sara_type = None
         else:
-            raise ValueError("You must have the same number of sara_type "
-                             "as PCs")
+            if len(sara_type) == self.num_components:
+                self.sara_type = sara_type
+            else:
+                raise ValueError("You must have the same number of sara_type "
+                                 "as PCs")
 
         self._k_v2 = None  # decay constant for viscosity curve
         self._visc_A = None  # constant for viscosity curve

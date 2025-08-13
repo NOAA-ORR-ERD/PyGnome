@@ -529,7 +529,7 @@ def is_savezip_valid(savezip):
 
     1. Failed to open zipfile
     2. CRC failed for a file in the archive - rejecting zip
-    3. Found a \*.json with size > _max_json_filesize - rejecting
+    3. Found a ``*.json`` with size > _max_json_filesize - rejecting
     4. Reject - found a file with:
         uncompressed_size/compressed_size > _max_compress_ratio.
     5. Found a file in archive that has path outside of saveloc - rejecting
