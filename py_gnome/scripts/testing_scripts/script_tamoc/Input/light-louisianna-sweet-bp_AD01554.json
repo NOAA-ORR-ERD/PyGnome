@@ -1,0 +1,238 @@
+{
+  "oil_id": "AD01554",
+  "adios_data_model_version": "0.11.0",
+  "metadata": {
+    "name": "LIGHT LOUISIANNA SWEET, BP",
+    "source_id": "AD01554",
+    "alternate_names": [
+      "LIGHT LOUISIANA SWEET"
+    ],
+    "location": "TOLEDO, OH",
+    "reference": {
+      "year": 1996,
+      "reference": "Benkelowycz, N., British Petroleum, Communication to Bill Sites, NOAA, September 23, 1996."
+    },
+    "product_type": "Crude Oil NOS",
+    "API": 35.6,
+    "labels": [
+      "Light Crude",
+      "Crude Oil"
+    ],
+    "model_completeness": 42,
+    "gnome_suitable": true
+  },
+  "status": [
+    "W009: Distillation fraction recovered is missing or invalid"
+  ],
+  "review_status": {
+    "status": "Not Reviewed"
+  },
+  "sub_samples": [
+    {
+      "metadata": {
+        "name": "Fresh Oil Sample",
+        "short_name": "Fresh Oil",
+        "fraction_evaporated": {
+          "value": 0,
+          "unit": "fraction",
+          "unit_type": "massfraction"
+        }
+      },
+      "physical_properties": {
+        "pour_point": {
+          "measurement": {
+            "value": -18,
+            "unit": "C",
+            "unit_type": "temperature"
+          }
+        },
+        "densities": [
+          {
+            "density": {
+              "value": 846.06,
+              "unit": "kg/m^3",
+              "unit_type": "density"
+            },
+            "ref_temp": {
+              "value": 288.16,
+              "unit": "K",
+              "unit_type": "temperature"
+            },
+            "method": "Converted from API"
+          }
+        ],
+        "kinematic_viscosities": [
+          {
+            "viscosity": {
+              "value": 0.0000053,
+              "unit": "m^2/s",
+              "unit_type": "kinematicviscosity"
+            },
+            "ref_temp": {
+              "value": 38,
+              "unit": "C",
+              "unit_type": "temperature"
+            },
+            "shear_rate": {}
+          }
+        ]
+      },
+      "SARA": {
+        "asphaltenes": {
+          "value": 0.0032,
+          "unit": "fraction",
+          "unit_type": "massfraction"
+        }
+      },
+      "distillation_data": {
+        "type": "volume fraction",
+        "cuts": [
+          {
+            "fraction": {
+              "value": 0.0114,
+              "unit": "fraction",
+              "unit_type": "volumefraction"
+            },
+            "vapor_temp": {
+              "value": 28,
+              "unit": "C",
+              "unit_type": "temperature"
+            }
+          },
+          {
+            "fraction": {
+              "value": 0.097,
+              "unit": "fraction",
+              "unit_type": "volumefraction"
+            },
+            "vapor_temp": {
+              "value": 93,
+              "unit": "C",
+              "unit_type": "temperature"
+            }
+          },
+          {
+            "fraction": {
+              "value": 0.181,
+              "unit": "fraction",
+              "unit_type": "volumefraction"
+            },
+            "vapor_temp": {
+              "value": 149,
+              "unit": "C",
+              "unit_type": "temperature"
+            }
+          },
+          {
+            "fraction": {
+              "value": 0.237,
+              "unit": "fraction",
+              "unit_type": "volumefraction"
+            },
+            "vapor_temp": {
+              "value": 177,
+              "unit": "C",
+              "unit_type": "temperature"
+            }
+          },
+          {
+            "fraction": {
+              "value": 0.294,
+              "unit": "fraction",
+              "unit_type": "volumefraction"
+            },
+            "vapor_temp": {
+              "value": 205,
+              "unit": "C",
+              "unit_type": "temperature"
+            }
+          },
+          {
+            "fraction": {
+              "value": 0.417,
+              "unit": "fraction",
+              "unit_type": "volumefraction"
+            },
+            "vapor_temp": {
+              "value": 260,
+              "unit": "C",
+              "unit_type": "temperature"
+            }
+          },
+          {
+            "fraction": {
+              "value": 0.489,
+              "unit": "fraction",
+              "unit_type": "volumefraction"
+            },
+            "vapor_temp": {
+              "value": 288,
+              "unit": "C",
+              "unit_type": "temperature"
+            }
+          },
+          {
+            "fraction": {
+              "value": 0.62,
+              "unit": "fraction",
+              "unit_type": "volumefraction"
+            },
+            "vapor_temp": {
+              "value": 343,
+              "unit": "C",
+              "unit_type": "temperature"
+            }
+          },
+          {
+            "fraction": {
+              "value": 0.672,
+              "unit": "fraction",
+              "unit_type": "volumefraction"
+            },
+            "vapor_temp": {
+              "value": 371,
+              "unit": "C",
+              "unit_type": "temperature"
+            }
+          },
+          {
+            "fraction": {
+              "value": 0.757,
+              "unit": "fraction",
+              "unit_type": "volumefraction"
+            },
+            "vapor_temp": {
+              "value": 427,
+              "unit": "C",
+              "unit_type": "temperature"
+            }
+          },
+          {
+            "fraction": {
+              "value": 0.824,
+              "unit": "fraction",
+              "unit_type": "volumefraction"
+            },
+            "vapor_temp": {
+              "value": 482,
+              "unit": "C",
+              "unit_type": "temperature"
+            }
+          },
+          {
+            "fraction": {
+              "value": 0.914,
+              "unit": "fraction",
+              "unit_type": "volumefraction"
+            },
+            "vapor_temp": {
+              "value": 566,
+              "unit": "C",
+              "unit_type": "temperature"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
