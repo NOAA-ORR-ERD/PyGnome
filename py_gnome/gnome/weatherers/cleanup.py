@@ -75,14 +75,6 @@ class RemoveMass(object):
     def prepare_for_model_step(self, sc, time_step, model_time):
         '''
         Do sub timestep resolution here so numbers add up correctly
-        Mark LEs to be skimmed - do them in order right now. Assume all LEs
-        that are released together will be skimmed together since they would
-        be closer to each other in position.
-
-        Assumes: there is more mass in water than amount of mass to be
-        skimmed. The LEs marked for Skimming are marked only once -
-        code checks to see if any LEs are marked for skimming and if
-        none are found, it marks them.
         '''
         if not self.on:
             self._active = False
@@ -313,6 +305,7 @@ class Skimmer(CleanUpBase):
     def prepare_for_model_step(self, sc, time_step, model_time):
         '''
         Do sub timestep resolution here so numbers add up correctly
+
         Mark LEs to be skimmed - do them in order right now. Assume all LEs
         that are released together will be skimmed together since they would
         be closer to each other in position.
