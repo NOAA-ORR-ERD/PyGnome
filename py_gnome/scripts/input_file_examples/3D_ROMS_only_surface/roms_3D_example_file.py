@@ -7,12 +7,13 @@ But it works in surface only mode.
 from pathlib import Path
 import gnome.scripting as gs
 
-gs.PrintFinder()
+# Turn on if you are looking for where prints are coming from
+# gs.PrintFinder()
 
 HERE = Path(__file__).parent
 
 # download the example file, if it's not already there
-cur_file = gs.get_datafile(HERE / '3D_ROMS_example.nc', 'gridded_test_files')
+cur_file = gs.get_datafile((HERE / '3D_ROMS_example_Honolulu.nc'), 'gridded_test_files')
 
 curr = gs.GridCurrent.from_netCDF(HERE / cur_file)
 
