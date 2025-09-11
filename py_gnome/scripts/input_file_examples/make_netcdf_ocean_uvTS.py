@@ -37,7 +37,7 @@ model_id = 'ESPC'
 start = datetime.datetime.today()#datetime(2025, 9, 9)
 end = start + datetime.timedelta(days=3)
 bounds = (-88.5, 27.5, -87.5, 28.5)
-location_tag = "Gulf_center28N88W"
+location_tag = "Gulf_spill28N88W"
 
 def make_netcdf_ocean_uvTS(model_id, start, end, bounds, env_params, location_tag):
     """
