@@ -2880,16 +2880,16 @@ OSErr GridMap_c::ExportTopology(char* path)
 	 }*/
 	
 	nver = _GetHandleSize((Handle)ptsH)/sizeof(**ptsH);
-	sprintf(hdrStr,"Vertices\t%ld\n",nver);	// total vertices
+	snprintf(hdrStr, sizeof(hdrStr), "Vertices\t%ld\n",nver);	// total vertices
 	fwrite(hdrStr,sizeof(char),strlen(hdrStr),fp);
-	sprintf(hdrStr,"%ld\t%ld\n",nver,nver);	// junk line
+	snprintf(hdrStr, sizeof(hdrStr), "%ld\t%ld\n",nver,nver);	// junk line
 	fwrite(hdrStr,sizeof(char),strlen(hdrStr),fp);
 	for(i=0;i<nver;i++)
 	{	
 		x = (*ptsH)[i].h/1000000.0;
 		y =(*ptsH)[i].v/1000000.0;
 		z = (*depthsH)[i];
-		sprintf(topoStr,"%lf\t%lf\t%lf\n",x,y,z);
+		snprintf(topoStr, sizeof(topoStr), "%lf\t%lf\t%lf\n",x,y,z);
 		fwrite(topoStr,sizeof(char),strlen(topoStr),fp);
 	}
 	//boundary points - an optional handle, only for curvilinear case
@@ -2897,11 +2897,11 @@ OSErr GridMap_c::ExportTopology(char* path)
 	if (boundarySegmentsH) 
 	{
 		nBoundarySegs = _GetHandleSize((Handle)boundarySegmentsH)/sizeof(long);
-		sprintf(hdrStr,"BoundarySegments\t%ld\n",nBoundarySegs);	// total vertices
+		snprintf(hdrStr, sizeof(hdrStr), "BoundarySegments\t%ld\n",nBoundarySegs);	// total vertices
 		fwrite(hdrStr,sizeof(char),strlen(hdrStr),fp);
 		for(i=0;i<nBoundarySegs;i++)
 		{	
-			sprintf(topoStr,"%ld\n",(*boundarySegmentsH)[i]+1);	// when reading in subtracts 1
+			snprintf(topoStr, sizeof(topoStr), "%ld\n",(*boundarySegmentsH)[i]+1);	// when reading in subtracts 1
 			fwrite(topoStr,sizeof(char),strlen(topoStr),fp);
 		}
 	}
@@ -2913,13 +2913,13 @@ OSErr GridMap_c::ExportTopology(char* path)
 		{	
 			if ((*boundaryTypeH)[i]==2) nWaterBoundaries++;
 		}
-		sprintf(hdrStr,"WaterBoundaries\t%ld\t%ld\n",nWaterBoundaries,nBoundarySegs);	
+		snprintf(hdrStr, sizeof(hdrStr), "WaterBoundaries\t%ld\t%ld\n",nWaterBoundaries,nBoundarySegs);	
 		fwrite(hdrStr,sizeof(char),strlen(hdrStr),fp);
 		for(i=0;i<nBoundarySegs;i++)
 		{	
 			if ((*boundaryTypeH)[i]==2)
 			{
-				sprintf(topoStr,"%ld\n",i);
+				snprintf(topoStr, sizeof(topoStr), "%ld\n",i);
 				fwrite(topoStr,sizeof(char),strlen(topoStr),fp);
 			}
 		}
@@ -2929,16 +2929,16 @@ OSErr GridMap_c::ExportTopology(char* path)
 	if (boundaryPointsH) 
 	{
 		nBoundaryPts = _GetHandleSize((Handle)boundaryPointsH)/sizeof(long);	// should be same size as previous handle
-		sprintf(hdrStr,"BoundaryPoints\t%ld\n",nBoundaryPts);	// total boundary points
+		snprintf(hdrStr, sizeof(hdrStr), "BoundaryPoints\t%ld\n",nBoundaryPts);	// total boundary points
 		fwrite(hdrStr,sizeof(char),strlen(hdrStr),fp);
 		for(i=0;i<nBoundaryPts;i++)
 		{	
-			sprintf(topoStr,"%ld\n",(*boundaryPointsH)[i]);	// when reading in subtracts 1
+			snprintf(topoStr, sizeof(topoStr), "%ld\n",(*boundaryPointsH)[i]);	// when reading in subtracts 1
 			fwrite(topoStr,sizeof(char),strlen(topoStr),fp);
 		}
 	}
 	numTriangles = _GetHandleSize((Handle)topH)/sizeof(**topH);
-	sprintf(hdrStr,"Topology\t%ld\n",numTriangles);
+	snprintf(hdrStr, sizeof(hdrStr), "Topology\t%ld\n",numTriangles);
 	fwrite(hdrStr,sizeof(char),strlen(hdrStr),fp);
 	for(i = 0; i< numTriangles;i++)
 	{
@@ -2948,7 +2948,7 @@ OSErr GridMap_c::ExportTopology(char* path)
 		n1 = (*topH)[i].adjTri1;
 		n2 = (*topH)[i].adjTri2;
 		n3 = (*topH)[i].adjTri3;
-		sprintf(topoStr, "%ld\t%ld\t%ld\t%ld\t%ld\t%ld\n",
+		snprintf(topoStr, sizeof(topoStr), "%ld\t%ld\t%ld\t%ld\t%ld\t%ld\n",
 				v1, v2, v3, n1, n2, n3);
 		
 		/////
@@ -2956,12 +2956,12 @@ OSErr GridMap_c::ExportTopology(char* path)
 	}
 	
 	numBranches = _GetHandleSize((Handle)treeH)/sizeof(**treeH);
-	sprintf(hdrStr,"DAGTree\t%ld\n",dagTree->fNumBranches);
+	snprintf(hdrStr, sizeof(hdrStr), "DAGTree\t%ld\n",dagTree->fNumBranches);
 	fwrite(hdrStr,sizeof(char),strlen(hdrStr),fp);
 	
 	for(i = 0; i<dagTree->fNumBranches; i++)
 	{
-		sprintf(topoStr,"%ld\t%ld\t%ld\n",(*treeH)[i].topoIndex,(*treeH)[i].branchLeft,(*treeH)[i].branchRight);
+		snprintf(topoStr, sizeof(topoStr), "%ld\t%ld\t%ld\n",(*treeH)[i].topoIndex,(*treeH)[i].branchLeft,(*treeH)[i].branchRight);
 		fwrite(topoStr,sizeof(char),strlen(topoStr),fp);
 	}
 	
@@ -3621,7 +3621,7 @@ OSErr GridMap_c::TextRead(char *path)
 		}
 		else {
 			err = true;
-			sprintf(errmsg, "File %s is a current file and should be input as a universal mover.", fileName);
+			snprintf(errmsg, sizeof(errmsg), "File %s is a current file and should be input as a universal mover.", fileName);
 			printNote(errmsg);
 		}
 	}
@@ -3652,7 +3652,7 @@ OSErr GridMap_c::TextRead(char *path)
 		}
 		if (err)
 		{
-			sprintf(errmsg,"File %s is not a recognizable map file.",fileName);
+			snprintf(errmsg, sizeof(errmsg), "File %s is not a recognizable map file.",fileName);
 			printError(errmsg);
 		}
 	}

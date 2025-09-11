@@ -837,7 +837,7 @@ Boolean ComponentMover_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticSt
 	StringWithoutTrailingZeros(str1,length1 * this->fOptimize.pat1ValScale,4);
 	StringWithoutTrailingZeros(str2,length2 * this->fOptimize.pat2ValScale,4);
 	StringWithoutTrailingZeros(str3,length3,4);
-	sprintf(diagnosticStr, " [grid: %s, pat1: %s m/s, pat2: %s m/s, total: %s m/s]",
+	snprintf(diagnosticStr, sizeof(diagnosticStr), " [grid: %s, pat1: %s m/s, pat2: %s m/s, total: %s m/s]",
 			"component", str1, str2, str3);
 	return true;
 	
@@ -954,8 +954,8 @@ VelocityFH ComponentMover_c::GetVelocityHdl(short pattern)
 		if (pattern2)
 			return pattern2->GetVelocityHdl();
 	}
-	else
-		return 0;
+
+	return 0;
 }
 
 LongPointHdl ComponentMover_c::GetPointsHdl(void)
