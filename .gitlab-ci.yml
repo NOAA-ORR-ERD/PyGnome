@@ -7,6 +7,7 @@ stages:
   - compile
   - build
   - test
+  - deploy
 
 cache:
   paths:
@@ -293,3 +294,38 @@ build_production:
     - docker build . --build-arg PYTHON_VER=$PYTHON_VER -t registry.orr.noaa.gov/gnome/pygnome:production
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker push registry.orr.noaa.gov/gnome/pygnome:production
+
+
+build pypi package:
+  stage: build
+  image: registry.orr.noaa.gov/erd/environments/ubuntu/ubuntuforge-python${PYTHON_VER}
+  tags:
+    - docker
+  script:
+    - |
+      conda install python=$PYTHON_VER \
+      --file py_gnome/conda_requirements.txt \
+      --file py_gnome/conda_requirements_build.txt
+    - python -m pip install ./py_gnome
+    - python -m pip install build
+    - python -m build -o pydist
+  artifacts:
+    paths:
+      - ./pydist
+    expire_in: "5 days"
+
+
+post pypi package to internal registry:
+  stage: deploy
+  image: registry.orr.noaa.gov/erd/environments/ubuntu/ubuntuforge-python${PYTHON_VER} 
+  tags:
+    - docker
+  needs:
+    - build pypi package
+  dependencies:
+    - build pypi package
+  script:
+  - python -m pip install twine
+  - TWINE_PASSWORD=${CI_JOB_TOKEN} TWINE_USERNAME=gitlab-ci-token python -m
+    twine upload --repository-url
+    ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi ./pydist/*
