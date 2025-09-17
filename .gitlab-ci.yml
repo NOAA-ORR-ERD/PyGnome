@@ -318,7 +318,7 @@ build pypi package:
     - python -m build -o pydist
   artifacts:
     paths:
-      - ./pydist
+      - ./py_gnome/pydist
     expire_in: "5 days"
 
 
@@ -331,6 +331,8 @@ post pypi package to internal registry:
     - build pypi package
   dependencies:
     - build pypi package
+  before_script:
+    - echo ''
   script:
     - cd py_gnome
     - python -m pip install twine
