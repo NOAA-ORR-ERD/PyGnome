@@ -301,6 +301,12 @@ build pypi package:
   image: registry.orr.noaa.gov/erd/environments/ubuntu/ubuntuforge-python${PYTHON_VER}
   tags:
     - docker
+  before_script:
+    - |
+      apt-get install -y \
+      g++ make libxext-dev libsm-dev libxrender-dev libglib2.0-0 \
+      wget chrpath bzip2 tar \
+      git patchelf ca-certificates
   script:
     - |
       conda install python=$PYTHON_VER \
