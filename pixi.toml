@@ -1,0 +1,35 @@
+[workspace]
+authors = ["Naomi Connolly <naomi.connolly@noaa.gov>"]
+channels = ["conda-forge"]
+name = "pygnome"
+platforms = ["osx-64", "linux-64"]
+version = "0.1.0"
+
+[tasks]
+
+[dependencies]
+awesome-slugify = ">=1.6.5,<2"
+colander = "<2"
+progressbar = ">=2.5,<3"
+psutil = ">=7.1.0,<8"
+python-dateutil = ">=2.9.0.post0,<3"
+pyzmq = ">=27.1.0,<28"
+numpy = ">=2.0,<3"
+scipy = ">=1.16.2,<2"
+gsw = ">=3.6.20,<4"
+netcdf4 = ">=1.7.2,<2"
+trimesh = ">=4.8.2,<5"
+geojson = ">=3.2.0,<4"
+geopandas = ">=1.1.1,<2"
+mapbox_earcut = ">=1.0.3,<2"
+pyogrio = ">=0.11.1,<0.12"
+pyproj = ">=3.7.2,<4"
+shapely = ">=2.0.6"
+gridded = ">=0.7.2,<0.8"
+pynucos = ">=3.4.0"
+cell_tree2d = ">=0.3.0,<0.4"
+py_gd = ">=2.3"
+adios_db = ">=1.2.5"
+
+[target.linux-64.dependencies]
+clang = ">=21.1.1,<22"
