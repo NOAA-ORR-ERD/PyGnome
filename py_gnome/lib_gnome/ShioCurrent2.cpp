@@ -2864,7 +2864,7 @@ double RStatCurrentRot(double		theTime,		// time in hrs from begin of year
 
 void short2Str(short sValue, char *theStr)
 {	
-	sprintf(theStr,"%hd",sValue);
+	snprintf(theStr, sizeof(theStr), "%hd",sValue);
 	return;
 }
 
@@ -2880,7 +2880,7 @@ void hr2TStr(double exHours, char *theStr)
    if( (sHour<0)||(sHour>24) ){
    		ndec = 2;
 
-		sprintf(theStr,"%.2lf",exHours);
+		snprintf(theStr, sizeof(theStr), "%.2lf",exHours);
 //		nchr=val2st(exHours,ndec,theStr);
 		return;
    }

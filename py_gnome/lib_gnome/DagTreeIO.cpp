@@ -53,7 +53,7 @@ OSErr ReadTIndexedDagTreeBody(vector<string> &linesInFile, long *line,
 
 	for (i = 0; i < numRecs; i++) {
 		if (!ParseLine(linesInFile[(*line)++], (*dagListHdl)[i])) {
-			sprintf(errmsg, "Unable to read DAG Tree data from line %ld:%s", *line, NEWLINESTRING);
+			snprintf(errmsg, sizeof(errmsg), "Unable to read DAG Tree data from line %ld:%s", *line, NEWLINESTRING);
 			goto done;
 		}
 
@@ -162,7 +162,7 @@ OSErr ReadTVerticesBody(vector<string> &linesInFile, long *line,
 	{
 		wantDepths = false;	// in case any current files don't have depth data, it's usually not used
 		if (!ParseLine(currentLine, x, y)) {
-		sprintf(errmsg, "Unable to read vertex data from line %ld:%s", *line, NEWLINESTRING);
+		snprintf(errmsg, sizeof(errmsg), "Unable to read vertex data from line %ld:%s", *line, NEWLINESTRING);
 			goto done;
 		}
 	}
@@ -201,7 +201,7 @@ OSErr ReadTVerticesBody(vector<string> &linesInFile, long *line,
 		}
 
 		if (badScan) {
-			sprintf(errmsg, "Unable to read vertex data from line %ld:%s", *line, NEWLINESTRING);
+			snprintf(errmsg, sizeof(errmsg), "Unable to read vertex data from line %ld:%s", *line, NEWLINESTRING);
 			goto done;
 		}
 	}
@@ -337,7 +337,7 @@ OSErr ReadTTopologyBody(vector<string> &linesInFile, long *line,
 		}
 
 		if (badScan) {
-			sprintf(errmsg,"Unable to read topology data from line %ld:%s", *line, NEWLINESTRING);
+			snprintf(errmsg, sizeof(errmsg), "Unable to read topology data from line %ld:%s", *line, NEWLINESTRING);
 			goto done;
 		}
 	}
@@ -856,7 +856,7 @@ OSErr ReadBoundarySegs(vector<string> &linesInFile, long *line,
 
 		--boundarySeg;
 		if (boundarySeg - oldSegno < 2) {
-			sprintf(errmsg,
+			snprintf(errmsg, sizeof(errmsg),
 				"Less than 3 points in boundary number: %ld, from point %ld to point %ld."
 				"Triangle generation will fail.",i+1, oldSegno+1,boundarySeg+1);
 			printError(errmsg);

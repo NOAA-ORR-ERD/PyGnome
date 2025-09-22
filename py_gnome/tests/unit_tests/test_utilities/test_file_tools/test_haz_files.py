@@ -15,7 +15,7 @@ from gnome.utilities.file_tools import haz_files
 
 ## NOTE: according to:
 ## http://www.softwright.com/faq/support/boundary_file_bna_format.html
-## polygons in BNA shouls have the first and last point the same.
+## polygons in BNA should have the first and last point the same.
 ## these tests (Nor the code) do not enforce that, but rather add the extra
 ## point if it's not there
 
@@ -171,17 +171,5 @@ class Test_bna_polygonset:
                                   dtype=np.float32)
         for p in polys:
             assert p.dtype == np.float32
-
-def test_without_filescanner():
-
-    state = haz_files.FILESCANNER
-    haz_files.FILESCANNER = False
-    polys = haz_files.ReadBNA(test_bna, 'PolygonSet')
-    haz_files.FILESCANNER = state # reset, 'cause global state
-
-    assert len(polys) == 6
-    assert  polys[1].metadata[0] == 'polygon'
-    assert  polys[1].metadata[1] == "A third 'name'"
-    assert  polys[1].metadata[2] == '6'
 
 

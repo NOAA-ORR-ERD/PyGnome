@@ -43,11 +43,11 @@ class Refs(dict):
 
 class References(object):
     '''
-    PyGnome objects like the PointWindMover contain other objects, eg Wind object.
-    When persisting a Model, the Wind object is not created by the PointWindMover,
-    it is merely referenced by the PointWindMover. When persisting a Model, the
-    referenced objects are saved in their own file and a reference is stored
-    for it. This class manages these references.
+    PyGnome objects like the PointWindMover contain other objects, eg Wind
+    object.  When persisting a Model, the Wind object is not created by the
+    PointWindMover, it is merely referenced by the PointWindMover.
+    When persisting a Model, the referenced objects are saved in their own file
+    and a reference is stored for it. This class manages these references.
     '''
     def __init__(self):
         self._refs = {}
@@ -171,7 +171,7 @@ def load(saveloc, fname='Model.json', references=None):
         return
 
     # load json data from file descriptor
-    json_data = json.loads("".join([l.rstrip('\n') for l in fd]))
+    json_data = json.loads("".join([line.rstrip('\n') for line in fd]))
     fd.close()
 
     # create a reference to the object being loaded
@@ -305,7 +305,6 @@ class Savable(object):
                              compression=zipfile.ZIP_DEFLATED,
                              allowZip64=self._allowzip64) as z:
             z.writestr(f_name, s_data)
-
 
     def _move_data_file(self, saveloc, json_):
         """
@@ -529,7 +528,7 @@ def is_savezip_valid(savezip):
 
     1. Failed to open zipfile
     2. CRC failed for a file in the archive - rejecting zip
-    3. Found a \*.json with size > _max_json_filesize - rejecting
+    3. Found a *.json with size > _max_json_filesize - rejecting
     4. Reject - found a file with:
         uncompressed_size/compressed_size > _max_compress_ratio.
     5. Found a file in archive that has path outside of saveloc - rejecting
