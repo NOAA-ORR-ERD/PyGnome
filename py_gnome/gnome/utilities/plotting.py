@@ -389,7 +389,6 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         #add the node lines
         print("Drawing node lines")
         if g3.check_for_mask(grid_obj, 'node'):
-            breakpoint()
             self.masked_node_lines = g3.draw_grid_lines(self.map_ax, grid_obj, location='node', use_mask=True, appearance=g3.node_line_appearance, plot_crs=self.plot_crs)
         else:
             self.masked_node_lines = g3.draw_grid_lines(self.map_ax, grid_obj, location='node', use_mask=False, appearance=g3.node_line_masked_appearance, plot_crs=self.plot_crs)
