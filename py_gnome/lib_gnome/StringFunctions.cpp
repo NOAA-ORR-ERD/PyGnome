@@ -102,7 +102,7 @@ void StringWithoutTrailingZeros(char* str,double val,short maxNumDecimalPlaces) 
 		maxNumDecimalPlaces = 0;
 
 	format[2] = '0'+ maxNumDecimalPlaces;
-	sprintf(str,format,val);
+	snprintf(str, sizeof(str), format,val);
 	ChopEndZeros(str);
 }
 
@@ -1537,7 +1537,7 @@ void Secs2DateString(Seconds seconds, CHARPTR s)
 					printError("Programmer error in Secs2DateString");
 			}
 		}
-		sprintf(s, "%02ld/%02ld/%02ld", (long)newTime->tm_mon + 1, (long)newTime->tm_mday, (long)newTime->tm_year);
+		snprintf(s, sizeof(s), "%02ld/%02ld/%02ld", (long)newTime->tm_mon + 1, (long)newTime->tm_mday, (long)newTime->tm_year);
 	}
 	else {
 		strcpy(s, "???");
@@ -1631,9 +1631,9 @@ void Secs2DateString2(Seconds seconds, CHARPTR s)
 			break;
 	}
 	
-	sprintf(str, "%02hd, %hd ", day, year4);
+	snprintf(str, sizeof(str), "%02hd, %hd ", day, year4);
 	strcat (s, str);
-	sprintf (str, "%2.2d:%2.2d", hour, minute);
+	snprintf(str, sizeof(str), "%2.2d:%2.2d", hour, minute);
 	strcat (s, str);
 }
 
@@ -1686,9 +1686,9 @@ void Secs2DateStringNetCDF(Seconds seconds, CHARPTR s)
 	}
 	
 
-	sprintf(str, "%hd-%02hd-%02hd ", year4, month, day);
+	snprintf(str, sizeof(str), "%hd-%02hd-%02hd ", year4, month, day);
 	strcpy (s, str);
-	sprintf (str, "%2.2d:%2.2d:%2.2d", hour, minute, second);
+	snprintf(str, sizeof(str), "%2.2d:%2.2d:%2.2d", hour, minute, second);
 	strcat (s, str);
 }
 
@@ -1743,7 +1743,7 @@ unsigned long DateString2Secs(CHARPTR s)
 
 char *Date2String(DateTimeRec *time, char *s)
 {
-	sprintf(s, "%02hd/%02hd/%02hd %02hd:%02hd:%02hd",
+	snprintf(s, sizeof(s), "%02hd/%02hd/%02hd %02hd:%02hd:%02hd",
 			time->month, time->day, time->year,
 			time->hour, time->minute, time->second);
 	
@@ -1755,7 +1755,7 @@ char *Date2KmlString(DateTimeRec *time, char *s)
 	short year = time->year;
 	if (time->year < 100)
 		year = year+2000; 
-	sprintf(s, "%04hd-%02hd-%02hdT%02hd:%02hd:%02hdZ",
+	snprintf(s, sizeof(s), "%04hd-%02hd-%02hdT%02hd:%02hd:%02hdZ",
 			year, time->month, time->day,
 			time->hour, time->minute, time->second);
 	
@@ -1990,7 +1990,7 @@ void DateToSeconds (DateTimeRec *date, Seconds *seconds)
 	char s[100];
 	unsigned long secs;
 	
-	sprintf(s, "%02hd/%02hd/%02hd", date->month, date->day, date->year);
+	snprintf(s, sizeof(s), "%02hd/%02hd/%02hd", date->month, date->day, date->year);
 	
 	secs = DateString2Secs(s);
 	secs += date->hour * 3600 + date->minute * 60 + date->second;

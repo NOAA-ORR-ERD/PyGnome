@@ -462,8 +462,8 @@ Boolean maketriangles(TopologyHdl *topoHdl, LongPointHdl ptsH, long nv, LONGH bo
 					err = true;
 					if(morepoints) 	// something is wrong
 					{
-						sprintf(from,"%ld",l[i].a);
-						sprintf(to,"%ld",l[i].b);
+						snprintf(from, sizeof(from), "%ld",l[i].a);
+						snprintf(to, sizeof(to), "%ld",l[i].b);
 						strcpy(msg,"Problem at segment with endpoints [");
 						strcat(msg,from); strcat(msg," ,"); strcat(msg,to);strcat(msg,"]");
 						strcat(msg," There may be a problem with boundary orientation.");
@@ -850,8 +850,8 @@ Boolean maketriangles2(TopologyHdl *topoHdl, LongPointHdl ptsH, long nv, LONGH b
 					err = true;
 					if(morepoints) 	// something is wrong
 					{
-						sprintf(from,"%ld",l[i].a);
-						sprintf(to,"%ld",l[i].b);
+						snprintf(from, sizeof(from), "%ld",l[i].a);
+						snprintf(to, sizeof(to), "%ld",l[i].b);
 						strcpy(msg,"Problem at segment with endpoints [");
 						strcat(msg,from); strcat(msg," ,"); strcat(msg,to);strcat(msg,"]");
 						strcat(msg," There may be a problem with boundary orientation.");
