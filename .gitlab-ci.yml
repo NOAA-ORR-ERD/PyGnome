@@ -312,8 +312,8 @@ build pypi package:
       conda install python=$PYTHON_VER \
       --file py_gnome/conda_requirements.txt \
       --file py_gnome/conda_requirements_build.txt
-    - python -m pip install ./py_gnome
-    - python -m pip install build
+#    - python -m pip install ./py_gnome
+    - conda install python-build
     - cd py_gnome
     - python -m build -o pydist
   artifacts:
@@ -335,7 +335,7 @@ post pypi package to internal registry:
     - echo ''
   script:
     - cd py_gnome
-    - python -m pip install twine
+    - conda install twine
     - TWINE_PASSWORD=${CI_JOB_TOKEN} TWINE_USERNAME=gitlab-ci-token python -m
       twine upload --repository-url
       ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi ./pydist/*
