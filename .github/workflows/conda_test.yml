@@ -11,7 +11,7 @@ jobs:
             os: ["ubuntu", "windows", "macos"]
             pyver: ["3.10", "3.11", "3.12", "3.13"]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: conda-incubator/setup-miniconda@v3
         with:
           auto-update-conda: true
@@ -46,7 +46,7 @@ jobs:
     name: Flake8 linting
     runs-on: "ubuntu-latest"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: conda-incubator/setup-miniconda@v3
         with:
           auto-update-conda: true
