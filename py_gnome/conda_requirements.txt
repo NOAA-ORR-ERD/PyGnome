@@ -44,7 +44,7 @@ scipy
 
 ## Modeling libs
 gsw
-netCDF4 < 1.7.1 # Oct2025 seeing if this fixes loading nc datasets opendap issues
+netCDF4
 trimesh
 
 ## Spatial Libs
