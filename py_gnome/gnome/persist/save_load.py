@@ -513,13 +513,9 @@ class Savable(object):
         return l_coll
 
 
-# max json filesize is 1MegaByte
-# max compression ratio: uncompressed/compressed = 3
-_max_json_filesize = 1024 * 1024
-_max_compress_ratio = 54
-
-
-def is_savezip_valid(savezip):
+def is_savezip_valid(savezip,
+                     max_json_filesize=1024 * 1024,
+                     max_compress_ratio=54):
     '''
     some basic checks on validity of zipfile. Primarily for checking save
     zipfiles loaded from the Web. Following are the types of errors it checks:
@@ -557,17 +553,17 @@ def is_savezip_valid(savezip):
 
         for zi in z.filelist:
             if (os.path.splitext(zi.filename)[1] == '.json' and
-                    zi.file_size > _max_json_filesize):
+                    zi.file_size > max_json_filesize):
                 # 3) Found a *.json with size > _max_json_filesize. Rejecting.
                 log.warning('Filesize of {0} is {1}. It must be less than {2}.'
                             ' Rejecting zipfile.'
                             .format(zi.filename, zi.file_size,
-                                    _max_json_filesize))
+                                    max_json_filesize))
                 return False
 
             # integer division - it will floor
             if (zi.compress_size > 0 and
-                    (zi.file_size / zi.compress_size) > _max_compress_ratio):
+                    (zi.file_size / zi.compress_size) > max_compress_ratio):
                 # 4) Found a file with
                 #    uncompressed_size/compressed_size > _max_compress_ratio.
                 #    Rejecting.
@@ -575,7 +571,7 @@ def is_savezip_valid(savezip):
                             'maximum must be less than {1}. '
                             'Rejecting zipfile'
                             .format((zi.file_size / zi.compress_size),
-                                    _max_compress_ratio))
+                                    max_compress_ratio))
                 return False
 
             if '..' in zi.filename:
