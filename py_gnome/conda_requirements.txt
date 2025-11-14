@@ -53,12 +53,12 @@ geopandas
 mapbox_earcut
 pyogrio
 pyproj
-shapely>=2.0.6 # older one broken with numpy2
+shapely>=2.1.2
 
 # NOAA maintained packages
-gridded >=0.7.2,<0.8
+gridded >=0.7.3,<0.8
 pynucos>=3.4.0
-cell_tree2d
-py_gd>=2.3
-adios_db>=1.2.5
+cell_tree2d # should be brought in by gridded ..
+py_gd>=2.3.3
+adios_db>=1.2.7
 
