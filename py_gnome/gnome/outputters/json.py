@@ -88,7 +88,11 @@ class SpillJsonOutput(Outputter):
                                  'Age': {'column': 'age',
                                          'unit': 'seconds'},
                                  'Viscosity': {'column': 'viscosity',
-                                               'unit': 'm^2/s'}
+                                               'unit': 'm^2/s'},
+                                 'Depth': {'column': 'depth',
+                                           'unit': 'meters'},
+                                 'Windage': {'column': 'windage',
+                                             'unit': 'fraction'}
                                  }
 
     def prepare_for_model_run(self,
@@ -185,6 +189,8 @@ class SpillJsonOutput(Outputter):
                 for d in self._additional_data:
                     if d == 'viscosity' or d == 'surface_concentration':
                         out[d] = np.around(sc[d], 8).tolist()
+                    elif d == 'depth':
+                        out[d] = np.around(sc['positions'][:, 2], 4).tolist()
                     else:
                         out[d] = np.around(sc[d], 4).tolist()
 

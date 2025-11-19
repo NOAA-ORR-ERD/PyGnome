@@ -1224,11 +1224,16 @@ class VectorVariable(gridded.VectorVariable, Environment):
         '''
 
         raw_u = self.variables[0].data[:]
-        raw_v = self.variables[1].data[:]
+        raw_v = self.variables[1].data[:]        
 
         if self.depth is not None:
-            raw_u = raw_u[:, self.depth.surface_index]
-            raw_v = raw_v[:, self.depth.surface_index]
+            try:
+                raw_u = raw_u[:, self.depth.surface_index]
+                raw_v = raw_v[:, self.depth.surface_index]
+            except IndexError:
+                #case where surface_index is for s_w dimension and data is s_rho
+                raw_u = raw_u[:, self.depth.surface_index-1]
+                raw_v = raw_v[:, self.depth.surface_index-1]
 
         if np.any(np.array(raw_u.shape) != np.array(raw_v.shape)):
             # must be roms-style staggered
