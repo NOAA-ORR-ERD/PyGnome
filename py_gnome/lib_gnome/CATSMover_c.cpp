@@ -508,7 +508,7 @@ Boolean CATSMover_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr)
 	StringWithoutTrailingZeros(uStr, lengthU, 4);
 	StringWithoutTrailingZeros(sStr, lengthS, 4);
 
-	sprintf(diagnosticStr, " [grid: %s, unscaled: %s m/s, scaled: %s m/s]",
+	snprintf(diagnosticStr, sizeof(diagnosticStr), " [grid: %s, unscaled: %s m/s, scaled: %s m/s]",
 			this->className, uStr, sStr);
 
 	return true;

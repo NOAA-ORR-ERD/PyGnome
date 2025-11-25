@@ -6,6 +6,7 @@ from shapely import concave_hull, union_all
 import logging
 logger = logging.getLogger(__name__)
 
+
 # Buffer by a number of meters
 def buffer_hull(this_hull, buffer_distance=1):
     schema = {'geometry': [this_hull]}
@@ -102,12 +103,13 @@ def calculate_hull(spill_container, ratio=0.5, union_results=True,
 # Middle bins are cutoffs[previous] < [data] < cutoffs[current]
 # Last "high" bin is always cutoffs[previous] < [data]
 
+
 def calculate_contours(spill_container, cutoff_struct=None,
                        ratio=0.5, allow_holes=False):
     contours_found = []
     # If we are not calculating any contours, dont bother parsing the data
     if not cutoff_struct or len(spill_container['positions']) == 0:
-        return [];
+        return []
     # The spills requested are the keys
     spills = cutoff_struct.keys()
     # Make a dataframe

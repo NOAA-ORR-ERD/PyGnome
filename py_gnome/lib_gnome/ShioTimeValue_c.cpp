@@ -952,7 +952,7 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 			}
 			/////////////////////////////////////////////////
 			// ask for a scale factor if not known from wizard
-			sprintf(msg,"The largest calculated derivative was %.4lf", largestDeriv);
+			snprintf(msg, sizeof(msg), "The largest calculated derivative was %.4lf", largestDeriv);
 			strcat(msg, ".  Enter scale factor for heights coefficients file : ");
 			if (fScaleFactor==0)
 			{
@@ -1402,8 +1402,8 @@ OSErr ShioTimeValue_c::GetLocationInTideCycle(const Seconds& model_time, short *
 void ShioTimeValue_c::ProgrammerError(const char *routine)
 {
 	char str[256];
-	if(routine)  sprintf(str,"Programmer error: can't call %s() for TShioTimeValue objects",routine);
-	else sprintf(str,"Programmer error: TShioTimeValue object");
+	if(routine)  snprintf(str, sizeof(str), "Programmer error: can't call %s() for TShioTimeValue objects",routine);
+	else snprintf(str, sizeof(str), "Programmer error: TShioTimeValue object");
 	printError(str);
 }
 
@@ -1603,7 +1603,7 @@ skipDatumControls:
 
 readError:
 	if(f) DisposeHandle((Handle)f); f = nil;
-	sprintf(strLine,"Error reading SHIO time file %s on line %ld",this->fileName,lineNum);
+	snprintf(strLine, sizeof(strLine), "Error reading SHIO time file %s on line %ld",this->fileName,lineNum);
 	printError(strLine);
 	this->Dispose();
 	return -1;
@@ -1652,7 +1652,7 @@ YEARDATA2* ReadYearData(short year, const char *path, char *errStr)
 	//errStr[0] = 0;
 
 	// create the filename of the proper year data file
-	sprintf(filePathName, "%s#%d", path, year);
+	snprintf(filePathName, sizeof(filePathName), "%s#%d", path, year);
 
 	// It appears that there are 128 data values for XODE and VPU in each file
 	// NOTE: we only collect the first 128 data points (BUG if any more ever get added)
@@ -1692,7 +1692,7 @@ YEARDATA2* ReadYearData(short year, const char *path, char *errStr)
 	else
 	{
 		err = -1;
-		sprintf(errStr, "Could not open file '%s'", filePathName);
+		snprintf(errStr, sizeof(errStr), "Could not open file '%s'", filePathName);
 	}
 
 	if (err)

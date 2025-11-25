@@ -58,9 +58,9 @@ class LEData(MutableMapping, AddLogger, dict):
     def __setitem__(self, key, value):
         if key in self._arrs:
             warnings.warn('Replacing existing LEData array references directly'
-                          'is dangerous! If this *really* is what you want to do, '
-                          'please use the _set_existing_LEData(key, value) '
-                          'function instead')
+                          'is dangerous!  If this *really* is what you want '
+                          'to do, please use the '
+                          '_set_existing_LEData(key, value) function instead')
         self._arrs[key] = value
 
     def _set_existing_LEData(self, key, value):
@@ -123,17 +123,15 @@ class LEData(MutableMapping, AddLogger, dict):
 
         """
         if not self._initialized:
-            raise ValueError("Must initialize spill data arrays before extending is possible")
+            raise ValueError("Must initialize spill data arrays "
+                             "before extending is possible")
         for name, atype in self._array_types.items():
             # initialize all arrays even if 0 length
-            if atype.shape is None:
-                shape = (self.num_oil_components, )
-            else:
-                shape = atype.shape
             buf = self._bufs[name]
             new_buflen = len(self[name]) + num_new_elements
+
             if len(buf) < new_buflen:
-                #need to resize. Use double the new_buflen
+                # need to resize. Use double the new_buflen
                 oldbuf = self._bufs[name]
                 self._bufs[name] = np.resize(oldbuf, (2*new_buflen, ) + oldbuf.shape[1:])
                 self._bufs[name][len(oldbuf):] = atype.initial_value

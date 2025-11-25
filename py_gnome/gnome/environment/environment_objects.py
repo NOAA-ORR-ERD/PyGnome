@@ -61,7 +61,7 @@ class SteadyUniformCurrent(Environment):
                  speed,
                  direction,
                  units='m/s',
-                 name = "Steady Uniform Current"):
+                 name = "Steady_Uniform_Current"):
         """
         Create a steady, uniform current (same at all time and places)
 

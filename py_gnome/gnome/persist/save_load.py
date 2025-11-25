@@ -43,11 +43,11 @@ class Refs(dict):
 
 class References(object):
     '''
-    PyGnome objects like the PointWindMover contain other objects, eg Wind object.
-    When persisting a Model, the Wind object is not created by the PointWindMover,
-    it is merely referenced by the PointWindMover. When persisting a Model, the
-    referenced objects are saved in their own file and a reference is stored
-    for it. This class manages these references.
+    PyGnome objects like the PointWindMover contain other objects, eg Wind
+    object.  When persisting a Model, the Wind object is not created by the
+    PointWindMover, it is merely referenced by the PointWindMover.
+    When persisting a Model, the referenced objects are saved in their own file
+    and a reference is stored for it. This class manages these references.
     '''
     def __init__(self):
         self._refs = {}
@@ -171,7 +171,7 @@ def load(saveloc, fname='Model.json', references=None):
         return
 
     # load json data from file descriptor
-    json_data = json.loads("".join([l.rstrip('\n') for l in fd]))
+    json_data = json.loads("".join([line.rstrip('\n') for line in fd]))
     fd.close()
 
     # create a reference to the object being loaded
@@ -305,7 +305,6 @@ class Savable(object):
                              compression=zipfile.ZIP_DEFLATED,
                              allowZip64=self._allowzip64) as z:
             z.writestr(f_name, s_data)
-
 
     def _move_data_file(self, saveloc, json_):
         """
@@ -514,13 +513,9 @@ class Savable(object):
         return l_coll
 
 
-# max json filesize is 1MegaByte
-# max compression ratio: uncompressed/compressed = 3
-_max_json_filesize = 1024 * 1024
-_max_compress_ratio = 54
-
-
-def is_savezip_valid(savezip):
+def is_savezip_valid(savezip,
+                     max_json_filesize=1024 * 1024,
+                     max_compress_ratio=54):
     '''
     some basic checks on validity of zipfile. Primarily for checking save
     zipfiles loaded from the Web. Following are the types of errors it checks:
@@ -529,7 +524,7 @@ def is_savezip_valid(savezip):
 
     1. Failed to open zipfile
     2. CRC failed for a file in the archive - rejecting zip
-    3. Found a \*.json with size > _max_json_filesize - rejecting
+    3. Found a *.json with size > _max_json_filesize - rejecting
     4. Reject - found a file with:
         uncompressed_size/compressed_size > _max_compress_ratio.
     5. Found a file in archive that has path outside of saveloc - rejecting
@@ -558,17 +553,17 @@ def is_savezip_valid(savezip):
 
         for zi in z.filelist:
             if (os.path.splitext(zi.filename)[1] == '.json' and
-                    zi.file_size > _max_json_filesize):
+                    zi.file_size > max_json_filesize):
                 # 3) Found a *.json with size > _max_json_filesize. Rejecting.
                 log.warning('Filesize of {0} is {1}. It must be less than {2}.'
                             ' Rejecting zipfile.'
                             .format(zi.filename, zi.file_size,
-                                    _max_json_filesize))
+                                    max_json_filesize))
                 return False
 
             # integer division - it will floor
             if (zi.compress_size > 0 and
-                    (zi.file_size / zi.compress_size) > _max_compress_ratio):
+                    (zi.file_size / zi.compress_size) > max_compress_ratio):
                 # 4) Found a file with
                 #    uncompressed_size/compressed_size > _max_compress_ratio.
                 #    Rejecting.
@@ -576,7 +571,7 @@ def is_savezip_valid(savezip):
                             'maximum must be less than {1}. '
                             'Rejecting zipfile'
                             .format((zi.file_size / zi.compress_size),
-                                    _max_compress_ratio))
+                                    max_compress_ratio))
                 return False
 
             if '..' in zi.filename:

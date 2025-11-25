@@ -220,5 +220,3 @@ class InfDateTime(datetime.datetime):
                 raise ValueError("InfDateTime can't be created that is before:"
                                  " {0}".format(min_datetime.isoformat()))
             return inst
-
-

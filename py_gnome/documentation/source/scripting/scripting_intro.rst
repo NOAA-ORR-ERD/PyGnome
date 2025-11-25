@@ -73,13 +73,13 @@ Create and Add Movers
 ---------------------
 The model needs one or more "Movers" to move the elements. In this case, a steady uniform current and random walk diffusion are demonstrated.
 
-The `SimpleMover` class is used to specify a 0.2 m/s eastward current.
+The `SteadyUniformCurrent` class is used to specify a 0.2 m/s eastward current.
 
 The `RandomMover` class simulates spreading due to turbulent motion via a random walk algorithm:
 
 .. code-block:: python
 
-    velocity = (.2, 0, 0)  # (u, v, w) in m/s
+    currrent = gs.SteadyUniformCurrent()  # (u, v, w) in m/s
     uniform_vel_mover = gs.SimpleMover(velocity)
     #  random walk diffusion -- diffusion_coef in units of cm^2/s
     random_mover = gs.RandomMover(diffusion_coef=2e4)
@@ -96,10 +96,10 @@ Spills in ``gnome`` specify what, when, where, and how many elements are release
 
 There are a number of "helper" functions and classes that can initialize various types of spills (for example, at a point or over a spatial area, at the surface or subsurface). See: :ref:`scripting_spills` for more details.
 
-A common spill type is created by the `surface_point_line_spill`. To set up an instantaneous release of a conservative substance at a point, it can be called with most of the defaults::
+A common spill type is created by the `point_line_spill`. To set up an instantaneous release of a conservative substance at a point, it can be called with most of the defaults::
 
 
-    spill = gs.surface_point_line_spill(release_time=start_time,
+    spill = gs.point_line_spill(release_time=start_time,
                                         start_position=(-144, 48.5),
                                         num_elements=500)
     model.spills += spill

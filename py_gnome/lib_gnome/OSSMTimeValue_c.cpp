@@ -405,7 +405,7 @@ OSErr OSSMTimeValue_c::GetTimeChange(long a, long b, Seconds *dt)
         if ((p = strrchr(timeS, ':')) != NULL)
             p[0] = 0; // remove seconds
 
-        sprintf(msg, "Duplicate times in time/value table.%s%s%s",
+        snprintf(msg, sizeof(msg), "Duplicate times in time/value table.%s%s%s",
                 NEWLINESTRING, timeS, NEWLINESTRING);
 
         SecondsToDate(INDEXH(timeValues, b).time, &time);
@@ -1251,7 +1251,7 @@ OSErr OSSMTimeValue_c::ReadHydrologyHeader(vector<string> &linesInFile)
     if (lineStream.fail()) {
         istringstream lineStream(currentLine);
         if (lineStream.fail()) {
-            sprintf(errmsg, "Unable to read data (lat, lon) from line %ld:\n",
+            snprintf(errmsg, sizeof(errmsg), "Unable to read data (lat, lon) from line %ld:\n",
                     line);
             goto done;
         }

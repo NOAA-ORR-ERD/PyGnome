@@ -22,7 +22,7 @@ py_gnome scripts with, e.g.::
 
     model.map = gs.MapFromBNA('coast.bna', refloat_halflife=0.0)
 
-    model.spills += gs.surface_point_line_spill(num_elements=1000,
+    model.spills += gs.point_line_spill(num_elements=1000,
                                                 start_position=(-163.75,
                                                                 69.75,
                                                                 0.0),
@@ -54,8 +54,7 @@ from gnome.utilities.inf_datetime import MinusInfTime, InfTime
 from gnome.spills.spill import Spill
 from gnome.spills.release import PointLineRelease, PolygonRelease
 
-from gnome.spills.spill import (surface_point_line_spill,
-                                point_line_spill,
+from gnome.spills.spill import (point_line_spill,
                                 subsurface_spill,
                                 grid_spill,
                                 spatial_release_spill,
@@ -102,11 +101,7 @@ from gnome.movers import (RandomMover,
                           WindMover,
                           CurrentMover,
                           IceAwareRandomMover,
-                          SimpleMover,
                           )
-
-from gnome.movers.py_current_movers import PyCurrentMover
-from gnome.movers.py_wind_movers import PyWindMover
 
 from gnome.utilities.remote_data import get_datafile
 
@@ -124,3 +119,21 @@ def load_model(filename):
     """
     return Model.load_savefile(filename)
 
+
+def constant_point_current_mover(speed, direction, units='m/s'):
+    """
+    utility function to create a point current mover with a constant uniform current:
+
+    a single velocity at all time and space.
+
+    :param speed: current speed
+    :param direction: direction of the current (direction to, not from), in degrees CCW from north
+    :param units='m/s': the units that the input wind speed is in.
+                    options: 'm/s', 'knot', 'mph', others...
+
+    :return: returns a gnome.movers.PyCurrentMover object all set up.
+    """
+
+    curr = SteadyUniformCurrent(speed, direction, units)
+
+    return CurrentMover(curr)

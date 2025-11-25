@@ -1,12 +1,13 @@
 variables:
-  PYTHON_VER: "3.10"
-  IMAGE_NAME: "ubuntu/ubuntuforge-python"
+  PYTHON_VER: "3.13"
+  IMAGE_NAME: "/erd/environments/ubuntu/ubuntuforge-python"
   GIT_DEPTH: 2
 
 stages:
   - compile
   - build
   - test
+  - deploy
 
 cache:
   paths:
@@ -22,7 +23,7 @@ configure_env:
   tags:
     - docker
     - linux
-  image: registry.orr.noaa.gov/erd/centos-conda/$IMAGE_NAME$PYTHON_VER
+  image: $CI_REGISTRY$IMAGE_NAME$PYTHON_VER
   before_script:
     - echo '' # manual override of before_script because we're on runner 12.3 and inherit options are only 12.9+
   script:
@@ -37,7 +38,7 @@ compile_pygnome:
   tags:
     - docker
     - linux
-  image: registry.orr.noaa.gov/erd/centos-conda/$IMAGE_NAME$PYTHON_VER
+  image: $CI_REGISTRY$IMAGE_NAME$PYTHON_VER
   script:
     - apt-get update
     - apt-get upgrade -y
@@ -86,7 +87,7 @@ test_pygnome:
     - docker
     - linux
   allow_failure: false
-  image: registry.orr.noaa.gov/erd/centos-conda/$IMAGE_NAME$PYTHON_VER
+  image: $CI_REGISTRY$IMAGE_NAME$PYTHON_VER
   script:
     - conda install -y --file py_gnome/conda_requirements_test.txt
     - cd ./py_gnome/tests/unit_tests && pytest --runslow
@@ -96,17 +97,28 @@ test_pygnome:
 
 # Ideally, all the scripts in "testing_scripts" should run without errors,
 # but once in a while we refactor something that breaks something.
-# So it would be good to get a warning from the CI.
-# This shouldn't be a "it has to pass" job.
 test_pygnome_testing_scripts:
   stage: test
   tags:
     - docker
     - linux
   allow_failure: true
-  image: registry.orr.noaa.gov/erd/centos-conda/$IMAGE_NAME$PYTHON_VER
+  image: $CI_REGISTRY$IMAGE_NAME$PYTHON_VER
   script:
     - cd ./py_gnome/scripts/testing_scripts && python run_all.py 2<&1
+
+# All the scripts in "input_file_examples" should run without errors,
+# But once in a while we refactor something that breaks something.
+test_pygnome_input_file_examples:
+  stage: test
+  tags:
+    - docker
+    - linux
+  allow_failure: true
+  image: $CI_REGISTRY$IMAGE_NAME$PYTHON_VER
+  script:
+    - cd ./py_gnome/scripts/input_file_examples && python run_all.py 2<&1
+
 
 # make sure the example scripts run without error
 # this can fail, but we want to be warned ...
@@ -116,7 +128,7 @@ test_pygnome_example_scripts:
     - docker
     - linux
   allow_failure: true
-  image: registry.orr.noaa.gov/erd/centos-conda/$IMAGE_NAME$PYTHON_VER
+  image: $CI_REGISTRY$IMAGE_NAME$PYTHON_VER
   script:
     - cd ./py_gnome/scripts/example_scripts && python run_all.py 2<&1
 
@@ -132,8 +144,7 @@ test_pygnome_windows:
   stage: test
   when: manual
   tags:
-    - windows
-    - visual-studio-22
+    - windows-build-image
   allow_failure: true
   cache: []
   before_script:
@@ -283,3 +294,51 @@ build_production:
     - docker build . --build-arg PYTHON_VER=$PYTHON_VER -t registry.orr.noaa.gov/gnome/pygnome:production
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker push registry.orr.noaa.gov/gnome/pygnome:production
+
+
+build pypi package:
+  stage: build
+  image: registry.orr.noaa.gov/erd/environments/ubuntu/ubuntuforge-python${PYTHON_VER}
+  tags:
+    - docker
+  before_script:
+    - |
+      apt-get install -y \
+      g++ make libxext-dev libsm-dev libxrender-dev libglib2.0-0 \
+      wget chrpath bzip2 tar \
+      git patchelf ca-certificates
+  script:
+    - |
+      conda install python=$PYTHON_VER \
+      --file py_gnome/conda_requirements.txt \
+      --file py_gnome/conda_requirements_build.txt
+#    - python -m pip install ./py_gnome
+    - conda install python-build
+    - cd py_gnome
+    - python -m build --wheel -o pydist
+  artifacts:
+    paths:
+      - ./py_gnome/pydist
+    expire_in: "5 days"
+
+
+# note: we are building wheels, yes? in which case, probably better
+#       to use that term, e.g. "post wheel to ..." and "build wheel"
+post pypi package to internal registry:
+  stage: deploy
+  allow_failure: true
+  image: registry.orr.noaa.gov/erd/environments/ubuntu/ubuntuforge-python${PYTHON_VER} 
+  tags:
+    - docker
+  needs:
+    - build pypi package
+  dependencies:
+    - build pypi package
+  before_script:
+    - echo ''
+  script:
+    - cd py_gnome
+    - conda install twine
+    - TWINE_PASSWORD=${CI_JOB_TOKEN} TWINE_USERNAME=gitlab-ci-token python -m
+      twine upload --repository-url
+      ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi ./pydist/*

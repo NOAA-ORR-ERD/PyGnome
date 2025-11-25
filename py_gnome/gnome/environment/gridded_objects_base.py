@@ -218,6 +218,15 @@ class Grid_U(gridded.grids.Grid_U, GnomeId):
         read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
 
         [dict_.pop(n, None) for n in read_only_attrs]
+        # FixMe: this really shouldn't be required!
+        #        remove once gridded is fixed
+        # hack to get around broken gridded
+        # if loaded via the compliant code path, it would provide a different
+        # grid_topology dict :-(
+        gt = dict_.get('grid_topology')
+        if gt and 'cf_role' in gt:
+            dict_['grid_topology'] = None
+
         rv = cls.from_netCDF(**dict_)
 
         return rv
@@ -1005,9 +1014,12 @@ class VectorVariable(gridded.VectorVariable, Environment):
             grid = Grid.from_netCDF(grid_file,
                                     dataset=dg,
                                     grid_topology=grid_topology)
+            if grid.filename is None:
+                # kludge to set it if gridded didn't
+                grid.filename = str(grid_file)
         if varnames is None:
             varnames = self._gen_varnames(data_file,
-                                         dataset=ds)
+                                          dataset=ds)
             if all([v is None for v in varnames]):
                 raise ValueError('No compatible variable names found!')
         data = ds[varnames[0]]
@@ -1212,11 +1224,16 @@ class VectorVariable(gridded.VectorVariable, Environment):
         '''
 
         raw_u = self.variables[0].data[:]
-        raw_v = self.variables[1].data[:]
+        raw_v = self.variables[1].data[:]        
 
         if self.depth is not None:
-            raw_u = raw_u[:, self.depth.surface_index]
-            raw_v = raw_v[:, self.depth.surface_index]
+            try:
+                raw_u = raw_u[:, self.depth.surface_index]
+                raw_v = raw_v[:, self.depth.surface_index]
+            except IndexError:
+                #case where surface_index is for s_w dimension and data is s_rho
+                raw_u = raw_u[:, self.depth.surface_index-1]
+                raw_v = raw_v[:, self.depth.surface_index-1]
 
         if np.any(np.array(raw_u.shape) != np.array(raw_v.shape)):
             # must be roms-style staggered

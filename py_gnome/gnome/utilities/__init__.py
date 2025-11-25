@@ -4,8 +4,6 @@ __init__.py for the utilities package
 a few small things here, 'cause why not?
 
 """
-
-import math
 import operator
 import sys
 import warnings
@@ -14,12 +12,13 @@ import numpy as np
 
 import nucos
 
-#from .sig_fig_rounding import RoundToSigFigs_fp as round_sf
+# from .sig_fig_rounding import RoundToSigFigs_fp as round_sf
 
 div = {'GB': 1024*1024*1024,
        'MB': 1024*1024,
        'KB': 1024,
        }
+
 
 def convert_longitude(lon, coord_system='-180--180'):
     """
@@ -137,12 +136,13 @@ else:  # for posix systems only tested on OS-X for now
                            'GB', 'MB', 'KB'
         """
         import resource
-        useage = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+        # usage = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
         div = {'GB': 1024*1024*1024,
                'MB': 1024*1024,
                'KB': 1024,
                }
         d = div[units]
+
         if sys.platform == 'darwin':
             pass
         elif sys.platform.startswith("linux"):
@@ -150,6 +150,7 @@ else:  # for posix systems only tested on OS-X for now
         else:
             warnings.warn('memory use reported may not be correct '
                           'on this platform')
+
         return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / float(d)
 
 
@@ -182,7 +183,8 @@ def _round_sf_float(x, sigfigs):
     # else:
     #     result = float(f"{x:}")round(x, sigfigs - int(math.floor(math.log10(abs(x)))) - 1)
 
-    formatter = "{x:.%d}" % sigfigs  # using "old style formatting for the curly bracket"
+    # using "old style formatting for the curly bracket"
+    formatter = "{x:.%d}" % sigfigs
     result = float(formatter.format(x=x))
     return result
 
@@ -200,8 +202,9 @@ def round_sf_array(x, sigfigs):
     should work on floats and numpy arrays
 
     NOTE: This should be vectorizable, but np.round takes only a scalar value
-          for number of decimals -- you could vectorize the rest of the computation,
-          and then loop for the round, but would that buy anything?
+          for number of decimals -- you could vectorize the rest of the
+          computation, and then loop for the round, but would that buy
+          anything?
           (or use np.vectorize)
     """
     sigfigs = operator.index(sigfigs)
@@ -209,9 +212,11 @@ def round_sf_array(x, sigfigs):
     x = np.asarray(x)
 
     shape = x.shape
-    result = np.fromiter((_round_sf_float(val, sigfigs) for val in x.flat), dtype=np.float64)
+    result = np.fromiter((_round_sf_float(val, sigfigs) for val in x.flat),
+                         dtype=np.float64)
     result.shape = shape
     return result
+
 
 def convert_mass_to_mass_or_volume(in_unit, out_unit, density, value):
     """
@@ -219,9 +224,11 @@ def convert_mass_to_mass_or_volume(in_unit, out_unit, density, value):
 
     :param in_unit: units of input, should be a valid mass unit.
 
-    :param out_unit: units you want the result in -- can be a volume or mass unit
+    :param out_unit: units you want the result in -- can be a volume or
+                     mass unit
 
-    :param density: density to use to convert from mass to volume. has to be kg/m^3
+    :param density: density to use to convert from mass to volume. has to be
+                    kg/m^3
 
     :param value: value (in in_units) you want converted.
 
@@ -243,11 +250,10 @@ def convert_mass_to_mass_or_volume(in_unit, out_unit, density, value):
         raise err
     return result
 
-
-            # try:
-            #     dm = uc.convert('mass', self.units, 'kg', dv)
-            # except uc.InvalidUnitError:  # not mass
-            #     volume = uc.convert('volume', self.units, 'm^3', dv)
-            #     dm = volume * substance.standard_density
-            # except uc.InvalidUnitError:  # not volume either
-            #     raise ValueError(f"{self.unit} is not a valid unit for beached oil")
+    # try:
+    #     dm = uc.convert('mass', self.units, 'kg', dv)
+    # except uc.InvalidUnitError:  # not mass
+    #     volume = uc.convert('volume', self.units, 'm^3', dv)
+    #     dm = volume * substance.standard_density
+    # except uc.InvalidUnitError:  # not volume either
+    #     raise ValueError(f"{self.unit} is not a valid unit for beached oil")

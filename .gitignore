@@ -282,3 +282,6 @@ py_gnome/tests/unit_tests/test_environment/sample_data/currents/tbofs_example.nc
 py_gnome/tests/unit_tests/test_outputters/output_shape/multi_timesteps.zip
 py_gnome/tests/unit_tests/test_outputters/output_shape/multi_timesteps_uncert.zip
 
+# pixi environments
+.pixi/*
+!.pixi/config.toml

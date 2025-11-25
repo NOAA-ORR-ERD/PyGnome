@@ -3,11 +3,6 @@ unit tests cython wrapper
 
 designed to be run with py.test
 """
-
-
-
-
-
 import numpy as np
 
 from gnome.basic_types import spill_type, world_point, world_point_type

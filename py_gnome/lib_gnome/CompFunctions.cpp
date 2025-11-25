@@ -288,7 +288,7 @@ static void AssertionCheckMassUnits(short massUnits)
 	char str[256];
 	if(!b) 
 	{
-		sprintf(str,"AssertionCheckMassUnits failed: massUnits = %d",massUnits);
+		snprintf(str, sizeof(str), "AssertionCheckMassUnits failed: massUnits = %d",massUnits);
 		printError(str);
 	}
 }
@@ -299,7 +299,7 @@ static void AssertionCheckVolUnits(short volUnits)
 	char str[256];
 	if(!b) 
 	{
-		sprintf(str,"AssertionCheckVolUnits failed: volUnits = %d",volUnits);
+		snprintf(str, sizeof(str), "AssertionCheckVolUnits failed: volUnits = %d",volUnits);
 		printError(str);
 	}
 }
@@ -311,7 +311,7 @@ static void AssertionCheckMassVolUnits(short massVolUnits)
 	char str[256];
 	if(!b) 
 	{
-		sprintf(str,"AssertionCheckMassVolUnits failed: massVolUnits = %d",massVolUnits);
+		snprintf(str, sizeof(str), "AssertionCheckMassVolUnits failed: massVolUnits = %d",massVolUnits);
 		printError(str);
 	}
 }

@@ -1712,13 +1712,13 @@ OSErr TimeGridWindCurv_c::ExportTopology(char* path)
 	// Write out values
 	if (fVerdatToNetCDFH) n = _GetHandleSize((Handle)fVerdatToNetCDFH)/sizeof(long);
 	else {printError("There is no transpose array"); err = -1; goto done;}
-	sprintf(hdrStr,"TransposeArray\t%ld\n",n);	
+	snprintf(hdrStr, sizeof(hdrStr), "TransposeArray\t%ld\n",n);	
 	//strcpy(buffer,hdrStr);
 	//if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
 	fwrite(hdrStr,sizeof(char),strlen(hdrStr),fp);
 	for(i=0;i<n;i++)
 	{	
-		sprintf(topoStr,"%ld\n",(*fVerdatToNetCDFH)[i]);
+		snprintf(topoStr, sizeof(topoStr), "%ld\n",(*fVerdatToNetCDFH)[i]);
 		//strcpy(buffer,topoStr);
 		//if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
 		fwrite(topoStr,sizeof(char),strlen(topoStr),fp);
@@ -1726,11 +1726,11 @@ OSErr TimeGridWindCurv_c::ExportTopology(char* path)
 	
 	nver = _GetHandleSize((Handle)ptsH)/sizeof(**ptsH);
 	//fprintf(outfile,"Vertices\t%ld\t%ld\n",nver,numBoundaryPts);	// total vertices and number of boundary points
-	sprintf(hdrStr,"Vertices\t%ld\n",nver);	// total vertices
+	snprintf(hdrStr, sizeof(hdrStr), "Vertices\t%ld\n",nver);	// total vertices
 	//strcpy(buffer,hdrStr);
 	//if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
 	fwrite(hdrStr,sizeof(char),strlen(hdrStr),fp);
-	sprintf(hdrStr,"%ld\t%ld\n",nver,nver);	// junk line
+	snprintf(hdrStr, sizeof(hdrStr), "%ld\t%ld\n",nver,nver);	// junk line
 	//strcpy(buffer,hdrStr);
 	//if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
 	fwrite(hdrStr,sizeof(char),strlen(hdrStr),fp);
@@ -1738,9 +1738,9 @@ OSErr TimeGridWindCurv_c::ExportTopology(char* path)
 	{	
 		x = (*ptsH)[i].h/1000000.0;
 		y =(*ptsH)[i].v/1000000.0;
-		//sprintf(topoStr,"%ld\t%lf\t%lf\t%lf\n",i+1,x,y,(*gDepths)[i]);
-		//sprintf(topoStr,"%ld\t%lf\t%lf\n",i+1,x,y);
-		sprintf(topoStr,"%lf\t%lf\n",x,y);
+		//snprintf(topoStr, sizeof(topoStr), "%ld\t%lf\t%lf\t%lf\n",i+1,x,y,(*gDepths)[i]);
+		//snprintf(topoStr, sizeof(topoStr), "%ld\t%lf\t%lf\n",i+1,x,y);
+		snprintf(topoStr, sizeof(topoStr), "%lf\t%lf\n",x,y);
 		//strcpy(buffer,topoStr);
 		//if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
 		fwrite(topoStr,sizeof(char),strlen(topoStr),fp);
@@ -1801,7 +1801,7 @@ OSErr TimeGridWindCurv_c::ExportTopology(char* path)
 		}
 	}*/
 	numTriangles = _GetHandleSize((Handle)topH)/sizeof(**topH);
-	sprintf(hdrStr,"Topology\t%ld\n",numTriangles);
+	snprintf(hdrStr, sizeof(hdrStr), "Topology\t%ld\n",numTriangles);
 	//strcpy(buffer,hdrStr);
 	//if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
 	fwrite(hdrStr,sizeof(char),strlen(hdrStr),fp);
@@ -1813,7 +1813,7 @@ OSErr TimeGridWindCurv_c::ExportTopology(char* path)
 		n1 = (*topH)[i].adjTri1;
 		n2 = (*topH)[i].adjTri2;
 		n3 = (*topH)[i].adjTri3;
-		sprintf(topoStr, "%ld\t%ld\t%ld\t%ld\t%ld\t%ld\n",
+		snprintf(topoStr, sizeof(topoStr), "%ld\t%ld\t%ld\t%ld\t%ld\t%ld\n",
 				v1, v2, v3, n1, n2, n3);
 		
 		/////
@@ -1823,14 +1823,14 @@ OSErr TimeGridWindCurv_c::ExportTopology(char* path)
 	}
 	
 	numBranches = _GetHandleSize((Handle)treeH)/sizeof(**treeH);
-	sprintf(hdrStr,"DAGTree\t%ld\n",dagTree->fNumBranches);
+	snprintf(hdrStr, sizeof(hdrStr), "DAGTree\t%ld\n",dagTree->fNumBranches);
 	//strcpy(buffer,hdrStr);
 	//if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
 	fwrite(hdrStr,sizeof(char),strlen(hdrStr),fp);
 	
 	for(i = 0; i<dagTree->fNumBranches; i++)
 	{
-		sprintf(topoStr,"%ld\t%ld\t%ld\n",(*treeH)[i].topoIndex,(*treeH)[i].branchLeft,(*treeH)[i].branchRight);
+		snprintf(topoStr, sizeof(topoStr), "%ld\t%ld\t%ld\n",(*treeH)[i].topoIndex,(*treeH)[i].branchLeft,(*treeH)[i].branchRight);
 		//strcpy(buffer,topoStr);
 		//if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
 		fwrite(topoStr,sizeof(char),strlen(topoStr),fp);

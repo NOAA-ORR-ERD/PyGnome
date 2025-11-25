@@ -57,7 +57,7 @@ include = ["gnome*"]  # package names should match these glob patterns (["*"] by
 namespaces = false  # to disable scanning PEP 420 namespaces (true by default)
 
 [tool.scikit-build]
-wheel.py-api = "py3"
+# wheel.py-api = "py3"  # dont want to hardcode this -- scikit build can figure it out
 # sdist.include = ["tests/unit_tests"]
 sdist.exclude = ["scripts",
                  "tests/", # until we can figure out how to exclude the downloaded data files.

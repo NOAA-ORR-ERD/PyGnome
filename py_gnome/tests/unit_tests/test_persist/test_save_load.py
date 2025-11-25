@@ -61,7 +61,10 @@ from testfixtures import LogCapture
 from ..conftest import test_oil
 
 # reloading maps often triggers this one:
-pytestmark = pytest.mark.filterwarnings("ignore:Provided map bounds superscede map bounds found in file")
+pytestmark = pytest.mark.filterwarnings(
+    "ignore:Provided map bounds superscede map bounds found in file"
+)
+
 
 def test_warning_logged():
     '''
@@ -86,7 +89,7 @@ def test_class_from_objtype():
 
 
 def test_exceptions():
-    a = 1.1 # need to use something other than an int -- ints are interned.
+    a = 1.1  # need to use something other than an int -- ints are interned.
     refs = References()
     refs.reference(a, 'a')
     refs.reference(a, 'a')  # should not do anything
@@ -156,35 +159,44 @@ g_objects = (
     Water(temperature=273),
     RandomMover(),
     CatsMover(testdata['CatsMover']['curr']),
-    CatsMover(testdata['CatsMover']['curr'], tide=Tide(testdata['CatsMover']['tide'])),
+    CatsMover(testdata['CatsMover']['curr'],
+              tide=Tide(testdata['CatsMover']['tide'])),
     ComponentMover(testdata['ComponentMover']['curr']),
-    ComponentMover(testdata['ComponentMover']['curr'], wind=constant_wind(5., 270, 'knots')),
-    # wind=Wind(filename=testdata['ComponentMover']['wind'])),
+    ComponentMover(testdata['ComponentMover']['curr'],
+                   wind=constant_wind(5., 270, 'knots')),
     WindMover(GridWind.from_netCDF(testdata['c_GridWindMover']['wind_rect'])),
-    #WindMover(testdata['c_GridWindMover']['wind_curv']), #variable names wrong
-    CurrentMover(GridCurrent.from_netCDF(testdata['c_GridCurrentMover']['curr_tri'])),
-    CurrentMover(GridCurrent.from_netCDF(testdata['c_GridCurrentMover']['curr_reg'])),
+    CurrentMover(GridCurrent.from_netCDF(
+        testdata['c_GridCurrentMover']['curr_tri']
+    )),
+    CurrentMover(GridCurrent.from_netCDF(
+        testdata['c_GridCurrentMover']['curr_reg']
+    )),
     RandomMover3D(),
     SimpleMover(velocity=(10.0, 10.0, 0.0)),
     MapFromBNA(testdata['MapFromBNA']['testmap'], 6),
     NetCDFOutput(os.path.join(base_dir, 'xtemp.nc')),
-    Renderer(testdata['Renderer']['bna_sample'], os.path.join(base_dir, 'output_dir')),
+    Renderer(testdata['Renderer']['bna_sample'],
+             os.path.join(base_dir, 'output_dir')),
     WeatheringOutput(),
-    PointLineRelease(release_time=datetime.now(), num_elements=10, start_position=(0, 0, 0)),
+    PointLineRelease(release_time=datetime.now(), num_elements=10,
+                     start_position=(0, 0, 0)),
     point_line_spill(10, (0, 0, 0), datetime.now()),
     Substance(windage_range=(0.05, 0.07)),
     GnomeOil(test_oil, windage_range=(0.05, 0.07)),
     NonWeatheringSubstance(windage_range=(0.05, 0.07)),
     Skimmer(amount=100,
             efficiency=0.3,
-            active_range=(datetime(2014, 1, 1, 0, 0), datetime(2014, 1, 1, 4, 0)),
+            active_range=(datetime(2014, 1, 1, 0, 0),
+                          datetime(2014, 1, 1, 4, 0)),
             units='kg'),
     Burn(area=100,
          thickness=1,
-         active_range=(datetime(2014, 1, 1, 0, 0), datetime(2014, 1, 1, 4, 0)),
+         active_range=(datetime(2014, 1, 1, 0, 0),
+                       datetime(2014, 1, 1, 4, 0)),
          efficiency=.9),
     ChemicalDispersion(fraction_sprayed=.2,
-                       active_range=(datetime(2014, 1, 1, 0, 0), datetime(2014, 1, 1, 4, 0)),
+                       active_range=(datetime(2014, 1, 1, 0, 0),
+                                     datetime(2014, 1, 1, 4, 0)),
                        efficiency=.3),
     # todo: ask Caitlin how to fix
     # movers.RiseVelocityMover(),
@@ -193,6 +205,7 @@ g_objects = (
     # spill.PolygonRelease(datetime.now(), ((0, 0, 0), (1, 2, 0))),
     TrajectoryGeoJsonOutput(),
 )
+
 
 @pytest.mark.parametrize("obj", g_objects)
 def test_serial_deserial(saveloc_, obj):
@@ -204,6 +217,7 @@ def test_serial_deserial(saveloc_, obj):
     obj2 = obj.__class__.deserialize(json_)
 
     assert obj == obj2
+
 
 @pytest.mark.parametrize("obj", g_objects)
 def test_save_load_fun(saveloc_, obj):
@@ -254,16 +268,24 @@ def test_save_load_wind_objs(saveloc_, obj):
 # Following movers fail on windows with fixture. This is causing an issue in
 # windows for the NetCDF files - for some reason it is not able to delete the
 # netcdf data files. All files are being closed in C++.
-l_movers2 = (CurrentCycleMover(testdata['CurrentCycleMover']['curr'],
-                               topology_file=testdata['CurrentCycleMover']['top'],
-                               tide=Tide(testdata['CurrentCycleMover']['tide'])),
-             CurrentCycleMover(testdata['CurrentCycleMover']['curr'],
-                               topology_file=testdata['CurrentCycleMover']['top']),
-             c_GridCurrentMover(testdata['c_GridCurrentMover']['curr_tri'],
-                              testdata['c_GridCurrentMover']['top_tri']),
-             c_GridWindMover(testdata['c_GridWindMover']['wind_curv'],
-                           testdata['c_GridWindMover']['top_curv']),
-             )
+l_movers2 = (
+    CurrentCycleMover(
+        testdata['CurrentCycleMover']['curr'],
+        topology_file=testdata['CurrentCycleMover']['top'],
+        tide=Tide(testdata['CurrentCycleMover']['tide'])
+    ),
+    CurrentCycleMover(
+        testdata['CurrentCycleMover']['curr'],
+        topology_file=testdata['CurrentCycleMover']['top']
+    ),
+    c_GridCurrentMover(
+        testdata['c_GridCurrentMover']['curr_tri'],
+        testdata['c_GridCurrentMover']['top_tri']
+    ),
+    c_GridWindMover(
+        testdata['c_GridWindMover']['wind_curv'],
+        testdata['c_GridWindMover']['top_curv']),
+)
 
 
 @pytest.mark.parametrize("obj", l_movers2)
@@ -310,24 +332,24 @@ class TestSaveZipIsValid:
         'sample_data/boston_data/MerrimackMassCoastOSSM.json'
         change _max_json_filesize 4K
         '''
-        save_load._max_json_filesize = 8 * 1024
+        max_json_filesize = 8 * 1024
         badzip = os.path.join(self.here,
                               'sample_data/badzip_max_json_filesize.zip')
         filetoobig = 'filetoobig.json'
+
         with ZipFile(badzip, 'w', compression=ZIP_DEFLATED) as z:
             z.write(testdata['boston_data']['cats_ossm'], filetoobig)
 
         with LogCapture() as lc:
-            assert not is_savezip_valid(badzip)
+            assert not is_savezip_valid(badzip,
+                                        max_json_filesize=max_json_filesize)
             lc.check(('gnome.persist.save_load',
                       'WARNING',
                       'Filesize of {0} is {1}. It must be less than {2}. '
                       'Rejecting zipfile.'
                       .format(filetoobig,
                               z.NameToInfo[filetoobig].file_size,
-                              save_load._max_json_filesize)))
-
-        save_load._max_json_filesize = 1 * 1024
+                              max_json_filesize)))
 
     def test_check_max_compress_ratio(self):
         '''
@@ -341,7 +363,9 @@ class TestSaveZipIsValid:
             z.writestr(badfile, ''.join(['0'] * 1000))
 
         with LogCapture() as lc:
-            assert not is_savezip_valid(badzip)
+            max_compress_ratio = 54
+            assert not is_savezip_valid(badzip,
+                                        max_compress_ratio=max_compress_ratio)
             zi = z.NameToInfo[badfile]
             lc.check(('gnome.persist.save_load',
                       'WARNING',
@@ -349,7 +373,7 @@ class TestSaveZipIsValid:
                        'maximum must be less than {1}. '
                        'Rejecting zipfile'
                        .format(zi.file_size / zi.compress_size,
-                               save_load._max_compress_ratio))))
+                               max_compress_ratio))))
 
     def test_filenames_dont_contain_dotdot(self):
         '''

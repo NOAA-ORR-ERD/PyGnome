@@ -22,7 +22,7 @@ import nucos
 # just so it will be in the namespace.
 from .gnomeobject import GnomeId, AddLogger
 
-__version__ = "1.1.16"
+__version__ = "1.1.21"
 
 # set up to show DeprecationWarnings that come from PyGNOME
 warnings.filterwarnings("default",
@@ -30,16 +30,14 @@ warnings.filterwarnings("default",
                         module="gnome.*")
 
 if os.name == 'nt':
-    # In Windows, we need to add the location of our lib_gnome.dll to the
-    # .dll search path.
-    here = getattr(sys, '_stdlib_dir', None)
-    if not here and hasattr(os, '__file__'):
-        here = os.path.dirname(os.__file__)
+    # Get site-packages path from the current Python environment
+    import site
+    site_packages = next((p for p in site.getsitepackages() if 'site-packages' in p), None)
 
-    if here:
-        os.add_dll_directory(
-            pathlib.Path(here) / 'site-packages' / 'bin'
-        )
+    if site_packages:
+        dll_path = pathlib.Path(site_packages) / 'bin'
+        if dll_path.exists():
+            os.add_dll_directory(dll_path)
 
 #
 # A few imports so that the basic stuff is there
@@ -74,10 +72,17 @@ def check_dependency_versions():
         else:
             return True
 
+<<<<<<< HEAD
     libs = [('gridded', '0.7.2', ''),
             ('nucos', '3.4.0', ''),
             ('py_gd', '2.3.0', ''),
             ('adios_db', '1.2.5', 'Only required to use the ADIOS Database '
+=======
+    libs = [('gridded', '0.7.4', ''),
+            ('nucos', '3.4.1', ''),
+            ('py_gd', '2.3.3', ''),
+            ('adios_db', '1.2.7', 'Only required to use the ADIOS Database '
+>>>>>>> main
                                   'JSON format for oil data.')
             ]
 

@@ -1,7 +1,3 @@
-
-
-
-
 import os
 
 import numpy as np
@@ -59,7 +55,7 @@ class CatsMove(cy_fixtures.CyTestMove):
 
     def uncertain_move(self):
         """
-        get_move for forecast LEs
+        get_move for uncertain LEs
         """
 
         self.cats.get_move(
@@ -72,6 +68,23 @@ class CatsMove(cy_fixtures.CyTestMove):
             )
         print()
         print(self.u_delta)
+
+    def backward_move(self):
+        """
+        get_move for negative timestep
+        """
+
+        self.cats.get_move(
+            self.model_time,
+            - self.time_step,
+            self.ref,
+            self.delta,
+            self.status,
+            basic_types.spill_type.forecast,
+            )
+        print()
+        print(self.delta)
+
 
 
 def test_move():
@@ -125,6 +138,32 @@ def test_uncertain_move():
     assert np.all(tgt.u_delta['lat'] != 0)
     assert np.all(tgt.u_delta['long'] != 0)
     assert np.all(tgt.u_delta['z'] == 0)
+
+def test_run_backwards():
+    """
+    test that a component mover can work running backwards.
+    """
+    # first run forward
+    tgt = CatsMove()
+    tgt.certain_move()
+    front_deltas = tgt.delta.copy()
+
+    # then run backward
+    tgt = CatsMove()
+    tgt.backward_move()
+    back_deltas = tgt.delta.copy()
+
+    print(back_deltas)
+
+    # Not sure how to test that it's correct, but here's something:
+    # deltas should be all the same:
+    for d in back_deltas:
+        assert d == back_deltas[0]
+
+    # They should be the negative of the forward values
+    assert back_deltas['lat'][0] == -front_deltas['lat'][0]
+    assert back_deltas['long'][0] == -front_deltas['long'][0]
+    assert back_deltas['z'][0] == -front_deltas['z'][0]
 
 
 c_cats = cy_cats_mover.CyCatsMover()

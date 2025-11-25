@@ -681,10 +681,10 @@ OSErr TimeGridVel_c::ReadInputFileNames(char *fileNamesPath)
 				err = -2;
 				goto done;
 			}
-		}	
+		}
 		else {
 			char msg[256];
-			sprintf(msg, "PATH to NetCDF data File does not exist.%s%s", NEWLINESTRING, (*inputFilesHdl)[i].pathName);
+			snprintf(msg, sizeof(msg), "PATH to NetCDF data File does not exist.%s%s", NEWLINESTRING, (*inputFilesHdl)[i].pathName);
 			printError(msg);
 			err = true;
 			goto done;
@@ -6718,13 +6718,13 @@ OSErr TimeGridVelCurv_c::ExportTopology(char* path)
 	// Write out values
 	if (fVerdatToNetCDFH) n = _GetHandleSize((Handle)fVerdatToNetCDFH)/sizeof(long);
 	else {printError("There is no transpose array"); err = -1; goto done;}
-	sprintf(hdrStr,"TransposeArray\t%ld\n",n);	
+	snprintf(hdrStr, sizeof(hdrStr), "TransposeArray\t%ld\n",n);	
 	//strcpy(buffer,hdrStr);
 	//if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
 	fwrite(hdrStr,sizeof(char),strlen(hdrStr),fp);
 	for(i=0;i<n;i++)
 	{	
-		sprintf(topoStr,"%ld\n",(*fVerdatToNetCDFH)[i]);
+		snprintf(topoStr, sizeof(topoStr), "%ld\n",(*fVerdatToNetCDFH)[i]);
 		//strcpy(buffer,topoStr);
 		//if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
 		fwrite(topoStr,sizeof(char),strlen(topoStr),fp);
@@ -6732,11 +6732,11 @@ OSErr TimeGridVelCurv_c::ExportTopology(char* path)
 	
 	nver = _GetHandleSize((Handle)ptsH)/sizeof(**ptsH);
 	//fprintf(outfile,"Vertices\t%ld\t%ld\n",nver,numBoundaryPts);	// total vertices and number of boundary points
-	sprintf(hdrStr,"Vertices\t%ld\n",nver);	// total vertices
+	snprintf(hdrStr, sizeof(hdrStr), "Vertices\t%ld\n",nver);	// total vertices
 	//strcpy(buffer,hdrStr);
 	//if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
 	fwrite(hdrStr,sizeof(char),strlen(hdrStr),fp);
-	sprintf(hdrStr,"%ld\t%ld\n",nver,nver);	// junk line
+	snprintf(hdrStr, sizeof(hdrStr), "%ld\t%ld\n",nver,nver);	// junk line
 	//strcpy(buffer,hdrStr);
 	//if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
 	fwrite(hdrStr,sizeof(char),strlen(hdrStr),fp);
@@ -6744,15 +6744,15 @@ OSErr TimeGridVelCurv_c::ExportTopology(char* path)
 	{	
 		x = (*ptsH)[i].h/1000000.0;
 		y =(*ptsH)[i].v/1000000.0;
-		//sprintf(topoStr,"%ld\t%lf\t%lf\t%lf\n",i+1,x,y,(*gDepths)[i]);
-		//sprintf(topoStr,"%ld\t%lf\t%lf\n",i+1,x,y);
-		if (depthsH) 
+		//snprintf(topoStr, sizeof(topoStr), "%ld\t%lf\t%lf\t%lf\n",i+1,x,y,(*gDepths)[i]);
+		//snprintf(topoStr, sizeof(topoStr), "%ld\t%lf\t%lf\n",i+1,x,y);
+		if (depthsH)
 		{
 			z = (*depthsH)[i];
-			sprintf(topoStr,"%lf\t%lf\t%lf\n",x,y,z);
+			snprintf(topoStr, sizeof(topoStr), "%lf\t%lf\t%lf\n",x,y,z);
 		}
 		else
-			sprintf(topoStr,"%lf\t%lf\n",x,y);
+			snprintf(topoStr, sizeof(topoStr), "%lf\t%lf\n",x,y);
 		//strcpy(buffer,topoStr);
 		//if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
 		fwrite(topoStr,sizeof(char),strlen(topoStr),fp);
@@ -6813,7 +6813,7 @@ OSErr TimeGridVelCurv_c::ExportTopology(char* path)
 		}
 	}*/
 	numTriangles = _GetHandleSize((Handle)topH)/sizeof(**topH);
-	sprintf(hdrStr,"Topology\t%ld\n",numTriangles);
+	snprintf(hdrStr, sizeof(hdrStr), "Topology\t%ld\n",numTriangles);
 	//strcpy(buffer,hdrStr);
 	//if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
 	fwrite(hdrStr,sizeof(char),strlen(hdrStr),fp);
@@ -6825,7 +6825,7 @@ OSErr TimeGridVelCurv_c::ExportTopology(char* path)
 		n1 = (*topH)[i].adjTri1;
 		n2 = (*topH)[i].adjTri2;
 		n3 = (*topH)[i].adjTri3;
-		sprintf(topoStr, "%ld\t%ld\t%ld\t%ld\t%ld\t%ld\n",
+		snprintf(topoStr, sizeof(topoStr), "%ld\t%ld\t%ld\t%ld\t%ld\t%ld\n",
 				v1, v2, v3, n1, n2, n3);
 		
 		/////
@@ -6835,14 +6835,14 @@ OSErr TimeGridVelCurv_c::ExportTopology(char* path)
 	}
 	
 	numBranches = _GetHandleSize((Handle)treeH)/sizeof(**treeH);
-	sprintf(hdrStr,"DAGTree\t%ld\n",dagTree->fNumBranches);
+	snprintf(hdrStr, sizeof(hdrStr), "DAGTree\t%ld\n",dagTree->fNumBranches);
 	//strcpy(buffer,hdrStr);
 	//if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
 	fwrite(hdrStr,sizeof(char),strlen(hdrStr),fp);
 	
 	for(i = 0; i<dagTree->fNumBranches; i++)
 	{
-		sprintf(topoStr,"%ld\t%ld\t%ld\n",(*treeH)[i].topoIndex,(*treeH)[i].branchLeft,(*treeH)[i].branchRight);
+		snprintf(topoStr, sizeof(topoStr), "%ld\t%ld\t%ld\n",(*treeH)[i].topoIndex,(*treeH)[i].branchLeft,(*treeH)[i].branchRight);
 		//strcpy(buffer,topoStr);
 		//if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
 		fwrite(topoStr,sizeof(char),strlen(topoStr),fp);
@@ -10804,13 +10804,13 @@ OSErr TimeGridVelTri_c::ExportTopology(char *path)
 	//if (!bVelocitiesOnTriangles)
 	if (n>0)
 	{
-		sprintf(hdrStr,"TransposeArray\t%ld\n",n);	
+		snprintf(hdrStr, sizeof(hdrStr), "TransposeArray\t%ld\n",n);	
 		//strcpy(buffer,hdrStr);
 		//if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
 		fwrite(hdrStr,sizeof(char),strlen(hdrStr),fp);
 		for(i=0;i<n;i++)
 		{	
-			sprintf(topoStr,"%ld\n",(*fVerdatToNetCDFH)[i]);
+			snprintf(topoStr, sizeof(topoStr), "%ld\n",(*fVerdatToNetCDFH)[i]);
 			//strcpy(buffer,topoStr);
 			//if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
 			fwrite(topoStr,sizeof(char),strlen(topoStr),fp);
@@ -10818,11 +10818,11 @@ OSErr TimeGridVelTri_c::ExportTopology(char *path)
 	}
 	nver = _GetHandleSize((Handle)ptsH)/sizeof(**ptsH);
 	//fprintf(outfile,"Vertices\t%ld\t%ld\n",nver,numBoundaryPts);	// total vertices and number of boundary points
-	sprintf(hdrStr,"Vertices\t%ld\n",nver);	// total vertices
+	snprintf(hdrStr, sizeof(hdrStr), "Vertices\t%ld\n",nver);	// total vertices
 	fwrite(hdrStr,sizeof(char),strlen(hdrStr),fp);
 	//strcpy(buffer,hdrStr);
 	//if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
-	sprintf(hdrStr,"%ld\t%ld\n",nver,nver);	// junk line
+	snprintf(hdrStr, sizeof(hdrStr), "%ld\t%ld\n",nver,nver);	// junk line
 	//strcpy(buffer,hdrStr);
 	//if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
 	fwrite(hdrStr,sizeof(char),strlen(hdrStr),fp);
@@ -10830,15 +10830,15 @@ OSErr TimeGridVelTri_c::ExportTopology(char *path)
 	{	
 		x = (*ptsH)[i].h/1000000.0;
 		y =(*ptsH)[i].v/1000000.0;
-		//sprintf(topoStr,"%ld\t%lf\t%lf\t%lf\n",i+1,x,y,(*gDepths)[i]);
-		//sprintf(topoStr,"%ld\t%lf\t%lf\n",i+1,x,y);
+		//snprintf(topoStr, sizeof(topoStr), "%ld\t%lf\t%lf\t%lf\n",i+1,x,y,(*gDepths)[i]);
+		//snprintf(topoStr, sizeof(topoStr), "%ld\t%lf\t%lf\n",i+1,x,y);
 		if (depthsH) 
 		{
 			z = (*depthsH)[i];
-			sprintf(topoStr,"%lf\t%lf\t%lf\n",x,y,z);
+			snprintf(topoStr, sizeof(topoStr), "%lf\t%lf\t%lf\n",x,y,z);
 		}
 		else
-			sprintf(topoStr,"%lf\t%lf\n",x,y);
+			snprintf(topoStr, sizeof(topoStr), "%lf\t%lf\n",x,y);
 		//strcpy(buffer,topoStr);
 		//if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
 		fwrite(topoStr,sizeof(char),strlen(topoStr),fp);
@@ -10896,7 +10896,7 @@ OSErr TimeGridVelTri_c::ExportTopology(char *path)
 		}
 	}*/
 	numTriangles = _GetHandleSize((Handle)topH)/sizeof(**topH);
-	sprintf(hdrStr,"Topology\t%ld\n",numTriangles);
+	snprintf(hdrStr, sizeof(hdrStr), "Topology\t%ld\n",numTriangles);
 	//strcpy(buffer,hdrStr);
 	//if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
 	fwrite(hdrStr,sizeof(char),strlen(hdrStr),fp);
@@ -10908,7 +10908,7 @@ OSErr TimeGridVelTri_c::ExportTopology(char *path)
 		n1 = (*topH)[i].adjTri1;
 		n2 = (*topH)[i].adjTri2;
 		n3 = (*topH)[i].adjTri3;
-		sprintf(topoStr, "%ld\t%ld\t%ld\t%ld\t%ld\t%ld\n",
+		snprintf(topoStr, sizeof(topoStr), "%ld\t%ld\t%ld\t%ld\t%ld\t%ld\n",
 				v1, v2, v3, n1, n2, n3);
 		
 		/////
@@ -10918,14 +10918,14 @@ OSErr TimeGridVelTri_c::ExportTopology(char *path)
 	}
 	
 	numBranches = _GetHandleSize((Handle)treeH)/sizeof(**treeH);
-	sprintf(hdrStr,"DAGTree\t%ld\n",dagTree->fNumBranches);
+	snprintf(hdrStr, sizeof(hdrStr), "DAGTree\t%ld\n",dagTree->fNumBranches);
 	//strcpy(buffer,hdrStr);
 	//if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
 	fwrite(hdrStr,sizeof(char),strlen(hdrStr),fp);
 	
 	for(i = 0; i<dagTree->fNumBranches; i++)
 	{
-		sprintf(topoStr,"%ld\t%ld\t%ld\n",(*treeH)[i].topoIndex,(*treeH)[i].branchLeft,(*treeH)[i].branchRight);
+		snprintf(topoStr, sizeof(topoStr), "%ld\t%ld\t%ld\n",(*treeH)[i].topoIndex,(*treeH)[i].branchLeft,(*treeH)[i].branchRight);
 		//strcpy(buffer,topoStr);
 		//if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
 		fwrite(topoStr,sizeof(char),strlen(topoStr),fp);
@@ -11294,7 +11294,7 @@ OSErr TimeGridCurRect_c::ReadInputFileNames(vector<string> &linesInFile, long *l
 			// process our linked file
 			if (!ResolvePath(containingDir, file)) {
 				char msg[256];
-				sprintf(msg, "PATH to data File does not exist.%s%s", NEWLINESTRING, file.c_str());
+				snprintf(msg, sizeof(msg), "PATH to data File does not exist.%s%s", NEWLINESTRING, file.c_str());
 				printError(msg);
 				err = true;
 				goto done;
@@ -11346,7 +11346,7 @@ OSErr TimeGridCurRect_c::ReadInputFileNames(vector<string> &linesInFile, long *l
 	if (fileStanzasFound != numFiles) {
 		err = -1;
 		char msg[256];
-		sprintf(msg, "Expected %ld file stanzas, found %ld\n", numFiles, fileStanzasFound);
+		snprintf(msg, sizeof(msg), "Expected %ld file stanzas, found %ld\n", numFiles, fileStanzasFound);
 		printError(msg);
 		goto done;
 	}
@@ -12022,7 +12022,7 @@ OSErr TimeGridCurRect_c::ReadHeaderLines(vector<string> &linesInFile,
 		}
 		else {
 			char msg[256];
-			sprintf(msg, "Linked GridCur data File could not be resolved.%s%s",
+			snprintf(msg, sizeof(msg), "Linked GridCur data File could not be resolved.%s%s",
 					NEWLINESTRING, linkedFile.c_str());
 			printError(msg);
 			err = true;
@@ -12154,7 +12154,7 @@ OSErr TimeGridCurRect_c::ReadTimeData(long index,
 	if(err || !h) 
 	{
 		char firstPartOfLine[128];
-		sprintf(errmsg,"Unable to open data file:%s",NEWLINESTRING);
+		snprintf(errmsg, sizeof(errmsg), "Unable to open data file:%s",NEWLINESTRING);
 		strncpy(firstPartOfLine,fVar.pathName,120);
 		strcpy(firstPartOfLine+120,"...");
 		strcat(errmsg,firstPartOfLine);
@@ -12224,7 +12224,7 @@ OSErr TimeGridCurRect_c::ReadTimeData(long index,
 			if (lineStream.fail() || key != "[TIME]" ) {
 				// anything other than a time stanza is not allowed
 				char firstPartOfLine[128];
-				sprintf(errmsg, "TimeGridCurRect_c::ReadTimeData(): Unable to read velocity data from line %ld:%s", line, NEWLINESTRING);
+				snprintf(errmsg, sizeof(errmsg), "TimeGridCurRect_c::ReadTimeData(): Unable to read velocity data from line %ld:%s", line, NEWLINESTRING);
 				strncpy(firstPartOfLine, lineStream.str().c_str(), 120);
 				strcpy(firstPartOfLine + 120, "...");
 				strcat(errmsg, firstPartOfLine);
@@ -12240,7 +12240,7 @@ OSErr TimeGridCurRect_c::ReadTimeData(long index,
 			colNum <= 0 || colNum > fNumCols)
 		{
 			char firstPartOfLine[128];
-			sprintf(errmsg, "TimeGridCurRect_c::ReadTimeData(): velocity data out of bounds in line %ld:%s", line, NEWLINESTRING);
+			snprintf(errmsg, sizeof(errmsg), "TimeGridCurRect_c::ReadTimeData(): velocity data out of bounds in line %ld:%s", line, NEWLINESTRING);
 			strncpy(firstPartOfLine, lineStream.str().c_str(), 120);
 			strcpy(firstPartOfLine + 120, "...");
 			strcat(errmsg, firstPartOfLine);
@@ -13047,7 +13047,7 @@ OSErr TimeGridCurTri_c::ReadPtCurVertices(vector<string> &linesInFile,
 		istringstream lineStream(currentLine);
 		lineStream >> ptNum >> h >> v;
 		if (lineStream.fail()) {
-			sprintf(errmsg, "Unable to read data (ptNum, h, v) from line %ld:\n", *line);
+			snprintf(errmsg, sizeof(errmsg), "Unable to read data (ptNum, h, v) from line %ld:\n", *line);
 			goto done;
 		}
 
@@ -13076,7 +13076,7 @@ OSErr TimeGridCurTri_c::ReadPtCurVertices(vector<string> &linesInFile,
 			while (numDepths <= fVar.maxNumDepths) {
 				lineStream >> depth;
 				if (lineStream.fail()) {
-					sprintf(errmsg, "Unable to read depth data from line %ld:\n", *line);
+					snprintf(errmsg, sizeof(errmsg), "Unable to read depth data from line %ld:\n", *line);
 					goto done;
 				}
 
@@ -13191,7 +13191,7 @@ OSErr TimeGridCurTri_c::ReadTimeData(long index,
 	if(err || !h) 
 	{
 		char firstPartOfLine[128];
-		sprintf(errmsg,"Unable to open data file:%s",NEWLINESTRING);
+		snprintf(errmsg, sizeof(errmsg), "Unable to open data file:%s",NEWLINESTRING);
 		strncpy(firstPartOfLine,fVar.pathName,120);
 		strcpy(firstPartOfLine+120,"...");
 		strcat(errmsg,firstPartOfLine);
@@ -13283,7 +13283,7 @@ OSErr TimeGridCurTri_c::ReadTimeData(long index,
 
 		for (long j = 0; j < numDepths; j++) {
 			if (!ParseLine(lineStream, vel)) {
-				sprintf(errmsg, "TimeGridCurTri_c::ReadTimeData(): Unable to read velocity data from line %ld:%s",
+				snprintf(errmsg, sizeof(errmsg), "TimeGridCurTri_c::ReadTimeData(): Unable to read velocity data from line %ld:%s",
 						line, NEWLINESTRING);
 				delete[] s1;
 				s1 = 0;
@@ -13565,7 +13565,7 @@ OSErr TimeGridCurTri_c::TextRead(vector<string> &linesInFile,
 		// process our linked file
 		if (!ResolvePath(containingDir, linkedFile)) {
 			char msg[256];
-			sprintf(msg, "PATH to data File does not exist.%s%s", NEWLINESTRING, linkedFile.c_str());
+			snprintf(msg, sizeof(msg), "PATH to data File does not exist.%s%s", NEWLINESTRING, linkedFile.c_str());
 			printError(msg);
 			err = true;
 			goto done;

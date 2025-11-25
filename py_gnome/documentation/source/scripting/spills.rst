@@ -118,7 +118,7 @@ Rather than deal with the complexities of the Spill class directly, helper funct
 Surface spill
 .............
 
-We use the :func:`gnome.scripting.surface_point_line_spill` helper function to initialize a spill along a line that occurs over one day.
+We use the :func:`gnome.scripting.point_line_spill` helper function to initialize a spill along a line that occurs over one day.
 The oil type is specified using the sample oil file provided above with a spill volume of 5000 barrels.
 The windage range is changed from the default to 1-2% with an infinite persistence (elements keep the same windage value for all time).
 The helper function creates both the ``Release`` and the ``Substance`` objects and uses them to create a ``Spill`` object.
@@ -132,7 +132,7 @@ The helper function creates both the ``Release`` and the ``Substance`` objects a
                      time_step=60 * 15, # 15 minutes in seconds
                      )
 
-    spill = gs.surface_point_line_spill(num_elements=1000,
+    spill = gs.point_line_spill(num_elements=1000,
                                         start_position=(-144, 48.5),
                                         release_time=start_time,
                                         end_position=(-144, 48.6),

@@ -13,6 +13,7 @@ from gnome.utilities.remote_data import get_datafile
 import pytest
 from ..conftest import testdata
 
+HERE = Path("__file__").parent
 
 def test_exception():
     """
@@ -42,7 +43,7 @@ def test_get_datafile():
     """
     downloads CLISShio.txt to make sure get_datafile works as expected
     Uses testdata['CatsMover']['tide'] as test file. If it exists, it moves
-    it '*.renamed'. It then trys to download file and if it fails for any
+    it '*.renamed'. It then tries to download file and if it fails for any
     reason (most likely internet connection is missing), then copy the
     file back from '*.renamed' to testdata['CatsMover']['tide']
     At the end also, move the renamed file back
@@ -72,3 +73,22 @@ def test_get_datafile():
     # do not delete file_
     if renamed is not None:
         shutil.move(renamed, file_)
+
+def test_subdir():
+    """
+    making sure passing in a subdir works
+    """
+    test_file = HERE / "README.txt"
+
+    test_file.unlink(missing_ok=True)
+
+    assert not test_file.is_file()
+
+    test_file = get_datafile(test_file, 'gridded_test_files')
+
+    assert test_file.is_file()
+
+
+
+
+
