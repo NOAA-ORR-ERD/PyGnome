@@ -22,7 +22,7 @@ import nucos
 # just so it will be in the namespace.
 from .gnomeobject import GnomeId, AddLogger
 
-__version__ = "1.1.20dev"
+__version__ = "1.1.21dev"
 
 # set up to show DeprecationWarnings that come from PyGNOME
 warnings.filterwarnings("default",
@@ -72,7 +72,7 @@ def check_dependency_versions():
         else:
             return True
 
-    libs = [('gridded', '0.7.3', ''),
+    libs = [('gridded', '0.7.4', ''),
             ('nucos', '3.4.1', ''),
             ('py_gd', '2.3.3', ''),
             ('adios_db', '1.2.7', 'Only required to use the ADIOS Database '
