@@ -2,10 +2,6 @@
 Test all operations for cats mover work
 '''
 
-
-
-
-
 import os
 
 import pytest
@@ -25,13 +21,19 @@ ossm_file = testdata['timeseries']['tide_ossm']
 def test_shio_data_limits():
     """
     make sure we can get the SHIO year data limits
+
+    This is determined by the yeardata in the gnome/data/yeardata folder
+
+    1/7/2026 : added the 2026 yeardata
     """
-    assert SHIO_YEARDATA_LIMITS == (1980, 2025)
+    print(SHIO_YEARDATA_LIMITS)
+
+    assert SHIO_YEARDATA_LIMITS == (1980, 2026)
 
 
 def test_exceptions():
     """
-        Test correct exceptions are raised
+    Test correct exceptions are raised
     """
     bad_file = 'CLISShio.txtX'
     bad_yeardata_path = os.path.join('Data', 'yeardata')
