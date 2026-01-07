@@ -64,6 +64,9 @@ sdist.exclude = ["scripts",
                  "gnome/cy_gnome/*.cpp"
                  ]
 
+[project.scripts]
+plot_grids = "gnome.scripting.plotting:main"
+
 [tool.pytest.ini_options]
 # ignore warnings from geopandas -- out of our control
 filterwarnings = ["ignore:.*BlockManager to :DeprecationWarning",
