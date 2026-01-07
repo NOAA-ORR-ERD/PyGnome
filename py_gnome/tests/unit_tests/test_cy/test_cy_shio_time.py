@@ -96,11 +96,25 @@ def test_yeardata():
 def test_get_time_value():
     'make sure get_time_value goes to correct C++ derived class function'
     shio = CyShioTime(shio_file)
-    t = time_utils.date_to_sec(datetime(2012, 8, 20, 13))
-    time = [t + 3600.*dt for dt in range(10)]
+    t = time_utils.date_to_sec(datetime(2026, 8, 20, 13))
+    time = [t + 3600. * dt for dt in range(10)]
     vel_rec, err = shio.get_time_value(time)
     assert all(vel_rec['u'] != 0)
     assert all(vel_rec['v'] == 0)
+
+
+def test_get_time_value_out_of_range():
+    """
+    Make sure you get a meaningful error if you ask for
+    a year that isn't supported by yeardata.
+
+    1/7/2026 -- added 2026 data.
+    """
+    shio = CyShioTime(shio_file)
+    t = time_utils.date_to_sec(datetime(2030, 8, 20, 13))
+    # time = [t + 3600. * dt for dt in range(10)]
+    with pytest.raises(IndexError):
+        vel_rec, err = shio.get_time_value(t)
 
 
 def test_eq():
