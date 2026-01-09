@@ -22,7 +22,7 @@ import nucos
 # just so it will be in the namespace.
 from .gnomeobject import GnomeId, AddLogger
 
-__version__ = "1.1.22dev"
+__version__ = "1.1.22"
 
 # set up to show DeprecationWarnings that come from PyGNOME
 warnings.filterwarnings("default",
