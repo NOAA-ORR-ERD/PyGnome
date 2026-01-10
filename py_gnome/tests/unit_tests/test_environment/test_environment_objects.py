@@ -278,34 +278,39 @@ def test_GridCurrent_UGRID_compliant():
     # download the test file, if it's not already there
     cur_file = gs.get_datafile(TEST_DATA_DIR / 'SSCOFS.ugrid.nc', 'gridded_test_files')
 
+    # create it from the netCDF file
     curr = GridCurrent.from_netCDF(cur_file)
 
     # make sure it works
     points = np.array([(-122.6149358, 48.41271330),])
     time = curr.data_start + ((curr.data_stop - curr.data_start) / 2)
+    known_results = [[-1.29538738, -0.62726747, 0.0]]
 
     vels = curr.at(points, time)
-    print(vels)
-    # Just to make sure it's working
-    assert np.allclose(vels, [[-1.29538738, -0.62726747, 0.0]])
-
-    # breakpoint()
+    assert np.allclose(vels, known_results)
 
     # now save it out:
     save_json, zipfile_, _refs = curr.save(OUTPUT_DIR)
 
-    # pprint.pp(save_json)
-
-    # print(zipfile_)
-
+    # and reload it
     curr2 = GridCurrent.load(zipfile_)
 
+    # they should be the same
     assert curr2 == curr
 
+    # and work:
     vels2 = curr2.at(points, time)
+    assert np.allclose(vels2, known_results)
 
-    print(vels2)
-    # Just to make sure it's still working
-    assert np.allclose(vels, [[-1.29538738, -0.62726747, 0.0]])
+    # now save it out a second time ...
+    save_json, zipfile_, _refs = curr2.save(OUTPUT_DIR)
 
-    print("YES! it was able to save and reload!")
+    # and reload
+    curr3 = GridCurrent.load(zipfile_)
+
+    # still should be the same
+    assert curr3 == curr2 == curr
+
+    # and give the same results
+    vels3 = curr3.at(points, time)
+    assert np.allclose(vels3, known_results)
