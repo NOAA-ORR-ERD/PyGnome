@@ -105,6 +105,9 @@ var_attributes = {
     'fate_status': {},
 
     # weathering data
+    'standard_density': {
+        'long_name': 'density of substance used to convert mass to/from volume',
+        'units': 'kg/m^3'},
     'floating': {
         'long_name': 'total mass floating in water after each time step',
         'units': 'kilograms'},
@@ -632,6 +635,14 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
                     # give this grp a dimension for time
                     grp.createDimension('time', None)  # unlimited
 
+                    # add time variable to subgroup
+                    # self._create_nc_var(grp, 'time', np.float64,
+                    #                     ('time',), (256,))
+                    self._create_nc_var(grp,
+                                        var_name='time',
+                                        dtype='float',
+                                        shape=('time',),
+                                        chunksz=(256,))
                     for key in sc.mass_balance:
                         # mass_balance variables get a smaller chunksize
                         self._create_nc_var(grp,
@@ -754,6 +765,9 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
                     # write mass_balance data
                     if sc.mass_balance:
                         grp = rootgrp.groups['mass_balance']
+                        grp.variables['time'][idx] = nc.date2num(time_stamp,
+                                                        grp.variables['time'].units,
+                                                        grp.variables['time'].calendar)
                         for key, val in sc.mass_balance.items():
                             if key not in grp.variables:
                                 self._create_nc_var(grp,
