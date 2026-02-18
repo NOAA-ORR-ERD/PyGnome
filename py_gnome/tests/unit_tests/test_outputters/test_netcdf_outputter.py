@@ -496,7 +496,9 @@ def test_read_standard_arrays(model, output_ts_factor, use_time):
                     sc = list(scp.items())[1]
                 else:
                     sc = list(scp.items())[0]
-
+                #take 'time' out of the file dict since it was only added in the file
+                # not in the spill container/mass_balance
+                weathering_data.pop('time')
                 assert sc.mass_balance == weathering_data
             else:
                 raise Exception('Assertions not tested since no data found '
@@ -553,6 +555,9 @@ def test_read_all_arrays(model):
                         assert np.allclose(scp.LE('positions', uncertain),
                                            nc_data['positions'], rtol, atol)
                     elif key == 'mass_balance':
+                        # take 'time' out of the file dict since it was only added in the file
+                        # not in the spill container/mass_balance
+                        mb.pop('time')
                         assert scp.LE(key, uncertain) == mb
                     else:
                         # not always there
@@ -625,6 +630,9 @@ def test_write_output_post_run(model, output_ts_factor):
             # does infact give the next consecutive index
             (data_by_index, mb) = NetCDFOutput.read_data(file_, index=ix)
             assert curr_time == data_by_index['current_time_stamp'].item()
+            # take 'time' out of the file dict since it was only added in the file
+            # not in the spill container/mass_balance
+            mb.pop('time')
             assert scp.LE('mass_balance', uncertain) == mb
 
             ix += 1
@@ -642,6 +650,9 @@ def test_write_output_post_run(model, output_ts_factor):
             # again, check that last time step
             (data_by_index, mb) = NetCDFOutput.read_data(file_, index=ix)
             assert curr_time == data_by_index['current_time_stamp'].item()
+            # take 'time' out of the file dict since it was only added in the file
+            # not in the spill container/mass_balance
+            mb.pop('time')
             assert scp.LE('mass_balance', uncertain) == mb
 
             with pytest.raises(IndexError):
