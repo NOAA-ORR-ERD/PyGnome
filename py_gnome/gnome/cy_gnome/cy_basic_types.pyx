@@ -42,7 +42,35 @@ LE Status as an enum type
 """
 class oil_status(IntEnum):
     """
-    maps to the C enum
+    (Maps to C enum)
+
+    Enum for the element status. Values are::
+
+        not_released = OILSTAT_NOTRELEASED = 0
+        in_water = OILSTAT_INWATER = 2
+        on_land = OILSTAT_ONLAND = 3
+        off_maps = OILSTAT_OFFMAPS = 7
+        evaporated = OILSTAT_EVAPORATED = 10
+        to_be_removed = OILSTAT_TO_BE_REMOVED = 12
+        on_tideflat = OILSTAT_ON_TIDEFLAT = 32
+
+    NOTE:
+    Some of these are legacy from GNOME 1 and will never be used.
+    Others are internal, and will not be output.
+
+    Legacy:
+
+    not_released = OILSTAT_NOTRELEASED -- Legacy
+
+    evaporated = OILSTAT_EVAPORATED = 10
+
+    Internal, won't be output:
+
+    off_maps = OILSTAT_OFFMAPS = 7
+
+    evaporated = OILSTAT_EVAPORATED = 10
+
+    to_be_removed = OILSTAT_TO_BE_REMOVED = 12
     """
     not_released = OILSTAT_NOTRELEASED
     in_water = OILSTAT_INWATER

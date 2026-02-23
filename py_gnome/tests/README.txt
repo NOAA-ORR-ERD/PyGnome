@@ -1,11 +1,6 @@
-unit_tests/ directory is getting crowded.
+This dir is for putting various gridded data files that are known to work.
 
-Break out integration tests from unit_tests/ to integration_tests/ directory.
+They are (mostly?) netCDF files, with various grid types, etc.
 
-Also created tests/sample_data/ 
-* contains sample data files used by multiple types of tests,
-  like integration_tests/ and unit_tests/
+Mostly designed to be accessed from the input_file_examples in PyGNOME.
 
-In addition, each test directory has its own sample_data/ directory.
-* unit_tests/sample_data/ contains files that are used only by tests in unit_tests directory
-* integration_tests/sample_data/ contains files that are used only by tests in unit_tests directory
