@@ -17,13 +17,17 @@ Set the channel priority to "strict"::
 
 Create an environment for PyGNOME with all requirements:
 
+First, change to the py_gnome sub-directory... ::
+   
+    > cd py_gnome
+
 If you only need to run PyGNOME::
 
-    > conda create -n gnome python=3.10 --file  conda_requirements.txt
+    > conda create -n gnome python=3.13 --file  conda_requirements.txt
 
 If you need to build, etc PyGNOME::
 
-    > conda create -n gnome python=3.10 --file conda_requirements.txt --file conda_requirements_build.txt --file conda_requirements_test.txt
+    > conda create -n gnome python=3.13 --file conda_requirements.txt --file conda_requirements_build.txt --file conda_requirements_test.txt
 
 Activate the gnome environment::
 
@@ -31,7 +35,6 @@ Activate the gnome environment::
 
 Build the gnome package::
 
-    > cd py_gnome
     > python -m pip install ./
 
 or::
@@ -92,8 +95,7 @@ independent environment for it.
 
 **NOTES:**
 
-PyGNOME requires Python version 3.9 or greater (version 3.10 is currently used
-operationally -- 3.11 and 3.12 should work, but it not well tested)
+Python version 3.13 is currently used operationally, but v 3.9 or greater should also work.
 
 Anaconda (and miniconda and miniforge) can be installed in either single-user or multi-user mode:
 
