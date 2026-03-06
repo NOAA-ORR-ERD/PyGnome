@@ -11,9 +11,10 @@ authors = [
     {name = "Gnome team at NOAA/ORR/ERD", email = "orr.gnome@noaa.gov"},
 ]
 description = "Particle tracking code with features specifically for oil spill modeling."
-requires-python = ">=3.9"
+requires-python = ">=3.10, <3.14"
 keywords = ["oilspill", "modeling", "particle-tracking"]
-license = {text = "CC0-1.0"}
+license = "CC0-1.0"
+license-files = ["LICENSE.txt"]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Programming Language :: Python :: 3 :: Only",
@@ -21,7 +22,6 @@ classifiers = [
     "Programming Language :: C++",
     "Programming Language :: Cython",
     "Intended Audience :: Science/Research",
-    "License :: CC0 1.0 Universal (CC0 1.0) Public Domain Dedication",
     "Natural Language :: English",
     "Operating System :: OS Independent",
     "Topic :: Scientific/Engineering",
