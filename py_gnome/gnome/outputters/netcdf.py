@@ -23,6 +23,14 @@ from .outputter import Outputter, BaseOutputterSchema, OutputterFilenameMixin
 # in the output - these are constants. The instance var_attributes are stored
 # with the NetCDFOutput object
 
+_CODES_TO_EXCLUDE = {'not_released', 'off_maps', 'evaporated', 'to_be_removed'}
+_STATUS_CODES = [(v.value, v.name) for v in oil_status
+                                   if v.name not in _CODES_TO_EXCLUDE]
+
+status_code_flag_meetings = " ".join(f"{v}:{n}" for v, n in _STATUS_CODES)
+status_code_flag_values = [v for v, n in _STATUS_CODES]
+
+
 var_attributes = {
     'time': {'long_name': 'time since the beginning of the simulation',
              'standard_name': 'time',
@@ -56,9 +64,8 @@ var_attributes = {
             },
     'status_codes': {
         'long_name': 'particle status code',
-        'flag_values': [v.value for v in oil_status],
-        'flag_meanings': " ".join("{}:{}".format(v.value, v.name)
-                                  for v in oil_status)
+        'flag_values': status_code_flag_values,
+        'flag_meanings': status_code_flag_meetings
                      },
     'spill_num': {'long_name': 'spill to which the particle belongs'},
     'id': {'long_name': 'particle ID',
@@ -196,7 +203,7 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
     >>> model.outputters += gnome.netcdf_outputter.NetCDFOutput(
                 os.path.join(base_dir,'sample_model.nc'), which_data='most')
 
-    `which_data` flag is used to set which data to add to the netcdf file:
+    ``which_data`` flag is used to set which data to add to the netcdf file:
 
     'standard' : the basic stuff most people would want
 
@@ -211,10 +218,10 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
        cf_attributes is a class attribute: a dict
        that contains the global attributes per CF convention
 
-       The attribute: `.arrays_to_output` is a set of the data arrays that
+       The attribute: ``.arrays_to_output`` is a set of the data arrays that
        will be added to the netcdf file. array names may be added to or removed
        from this set before a model run to customize what gets output:
-       `the_netcdf_outputter.arrays_to_output.add['rise_vel']`
+       ``the_netcdf_outputter.arrays_to_output.add['rise_vel']``
 
        Since some of the names of the netcdf variables are different from the
        names in the SpillContainer data_arrays, this list uses the netcdf names
@@ -305,8 +312,8 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
             attributes
         :type which_data: string -- one of {'standard', 'most', 'all'}
 
-        NOTE: if you want a custom set of output arrays, you can cahnge the
-        `.self.arrays_to_output` set after initialization.
+        NOTE: if you want a custom set of output arrays, you can change the
+        ``.self.arrays_to_output`` set after initialization.
 
         Optional arguments passed on to base class (kwargs):
 
@@ -373,7 +380,7 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
         # up to 0.5MB tested better for large datasets, but
         # we don't want to have far-too-large files for the
         # smaller ones
-        # The default in netcdf4 is 1 -- which works really badly
+        # The default in netcdf4 is (was) 1 -- which works really badly
         self._chunksize = 1024
 
         # need to keep track of starting index for writing data since variable

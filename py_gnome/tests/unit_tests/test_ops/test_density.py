@@ -84,8 +84,8 @@ def test_recalc_density():
     sc._append_data_arrays(100)
     sc.mass_balance['avg_density'] = 0
     sc['mass'][:] = 10 #necessary for avg_density and mass components
-#    new_subs.initialize_LEs(100, sc, environment={'water':default_water})
-    sc.substance.initialize_LEs(100, sc, environment={'water':default_water})
+#    new_subs.initialize_elements(100, sc, environment={'water':default_water})
+    sc.substance.initialize_elements(100, sc, environment={'water':default_water})
 
 #    init_rho = new_subs.density_at_temp(default_water.get('temperature'))
     init_rho = sc.substance.density_at_temp(default_water.get('temperature'))

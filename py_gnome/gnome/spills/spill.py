@@ -8,7 +8,6 @@ and
 Substance -- what the types of the elements are.
 
 (currently there are only two substances: GnomeOIl and NonWeatheringSubstance)
-
 """
 
 from datetime import datetime
@@ -179,18 +178,6 @@ class Spill(BaseSpill):
 
         self.units = units
 
-        # self.units = nucos.get_abbreviation(units)
-        # # special cases until pynucos is updated
-        # if self.units == 'tons':
-        #     self.units = 'ton'
-        # elif self.units == 'tonne':
-        #     self.units = 'mt'
-        # if self.units not in ['bbl', 'gal', 'm³', 'kg', 'ton', 'mt']:
-        #     msg = ('The spill amount unit {0} is outside of the standard set: '
-        #            '["bbl", "gal", "m³", "kg", "ton", "mt"] and will not work correctly '
-        #            'in WebGNOME.'.format(self.units))
-        #     #self.logger.warning(msg)
-        #     warnings.warn('warning: ' + msg)
         self.amount = amount
 
         self.water = water
@@ -433,7 +420,6 @@ class Spill(BaseSpill):
         self.array_types = {}
         self._num_released = 0
         self.release.rewind()
-#         self.data.rewind()
 
     def prepare_for_model_run(self, timestep):
         '''
@@ -447,6 +433,8 @@ class Spill(BaseSpill):
         Releases and partially initializes new LEs
         Note: this will have to be updated if we allow backwards runs for continuous spills
         """
+        # Fixme: this has a bit too much logic in here that should be in the release objects.
+        #        e.g. they should keep track of what they have already released.
         if not self.on:
             return 0
         idx = sc.spills.index(self)
@@ -461,14 +449,15 @@ class Spill(BaseSpill):
         sc['spill_num'][-to_rel:] = idx
 
         # Partial initialization from various objects
-        self.release.initialize_LEs(to_rel, sc, start_time, end_time)
+        self.release.initialize_elements(to_rel, sc, start_time, end_time)
 
+        # fixme -- why is this here ???
         if 'frac_coverage' in sc:
             sc['frac_coverage'][-to_rel:] = self.frac_coverage
 
-        self.substance.initialize_LEs(to_rel, sc, environment=environment)
+        self.substance.initialize_elements(to_rel, sc, environment=environment)
 
-        self.release.initialize_LEs_post_substance(to_rel, sc,
+        self.release.initialize_elements_post_substance(to_rel, sc,
                                                    start_time, end_time,
                                                    environment=environment)
 
@@ -703,7 +692,6 @@ def surface_point_line_spill(num_elements,
 
     return spill
 
-
 def grid_spill(bounds,
                resolution,
                release_time,
@@ -727,19 +715,23 @@ def grid_spill(bounds,
 
     :type bounds: 2x2 numpy array or equivalent
 
-    :param resolution: resolution of grid -- it will be a resoluiton X
-                       resolution grid
-    :type resolution: integer
+    :param resolution: resolution of grid -- (num_lon, num_lat)
+                       if a single value, the resolution will be
+                       adjusted to get a square grid with that
+                       average resolution.
 
-    :param substance=None: Type of oil spilled.
-    :type substance: str or OilProps
+    :type resolution: length-2 tuple of integers: `(longitude_res, latitude_res)`
+                      or single integer.
+
+    :param substance=None: Substance spilled.
+    :type substance: Substance object
 
     :param float amount=None: mass or volume of oil spilled
 
     :param str units=None: units for amount spilled
 
     :param release_time: time the LEs are released (datetime object)
-    :type release_time: datetime.datetime
+    :type release_time: iso datetime string or datetime.datetime
 
     :param windage_range: Percentage range for windage.
                           Active only for surface particles

@@ -201,7 +201,7 @@ class Substance(GnomeId):
 
         return False
 
-    def initialize_LEs(self, to_rel, arrs, environment=None):
+    def initialize_elements(self, to_rel, arrs, environment=None):
         '''
         :param to_rel - number of new LEs to initialize
         :param arrs - dict-like of data arrays representing LEs
@@ -268,7 +268,7 @@ class NonWeatheringSubstance(Substance):
     def is_weatherable(self, val):
         self.logger.warning('This substance {0} cannot be set to be weathering')
 
-    def initialize_LEs(self, to_rel, arrs, environment=None):
+    def initialize_elements(self, to_rel, arrs, environment=None):
         '''
         :param to_rel - number of new LEs to initialize
         :param arrs - dict-like of data arrays representing LEs
@@ -276,7 +276,7 @@ class NonWeatheringSubstance(Substance):
         sl = slice(-to_rel, None, 1)
         if ('fate_status' in arrs):
             arrs['fate_status'][sl] = fate.non_weather
-        super(NonWeatheringSubstance, self).initialize_LEs(to_rel, arrs, environment=environment)
+        super(NonWeatheringSubstance, self).initialize_elements(to_rel, arrs, environment=environment)
 
 
 
