@@ -128,9 +128,10 @@ class TestSpill:
             sp.units = 'lb'
 
 
-
     # NOTE: these have only partially been refactored to match the
     #       new structure -- are they needed?
+    # in any case, they should be release tests.
+
     # # @pytest.mark.xfail()
     # @pytest.mark.parametrize('spill', [inst_point_spill(),
     #                                    # inst_point_line_spill(),
@@ -165,7 +166,7 @@ class TestSpill:
     #     sc.prepare_for_model_run(array_types=spill.array_types)
     #     sc.prepare_for_model_run(time_step=ts)
     #     spill.prepare_for_model_run(ts)
-    #     le_per_ts = spill.release.LE_timestep_ratio(ts)
+    #     le_per_ts = spill.release.element_timestep_ratio(ts)
     #     mass_per_le = spill.release._mass_per_le
 
     #     for ix in range(0, 20):
@@ -189,7 +190,7 @@ class TestSpill:
 
     #     model_time = spill.release_time - timedelta(seconds=ts*4/3)
     #     spill.prepare_for_model_run(900)
-    #     le_per_ts = spill.release.LE_timestep_ratio(900)
+    #     le_per_ts = spill.release.element_timestep_ratio(900)
     #     mass_per_le = spill.release._mass_per_le
     #     for ix in range(0,20):
     #         new_rel = spill.release_elements(sc, model_time, ts)

@@ -121,6 +121,10 @@ class GnomeMap(GnomeId):
         :param map_bounds: The polygon bounding the map.
                            If any elements are outside the map bounds,
                            they are removed from the simulation.
+                           if ``None`` or ``"global"`` -- set to the whole world.
+
+        :type map_bounds: sequence of 2-tuples describing a polygon:
+                          ``[(lon, lat), (lon, lat), (lon, lat), ...]``
 
         :param spillable_area: The `PolygonSet` bounding the spillable_area.
         :type spillable_area: Either a `PolygonSet` object or a list of lists
@@ -139,15 +143,8 @@ class GnomeMap(GnomeId):
             if no map bounds is provided -- the whole world is valid
         """
         super(GnomeMap, self).__init__(**kwargs)
-        if map_bounds is not None:
-            self.map_bounds = np.asarray(map_bounds,
-                                         dtype=np.float64).reshape(-1, 2)
-        else:
-            # using -360 to 360 to allow stuff to cross the dateline..
-            self.map_bounds = np.array(((-360, -90), (-360, 90),
-                                        (360, 90), (360, -90)),
-                                       dtype=np.float64)
 
+        self.map_bounds = map_bounds
         self.spillable_area = spillable_area
         self.land_polys = land_polys
 
@@ -217,11 +214,17 @@ class GnomeMap(GnomeId):
 
     @map_bounds.setter
     def map_bounds(self, mb):
-        if mb is None:
-            mb = np.array(((-360, -90), (-360, 90),
-                           (360, 90), (360, -90)),
-                          dtype=np.float64)
-        self._map_bounds = np.array(mb)
+        try:
+            bounds = np.array(mb, dtype=np.float64)
+            bounds.shape = (-1, 2)
+        except ValueError as exp:
+            if mb is None or mb == 'global':
+                bounds = np.array(((-360, -90), (-360, 90),
+                               (360, 90), (360, -90)),
+                              dtype=np.float64)
+            else:
+                raise ValueError(f"{mb} is not a valid value for map_bounds") from exp
+        self._map_bounds = bounds
 
     def get_map_bounding_box(self):
         """
@@ -321,6 +324,8 @@ class GnomeMap(GnomeId):
 
     def on_land(self, coord):
         """
+        check whether a point in on land.
+
         :param coord: location for test.
         :type coord: 3-tuple of floats: (long, lat, depth)
 
@@ -328,6 +333,21 @@ class GnomeMap(GnomeId):
          - Always returns False-- no land in this implementation
         """
         return False
+
+
+    def on_land_points(self, coords):
+        """
+        check whether multiple points are on land
+
+        :param coords: locations to check
+        :type coord: (Nx3) or (Nx3) numpy array of floats, or compatible
+                     ``[(lon, lat, depth), (lon, lat, depth)]``
+
+        :return: Array of bool all true in this implimentation -- no land
+        """
+
+        return np.zeros((len(coords),), dtype=np.bool)
+
 
     def in_water(self, coords):
         """
@@ -526,19 +546,22 @@ class ParamMap(GnomeMap):
 
     def _check_units(self, units):
         """
-        Checks the user provided units are in list of valid volume
-        or mass units
+        Checks the user provided units are in list of valid distance units
         """
         if units in self._valid_dist_units:
             return True
         else:
             ex = uc.InvalidUnitError((units, 'Length'))
             self.logger.exception(ex, exc_info=True)
-
             # this should be raised since run will fail otherwise
             raise ex
 
     def get_map_bounds(self):
+        # Fixme: why only here?? Is this used anywhere else?
+        """
+        Return the bounds of the map as a (lower_left, upper_right) bounding box.
+        """
+        # this works for this case, 'cause the bounds are known to be simple.
         return (self.map_bounds[0], self.map_bounds[2])
 
     def get_land_polygon(self):
@@ -843,8 +866,6 @@ class RasterMap(GnomeMap):
             self.layers.append(genned_layer)
 
         self.layers.append(self.raster)
-        # self.layers = np.array(self.layers)
-        # print("the layers array:", self.layers)
 
     @property
     def ratios(self):
@@ -918,6 +939,17 @@ class RasterMap(GnomeMap):
                 coord[0] >= shape[0] or
                 coord[1] >= shape[1])
 
+    def _off_raster_array(self, coords):
+        """
+        are these pixel coordinates on the raster?
+        """
+        shape = self.raster.shape
+        return ((coords[:,0] < 0)
+                | (coords[:,1] < 0)
+                | (coords[:,0] >= shape[0])
+                | (coords[:,1] >= shape[1])
+                )
+
     def _on_land_pixel(self, coord):
         """
         returns 1 if the point is on land, 0 otherwise
@@ -935,37 +967,57 @@ class RasterMap(GnomeMap):
         else:
             return self.raster[coord[0], coord[1]] & self.land_flag
 
+    def _on_land_pixel_array(self, coords):
+        """
+        determines which elements are on land, in pixel coords
+
+        :param coords:  pixel coords matching the raster
+        :type coords:  Nx2 numpy int array
+
+        returns: a (N,) array of bools - true for points that are on land
+        """
+
+        on_raster = ~self._off_raster_array(coords)
+        coords_on_raster = coords[on_raster]
+
+        on_land = self.raster[coords_on_raster[:,0], coords_on_raster[:,1]] == self.land_flag
+
+        result = np.zeros((len(coords),), dtype=np.bool)
+        result[on_raster] = on_land
+
+        return result
+
+
     def on_land(self, coord):
         """
         :param coord: (long, lat, depth) location -- depth is ignored here.
         :type coord: 3-tuple of floats -- (long, lat, depth)
 
         :return:
-         - 1 if point on land
-         - 0 if not on land
+         - True if point on land
+         - False if not on land
 
         .. note:: to_pixel() converts to array of points...
         """
         return self._on_land_pixel(self.projection.to_pixel(coord,
                                                             asint=True)[0])
-    # does not appear to be used anymore
-    # def _on_land_pixel_array(self, coords):
-    #     """
-    #     determines which LEs are on land
+    def on_land_points(self, coords):
+        """
+        check whether multiple points are on land
 
-    #     :param coords:  pixel coords matching the raster
-    #     :type coords:  Nx2 numpy int array
+        :param coords: locations to check
+        :type coord: (Nx3) or (Nx3) numpy array of floats, or compatible
+                     ``[(lon, lat, depth), (lon, lat, depth)]``
 
-    #     returns: a (N,) array of bools - true for particles that are on land
-    #     """
-    #     mask = list(map(point_in_poly, [self.map_bounds] * len(coords), coords))
-    #     racpy = np.copy(coords)[mask]
-    #     mskgph = self.raster[racpy[:, 0], racpy[:, 1]]
+        :return: Array of bool: True for on land, False for not on land
+        """
+        pixel_coords = self.projection.to_pixel(coords, asint=True)
 
-    #     chrmgph = np.array([0] * len(coords))
-    #     chrmgph[np.array(mask)] = mskgph
+        result = self._on_land_pixel_array(pixel_coords)
 
-    #     return chrmgph
+        return result
+
+
 
     def _in_water_pixel(self, coord):
         # if  off the raster, so must be in water,
@@ -976,6 +1028,8 @@ class RasterMap(GnomeMap):
             return not self.raster[coord[0], coord[1]] & self.land_flag
 
     def in_water(self, coord):
+        # fixme -- why is this independent of on_land???
+        # and it doesn't appear to be used anywhere anyway.
         """
         checks if it's on the map, first.
             (depth is ignored in this version)
@@ -1199,8 +1253,13 @@ class MapFromBNA(RasterMap):
 
         :param refloat_halflife: the half-life (in hours) for the re-floating.
 
-        :param map_bounds: The polygon bounding the map -- could be larger or
-                           smaller than the land raster
+        :param map_bounds: The polygon bounding the map. If any elements are
+                           outside the map bounds, they are removed from the simulation.
+                           If set to ``None`` or ``"global"`` -- set to the whole world.
+
+        :type map_bounds: sequence of 2-tuples describing a polygon:
+                          ``[(lon, lat), (lon, lat), (lon, lat), ...]``
+
 
         :param spillable_area: The polygon bounding the spillable_area
 

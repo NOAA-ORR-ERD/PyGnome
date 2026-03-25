@@ -879,6 +879,12 @@ class LongLat(TupleSchema):
     lat = SchemaNode(Float())
 
 
+class IntPair(TupleSchema):
+    'lenght-2 tuple of Int'
+    zeroth = SchemaNode(Int())
+    first = SchemaNode(Int())
+
+
 class LongLatBounds(SequenceSchema):
     'Used to define bounds on a map'
     bounds = LongLat()

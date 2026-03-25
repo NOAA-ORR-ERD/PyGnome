@@ -118,6 +118,8 @@ class Time(gridded.time.Time, GnomeId):
         except ValueError:
             return object.__repr__(self)
 
+    # fixme -- why are these not in gridded?
+    #          or if they are, why are they overridden here?
     @combine_signatures
     @classmethod
     def from_netCDF(cls, *args, **kwargs):
