@@ -90,7 +90,7 @@ from gnome.spills.substance import NonWeatheringSubstance
 from gnome.ops import aggregated_data, weathering_array_types, non_weathering_array_types
 from gnome.ops.viscosity import recalc_viscosity
 from gnome.ops.density import recalc_density
-from gnome.utilities.appearance import ModelAppearance
+from gnome.utilities.appearance import AppearanceSchema
 
 
 class ModelSchema(ObjTypeSchema):
@@ -156,7 +156,9 @@ class ModelSchema(ObjTypeSchema):
     run_backwards = SchemaNode(Bool())
 
     timezone_offset = TZOffsetSchema(missing=drop)
-    _appearance = SchemaNode(ModelAppearance, missing=drop)
+    _appearance = AppearanceSchema(
+        save=True, update=True, missing=drop, test_equal=False
+    )
 
 class Model(GnomeId):
     '''

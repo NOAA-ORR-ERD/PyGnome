@@ -26,7 +26,6 @@ import warnings
 
 import py_gd
 import numpy as np
-from gnome.persist import SchemaNode, String, Float, Boolean, drop
 
 from geojson import FeatureCollection, Feature, MultiPolygon
 
@@ -56,7 +55,7 @@ from gnome.utilities.appearance import AppearanceSchema
 from gnome.cy_gnome.cy_land_check import check_land_layers, move_particles
 
 from gnome.persist import (base_schema, SchemaNode, String, Float, Int,
-                           Boolean, drop)
+                           FilenameSchema, drop)
 
 
 class GnomeMapSchema(base_schema.ObjTypeSchema):
@@ -82,8 +81,9 @@ class RasterMapSchema(GnomeMapSchema):
 
 
 class MapFromBNASchema(RasterMapSchema):
-    filename = SchemaNode(
-        String(), isdatafile=True, test_equal=False)
+    filename = FilenameSchema(
+        isdatafile=True, test_equal=False, update=False
+    )
     refloat_halflife = SchemaNode(Float())
     raster_size = SchemaNode(Float())
     shift_lons = SchemaNode(Int(), missing=drop)
@@ -91,8 +91,8 @@ class MapFromBNASchema(RasterMapSchema):
 
 
 class MapFromUGridSchema(RasterMapSchema):
-    filename = SchemaNode(
-        String(), read_only=True, isdatafile=True, test_equal=False
+    filename = FilenameSchema(
+        isdatafile=True, read_only=True, test_equal=False, update=False
     )
     refloat_halflife = SchemaNode(Float())
 
