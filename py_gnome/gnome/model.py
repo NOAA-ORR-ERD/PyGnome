@@ -90,6 +90,7 @@ from gnome.spills.substance import NonWeatheringSubstance
 from gnome.ops import aggregated_data, weathering_array_types, non_weathering_array_types
 from gnome.ops.viscosity import recalc_viscosity
 from gnome.ops.density import recalc_density
+from gnome.utilities.appearance import AppearanceSchema
 
 
 class ModelSchema(ObjTypeSchema):
@@ -155,6 +156,9 @@ class ModelSchema(ObjTypeSchema):
     run_backwards = SchemaNode(Bool())
 
     timezone_offset = TZOffsetSchema(missing=drop)
+    _appearance = AppearanceSchema(
+        save=True, update=True, missing=drop, test_equal=False
+    )
 
 class Model(GnomeId):
     '''
@@ -1155,7 +1159,6 @@ class Model(GnomeId):
     def step(self):
         '''
         Steps the model forward in time (or backward if run_backwards = True).
-
         '''
         isValid = True
         for sc in self.spills.items():
@@ -1185,7 +1188,6 @@ class Model(GnomeId):
 
             # step 0 output
             output_info = self.output_step(isValid)
-
             return output_info
 
         elif self.current_time_step >= self._num_time_steps - 1:
@@ -1249,15 +1251,23 @@ class Model(GnomeId):
             # over weatherers collection - in future, maybe movers can also do
             # this
             if num_released > 0:
+                # Mark any that are already on land as such
+                #    mostly for the grid spill
+                # for sc in self.spills.items():
+                on_land = self.map.on_land_points(sc['positions'][-num_released:])
+                sc['status_codes'][-num_released:][on_land] = oil_status.on_land
+
                 for item in self.weatherers:
                     if item.on:
                         item.initialize_data(sc, num_released)
+
 
             aggregated_data.aggregate(sc, num_released)
 
             self.logger.debug("{1._pid} released {0} new elements for step:"
                               " {1.current_time_step} for {1.name}".
                               format(num_released, self))
+
         return num_released
 
     def compile_env(self):

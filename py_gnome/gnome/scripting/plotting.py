@@ -1,31 +1,56 @@
+"""
+Utility for plotting up various grids used by PyGNOMe / gridded.
+
+"""
+# packages required to run:
+
+IMPORT_ERROR = """
+This script requires the following packages to run:
+
+They all should be available on conda-forge
+
+pygnome
+matplotlib
+pyqt
+cartopy
+shapely
+geopandas
+"""
+
 import sys
 import time
 import pathlib
 import argparse
 
-import numpy as np
+try:
+    import numpy as np
 
-from matplotlib.backends.backend_qtagg import FigureCanvas
-from matplotlib.backends.backend_qtagg import \
-    NavigationToolbar2QT as NavigationToolbar
-from matplotlib.backends.qt_compat import QtWidgets
-from matplotlib.figure import Figure
-from matplotlib.collections import LineCollection
-import matplotlib.style as mplstyle
-mplstyle.use('fast')
+    from matplotlib.backends.backend_qtagg import FigureCanvas
+    from matplotlib.backends.backend_qtagg import \
+        NavigationToolbar2QT as NavigationToolbar
+    from matplotlib.backends.qt_compat import QtWidgets
+    from matplotlib.figure import Figure
+    from matplotlib.collections import LineCollection
+    import matplotlib.style as mplstyle
+    mplstyle.use('fast')
 
-import matplotlib.pyplot as plt
+    import matplotlib.pyplot as plt
 
-import cartopy.crs as ccrs
-import cartopy.feature as cfeature
-import shapely.geometry as sgeom
-import geopandas as gpd
+    import cartopy.crs as ccrs
+    import cartopy.feature as cfeature
+    import shapely.geometry as sgeom
+    import geopandas as gpd
 
-from gnome.environment.environment_objects import GridCurrent
-from gnome.environment.gridded_objects_base import Grid_U, Grid_R, Grid_S
+    from gnome.environment.environment_objects import GridCurrent
+    from gnome.environment.gridded_objects_base import Grid_U, Grid_R, Grid_S
 
-from gridded.utilities import convert_mask_to_numpy_mask
-from pyproj import Transformer
+    from gridded.utilities import convert_mask_to_numpy_mask
+    from pyproj import Transformer
+
+except ImportError as err:
+    print(IMPORT_ERROR)
+    raise
+
 
 # test_filename = 'C:\\Users\\jahen\\Downloads\\CIOFS.nc'
 # test_filename = 'C:\\Users\\jahen\\Downloads\\wcofs.t03z.20241003.fields.f060.nc'
@@ -558,7 +583,8 @@ class ApplicationWindow(QtWidgets.QMainWindow):
                 self.unmasked_node_lines.set_visible(False)
         self.fig.canvas.draw()
 
-if __name__ == "__main__":
+def main():
+
     # Check whether there is already a running QApplication (e.g., if running
     # from an IDE).
     qapp = QtWidgets.QApplication.instance()
@@ -570,3 +596,6 @@ if __name__ == "__main__":
     app.activateWindow()
     app.raise_()
     qapp.exec()
+
+if __name__ == "__main__":
+    main()

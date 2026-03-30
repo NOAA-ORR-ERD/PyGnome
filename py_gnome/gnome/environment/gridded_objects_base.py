@@ -118,6 +118,8 @@ class Time(gridded.time.Time, GnomeId):
         except ValueError:
             return object.__repr__(self)
 
+    # fixme -- why are these not in gridded?
+    #          or if they are, why are they overridden here?
     @combine_signatures
     @classmethod
     def from_netCDF(cls, *args, **kwargs):
@@ -223,9 +225,9 @@ class Grid_U(gridded.grids.Grid_U, GnomeId):
         # hack to get around broken gridded
         # if loaded via the compliant code path, it would provide a different
         # grid_topology dict :-(
-        gt = dict_.get('grid_topology')
-        if gt and 'cf_role' in gt:
-            dict_['grid_topology'] = None
+        # gt = dict_.get('grid_topology')
+        # if gt and 'cf_role' in gt:
+        #     dict_['grid_topology'] = None
 
         rv = cls.from_netCDF(**dict_)
 

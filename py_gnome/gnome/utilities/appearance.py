@@ -149,6 +149,10 @@ class MapAppearance(Appearance):
     _schema = AppearanceSchema
 
 
+class ModelAppearance(Appearance):
+    _schema = AppearanceSchema
+
+
 class VectorAppearance(Appearance):
     _schema = AppearanceSchema
 

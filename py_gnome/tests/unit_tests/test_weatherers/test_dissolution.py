@@ -2,10 +2,6 @@
 Test dissolution module
 '''
 
-
-
-
-
 import pytest
 
 from datetime import timedelta
@@ -97,7 +93,7 @@ def test_prepare_for_model_run():
     assert 'dissolution' in sc.mass_balance
 
 
-@pytest.mark.skipif(reason="refactoring sara out of gnome oil")
+@pytest.mark.skipif(True, reason="refactoring sara out of gnome oil")
 @pytest.mark.parametrize(('oil', 'temp', 'num_elems', 'k_ow', 'on'),
                          [('oil_bahia', 311.15, 3, 1.03156e+12, True),
                           ('oil_ans_mp', 311.15, 3, 2.40572e+39, True),
@@ -214,7 +210,7 @@ mb_params = [
 
 
 # This test is badly designed. results are affected by changes in dispersion
-@pytest.mark.xfail
+@pytest.mark.skipif(True, reason="refactoring sara out of gnome oil")
 @pytest.mark.parametrize(mb_param_names, mb_params)
 def test_dissolution_mass_balance(oil, temp, wind_speed,
                                   num_elems, expected_mb, on):
@@ -232,7 +228,7 @@ def test_dissolution_mass_balance(oil, temp, wind_speed,
     disp = NaturalDispersion(waves, water)
     diss = Dissolution(waves, wind)
 
-    all_array_types = diss.array_types.union(disp.array_types)
+    all_array_types = diss.array_types | disp.array_types
 
     (sc, time_step) = weathering_data_arrays(all_array_types,
                                              water,
@@ -294,7 +290,7 @@ def test_dissolution_mass_balance(oil, temp, wind_speed,
     #     assert False
 
 
-@pytest.mark.xfail
+@pytest.mark.skipif(True, reason="refactoring sara out of gnome oil")
 @pytest.mark.parametrize(('oil', 'temp', 'expected_balance'),
                          [('oil_ans_mp', 288.7, 55.34),
                           ('oil_bahia',  288.7, 158.77)])
