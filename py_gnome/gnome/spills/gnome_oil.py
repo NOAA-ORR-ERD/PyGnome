@@ -9,7 +9,6 @@ from gnome.ops.viscosity import init_viscosity
 from .sample_oils import _sample_oils
 from .substance import Substance, SubstanceSchema
 
-
 from gnome.persist import (NumpyArraySchema,
                            Int,
                            String,
@@ -332,7 +331,7 @@ class GnomeOil(Substance):
 
         return json_
 
-    def initialize_LEs(self, to_rel, arrs, environment=None):
+    def initialize_elements(self, to_rel, arrs, environment=None):
         '''
         :param to_rel - number of new LEs to initialize
         :param arrs - dict-like of data arrays representing LEs
@@ -360,7 +359,7 @@ class GnomeOil(Substance):
         # initialize mass_components
         arrs['mass_components'][sl] = (np.asarray(self.mass_fraction, dtype=np.float64) * (arrs['mass'][sl].reshape(len(arrs['mass'][sl]), -1)))
 
-        super(GnomeOil, self).initialize_LEs(to_rel, arrs)
+        super(GnomeOil, self).initialize_elements(to_rel, arrs)
 
     def _set_pc_values(self, prop, values):
         """

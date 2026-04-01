@@ -296,7 +296,7 @@ build_production:
     - docker push registry.orr.noaa.gov/gnome/pygnome:production
 
 
-build pypi package:
+build wheel:
   stage: build
   image: registry.orr.noaa.gov/erd/environments/ubuntu/ubuntuforge-python${PYTHON_VER}
   tags:
@@ -322,18 +322,16 @@ build pypi package:
     expire_in: "5 days"
 
 
-# note: we are building wheels, yes? in which case, probably better
-#       to use that term, e.g. "post wheel to ..." and "build wheel"
-post pypi package to internal registry:
+post wheel to internal registry:
   stage: deploy
   allow_failure: true
   image: registry.orr.noaa.gov/erd/environments/ubuntu/ubuntuforge-python${PYTHON_VER} 
   tags:
     - docker
   needs:
-    - build pypi package
+    - build wheel
   dependencies:
-    - build pypi package
+    - build wheel
   before_script:
     - echo ''
   script:

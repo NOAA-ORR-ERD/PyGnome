@@ -1,6 +1,6 @@
 '''
 release objects that define how elements are released. A Spill() objects
-is composed of a release object and an ElementType
+is composed of a release object and a substance
 '''
 
 import copy
@@ -29,7 +29,8 @@ import gnome.utilities.geometry.geo_routines as geo_routines
 from colander import (String, SchemaNode, SequenceSchema, drop, Int, Float,
                       Boolean)
 
-from gnome.persist.base_schema import ObjTypeSchema, WorldPoint, FeatureCollectionSchema
+from gnome.persist.base_schema import (ObjTypeSchema, WorldPoint, FeatureCollectionSchema,
+                                       LongLatBounds, IntPair)
 from gnome.persist.extend_colander import LocalDateTime, FilenameSchema
 
 from gnome.basic_types import world_point_type
@@ -54,6 +55,39 @@ from .initializers import (InitRiseVelFromDropletSizeFromDist,
                            InitRiseVelFromDist)
 
 SPREADING_CUMULATIVE_TIME_SCALE = timedelta(hours=12.)
+
+# class BaseRelease
+#     """
+#     Start of a base classs that defines what a release must support
+#     """
+#     # properties
+#     all_array_types
+#     release.release_time
+#     release.end_release_time
+#     release.release_duration
+#     num_elements
+#     centroid
+#     release_mass
+
+#     # methods
+#     def rewind(self):
+#         raise NotImplimentedError
+
+#     def num_elements_after_time(end_time):
+#         raise NotImplimentedError
+
+#     def initialize_elements(self, to_rel, sc, start_time, end_time):
+#         raise NotImplimentedError
+
+#     def release.initialize_elements_post_substance(self):
+#         raise NotImplimentedError
+
+#     def _attach_default_refs(self, ref_dict):
+#         raise NotImplimentedError
+
+#     def prepare_for_model_run(self, timestep):
+#         raise NotImplimentedError
+
 
 class StartPositions(SequenceSchema):
     start_position = WorldPoint()
@@ -313,7 +347,7 @@ class Release(GnomeId):
 
         self._end_release_time = val
 
-    def LE_timestep_ratio(self, ts):
+    def element_timestep_ratio(self, ts):
         '''
         Returns the ratio
         '''
@@ -322,15 +356,16 @@ class Release(GnomeId):
         return 1.0 * self.num_elements / self.get_num_release_time_steps(ts)
 
     def maximum_mass_error(self, ts):
+        #fixme -- needed???
         '''
         This function returns the maximum error in mass present in the model at
         any given time. In theory, this should be the mass of 1 LE
         '''
-        pass
+        raise NotImplementedError
 
     def get_num_release_time_steps(self, ts):
         '''
-        calculates how many time steps it takes to complete the release duration
+        Calculates how many time steps it takes to complete the release duration
         '''
         rts = int(ceil(self.release_duration / ts))
         if rts == 0:
@@ -358,11 +393,11 @@ class Release(GnomeId):
             t.data[-1] = self.end_release_time
         
         if self.release_duration == 0:
-            self._release_ts = TimeseriesData(name=self.name+'_release_ts',
+            self._release_ts = TimeseriesData(name=self.name + '_release_ts',
                                               time=t,
                                               data=np.full(t.data.shape, max_release).astype(int))
         else:
-            self._release_ts = TimeseriesData(name=self.name+'_release_ts',
+            self._release_ts = TimeseriesData(name=self.name + '_release_ts',
                                               time=t,
                                               data=np.linspace(0, max_release, num_ts + 1).astype(int))
 
@@ -388,7 +423,7 @@ class Release(GnomeId):
         if ts < 1 and (self.end_release_time != self.release_time):
             raise ValueError('Backwards run is not valid for continuous releases.  \
                 Use an instantaneous release or run forwards.')
-        if self.LE_timestep_ratio(ts) < 1:
+        if self.element_timestep_ratio(ts) < 1:
             raise ValueError('Not enough LEs: Number of LEs must at least \
                 be equal to the number of timesteps in the release')
 
@@ -400,12 +435,14 @@ class Release(GnomeId):
             max_release = self.num_elements
 
         self.generate_release_timeseries(num_ts, max_release, ts)
-        self._mass_per_le = self.release_mass*1.0 / max_release
+        self._mass_per_le = self.release_mass * 1.0 / max_release
 
-        if self.__class__ is Release:
+        # Fixme: Why is this here at all??
+        # What else would it be?? and why not call it regardless?
+        if isinstance(self, Release):
             self._prepared = True
 
-    def initialize_LEs(self, to_rel, sc, start_time, end_time): # change data to soill container (sc) 10/24/2022
+    def initialize_elements(self, to_rel, sc, start_time, end_time):
         """
         set positions for new elements added by the SpillContainer
 
@@ -434,7 +471,7 @@ class Release(GnomeId):
         if self.retain_initial_positions:
             sc['init_positions'][sl] = pos
 
-    def initialize_LEs_post_substance(self, to_rel, sc, start_time, end_time, environment):
+    def initialize_elements_post_substance(self, to_rel, sc, start_time, end_time, environment):
 
         # compute initial spreading area based on Fay
         sl = slice(-to_rel, None, 1)
@@ -640,9 +677,9 @@ class PointLineRelease(Release):
         super(PointLineRelease, self).prepare_for_model_run(ts)
         self._prepared = True
 
-    def initialize_LEs(self, to_rel, sc, start_time, end_time):
+    def initialize_elements(self, to_rel, sc, start_time, end_time):
         '''
-        Initializes the mass and position for to_rel new LEs.
+        Initializes the mass and position for to_rel new elements.
         :param data: spill container with data arrays
         :param to_rel: number of elements to initialize
         :param start_time: initial time of release
@@ -918,7 +955,7 @@ class PolygonRelease(Release):
 
         self._prepared = True
 
-    def initialize_LEs(self, to_rel, data, start_time, end_time):
+    def initialize_elements(self, to_rel, data, start_time, end_time):
         """
         set positions for new elements added by the SpillContainer
 
@@ -977,33 +1014,184 @@ class PolygonRelease(Release):
 
 # PolygonRelease = SpatialRelease
 
-def GridRelease(release_time, bounds, resolution):
-    """
-    Utility function that creates a release with a grid of elements.
+class GridReleaseSchema(BaseReleaseSchema):
+    # we should make these updateable, but the current
+    # code does not re-calculate the initial positions
+    release_time = SchemaNode(LocalDateTime())
+    release_mass = SchemaNode(Float())
+    centroid = WorldPoint(save=False, update=False, read_only=True)
+    timezone_offset = TZOffsetSchema()
 
-    Only 2-d for now
+    bounds = LongLatBounds(save=True, update=False)
+    resolution = IntPair(save=True, update=False)
 
-    :param bounds: bounding box of region you want the elements in:
 
-                   ::
+class GridRelease(Release):
 
-                     ((min_lon, min_lat),
-                      (max_lon, max_lat))
+    _schema = GridReleaseSchema
 
-    :type bounds: 2x2 numpy array or equivalent
+    def __init__(self, release_time, bounds, resolution, release_mass=0):
+        """
+        Release from a 2-D grid of points.
 
-    :param resolution: resolution of grid -- it will be a resolution X resolution grid
-    :type resolution: integer
-    """
-    lon = np.linspace(bounds[0][0], bounds[1][0], resolution)
-    lat = np.linspace(bounds[0][1], bounds[1][1], resolution)
-    lon, lat = np.meshgrid(lon, lat)
-    positions = np.c_[lon.flat, lat.flat, np.zeros((resolution * resolution),)]
+        :param release_time: time of release
 
-    return Release(release_time=release_time,
-                          custom_positions=positions,
-                          num_elements=len(positions),
-                          )
+        :param bounds: bounding box of region you want the elements in:
+                       ::
+                         ((min_lon, min_lat),
+                          (max_lon, max_lat))
+
+        :type bounds: 2x2 numpy array or equivalent
+
+        :param resolution: resolution of grid -- (num_lon, num_lat)
+                           if a single value, the resolution will be
+                           adjusted to get a square grid with that
+                           average resolution.
+
+        :type resolution: length-2 tuple of integers: `(longitude_res, latitude_res)`
+                          or single integer.
+
+        :param release_mass=0: optional. This is the mass released in kilograms.
+        :type release_mass: integer
+
+        """
+        self.bounds = np.array(bounds, dtype=np.float64)
+
+        try:
+            resolution = (int(resolution[0]), int(resolution[1]))
+        except TypeError:
+            resolution = self._compute_resolution(self.bounds, resolution)
+
+        self.resolution = resolution
+
+        # positions = self._compute_grid_points()
+
+        super().__init__(release_time=release_time,
+                         # custom_positions=positions,
+                         # num_elements=len(positions),
+                         release_mass=release_mass
+                         )
+    @property
+    def num_elements(self):
+        res = self.resolution
+        return res[0] * res[1]
+    @num_elements.setter
+    def num_elements(self, num):
+        """
+        Hack to allow this to use the Release init!
+        """
+        pass
+
+    def num_elements_after_time(self, current_time):
+        '''
+        Returns the number of elements expected to exist at current_time.
+        Returns 0 if prepare_for_model_run has not been called.
+        :param current_time: time of release
+        :type current_time: datetime
+        '''
+        if not self._prepared:
+            return 0
+        if current_time < self.release_time:
+            return 0
+        else:
+            return self.num_elements
+
+    def initialize_elements(self, to_rel, sc, start_time, end_time):
+        """
+        set positions for new elements added by the SpillContainer
+
+        .. note:: this releases all the elements at their initial positions at
+            the end_time
+        """
+        print("called initialize_elements")
+        print(to_rel, start_time, end_time)
+
+        positions = self._compute_grid_points()
+
+        num_locs = len(positions)
+
+        if to_rel < num_locs:
+            warnings.warn("{0} is releasing fewer LEs than number of start positions at time: {1}".format(self, end_time))
+
+        # c_p = np.asarray(positions)
+
+        # qt = to_rel // num_locs # number of times to tile self.start_positions
+        # rem = to_rel % num_locs # remaining LES to distribute randomly
+        # qt_pos = np.tile(c_p, (qt, 1))
+        # rem_pos = c_p[np.random.randint(0, len(c_p), rem)]
+        # pos = np.vstack((qt_pos, rem_pos))
+        # assert len(pos) == to_rel
+
+        sl = slice(-to_rel, None, 1)
+        sc['positions'][sl] = positions
+        sc['mass'][sl] = self._mass_per_le
+        sc['init_mass'][sl] = self._mass_per_le
+
+        if self.retain_initial_positions:
+            sc['init_positions'][sl] = pos
+
+
+
+    @staticmethod
+    def _compute_resolution(bounds, avg_res):
+        """
+        compute the resolution so that the grid
+        is relatively square in projected coordinates
+        """
+        center = bounds.mean(axis=0)
+        width, height = np.abs(bounds[1]-bounds[0])
+        width *= np.cos(math.radians(center[1]))
+
+        ry = math.sqrt(height / width) * avg_res
+        rx = round(avg_res**2 / ry)
+        ry = round(avg_res**2 / rx)
+
+        return (rx, ry)
+
+    def _compute_grid_points(self):
+        bounds = self.bounds
+        resolution = self.resolution
+        lon = np.linspace(bounds[0][0], bounds[1][0], resolution[0])
+        lat = np.linspace(bounds[0][1], bounds[1][1], resolution[1])
+        lon, lat = np.meshgrid(lon, lat)
+        positions = np.c_[lon.flat, lat.flat, np.zeros((resolution[0] * resolution[1]),)]
+
+        return positions
+
+    @property
+    def centroid(self):
+        cent = np.zeros((3,), dtype=np.float64)
+        cent[:2] = self.bounds.mean(axis=0)
+        return cent
+
+
+# def GridRelease(release_time, bounds, resolution):
+#     """
+#     Utility function that creates a release with a grid of elements.
+
+#     Only 2-d for now
+
+#     :param bounds: bounding box of region you want the elements in:
+
+#                    ::
+
+#                      ((min_lon, min_lat),
+#                       (max_lon, max_lat))
+
+#     :type bounds: 2x2 numpy array or equivalent
+
+#     :param resolution: resolution of grid -- it will be a resolution X resolution grid
+#     :type resolution: integer
+#     """
+#     lon = np.linspace(bounds[0][0], bounds[1][0], resolution)
+#     lat = np.linspace(bounds[0][1], bounds[1][1], resolution)
+#     lon, lat = np.meshgrid(lon, lat)
+#     positions = np.c_[lon.flat, lat.flat, np.zeros((resolution * resolution),)]
+
+#     return Release(release_time=release_time,
+#                    custom_positions=positions,
+#                    num_elements=len(positions),
+#                    )
 
 
 class NESDISReleaseSchema(PolygonReleaseSchema):
@@ -1179,7 +1367,7 @@ class ContinuousPolygonRelease(PolygonRelease):
         else:
             return (self.end_release_time - self.release_time).total_seconds()
 
-    def LE_timestep_ratio(self, ts):
+    def element_timestep_ratio(self, ts):
         '''
         Returns the ratio
         '''
@@ -1281,10 +1469,10 @@ class SubsurfaceRelease(PointLineRelease):
 
         self.array_types.update(self._init_rise_vel.array_types)
 
-    def initialize_LEs_post_substance(self, to_rel, sc, start_time, end_time, environment):
+    def initialize_elements_post_substance(self, to_rel, sc, start_time, end_time, environment):
         sl = slice(-to_rel, None, 1)
 
-        Release.initialize_LEs_post_substance(self, to_rel, sc, start_time, end_time, environment)
+        Release.initialize_elements_post_substance(self, to_rel, sc, start_time, end_time, environment)
         self._init_rise_vel.initialize(to_rel, sc, sc.substance)
 
 class VerticalPlumeRelease(Release):

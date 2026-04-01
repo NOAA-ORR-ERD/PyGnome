@@ -27,7 +27,7 @@ from gnome.gnomeobject import class_from_objtype
 from ..conftest import sample_sc_release
 
 
-# fixme: this should realy be in conftest
+# fixme: this should really be in conftest
 basedir = os.path.dirname(__file__)
 basedir = os.path.split(basedir)[0]
 datadir = os.path.normpath(os.path.join(basedir, "sample_data"))
@@ -35,6 +35,35 @@ output_dir = os.path.normpath(os.path.join(basedir, "output_dir"))
 testbnamap = os.path.join(datadir, 'MapBounds_Island.bna')
 bna_with_lake = os.path.join(datadir, 'florida_with_lake_small.bna')
 test_tri_grid = os.path.join(datadir, 'small_trigrid_example.nc')
+
+
+GLOBAL_MAP_BOUNDS = np.array(((-360, -90), (-360, 90),
+                               (360, 90), (360, -90)),
+                              dtype=np.float64)
+
+
+def test_set_map_bounds_global():
+    m = GnomeMap(map_bounds='global')
+
+    # m.map_bounds = 'global'
+
+    print(m.map_bounds)
+
+    assert np.all(m.map_bounds == GLOBAL_MAP_BOUNDS)
+
+    m.map_bounds = None
+
+    assert np.all(m.map_bounds == GLOBAL_MAP_BOUNDS)
+
+
+def test_set_map_bounds_bad():
+    with pytest.raises(ValueError):
+        GnomeMap(map_bounds='garbage')
+
+    m = GnomeMap()
+
+    with pytest.raises(ValueError):
+        m.map_bounds = [(3, 4), (5, 6), (7, 8), (9, 10, 11)]
 
 
 def test_in_water_resolution():
@@ -116,6 +145,11 @@ class Test_GnomeMap:
     def test_on_land(self):
         gmap = GnomeMap()
         assert gmap.on_land((18.0, -87.0, 0.)) is False
+
+    def test_on_land_points(self):
+        gmap = GnomeMap()
+        result = gmap.on_land_points(((18.0, -87.0, 0.), (23, 45, 1)))
+        assert len(result) == 2
 
     def test_in_water(self):
         gmap = GnomeMap()
@@ -319,6 +353,28 @@ class Test_RasterMap:
 
         print('testing a water point:')
         assert not gmap.on_land((19.0, 11.0, 0.))
+
+    def test_on_land_points(self):
+        gmap = RasterMap(refloat_halflife=6, raster=self.raster,
+                         map_bounds=((-50, -30), (-50, 30),
+                                     (50, 30), (50, -30)),
+                         projection=NoProjection())
+
+        # Various points:
+        # maybe this should be more varied, but this is testing the vectorization..
+        points = [(10, 6, 0.), # on land
+                  (19.0, 11.0, 0.), # in water
+                  (10, 6, 0.), # on land
+                  (19.0, 11.0, 0.), # in water
+                  (19.0, 11.0, 0.), # in water
+                  (10, 6, 0.), # on land
+                  (100, -100, 0), # way off the raster, so not on land, but shouldn't barf
+                  ]
+        # right in the middle
+        result = gmap.on_land_points(points)
+
+        assert np.all(result == [True, False, True, False, False, True, False])
+
 
     def test_spillable_area(self):
         # anywhere not on land is spillable...

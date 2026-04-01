@@ -75,8 +75,8 @@ def test_recalc_viscosity():
     sc._append_data_arrays(100)
     sc['mass'][:] = 10 #necessary for avg_viscosity and mass components
     sc.mass_balance['avg_viscosity'] = 0
-#    new_subs.initialize_LEs(100, sc, environment={'water':default_water})
-    sc.substance.initialize_LEs(100, sc, environment={'water':default_water})
+#    new_subs.initialize_elements(100, sc, environment={'water':default_water})
+    sc.substance.initialize_elements(100, sc, environment={'water':default_water})
     
 #    init_kv = new_subs.kvis_at_temp(default_water.get('temperature'))
     init_kv = sc.substance.kvis_at_temp(default_water.get('temperature'))

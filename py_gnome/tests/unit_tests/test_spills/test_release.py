@@ -17,10 +17,14 @@ from gnome.spills import (Release,
                           PointLineRelease,
                           PolygonRelease,
                           #GridRelease,
+                          Spill
                           )
 from gnome.spills.release import release_from_splot_data
 from gnome.spills.le import LEData
+from gnome.spill_container import SpillContainer
 from gnome.utilities.time_utils import TZOffset
+
+import gnome.scripting as gs
 
 
 def test_init():
@@ -37,22 +41,6 @@ class TestRelease(object):
         assert rel.release_duration == 0
 
 
-# def test_grid_release():
-#     """
-#     fixme: test something more here? like actually have the release do its thing?
-#     """
-#     bounds = ((0, 10), (2, 12))
-#     release = GridRelease(datetime.now(), bounds, 3)
-
-#     assert np.array_equal(release.start_position, [[0., 10., 0.],
-#                                                    [1., 10., 0.],
-#                                                    [2., 10., 0.],
-#                                                    [0., 11., 0.],
-#                                                    [1., 11., 0.],
-#                                                    [2., 11., 0.],
-#                                                    [0., 12., 0.],
-#                                                    [1., 12., 0.],
-#                                                    [2., 12., 0.]])
 
 # todo: add other release to this test - need schemas for all
 rel_time = datetime(2012, 8, 20, 13)
@@ -82,11 +70,12 @@ pos = (0, 10, 20)
 
 @pytest.fixture(scope='function')
 def r1():
-    #150 minute continuous release
+    # 150 minute continuous release
+    # vertical line
     return PointLineRelease(release_time=rel_time,
                             start_position=pos,
                             end_position=(10, 20, 30),
-                            end_release_time=rel_time + timedelta(seconds=900) * 10,
+                            end_release_time=rel_time + gs.minutes(150),
                             num_elements=1000,
                             release_mass=5000)
 
@@ -108,13 +97,15 @@ def r3():
                             num_per_timestep=100,
                             release_mass=5000)
 
-class TestPointLineRelease(object):
-
-    def test_LE_timestep_ratio(self, r1):
+class TestPointLineRelease():
+    # Fixme: these are testing the implimentation, not the API
+    #        we shoud be testing that the release works, not that
+    #        it has the right time series
+    def test_element_timestep_ratio(self, r1):
         r1.end_release_time = rel_time + timedelta(seconds=1000)*10
         #timestep of 10 seconds. 10,000 second release, min 1000 elements exactly
-        assert r1.LE_timestep_ratio(10) == 1
-        assert r1.LE_timestep_ratio(20) == 2
+        assert r1.element_timestep_ratio(10) == 1
+        assert r1.element_timestep_ratio(20) == 2
 
     def test_get_num_release_time_steps(self, r1):
         assert r1.get_num_release_time_steps(9000) == 1
@@ -122,29 +113,44 @@ class TestPointLineRelease(object):
         assert r1.get_num_release_time_steps(900) == 10
         assert r1.get_num_release_time_steps(899) == 11
 
-    def test_prepare_for_model_run(self, r1, r2, r3):
-        r1.prepare_for_model_run(900)
+    def test_prepare_for_model_run_r1(self, r1):
+        release_duration = r1.end_release_time - r1.release_time
+        ts = 900
+        r1.prepare_for_model_run(ts)
         assert len(r1._release_ts.data) == 11
         assert r1._release_ts.at(None, r1.release_time) == 0
         assert r1._release_ts.at(None, r1.end_release_time) == 1000
-        assert np.all(r1._release_ts.data == np.linspace(0,1000, len(r1._release_ts.data)))
+        assert np.all(r1._release_ts.data == np.linspace(0, 1000, len(r1._release_ts.data)))
         assert r1._mass_per_le == 5
-        assert r1.get_num_release_time_steps(900) == 10
+        assert r1.get_num_release_time_steps(ts) == 10
         assert len(r1._pos_ts.time) == 11
-        assert np.all(r1._pos_ts.at(None, r1.release_time + timedelta(seconds=900)*5) == np.array([(5.,15.,25.)]))
+
+        # assert np.all(r1._pos_ts.at(None, r1.release_time + timedelta(seconds=ts)*5) == np.array([(5.,15.,25.)]))
+        # start and end position are correct.
+        assert np.all(r1._pos_ts.at(None, r1.release_time) == r1.start_position)
+        assert np.all(r1._pos_ts.at(None, r1.release_time + release_duration) == r1.end_position)
+        # is the middle position correct
+        middle = (r1.end_position + r1.start_position) / 2
+        assert np.all(r1._pos_ts.at(None, r1.release_time + release_duration / 2) == middle)
 
         r1.rewind()
         r1.release_mass = 2500
-        r1.prepare_for_model_run(450)
+        ts = 450  # s
+        r1.prepare_for_model_run(ts)
         assert len(r1._release_ts.data) == 21
         assert r1._release_ts.at(None, r1.release_time) == 0
         assert r1._release_ts.at(None, r1.end_release_time) == 1000
         assert np.all(r1._release_ts.data == np.linspace(0,1000, len(r1._release_ts.data)))
         assert r1._mass_per_le == 2.5
         assert len(r1._pos_ts.time) == 21
-        assert np.all(r1._pos_ts.at(None, r1.release_time + timedelta(seconds=450)*10) == np.array([(5.,15.,25.)]))
+        assert np.all(r1._pos_ts.at(None, r1.release_time) == r1.start_position)
+        assert np.all(r1._pos_ts.at(None, r1.release_time + release_duration) == r1.end_position)
+        middle = (r1.end_position + r1.start_position) / 2
+        assert np.all(r1._pos_ts.at(None, r1.release_time + release_duration / 2) == middle)
 
-        #No end_release time. Timeseries must be 2 entries, 1 second apart
+        # No end_release time. Timeseries must be 2 entries, 1 second apart
+
+    def test_prepare_for_model_run_r2(self, r2):
 
         r2.prepare_for_model_run(900)
         assert len(r2._release_ts.data) == 2
@@ -156,13 +162,21 @@ class TestPointLineRelease(object):
         assert r2._mass_per_le == 0
         assert len(r2._pos_ts.time) == 2
 
-        r3.prepare_for_model_run(900)
+
+    def test_prepare_for_model_run_r3(self, r3):
+        release_duration = r3.end_release_time - r3.release_time
+        assert release_duration == gs.minutes(150)
+        ts = 900
+        r3.prepare_for_model_run(ts)
         assert len(r3._release_ts.data) == 11
         assert r3._release_ts.at(None, r3.release_time) == 0
         assert r3._release_ts.at(None, r3.end_release_time) == 1000
-        assert np.all(r3._release_ts.data == np.linspace(0,1000, len(r3._release_ts.data)))
+        assert np.all(r3._release_ts.data == np.linspace(0, 1000, len(r3._release_ts.data)))
         assert len(r3._pos_ts.time) == 11
-        assert np.all(r1._pos_ts.at(None, r3.release_time + timedelta(seconds=900)*5) == np.array([(5.,15.,25.)]))
+        assert np.all(r3._pos_ts.at(None, r3.release_time) == r3.start_position)
+        assert np.all(r3._pos_ts.at(None, r3.release_time + release_duration) == r3.end_position)
+        middle = (r3.end_position + r3.start_position) / 2
+        assert np.all(r3._pos_ts.at(None, r3.release_time + release_duration / 2) == middle)
 
 #     @pytest.mark.parametrize('r', [r1, r3])
 #     def test_num_elements_after_time(self, r):
@@ -200,7 +214,7 @@ class TestPointLineRelease(object):
         assert deser == r1
 
     def test_LE_initialization_instantaneous(self, r2):
-        #initialize_LEs(self, to_rel, data, current_time, time_step)
+        #initialize_elements(self, to_rel, data, current_time, time_step)
         data = LEData()
         ts = 900
         r = r2
@@ -210,7 +224,7 @@ class TestPointLineRelease(object):
         data.prepare_for_model_run(r.array_types, None)
         data.extend_data_arrays(10)
         #initialize over the time interval 0-10%
-        r.initialize_LEs(10, data, r.release_time, r.release_time+timedelta(seconds=ts))
+        r.initialize_elements(10, data, r.release_time, r.release_time+timedelta(seconds=ts))
 
         #particles should have positions spread over the
         #line from start_position to end_position
@@ -229,7 +243,7 @@ class TestPointLineRelease(object):
         data.prepare_for_model_run(r.array_types, None)
         data.extend_data_arrays(100)
         #initialize 100 LEs overlapping the start of the release
-        r.initialize_LEs(100, data, r.release_time - timedelta(seconds=ts/2), r.release_time)
+        r.initialize_elements(100, data, r.release_time - timedelta(seconds=ts/2), r.release_time)
         for pos in data['positions']:
             for d in [0,1,2]:
                 #instantaneous so particles should be spread across whole line
@@ -243,7 +257,7 @@ class TestPointLineRelease(object):
     #@pytest.mark.parametrize('r', [r1, r3])
     def test_LE_initialization(self, r1, r3):
         for r in [r1, r3]:
-            #initialize_LEs(self, to_rel, data, current_time, time_step)
+            #initialize_elements(self, to_rel, data, current_time, time_step)
             data = LEData()
             ts = 900
             r.prepare_for_model_run(ts)
@@ -251,7 +265,7 @@ class TestPointLineRelease(object):
             data.prepare_for_model_run(r.array_types, None)
             data.extend_data_arrays(10)
             #initialize over the time interval 0-10%
-            r.initialize_LEs(10, data, r.release_time, r.release_time+timedelta(seconds=ts))
+            r.initialize_elements(10, data, r.release_time, r.release_time+timedelta(seconds=ts))
 
             #particles should have positions spread over 0-10% (frac) of the
             #line from start_position to end_position
@@ -269,7 +283,7 @@ class TestPointLineRelease(object):
             data.prepare_for_model_run(r.array_types, None)
             data.extend_data_arrays(100)
             #initialize 100 LEs overlapping the start of the release
-            r.initialize_LEs(100, data, r.release_time - timedelta(seconds=ts/2), r.release_time)
+            r.initialize_elements(100, data, r.release_time - timedelta(seconds=ts/2), r.release_time)
             for pos in data['positions']:
                 for d in [0,1,2]:
                     assert pos[d] >= r.start_position[d]
@@ -280,8 +294,8 @@ class TestPointLineRelease(object):
 
             data.extend_data_arrays(900)
             #Should be fine initializing over a longer or shorter time interval than was prepared with
-            # r.initialize_LEs(1000, data, r.release_time - timedelta(seconds=ts/2), 10000)
-            r.initialize_LEs(1000,
+            # r.initialize_elements(1000, data, r.release_time - timedelta(seconds=ts/2), 10000)
+            r.initialize_elements(1000,
                              data,
                              r.release_time - timedelta(seconds=ts/2),
                              r.release_time - timedelta(seconds=ts/2) + timedelta(seconds=10000)
@@ -295,7 +309,7 @@ class TestPointLineRelease(object):
             data.rewind()
             data.prepare_for_model_run(r.array_types, None)
             data.extend_data_arrays(100)
-            r.initialize_LEs(100,
+            r.initialize_elements(100,
                              data,
                              r.release_time + timedelta(seconds=ts/4),
                              r.release_time + timedelta(seconds=(ts/4 + 225)),
@@ -338,7 +352,7 @@ def test_moving_point_line():
           'fay_area': np.zeros((num_to_rel,)),
           }
 
-    rel.initialize_LEs(num_to_rel, sc, start_time, end_time)
+    rel.initialize_elements(num_to_rel, sc, start_time, end_time)
     print(sc['positions'][:,0])
     assert np.array_equal(sc['positions'],
                           np.c_[np.linspace(0, 5, num_to_rel),
@@ -364,7 +378,7 @@ def test_moving_point_line():
           'area': np.zeros((num_to_rel,)),
           'fay_area': np.zeros((num_to_rel,)),
           }
-    rel.initialize_LEs(num_to_rel, sc, start_time, end_time)
+    rel.initialize_elements(num_to_rel, sc, start_time, end_time)
     print(sc['positions'][:,0])
     assert np.array_equal(sc['positions'],
                           np.c_[np.linspace(5, 10, num_to_rel),
@@ -395,11 +409,11 @@ def sr2():
 
 class TestPolygonRelease:
 
-    def test_LE_timestep_ratio(self, sr1):
+    def test_element_timestep_ratio(self, sr1):
         sr1.end_release_time = rel_time + timedelta(seconds=1000)*10
         #timestep of 10 seconds. 10,000 second release, min 1000 elements exactly
-        assert sr1.LE_timestep_ratio(10) == 1
-        assert sr1.LE_timestep_ratio(20) == 2
+        assert sr1.element_timestep_ratio(10) == 1
+        assert sr1.element_timestep_ratio(20) == 2
 
     def test_get_num_release_time_steps(self, sr1):
         assert sr1.get_num_release_time_steps(9000) == 1
@@ -505,4 +519,144 @@ def test_release_from_splot_data():
     assert np.all(rel.custom_positions[0] == rel.custom_positions[:cumsum[0]])
 
     os.remove(td_file)
+
+## Tests ported from old spill tests
+## examples to parametrize on
+rel_time = datetime(2014, 1, 1, 0, 0)
+end_rel_time = rel_time + timedelta(seconds=9000)
+pos = (0, 1, 2)
+end_release_pos = (1, 2, 3)
+
+def inst_point_release():
+    release = PointLineRelease(rel_time, pos,
+                               release_mass=5000,
+                               )
+    return release
+
+
+def inst_point_line_release():
+    release = PointLineRelease(rel_time,
+                               pos,
+                               end_position=end_release_pos,
+                               release_mass=5000,
+                               )
+    return release
+
+
+def cont_point_release():
+    release = PointLineRelease(rel_time,
+                               pos,
+                               end_release_time=end_rel_time,
+                               release_mass=5000,
+                               )
+    return release
+
+
+def cont_point_line_release():
+    release = PointLineRelease(rel_time,
+                               pos,
+                               end_position=end_release_pos,
+                               end_release_time=end_rel_time,
+                               release_mass=5000,
+                               )
+    return release
+
+
+def cont_point_release_le_per_ts():
+    release = PointLineRelease(rel_time,
+                               pos,
+                               end_release_time=end_rel_time,
+                               num_per_timestep=200,
+                               release_mass=5000,
+                               )
+    return release
+
+# class TestSpill:
+#     rel_time = datetime(2014, 1, 1, 0, 0)
+#     pos = (0, 1, 2)
+# Ported over from old tests -- not working yet
+# @pytest.mark.parametrize('release', [inst_point_release(),
+#                                    # inst_point_line_release(),
+#                                    # cont_point_release(),
+#                                    # cont_point_line_release(),
+#                                    # cont_point_release_le_per_ts(),
+#                                    ])
+# def test_release_behavior(release):
+#     '''
+#     Validates spill behavior for a number of example spills.
+
+#     Tests the following items by simulating model runs:
+#     1. Over a timestep-aligned model run:
+#         a. elements are not releaed before spill begins
+#         b. expected number of elements exist at any timestep
+#         c. expected number of elements exist at end of spill
+#         d. LEs are initialized to expected mass and position values
+#     2. Rewind resets appropriate fields, LEData, and release
+#     3. Over a non-aligned model run:
+#         a. correct fraction of LEs are released on overlapping start & end
+#         b. expected number of elements exist at any timestep
+#         c. expected number of elements exist at end of spill
+#         d. LEs are initialized to expected mass and position values
+#         e. maximum mass error does not exceed 1 LE at any time.
+#     '''
+#     ts = 900
+#     tsd = timedelta(seconds=ts)
+#     model_time = release.release_time - tsd
+
+#     ## fixme -- should be able to test release without a spill!
+#     sc = SpillContainer()
+#     spill = Spill(release=release,
+#                   amount=5000)
+#     sc.spills += spill
+#     sc.prepare_for_model_run(array_types=release.array_types)
+#     #     sc.prepare_for_model_run(timestep=ts)
+#     spill.prepare_for_model_run(timestep=ts)
+#     le_per_ts = release.element_timestep_ratio(ts)
+#     mass_per_le = release._mass_per_le
+#     #     le_per_ts = spill.release.element_timestep_ratio(ts)
+#     #     mass_per_le = spill.release._mass_per_le
+
+
+#     for ix in range(0, 20):
+#         new_rel = spill.release_elements(sc, model_time, model_time+tsd)
+#         if ix == 0:
+#             assert spill._num_released == 0
+#         elif model_time < spill.end_release_time:
+#             assert spill.num_released == le_per_ts * ix
+#             assert sum(spill.data['mass']) == le_per_ts * mass_per_le * ix
+#             assert all(spill.data['density'] == spill.substance.standard_density)
+#         else:
+#             if spill.release.num_elements:
+#                 assert spill._num_released == spill.release.num_elements
+#             else:
+#                 assert spill.num_released == spill.release.num_per_timestep * spill.release.get_num_release_time_steps(900)
+#             # assert sum(spill.data['mass']) == spill.release.release_mass
+#         model_time += tsd
+#     spill.rewind()
+#     assert spill._num_released == 0
+#     assert spill.release._prepared == False
+
+#     model_time = spill.release_time - timedelta(seconds=ts*4/3)
+#     spill.prepare_for_model_run(900)
+#     le_per_ts = spill.release.element_timestep_ratio(900)
+#     mass_per_le = spill.release._mass_per_le
+#     for ix in range(0,20):
+#         new_rel = spill.release_elements(sc, model_time, ts)
+#         if ix == 0:
+#             assert spill._num_released == 0
+#         elif model_time + tsd < spill.end_release_time and ix == 1:
+#             assert spill.num_released == int(0.667 * le_per_ts)
+#             assert sum(spill.data['mass']) == int(0.667 * le_per_ts) * mass_per_le
+#             assert (0.667 * le_per_ts * mass_per_le) - sum(spill.data['mass']) < mass_per_le
+#         elif model_time + tsd < spill.end_release_time:
+#             assert spill.num_released % 100 == 66
+#         else:
+#             assert new_rel % 2 == 0 #check ensures last LE was actually released
+#             if spill.release.num_elements:
+#                 assert spill._num_released == spill.release.num_elements
+#             else:
+#                 assert spill._num_released == spill.release.num_per_timestep * spill.release.get_num_release_time_steps(900)
+#             assert sum(spill.data['mass']) == spill.release.release_mass
+#         model_time += tsd
+
 
