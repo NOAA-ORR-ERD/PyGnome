@@ -41,7 +41,7 @@ class RandomMover(CyMover):
     _schema = RandomMoverSchema
 
     def __init__(self,
-                 diffusion_coef=100000.0,
+                 diffusion_coef=1.0E5,
                  uncertain_factor=2.0,
                  **kwargs):
         # Uses super to invoke CyMover__init__ method.
