@@ -216,6 +216,7 @@ test_pygnome_windows:
 
 build_develop:
   stage: build
+  image: registry.orr.noaa.gov/internal-container-registry/dnd-image-builder/dnd-image-builder-new
   only:
     - develop
   tags:
@@ -241,6 +242,7 @@ build_main:
   stage: build
   only:
     - main
+  image: registry.orr.noaa.gov/internal-container-registry/dnd-image-builder/dnd-image-builder-new
   tags:
     - 'docker'
     - 'aws'
@@ -271,6 +273,7 @@ build_main:
 
 build_production:
   stage: build
+  image: registry.orr.noaa.gov/internal-container-registry/dnd-image-builder/dnd-image-builder-new
   only:
     - production
   tags:
