@@ -214,7 +214,22 @@ test_pygnome_windows:
     - pytest --runslow
     - cd ../../..
 
-build_develop:
+include:
+  - component: $CI_SERVER_FQDN/components/build-publish-docker-image/BuildPublishContainerRegistryImage@v3.0.0
+    rules:
+      - if: $CI_COMMIT_REF_NAME != 'develop'
+        when: never
+    inputs:
+      job-name: build pygnome develop image
+      stage: build
+      version: develop
+      image-name: pygnome
+      dockerfile-path: dockerfile
+      latest: true
+      before-script:
+        - unset DOCKER_AUTH_CONFIG
+
+.build_develop:
   stage: build
   image: registry.orr.noaa.gov/internal-container-registry/dnd-image-builder/dnd-image-builder-new
   only:
