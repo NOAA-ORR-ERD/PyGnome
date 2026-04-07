@@ -219,7 +219,10 @@ build_develop:
   only:
     - develop
   tags:
-    - docker
+    - 'docker'
+    - 'aws'
+    - 'us-west-2'
+
   before_script:
     - echo '' # manual override of before_script because we're on runner 12.3 and inherit options are only 12.9+
   script:
@@ -239,7 +242,10 @@ build_main:
   only:
     - main
   tags:
-    - docker
+    - 'docker'
+    - 'aws'
+    - 'us-west-2'
+
   before_script:
     - echo '' # manual override of before_script because we're on runner 12.3 and inherit options are only 12.9+
   script:
@@ -268,7 +274,10 @@ build_production:
   only:
     - production
   tags:
-    - docker
+    - 'docker'
+    - 'aws'
+    - 'us-west-2'
+
   before_script:
     - echo ''
   script:
