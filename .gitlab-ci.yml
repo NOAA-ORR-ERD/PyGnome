@@ -214,22 +214,6 @@ test_pygnome_windows:
     - pytest --runslow
     - cd ../../..
 
-include:
-  - component: $CI_SERVER_FQDN/components/build-publish-docker-image/BuildPublishContainerRegistryImage@v3.0.0
-    rules:
-      - when: always
-      - if: $CI_COMMIT_REF_NAME != 'develop'
-        when: never
-    inputs:
-      job-name: build pygnome develop image
-      stage: build
-      version: develop
-      image-name: pygnome
-      dockerfile-path: dockerfile
-      latest: true
-      before-script:
-        - unset DOCKER_AUTH_CONFIG
-
 build_develop:
   stage: build
   image: registry.orr.noaa.gov/internal-container-registry/dnd-image-builder/dnd-image-builder-new
@@ -264,7 +248,7 @@ build_main:
     - 'us-west-2'
 
   before_script:
-    - echo '' # manual override of before_script because we're on runner 12.3 and inherit options are only 12.9+
+    - unset DOCKER_AUTH_CONFIG
   script:
     # get the adios_db code, so we can install it in the docker image
     # note -- is should already be there -- from conda-forge
@@ -297,7 +281,7 @@ build_production:
     - 'us-west-2'
 
   before_script:
-    - echo ''
+    - unset DOCKER_AUTH_CONFIG
   script:
     # get the adios_db code, so we can install it in the docker image
     # should be there from conda-forge
