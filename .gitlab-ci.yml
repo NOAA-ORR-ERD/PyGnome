@@ -1,13 +1,12 @@
 variables:
-  PYTHON_VER: "3.13"
-  IMAGE_NAME: "/erd/environments/ubuntu/ubuntuforge-python"
+  PYTHON_VER: '3.13'
+  IMAGE_NAME: '/erd/environments/ubuntu/ubuntuforge-python'
   GIT_DEPTH: 2
 
 stages:
   - compile
   - build
   - test
-  - deploy
 
 cache:
   paths:
@@ -22,7 +21,6 @@ configure_env:
   stage: .pre
   tags:
     - docker
-    - linux
   image: $CI_REGISTRY$IMAGE_NAME$PYTHON_VER
   before_script:
     - echo '' # manual override of before_script because we're on runner 12.3 and inherit options are only 12.9+
@@ -37,7 +35,6 @@ compile_pygnome:
   stage: compile
   tags:
     - docker
-    - linux
   image: $CI_REGISTRY$IMAGE_NAME$PYTHON_VER
   script:
     - apt-get update
@@ -49,8 +46,8 @@ compile_pygnome:
     # no longer needed -- pygnome is pulling adios_db from conda-forge
     # - git clone --depth 1 -b develop https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.orr.noaa.gov/gnome/oil_database/oil_database.git
     - cd ./py_gnome
-    - conda install -y python=$PYTHON_VER --file conda_requirements.txt
-                                          --file conda_requirements_build.txt
+    - conda install -y python=$PYTHON_VER --file conda_requirements.txt --file
+      conda_requirements_build.txt
     #                                       --file ../oil_database/adios_db/conda_requirements.txt
 
     # # install adios_db
@@ -71,7 +68,7 @@ compile_pygnome:
     # need extra requirements for the docs
     - conda install -y --file conda_requirements_docs.txt
     - conda list |grep -i sphinx
-    - cd documentation && make html  # build the docs
+    - cd documentation && make html # build the docs
     - ls documentation/build/html/_static/jquery.js || true
   artifacts:
     when: always
@@ -85,7 +82,6 @@ test_pygnome:
   stage: test
   tags:
     - docker
-    - linux
   allow_failure: false
   image: $CI_REGISTRY$IMAGE_NAME$PYTHON_VER
   script:
@@ -101,7 +97,6 @@ test_pygnome_testing_scripts:
   stage: test
   tags:
     - docker
-    - linux
   allow_failure: true
   image: $CI_REGISTRY$IMAGE_NAME$PYTHON_VER
   script:
@@ -113,12 +108,10 @@ test_pygnome_input_file_examples:
   stage: test
   tags:
     - docker
-    - linux
   allow_failure: true
   image: $CI_REGISTRY$IMAGE_NAME$PYTHON_VER
   script:
     - cd ./py_gnome/scripts/input_file_examples && python run_all.py 2<&1
-
 
 # make sure the example scripts run without error
 # this can fail, but we want to be warned ...
@@ -126,7 +119,6 @@ test_pygnome_example_scripts:
   stage: test
   tags:
     - docker
-    - linux
   allow_failure: true
   image: $CI_REGISTRY$IMAGE_NAME$PYTHON_VER
   script:
@@ -152,10 +144,10 @@ test_pygnome_windows:
 
     # where are we?
     - Get-Location
-    - Get-ChildItem | % { $_.FullName }  # this should list the current folder
+    - Get-ChildItem | % { $_.FullName } # this should list the current folder
     - $Env:PathOrig = $Env:Path
     - $Env:CurrDir = Get-Location
- 
+
     # Where is our conda installation?
     # This will tell us where python is installed.  This could change periodically
     #- Get-ChildItem -Path 'C:\Python310' -Recurse -Include "python.exe", "conda.exe" | % { $_.FullName }
@@ -163,9 +155,8 @@ test_pygnome_windows:
 
     # make sure conda is on the path first in the path
     - $Env:Path = 'C:\ProgramData\miniforge3\;' +
-                  'C:\ProgramData\miniforge3\Scripts;' +
-                  'C:\ProgramData\miniforge3\Lib\bin;' +
-                  $Env:PathOrig
+      'C:\ProgramData\miniforge3\Scripts;' +
+      'C:\ProgramData\miniforge3\Lib\bin;' + $Env:PathOrig
     - $Env:Path -split ';'
 
     - python -c "import sys; print(sys.executable)"
@@ -202,10 +193,9 @@ test_pygnome_windows:
     - conda install -y python=$PYTHON_VER mamba
     - cd ./py_gnome
     - echo "Setting up conda environment"
-    - mamba install -y python=$PYTHON_VER --file conda_requirements.txt
-                                          --file conda_requirements_build.txt
-                                          --file conda_requirements_test.txt
-                                          # --file ../oil_database/adios_db/conda_requirements.txt
+    - mamba install -y python=$PYTHON_VER --file conda_requirements.txt --file
+      conda_requirements_build.txt --file conda_requirements_test.txt
+      # --file ../oil_database/adios_db/conda_requirements.txt
 
     # install adios_db
     # - pip install ../oil_database/adios_db/
@@ -226,13 +216,15 @@ test_pygnome_windows:
 
 build_develop:
   stage: build
+  image: registry.orr.noaa.gov/internal-container-registry/dnd-image-builder/dnd-image-builder-new
   only:
     - develop
   tags:
-    - shell
-    - build
+    - 'docker'
+    - 'aws'
+    - 'us-west-2'
   before_script:
-    - echo '' # manual override of before_script because we're on runner 12.3 and inherit options are only 12.9+
+    - unset DOCKER_AUTH_CONFIG # manual override of before_script because we're on runner 12.3 and inherit options are only 12.9+
   script:
     # get the adios_db code, so we can install it in the docker image
     # note -- is should already be there from conda-forge
@@ -240,7 +232,8 @@ build_develop:
 
     # build the py_gnome image
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker build . --build-arg PYTHON_VER=$PYTHON_VER -t registry.orr.noaa.gov/gnome/pygnome:$CI_COMMIT_BRANCH
+    - docker build . --build-arg PYTHON_VER=$PYTHON_VER -t
+      registry.orr.noaa.gov/gnome/pygnome:$CI_COMMIT_BRANCH
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker push registry.orr.noaa.gov/gnome/pygnome:$CI_COMMIT_BRANCH
 
@@ -248,11 +241,14 @@ build_main:
   stage: build
   only:
     - main
+  image: registry.orr.noaa.gov/internal-container-registry/dnd-image-builder/dnd-image-builder-new
   tags:
-    - shell
-    - build
+    - 'docker'
+    - 'aws'
+    - 'us-west-2'
+
   before_script:
-    - echo '' # manual override of before_script because we're on runner 12.3 and inherit options are only 12.9+
+    - unset DOCKER_AUTH_CONFIG
   script:
     # get the adios_db code, so we can install it in the docker image
     # note -- is should already be there -- from conda-forge
@@ -261,82 +257,38 @@ build_main:
     # build the docs image
     - ls ./py_gnome/documentation/build/html/_static/jquery.js
     - >
-        docker build ./py_gnome/documentation/build/html
-        -f dockerfile-docs
-        -t registry.orr.noaa.gov/gnome/pygnome/docs
+      docker build ./py_gnome/documentation/build/html -f dockerfile-docs -t
+      registry.orr.noaa.gov/gnome/pygnome/docs
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker push registry.orr.noaa.gov/gnome/pygnome/docs
 
     # build the py_gnome image
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - >
-        docker build .
-        --build-arg PYTHON_VER=$PYTHON_VER
-        -t registry.orr.noaa.gov/gnome/pygnome:main
+      docker build . --build-arg PYTHON_VER=$PYTHON_VER -t
+      registry.orr.noaa.gov/gnome/pygnome:main
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker push registry.orr.noaa.gov/gnome/pygnome:main
 
 build_production:
   stage: build
+  image: registry.orr.noaa.gov/internal-container-registry/dnd-image-builder/dnd-image-builder-new
   only:
     - production
   tags:
-     - shell
-     - build
+    - 'docker'
+    - 'aws'
+    - 'us-west-2'
+
   before_script:
-    - echo ''
+    - unset DOCKER_AUTH_CONFIG
   script:
     # get the adios_db code, so we can install it in the docker image
     # should be there from conda-forge
     # - git clone --depth 1 -b production https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.orr.noaa.gov/gnome/oil_database/oil_database.git
 
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker build . --build-arg PYTHON_VER=$PYTHON_VER -t registry.orr.noaa.gov/gnome/pygnome:production
+    - docker build . --build-arg PYTHON_VER=$PYTHON_VER -t
+      registry.orr.noaa.gov/gnome/pygnome:production
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker push registry.orr.noaa.gov/gnome/pygnome:production
-
-
-build wheel:
-  stage: build
-  image: registry.orr.noaa.gov/erd/environments/ubuntu/ubuntuforge-python${PYTHON_VER}
-  tags:
-    - docker
-  before_script:
-    - |
-      apt-get install -y \
-      g++ make libxext-dev libsm-dev libxrender-dev libglib2.0-0 \
-      wget chrpath bzip2 tar \
-      git patchelf ca-certificates
-  script:
-    - |
-      conda install python=$PYTHON_VER \
-      --file py_gnome/conda_requirements.txt \
-      --file py_gnome/conda_requirements_build.txt
-#    - python -m pip install ./py_gnome
-    - conda install python-build
-    - cd py_gnome
-    - python -m build --wheel -o pydist
-  artifacts:
-    paths:
-      - ./py_gnome/pydist
-    expire_in: "5 days"
-
-
-post wheel to internal registry:
-  stage: deploy
-  allow_failure: true
-  image: registry.orr.noaa.gov/erd/environments/ubuntu/ubuntuforge-python${PYTHON_VER} 
-  tags:
-    - docker
-  needs:
-    - build wheel
-  dependencies:
-    - build wheel
-  before_script:
-    - echo ''
-  script:
-    - cd py_gnome
-    - conda install twine
-    - TWINE_PASSWORD=${CI_JOB_TOKEN} TWINE_USERNAME=gitlab-ci-token python -m
-      twine upload --repository-url
-      ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi ./pydist/*
