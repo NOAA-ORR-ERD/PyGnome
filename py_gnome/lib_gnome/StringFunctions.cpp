@@ -1939,7 +1939,8 @@ void SecondsToDate (Seconds seconds, DateTimeRec *date)
 			if (newTime->tm_hour > 0)
 				newTime->tm_hour--;
 			else {
-				seconds -= 3600;
+				//seconds -= 3600;
+				converted_seconds -= 3600;
 				newTime = localtime(&converted_seconds);
 
 				if (newTime->tm_isdst == 1) {
@@ -1954,7 +1955,7 @@ void SecondsToDate (Seconds seconds, DateTimeRec *date)
 		date->year = newTime->tm_year;
 
 		// this mimics the mac function which has a 4 digit value in the time field
-		if (date->year < 40)
+		if (date->year < 50)
 			date->year += 2000;
 		else if (date->year < 200)
 			date->year += 1900;
