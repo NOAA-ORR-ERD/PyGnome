@@ -35,7 +35,7 @@ class TestCyDateTime(object):
         py_gnome uses this to convert time back to date
         '''
 
-        pyDate = time_utils.sec_to_timestruct(self.pySec)
+        pyDate = time_utils.sec_to_timestruct(seconds)
         date = np.empty((1, ), dtype=basic_types.date_rec)
         date[0] = (pyDate.tm_year, pyDate.tm_mon, pyDate.tm_mday,
             pyDate.tm_hour, pyDate.tm_min, pyDate.tm_sec, pyDate.tm_wday)
@@ -80,6 +80,26 @@ class TestCyDateTime(object):
                 msg = 'expected {0}: {1}\t actual {0}: {2}'
                 print(msg.format(field, date[field], self.daterec[field][0]))
                 assert date[field] == self.daterec[field][0]
+
+    def test_sec_to_timestruct_dst(self):
+        '''
+        Test Gnome's reverse conversion back to Date during daylight savings at end of day
+        '''
+
+        dst_time = datetime(2026, 6, 4, 23, 45)
+        daterec = np.empty((1, ), dtype=basic_types.date_rec)
+        daterec[0] = (dst_time.year, dst_time.month, dst_time.day, dst_time.hour,
+            dst_time.minute, dst_time.second, dst_time.weekday())
+        pySec_dst = time_utils.date_to_sec(dst_time)
+        date = self.target.SecondsToDate(pySec_dst)
+
+        print()
+        for field in daterec.dtype.names:
+
+            if field != 'dayOfWeek':
+                msg = 'expected {0}: {1}\t actual {0}: {2}'
+                print(msg.format(field, date[field], daterec[field][0]))
+                assert date[field] == daterec[field][0]
 
     def test_sec_to_date(self):
         """

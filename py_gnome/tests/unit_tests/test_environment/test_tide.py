@@ -24,11 +24,11 @@ def test_shio_data_limits():
 
     This is determined by the yeardata in the gnome/data/yeardata folder
 
-    6/3/2026 : added the yeardata through 2045
+    6/3/2026 : added the yeardata through 2035
     """
     print(SHIO_YEARDATA_LIMITS)
 
-    assert SHIO_YEARDATA_LIMITS == (1980, 2045)
+    assert SHIO_YEARDATA_LIMITS == (1980, 2035)
 
 
 def test_exceptions():
