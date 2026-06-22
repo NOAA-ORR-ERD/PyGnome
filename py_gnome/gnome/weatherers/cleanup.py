@@ -827,9 +827,12 @@ class ChemicalDispersion(CleanUpBase):
                 if spill.on:
                     mass += spill.get_mass()
 
-            # rm_total_mass_si = mass * self.fraction_sprayed
-            rm_total_mass_si = mass * self.fraction_sprayed * self.efficiency
+            # get current mass instead of initial mass since user sets a rate rather than an amount
+            for substance, data in sc.itersubstancedata(self.array_types, fate_status='surface_weather'):
+                curr_mass = data['mass'].sum()
 
+            # rm_total_mass_si = mass * self.fraction_sprayed
+            rm_total_mass_si = curr_mass * self.fraction_sprayed * self.efficiency
             # the mass to remove is actual oil mass not mass of oil/water
             # mixture
             self._update_LE_status_codes(sc, bt_fate.disperse,
