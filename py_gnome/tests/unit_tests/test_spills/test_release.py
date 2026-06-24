@@ -334,12 +334,12 @@ def test_moving_point_line():
                            )
     rel.prepare_for_model_run(timestep.total_seconds())
     # before timestep
-    num_to_rel = rel.num_elements_after_time(rel.release_time)
+    num_to_rel = rel.num_elements_after_time(rel.release_time, timestep)
     assert num_to_rel == 0
     # first half timestep
     start_time = rel.release_time
     end_time = rel.release_time + timestep / 2
-    num_to_rel = rel.num_elements_after_time(end_time)
+    num_to_rel = rel.num_elements_after_time(end_time,  timestep)
     assert num_to_rel == num_elements / 2
     sc = {'positions': np.zeros((num_to_rel, 3)),
           'mass': np.zeros((num_to_rel,)),
@@ -364,7 +364,7 @@ def test_moving_point_line():
     # second half timestep
     start_time = end_time
     end_time = rel.release_time + timestep
-    num_to_rel = rel.num_elements_after_time(end_time)
+    num_to_rel = rel.num_elements_after_time(end_time, timestep)
     num_to_rel //= 2
     assert num_to_rel == num_elements / 2
 
@@ -473,28 +473,28 @@ class TestPolygonRelease:
         ser = sr1.serialize()
         deser = PolygonRelease.deserialize(ser)
         assert deser == sr1\
-    
+
     def test_timezone_offset(self, sr1):
         assert sr1.timezone_offset.offset is None
         o_rel_time = sr1.release_time
         o_end_rel_time = sr1.end_release_time
-        
+
         # None -> Offset (no change)
         sr1.timezone_offset = TZOffset(offset=1)
         assert sr1.release_time == o_rel_time
         assert sr1.end_release_time == o_end_rel_time
-        
+
         #Offset -> offset (change)
         sr1.timezone_offset = TZOffset(offset=2)
         assert sr1.release_time == o_rel_time + timedelta(hours=1)
         assert sr1.end_release_time == o_end_rel_time + timedelta(hours=1)
         sr1.timezone_offset = TZOffset(offset=1)
-        
+
         #Offset -> None (no change)
         sr1.timezone_offset = None
         assert sr1.release_time == o_rel_time
         assert sr1.end_release_time == o_end_rel_time
-        
+
 
 def test_release_from_splot_data():
     '''

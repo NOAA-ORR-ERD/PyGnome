@@ -168,8 +168,9 @@ def test_variance1(start_loc, time_step):
 
     model_time = start_time
     for i in range(num_steps):
+        previous_model_time = model_time
         model_time += datetime.timedelta(seconds=time_step)
-        sc.release_elements(time_step, model_time)
+        sc.release_elements(previous_model_time, model_time)
         rand.prepare_for_model_step(sc, time_step, model_time)
         delta = rand.get_move(sc, time_step, model_time)
 

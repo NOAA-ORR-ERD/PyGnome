@@ -438,7 +438,7 @@ class Spill(BaseSpill):
         if not self.on:
             return 0
         idx = sc.spills.index(self)
-        expected_num_release = self.release.num_elements_after_time(end_time)
+        expected_num_release = self.release.num_elements_after_time(end_time, end_time - start_time)
         actual_num_release = self._num_released
         to_rel = expected_num_release - actual_num_release
         if to_rel <= 0:

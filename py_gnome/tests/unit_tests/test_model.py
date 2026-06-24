@@ -818,8 +818,17 @@ def test_model_release_after_start():
     model.movers += PointWindMover(Wind(timeseries=series, units=units))
 
     for step in model:
+        step_num = step['step_num']
         print('running a step')
-        assert step['step_num'] == model.current_time_step
+        assert step_num == model.current_time_step
+        num_LEs = len(model.get_spill_property('positions'))
+
+        if step_num < 2:
+            assert num_LEs == 0
+        elif step_num < 4:
+            assert num_LEs == 5
+        else:
+            num_LEs == 9
 
         for sc in model.spills.items():
             print('num_LEs', len(sc['positions']))
@@ -858,8 +867,17 @@ def test_model_release_after_start_backwards():
     model.movers += PointWindMover(Wind(timeseries=series, units=units))
 
     for step in model:
+        step_num = step['step_num']
         print('running a step')
-        assert step['step_num'] == model.current_time_step
+        assert step_num == model.current_time_step
+        num_LEs = len(model.get_spill_property('positions'))
+
+        if step_num < 2:
+            assert num_LEs == 0
+        elif step_num < 4:
+            assert num_LEs == 5
+        else:
+            num_LEs == 9
 
         for sc in model.spills.items():
             print('num_LEs', len(sc['positions']))

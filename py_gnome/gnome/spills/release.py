@@ -212,14 +212,14 @@ class Release(GnomeId):
 
         self._previously_released = 0.0
         self.cumulative_time_scale = SPREADING_CUMULATIVE_TIME_SCALE
-        
+
     @property
     def timezone_offset(self):
         return self._get_timezone_offset()
-    
+
     def _get_timezone_offset(self):
         return self._timezone_offset
-    
+
     @timezone_offset.setter
     def timezone_offset(self, value):
         #Due to the possibility of multiple time objects, we need to check for and set the offset
@@ -228,7 +228,7 @@ class Release(GnomeId):
             self._set_timezone_offset(value)
         else:
             raise ValueError("timezone_offset must be set with a TZOffset object or None")
-    
+
     def _set_timezone_offset(self, tzo):
         if tzo is None:
             tzo = TZOffset(offset=None, title="No Timezone Specified")
@@ -240,7 +240,7 @@ class Release(GnomeId):
                 self.release_time = self.release_time + off
                 self.end_release_time = self.end_release_time + off
         self._timezone_offset = tzo
-        
+
     def __repr__(self):
         return ('{0.__class__.__module__}.{0.__class__.__name__}('
                 'release_time={0.release_time!r}, '
@@ -391,7 +391,7 @@ class Release(GnomeId):
             t = Time(data=[self.release_time + timedelta(seconds=ts * step)
                       for step in range(0, num_ts + 1)])
             t.data[-1] = self.end_release_time
-        
+
         if self.release_duration == 0:
             self._release_ts = TimeseriesData(name=self.name + '_release_ts',
                                               time=t,
@@ -401,16 +401,19 @@ class Release(GnomeId):
                                               time=t,
                                               data=np.linspace(0, max_release, num_ts + 1).astype(int))
 
-    def num_elements_after_time(self, current_time):
+    def num_elements_after_time(self, current_time, time_delta):
         '''
         Returns the number of elements expected to exist at current_time.
         Returns 0 if prepare_for_model_run has not been called.
         :param current_time: time of release
         :type current_time: datetime
+        :param time_delta: end_time - start_time
+        :type time_delta: timedelta
         '''
         if not self._prepared:
             return 0
-        if current_time < self.release_time:
+        if ((current_time < self.release_time and time_delta.total_seconds() >= 0)
+                or (current_time > self.release_time and time_delta.total_seconds() <= 0)):
             return 0
         return int(math.ceil(self._release_ts.at(None, current_time, extrapolate=True)))
 
@@ -688,7 +691,9 @@ class PointLineRelease(Release):
         # if time_step == 0:
         #     time_step = 1  # to deal with initializing position in instantaneous release case
         if self.release_duration == 0 and start_time != end_time: # special case for instantaneous spill with release after model start
-            if self.release_time <= end_time and self.release_time>=start_time:
+            time_delta = end_time - start_time
+            if ((self.release_time <= end_time and self.release_time>=start_time and time_delta.total_seconds() >= 0)
+                or (self.release_time >= end_time and self.release_time<=start_time and time_delta.total_seconds() <= 0)):
                  start_time = end_time = self.release_time
         if start_time == end_time:
             end_time += timedelta(seconds=1)
@@ -1082,16 +1087,19 @@ class GridRelease(Release):
         """
         pass
 
-    def num_elements_after_time(self, current_time):
+    def num_elements_after_time(self, current_time, time_delta):
         '''
         Returns the number of elements expected to exist at current_time.
         Returns 0 if prepare_for_model_run has not been called.
         :param current_time: time of release
         :type current_time: datetime
+        :param time_delta: end_time - start_time
+        :type time_delta: timedelta
         '''
         if not self._prepared:
             return 0
-        if current_time < self.release_time:
+        if ((current_time < self.release_time and time_delta.total_seconds() >= 0)
+                or (current_time > self.release_time and time_delta.total_seconds() <= 0)):
             return 0
         else:
             return self.num_elements
@@ -1224,7 +1232,7 @@ class NESDISRelease(PolygonRelease):
 
         :param feature: FeatureCollection representation of a NESDIS shapefile
         :type feature: geojson.FeatureCollection
-        
+
         :param timezone_offset:
         :type timezone_offset: gnome.environment.time.TZOffset defaults to UTC
 

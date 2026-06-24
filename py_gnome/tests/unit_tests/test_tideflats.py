@@ -10,7 +10,7 @@ NOTE: this doesn't test whether the on_tideflat code is
       properly
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import numpy as np
 
@@ -108,7 +108,7 @@ def test_random_mover():
     model_time = start_time
     time_step = 1000  # quite random
 
-    sc.release_elements(time_step, model_time)
+    sc.release_elements(model_time - timedelta(time_step), model_time)
 
     print("status codes")
     print(sc['status_codes'])
