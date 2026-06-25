@@ -522,8 +522,9 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 	//sprintf(msgStr,"Path for year data = %s\n",directoryPath);
 	//printNote(msgStr);
 	yearData = ReadYearData(beginDate.year,directoryPath,errStr);
-	if (errStr[0] != 0) printNote(errStr);
-	if(!yearData)  { TechError("TShioTimeValue::GetTimeValue()", "GetYearData()", 0); return -1; }
+	if (errStr[0] != 0) return -1;
+	//if (errStr[0] != 0) printNote(errStr);
+	//if(!yearData)  { TechError("TShioTimeValue::GetTimeValue()", "GetYearData()", 0); return -1; }
 
 	if (yearData) amtYearData = yearData->numElements;
 	try

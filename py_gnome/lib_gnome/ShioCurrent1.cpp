@@ -21,14 +21,14 @@ using namespace std;
 /***************************************************************************************/
 
 short GetTideCurrent(DateTimeRec *BeginDate,DateTimeRec *EndDate,
-						short numOfConstituents, 
+						short numOfConstituents,
 						CONSTITUENT *constituent,	// Amplitude-phase array structs
 						CURRENTOFFSET *offset,		// Current offset data
 						COMPCURRENTS *answers,		// Current-time struc with answers
-						double* XODE, double* VPU, 
+						double* XODE, double* VPU,
 						Boolean DaylightSavings,		// Daylight Savings Flag
 						char *staname)					// Station name
-						
+
 // Here we compute several arrays containing
 // the reference curve and the highs and lows
 // the reference curve is computed at user specified dt
@@ -54,7 +54,7 @@ short GetTideCurrent(DateTimeRec *BeginDate,DateTimeRec *EndDate,
 	if(errorFlag){ goto Error; }
 #ifndef pyGNOME
 	SetWatchCursor();
-#endif	
+#endif
 	/* Find beginning hour and ending hour */
 	beginDay	= BeginDate->day;
 	beginMonth	= BeginDate->month;
@@ -67,7 +67,7 @@ short GetTideCurrent(DateTimeRec *BeginDate,DateTimeRec *EndDate,
 
 	endDay		= EndDate->day;
 	endMonth	= EndDate->month;
-	endYear		= EndDate->year;	
+	endYear		= EndDate->year;
 
 	errorFlag	= GetJulianDayHr(endDay,endMonth,endYear,&endHour);
 	if(errorFlag!=0){ goto Error; }
@@ -88,7 +88,7 @@ short GetTideCurrent(DateTimeRec *BeginDate,DateTimeRec *EndDate,
 
 	biggestOffset = offset->MinBefFloodTime.val;
 	absBiggestOffset = fabs(biggestOffset);
-			
+
 	if( absBiggestOffset < fabs(offset->MinBefEbbTime.val) ){
 		biggestOffset = offset->MinBefEbbTime.val;
 		absBiggestOffset = fabs(biggestOffset);
@@ -98,7 +98,7 @@ short GetTideCurrent(DateTimeRec *BeginDate,DateTimeRec *EndDate,
 		biggestOffset = offset->EbbTime.val;
 		absBiggestOffset = fabs(biggestOffset);
 	}
-	
+
 	if( absBiggestOffset < fabs(offset->FloodTime.val) ){
 		biggestOffset = offset->FloodTime.val;
 		absBiggestOffset = fabs(biggestOffset);
@@ -118,19 +118,19 @@ short GetTideCurrent(DateTimeRec *BeginDate,DateTimeRec *EndDate,
 
 	oldBeginHour = beginHour;
 	oldEndHour = endHour;
-	
+
 	// Lookit, we just offset both ends by the largest
 	// offset.  This way, we don't have to worry about
 	// what the offset is for, where it falls on the
 	// curve and if it positive or negative.
-	
+
 	endHour = endHour + absBiggestOffset;
 	beginHour = beginHour - absBiggestOffset;
-	
+
 	// OK here we set the begin hour back one time step so
 	// we don't miss a max or min that is within 1 timestep
 	// We will also go on step pass the end hour
-	
+
 	beginHour -= dt;
  	endHour += dt;
 
@@ -138,7 +138,7 @@ short GetTideCurrent(DateTimeRec *BeginDate,DateTimeRec *EndDate,
 		errorFlag=1;
 		goto Error;
 	}
-	
+
 	deltaTime = endHour - beginHour;
 	if( deltaTime <= dt ){
 		errorFlag=2;
@@ -156,16 +156,16 @@ short GetTideCurrent(DateTimeRec *BeginDate,DateTimeRec *EndDate,
 		errorFlag=6;
 		goto Error;
 	}
-	
+
 
 	// Now get control flag to see if we gotta change L2 stuff
 	if( constituent)
 	{
-		errorFlag=GetControlFlags(constituent,&L2Flag,&HFlag,&rotFlag);     
+		errorFlag=GetControlFlags(constituent,&L2Flag,&HFlag,&rotFlag);
 	}
 	//else
 	//{
-	//	errorFlag=GetControlFlagsAlternate(cntrlvars,&L2Flag,&HFlag,&rotFlag);     
+	//	errorFlag=GetControlFlagsAlternate(cntrlvars,&L2Flag,&HFlag,&rotFlag);
 	//}
 	if(errorFlag!=0){ goto Error; }
 
@@ -204,7 +204,7 @@ short GetTideCurrent(DateTimeRec *BeginDate,DateTimeRec *EndDate,
 
 		// Check to see if rotary smoothing is called for
 		/*if( answers->speedKey != 0 )*/{ FixCurve(answers); }	// GK suggested commenting out to fix Norfolk problem w unusable tide data, so far it hasn't helped 6.22.06
-		
+
 		// Now fill in array for major-minor axis
 		errorFlag = RotToMajorMinor(constituent,offset,answers);
 		if(errorFlag!=0){ goto Error; }
@@ -218,7 +218,7 @@ short GetTideCurrent(DateTimeRec *BeginDate,DateTimeRec *EndDate,
 	// If we are, we gotta handle it as special case
 	// davew - What a suprise! It appears that the name has changed
 	// in the new data set from NOS!
-	
+
 	//if( strcmp(staname,"AKUTAN PASS; ALEUTIAN ISLANDS") == 0 )
 	if( strcmp(staname,"AKUTAN PASS") == 0 )
 	{
@@ -233,13 +233,13 @@ Error:
 
 
 	CompCErrors(errorFlag,str1);
-	
-	if(errorFlag!=0){ 
+
+	if(errorFlag!=0){
 #ifndef pyGNOME
 		settings.doNotPrintError = false;//JLM 6/19/98, allows dialogs to come up more than once
+		printError(str1);
 #endif
-		printError(str1); }
-
+	}
 	return( errorFlag );
 }
 
@@ -251,23 +251,23 @@ void AkutanFix (COMPCURRENTS *answers, short rotFlag)
 	double	*CHdl,*uVelHdl,*vVelHdl;
 	double	*MaxMinHdl;
 
-	long	numOfPoints,numOfMaxMins;	
+	long	numOfPoints,numOfMaxMins;
 	long	i;
-	
+
 	double	v,ratio,dv,sign,vfix;
-	
+
 	// **************************************************
-	
+
 	MaxMinHdl = answers->EbbFloodSpeeds;
 	CHdl = answers->speed;
 	uVelHdl = answers->u;
 	vVelHdl= answers->v;
-	
+
 	numOfPoints = answers->nPts;
 	numOfMaxMins = answers->numEbbFloods;
-	
+
 	//OK do the fix on amplitude array
-	
+
 	for (i=0;i<numOfPoints;i++){
 		sign = 1.0;
 		v = CHdl[i];
@@ -275,7 +275,7 @@ void AkutanFix (COMPCURRENTS *answers, short rotFlag)
 			sign = -1.0;
 			v = -v;
 		}
-		
+
 		if( v > 7.5) {
 			dv = v - 7.5;
 			vfix = .635 * dv;
@@ -283,7 +283,7 @@ void AkutanFix (COMPCURRENTS *answers, short rotFlag)
 			ratio = (v-vfix)/v;
 
 			// davew  12/22/3: added if statement
-			// pointers for u and v velocity components are 
+			// pointers for u and v velocity components are
 			// only valid if tidal currents are rotary
 			if ( (rotFlag==1) || (rotFlag==2) )
 			{
@@ -291,11 +291,11 @@ void AkutanFix (COMPCURRENTS *answers, short rotFlag)
 				(answers->v)[i] = (answers->v)[i] * ratio;
 	 		}
 		}
-	
+
 	}
-	
+
 	// Now do max-min array
-	
+
 	for (i=0;i<numOfMaxMins; i++){
 		sign = 1.0;
 		v = MaxMinHdl[i];
@@ -303,15 +303,15 @@ void AkutanFix (COMPCURRENTS *answers, short rotFlag)
 			sign = -1.0;
 			v = -v;
 		}
-		
+
 		if(v>7.5){
 			dv = v - 7.5;
 			vfix = .635 * dv;
 			answers->EbbFloodSpeeds[i] = sign * (v - vfix);
-		}	
-	
+		}
+
 	}
-	
+
 	return;
 }
 
@@ -323,15 +323,15 @@ short CheckCurrDir(CONSTITUENT *constituent,COMPCURRENTS *answers)
 // We go to the first max velocity and check it's direction
 // If the direction is wrong, we negate all the velocity magnitudes
 // and change the labels on the max and mins.
-{	
-	
+{
+
 	double		*theCurrentHdl,*maxMinHdl;
 	double		*uHdl,*vHdl;
 	short		*keyHdl;
 	short numberOfPoints,i,nFloodEbbs,flag;
 	double u,v;
 	double v0,v1,v2,s1,s2;
-	
+
 	numberOfPoints	= answers->nPts;
 	theCurrentHdl	= answers->speed;
 	nFloodEbbs		= answers->numEbbFloods;
@@ -339,22 +339,22 @@ short CheckCurrDir(CONSTITUENT *constituent,COMPCURRENTS *answers)
 	keyHdl			= answers->EbbFlood;
 	uHdl			= answers->u;
 	vHdl			= answers->v;
-	
+
 	// go get the first max velocity
 	// we need to pull it out of the speed array and not the
 	// max min arrays because the speed arrays have the u and v components
 	//
-	
+
 	flag = 0;
 	for(i=1;i< (numberOfPoints-1);i++){
-	
+
 		v0 = theCurrentHdl[i-1];
 		v1 = theCurrentHdl[i];
 		v2 = theCurrentHdl[i+1];
 		if(v0<0.0)v0=-v0;
 		if(v1<0.0)v1=-v1;
 		if(v2<0.0)v2=-v2;
-		
+
 		s1 = v1-v0;
 		s2 = v2 - v1;
 		if( (s1>0.0) && (s2<0.0) ){
@@ -367,19 +367,19 @@ short CheckCurrDir(CONSTITUENT *constituent,COMPCURRENTS *answers)
 			break;
 		}
 	}
-	
+
 	if(flag==0)return 0;
 	if( (flag>0) && (v0>0.0) ) return 0;
 	if( (flag<0) && (v0<0.0) ) return 0;
-	
+
 	// if we get here, we gotta flip the world!!!
 
 	for(i=0;i< numberOfPoints;i++){
 		theCurrentHdl[i] = -theCurrentHdl[i];
 	}
-	
+
 	for (i=0;i<nFloodEbbs;i++){
-	
+
 		maxMinHdl[i] = -maxMinHdl[i];
 		if( keyHdl[i] == MaxEbb ){
 			keyHdl[i]=MaxFlood;
@@ -394,7 +394,7 @@ short CheckCurrDir(CONSTITUENT *constituent,COMPCURRENTS *answers)
 			keyHdl[i]=MinBeforeFlood;
 		}
 	}
-	
+
 	return 0;
 }
 
@@ -404,19 +404,19 @@ void CleanUpCompCurrents (COMPCURRENTS *CPtr)
 	double		*hHdl,*HLHHdl;
 	EXTFLAG	*tHdl,*HLTHdl;
 	short		*HLHdl;
-	
+
 	tHdl	= CPtr->time;
 	hHdl	= CPtr->speed;
 	HLHHdl	= CPtr->EbbFloodSpeeds;
 	HLTHdl	= CPtr->EbbFloodTimes;
 	HLHdl	= CPtr->EbbFlood;
-	
+
 	/*if(tHdl) DisposeHandle((Handle)tHdl);
 	if(hHdl) DisposeHandle((Handle)hHdl);
 	if(HLHHdl) DisposeHandle((Handle)HLHHdl);
 	if(HLTHdl) DisposeHandle((Handle)HLTHdl);
 	if(HLHdl) DisposeHandle((Handle)HLHdl);*/
-	
+
 	if(tHdl) {delete [] tHdl; tHdl = 0;}
 	if(hHdl) {delete [] hHdl; hHdl = 0;}
 	if(HLHHdl) {delete [] HLHHdl; HLHHdl = 0;}
@@ -436,7 +436,7 @@ void CleanUpCompCurrents (COMPCURRENTS *CPtr)
 void CompCErrors(short errorNum,char *errStr)
 {
 	switch (errorNum){
-	
+
 		case 0:
 			break;
 		case 1:
@@ -577,7 +577,7 @@ void CompCErrors(short errorNum,char *errStr)
 short CurveFitOffsetCurve(COMPCURRENTS *answers,
 							double startTime,
 							double endTime,
-							double timestep)   
+							double timestep)
 {
 // Here we generate the offset curve by curve fitting the high low
 // stuff ...
@@ -593,27 +593,27 @@ short CurveFitOffsetCurve(COMPCURRENTS *answers,
 	double previousMinusOneTime,previousMinusOneValue;
 	double nextPlusOneTime,nextPlusOneValue;
 	double zeroSlope,SpeedValue;
-	
+
 	double *	CArrayPtr;
 	EXTFLAG		*TArrayPtr;
 	double		*MaxMinHdl,*ValHdl;
 	EXTFLAG		*MaxMinTimeHdl,*TimeHdl;
 	short		*MaxMinFlagHdl;
 	short		*OldMaxMinFlagPtr;
-	
+
 
 	CArrayPtr=NULL;
 	TArrayPtr=NULL;
 	errorFlag=0;
-	
+
 	/* Get handles just to make code more readable */
 	MaxMinHdl		= answers->EbbFloodSpeeds;
 	MaxMinTimeHdl	= answers->EbbFloodTimes;
 	MaxMinFlagHdl	= answers->EbbFlood;
 	ValHdl			= answers->speed;
 	TimeHdl			= answers->time;
-	
-	// Begin by declaring temp space on heap 
+
+	// Begin by declaring temp space on heap
 	// for a copy of the maxs and mins
 
 	NoOfMaxMins = answers->numEbbFloods;
@@ -633,7 +633,7 @@ short CurveFitOffsetCurve(COMPCURRENTS *answers,
 
 	// Note the two extra high/low times used for interpolation
 	// are stored at the end of the Time array
-	
+
 	/*TArrayPtr=(EXTFLAGPTR)NewPtrClear(sizeof(EXTFLAG)*(NoOfMaxMins+2) );
 	if(TArrayPtr==nil){
 		errorFlag=21;
@@ -642,7 +642,7 @@ short CurveFitOffsetCurve(COMPCURRENTS *answers,
 	//TArrayPtr = (EXTFLAG *)calloc(NoOfMaxMins+2,sizeof(EXTFLAG));
 	TArrayPtr = new EXTFLAG[NoOfMaxMins+2];
 	if (TArrayPtr==NULL) {errorFlag=21; goto Error;}
-	
+
 	/*OldMaxMinFlagPtr=(short *)NewPtrClear(sizeof(short)*(NoOfMaxMins + 2) );
 	if(OldMaxMinFlagPtr==nil){
 		errorFlag=37;
@@ -651,8 +651,8 @@ short CurveFitOffsetCurve(COMPCURRENTS *answers,
 	//OldMaxMinFlagPtr = (short *)calloc(NoOfMaxMins+2,sizeof(short));
 	OldMaxMinFlagPtr = new short[NoOfMaxMins+2];
 	if (OldMaxMinFlagPtr==NULL) {errorFlag=37; goto Error;}
-	
-	//OK now make copy of reference station data 
+
+	//OK now make copy of reference station data
 	// use copy instead of original data
     // 04/16/2013 - G.K. - but do not copy out of sequence points
 	for(i=0, j=0; i<(NoOfMaxMins+2); i++)
@@ -663,39 +663,39 @@ short CurveFitOffsetCurve(COMPCURRENTS *answers,
             TArrayPtr[j].flag = MaxMinTimeHdl[i].flag;
 		    OldMaxMinFlagPtr[j] = MaxMinFlagHdl[i];
             j++;
-	    }	
+	    }
     // 04/16/2013 - G.K.:
     NoOfMaxMins = j-2;
-	
+
 	/* for (i=0; i< (NoOfMaxMins+2); i++){
 		CArrayPtr[i] = MaxMinHdl[i];
 		TArrayPtr[i].val = MaxMinTimeHdl[i].val;
 		OldMaxMinFlagPtr[i] = MaxMinFlagHdl[i];
-	}*/	
+	}*/
 
 
-// ********	
-		
+// ********
+
 	numOfPoints = answers->nPts;
-		
+
 	zeroSlope = 0.0;
-			
+
  	for (i=0; i<numOfPoints; i++){
-	
+
 		t= startTime + i * (timestep/60.0);
 		if(t > (endTime) ){
 			t = endTime;
 		}
-		
+
 		errorFlag = GetFloodEbbKey(t,
 					  TArrayPtr,
 					  OldMaxMinFlagPtr,
 					  CArrayPtr,
 					  NoOfMaxMins,
 					  &flag);
-		
+
 		if(errorFlag == 0){
-				 		
+
 			errorFlag = GetFloodEbbSpans(t,
 					  	TArrayPtr,
 					  	OldMaxMinFlagPtr,
@@ -710,14 +710,14 @@ short CurveFitOffsetCurve(COMPCURRENTS *answers,
 						&previousMinusOneValue,
 						&nextPlusOneValue,
 					 	0);
-						
+
 			if(flag==FloodToMinBEbb){
 				flag = 1;
 	 			DoHermite(zeroSlope,previousMinusOneTime,previousValue,previousTime,
 	 		          nextValue,nextTime,nextPlusOneValue,nextPlusOneTime,t,
 					  &SpeedValue,flag);
 			}
-			
+
 			else if(flag==MinBFloodToFlood){
 				flag = 2;
 	 			DoHermite(previousMinusOneValue,previousMinusOneTime,previousValue,previousTime,nextValue,
@@ -738,7 +738,7 @@ short CurveFitOffsetCurve(COMPCURRENTS *answers,
 	 		          nextTime,zeroSlope,nextPlusOneTime,t,
 					  &SpeedValue,flag);
 			}
-			
+
 			else if(flag==EbbToFlood){
 				flag = 3;
 	 			DoHermite(zeroSlope,previousMinusOneTime,previousValue,previousTime,nextValue,
@@ -763,12 +763,12 @@ short CurveFitOffsetCurve(COMPCURRENTS *answers,
 	 		          nextTime,nextPlusOneValue,nextPlusOneTime,t,
 					  &SpeedValue,flag);
             }
-			
+
 			TimeHdl[i].val = t;
 	 		ValHdl[i] = SpeedValue;
 		}
 	}
- 
+
 Error:
 	//if(CArrayPtr) DisposePtr((Ptr)CArrayPtr);
 	//if(TArrayPtr) DisposePtr((Ptr)TArrayPtr);
@@ -788,25 +788,25 @@ Error:
 // ************************************************************
 void DoHermite(double v0,     // value at t0
 			   double t0,     // time t0
-			   double v1,     
-			   double t1,     
-			   double v2,     
-			   double t2,     
-			   double v3,    
-			   double t3,    
+			   double v1,
+			   double t1,
+			   double v2,
+			   double t2,
+			   double v3,
+			   double t3,
 			   double t,      // time for interpolation
 			   double *vTime, // returns value at time
 			   short    flag)   // if flag == 0 then compute slope
 			                    // if flag == 1 then v0 contains slope at t1
 								// if flag == 2 then v3 contains slope at t2
 								// if flag == 3 then v0 and v3 contain slopes
-{	
+{
 	double s1,s2,theValue;
-	
+
 	if(flag==0){
 		s1 = ( (v1-v0)/(t1-t0) + (v2-v1)/(t2-t1) ) * .5;
 		s2 = ( (v3-v2)/(t3-t2) + (v2-v1)/(t2-t1) ) * .5;
-	
+
 	}
 	else if(flag==1){
 		s1 = v0;
@@ -820,11 +820,11 @@ void DoHermite(double v0,     // value at t0
 		s1 = v0;
 		s2 = v3;
 	}
-	
+
 	Hermite(v1,s1,t1,v2,s2,t2,t,&theValue);
 	*vTime = theValue;
 	return;
-	
+
 }
 
 //**************************************************************
@@ -845,48 +845,48 @@ short DoOffSetCurrents (COMPCURRENTS *answers,  // Hdl to reference station heig
 	short FloodToMinBEbb=2, MinBEbbToEbb=3;
 	short FloodToEbb=4, EbbToFlood=5;
 	short maxFlood = 1, minBFlood = 0, maxEbb = 3, minBEbb = 2;
-	
-	
+
+
 	short mainStationFlag;
-	
+
 	short Key, offSetKey = 0, curveFitKey = 1;
 	double		*MaxMinHdl;
 	EXTFLAG *MaxMinTimeHdl;
 	short		*MaxMinFlagHdl;
 	short tryFixNum;
-	
+
 	EXTFLAG debugMe[100] ;  //debug , code goes here
 	EXTFLAG debugMeAfter[100] ;  //debug , code goes here
 	short debugMeFlagHdl[100] ;  //debug , code goes here
-	
+
 
 	errorFlag = 0;
 	Key = curveFitKey;
 	mainStationFlag = 0;
-	
+
 	/* Get handles just to make code more readable */
 	MaxMinHdl		= answers->EbbFloodSpeeds;
 	MaxMinTimeHdl	= answers->EbbFloodTimes;
 	MaxMinFlagHdl	= answers->EbbFlood;
-	
-	// Begin by declaring temp space on heap 
+
+	// Begin by declaring temp space on heap
 	// for a copy of the maxs and mins
-	
+
 	NoOfMaxMins = answers->numEbbFloods;
 	if(NoOfMaxMins<1){
 		errorFlag=19;
 		goto Error;
 	}
-	
+
 	// Check to make sure we got offset data before using it
-	
+
 	if( offset->MinBefFloodTime.dataAvailFlag!=1){
 		errorFlag=22;
 		goto Error;
 	}
 	MinBFloodOffset = offset->MinBefFloodTime.val;
 	if(MinBFloodOffset!=0.0)mainStationFlag = 1;
-	
+
 	if( offset->FloodTime.dataAvailFlag!=1){
 		errorFlag=23;
 		goto Error;
@@ -900,32 +900,32 @@ short DoOffSetCurrents (COMPCURRENTS *answers,  // Hdl to reference station heig
 	}
 	MinBEbbOffset =offset->MinBefEbbTime.val;
 	if(MinBEbbOffset!=0.0)mainStationFlag = 1;
-	
+
 	if( offset->EbbTime.dataAvailFlag!=1){
 		errorFlag=27;
 		goto Error;
 	}
 	MaxEbbOffset =offset->EbbTime.val;
 	if(MaxEbbOffset!=0.0)mainStationFlag = 1;
-	
+
 	if( offset->FloodSpdRatio.dataAvailFlag!=1){
 		errorFlag=24;
 		goto Error;
 	}
 	FloodRatio = offset->FloodSpdRatio.val;
 	if(FloodRatio!=1.0)mainStationFlag = 1;
-	
+
 	if( offset->EbbSpdRatio.dataAvailFlag!=1){
 		errorFlag=25;
 		goto Error;
 	}
 	EbbRatio = offset->EbbSpdRatio.val;
 	if(EbbRatio!=1.0)mainStationFlag = 1;
-	
-	
+
+
 	// Check to see if we have main station ... if we do,
 	// forget about offsets, just fill the U V handles and return
-	
+
 	// davew 2/9/4: Cheasapeake Bay Entrance was returning nil for u,v handles (not what we wanted)
 	// Bushy and I fixed it by REMOVING the if(rotFlag==3) check. We don't know what this check
 	// was for or what 3 means. We do know that
@@ -941,9 +941,9 @@ short DoOffSetCurrents (COMPCURRENTS *answers,  // Hdl to reference station heig
 		//}
         // 02/24/14 G.K. - commented out next to apply interpolation cases for main stations too
         // TODO: test it more for all key cases and rotary stations
-        // return errorFlag;	
+        // return errorFlag;
     }
-	
+
 	// OK we are OK with max and min corrections
 	// We now need to fix the full array
 
@@ -951,15 +951,15 @@ short DoOffSetCurrents (COMPCURRENTS *answers,  // Hdl to reference station heig
 	// We can curve fit the high low array
 	// Or we can adjust the reference curve
 	// point by point
-	
 
-	
+
+
 
 	if(Key==offSetKey){
  		errorFlag = OffsetReferenceCurve(answers,offset);
 	}
-	
-	
+
+
 	/////////////////////////////////////////////////
 	// debug , code goes here
 	{
@@ -971,11 +971,11 @@ short DoOffSetCurrents (COMPCURRENTS *answers,  // Hdl to reference station heig
 	}
 	/////////////////////////////////////////////////
 
-	
+
 
 //  *** OK now loop through and add corrections to the hummer
 	for(i=0; i< (NoOfMaxMins+2); i++){
-		
+
 		if( MaxMinFlagHdl[i] == maxFlood){
 			MaxMinTimeHdl[i].val = MaxMinTimeHdl[i].val + MaxFloodOffset;
 			MaxMinHdl[i]= MaxMinHdl[i] * FloodRatio;
@@ -1022,10 +1022,10 @@ short DoOffSetCurrents (COMPCURRENTS *answers,  // Hdl to reference station heig
 	// points, we will flag those points so Andy can
 	// use a different line weight to plot with
 
-    // 04/12/2013 - G.K. - actually old code marks out of sequence 
-    // peak points but does nothing with them later - just sets a 
+    // 04/12/2013 - G.K. - actually old code marks out of sequence
+    // peak points but does nothing with them later - just sets a
     // correspondent error flag. Now we will try to interpolate
-    // ones later in CurveFitOffsetCurve(...) function (since curveFitKey 
+    // ones later in CurveFitOffsetCurve(...) function (since curveFitKey
     // branch is active here). So commented out setting the error flag.
 
 	#define MAXNUMTRIES 5
@@ -1036,7 +1036,7 @@ short DoOffSetCurrents (COMPCURRENTS *answers,  // Hdl to reference station heig
 		{
 			if( MaxMinTimeHdl[i].val < MaxMinTimeHdl[i-1].val )
 			{
-				Boolean tryFixingPts = (tryFixNum < (MAXNUMTRIES - 1) 
+				Boolean tryFixingPts = (tryFixNum < (MAXNUMTRIES - 1)
 												&& (NoOfMaxMins > 2)
 												//&& (!OptionKeyDown()) // for debugging
 												);
@@ -1044,7 +1044,7 @@ short DoOffSetCurrents (COMPCURRENTS *answers,  // Hdl to reference station heig
 				{	// new plan, try to ignore the points causing the error
 					// if one of them is a minBFlood or minBEbb gets out of sequence
 					// Just take the midpoint of the time values set the time difference to 1 minute
-					if(MaxMinTimeHdl[i-1].flag == minBEbb 
+					if(MaxMinTimeHdl[i-1].flag == minBEbb
 						|| MaxMinTimeHdl[i-1].flag == minBFlood
 						|| MaxMinTimeHdl[i].flag == minBEbb
 						|| MaxMinTimeHdl[i].flag == minBFlood)
@@ -1070,12 +1070,12 @@ short DoOffSetCurrents (COMPCURRENTS *answers,  // Hdl to reference station heig
  		errorFlag = CurveFitOffsetCurve( answers,
 										 OldBeginHour,
 										 OldEndHour,
-										 timestep); 
+										 timestep);
 	}
 
 	// OK now we adjust the u and v vectors to match the
 	// offset station data
-	
+
 	errorFlag = OffsetUV ( answers,offset);
 
 Error:
@@ -1100,7 +1100,7 @@ short FindExtraFE(double			*AMPA,				// amplitude corrected for year
 					short			*extraFlag,			// key to what *extraValue is
 					double			refCur,				// reference current in knots
 					short			CFlag)				// hydraulic station flag
-						
+
 // Function to compute extra max and min values
 // We need one value before first high low and one after
 // So we can interpolate
@@ -1114,26 +1114,26 @@ short FindExtraFE(double			*AMPA,				// amplitude corrected for year
 	short		*tHdl;
 	short EbbKey = 3, FloodKey = 1,MinBFloodKey = 0,MinBEbbKey = 2;
 	// OK begin by looking for first one before our data
-	
+
 	// Check first if max value or min value
-	
+
 		tHdl = answers->EbbFlood;
 		THdl = answers->time;
 		CHdl = answers->speed;
 		nPts = answers->nPts;
 		nFE  = answers->numEbbFloods;
-		
+
 		firstTime = THdl[0].val;
 		lastValue = CHdl[0];
-		
+
 		dt = 1.0/60.0;
-		
+
 		// go for max of 24 hours at 1 minute intervals
 		// and look for max or min
-		
+
 		// if first value is min before flood
 		// look for previous ebb
-		if( tHdl[0]==MinBFloodKey){ 
+		if( tHdl[0]==MinBFloodKey){
 			//look for max ebb
 			for(i=1;i<1441;i++){
 				t = firstTime - dt*i;
@@ -1143,7 +1143,7 @@ short FindExtraFE(double			*AMPA,				// amplitude corrected for year
 			}
 				*zeroFlag = EbbKey;
 		}
-		
+
 		// if first value is max flood
 		// look for min before flood
 		else if(tHdl[0]==FloodKey){
@@ -1160,7 +1160,7 @@ short FindExtraFE(double			*AMPA,				// amplitude corrected for year
 				lastValue = c;
 			}
 		}
-		
+
 		// if first value is min before ebb
 		// look for flood
 		else if(tHdl[0]==MinBEbbKey){
@@ -1173,7 +1173,7 @@ short FindExtraFE(double			*AMPA,				// amplitude corrected for year
 			}
 				*zeroFlag = FloodKey;
 		}
-		
+
 		// if first value is max ebb
 		// look for min before ebb
 		else if(tHdl[0]==EbbKey){
@@ -1187,31 +1187,31 @@ short FindExtraFE(double			*AMPA,				// amplitude corrected for year
 						*zeroFlag = FloodKey;
 						break;
 				}
-				
+
 				lastValue = c;
 			}
 		}
-		
+
 		else {  // error
 			return 25;
 		}
-		
+
 		*zeroTime = t + dt/2.0;
 		*zeroValue = RStatCurrent(*zeroTime,AMPA,epoch,refCur,numOfConstituents,CFlag);
-		
+
 		// Now find the time after the last time
-		
+
 		lastTime = THdl[nPts-1].val;
 		lastValue = CHdl[nPts-1];
-				
+
 		// go for max of 24 hours at 1 minute intervals
 		// and look for max or min
-		
-		
+
+
 		// if last time is a min before flood
 		// look for flood
-		if( tHdl[nFE-1]==MinBFloodKey){ 
-			
+		if( tHdl[nFE-1]==MinBFloodKey){
+
 			for(i=1;i<1441;i++){
 				t = lastTime + dt*i;
 				c = RStatCurrent(t,AMPA,epoch,refCur,numOfConstituents,CFlag);
@@ -1220,11 +1220,11 @@ short FindExtraFE(double			*AMPA,				// amplitude corrected for year
 			}
 			*extraFlag = FloodKey;
 		}
-		
+
 		// if last time is a max flood
 		// look for min before ebb
 		else if( tHdl[nFE-1]==FloodKey){
-			
+
 			for(i=1;i<1441;i++){
 				t = lastTime + dt*i;
 				c = RStatCurrent(t,AMPA,epoch,refCur,numOfConstituents,CFlag);
@@ -1232,22 +1232,22 @@ short FindExtraFE(double			*AMPA,				// amplitude corrected for year
 					*extraFlag = MinBEbbKey;
 					break;
 				}
-				
+
 				//OK now check incase we don't slack but go
 				// directly to max ebb ... currents don't turn for ebb
 				if( c > lastValue){
 					*extraFlag = EbbKey;
 					break;
 				}
-				
+
 				lastValue = c;
 			}
 		}
-		
+
 		// if last time is a min before ebb
 		// look for ebb
 		else if( tHdl[nFE-1]==MinBEbbKey){
-			
+
 			for(i=1;i<1441;i++){
 				t = lastTime + dt*i;
 				c = RStatCurrent(t,AMPA,epoch,refCur,numOfConstituents,CFlag);
@@ -1256,11 +1256,11 @@ short FindExtraFE(double			*AMPA,				// amplitude corrected for year
 			}
 			*extraFlag = EbbKey;
 		}
-		
+
 		// if last time is a max ebb
 		// look for min before flood
 		else if( tHdl[nFE-1]==EbbKey){
-			
+
 			for(i=1;i<1441;i++){
 				t = lastTime + dt*i;
 				c = RStatCurrent(t,AMPA,epoch,refCur,numOfConstituents,CFlag);
@@ -1277,10 +1277,10 @@ short FindExtraFE(double			*AMPA,				// amplitude corrected for year
 				lastValue = c;
 			}
 		}
-		
+
 		*extraTime = t - dt/2.0;
 		*extraValue = RStatCurrent(*extraTime,AMPA,epoch,refCur,numOfConstituents,CFlag);
-		
+
 	return 0;
 }
 
@@ -1296,8 +1296,8 @@ short FindExtraFERot(double				*AMPA,				// amplitude corrected for year
 						double			*lastTime,			// last max-min value
 						double			*lastValue,			// last max-min value
 						short			*lastFlag,			// last max-min flag
-						CONSTITUENT *constituent)		// Handle to constituent data               
-						
+						CONSTITUENT *constituent)		// Handle to constituent data
+
 // Function to compute extra high and low values
 // if current data is rotary data
 // We need one value before first high low and one after
@@ -1319,48 +1319,48 @@ short FindExtraFERot(double				*AMPA,				// amplitude corrected for year
 	short floodKey = 1;
 	short minBEbbKey = 2;
 	short ebbKey = 3;
-	
-	
+
+
 	// OK begin by looking for first one before our data begins
-	
+
 	// Check first if max value or min value
-	
+
 		KeyHdl = answers->EbbFlood;
 		THdl = answers->time;
 		CHdl = answers->speed;
 		nPts = answers->nPts;
 		nFE  = answers->numEbbFloods;
-		
+
 		t2 = THdl[1].val;
 		t1 = THdl[0].val;
 		val2 = CHdl[1];
 		val1 = CHdl[0];
 		firstTime = t1;
-		
+
 		dt = 10.0/60.0;
-		
+
 		// go for max of 24 hours at 1 minute intervals
 		// and look for max or min.
-		
+
 		for (i=1;i<145;i++){
 			t0 = firstTime - dt*i;
 			val0 = RStatCurrentRot(t0,AMPA,epoch,numOfConstituents,constituent,999.0,999.0,
 				&uVelocity,&vVelocity,&vMajor,&vMinor,&direcKey);
-		
+
 			// check for zero crossing
 			zeroKey = zeroCross(val0,val1,val2);
-			
+
 			// check for slope change
 			slopeKey = slopeChange(val0,val1,val2);
-			
+
 			// OK if we have a slope change or a sign change
 			// we loop through at 1 minute intervals and
 			// pick up the time and value we need to the minute
-			
+
 			if( (zeroKey!=0) || (slopeKey!=0) ){
-			
+
 				// OK now figure out what we are looking for ... to set MaxMinFlag
-				
+
 				// if first max - min was minBFloodKey we are looking
 				// for ebb
 				if( KeyHdl[0]==minBFloodKey){
@@ -1378,17 +1378,17 @@ short FindExtraFERot(double				*AMPA,				// amplitude corrected for year
 				else {
 					MaxMinFlag = minBEbbKey;
 				}
-				
+
 				// OK now go find the max or min to the minute
-				
+
 				errorFlag = FindFloodEbbRot(t0,t2,MaxMinFlag,AMPA,epoch,numOfConstituents,
 					&theCurrent,&theTime,constituent,999,999);
-					
+
 				if(errorFlag!=0)return errorFlag;
-				
+
 				break;
 			}
-			
+
 			// If we get here, we just continue
 			else {
 				t2 = t1;
@@ -1397,10 +1397,10 @@ short FindExtraFERot(double				*AMPA,				// amplitude corrected for year
 				val1 = val0;
 			}
 		}
-		
+
 		//OK we have found max - min before first data point
 		// Save info and go on to find max - min beyond last data
-		
+
 		*zeroTime = theTime;
 		*zeroValue = theCurrent;
 		*zeroFlag = MaxMinFlag;
@@ -1408,39 +1408,39 @@ short FindExtraFERot(double				*AMPA,				// amplitude corrected for year
 // *************************************************
 
 	// Now find the time after the last time
-		
+
 		t0 = THdl[nPts-2].val;
 		t1 = THdl[nPts-1].val;
 		val0 = CHdl[nPts-2];
 		val1 = CHdl[nPts-1];
-		
+
 		dt = 10.0/60.0;
-		
+
 		firstTime = t1;
-		
+
 		// go for max of 24 hours at 10 minute intervals
 		// and look for max or min.
-		
+
 		for (i=1;i<145;i++){
 			t2 = firstTime + dt*i;
 			val2 = RStatCurrentRot(t2,AMPA,epoch,numOfConstituents,constituent,val0,val1,
 				&uVelocity,&vVelocity,&vMajor,&vMinor,&direcKey);
-		
+
 			// check for zero crossing
 			zeroKey = zeroCross(val0,val1,val2);
-			
+
 			// check for slope change
 			slopeKey = slopeChange(val0,val1,val2);
-			
+
 			// OK if we have a slope change or a sign change
 			// we loop through at 1 minute intervals and
 			// pick up the time and value we need to the minute
 			// Can't check if in first step becuase we already picked
 			// it up in the regular data.
 			if( ( (zeroKey!=0) || (slopeKey!=0) ) && (i>1) ){
-			
+
 				// OK now figure out what we are looking for ... to set MaxMinFlag
-				
+
 				// if last max - min was minBFloodKey we are looking
 				// for flood
 				if( KeyHdl[nFE-1]==minBFloodKey){
@@ -1458,17 +1458,17 @@ short FindExtraFERot(double				*AMPA,				// amplitude corrected for year
 				else {
 					MaxMinFlag = minBFloodKey;
 				}
-				
+
 				// OK now go find the max or min to the minute
-				
+
 				errorFlag = FindFloodEbbRot(t0,t2,MaxMinFlag,AMPA,epoch,numOfConstituents,
 					&theCurrent,&theTime,constituent,val0,val1);
-					
+
 				if(errorFlag!=0)return errorFlag;
-				
+
 				break;
 			}
-			
+
 			// If we get here, we just continue
 			else {
 				t0 = t1;
@@ -1477,14 +1477,14 @@ short FindExtraFERot(double				*AMPA,				// amplitude corrected for year
 				val1 = val2;
 			}
 		}
-		
+
 		//OK we have found max - min before first data point
 		// Save info and go on to find max - min beyond last data
-		
+
 		*lastTime = theTime;
 		*lastValue = theCurrent;
 		*lastFlag = MaxMinFlag;
-		
+
 	return 0;
 }
 
@@ -1500,7 +1500,7 @@ short FindFloodEbb(	double	startTime,			// start time in hrs from begining of ye
 					double	*theTime,			// the high or low tide time
 					double	refCur,				// reference current in knots
 					short	CFlag)				// hydraulic station flag
-					
+
 // routine to take start time, end time and solve for
 // current at 1 minute intervals.  It picks out the low or high
 // value and returns it and it's time.
@@ -1511,10 +1511,10 @@ short FindFloodEbb(	double	startTime,			// start time in hrs from begining of ye
 	long numOfSteps,i;
 	short maxFlood=1,minBFlood=0;
 	short minBEbb=2, maxEbb=3;
-	 
+
 	// compute number of time steps ... if start time and end time
 	// less than or equal to 3 minutes apart, interpolate and return
-	
+
 	timeSpan = endTime - startTime;
 	if(timeSpan<= .05) {  // less than 3 minutes
 		t = (startTime + endTime)/2.0;
@@ -1523,7 +1523,7 @@ short FindFloodEbb(	double	startTime,			// start time in hrs from begining of ye
 		*theTime = t;
 		return 0;
 	}
-	
+
 	// Now if we get here, we gotta step through time and search
 	// for flood or ebb on 1 minute intervals
 	// The plan is that if we are looking for a low, then
@@ -1532,13 +1532,13 @@ short FindFloodEbb(	double	startTime,			// start time in hrs from begining of ye
 	// value and cut out.
 	// We do just the opposite for searching for high values.
 	// We also gotta find zero crossings
-	
+
 	numOfSteps = timeSpan * 60.0 + 1.5;
-	
+
 	t0 = startTime;
 	c0 = RStatCurrent(t0,AMPA,epoch,refCur,numOfConstituents,CFlag);
 	findFlag=-1;
-	
+
 	for (i=1; i<numOfSteps; i++){
 		t1 = t0 + 1.0/60.0;
 		c1 = RStatCurrent(t1,AMPA,epoch,refCur,numOfConstituents,CFlag);
@@ -1574,7 +1574,7 @@ short FindFloodEbb(	double	startTime,			// start time in hrs from begining of ye
 				break;
 			}
 		}
-		
+
 		c0=c1;
 		t0=t1;
 	}
@@ -1606,7 +1606,7 @@ short FindFloodEbbRot(double		startTime,			// start time in hrs from begining of
 					CONSTITUENT		*constituent,
 					double			oldTwoCurrentsAgo,
 					double			oldLastCurrent)
-					
+
 // routine to take start time, end time and solve for
 // current at 1 minute intervals.  It picks out the low or high
 // value and returns it and its time.
@@ -1619,11 +1619,11 @@ short FindFloodEbbRot(double		startTime,			// start time in hrs from begining of
 	short maxFlood=1,minBFlood=0;
 	short minBEbb=2, maxEbb=3;
 	short direcKey;
-	 
+
 	// compute number of time steps ... if start time and end time
 	// less than or equal to 3 minutes apart, interpolate and return
 	 c1 = 0.0;
-	 
+
 	timeSpan = endTime - startTime;
 	if(timeSpan<= .05) {  // less than 3 minutes
 		t = (startTime + endTime)/2.0;
@@ -1633,7 +1633,7 @@ short FindFloodEbbRot(double		startTime,			// start time in hrs from begining of
 		*theTime = t;
 		return 0;
 	}
-	
+
 	// Now if we get here, we gotta step through time and search
 	// for flood or ebb on 1 minute intervals
 	// The plan is that if we are looking for a low, then
@@ -1642,13 +1642,13 @@ short FindFloodEbbRot(double		startTime,			// start time in hrs from begining of
 	// value and cut out.
 	// We do just the opposite for searching for high values.
 	// We also gotta find zero crossings
-	
+
 	numOfSteps = timeSpan * 60.0 + 1.5;
-	
+
 	t0 = startTime;
 	c0 = oldTwoCurrentsAgo;
 	findFlag=-1;
-	
+
 	for (i=1; i<numOfSteps; i++){
 		t1 = t0 + 1.0/60.0;
 		if(i==1){
@@ -1659,7 +1659,7 @@ short FindFloodEbbRot(double		startTime,			// start time in hrs from begining of
 			twoCurrentsAgo = lastCurrent;
 			lastCurrent = c1;
 		}
-		
+
 		c1 = RStatCurrentRot(t1,AMPA,epoch,numOfConstituents,constituent,twoCurrentsAgo,
 							lastCurrent,&uVelocity,&vVelocity,&vMajor,&vMinor,&direcKey);
 		if(MaxMinFlag==maxFlood){
@@ -1708,7 +1708,7 @@ short FindFloodEbbRot(double		startTime,			// start time in hrs from begining of
 				break;
 			}
 		}
-		
+
 		c0=c1;
 		t0=t1;
 	}
@@ -1727,7 +1727,7 @@ short FindFloodEbbRot(double		startTime,			// start time in hrs from begining of
 }
 
 short FixAngle(short angle)
-{	
+{
 // input an angle from north ... direction is toward
 /**************************************************************/
 	// first quardrant
@@ -1766,26 +1766,26 @@ void FixCEnds(COMPCURRENTS *answers,double beginTime, double endTime,short rotFl
 	long numberOfPoints,i,startCross,endCross,numberOfEbbsFloods;
 	double w1,w2,dt,dt1,ratio;
 	double firstPointValue,lastPointValue;
-	
+
 	numberOfPoints	= answers->nPts;
 	theTimeHdl		= answers->time;
 	theCurrentHdl	= answers->speed;
 	theUHdl			= answers->u;
 	theVHdl			= answers->v;
-	
-	// OK check if offset station that uses rotary 
+
+	// OK check if offset station that uses rotary
 	// if it does, we turn off the rotFlag because
 	// the u v handles are nilled out
-	
+
 	if( (theUHdl==0) || (theVHdl==0) ) rotFlag = 0;
-	
+
 	// the max min array stuff
 	numberOfEbbsFloods = answers->numEbbFloods;
 	EFTimesHdl = answers->EbbFloodTimes;
-	
+
 	// begin by finding where it crosses beginTime
 	// and endTime
-	
+
 	startCross = -1;
 	endCross = -1;
 	for (i=1;i<numberOfPoints;i++){
@@ -1800,46 +1800,46 @@ void FixCEnds(COMPCURRENTS *answers,double beginTime, double endTime,short rotFl
 			}
 		}
 	}
-	
+
 	if(startCross==-1)startCross = 0;
 	if(endCross==-1)endCross = numberOfPoints-2;
-	
+
 	// Now gotta get interpolated values
-	
+
 	dt = theTimeHdl[startCross+1].val - theTimeHdl[startCross].val;
 	dt1 = beginTime - theTimeHdl[startCross].val;
 	w2 = dt1/dt;
 	w1 = 1.0 - w2;
-	
-	firstPointValue = w1 * theCurrentHdl[startCross] + 
+
+	firstPointValue = w1 * theCurrentHdl[startCross] +
 	                  w2 * theCurrentHdl[startCross+1];
-					  
+
 
 	dt = theTimeHdl[endCross+1].val - theTimeHdl[endCross].val;
 	dt1 = endTime - theTimeHdl[endCross].val;
 	w2 = dt1/dt;
 	w1 = 1.0 - w2;
-	
-	lastPointValue = w1 * theCurrentHdl[endCross] + 
+
+	lastPointValue = w1 * theCurrentHdl[endCross] +
 	                 w2 * theCurrentHdl[endCross+1];
-					  
+
 	// Now reset one array value and time if they overshoot
 	// If overshoot is more than one point, just change flag on time array
-	
+
 	for (i=0;i<(startCross+1);i++){
-	
+
 		if(i==startCross){
 			theTimeHdl[i].val = beginTime;
-		
+
 			// OK now fix u and v velocity values if we have
 			// rotary currents
-		
+
 			if( (rotFlag==1) || (rotFlag==2) ){
 				ratio = firstPointValue/theCurrentHdl[i];
 				theUHdl[i]=ratio*theUHdl[i];
 				theVHdl[i]=ratio*theVHdl[i];
 			}
-		
+
 			theCurrentHdl[i] = firstPointValue;
 		}
 		else {
@@ -1850,25 +1850,25 @@ void FixCEnds(COMPCURRENTS *answers,double beginTime, double endTime,short rotFl
 	for (i=(endCross+1);i<numberOfPoints;i++){
 		if( i == (endCross+1) ){
 			theTimeHdl[i].val = endTime;
-		
+
 			// OK now fix u and v velocity values if we have
 			// rotary currents
-		
+
 			if(  (rotFlag==1) || (rotFlag==2) ){
 				ratio = lastPointValue/theCurrentHdl[i];
 				theUHdl[i]=ratio*theUHdl[i];
 				theVHdl[i]=ratio*theVHdl[i];
 			}
-		
+
 			theCurrentHdl[i] = lastPointValue;
 		}
 		else {
 			theTimeHdl[i].flag = 1;
 		}
 	}
-	
+
 	// Now check flood and ebb array for overshoot
-	
+
 	for (i=0;i<numberOfEbbsFloods;i++){
 		if( EFTimesHdl[i].val < beginTime) {
 			EFTimesHdl[i].flag = 1;
@@ -1877,16 +1877,16 @@ void FixCEnds(COMPCURRENTS *answers,double beginTime, double endTime,short rotFl
 			EFTimesHdl[i].flag = 1;
 		}
 	}
-	
+
 	return;
 }
 
 void FixCurve(COMPCURRENTS *answers)
-                
+
 //
 // The idea here is to go through the velocity array for plotting and
 // change the curve in the vicinity of the zero crossing.
-// 
+//
 {
 	double		*theCurrentHdl,*maxMinHdl;
 	EXTFLAG 	*theTimeHdl,*maxMinTHdl;
@@ -1894,7 +1894,7 @@ void FixCurve(COMPCURRENTS *answers)
 	long numberOfPoints,i,nFloodEbbs,j,flag;
 	double t,c,t0,t1,t2,t3;
 	double v0,v1,v2,v3,s;
-	
+
 	numberOfPoints	= answers->nPts;
 	theTimeHdl		= answers->time;
 	theCurrentHdl	= answers->speed;
@@ -1902,10 +1902,10 @@ void FixCurve(COMPCURRENTS *answers)
 	maxMinHdl		= answers->EbbFloodSpeeds;
 	maxMinTHdl		= answers->EbbFloodTimes;
 	keyHdl			= answers->EbbFlood;
-	
-	
+
+
 	// Now loop through and do the Hermite fit
-	
+
 	for (i=1;i<nFloodEbbs;i++){
 		t1 = maxMinTHdl[i-1].val;
 		t2 = maxMinTHdl[i].val;
@@ -1929,25 +1929,25 @@ void FixCurve(COMPCURRENTS *answers)
 			v3 = maxMinHdl[i+1];
 			t3 = maxMinTHdl[i+1].val;
 		}
-		
+
 		// OK now loop through all the points and if they fall
 		// between t0 and t3, recompute using hermite
-		
+
 		flag = 0;
 		for (j=0; j<numberOfPoints; j++){
 			t = theTimeHdl[j].val;
-			
+
 				if( (t<=t2) && (t>=t1) ){
 					DoHermite(v0,t0,v1,t1,v2,t2,v3,t3,t,&c,flag);
 					theCurrentHdl[j] = c;
 				}
-		
+
 		}
 	}
 
 		for (j=0; j<numberOfPoints; j++){
 			t = theTimeHdl[j].val;
-			
+
 			if( (t<maxMinTHdl[0].val) && (t>theTimeHdl[0].val) ){
 					v0 = theCurrentHdl[0];
 					t0 = theTimeHdl[0].val;
@@ -1970,11 +1970,11 @@ void FixCurve(COMPCURRENTS *answers)
 					t2 = theTimeHdl[numberOfPoints-1].val;
 					t3 = t2;
 					s  = (v2-v1)/(t2-t1);
-					
+
 					DoHermite(v0,t0,v1,t1,v2,t2,s,t3,t,&c,2);
 					theCurrentHdl[j] = c;
 			}
-		
+
 		}
 	return;
 }
@@ -1987,26 +1987,26 @@ short FixMajMinFlags(EXTFLAG *THdl,
 					 double *MaxMinHdl,
 					 EXTFLAG *MaxMinTHdl,
 					 short MaxMinCount)
-					 
+
 // Function to check plot flag for major - minor current
 // station.  Function makes sure that we have no plot
 // flags in pairs.
 {
 	short i,j,k,k1,isign,jsign,jstop;
 	double oldSpeed,newSpeed,dv,oldTime,newTime,dt;
-	
-	
+
+
 		for (i= 1; i< (NumOfSteps-1); i++){
 			if(  ( (THdl[i].flag==1) && (THdl[i+1].flag!=1) ) &&
 				 ( (THdl[i].flag==1) && (THdl[i-1].flag!=1) ) ){
-				
+
 				// OK back up and look for transition
 				isign = 1;
 				if(CHdl[i] < 0.0)isign = -1;
 				jstop = i-5;
 				if(jstop<0)jstop = 0;
 				k = 0;
-				
+
 				for (j= (i-1);j>jstop;j--){
 					jsign = 1;
 					if( CHdl[j] < 0.0) jsign = -1;
@@ -2015,19 +2015,19 @@ short FixMajMinFlags(EXTFLAG *THdl,
 						break;
 					}
 				}
-				
+
 				if(k!=0){
 					for (j=k;j<i;j++){
 						THdl[j].flag=1;
 					}
 				}
-				
+
 				else {
 					// OK if we get here we gotta search foward
 					// to look for sign change
-				
+
 					jstop = i+6;
-					
+
 					if(jstop > NumOfSteps ) jstop = NumOfSteps;
 					for (j= (i+1);j<jstop;j++){
 						jsign = 1;
@@ -2041,31 +2041,31 @@ short FixMajMinFlags(EXTFLAG *THdl,
 						for(j=i;j<(k+1);j++){
 							THdl[j].flag=1;
 						}
-					
+
 						// OK here we modify the index i so we
-						// can continue the search foward for 
+						// can continue the search foward for
 						// more wierdness
-					
+
 						i = k + 1;
 					}
-				
+
 					// here we have problems!
 					else {
 						// Let's just take out the offending code
 						THdl[j].flag=0;
 					}
-					
+
 				}
-								
+
 			}
 		}
 
 // Now check to make sure that we span the transition between
 // flood and ebb with the no plot flag
 
-		
+
 		for (i= 1; i< (NumOfSteps-1); i++){
-		
+
 			if(  ( (THdl[i].flag==1) && (THdl[i+1].flag==1) ) ){
 				// OK make sure we cross the 0 line
 				k = 0;
@@ -2081,17 +2081,17 @@ short FixMajMinFlags(EXTFLAG *THdl,
 						break;
 					}
 				}
-				
+
 				// OK now extend the no plot flag if it doesn't span the
 				// transition from flood to ebb
-				
+
 				for (j=i;j<(k+1);j++){
 					THdl[j].flag=1;
 				}
 			}
-			
+
 		}
-		
+
 	// OK now we check max min arrays.  This check will look for
 	// a flat curve where the algorythm picks up on extra mins and
 	// maxs.  The tide book ignores these so we will too.  The
@@ -2099,7 +2099,7 @@ short FixMajMinFlags(EXTFLAG *THdl,
 	// the current differences are less than 0.005 knots in less
 	// than 1 hour.  For an example, check Boston Harbor entrance
 	// on March 17, 1994.
-	
+
 	for (i=0;i< (MaxMinCount-1);i++){
 		 k=i;
 		 k1 = i+1;
@@ -2109,10 +2109,10 @@ short FixMajMinFlags(EXTFLAG *THdl,
 		 if(MaxMinTHdl[i+1].flag==1) {
 		 	k1=i+2;
 		 }
-		 
+
 		oldSpeed = MaxMinHdl[k];
 		newSpeed = MaxMinHdl[k1];
-		 
+
 		// check difference
 		dv = fabs(newSpeed - oldSpeed);
 		if( (dv<0.005)){
@@ -2126,13 +2126,13 @@ short FixMajMinFlags(EXTFLAG *THdl,
 			}
 		}
 	}
-	
-	
+
+
 	// OK here is a wierd one
 	// We check to see if for rotary stations the transition from
 	// flood to ebb doesn't take a quantum jump.  This could happen
 	// if our check for the dot product doesn't produce any no plot flags
-	
+
 	for (i=0;i< (NumOfSteps-1);i++){
 		if( ( THdl[i].flag==0) && (THdl[i+1].flag==0) ) {
 			oldSpeed = CHdl[i];
@@ -2152,20 +2152,20 @@ short FixMajMinFlags(EXTFLAG *THdl,
 
 //*********************************************************************
 short GetCDirec(CONSTITUENT *constituent, short *FDir, short *EDir)
-{	
+{
 	short errorFlag,flood,ebb;
-	
+
     // Assume space already allocated
 
 	//flood = constituent->DatumControls.FDir;
 	//ebb = constituent->DatumControls.EDir;
-	
+
 	flood = constituent[0].DatumControls.FDir;			// more explicit
 	ebb = constituent[0].DatumControls.EDir;			// more explicit
-	
+
 	*FDir = FixAngle(flood);
 	*EDir = FixAngle(ebb);
-	
+
 	// check value
 	errorFlag = 0;
 	if( (*FDir<0) || (*FDir>360) )errorFlag = 33;
@@ -2179,15 +2179,15 @@ short GetControlFlags(CONSTITUENT *constituent,	// Constituent data handle
                       short *L2Flag,					// L2 frequency flag
 					  short *HFlag,						// Hydraulic station flag
                       short *RotFlag)					// Rotary station flag.........if any flag = 1 we got anomaly
-{	
+{
 	short	err=0;
-	
+
     // Assume space already allocated
 
 	(*L2Flag)	= (constituent->DatumControls).L2Flag;
 	(*HFlag)	= (constituent->DatumControls).HFlag;
 	(*RotFlag)	= (constituent->DatumControls).RotFlag;
-	
+
 	// Check values to make sure it makes sense
 
 	if( (*L2Flag < 0) || (*L2Flag > 1) ){ err = 1; }
@@ -2202,16 +2202,16 @@ short GetControlFlagsAlternate(	CONTROLVAR *cntrlvars,	// Control variables stru
                      			short *L2Flag,			// L2 frequency flag
 								short *HFlag,			// Hydraulic station flag
                					short *RotFlag)			// Rotary station flag.........if any flag = 1 we got anomaly
-{	
+{
 	// code not used
 	short	err=0;
-	
+
     // Assume space already allocated
 
 	(*L2Flag)	= cntrlvars->L2Flag;
 	(*HFlag)	= cntrlvars->HFlag;
 	(*RotFlag)	= cntrlvars->RotFlag;
-	
+
 	// Check values to make sure it makes sense
 
 	if( (*L2Flag < 0) || (*L2Flag > 1) ){ err = 1; }
@@ -2223,7 +2223,7 @@ short GetControlFlagsAlternate(	CONTROLVAR *cntrlvars,	// Control variables stru
 
 /*---------------------------------------------*/
 double GetDatum(CONSTITUENT *constituent)
-{	
+{
 	double datum;
 
 	datum = constituent->DatumControls.datum;
@@ -2234,11 +2234,11 @@ double GetDatum(CONSTITUENT *constituent)
 double GetDatum2(CONSTITUENT *constituent,short index)
 
 // function to pull of reference current for rotary data
-{	
+{
 	double datum;
 
 	datum =constituent[index].DatumControls.datum;
-	
+
 	return datum;
 }
 
@@ -2258,7 +2258,7 @@ short GetFloodEbbKey(double t,
 	short errorFlag,previousIndex,nextIndex;
 	double previousValue,nextValue;
 	short maxFlood = 1, minBFlood = 0, maxEbb = 3, minBEbb = 2;
-	
+
 	errorFlag = 0;
 	nextIndex = -1;
 
@@ -2271,13 +2271,13 @@ short GetFloodEbbKey(double t,
 		if(TArrayPtr[numOfMaxMins].val>t){
 			return 40;
 		}
-		
+
 		previousValue = CArrayPtr[numOfMaxMins];
 		nextValue = CArrayPtr[0];
 		previousIndex = numOfMaxMins;
 		nextIndex = 0;
 	}
-	
+
 //
 // Special check for last segment
 //
@@ -2285,17 +2285,17 @@ short GetFloodEbbKey(double t,
 		if(TArrayPtr[numOfMaxMins+1].val<t){
 			return 40;
 		}
-		
+
 		previousValue = CArrayPtr[numOfMaxMins-1];
 		nextValue = CArrayPtr[numOfMaxMins+1];
 		previousIndex = numOfMaxMins-1;
 		nextIndex = numOfMaxMins+1;
 	}
-	
+
 	 if(nextIndex==-1){
 
 		for (i=0;i<numOfMaxMins;i++){
-	
+
 			if(TArrayPtr[i].val<=t){
 				previousValue = CArrayPtr[i];
 				previousIndex = i;
@@ -2308,17 +2308,17 @@ short GetFloodEbbKey(double t,
 				}
 			}
 		}
-	
+
 	}
-	
+
 	// OK by the time we get here, we have a previous and a next value ...
-	
+
 	if(nextIndex==-1)return 40;
-	
+
 	// Now check values to come up with code
-	
-	// Normal stuff first where one of the values is 0 
-	
+
+	// Normal stuff first where one of the values is 0
+
 	if(previousValue==0.0){
 		if(nextValue<0.0){
 			*flag = MinBEbbToEbb;
@@ -2345,7 +2345,7 @@ short GetFloodEbbKey(double t,
 			return 40;
 		}
 	}
-	
+
 	// Now look for weird ones with no zero velocities
 
 	if(MaxMinFlagPtr[previousIndex]==minBFlood){
@@ -2364,7 +2364,7 @@ short GetFloodEbbKey(double t,
 		return 40;
 	}
 
-	
+
 	if(MaxMinFlagPtr[previousIndex]==maxFlood){
 		if(MaxMinFlagPtr[nextIndex]==maxEbb){
 			*flag = FloodToEbb;

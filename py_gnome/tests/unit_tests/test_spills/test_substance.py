@@ -51,6 +51,16 @@ class TestSubstance:
         assert sub1.windage_persist == 500
         assert sub1.windage_range == (0.0, 0.03)
 
+    def test_setters_bad_values(self):
+        """
+        setting bad windage values should raise a ValueError
+        """
+        sub1 = Substance()
+        with pytest.raises(ValueError):
+            sub1.windage_persist = 0
+        with pytest.raises(ValueError):
+            sub1.windage_range = (1.0, 3.0)
+
     def test_eq(self):
         sub1 = Substance()
         sub2 = Substance()

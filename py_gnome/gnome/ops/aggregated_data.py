@@ -15,6 +15,9 @@ def aggregate(sc, new_LEs=0):
         'amount_released',
     '''
 
+    if sc.num_released == 0:
+        return
+
     if sc['mass'].sum() > 0.0:
         sc.mass_balance['avg_density'] = \
             np.sum(sc['mass']/sc['mass'].sum() * sc['density'])

@@ -27,6 +27,18 @@ class TestGnomeOil:
                         windage_range=(0.05, 0.07))
         assert oil1.windage_range == (0.05, 0.07)
 
+    def test_init_bad_windage_range(self):
+    # exception raised since windage given in percent instead of decimal
+        with pytest.raises(ValueError):
+            oil1 = GnomeOil('oil_ans_mp',
+                            windage_range=(5., 7.))
+
+    def test_init_bad_windage_persist(self):
+    # exception raised since windage persist cannot be zero
+        with pytest.raises(ValueError):
+            oil1 = GnomeOil('oil_ans_mp',
+                            windage_persist=0)
+
     def test_init_from_oil_dict(self):
         #breakpoint()
         go = GnomeOil(**sample_oils.oil_bahia)

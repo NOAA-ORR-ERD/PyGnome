@@ -152,8 +152,9 @@ class Substance(GnomeId):
     def windage_range(self, windage_range):
         windage_range = (.01, .04) if windage_range is None else windage_range
         if self._windage_init:
-            if np.any(np.asarray(windage_range) < 0) or np.asarray(windage_range).size != 2:
-                raise ValueError("'windage_range' >= (0, 0). "
+            if (np.any(np.asarray(windage_range) < 0) or np.any(np.asarray(windage_range) > 1)
+                    or np.asarray(windage_range).size != 2):
+                raise ValueError("'windage_range' >= (0, 0) and <= (1, 1). "
                                  "Nominal values vary between 1% to 4%. "
                                  "Default windage_range=(0.01, 0.04)")
             self._windage_init.windage_range = windage_range
