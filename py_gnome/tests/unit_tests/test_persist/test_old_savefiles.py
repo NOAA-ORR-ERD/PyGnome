@@ -29,7 +29,7 @@ pytestmark = [pytest.mark.filterwarnings("ignore:Provided map bounds superscede 
 #        But may be a real issue ...
 
 @pytest.mark.xfail
-@pytest.mark.parametrize('savefilename', save_files)
+@pytest.mark.parametrize('savefilename', list(save_files))
 def test_old_save_files(savefilename):
     print("testing loading of:", savefilename)
     model = Model.load_savefile(str(savefilename))

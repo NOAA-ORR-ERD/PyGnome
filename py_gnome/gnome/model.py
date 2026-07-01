@@ -72,6 +72,7 @@ from gnome.weatherers import (weatherer_sort,
                               weatherer_schemas,
                               weatherers_by_name,
                               standard_weatherering_sets,
+                              response_weatherers,
                               )
 from gnome.outputters import Outputter, NetCDFOutput, WeatheringOutput
 from gnome.outputters import schemas as out_schemas
@@ -570,6 +571,12 @@ class Model(GnomeId):
     @property
     def has_weathering(self):
         return any([w.on for w in self.weatherers])
+
+    @property
+    def has_response_options(self):
+        for w in self.weatherers:
+            if isinstance(w, response_weatherers):
+                return True
 
     @property
     def start_time(self):
@@ -1775,6 +1782,12 @@ class Model(GnomeId):
             # self.logger.error(msg)
             msgs.append('warning: ' + self.__class__.__name__ + ': ' + msg)
             # isValid = False
+
+        if num_spills_on > 0 and not isWeatherable and self.has_response_options:
+            msg = ('Substance is not an oil. Response options will not be active.')
+            self.logger.warning(msg)
+            msgs.append('warning: ' + self.__class__.__name__ + ': ' + msg)
+            warnings.warn('warning: ' + msg)
 
         # check if movers and map overlap
         # this is mostly to catch different coordinate systems:

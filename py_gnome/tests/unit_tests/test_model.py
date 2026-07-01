@@ -88,6 +88,43 @@ def test_runtime_warning():
     with pytest.warns(UserWarning,match='does not overlap with the map bounds'):
         model.check_inputs()
 
+def test_runtime_warning_skimmer():
+    """
+    Test warning if setup has issues user should be alerted to
+    removal option with non weathering substance
+    """
+    start_time = "2023-03-02T12:00:00"
+    pos1 = (-125.16, 48.41)
+    pos2 = (-126.01, 48.79)
+    time_step = 900
+    model = Model(start_time = start_time,
+                  time_step = time_step,
+                  duration = gs.hours(2),
+                  )
+    sp = gs.point_line_spill(num_elements=10,
+                                        start_position=pos1,
+                                        release_time=start_time,
+                                        end_position=pos2,
+                                        )
+
+    model.spills += sp
+    rel_time = sp.release_time
+    active_start = sp.release_time + timedelta(seconds=time_step)
+    active_range = (active_start, active_start + timedelta(hours=1.))
+
+    water = Water(temperature = 300.)
+
+    skimmer = Skimmer(amount = 100,
+                      units='kg',
+                      efficiency=0.3,
+                      active_range=active_range,
+                      water=water)
+
+    model.weatherers += skimmer
+
+    with pytest.warns(UserWarning, match="Response options will not be active") as warning:
+        model.step()
+
 @pytest.fixture(scope='function')
 def model(sample_model_fcn, tmpdir):
     '''

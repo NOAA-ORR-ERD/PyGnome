@@ -384,12 +384,12 @@ class BurnSchema(WeathererSchema):
     thickness = SchemaNode(Float(), save=True, update=True)
     area_units = SchemaNode(String(), save=True, update=True)
     thickness_units = SchemaNode(String(), save=True, update=True)
-    _oilwater_thickness = SchemaNode(Float(), save=True, update=True, read_only=True,
-                                     missing=drop)
-    _oilwater_thick_burnrate = SchemaNode(Float(), save=True, update=True, read_only=True,
-                                          missing=drop)
-    _oil_vol_burnrate = SchemaNode(Float(), save=True, update=True, read_only=True,
-                                   missing=drop)
+#     _oilwater_thickness = SchemaNode(Float(), save=True, update=True, read_only=True,
+#                                      missing=drop)
+#     _oilwater_thick_burnrate = SchemaNode(Float(), save=True, update=True, read_only=True,
+#                                           missing=drop)
+#     _oil_vol_burnrate = SchemaNode(Float(), save=True, update=True, read_only=True,
+#                                    missing=drop)
     efficiency = SchemaNode(Float(), missing=None, save=True, update=True)
     wind = GeneralGnomeObjectSchema(acceptable_schemas=[WindSchema,
                                                         VectorVariableSchema],

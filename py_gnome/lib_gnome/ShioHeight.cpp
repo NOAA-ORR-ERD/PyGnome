@@ -1129,7 +1129,7 @@ void FixHEnds(COMPHEIGHTS *answers,double beginTime, double endTime)
 
 short GetJulianDayHr(short day,		// day of month (1 - 31)
 					short month,	// month (1- 12)
-					short year,		// year (1904 - 2045)
+					short year,		// year (1904 - 2035)
 					double *hour)	// returns hours from beginning of year
 {
 	double	DaysInMonth[13] = {0.0,31.0,28.0,31.0,30.0,31.0,30.0,31.0,31.0,30.0,31.0,30.0,31.0};
@@ -1145,7 +1145,7 @@ short GetJulianDayHr(short day,		// day of month (1 - 31)
 
 	if( (day<1) || (day>DaysInMonth[month] ) ){ err=4; goto Error; } // Bad day
 
-	if( (year<1904) || (year>2045) ){ err=5; goto Error; } // Bad year
+	if( (year<1904) || (year>2035) ){ err=5; goto Error; } // Bad year
 
 	// Compute the hour now
 	for(i=1;i<month; i++){

@@ -68,6 +68,8 @@ weatherer_schemas = list({cls._schema for cls in sort_order if hasattr(cls, '_sc
 
 weatherers_idx = dict([(v, i) for i, v in enumerate(sort_order)])
 
+response_weatherers = (Burn, Skimmer, ChemicalDispersion)
+
 # fixme: decide what to do about spreading ...
 weatherers_by_name = {'evaporation': Evaporation,
                       'dispersion': NaturalDispersion,
