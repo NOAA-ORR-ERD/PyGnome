@@ -104,7 +104,7 @@ class WindSchema(base_schema.ObjTypeSchema):
                              default='undefined',
                              missing='undefined')
     units = SchemaNode(String(), default='m/s')
-    speed_uncertainty_scale = SchemaNode(Float())
+    #speed_uncertainty_scale = SchemaNode(Float())
 
     # Because comparing datetimevalue2d arrays does not play nice
     timeseries = WindTimeSeriesSchema(test_equal=False)
@@ -384,7 +384,7 @@ class Wind(Timeseries, Environment):
             self.time.data = self._timeseries['time'].astype(datetime.datetime)
         else:
             raise ValueError('Bad timeseries as input')
-    
+
     def _set_timezone_offset(self, tzo):
         if tzo is None:
             tzo = TZOffset(offset=None, title="No Timezone Specified")
@@ -396,7 +396,7 @@ class Wind(Timeseries, Environment):
                 new_ts['time'] = self.timeseries['time'] + off
                 new_ts['value'] = self.timeseries['value']
                 self.new_set_timeseries(new_ts, 'r-theta')
-                
+
         self._timezone_offset = tzo
 
     @property
