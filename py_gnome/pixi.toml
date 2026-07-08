@@ -24,7 +24,7 @@ htmlmin = "*"
 jsmin = "*"
 mapbox_earcut = "*"
 netCDF4 = "*"
-numpy = ">=2.0,<3"  #  works with numpy 1 and 2
+numpy = ">=2.5,<3"  #  works with numpy 1 and 2
 pandas = "*"
 paste = "*"
 pastedeploy = ">=2.0"
@@ -91,19 +91,24 @@ default = { features = ["py312", "dev", "docs", "test", "build"], solve-group = 
 dev312 = ["py312", "dev", "docs", "test", "build"]
 dev313 = ["py313", "dev", "docs", "test", "build"]
 build = ["py312", "build"]
-test312 = [ "py312", "test", "build"]
-test313 = [ "py313", "test", "build"]
+test312 = [ "py312", "test", "build" ]
+test313 = [ "py313", "test", "build" ]
 docs = { features = ["py312", "docs"], solve-group = "default" }
 
 
 [tasks]
-install = { cmd = "pip install -v --no-deps --root-user-action=ignore ./", default-environment = "build"}
+# build = {cmd = "python -m build ./", default-environment = "build"}
+build = {cmd = "python -m build --skip-dependency-check --no-isolation ./"}
 
-build_wheel = {cmd = "python -m build ./", default-environment = "build"}
+install = { cmd = "pip install --force-reinstall --no-index --find-links=./dist/  gnome", depends-on = ["build"]}
 
-test = { cmd = "pytest tests/unit_tests/", depends-on = ["install"] }
+test = { cmd = "pytest --runslow tests/unit_tests/", depends-on = ["install"]}
+
+# test = { cmd = "pytest tests/unit_tests/", depends-on = ["install"], default-environment = "test312" }
+
+# test = { cmd = "pytest tests/unit_tests/", depends-on = [{task = "install", environment = "test312"}], default-environment = "test312" }
 
 lint = { cmd = "ruff check gnome", default-environment = "dev"}
 
-build_docs = { cmd = "cd documentation/ && make html", depends-on = ["install"] }
+build_docs = { cmd = "cd documentation/ && make html", depends-on = ["install"], default-environment = "build" }
 
