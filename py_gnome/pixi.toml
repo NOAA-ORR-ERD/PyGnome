@@ -1,0 +1,109 @@
+# pixi.toml file for developing pygnome
+[workspace]
+authors = ["Chris Barker <Chris.Barker@noaa.gov>",
+           "NOAA GNOME team <orr.gnome@noaa.gov>"]
+channels = ["https://prefix.dev/conda-forge"]
+name = "PyGnome"
+platforms = ["linux-64", "osx-arm64", "osx-64", "win-64"]
+
+
+[dependencies]
+python = ">=3.12,<3.14"
+
+awesome-slugify = "*"
+cfgrib = "*"
+colander = "<2"
+cornice = ">=3.4"
+docutils = "*"
+fiona = "*"
+geojson = "*"
+geopandas = "*"
+# gitpython = "*"
+gsw = "*"
+htmlmin = "*"
+jsmin = "*"
+mapbox_earcut = "*"
+netCDF4 = "*"
+numpy = ">=2.0,<3"  #  works with numpy 1 and 2
+pandas = "*"
+paste = "*"
+pastedeploy = ">=2.0"
+progressbar = "*"
+psutil = "*"
+pyogrio = "*"
+pyproj = "*"
+python-dateutil = "*"
+regex = "*"
+scipy = "*"
+shapely = ">=2.1.2"
+trimesh = "*"
+ujson = "*"
+
+# NOAA maintained packages
+gridded = ">=0.7.2,<0.8"
+pynucos = ">=3.4.1"
+cell_tree2d = ">=0.3.0"
+py_gd = ">=2.3.3"
+adios_db= ">=1.2.5"
+
+[feature.build.dependencies]
+cython  = ">=3"
+pip = "*"
+python-build = "*"
+cmake = "*"
+ninja = "*"
+scikit-build-core = ">=0.9.9"
+# setuptools-scm = ">=8"
+
+[feature.dev.dependencies]
+ipython = "*"
+matplotlib = "*"
+ruff = "*"
+
+[feature.test.dependencies]
+pytest = "*"
+pytest-cov = "*"
+pytest-timeout = "*"
+testfixtures = "*"
+
+[feature.docs.dependencies]
+sphinx = "*"
+sphinx_rtd_theme = "*"
+nbsphinx = "*"
+sphinx-autoapi = "*"
+sphinxcontrib-jquery = "*"
+
+# [feature.examples.dependencies]
+# matplotlib = "*"
+# xarray = "*"
+# jupyter = "*"
+# ipython = "*"
+
+[feature.py312.dependencies]
+python = "~=3.12.0"
+
+[feature.py313.dependencies]
+python = "~=3.13.0"
+
+[environments]
+default = { features = ["py312", "dev", "docs", "test", "build"], solve-group = "default" }
+# using the oldest supported version for development
+dev312 = ["py312", "dev", "docs", "test", "build"]
+dev313 = ["py313", "dev", "docs", "test", "build"]
+build = ["py312", "build"]
+test312 = [ "py312", "test", "build"]
+test313 = [ "py313", "test", "build"]
+docs = { features = ["py312", "docs"], solve-group = "default" }
+
+
+[tasks]
+install = { cmd = "pip install -v --no-deps --root-user-action=ignore ./", default-environment = "build"}
+
+build_wheel = {cmd = "python -m build ./", default-environment = "build"}
+
+test = { cmd = "pytest tests/unit_tests/", depends-on = ["install"] }
+
+lint = { cmd = "ruff check gnome", default-environment = "dev"}
+
+build_docs = { cmd = "cd documentation/ && make html", depends-on = ["install"] }
+
