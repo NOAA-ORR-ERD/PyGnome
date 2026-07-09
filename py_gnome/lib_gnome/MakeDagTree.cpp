@@ -246,7 +246,7 @@ DAGTreeStruct  MakeDagTree(TopologyHdl topoHdl, LongPoint **pointList, char *err
 	numSidesInList = (_GetHandleSize((Handle)sidesList))/(sizeof(Side_List));
 	if (numSidesInList < 3)
 	{
-		snprintf(errStr, sizeof(errStr), "Triangles have 3 sides; the data has only %ld sides.", numSidesInList);
+		snprintf(errStr, kMaxStrLen, "Triangles have 3 sides; the data has only %ld sides.", numSidesInList);
 		goto done;
 	}
 

@@ -5,7 +5,7 @@
 #include "StringFunctions.h"
 
 #include "RectUtils.h"
-#include "DagTreeIO.h" 
+#include "DagTreeIO.h"
 
 #ifndef pyGNOME
 #include "CROSS.H"
@@ -53,7 +53,7 @@ OSErr ReadTIndexedDagTreeBody(vector<string> &linesInFile, long *line,
 
 	for (i = 0; i < numRecs; i++) {
 		if (!ParseLine(linesInFile[(*line)++], (*dagListHdl)[i])) {
-			snprintf(errmsg, sizeof(errmsg), "Unable to read DAG Tree data from line %ld:%s", *line, NEWLINESTRING);
+			snprintf(errmsg, kMaxStrLen, "Unable to read DAG Tree data from line %ld:%s", *line, NEWLINESTRING);
 			goto done;
 		}
 
@@ -99,13 +99,13 @@ OSErr ReadTIndexedDagTree(CHARH fileBufH,long *line,DAGTreeStruct *dagTree,char*
 	long numRecs;
 	OSErr err = -1;
 	char s[256];
-	
+
 	strcpy(errmsg,"");//clear it
-		
-	NthLineInTextOptimized(*fileBufH, (*line)++, s, 256); 
+
+	NthLineInTextOptimized(*fileBufH, (*line)++, s, 256);
 	if(!IsTIndexedDagTreeHeaderLine(s,&numRecs))
 		return -1;
-		
+
 	err = ReadTIndexedDagTreeBody(fileBufH,line,dagTree,errmsg,numRecs);
 	return err;
 
@@ -162,7 +162,7 @@ OSErr ReadTVerticesBody(vector<string> &linesInFile, long *line,
 	{
 		wantDepths = false;	// in case any current files don't have depth data, it's usually not used
 		if (!ParseLine(currentLine, x, y)) {
-		snprintf(errmsg, sizeof(errmsg), "Unable to read vertex data from line %ld:%s", *line, NEWLINESTRING);
+		snprintf(errmsg, kMaxStrLen, "Unable to read vertex data from line %ld:%s", *line, NEWLINESTRING);
 			goto done;
 		}
 	}
@@ -201,7 +201,7 @@ OSErr ReadTVerticesBody(vector<string> &linesInFile, long *line,
 		}
 
 		if (badScan) {
-			snprintf(errmsg, sizeof(errmsg), "Unable to read vertex data from line %ld:%s", *line, NEWLINESTRING);
+			snprintf(errmsg, kMaxStrLen, "Unable to read vertex data from line %ld:%s", *line, NEWLINESTRING);
 			goto done;
 		}
 	}
@@ -323,7 +323,7 @@ OSErr ReadTTopologyBody(vector<string> &linesInFile, long *line,
 			goto done;
 		}
 	}
-	
+
 	for (long i = 0; i < numRecs; i++) {
 		if (wantVelData) {
 			if (!ParseLine(linesInFile[(*line)++], (*topoH)[i], (*velH)[i])) {
@@ -337,7 +337,7 @@ OSErr ReadTTopologyBody(vector<string> &linesInFile, long *line,
 		}
 
 		if (badScan) {
-			snprintf(errmsg, sizeof(errmsg), "Unable to read topology data from line %ld:%s", *line, NEWLINESTRING);
+			snprintf(errmsg, kMaxStrLen, "Unable to read topology data from line %ld:%s", *line, NEWLINESTRING);
 			goto done;
 		}
 	}
@@ -377,7 +377,7 @@ OSErr ReadTTopologyBody(CHARH fileBufH, long *line,
 
 OSErr ReadTTopology(vector<string> &linesInFile, long *line,
 					TopologyHdl *topH, VelocityFH *velocityH, char *errmsg)
-{ 
+{
 	OSErr err = -1;
 	string currentLine;
 	long numRecs;
@@ -445,19 +445,19 @@ long FindTriThirdPoint(long **longH,long p1, long p2, long index)
 int	Right_or_Left_of_Segment(LongPointHdl ptsH,long ref_p1,long ref_p2, LongPoint test_p1)
 {
 	long ref_p1_h, ref_p1_v, ref_p2_h, ref_p2_v;	// lat (h) and long (v) for ref points
-	long test_p1_h, test_p1_v;	
+	long test_p1_h, test_p1_v;
 													// lat (h) and long (v) for test point
 	double ref_h, ref_v;								// reference vector components
 	double test1_h, test1_v;							// first test vector components (test p1 - ref p1)
 	//double pi = 3.1415926;
 	//double deg2Rad = (2.*pi/360.);						// convert deg to rad
-	
+
 	double cp_1;						// result of (ref1,test1) X (ref1,ref2)
 	short location;
-	
+
 	// Make sure this code matches the code that generated the triangles !!!
 	// (Right now that other code is in CATS)
-	
+
 	// Find the lat and lon associated with each point
 	ref_p1_h = (*ptsH)[ref_p1].h;
 	ref_p1_v = (*ptsH)[ref_p1].v;
@@ -465,15 +465,15 @@ int	Right_or_Left_of_Segment(LongPointHdl ptsH,long ref_p1,long ref_p2, LongPoin
 	ref_p2_v = (*ptsH)[ref_p2].v;
 	test_p1_h = test_p1.h;
 	test_p1_v = test_p1.v;
-	
+
 	// Create the vectors by subtracting (p2 - p1)
 	// Change the integers back into floating points by dividing by 1000000.
-	
+
 	ref_h = (ref_p2_h - ref_p1_h)/1000000.;
 	ref_v = (ref_p2_v - ref_p1_v)/1000000.;
 	test1_h = (test_p1_h - ref_p1_h)/1000000.;
 	test1_v = (test_p1_v - ref_p1_v)/1000000.;
-	
+
 	// create  cross product
 	/////////////////////////////////////////////////
 	//cp_1 = (test1_h * ref_v * sin(ref_p1_v*deg2Rad/1000000.));
@@ -484,7 +484,7 @@ int	Right_or_Left_of_Segment(LongPointHdl ptsH,long ref_p1,long ref_p2, LongPoin
 	/////////////////////////////////////////////////
 	/////////////////////////////////////////////////
 
-	
+
 	// decide right, left or neither
 	if (cp_1 < 0.)
 		{
@@ -497,7 +497,7 @@ int	Right_or_Left_of_Segment(LongPointHdl ptsH,long ref_p1,long ref_p2, LongPoin
 	else //if (cp_1 == 0.)
 		{
 		location = 0;	// The point lies on the line of the reference segment.
-		}	
+		}
 
 	return (location);
 }
@@ -528,7 +528,7 @@ long WhatTriIsPtIn(DAGHdl treeH,TopologyHdl topH, LongPointHdl ptsH,LongPoint pt
 	long triRightIndex;			//  The index of triRight into the topo array.
 	long dagIndex;					//  The current topology index referred to in the dag tree.
 
-	long** longH = (long**)(topH);  
+	long** longH = (long**)(topH);
 
 	i=0;
 	//while ((*treeH)[i].branchLeft >= 0)
@@ -573,20 +573,20 @@ long WhatTriIsPtIn(DAGHdl treeH,TopologyHdl topH, LongPointHdl ptsH,LongPoint pt
 			if(triRight == -1)
 			{
 				i=-8;
-				goto checkTriPts;	
+				goto checkTriPts;
 				//return -1;
 			}
 			triRightIndex = (triRight)*6;
-			// The order will reverse because the triangles are defined counterclockwise and 
+			// The order will reverse because the triangles are defined counterclockwise and
 			//			our segment is defined clockwise.
 			thirdPoint = FindTriThirdPoint(longH,secondPoint,firstPoint,triRightIndex);
 			if(thirdPoint>=0)
 			{
 				direction = Right_or_Left_of_Segment(ptsH,thirdPoint, secondPoint, pt);
-				if(direction == -1) 
+				if(direction == -1)
 				{
 					direction = Right_or_Left_of_Segment(ptsH,firstPoint, thirdPoint, pt);
-					if(direction == -1)  
+					if(direction == -1)
 					{
 					//ptsH = nil;
 					return (triRight); //Start numbering triangles at zero
@@ -596,7 +596,7 @@ long WhatTriIsPtIn(DAGHdl treeH,TopologyHdl topH, LongPointHdl ptsH,LongPoint pt
 			// Guess I'd better step on down the Dag tree...
 			i = (*treeH)[i].branchRight;
 		}
-		
+
 		/////////////////////////////////////////////////
 		/////////////////////////////////////////////////
 checkTriPts:
@@ -642,7 +642,7 @@ checkTriPts:
 								//char errmsg[256];
 								//sprintf(errmsg,"first try triNum = %ld\n",triIndex);
 								//printNote(errmsg);
-								return (triIndex); 
+								return (triIndex);
 							}
 						}
 					}
@@ -674,7 +674,7 @@ checkTriPts:
 								char errmsg[256];
 								sprintf(errmsg,"second try triNum = %ld\n",triIndex);
 								printNote(errmsg);
-								return (triIndex); 
+								return (triIndex);
 							}
 						}
 					}
@@ -685,10 +685,10 @@ checkTriPts:
 			return(-8); 				// This is a special case caused by not being able
 										// to confirm that a point is in the infinite triangle.
 										// To see the change, have the function return -8 for triNum and
-										// give that triangle a unique color for plotting.		
+										// give that triangle a unique color for plotting.
 		}
 	}
-	return -1; // JLM, we already checked it was not in the triangle 
+	return -1; // JLM, we already checked it was not in the triangle
 }
 
 
@@ -856,7 +856,7 @@ OSErr ReadBoundarySegs(vector<string> &linesInFile, long *line,
 
 		--boundarySeg;
 		if (boundarySeg - oldSegno < 2) {
-			snprintf(errmsg, sizeof(errmsg),
+			snprintf(errmsg, kMaxStrLen,
 				"Less than 3 points in boundary number: %ld, from point %ld to point %ld."
 				"Triangle generation will fail.",i+1, oldSegno+1,boundarySeg+1);
 			printError(errmsg);

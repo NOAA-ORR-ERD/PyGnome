@@ -2567,7 +2567,7 @@ OSErr TModel::SaveKmlLEFileSeries (Seconds fileTime, short fileNumber)
 	LERec theLE;
 	//BFPB fileMS3,fileMS4,fileMS5,fileMS6,fileMS7;
 	DateTimeRec time;
-	char *p, path[256], fileName[256], nameStr[256], styleStr[256], startTimeStr[256], endTimeStr[256], kmlTimeStr[32];
+	char *p, path[256], fileName[256], nameStr[256], styleStr[256], startTimeStr[256], endTimeStr[256], kmlTimeStr[kDateStrLen];
 	char fileNumStr[64] = "",  outputFileName[256], shortFileName[64], copyPath[256];
 	char trajectoryTime[64], trajectoryDate[64], preparedTime[32], preparedDate[32];
 	Boolean bWriteUncertaintyLEs = this->IsUncertain();

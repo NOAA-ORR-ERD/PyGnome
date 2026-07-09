@@ -69,7 +69,7 @@ OSErr StringToDouble(char* str,double* val)
 	// code goes here, check str is a valid number
 	if (!str[0])
 		return -1; // it was just white space
-	
+
 	//#ifdef MPW
 #ifdef MAC
 	long numScanned = sscanf(localStr, "%lf", &localVal);
@@ -119,16 +119,16 @@ void ChopEndZeros(CHARPTR cString) //JLM
 	long decPtIndex = -99; // Use -99 as a flag for no decimal point.
 	bool hasExponent = false; /* initialize to false */
 	char exponentStr[56];
-	
+
 	length = strlen(cString);
-	
+
 	/* Find the index of cString[i] that holds the decimal point. */
 	for (int i = 0; i < length; i++) {
 		if (cString[i] == '.') {
 			/* We have a decimal point. */
 			decPtIndex = i;
 			break;
-			// Consider the unlikely event that we have more than 1 decimal point. 
+			// Consider the unlikely event that we have more than 1 decimal point.
 		}
 		else {
 			/* We have a number; continue with loop. */
@@ -137,12 +137,12 @@ void ChopEndZeros(CHARPTR cString) //JLM
 
 	if (decPtIndex == -99) {
 		/* There is no decimal point; return cString as it is. */
-		return;	
+		return;
 	}
 
-	/********************************************/	
+	/********************************************/
 	/* next we take off the exponent (if any).	*/
-	/********************************************/	
+	/********************************************/
 	for (int i = decPtIndex; i < length && hasExponent == false; i++) {
 		if (cString[i] == 'e' || cString[i] == 'E') {
 			/* we have found the exponent string */
@@ -155,7 +155,7 @@ void ChopEndZeros(CHARPTR cString) //JLM
 			cString[i] = 0;	/* null terminate */
 		}
 	}
-	
+
 	/* Starting with the last (length-th) decimal place in the string, check if */
 	/* that end character is a '0' or '.'.   */
 	length = strlen(cString);
@@ -163,29 +163,29 @@ void ChopEndZeros(CHARPTR cString) //JLM
 		if (cString[index] == '0' || cString[index] == '.') {
 			if (cString[index] == '.') {
 				cString[index] = 0;	/* Change to null & break out of loop. */
-				break;		
-			}	
-			/* Else it's equal to zero.	*/		
+				break;
+			}
+			/* Else it's equal to zero.	*/
 			cString[index] = 0; /* Change to null & keep going in loop. */
 		}
 		else {
 			/* We have a number (i.e., a non-0 and non-decPt). */
 			break;
-		}		
+		}
 	}
 
 	if (strlen(cString) == 0) {
 		/* We got rid of the whole string (e.g., input was ".000"). */
 		cString[0] = '0';
-		cString[1] = 0; 	
+		cString[1] = 0;
 	}
 	else if (hasExponent) {
-		/***********************************************/	
+		/***********************************************/
 		/* then we need to replace the exponent string */
-		/***********************************************/	
+		/***********************************************/
 		strcat(cString,exponentStr);
 	}
-	
+
 	return;
 }
 
@@ -197,14 +197,20 @@ void ChopEndZeros(CHARPTR cString) //JLM
 // trim from start
 std::string &ltrim(std::string &s)
 {
-        s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not1(std::ptr_fun<int, int>(std::isspace))));
+        //s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not1(std::ptr_fun<int, int>(std::isspace))));
+        s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char c) {
+			return !std::isspace(c);
+        }));
         return s;
 }
 
 // trim from end
 std::string &rtrim(std::string &s)
 {
-        s.erase(std::find_if(s.rbegin(), s.rend(), std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
+        //s.erase(std::find_if(s.rbegin(), s.rend(), std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
+        s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char c) {
+			return !std::isspace(c);
+        }).base(), s.end());
         return s;
 }
 
@@ -300,16 +306,16 @@ bool ParseKeyedLine(const string &strIn, const string &key,
 {
 	string tempKey;
 	short value;
-	
+
 	istringstream lineStream(strIn);
-	
+
 	lineStream >> tempKey >> value;
 	if (lineStream.fail())
 		return false;
-	
+
 	if (tempKey != key)
 		return false;
-	
+
 	out1 = value;
 	return true;
 }
@@ -594,23 +600,23 @@ bool ParseLine(const string &strIn,
 {
 	DateTimeRec value1;
 	string value2, value3;
-	
+
 	istringstream lineStream(strIn);
 	lineStream >> value1.day >> value1.month >> value1.year
 	>> value1.hour >> value1.minute
 	>> value2 >> value3;
 	if (lineStream.fail())
 		return false;
-	
+
 	out1.day = value1.day;
 	out1.month = value1.month;
 	out1.year = value1.year;
 	out1.hour = value1.hour;
 	out1.minute = value1.minute;
-	
+
 	out2 = value2;
 	out3 = value3;
-	
+
 	return true;
 }
 
@@ -804,11 +810,11 @@ CHARPTR AfterSetInString(CHARPTR s, CHARPTR set, long count)
 CHARPTR StringSubstitute(CHARPTR s, char old, char newC)
 {
 	char *p = s;
-	
+
 	for ( ; *p ; p++)
 		if (p[0] == old)
 			p[0] = newC;
-	
+
 	return s;
 }
 
@@ -839,9 +845,9 @@ CHARPTR strnztrimcpy(CHARPTR to, CHARPTR from, short n)
 long antol(CHARPTR s, short n)
 {
 	char c[256];
-	
+
 	strnztrimcpy(c, s, n);
-	
+
 	return atol(c);
 }
 
@@ -883,7 +889,7 @@ char mytoupper(char c)
 		if (table[i][0] == c)
 			return table[i][1];
 #endif
-	
+
 	return c;
 }
 
@@ -891,10 +897,10 @@ char mytoupper(char c)
 CHARPTR StrToUpper(CHARPTR s)
 {
 	char *p = s;
-	
+
 	for ( ; *p ; p++)
 		*p = mytoupper(*p);
-	
+
 	return s;
 }
 
@@ -908,12 +914,12 @@ char mytolower(char c)
 		{ -101,  -51 }, {  -49,  -50 }, {  -66,  -82 },
 		{  -65,  -81 }, {    0,    0 } };
 #endif
-	
+
 	if (c >= ' ' && c < 'A') return c; // leave alone
 	if (c >= 'A' && c <= 'Z') return c + 32; // convert to lower case
 	if (c >= 'a' && c <= 'z') return c ; // leave alone
 	if (c == 0) return 0;
-	
+
 #ifdef MAC
 	//LowerText(&c, 1);
 	LowercaseText(&c, 1,smSystemScript);	//smCurrentScript
@@ -922,7 +928,7 @@ char mytolower(char c)
 		if (table[i][1] == c)
 			return table[i][0];
 #endif
-	
+
 	return c;
 }
 
@@ -930,10 +936,10 @@ char mytolower(char c)
 CHARPTR StrToLower(CHARPTR s)
 {
 	char *p = s;
-	
+
 	for ( ; *p; p++)
 		*p = mytolower(*p);
-	
+
 	return s;
 }
 
@@ -1071,10 +1077,10 @@ CHARPTR mypstrcat(CHARPTR dest, CHARPTR src)
 {
 	unsigned char length = _min(((unsigned char)*src),
 					   250 - ((unsigned char)*dest));
-	
+
 	_BlockMove(src + 1, dest + *dest + 1, length);
 	*dest += length;
-	
+
 	return dest;
 }
 
@@ -1082,7 +1088,7 @@ CHARPTR mypstrcat(CHARPTR dest, CHARPTR src)
 CHARPTR mypstrcpy(CHARPTR dest, CHARPTR src)
 {
 	_BlockMove(src, dest, ((unsigned char)*src) + 1);
-	
+
 	return dest;
 }
 
@@ -1092,7 +1098,7 @@ void mypstrcatJM(void *dest_asVoidPtr, void *src_asVoidPtr)
 	unsigned char *dest = (unsigned char *)dest_asVoidPtr;
 	unsigned char *src = (unsigned char *)src_asVoidPtr;
 	unsigned char length = _min((*src), 255 - (*dest));
-	
+
 	_MyBlockMove(src + 1, dest + (*dest) + 1, length);
 	*dest += length;
 }
@@ -1108,7 +1114,7 @@ void mypstrcpyJM(void *dest_asVoidPtr, void *src_asVoidPtr)
 long NumLinesInText(CHARPTR text)
 {
 	long count = 1, i = 0;
-	
+
 	while (text[i]) {
 		// count LINEFEEDs and RETURNs that are not part of a RETURN-LINEFEED sequence
 		// don't count terminating newline sequence as a separate line
@@ -1118,7 +1124,7 @@ long NumLinesInText(CHARPTR text)
 			count++;
 		i++;
 	}
-	
+
 	return count;
 }
 
@@ -1164,12 +1170,12 @@ CHARPTR NthLineInTextHelper(CHARPTR text, long n, CHARPTR line, Boolean optimize
 				lineLengthInFile++; // keep track of the chars even though we may not put them in the string
 
 				if (numCharCopied < maxLen) {
-					q[0] = s[0]; 
+					q[0] = s[0];
 					numCharCopied++;
 				}
 
-				q++; 
-				s++; 
+				q++;
+				s++;
 			}
 
 			if (s[0] == RETURN && s[1] == LINEFEED)
@@ -1276,16 +1282,16 @@ CHARPTR IntersectLinesInText(CHARPTR text1, CHARPTR text2, CHARPTR intersection)
 {
 	long count = NumLinesInText(text1);
 	char line[256];
-	
+
 	memset(line, 0, 256);
 	intersection[0] = 0;
-	
+
 	for (long i = 0; i < count; i++) {
 		NthLineInTextOptimized(text1, i, line, 256);
 		if (LineInText(text2, line))
 			AddLineToText(intersection, line);
 	}
-	
+
 	return intersection;
 }
 
@@ -1293,14 +1299,14 @@ CHARPTR IntersectLinesInText(CHARPTR text1, CHARPTR text2, CHARPTR intersection)
 CHARPTR strcpyToDelimeter(CHARPTR target, CHARPTR source, char delimiter)
 {
 	char *save = target;
-	
+
 	while (*source && *source != delimiter) {
 		*target = *source;
 		target++;
 		source++;
 	}
 	*target = 0;
-	
+
 	return save;
 }
 
@@ -1308,14 +1314,14 @@ CHARPTR strcpyToDelimeter(CHARPTR target, CHARPTR source, char delimiter)
 CHARPTR strcpyWithDelimeter(CHARPTR target, CHARPTR source, char delimiter)
 {
 	char *save = target;
-	
+
 	while (*source != delimiter) {
 		*target = *source;
 		target++;
 		source++;
 	}
 	*target = *source;
-	
+
 	return save;
 }
 
@@ -1346,7 +1352,7 @@ Boolean ForceStringNumberHelper(CHARPTR s,
 
 	if (allowDirectionChars) {
 		// "NNE" is allowed
-		// BUT !! if the first char is a letter then only letters are allowed 
+		// BUT !! if the first char is a letter then only letters are allowed
 		// if the first char is a number only numbers are allowed
 		//
 		// find first valid char
@@ -1476,13 +1482,14 @@ void Secs2DateStrings(Seconds seconds,
 		SysBeep(1);
 		return;
 	}
-	
+
 	if (time->tm_isdst == 1) {
 		// we want to show standard time so we need to fake out the daylight savings time
 		if(time->tm_hour > 0)
 			time->tm_hour--;
 		else {
-			seconds -= 3600;
+			//seconds -= 3600;
+			converted_seconds -= 3600;
 			time = localtime(&converted_seconds);
 			if (time->tm_isdst == 1) {
 				// life is good, both times were daylight savings time
@@ -1527,7 +1534,8 @@ void Secs2DateString(Seconds seconds, CHARPTR s)
 			if(newTime->tm_hour > 0)
 				newTime->tm_hour--;
 			else {
-				seconds -= 3600;
+				//seconds -= 3600;
+				converted_seconds -= 3600;
 				newTime = localtime(&converted_seconds);
 				if (newTime->tm_isdst == 1) {
 					newTime->tm_year = newTime->tm_year % 100; // year 2000 fix , JLM 1/25/99
@@ -1537,7 +1545,7 @@ void Secs2DateString(Seconds seconds, CHARPTR s)
 					printError("Programmer error in Secs2DateString");
 			}
 		}
-		snprintf(s, sizeof(s), "%02ld/%02ld/%02ld", (long)newTime->tm_mon + 1, (long)newTime->tm_mday, (long)newTime->tm_year);
+		snprintf(s, kDateStrLen, "%02ld/%02ld/%02ld", (long)newTime->tm_mon + 1, (long)newTime->tm_mday, (long)newTime->tm_year);
 	}
 	else {
 		strcpy(s, "???");
@@ -1569,7 +1577,8 @@ void Secs2DateString2(Seconds seconds, CHARPTR s)
 			if (newTime->tm_hour > 0)
 				newTime->tm_hour--;
 			else {
-				seconds -= 3600;
+				//seconds -= 3600;
+				converted_seconds -= 3600;
 				newTime = localtime(&converted_seconds);
 
 				if (newTime->tm_isdst == 1) {
@@ -1630,7 +1639,7 @@ void Secs2DateString2(Seconds seconds, CHARPTR s)
 			strcpy (s, "December ");
 			break;
 	}
-	
+
 	snprintf(str, sizeof(str), "%02hd, %hd ", day, year4);
 	strcat (s, str);
 	snprintf(str, sizeof(str), "%2.2d:%2.2d", hour, minute);
@@ -1664,7 +1673,8 @@ void Secs2DateStringNetCDF(Seconds seconds, CHARPTR s)
 			if(newTime->tm_hour > 0)
 				newTime->tm_hour--;
 			else {
-				seconds -= 3600;
+				//seconds -= 3600;
+				converted_seconds -= 3600;
 				newTime = localtime(&converted_seconds);
 				if(newTime->tm_isdst == 1) {
 					// life is good, both times were daylight savings time
@@ -1673,7 +1683,7 @@ void Secs2DateStringNetCDF(Seconds seconds, CHARPTR s)
 					printError("Programmer error in Secs2DateStringNetCDF");
 			}
 		}
-		
+
 		month = newTime->tm_mon + 1;
 		day = newTime->tm_mday;
 		year4 = newTime->tm_year + 1900; // year 2000 OK
@@ -1684,7 +1694,7 @@ void Secs2DateStringNetCDF(Seconds seconds, CHARPTR s)
 		strcpy(s, "???");
 		return;
 	}
-	
+
 
 	snprintf(str, sizeof(str), "%hd-%02hd-%02hd ", year4, month, day);
 	strcpy (s, str);
@@ -1697,14 +1707,14 @@ unsigned long DateString2Secs(CHARPTR s)
 {
 	DateTimeRec DTR;
 	unsigned long seconds;
-	
+
 	sscanf(s, "%hd/%hd/%hd", &DTR.month, &DTR.day, &DTR.year);
 	if(DTR.year < 40) DTR.year += 2000;// year 2000 solution, JLM 1/25/99
 	if (DTR.year < 200) DTR.year += 1900;
 	DTR.hour = DTR.minute = DTR.second = 0;
-	
+
 	DateToSeconds (&DTR, &seconds);
-	
+
 	return seconds;
 }
 #else
@@ -1712,7 +1722,7 @@ unsigned long DateString2Secs(CHARPTR s)
 	short month, day, year;
 	time_t seconds;
 	struct tm newTime;
-	
+
 	sscanf(s, "%hd/%hd/%hd", &month, &day, &year);
 	newTime.tm_sec = newTime.tm_min = newTime.tm_hour = 0;
 	newTime.tm_mday = day;
@@ -1743,22 +1753,22 @@ unsigned long DateString2Secs(CHARPTR s)
 
 char *Date2String(DateTimeRec *time, char *s)
 {
-	snprintf(s, sizeof(s), "%02hd/%02hd/%02hd %02hd:%02hd:%02hd",
+	snprintf(s, kTimeStrLen, "%02hd/%02hd/%02hd %02hd:%02hd:%02hd",
 			time->month, time->day, time->year,
 			time->hour, time->minute, time->second);
-	
+
 	return s;
 }
-
+// this is not called in pygnome
 char *Date2KmlString(DateTimeRec *time, char *s)
 {
 	short year = time->year;
 	if (time->year < 100)
-		year = year+2000; 
-	snprintf(s, sizeof(s), "%04hd-%02hd-%02hdT%02hd:%02hd:%02hdZ",
+		year = year+2000;
+	snprintf(s, kDateStrLen, "%04hd-%02hd-%02hdT%02hd:%02hd:%02hdZ",
 			year, time->month, time->day,
 			time->hour, time->minute, time->second);
-	
+
 	return s;
 }
 
@@ -1789,9 +1799,9 @@ void SplitPathFile(CHARPTR fullPath, CHARPTR fileName)
 void SplitPathFileName(CHARPTR fullPath, CHARPTR fileName)
 {
 	char *p;
-	
+
 	fileName[0] = 0;
-	
+
 	if ((p = strrchr(fullPath, NEWDIRDELIMITER)) != 0) {
 		if (p[1] == 0) {
 			// treat final directory as file name to be retrieved
@@ -1908,7 +1918,7 @@ Seconds RoundDateSeconds(Seconds timeInSeconds)
 void GetDateTime(Seconds *seconds)
 {
 	time_t secs;
-	
+
 	time(&secs); // time() wants a near pointer; returns secs since 1/1/70
 
 #ifndef pyGNOME
@@ -1951,7 +1961,7 @@ void SecondsToDate (Seconds seconds, DateTimeRec *date)
 					printError("Programmer error in Secs2DateStrings");
 			}
 		}
-		
+
 		date->year = newTime->tm_year;
 
 		// this mimics the mac function which has a 4 digit value in the time field
@@ -1990,12 +2000,12 @@ void DateToSeconds (DateTimeRec *date, Seconds *seconds)
 {
 	char s[100];
 	unsigned long secs;
-	
+
 	snprintf(s, sizeof(s), "%02hd/%02hd/%02hd", date->month, date->day, date->year);
-	
+
 	secs = DateString2Secs(s);
 	secs += date->hour * 3600 + date->minute * 60 + date->second;
-	
+
 	(*seconds) = secs;
 }
 #endif
@@ -2022,7 +2032,7 @@ Boolean IsUnixAbsolutePath(char *path)
 
 Boolean IsWindowsAbsolutePath(char *path)
 {
-	// check for mapped drive 
+	// check for mapped drive
 	if (path[1] == ':' && path[2] == '\\')
 		return true;
 
@@ -2109,15 +2119,15 @@ Boolean ConvertIfClassicPath(char *path, char *unixPath)
 
 	if (IsUnixPath(path))
 		return false;
-	
+
 #ifdef MAC
-	if (IsClassicAbsolutePath(path)) 
+	if (IsClassicAbsolutePath(path))
 	{
 		OSErr err = 0;
-		err = ConvertTraditionalPathToUnixPath((const char *)path, unixPath, kMaxNameLen); 
+		err = ConvertTraditionalPathToUnixPath((const char *)path, unixPath, kMaxNameLen);
 		return true;
 	}
-#endif	
+#endif
 
 	if (IsClassicPath(path))
 	{
@@ -2386,27 +2396,27 @@ bool ResolvePath(string &containingDir, string &pathToResolve)
 		cerr << "ResolvePath(): path to resolve is empty" << endl;
 		return false;
 	}
-	
+
 	if (containingDir.size() == 0) {
 		// we assume the current working directory
 		//cerr << "ResolvePath(): containing directory is empty.  Setting to current working directory" << endl;
 		containingDir = '.';
 	}
-	
+
 	string inputPath = containingDir;
 	ConvertPathToCurrentPlatform(trim(inputPath));
-	
+
 	string resolvedPath = pathToResolve;
 	ConvertPathToCurrentPlatform(trim(resolvedPath));
-	
-	
+
+
 	//if (FileExists(0, 0, (char *)resolvedPath.c_str())) {
 	if (FileExists(0, 0, resolvedPath.c_str())) {
 		// no problem, the file exists at the path given
 		pathToResolve = resolvedPath;
 		return true;
 	}
-	
+
 	// otherwise we have to try to find it
 	//if (!FileExists(0, 0, (char *)inputPath.c_str())) {
 	if (!FileExists(0, 0, inputPath.c_str())) {
@@ -2416,17 +2426,17 @@ bool ResolvePath(string &containingDir, string &pathToResolve)
 	}
 	//cerr << "ResolvePath(): Our base path: " << inputPath << endl;
 	//cerr << "ResolvePath(): Our path to resolve: " << resolvedPath << endl;
-	
+
 	string pathToTry;
 	vector<string> pathComponentsToReference = SplitPath(inputPath);
 	vector<string> pathComponentsToResolve = SplitPath(resolvedPath);
-	
+
 	while (pathComponentsToResolve.size() > 0) {
 		vector<string> concatPath = pathComponentsToReference;
 		concatPath.insert(concatPath.end(),
 						  pathComponentsToResolve.begin(),
 						  pathComponentsToResolve.end());
-		
+
 		string delim;
 		delim += NEWDIRDELIMITER;
 		//cerr << "ResolvePath(): Our delimiter is '" << delim << "'"<< endl;
@@ -2437,10 +2447,10 @@ bool ResolvePath(string &containingDir, string &pathToResolve)
 			pathToResolve = pathToTry;
 			return true;
 		}
-		
+
 		pathComponentsToResolve.erase(pathComponentsToResolve.begin());
 	}
-	
+
 	cerr << "ResolvePath(): Could not resolve path" << endl;
 	return false;
 }

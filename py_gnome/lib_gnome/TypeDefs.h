@@ -24,6 +24,10 @@
 //--
 
 #define kMaxNameLen 256
+#define kMaxStrLen 256
+#define kTimeStrLen 128
+#define kDateStrLen 64
+
 #define TIMEVALUE_TOLERANCE 0.00001
 
 #define INFINITE_DEPTH	5000.

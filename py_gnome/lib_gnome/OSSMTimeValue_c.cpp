@@ -392,12 +392,12 @@ OSErr OSSMTimeValue_c::GetTimeChange(long a, long b, Seconds *dt)
         // better error message, JLM 4/11/01
         // printError("Duplicate times in time/value table."); return -1;
         char msg[256];
-        char timeS[128];
+        char timeS[kTimeStrLen];
         DateTimeRec time;
         char* p;
 
         memset(msg, 0, 256);
-        memset(timeS, 0, 128);
+        memset(timeS, 0, kTimeStrLen);
 
         SecondsToDate(INDEXH(timeValues, a).time, &time);
         Date2String(&time, timeS);
