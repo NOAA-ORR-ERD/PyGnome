@@ -36,29 +36,23 @@ Documentation
 
 `FAQ <https://github.com/NOAA-ORR-ERD/GNOME2/wiki/FAQ---Troubleshoot>`_
 
-`PyGNOME README <py_gnome/README.rst>`_
 
+Installation
+============
 
-The WebGNOME Interface:
-=======================
+We have put some effort into making this package reasonably easy,
+or at least possible, to install on a few different computing platforms:
 
-Scripting is the most featurefull way to access PyGNOME's capabilities.
-However we have developed a system that allows a user to create and run
-PyGNOME models from a web browser.
+ - OS-X
+ - Windows
+ - Linux
 
-There is a publicly available instance of WebGNOME at:
+This package contains modules written in C/C++, and they must be
+compiled for this package to function, and we primarily use the conda ()
+system for installation.  Conda is built primarily for
+scientific, engineering, and math applications.
 
-https://gnome.orr.noaa.gov
+It is now the only supported way to get set up to use ``PyGNOME``,
+and it is used in our development and testing process.
 
-If you want to run your own instance of WebGNOME, the code is in the
-following projects:
-
-- `WebGnomeAPI <https://github.com/NOAA-ORR-ERD/WebGnomeAPI>`_:
-  A web server that implements the PyGNOME interface
-- `WebGnomeClient <https://github.com/NOAA-ORR-ERD/WebGnomeClient>`_:
-  A Web application for setting up and running PyGNOME models
-
-**Fair Warning:**
-
-The WebGNOME system is under active development, and by its very nature
-does not expose the full capabilities of PyGNOME.
+`Install using conda <./Installing.rst>`_
