@@ -45,16 +45,17 @@ or at least possible, to install on a few different computing platforms:
 
  - OS-X
  - Windows
- - Linux (tested on CentOS 7)
+ - Linux
 
 This package contains modules written in C/C++, and they must be
-compiled for this package to function, and we primarily use the Anaconda
-distribution of Python for installation.  Anaconda is built primarily for
+compiled for this package to function, and we primarily use the conda ()
+system for installation.  Conda is built primarily for
 scientific, engineering, and math applications.
+
 It is now the only supported way to get set up to use ``PyGNOME``,
 and it is used in our development and testing process.
 
-`Install using Anaconda <./Installing.rst>`_
+`Install using conda <./Installing.rst>`_
 
 
 The WebGNOME Interface:

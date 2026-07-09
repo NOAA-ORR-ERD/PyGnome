@@ -5,6 +5,49 @@ Building / Installing PyGNOME with the conda package manager
 TL;DR
 =====
 
+
+Installing from conda-forge
+---------------------------
+
+The latest release of the PyGNOME pacakge is available on conda-forge.
+
+If you are set up to run conda, it should be a simple:
+
+conda install -c py_gnome
+
+Building it from source
+-----------------------
+
+pixi
+....
+
+The easiest why to build from source, or work on the source is with the pixi environment manager:
+
+``https://pixi.prefix.dev/latest/``
+
+A pixi configuration is provided, so::
+
+::
+
+    pixi shell
+
+will provide a shell, all ready for development, etc.
+
+::
+
+    pixi run build_wheel
+
+Will build a wheel that can be installed. (into an environment that has everything you need)
+
+::
+    pixi test
+
+Will run the full test suite.
+
+Using miniconda, miniforge, etc
+...............................
+
+
 If you are already set up to use conda, then it's as simple as:
 
 Add the conda-forge channel::
