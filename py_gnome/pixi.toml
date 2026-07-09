@@ -54,6 +54,16 @@ cmake = "*"
 ninja = "*"
 scikit-build-core = ">=0.9.9"
 # setuptools-scm = ">=8"
+# merging docs with build, the docs need s built install
+# [feature.docs.dependencies]
+sphinx = "*"
+sphinx_rtd_theme = "*"
+nbsphinx = "*"
+sphinx-autoapi = "*"
+sphinxcontrib-jquery = "*"
+
+
+
 
 [feature.dev.dependencies]
 ipython = "*"
@@ -66,18 +76,13 @@ pytest-cov = "*"
 pytest-timeout = "*"
 testfixtures = "*"
 
-[feature.docs.dependencies]
-sphinx = "*"
-sphinx_rtd_theme = "*"
-nbsphinx = "*"
-sphinx-autoapi = "*"
-sphinxcontrib-jquery = "*"
 
 # [feature.examples.dependencies]
 # matplotlib = "*"
 # xarray = "*"
 # jupyter = "*"
 # ipython = "*"
+
 
 [feature.py312.dependencies]
 python = "~=3.12.0"
@@ -86,27 +91,23 @@ python = "~=3.12.0"
 python = "~=3.13.0"
 
 [environments]
-default = { features = ["py312", "dev", "docs", "test", "build"], solve-group = "default" }
+default = { features = ["py312", "dev", "test", "build"], solve-group = "default" }
 # using the oldest supported version for development
-dev312 = ["py312", "dev", "docs", "test", "build"]
-dev313 = ["py313", "dev", "docs", "test", "build"]
+dev312 = ["py312", "dev", "test", "build"]
+dev313 = ["py313", "dev", "test", "build"]
 build = ["py312", "build"]
 test312 = [ "py312", "test", "build" ]
 test313 = [ "py313", "test", "build" ]
-docs = { features = ["py312", "docs"], solve-group = "default" }
+# docs = { features = ["py312", "docs"], solve-group = "default" }
 
 
 [tasks]
 # build = {cmd = "python -m build ./", default-environment = "build"}
-build = {cmd = "python -m build --skip-dependency-check --no-isolation ./"}
+build_wheel = {cmd = "python -m build --skip-dependency-check --no-isolation ./", default-environment = "build"}
 
-install = { cmd = "pip install --force-reinstall --no-index --find-links=./dist/  gnome", depends-on = ["build"]}
+install = { cmd = "pip install --root-user-action=ignore --force-reinstall --no-index --find-links=./dist/  gnome", depends-on = ["build_wheel"]}
 
 test = { cmd = "pytest --runslow tests/unit_tests/", depends-on = ["install"]}
-
-# test = { cmd = "pytest tests/unit_tests/", depends-on = ["install"], default-environment = "test312" }
-
-# test = { cmd = "pytest tests/unit_tests/", depends-on = [{task = "install", environment = "test312"}], default-environment = "test312" }
 
 lint = { cmd = "ruff check gnome", default-environment = "dev"}
 
