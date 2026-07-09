@@ -2362,7 +2362,7 @@ void ShowCoordinates(Point p)
 	
 	if(model->GetModelMode() ==  ADVANCEDMODE) 
 	{	// JLM, add a diagnostic message for CJ
-		char diagnosticStr[256] = "";
+		char diagnosticStr[kMaxStrLen] = "";
 		model->MovementString(wp, diagnosticStr);
 
 		// On Land diagnostic

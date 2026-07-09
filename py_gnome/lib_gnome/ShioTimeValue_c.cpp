@@ -416,7 +416,7 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
     //YEARDATA		*yearData = (YEARDATA *) NULL;
 	long numConstituents;
 	CONSTITUENT		*conArray = 0;
-	char	directoryPath[256], errStr[256];
+	char	directoryPath[256], errStr[kMaxStrLen];
 	YEARDATA2* yearData = 0;
 
 	long numValues = this->GetNumValues(), amtYearData = 0, i;
@@ -1693,7 +1693,7 @@ YEARDATA2* ReadYearData(short year, const char *path, char *errStr)
 	else
 	{
 		err = -1;
-		snprintf(errStr, sizeof(errStr), "Could not open file '%s'", filePathName);
+		snprintf(errStr, kMaxStrLen, "Could not open file '%s'", filePathName);
 	}
 
 	if (err)

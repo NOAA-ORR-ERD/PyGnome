@@ -508,7 +508,7 @@ Boolean CATSMover_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr)
 	StringWithoutTrailingZeros(uStr, lengthU, 4);
 	StringWithoutTrailingZeros(sStr, lengthS, 4);
 
-	snprintf(diagnosticStr, sizeof(diagnosticStr), " [grid: %s, unscaled: %s m/s, scaled: %s m/s]",
+	snprintf(diagnosticStr, kMaxStrLen, " [grid: %s, unscaled: %s m/s, scaled: %s m/s]",
 			this->className, uStr, sStr);
 
 	return true;
@@ -531,7 +531,7 @@ void CATSMover_c::DeleteTimeDep ()
 OSErr CATSMover_c::TextRead(vector<string> &linesInFile)
 {
 	OSErr err = 0;
-	char errmsg[256];
+	char errmsg[kMaxStrLen];
 	string currentLine;
 	long line = 1;
 
