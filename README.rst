@@ -42,7 +42,7 @@ Documentation
 The WebGNOME Interface:
 =======================
 
-Scripting is the most featurefull way to access PyGNOME's capabilities.
+Scripting is the most featureful way to access PyGNOME's capabilities.
 However we have developed a system that allows a user to create and run
 PyGNOME models from a web browser.
 
