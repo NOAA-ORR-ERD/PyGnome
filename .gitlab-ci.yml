@@ -43,13 +43,15 @@ test_multi_py:
     - pixi run -e test312 test
     - pixi run -e test313 test
 
-build_wheel:
+build_wheels:
   stage: build
   allow_failure: false
   image: $IMAGE_NAME
   script:
     - cd py_gnome
-    - pixi run build_wheel
+    - pixi run -e build312 build_wheel
+    - pixi run -e build313 build_wheel
+
 
 build_docs:
   stage: build
