@@ -95,7 +95,8 @@ default = { features = ["py312", "dev", "test", "build"], solve-group = "default
 # using the oldest supported version for development
 dev312 = ["py312", "dev", "test", "build"]
 dev313 = ["py313", "dev", "test", "build"]
-build = ["py312", "build"]
+build312 = ["py312", "build"]
+build313 = ["py313", "build"]
 test312 = [ "py312", "test", "build" ]
 test313 = [ "py313", "test", "build" ]
 # docs = { features = ["py312", "docs"], solve-group = "default" }
