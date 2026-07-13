@@ -205,9 +205,9 @@ class Dissolution(Weatherer):
         T_calm_i = self.calm_between_wave_breaks(points,model_time, time_step, T_wc_i)
         # print 'T_calm_i = ', T_calm_i
 
-        assert np.alltrue(T_calm_i <= float(time_step))
-        assert np.alltrue(T_wc_i <= float(time_step))
-        assert np.alltrue(T_wc_i + T_calm_i <= float(time_step))
+        assert np.all(T_calm_i <= float(time_step))
+        assert np.all(T_wc_i <= float(time_step))
+        assert np.all(T_wc_i + T_calm_i <= float(time_step))
 
         oil_concentrations = self.oil_concentration(fmasses, rho)
 
