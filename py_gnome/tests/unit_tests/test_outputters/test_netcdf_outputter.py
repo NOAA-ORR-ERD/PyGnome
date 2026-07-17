@@ -23,6 +23,7 @@ from gnome.environment import Water
 from gnome.movers import RandomMover, constant_point_wind_mover
 from gnome.outputters import NetCDFOutput
 from gnome.model import Model
+from gnome.basic_types import oil_status
 from ..conftest import test_oil
 
 # file extension to use for test output files
@@ -302,6 +303,80 @@ def test_write_output_standard(model):
         # uncertain flag
 
         uncertain = True
+
+def test_write_output_some_off_maps(model):
+    """
+    tests that both certain and uncertain netcdf
+    are written correctly when some elements go off maps
+
+    See: https://gitlab.orr.noaa.gov/gnome/pygnome/-/work_items/435
+    """
+
+    model.rewind()
+
+    model.duration = model.duration * 2
+    # run 5 steps.
+    # -- long enough for all elements to be released
+    for i in range(5):
+        step = model.step()
+        print(step)
+
+    # set a few elements off map
+    # breakpoint()
+    status_codes = model.get_spill_property('status_codes')
+    status_codes_u = model.get_spill_property('status_codes', ucert=True)
+    status_codes[-2:] = oil_status.off_maps
+    # run the rest of the way
+    print(f"cert codes: {model.get_spill_property('status_codes')}")
+    print(f"uncert codes: {model.get_spill_property('status_codes', ucert=True)}")
+
+    while True:
+        try:
+            step = model.step()
+            print(f"step: {step['step_num']}")
+            # print(f"cert codes: {model.get_spill_property('status_codes')}")
+            # print(f"uncert codes: {model.get_spill_property('status_codes', ucert=True)}")
+            print(f"number of certain particles: {len(model.get_spill_property('status_codes', ucert=False))}")
+            print(f"number of uncertain particles: {len(model.get_spill_property('status_codes', ucert=True))}")
+        except StopIteration:
+            break
+
+    o_put = [model.outputters[outputter.id]
+             for outputter in model.outputters
+             if isinstance(outputter, NetCDFOutput)][0]
+
+    atol = 1e-5
+    rtol = 0
+
+    # check the certain file:
+    # more checks are probably in order, but this
+    # catches the bug at hand.
+    with nc.Dataset(o_put.filename) as data:
+        dv = data.variables
+        part_count = dv['particle_count'][:]
+        latitude = dv['latitude'][:]
+        longitude = dv['longitude'][:]
+
+
+        print(part_count)
+        assert np.array_equal(part_count, [0, 1, 2, 3, 5, 3, 3, 3, 3])
+
+        num_part = part_count[:].sum()
+        assert len(latitude) == len(longitude) == num_part
+
+    # check the uncertain file:
+    with nc.Dataset(o_put._u_filename) as data:
+        dv = data.variables
+        part_count = dv['particle_count'][:]
+        latitude = dv['latitude'][:]
+        longitude = dv['longitude'][:]
+
+
+        print(part_count)
+        assert np.array_equal(part_count, [0, 1, 2, 3, 5, 5, 5, 5, 5])
+
+        num_part = part_count[:].sum()
+        assert len(latitude) == len(longitude) == num_part
 
 
 @pytest.mark.slow
