@@ -183,9 +183,9 @@ class NetCDFOutputSchema(BaseOutputterSchema):
 #     _start_idx = SchemaNode(
 #         Int(), missing=drop, save=True, read_only=True, test_equal=False
 #     )
-    _middle_of_run = SchemaNode(
-        Bool(), missing=drop, save=True, read_only=True, test_equal=False
-    )
+#     _middle_of_run = SchemaNode(
+#         Bool(), missing=drop, save=True, read_only=True, test_equal=False
+#     )
     zip_output = SchemaNode(
         Boolean(), missing=drop, save=True, update=True
     )
