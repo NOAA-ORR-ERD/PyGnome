@@ -183,6 +183,9 @@ class NetCDFOutputSchema(BaseOutputterSchema):
     _start_idx = SchemaNode(
         Int(), missing=drop, save=True, read_only=True, test_equal=False
     )
+    _start_idx_u = SchemaNode(
+        Int(), missing=drop, save=True, read_only=True, test_equal=False
+    )
     _middle_of_run = SchemaNode(
         Bool(), missing=drop, save=True, read_only=True, test_equal=False
     )
@@ -291,6 +294,7 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
                  surface_conc="kde",
                  # _middle_of_run=False,
                  _start_idx=0,
+                 _start_idx_u=0,
                  **kwargs):
         """
         Constructor for Net_CDFOutput object. It reads data from cache and
@@ -386,6 +390,7 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
         # need to keep track of starting index for writing data since variable
         # number of particles are released
         self._start_idx = _start_idx
+        self._start_idx_u = _start_idx_u
 
         # define NetCDF variable attributes that are instance attributes here
         # It is set in prepare_for_model_run():
@@ -665,6 +670,7 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
         # need to keep track of starting index for writing data since variable
         # number of particles are released
         self._start_idx = 0
+        self._start_idx_u = 0
 
     def _create_nc_var(self, grp, var_name, dtype, shape, chunksz):
         # fixme: why is this even here? it's wrapping a single call???
@@ -755,19 +761,23 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
                     pc = rg_vars['particle_count']
                     pc[idx] = len(sc)
 
-                    _end_idx = self._start_idx + pc[idx]
+                    if sc.uncertain:
+                        _start_index = self._start_idx_u
+                    else:
+                        _start_index = self._start_idx
+                    _end_idx = _start_index + pc[idx]
 
                     # add the data:
                     for var_name in self.arrays_to_output:
                         # special case positions:
                         if var_name == 'longitude':
-                            rg_vars['longitude'][self._start_idx:_end_idx] = sc['positions'][:, 0]
+                            rg_vars['longitude'][_start_index:_end_idx] = sc['positions'][:, 0]
                         elif var_name == 'latitude':
-                            rg_vars['latitude'][self._start_idx:_end_idx] = sc['positions'][:, 1]
+                            rg_vars['latitude'][_start_index:_end_idx] = sc['positions'][:, 1]
                         elif var_name == 'depth':
-                            rg_vars['depth'][self._start_idx:_end_idx] = sc['positions'][:, 2]
+                            rg_vars['depth'][_start_index:_end_idx] = sc['positions'][:, 2]
                         else:
-                            rg_vars[var_name][self._start_idx:_end_idx] = sc[var_name]
+                            rg_vars[var_name][_start_index:_end_idx] = sc[var_name]
 
                     # write mass_balance data
                     if sc.mass_balance:
@@ -783,6 +793,10 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
                                                     )
                             grp.variables[key][idx] = val
 
+                if sc.uncertain:
+                    self._start_idx_u = _end_idx  # set _start_idx_u for the next timestep
+                else:
+                    self._start_idx = _end_idx  # set _start_idx for the next timestep
         # if islast_step:
         #     if self.zip_output is True:
         #         self._zip_output_files()
@@ -790,7 +804,6 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
         if not self._write_step:
             return None
 
-        self._start_idx = _end_idx  # set _start_idx for the next timestep
 
         return {'filename': (self.filename,
                              self._u_filename),
@@ -857,6 +870,7 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
         super(NetCDFOutput, self).rewind()
 
         self._start_idx = 0
+        self._start_idx_u = 0
 
     # fixme: we should use the code in nc_particles for this!!!
     @classmethod
