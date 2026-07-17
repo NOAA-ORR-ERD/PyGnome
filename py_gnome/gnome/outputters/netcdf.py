@@ -180,12 +180,9 @@ class NetCDFOutputSchema(BaseOutputterSchema):
     compress = SchemaNode(
         Bool(), missing=drop, save=True, update=True
     )
-    _start_idx = SchemaNode(
-        Int(), missing=drop, save=True, read_only=True, test_equal=False
-    )
-    _start_idx_u = SchemaNode(
-        Int(), missing=drop, save=True, read_only=True, test_equal=False
-    )
+#     _start_idx = SchemaNode(
+#         Int(), missing=drop, save=True, read_only=True, test_equal=False
+#     )
     _middle_of_run = SchemaNode(
         Bool(), missing=drop, save=True, read_only=True, test_equal=False
     )
@@ -293,8 +290,7 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
                  #        a way for WebGNOME to set it yet..
                  surface_conc="kde",
                  # _middle_of_run=False,
-                 _start_idx=0,
-                 _start_idx_u=0,
+                 #_start_idx=0,
                  **kwargs):
         """
         Constructor for Net_CDFOutput object. It reads data from cache and
@@ -389,8 +385,8 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
 
         # need to keep track of starting index for writing data since variable
         # number of particles are released
-        self._start_idx = _start_idx
-        self._start_idx_u = _start_idx_u
+        self._start_idx = 0
+        self._start_idx_u = 0
 
         # define NetCDF variable attributes that are instance attributes here
         # It is set in prepare_for_model_run():
