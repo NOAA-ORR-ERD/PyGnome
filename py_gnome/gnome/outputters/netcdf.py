@@ -180,12 +180,6 @@ class NetCDFOutputSchema(BaseOutputterSchema):
     compress = SchemaNode(
         Bool(), missing=drop, save=True, update=True
     )
-#     _start_idx = SchemaNode(
-#         Int(), missing=drop, save=True, read_only=True, test_equal=False
-#     )
-#     _middle_of_run = SchemaNode(
-#         Bool(), missing=drop, save=True, read_only=True, test_equal=False
-#     )
     zip_output = SchemaNode(
         Boolean(), missing=drop, save=True, update=True
     )
@@ -289,8 +283,6 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
                  # FIXME: this should not be default, but since we don't have
                  #        a way for WebGNOME to set it yet..
                  surface_conc="kde",
-                 # _middle_of_run=False,
-                 #_start_idx=0,
                  **kwargs):
         """
         Constructor for Net_CDFOutput object. It reads data from cache and
@@ -339,8 +331,6 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
 
         # uncertain file is only written out if model is uncertain
 
-        ## why is this even here ?!?!
-        # kwargs['_middle_of_run'] = _middle_of_run
         super(NetCDFOutput, self).__init__(filename=filename,
                                            surface_conc=surface_conc,
                                            # _middle_of_run,
@@ -385,6 +375,8 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
 
         # need to keep track of starting index for writing data since variable
         # number of particles are released
+        # need uncertainty start index since particles can be removed if they go off map
+        # so the particle counts might not match
         self._start_idx = 0
         self._start_idx_u = 0
 
@@ -610,7 +602,7 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
                 for var_name in self.arrays_to_output:
                     # the special cases:
                     if var_name in ('latitude', 'longitude', 'depth'):
-                        # these don't  map directly to an array_type
+                        # these don't map directly to an array_type
                         dt = world_point_type
                         shape = ('data', )
                         chunksz = (self._chunksize,)
@@ -820,7 +812,6 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
         self.cleaned_up = True
 
     def _zip_output_files(self):
-        print("_zip_output_files called")
         zfilename = self.zip_filename
         zipf = zipfile.ZipFile(zfilename, 'w')
 
