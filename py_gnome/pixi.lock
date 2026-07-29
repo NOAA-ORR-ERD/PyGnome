@@ -292,6 +292,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/roman-numerals-py-4.1.0-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/scikit-build-core-1.0.2-pyh04d0eab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/setuptools-83.0.0-pyh332efcf_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/setuptools-scm-10.2.1-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/six-1.17.0-pyhe01879c_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/snowballstemmer-3.1.1-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/soupsieve-2.8.4-pyhd8ed1ab_0.conda
@@ -317,6 +318,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/tzdata-2025c-hc9c84f9_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/unidecode-1.4.0-pyhcf101f3_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/urllib3-2.7.0-pyhd8ed1ab_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/vcs_versioning-2.2.2-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/venusian-3.1.1-pyhd8ed1ab_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/webencodings-0.5.1-pyhd8ed1ab_3.conda
       - conda: https://prefix.dev/conda-forge/noarch/webob-1.8.10-pyhd8ed1ab_0.conda
@@ -422,6 +424,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/roman-numerals-py-4.1.0-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/scikit-build-core-1.0.2-pyh04d0eab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/setuptools-83.0.0-pyh332efcf_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/setuptools-scm-10.2.1-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/six-1.17.0-pyhe01879c_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/snowballstemmer-3.1.1-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/soupsieve-2.8.4-pyhd8ed1ab_0.conda
@@ -447,6 +450,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/tzdata-2025c-hc9c84f9_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/unidecode-1.4.0-pyhcf101f3_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/urllib3-2.7.0-pyhd8ed1ab_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/vcs_versioning-2.2.2-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/venusian-3.1.1-pyhd8ed1ab_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/webencodings-0.5.1-pyhd8ed1ab_3.conda
       - conda: https://prefix.dev/conda-forge/noarch/webob-1.8.10-pyhd8ed1ab_0.conda
@@ -701,6 +705,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/roman-numerals-py-4.1.0-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/scikit-build-core-1.0.2-pyh04d0eab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/setuptools-83.0.0-pyh332efcf_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/setuptools-scm-10.2.1-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/six-1.17.0-pyhe01879c_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/snowballstemmer-3.1.1-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/soupsieve-2.8.4-pyhd8ed1ab_0.conda
@@ -726,6 +731,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/tzdata-2025c-hc9c84f9_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/unidecode-1.4.0-pyhcf101f3_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/urllib3-2.7.0-pyhd8ed1ab_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/vcs_versioning-2.2.2-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/venusian-3.1.1-pyhd8ed1ab_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/webencodings-0.5.1-pyhd8ed1ab_3.conda
       - conda: https://prefix.dev/conda-forge/noarch/webob-1.8.10-pyhd8ed1ab_0.conda
@@ -972,6 +978,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/roman-numerals-py-4.1.0-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/scikit-build-core-1.0.2-pyh04d0eab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/setuptools-83.0.0-pyh332efcf_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/setuptools-scm-10.2.1-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/six-1.17.0-pyhe01879c_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/snowballstemmer-3.1.1-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/soupsieve-2.8.4-pyhd8ed1ab_0.conda
@@ -997,6 +1004,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/tzdata-2025c-hc9c84f9_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/unidecode-1.4.0-pyhcf101f3_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/urllib3-2.7.0-pyhd8ed1ab_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/vcs_versioning-2.2.2-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/venusian-3.1.1-pyhd8ed1ab_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/webencodings-0.5.1-pyhd8ed1ab_3.conda
       - conda: https://prefix.dev/conda-forge/noarch/webob-1.8.10-pyhd8ed1ab_0.conda
@@ -1430,6 +1438,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/roman-numerals-py-4.1.0-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/scikit-build-core-1.0.2-pyh04d0eab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/setuptools-83.0.0-pyh332efcf_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/setuptools-scm-10.2.1-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/six-1.17.0-pyhe01879c_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/snowballstemmer-3.1.1-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/soupsieve-2.8.4-pyhd8ed1ab_0.conda
@@ -1455,6 +1464,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/tzdata-2025c-hc9c84f9_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/unidecode-1.4.0-pyhcf101f3_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/urllib3-2.7.0-pyhd8ed1ab_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/vcs_versioning-2.2.2-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/venusian-3.1.1-pyhd8ed1ab_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/webencodings-0.5.1-pyhd8ed1ab_3.conda
       - conda: https://prefix.dev/conda-forge/noarch/webob-1.8.10-pyhd8ed1ab_0.conda
@@ -1559,6 +1569,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/roman-numerals-py-4.1.0-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/scikit-build-core-1.0.2-pyh04d0eab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/setuptools-83.0.0-pyh332efcf_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/setuptools-scm-10.2.1-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/six-1.17.0-pyhe01879c_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/snowballstemmer-3.1.1-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/soupsieve-2.8.4-pyhd8ed1ab_0.conda
@@ -1584,6 +1595,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/tzdata-2025c-hc9c84f9_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/unidecode-1.4.0-pyhcf101f3_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/urllib3-2.7.0-pyhd8ed1ab_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/vcs_versioning-2.2.2-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/venusian-3.1.1-pyhd8ed1ab_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/webencodings-0.5.1-pyhd8ed1ab_3.conda
       - conda: https://prefix.dev/conda-forge/noarch/webob-1.8.10-pyhd8ed1ab_0.conda
@@ -1837,6 +1849,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/roman-numerals-py-4.1.0-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/scikit-build-core-1.0.2-pyh04d0eab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/setuptools-83.0.0-pyh332efcf_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/setuptools-scm-10.2.1-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/six-1.17.0-pyhe01879c_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/snowballstemmer-3.1.1-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/soupsieve-2.8.4-pyhd8ed1ab_0.conda
@@ -1862,6 +1875,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/tzdata-2025c-hc9c84f9_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/unidecode-1.4.0-pyhcf101f3_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/urllib3-2.7.0-pyhd8ed1ab_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/vcs_versioning-2.2.2-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/venusian-3.1.1-pyhd8ed1ab_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/webencodings-0.5.1-pyhd8ed1ab_3.conda
       - conda: https://prefix.dev/conda-forge/noarch/webob-1.8.10-pyhd8ed1ab_0.conda
@@ -2107,6 +2121,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/roman-numerals-py-4.1.0-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/scikit-build-core-1.0.2-pyh04d0eab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/setuptools-83.0.0-pyh332efcf_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/setuptools-scm-10.2.1-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/six-1.17.0-pyhe01879c_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/snowballstemmer-3.1.1-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/soupsieve-2.8.4-pyhd8ed1ab_0.conda
@@ -2132,6 +2147,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/tzdata-2025c-hc9c84f9_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/unidecode-1.4.0-pyhcf101f3_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/urllib3-2.7.0-pyhd8ed1ab_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/vcs_versioning-2.2.2-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/venusian-3.1.1-pyhd8ed1ab_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/webencodings-0.5.1-pyhd8ed1ab_3.conda
       - conda: https://prefix.dev/conda-forge/noarch/webob-1.8.10-pyhd8ed1ab_0.conda
@@ -2623,6 +2639,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/roman-numerals-py-4.1.0-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/scikit-build-core-1.0.2-pyh04d0eab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/setuptools-83.0.0-pyh332efcf_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/setuptools-scm-10.2.1-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/six-1.17.0-pyhe01879c_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/snowballstemmer-3.1.1-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/soupsieve-2.8.4-pyhd8ed1ab_0.conda
@@ -2650,6 +2667,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/tzdata-2025c-hc9c84f9_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/unidecode-1.4.0-pyhcf101f3_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/urllib3-2.7.0-pyhd8ed1ab_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/vcs_versioning-2.2.2-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/venusian-3.1.1-pyhd8ed1ab_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/wcwidth-0.8.2-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/webencodings-0.5.1-pyhd8ed1ab_3.conda
@@ -2773,6 +2791,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/roman-numerals-py-4.1.0-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/scikit-build-core-1.0.2-pyh04d0eab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/setuptools-83.0.0-pyh332efcf_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/setuptools-scm-10.2.1-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/six-1.17.0-pyhe01879c_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/snowballstemmer-3.1.1-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/soupsieve-2.8.4-pyhd8ed1ab_0.conda
@@ -2800,6 +2819,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/tzdata-2025c-hc9c84f9_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/unidecode-1.4.0-pyhcf101f3_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/urllib3-2.7.0-pyhd8ed1ab_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/vcs_versioning-2.2.2-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/venusian-3.1.1-pyhd8ed1ab_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/wcwidth-0.8.2-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/webencodings-0.5.1-pyhd8ed1ab_3.conda
@@ -3075,6 +3095,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/roman-numerals-py-4.1.0-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/scikit-build-core-1.0.2-pyh04d0eab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/setuptools-83.0.0-pyh332efcf_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/setuptools-scm-10.2.1-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/six-1.17.0-pyhe01879c_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/snowballstemmer-3.1.1-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/soupsieve-2.8.4-pyhd8ed1ab_0.conda
@@ -3102,6 +3123,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/tzdata-2025c-hc9c84f9_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/unidecode-1.4.0-pyhcf101f3_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/urllib3-2.7.0-pyhd8ed1ab_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/vcs_versioning-2.2.2-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/venusian-3.1.1-pyhd8ed1ab_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/wcwidth-0.8.2-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/webencodings-0.5.1-pyhd8ed1ab_3.conda
@@ -3367,6 +3389,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/roman-numerals-py-4.1.0-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/scikit-build-core-1.0.2-pyh04d0eab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/setuptools-83.0.0-pyh332efcf_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/setuptools-scm-10.2.1-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/six-1.17.0-pyhe01879c_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/snowballstemmer-3.1.1-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/soupsieve-2.8.4-pyhd8ed1ab_0.conda
@@ -3394,6 +3417,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/tzdata-2025c-hc9c84f9_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/unidecode-1.4.0-pyhcf101f3_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/urllib3-2.7.0-pyhd8ed1ab_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/vcs_versioning-2.2.2-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/venusian-3.1.1-pyhd8ed1ab_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/wcwidth-0.8.2-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/webencodings-0.5.1-pyhd8ed1ab_3.conda
@@ -3901,6 +3925,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/roman-numerals-py-4.1.0-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/scikit-build-core-1.0.2-pyh04d0eab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/setuptools-83.0.0-pyh332efcf_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/setuptools-scm-10.2.1-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/six-1.17.0-pyhe01879c_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/snowballstemmer-3.1.1-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/soupsieve-2.8.4-pyhd8ed1ab_0.conda
@@ -3928,6 +3953,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/tzdata-2025c-hc9c84f9_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/unidecode-1.4.0-pyhcf101f3_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/urllib3-2.7.0-pyhd8ed1ab_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/vcs_versioning-2.2.2-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/venusian-3.1.1-pyhd8ed1ab_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/wcwidth-0.8.2-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/webencodings-0.5.1-pyhd8ed1ab_3.conda
@@ -4051,6 +4077,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/roman-numerals-py-4.1.0-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/scikit-build-core-1.0.2-pyh04d0eab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/setuptools-83.0.0-pyh332efcf_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/setuptools-scm-10.2.1-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/six-1.17.0-pyhe01879c_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/snowballstemmer-3.1.1-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/soupsieve-2.8.4-pyhd8ed1ab_0.conda
@@ -4078,6 +4105,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/tzdata-2025c-hc9c84f9_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/unidecode-1.4.0-pyhcf101f3_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/urllib3-2.7.0-pyhd8ed1ab_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/vcs_versioning-2.2.2-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/venusian-3.1.1-pyhd8ed1ab_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/wcwidth-0.8.2-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/webencodings-0.5.1-pyhd8ed1ab_3.conda
@@ -4353,6 +4381,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/roman-numerals-py-4.1.0-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/scikit-build-core-1.0.2-pyh04d0eab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/setuptools-83.0.0-pyh332efcf_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/setuptools-scm-10.2.1-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/six-1.17.0-pyhe01879c_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/snowballstemmer-3.1.1-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/soupsieve-2.8.4-pyhd8ed1ab_0.conda
@@ -4380,6 +4409,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/tzdata-2025c-hc9c84f9_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/unidecode-1.4.0-pyhcf101f3_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/urllib3-2.7.0-pyhd8ed1ab_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/vcs_versioning-2.2.2-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/venusian-3.1.1-pyhd8ed1ab_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/wcwidth-0.8.2-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/webencodings-0.5.1-pyhd8ed1ab_3.conda
@@ -4645,6 +4675,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/roman-numerals-py-4.1.0-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/scikit-build-core-1.0.2-pyh04d0eab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/setuptools-83.0.0-pyh332efcf_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/setuptools-scm-10.2.1-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/six-1.17.0-pyhe01879c_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/snowballstemmer-3.1.1-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/soupsieve-2.8.4-pyhd8ed1ab_0.conda
@@ -4672,6 +4703,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/tzdata-2025c-hc9c84f9_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/unidecode-1.4.0-pyhcf101f3_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/urllib3-2.7.0-pyhd8ed1ab_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/vcs_versioning-2.2.2-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/venusian-3.1.1-pyhd8ed1ab_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/wcwidth-0.8.2-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/webencodings-0.5.1-pyhd8ed1ab_3.conda
@@ -5179,6 +5211,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/roman-numerals-py-4.1.0-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/scikit-build-core-1.0.2-pyh04d0eab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/setuptools-83.0.0-pyh332efcf_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/setuptools-scm-10.2.1-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/six-1.17.0-pyhe01879c_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/snowballstemmer-3.1.1-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/soupsieve-2.8.4-pyhd8ed1ab_0.conda
@@ -5206,6 +5239,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/tzdata-2025c-hc9c84f9_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/unidecode-1.4.0-pyhcf101f3_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/urllib3-2.7.0-pyhd8ed1ab_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/vcs_versioning-2.2.2-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/venusian-3.1.1-pyhd8ed1ab_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/wcwidth-0.8.2-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/webencodings-0.5.1-pyhd8ed1ab_3.conda
@@ -5328,6 +5362,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/roman-numerals-py-4.1.0-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/scikit-build-core-1.0.2-pyh04d0eab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/setuptools-83.0.0-pyh332efcf_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/setuptools-scm-10.2.1-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/six-1.17.0-pyhe01879c_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/snowballstemmer-3.1.1-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/soupsieve-2.8.4-pyhd8ed1ab_0.conda
@@ -5355,6 +5390,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/tzdata-2025c-hc9c84f9_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/unidecode-1.4.0-pyhcf101f3_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/urllib3-2.7.0-pyhd8ed1ab_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/vcs_versioning-2.2.2-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/venusian-3.1.1-pyhd8ed1ab_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/wcwidth-0.8.2-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/webencodings-0.5.1-pyhd8ed1ab_3.conda
@@ -5629,6 +5665,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/roman-numerals-py-4.1.0-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/scikit-build-core-1.0.2-pyh04d0eab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/setuptools-83.0.0-pyh332efcf_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/setuptools-scm-10.2.1-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/six-1.17.0-pyhe01879c_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/snowballstemmer-3.1.1-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/soupsieve-2.8.4-pyhd8ed1ab_0.conda
@@ -5656,6 +5693,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/tzdata-2025c-hc9c84f9_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/unidecode-1.4.0-pyhcf101f3_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/urllib3-2.7.0-pyhd8ed1ab_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/vcs_versioning-2.2.2-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/venusian-3.1.1-pyhd8ed1ab_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/wcwidth-0.8.2-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/webencodings-0.5.1-pyhd8ed1ab_3.conda
@@ -5920,6 +5958,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/roman-numerals-py-4.1.0-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/scikit-build-core-1.0.2-pyh04d0eab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/setuptools-83.0.0-pyh332efcf_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/setuptools-scm-10.2.1-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/six-1.17.0-pyhe01879c_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/snowballstemmer-3.1.1-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/soupsieve-2.8.4-pyhd8ed1ab_0.conda
@@ -5947,6 +5986,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/tzdata-2025c-hc9c84f9_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/unidecode-1.4.0-pyhcf101f3_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/urllib3-2.7.0-pyhd8ed1ab_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/vcs_versioning-2.2.2-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/venusian-3.1.1-pyhd8ed1ab_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/wcwidth-0.8.2-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/webencodings-0.5.1-pyhd8ed1ab_3.conda
@@ -6401,6 +6441,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/roman-numerals-py-4.1.0-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/scikit-build-core-1.0.2-pyh04d0eab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/setuptools-83.0.0-pyh332efcf_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/setuptools-scm-10.2.1-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/six-1.17.0-pyhe01879c_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/snowballstemmer-3.1.1-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/soupsieve-2.8.4-pyhd8ed1ab_0.conda
@@ -6427,6 +6468,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/tzdata-2025c-hc9c84f9_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/unidecode-1.4.0-pyhcf101f3_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/urllib3-2.7.0-pyhd8ed1ab_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/vcs_versioning-2.2.2-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/venusian-3.1.1-pyhd8ed1ab_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/webencodings-0.5.1-pyhd8ed1ab_3.conda
       - conda: https://prefix.dev/conda-forge/noarch/webob-1.8.10-pyhd8ed1ab_0.conda
@@ -6537,6 +6579,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/roman-numerals-py-4.1.0-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/scikit-build-core-1.0.2-pyh04d0eab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/setuptools-83.0.0-pyh332efcf_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/setuptools-scm-10.2.1-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/six-1.17.0-pyhe01879c_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/snowballstemmer-3.1.1-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/soupsieve-2.8.4-pyhd8ed1ab_0.conda
@@ -6563,6 +6606,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/tzdata-2025c-hc9c84f9_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/unidecode-1.4.0-pyhcf101f3_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/urllib3-2.7.0-pyhd8ed1ab_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/vcs_versioning-2.2.2-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/venusian-3.1.1-pyhd8ed1ab_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/webencodings-0.5.1-pyhd8ed1ab_3.conda
       - conda: https://prefix.dev/conda-forge/noarch/webob-1.8.10-pyhd8ed1ab_0.conda
@@ -6823,6 +6867,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/roman-numerals-py-4.1.0-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/scikit-build-core-1.0.2-pyh04d0eab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/setuptools-83.0.0-pyh332efcf_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/setuptools-scm-10.2.1-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/six-1.17.0-pyhe01879c_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/snowballstemmer-3.1.1-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/soupsieve-2.8.4-pyhd8ed1ab_0.conda
@@ -6849,6 +6894,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/tzdata-2025c-hc9c84f9_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/unidecode-1.4.0-pyhcf101f3_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/urllib3-2.7.0-pyhd8ed1ab_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/vcs_versioning-2.2.2-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/venusian-3.1.1-pyhd8ed1ab_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/webencodings-0.5.1-pyhd8ed1ab_3.conda
       - conda: https://prefix.dev/conda-forge/noarch/webob-1.8.10-pyhd8ed1ab_0.conda
@@ -7101,6 +7147,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/roman-numerals-py-4.1.0-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/scikit-build-core-1.0.2-pyh04d0eab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/setuptools-83.0.0-pyh332efcf_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/setuptools-scm-10.2.1-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/six-1.17.0-pyhe01879c_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/snowballstemmer-3.1.1-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/soupsieve-2.8.4-pyhd8ed1ab_0.conda
@@ -7127,6 +7174,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/tzdata-2025c-hc9c84f9_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/unidecode-1.4.0-pyhcf101f3_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/urllib3-2.7.0-pyhd8ed1ab_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/vcs_versioning-2.2.2-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/venusian-3.1.1-pyhd8ed1ab_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/webencodings-0.5.1-pyhd8ed1ab_3.conda
       - conda: https://prefix.dev/conda-forge/noarch/webob-1.8.10-pyhd8ed1ab_0.conda
@@ -7567,6 +7615,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/roman-numerals-py-4.1.0-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/scikit-build-core-1.0.2-pyh04d0eab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/setuptools-83.0.0-pyh332efcf_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/setuptools-scm-10.2.1-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/six-1.17.0-pyhe01879c_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/snowballstemmer-3.1.1-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/soupsieve-2.8.4-pyhd8ed1ab_0.conda
@@ -7593,6 +7642,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/tzdata-2025c-hc9c84f9_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/unidecode-1.4.0-pyhcf101f3_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/urllib3-2.7.0-pyhd8ed1ab_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/vcs_versioning-2.2.2-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/venusian-3.1.1-pyhd8ed1ab_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/webencodings-0.5.1-pyhd8ed1ab_3.conda
       - conda: https://prefix.dev/conda-forge/noarch/webob-1.8.10-pyhd8ed1ab_0.conda
@@ -7702,6 +7752,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/roman-numerals-py-4.1.0-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/scikit-build-core-1.0.2-pyh04d0eab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/setuptools-83.0.0-pyh332efcf_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/setuptools-scm-10.2.1-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/six-1.17.0-pyhe01879c_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/snowballstemmer-3.1.1-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/soupsieve-2.8.4-pyhd8ed1ab_0.conda
@@ -7728,6 +7779,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/tzdata-2025c-hc9c84f9_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/unidecode-1.4.0-pyhcf101f3_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/urllib3-2.7.0-pyhd8ed1ab_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/vcs_versioning-2.2.2-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/venusian-3.1.1-pyhd8ed1ab_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/webencodings-0.5.1-pyhd8ed1ab_3.conda
       - conda: https://prefix.dev/conda-forge/noarch/webob-1.8.10-pyhd8ed1ab_0.conda
@@ -7987,6 +8039,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/roman-numerals-py-4.1.0-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/scikit-build-core-1.0.2-pyh04d0eab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/setuptools-83.0.0-pyh332efcf_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/setuptools-scm-10.2.1-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/six-1.17.0-pyhe01879c_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/snowballstemmer-3.1.1-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/soupsieve-2.8.4-pyhd8ed1ab_0.conda
@@ -8013,6 +8066,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/tzdata-2025c-hc9c84f9_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/unidecode-1.4.0-pyhcf101f3_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/urllib3-2.7.0-pyhd8ed1ab_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/vcs_versioning-2.2.2-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/venusian-3.1.1-pyhd8ed1ab_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/webencodings-0.5.1-pyhd8ed1ab_3.conda
       - conda: https://prefix.dev/conda-forge/noarch/webob-1.8.10-pyhd8ed1ab_0.conda
@@ -8264,6 +8318,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/roman-numerals-py-4.1.0-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/scikit-build-core-1.0.2-pyh04d0eab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/setuptools-83.0.0-pyh332efcf_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/setuptools-scm-10.2.1-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/six-1.17.0-pyhe01879c_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/snowballstemmer-3.1.1-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/soupsieve-2.8.4-pyhd8ed1ab_0.conda
@@ -8290,6 +8345,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/tzdata-2025c-hc9c84f9_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/unidecode-1.4.0-pyhcf101f3_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/urllib3-2.7.0-pyhd8ed1ab_0.conda
+      - conda: https://prefix.dev/conda-forge/noarch/vcs_versioning-2.2.2-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/venusian-3.1.1-pyhd8ed1ab_1.conda
       - conda: https://prefix.dev/conda-forge/noarch/webencodings-0.5.1-pyhd8ed1ab_3.conda
       - conda: https://prefix.dev/conda-forge/noarch/webob-1.8.10-pyhd8ed1ab_0.conda
@@ -13953,6 +14009,22 @@ packages:
   run_exports: {}
   size: 642081
   timestamp: 1783619174976
+- conda: https://prefix.dev/conda-forge/noarch/setuptools-scm-10.2.1-pyhcf101f3_0.conda
+  sha256: 8eb9daf6fc70111abf73f848c6d32d2769aa1fba550f793b865076fd4e33fb3a
+  md5: eefa3bc61c9224107d3a9afeb37552a9
+  depends:
+  - python >=3.10
+  - vcs_versioning >=2.0.0.dev0
+  - packaging >=20
+  - setuptools
+  - tomli >=1
+  - typing_extensions
+  - python
+  license: MIT
+  license_family: MIT
+  run_exports: {}
+  size: 29407
+  timestamp: 1784653562396
 - conda: https://prefix.dev/conda-forge/noarch/six-1.17.0-pyhe01879c_1.conda
   sha256: 458227f759d5e3fcec5d9b7acce54e10c9e1f4f4b7ec978f3bfd54ce4ee9853d
   md5: 3339e3b65d58accf4ca4fb8748ab16b3
@@ -14281,6 +14353,20 @@ packages:
   run_exports: {}
   size: 103560
   timestamp: 1778188657149
+- conda: https://prefix.dev/conda-forge/noarch/vcs_versioning-2.2.2-pyhcf101f3_0.conda
+  sha256: 5728b15adf4e2877e510996e0d617d1531ccd8e55ca59358f60d3a10aaead5fa
+  md5: efbdc1f76721fb4ae7a1dbb5fff72562
+  depends:
+  - python >=3.10
+  - packaging >=20
+  - tomli >=1
+  - typing_extensions >=4.1
+  - python
+  license: MIT
+  license_family: MIT
+  run_exports: {}
+  size: 83180
+  timestamp: 1782748145197
 - conda: https://prefix.dev/conda-forge/noarch/venusian-3.1.1-pyhd8ed1ab_1.conda
   sha256: 13545a1ba90183b0015c6b7990b399b54804b98d0545edf32c5419eb863b58e9
   md5: 93a52c3c237026096cad7e5fd9451ed8

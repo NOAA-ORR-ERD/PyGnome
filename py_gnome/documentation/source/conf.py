@@ -21,19 +21,10 @@ project = 'PyGNOME'
 copyright = 'Public Domain'
 author = 'NOAA Emergency Response Division'
 
-# reading version from the gnome.__init__ without importing
-with open('../../gnome/__init__.py') as init_file:
-    for line in init_file:
-        parts = line.strip().split()
-        try:
-            if parts[1] == '=' and parts[0] == "__version__":
-                release = parts[2].strip("'")
-                break
-        except:
-            pass
-    else:
-        raise ValueError("Could not extract version from the gnome.__init__")
-version = release
+from gnome._version import __version__ as release
+
+version = ".".join(release.split(".")[:2])
+
 
 # -- General configuration ---------------------------------------------------
 
