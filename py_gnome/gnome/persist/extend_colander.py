@@ -36,7 +36,7 @@ class DataSchemaNode(SchemaNode):
     - list, tuple
     - int, float
     """
-    def serialize(self, appstruct):
+    def serialize(self, appstruct, options):
         typ = None
         pth = None
         varname = self.name
@@ -71,7 +71,7 @@ class DataSchemaNode(SchemaNode):
             a = np.array(appstruct)
             if a.dtype == object:
                 raise ValueError("objects or object arrays are not supported for serialization by DataSchemaNode")
-            ujson.dumps(a)
+            ujson.dumps(appstruct)  # test if serializable
             return appstruct
         return LoadSpec(typ, pth, varname)
 
@@ -80,36 +80,43 @@ class DataSchemaNode(SchemaNode):
         For files that already exist on disk, we just need to add them to the zipfile and return the path.
         It is a little more complicated for in-memory data.
         """
-        typ, fn, vname = self.serialize(appstruct)
-        if fn == '??' and typ not in ['ndarray', 'maskedarray']:
-            raise NotImplementedError("In-memory netCDF/Xarray saving is not implemented. Please save to a file first.")
-        if typ in ['ndarray', 'maskedarray']:
-            # put the data back in because this needs to be added to the zipfile at a higher level (Gnome Obj)
-            p_fn = appstruct
-        elif typ in ['xarray', 'netCDF4.Dataset', 'netCDF4.MFDataset']:
-            p_fn = self._process_supporting_file(fn, zipfile_)
-            fn = p_fn
+        typ = fn = varname = None
+        ser = self.serialize(appstruct, options={'raw_paths': True})
+        if isinstance(ser, LoadSpec):
+            typ, fn, varname = ser
+            if fn == '??' and typ not in ['ndarray', 'maskedarray']:
+                raise NotImplementedError("In-memory netCDF/Xarray saving is not implemented. Please save to a file first.")
+            if typ in ['ndarray', 'maskedarray']:
+                # put the data back in because this needs to be added to the zipfile at a higher level (Gnome Obj)
+                p_fn = appstruct
+            elif typ in ['xarray', 'netCDF4.Dataset', 'netCDF4.MFDataset']:
+                p_fn = self._process_supporting_file(fn, zipfile_)
+                fn = p_fn
+            else:
+                raise ValueError(f"Unsupported type for saving: {typ}")
+            return LoadSpec(typ, p_fn, varname)
         else:
-            raise ValueError(f"Unsupported type for saving: {typ}")
-        return LoadSpec(typ, p_fn, vname)
+            return appstruct
 
-    def deserialize(self, node, cstruct):
-        if isinstance(cstruct, list) and len(cstruct) == 3 \
+    def deserialize(self, cstruct):
+        if isinstance(cstruct, (list, tuple)) and len(cstruct) == 3 \
             and isinstance(cstruct[0], str) \
             and cstruct[0] in ['ndarray', 'maskedarray', 'xarray', 'netCDF4.Dataset', 'netCDF4.MFDataset']:
             typ, fn, vname = cstruct
-        if fn == '??':
-            raise NotImplementedError("In-memory netCDF/Xarray deserialization is not implemented. Please save to a file first.")
-        if not os.path.exists(fn):
-            raise NotImplementedError("Invalid file path ({1}) provided for deserialization in node {0}. Please provide a valid file path.".format(node.name, fn))
-        lookup = {
-            'ndarray': lambda: np.load(fn, allow_pickle=False)[vname],
-            'maskedarray': lambda: np.ma.MaskedArray(data=np.load(fn, allow_pickle=False)[vname], mask=np.load(fn, allow_pickle=False)[vname + '_mask']),
-            'xarray': lambda: xarray.open_dataset(fn)[vname],
-            'netCDF4.Dataset': lambda: netCDF4.Dataset(fn)[vname],
-            'netCDF4.MFDataset': lambda: netCDF4.MFDataset(fn)[vname],
-        }
-        return lookup[typ]()
+            if fn == '??':
+                raise NotImplementedError("In-memory netCDF/Xarray deserialization is not implemented. Please save to a file first.")
+            if not os.path.exists(fn):
+                raise NotImplementedError("Invalid file path ({1}) provided for deserialization in node {0}. Please provide a valid file path.".format(self.name, fn))
+            lookup = {
+                'ndarray': lambda: np.load(fn, allow_pickle=False)[vname],
+                'maskedarray': lambda: np.ma.MaskedArray(data=np.load(fn, allow_pickle=False)[vname], mask=np.load(fn, allow_pickle=False)[vname + '_mask']),
+                'xarray': lambda: xarray.open_dataset(fn)[vname],
+                'netCDF4.Dataset': lambda: netCDF4.Dataset(fn)[vname],
+                'netCDF4.MFDataset': lambda: netCDF4.MFDataset(fn)[vname],
+            }
+            return lookup[typ]()
+        else:
+            return cstruct
     
     def load(self, cstruct, saveloc, refs):
         #saveloc will be the directory where the zipfile was extracted to, or the zipfile itself if it is still open.

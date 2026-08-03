@@ -107,3 +107,43 @@ class DemoObj(GnomeId):
         )
 
         return DemoObj(variable=tsv, variables=[tsv, tsv.variables[0]])
+    
+from gnome.persist.extend_colander import DataSchemaNode
+class GnomeID_Schema2(base_schema.ObjTypeSchema):
+    raw_numpy = DataSchemaNode(israwdata=True, save=True)
+    raw_scalar = DataSchemaNode(israwdata=True, save=True)
+    pass
+class GnomeID_Schema1(base_schema.ObjTypeSchema):
+    raw_numpy = DataSchemaNode(israwdata=True, save=True)
+    raw_masked = DataSchemaNode(israwdata=True, save=True)
+    string_array = DataSchemaNode(israwdata=True, save=True)
+    raw_numeric_list = DataSchemaNode(israwdata=True, save=True)
+    raw_string_list = DataSchemaNode(israwdata=True, save=True)
+    sub_obj = base_schema.GeneralGnomeObjectSchema(acceptable_schemas=[base_schema.ObjTypeSchema, GnomeID_Schema2], save_reference=True)
+
+class GnomeID_OBJ1(GnomeId):
+    _schema = GnomeID_Schema1
+    def __init__(self,
+                    raw_numpy=None,
+                    raw_masked=None,
+                    string_array=None,
+                    raw_numeric_list=None,
+                    raw_string_list=None,
+                    sub_obj=None,
+                    **kwargs):
+        super().__init__(**kwargs)
+        self.raw_numpy = raw_numpy
+        self.raw_masked = raw_masked
+        self.string_array = string_array
+        self.raw_numeric_list = raw_numeric_list
+        self.raw_string_list = raw_string_list
+        self.sub_obj = sub_obj
+class GnomeID_OBJ2(GnomeId):
+    _schema = GnomeID_Schema2
+    def __init__(self,
+                    raw_numpy=None,
+                    raw_scalar=None,
+                    **kwargs):
+        super().__init__(**kwargs)
+        self.raw_numpy = raw_numpy
+        self.raw_scalar = raw_scalar
