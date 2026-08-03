@@ -94,10 +94,14 @@ class DataSchemaNode(SchemaNode):
         return LoadSpec(typ, p_fn, vname)
 
     def deserialize(self, node, cstruct):
-        pdb.set_trace()
-        if isinstance(cstruct, (int, float, list, tuple)):
-            return cstruct
-        typ, fn, vname = cstruct
+        if isinstance(cstruct, list) and len(cstruct) == 3 \
+            and isinstance(cstruct[0], str) \
+            and cstruct[0] in ['ndarray', 'maskedarray', 'xarray', 'netCDF4.Dataset', 'netCDF4.MFDataset']:
+            typ, fn, vname = cstruct
+        if fn == '??':
+            raise NotImplementedError("In-memory netCDF/Xarray deserialization is not implemented. Please save to a file first.")
+        if not os.path.exists(fn):
+            raise NotImplementedError("Invalid file path ({1}) provided for deserialization in node {0}. Please provide a valid file path.".format(node.name, fn))
         lookup = {
             'ndarray': lambda: np.load(fn, allow_pickle=False)[vname],
             'maskedarray': lambda: np.ma.MaskedArray(data=np.load(fn, allow_pickle=False)[vname], mask=np.load(fn, allow_pickle=False)[vname + '_mask']),

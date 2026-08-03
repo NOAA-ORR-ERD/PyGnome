@@ -106,14 +106,16 @@ class Grid_SSchema(GridSchema):
                 self.children.append(DataSchemaNode(name=name,save=True, update=True, missing=default, israwdata=True, test_equal=False))
         
 class Grid_USchema(GridSchema):
-    for name, param in inspect.signature(gridded.pyugrid.ugrid.UGrid.__init__).parameters.items():
-        if name in ['self', 'args', 'kwargs', 'use_masked_boundary'] or name in [child.name for child in self.children]:
-            continue
-        if param.default is inspect.Parameter.empty:
-            default = drop
-        else:
-            default = param.default
-        self.children.append(DataSchemaNode(name=name, save=True, update=True, missing=default, israwdata=True, test_equal=False))    
+    def __init__(self, *args, **kwargs):
+        super(Grid_USchema, self).__init__(*args, **kwargs)
+        for name, param in inspect.signature(gridded.pyugrid.ugrid.UGrid.__init__).parameters.items():
+            if name in ['self', 'args', 'kwargs', 'use_masked_boundary'] or name in [child.name for child in self.children]:
+                continue
+            if param.default is inspect.Parameter.empty:
+                default = drop
+            else:
+                default = param.default
+            self.children.append(DataSchemaNode(name=name, save=True, update=True, missing=default, israwdata=True, test_equal=False))    
 
 class DepthSchema(base_schema.ObjTypeSchema):
     filename = FilenameSchema(
