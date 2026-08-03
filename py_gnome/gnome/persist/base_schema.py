@@ -1,4 +1,5 @@
 import datetime
+import pdb
 import zipfile
 import logging
 from collections import abc
@@ -7,16 +8,18 @@ import json
 import tempfile
 import geojson
 import re
+import numpy as np
+from collections import namedtuple
+from tempfile import NamedTemporaryFile as NTF
 
 from colander import (SchemaNode, SequenceSchema, TupleSchema, MappingSchema,
                       String, Float, Int, SchemaType, Sequence, Tuple, Mapping,
                       Positional, Invalid, UnsupportedFields,
                       deferred, drop, required, null)
 
-from .extend_colander import NumpyFixedLenSchema
 
 from gnome.gnomeobject import Refs, class_from_objtype
-from gnome.persist.extend_colander import OrderedCollectionType
+from gnome.persist.extend_colander import OrderedCollectionType, LoadSpec
 from gnome.utilities.geometry.polygons import PolygonSet
 
 log = logging.getLogger(__name__)
@@ -30,7 +33,6 @@ def now(node, kw):
                                     in Schema
     """
     return datetime.datetime.now().replace(microsecond=0)
-
 
 class ObjType(SchemaType):
     def __init__(self, unknown='ignore'):
@@ -118,6 +120,12 @@ class ObjType(SchemaType):
         return dict_
 
     def serialize(self, node, appstruct, options=None):
+        '''
+        :param node: SchemaNode for the object to be serialized (eg Model.ModelSchema())
+        :param appstruct: The application structure (object) to be serialized
+        :param options: Optional serialization options
+        '''
+        
         def callback(subnode, subappstruct):
             if (isinstance(subnode.typ, (Sequence, OrderedCollectionType)) and
                     isinstance(subnode.children[0], ObjTypeSchema)):
@@ -270,6 +278,12 @@ class ObjType(SchemaType):
             raise TypeError('Object does not have a to_dict function')
 
     def _save(self, node, json_, zipfile_, refs):
+        '''
+        :param node: SchemaNode for the object to be saved (eg Model.ModelSchema())
+        :param json_: the json (result of to_dict('save'))
+        :param zipfile_: the zipfile to save supporting files into
+        :param refs: a dictionary of references for already saved objects
+        '''
         if json_['id'] in refs:
             fname = refs[json_['id']]
         else:
@@ -337,12 +351,44 @@ class ObjType(SchemaType):
                     json_[d][i] = self._process_supporting_file(filename,
                                                                 zipfile_)
 
+        #process any raw data attributes
+        rawdata_attrs = [d for d in node.get_nodes_by_attr('israwdata')]
+        if len(rawdata_attrs) > 0:
+            # at this point, only in-memory data still needs to be saved.
+            npz_filename = str(json_['name']) + '_rawdata.npz'  # Gnome object name
+            with NTF() as ntf:
+                files = {}
+                for d in rawdata_attrs:
+                    if d in json_ and json_[d] is not None and isinstance(json_[d], LoadSpec):
+                        #Non-LoadSpec entries will be jsonified correctly.
+                        #LoadSpec entries that have a filename will already have been finished
+                        #by the DataSchemaNode._save function.
+                        typ, fn, vname = json_[d]
+                        if typ == 'ndarray':
+                            files[vname] = fn
+                        elif typ == 'maskedarray':
+                            files[vname] = fn.data
+                            files[vname + '_mask'] = fn.mask
+                        else:
+                            continue
+                        json_[d] = LoadSpec(typ, npz_filename, vname)
+                if len(files) > 0:
+                    np.savez_compressed(ntf, **files)
+                    ntf.flush()
+                    self._add_tempfile_to_zip(npz_filename, ntf, zipfile_)
+
         # Finally, write the json itself to the zipfile, and return the json
         if fname not in zipfile_.namelist():
             zipfile_.writestr(fname, json.dumps(json_, indent=True))
         return json_
 
     def save(self, node, appstruct, zipfile_, refs):
+        '''
+        :param node: SchemaNode for the object to be saved (eg Model.ModelSchema())
+        :param appstruct: the object to be saved (eg Model() object)
+        :param zipfile_: the zipfile to save supporting files into
+        :param refs: a dictionary of references for already saved objects
+        '''
         def callback(subnode, subappstruct):
             if not hasattr(subnode, '_save'):
                 # This happens when it goes into non-gnome object attributes
@@ -367,6 +413,7 @@ class ObjType(SchemaType):
                     return subnode.serialize(subappstruct)
             else:
                 # This is the path for Gnome objects
+                # or other attributes that require special handling when saving.
                 if subnode.save is True:
                     return subnode._save(subappstruct,
                                          zipfile_=zipfile_,
@@ -382,10 +429,22 @@ class ObjType(SchemaType):
         # and writes the json to the zip, and returns the json of the object.
         return self._save(node, preprocessed_json, zipfile_, refs)
 
+    def _add_tempfile_to_zip(self, filename, tempfile, zipfile_):
+        '''
+        Adds a temporary file to the zipfile, and returns the name of the
+        file in the zipfile.
+        '''
+        d_fname = os.path.basename(filename)
+        if d_fname not in zipfile_.namelist():
+            tempfile.seek(0)
+            zipfile_.writestr(d_fname, tempfile.read())
+        return d_fname
+
     def _process_supporting_file(self, raw_path, zipfile_):
         '''
         raw_path is the filename stored on the object
-        zipfile is an open zipfile.Zipfile in append mode
+        and path to the file on disk.
+        zipfile_ is an open zipfile.ZipFile in append mode
         returns the name of the file in the archive
         '''
         d_fname = os.path.split(raw_path)[1]
@@ -414,7 +473,8 @@ class ObjType(SchemaType):
                 else:
                     return subnode.deserialize(subcstruct)
             else:
-                # this is the path for Gnome attributes
+                # this is the path for child GnomeID objects, or other
+                # attributes that require special handling when loading.
                 return subnode.load(subcstruct, saveloc=saveloc, refs=refs)
 
         # takes the obj_json with references and replaces the references
@@ -493,6 +553,8 @@ class ObjType(SchemaType):
                 for i, filename in enumerate(cstruct[d]):
                     cstruct[d][i] = self._load_supporting_file(filename,
                                                                saveloc, tmpdir)
+        
+        #Handle any raw data attributes.
 
         return cstruct
 
@@ -559,6 +621,7 @@ class ObjTypeSchema(MappingSchema):
                             # read_only and save are NOT mutually exclusive
     test_equal = True       # Attr will be ignored in == tests
     isdatafile = False      # Attr references filenames to be added to save files
+                            # Expectation is that the attr (after to_dict()) is a string or list of strings
     save_reference = True   # Attr is a link to another GnomeId and should be
                             # saved as a reference in save files
     default = null          # (Colander) Set default = drop to skip this attribute
@@ -567,6 +630,9 @@ class ObjTypeSchema(MappingSchema):
                             # attribute is NOT required for correct deserialization
                             # set missing=required for all attributes that ARE
                             # required for object init.
+    israwdata = False       # Attr is a raw data attribute that we want to save.
+                            # Raw data attributes DO NOT serialize, but MAY deserialize.
+                            # The SchemaNode for this attribute must implement 
 
     # These are the defaults automatically applied to children of this node
     # if not defined already
@@ -860,7 +926,6 @@ class StringListSchema(SequenceSchema):
     text_item = SchemaNode(String())
 
 
-
 class CollectionItemMap(MappingSchema):
     '''
     This stores the obj_type and obj_index
@@ -949,16 +1014,6 @@ class PolygonSetSchema(SequenceSchema):
 class WorldPoint(LongLat):
     'Used to define reference points. 3D positions (long,lat,z)'
     z = SchemaNode(Float(), default=0.0)
-
-
-class WorldPointNumpy(NumpyFixedLenSchema):
-    '''
-    Define same schema as WorldPoint; however, the base class
-    NumpyFixedLenSchema serializes/deserializes it from/to a numpy array
-    '''
-    long = SchemaNode(Float())
-    lat = SchemaNode(Float())
-    z = SchemaNode(Float())
 
 
 class ImageSize(TupleSchema):

@@ -5,23 +5,24 @@ import copy
 import numpy as np
 # import logging
 import warnings
+import inspect
 from functools import wraps
 
 from colander import (SchemaNode, SequenceSchema,
-                      String, Boolean, DateTime,
-                      drop, Int, Float)
+                      String, Boolean, DateTime, Tuple,TupleSchema,
+                      drop, Int, Float, null)
 
 import gridded
 from gridded.utilities import get_dataset
 import nucos as uc
 
 from gnome.gnomeobject import combine_signatures
-from gnome.persist import base_schema
+from gnome.persist import base_schema, ObjType
 from gnome.gnomeobject import GnomeId
 from gnome.environment.environment import Environment
 from gnome.persist import (GeneralGnomeObjectSchema, SchemaNode, SequenceSchema,
                            String, Boolean, DateTime, TimeDelta, drop, FilenameSchema)
-from gnome.persist.extend_colander import LocalDateTime, UnknownMappingSchema
+from gnome.persist.extend_colander import LocalDateTime, UnknownMappingSchema, DataSchemaNode, NullableString
 from gnome.utilities.inf_datetime import InfDateTime
 from gnome.utilities.time_utils import TZOffset, TZOffsetSchema
 
@@ -52,11 +53,67 @@ class TimeSchema(base_schema.ObjTypeSchema):
     )
 
 class GridSchema(base_schema.ObjTypeSchema):
+    schema_type = ObjType
     name = SchemaNode(String(), test_equal=False)
     filename = FilenameSchema(
         isdatafile=True, test_equal=False, update=False
     )
     grid_topology = UnknownMappingSchema(save=True, update=False)
+    node_lon = DataSchemaNode(save=True, update=True, israwdata=True)
+    node_lat = DataSchemaNode(save=True, update=True, israwdata=True)
+
+class Grid_SSchema(GridSchema):
+    
+    schema_type = ObjType
+    def __init__(self, *args, **kwargs):
+        super(Grid_SSchema, self).__init__(*args, **kwargs)
+        for name, param in inspect.signature(gridded.pysgrid.sgrid.SGrid.__init__).parameters.items():
+            # if name == 'grid_topology':
+            #     import pdb
+            #     pdb.set_trace()
+            if name in ['self', 'args', 'kwargs', 'tree'] or name in [child.name for child in self.children]:
+                continue
+            if param.default is inspect.Parameter.empty:
+                default = drop
+            else:
+                default = param.default
+            if 'padding' in name or 'coordinates' in name:
+                self.children.append(
+                    TupleSchema(
+                        children=[SchemaNode(NullableString(), missing=null),
+                                  SchemaNode(NullableString(), missing=null)],
+                        name=name, save=True, update=True, missing=default
+                        ))
+            elif 'variables' in name:
+                continue
+                # self.children.append(SequenceSchema(
+                #     SchemaNode(String()),
+                #     name=name, save=True, update=True, missing=default
+                # ))
+            elif name == 'dimensions':
+                self.children.append(SequenceSchema(
+                    TupleSchema(
+                        children=[SchemaNode(String()),
+                                SchemaNode(Int())]
+                    ),
+                    name=name,
+                ))
+            elif name in ['masked_interpolant_behavior', 'grid_topology_var'] or 'coordinates' in name or 'dimensions' in name:
+                self.children.append(SchemaNode(NullableString(), name=name, save=True, update=True, missing=default))
+            elif name in ['use_masked_boundary']:
+                self.children.append(SchemaNode(Boolean(), name=name, save=True, update=True, missing=default))
+            else:
+                self.children.append(DataSchemaNode(name=name,save=True, update=True, missing=default, israwdata=True, test_equal=False))
+        
+class Grid_USchema(GridSchema):
+    for name, param in inspect.signature(gridded.pyugrid.ugrid.UGrid.__init__).parameters.items():
+        if name in ['self', 'args', 'kwargs', 'use_masked_boundary'] or name in [child.name for child in self.children]:
+            continue
+        if param.default is inspect.Parameter.empty:
+            default = drop
+        else:
+            default = param.default
+        self.children.append(DataSchemaNode(name=name, save=True, update=True, missing=default, israwdata=True, test_equal=False))    
 
 class DepthSchema(base_schema.ObjTypeSchema):
     filename = FilenameSchema(
@@ -94,6 +151,7 @@ class VariableSchema(VariableSchemaBase):
     varname = SchemaNode(
         String(), missing=drop
     )
+    data = DataSchemaNode(save=True, update=True, israwdata=True)
 
 
 class VectorVariableSchema(VariableSchemaBase):
@@ -150,7 +208,7 @@ class Time(gridded.time.Time, GnomeId):
 class Grid_U(gridded.grids.Grid_U, GnomeId):
     '''Object to represent a triangle unstructured grid in a Variable.'''
 
-    _schema = GridSchema
+    _schema = Grid_USchema
     
     def __init__(self, *args, **kwargs):
         '''
@@ -214,24 +272,24 @@ class Grid_U(gridded.grids.Grid_U, GnomeId):
                     dict_['grid_topology'][k] = v.item()
         return dict_
 
-    @classmethod
-    @combine_signatures
-    def new_from_dict(cls, dict_):
-        read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
+    # @classmethod
+    # @combine_signatures
+    # def new_from_dict(cls, dict_):
+    #     read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
 
-        [dict_.pop(n, None) for n in read_only_attrs]
-        # FixMe: this really shouldn't be required!
-        #        remove once gridded is fixed
-        # hack to get around broken gridded
-        # if loaded via the compliant code path, it would provide a different
-        # grid_topology dict :-(
-        # gt = dict_.get('grid_topology')
-        # if gt and 'cf_role' in gt:
-        #     dict_['grid_topology'] = None
+    #     [dict_.pop(n, None) for n in read_only_attrs]
+    #     # FixMe: this really shouldn't be required!
+    #     #        remove once gridded is fixed
+    #     # hack to get around broken gridded
+    #     # if loaded via the compliant code path, it would provide a different
+    #     # grid_topology dict :-(
+    #     # gt = dict_.get('grid_topology')
+    #     # if gt and 'cf_role' in gt:
+    #     #     dict_['grid_topology'] = None
 
-        rv = cls.from_netCDF(**dict_)
+    #     rv = cls.from_netCDF(**dict_)
 
-        return rv
+    #     return rv
 
     def get_cells(self):
         '''
@@ -282,7 +340,7 @@ class Grid_U(gridded.grids.Grid_U, GnomeId):
 class Grid_S(gridded.grids.Grid_S, GnomeId):
     '''Object to represent a structured quad grid in a Variable.'''
 
-    _schema = GridSchema
+    _schema = Grid_SSchema
 
     def __init__(self, use_masked_boundary=True, *args, **kwargs):
         '''
@@ -334,14 +392,14 @@ class Grid_S(gridded.grids.Grid_S, GnomeId):
                     dict_['grid_topology'][k] = v.item()
         return dict_
 
-    @classmethod
-    @combine_signatures
-    def new_from_dict(cls, dict_):
-        read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
+    # @classmethod
+    # @combine_signatures
+    # def new_from_dict(cls, dict_):
+    #     read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
 
-        [dict_.pop(n, None) for n in read_only_attrs]
-        rv = cls.from_netCDF(**dict_)
-        return rv
+    #     [dict_.pop(n, None) for n in read_only_attrs]
+    #     rv = cls.from_netCDF(**dict_)
+    #     return rv
 
     def get_cells(self):
         '''
@@ -817,13 +875,13 @@ class DepthBase(gridded.depth.DepthBase, GnomeId):
                                      'grid': PyGrid,
                                      'variable': Variable})
 
-    @classmethod
-    def new_from_dict(cls, dict_):
-        read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
+    # @classmethod
+    # def new_from_dict(cls, dict_):
+    #     read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
 
-        [dict_.pop(n, None) for n in read_only_attrs]
-        rv = cls.from_netCDF(**dict_)
-        return rv
+    #     [dict_.pop(n, None) for n in read_only_attrs]
+    #     rv = cls.from_netCDF(**dict_)
+    #     return rv
 
 
 class L_Depth(gridded.depth.L_Depth, GnomeId):
@@ -835,13 +893,13 @@ class L_Depth(gridded.depth.L_Depth, GnomeId):
                                      'grid': PyGrid,
                                      'variable': Variable})
 
-    @classmethod
-    def new_from_dict(cls, dict_):
-        read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
+    # @classmethod
+    # def new_from_dict(cls, dict_):
+    #     read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
 
-        [dict_.pop(n, None) for n in read_only_attrs]
-        rv = cls.from_netCDF(**dict_)
-        return rv
+    #     [dict_.pop(n, None) for n in read_only_attrs]
+    #     rv = cls.from_netCDF(**dict_)
+    #     return rv
 
 
 class ROMS_Depth(gridded.depth.ROMS_Depth, GnomeId):
@@ -854,13 +912,13 @@ class ROMS_Depth(gridded.depth.ROMS_Depth, GnomeId):
                                      'grid': PyGrid,
                                      'variable': Variable})
 
-    @classmethod
-    def new_from_dict(cls, dict_):
-        read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
+    # @classmethod
+    # def new_from_dict(cls, dict_):
+    #     read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
 
-        [dict_.pop(n, None) for n in read_only_attrs]
-        rv = cls.from_netCDF(**dict_)
-        return rv
+    #     [dict_.pop(n, None) for n in read_only_attrs]
+    #     rv = cls.from_netCDF(**dict_)
+    #     return rv
 
 class FVCOM_Depth(gridded.depth.FVCOM_Depth, GnomeId):
 
@@ -873,13 +931,13 @@ class FVCOM_Depth(gridded.depth.FVCOM_Depth, GnomeId):
                                      'bathymetry': Variable,
                                      'zeta': Variable})
 
-    @classmethod
-    def new_from_dict(cls, dict_):
-        read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
+    # @classmethod
+    # def new_from_dict(cls, dict_):
+    #     read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
 
-        [dict_.pop(n, None) for n in read_only_attrs]
-        rv = cls.from_netCDF(**dict_)
-        return rv
+    #     [dict_.pop(n, None) for n in read_only_attrs]
+    #     rv = cls.from_netCDF(**dict_)
+    #     return rv
 
 class Depth(gridded.depth.Depth):
     ld_types = [L_Depth]
