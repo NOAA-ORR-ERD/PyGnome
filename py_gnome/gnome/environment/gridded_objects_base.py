@@ -135,7 +135,8 @@ class VariableSchemaBase(base_schema.ObjTypeSchema):
     )
     timezone_offset = TZOffsetSchema(
     )
-    grid = GridSchema(
+    grid = GeneralGnomeObjectSchema(
+        acceptable_schemas=[GridSchema, Grid_SSchema, Grid_USchema],
         save_reference=True
     )
     data_file = FilenameSchema(
