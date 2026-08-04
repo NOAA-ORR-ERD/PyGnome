@@ -1,6 +1,6 @@
-************************************************************
-Building / Installing PyGNOME with the conda package manager
-************************************************************
+*************************************************
+Building / Installing PyGNOME with conda packages
+*************************************************
 
 TL;DR
 =====
@@ -9,14 +9,18 @@ TL;DR
 Installing from conda-forge
 ---------------------------
 
-The latest release of the PyGNOME pacakge is available on conda-forge.
+The latest release of the PyGNOME package is available on conda-forge.
 
 If you are set up to run conda, it should be a simple:
 
 conda install -c py_gnome
 
+
 Building it from source
 -----------------------
+
+This is required if you want to use the latest and greatest code that has not been released yet, or you want to contribute to PyGNOME itself.
+
 
 pixi
 ....
@@ -44,8 +48,55 @@ Will build a wheel that can be installed. (into an environment that has everythi
 
 Will run the full test suite.
 
-Using miniconda, miniforge, etc
-...............................
+pixi config options
+...................
+
+For the full pixi config, see the pixi.toml file, but here's a summary:
+
+Pixi environments
+,,,,,,,,,,,,,,,,,
+
+default: everything you need for development, testing, etc. Currently python 3.12
+
+dev312: everything for development, with python 3.12
+
+dev313: everything for development, with python 3.13
+
+build312: everything to build with python 3.12
+
+build313: everything to build with python 3.13
+
+test312: everything to build with python 3.12
+
+test313: everything to build with python 3.13
+
+
+Pixi tasks (commands)
+,,,,,,,,,,,,,,,,,,,,,
+
+``build_wheel``: build a pygnome wheel
+
+``install``: install pygnome
+
+``test``: test pygnome
+
+``lint``: lint the code (with ruff)
+
+``build_docs``: build the PyGNOME Sphinx docs
+
+These will all run in the default environment(s), currently python 3.12
+
+If you want to run in a different environment, you can pass the environment in,
+e.g. to test with Python 3.13:
+
+``pixi run -e test313 test``
+
+
+
+Using miniconda, miniforge, etc.
+................................
+
+We've found pixi to be an excellent way to manage environments with conda pacakges -- particularly for development. But conda environments will work as well.
 
 
 If you are already set up to use conda, then it's as simple as:
@@ -96,6 +147,7 @@ Run the tests::
 NOTE: *The "runslow" tests requiring downloading data for the tests -- you can
 eliminate that flag to get most of the tests to run without that delay.*
 
+
 All the details
 ===============
 
@@ -116,6 +168,8 @@ this package.  In short, we don't recommend it.
 
 Anaconda vs miniconda vs miniforge:
 -----------------------------------
+
+NOTE: some of this info may be a bit out of date -- do go check the respective websites for the latest info.
 
 `Anaconda <https://store.continuum.io/cshop/anaconda/>`__ provides a fairly
 complete python system for computational programming -- it is a large install,
@@ -138,7 +192,7 @@ independent environment for it.
 
 **NOTES:**
 
-Python version 3.13 is currently used operationally, but PYGNOME is currently tested with Python 3.10--3.13: any of these should also work.
+Python version 3.13 is currently used operationally, but PYGNOME is currently tested with Python 3.12--3.13: either of these should also work.
 
 Anaconda (and miniconda and miniforge) can be installed in either single-user or multi-user mode:
 
@@ -308,8 +362,8 @@ PyGNOME in the future
 Download the PyGNOME Code
 -------------------------
 
-PyGNOME is not currently available as a conda package, as it is under active
-development, and many users will need access to the source code.
+PyGNOME is available as a conda package on conda-forge, but it is under active
+development, so some users may want to run from source code.
 
 Once you have a conda environment set up, you can compile and install PyGNOME.
 
@@ -336,14 +390,15 @@ fine way to work with PyGNOME.  However if, in the future, you want to use any
 new changes that have been made to the code, you will need to re-download the
 new release in its entirety.
 
+
 Cloning the PyGNOME Git repository
 ----------------------------------
 
 If you clone the repository, you will be able to update the code with the
-latest version with a simple command (`git pull`).  This will download only
+latest version with a simple command (``git pull``).  This will download only
 the files that have changed and requires no archive extraction, so it will
-not only be a faster operation, but we think you will find it is also more
-convenient.
+not only be a faster operation, but it is also more convenient if you want to
+keep up with development
 
 First you will need a Git client.  On Linux, it should be available from your
 package manager using one of the following commands::
@@ -372,7 +427,7 @@ This will create a `./pygnome` directory with all the code in it.
 
 git branches:
   git supports a number of different "branches" or versions of the code.
-  You will most likley want to use the "main" branch (the default) unless you
+  You will most likely want to use the "main" branch (the default) unless you
   specifically want to experiment with a new feature.
 
 Setting up conda
@@ -557,7 +612,7 @@ simulations.  For this, run the following::
 Just keep in mind that any updates to the project will need to be
 rebuilt and re-installed in order for changes to take effect.
 
-**NOTE:** You may have noticed that we run the pip module inside python instead of running the `pip` executable directly.
+**NOTE:** You may have noticed that we run the pip module inside python instead of running the ``pip`` executable directly.
 This is to ensure that you get the version of pip associated with your active Python install, and is a recommend practice.
 
 If you are planning to develop or debug the PyGNOME source code itself,
