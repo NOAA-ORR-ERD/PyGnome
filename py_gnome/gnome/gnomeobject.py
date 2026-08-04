@@ -893,7 +893,7 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
         obj_json = self._schema()._save(self, zipfile_=zipfile_, refs=refs)
 
         zipfile_.writestr('version.txt', SAVEFILE_VERSION)
-        zipfile_.writestr('pygnome_version.txt', gnome.__version__)
+        zipfile_.writestr('pygnome_version.txt', gnome._version.__version__)
 
         if saveloc is None:
             log.info('Returning open zipfile in memory')
