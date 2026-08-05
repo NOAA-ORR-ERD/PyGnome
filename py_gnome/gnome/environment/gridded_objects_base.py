@@ -275,24 +275,15 @@ class Grid_U(gridded.grids.Grid_U, GnomeId):
                     dict_['grid_topology'][k] = v.item()
         return dict_
 
-    # @classmethod
-    # @combine_signatures
-    # def new_from_dict(cls, dict_):
-    #     read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
-
-    #     [dict_.pop(n, None) for n in read_only_attrs]
-    #     # FixMe: this really shouldn't be required!
-    #     #        remove once gridded is fixed
-    #     # hack to get around broken gridded
-    #     # if loaded via the compliant code path, it would provide a different
-    #     # grid_topology dict :-(
-    #     # gt = dict_.get('grid_topology')
-    #     # if gt and 'cf_role' in gt:
-    #     #     dict_['grid_topology'] = None
-
-    #     rv = cls.from_netCDF(**dict_)
-
-    #     return rv
+    @classmethod
+    def new_from_dict(cls, dict_):
+        if 'filename' in dict_ and not 'node_lon' in dict_:
+            #Compatibility with older version of save file that did not save the grid data directly.
+            read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
+            [dict_.pop(n, None) for n in read_only_attrs]
+            return cls.from_netCDF(**dict_)
+        else:
+            return super(Grid_U, cls).new_from_dict(dict_)
 
     def get_cells(self):
         '''
@@ -395,14 +386,15 @@ class Grid_S(gridded.grids.Grid_S, GnomeId):
                     dict_['grid_topology'][k] = v.item()
         return dict_
 
-    # @classmethod
-    # @combine_signatures
-    # def new_from_dict(cls, dict_):
-    #     read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
-
-    #     [dict_.pop(n, None) for n in read_only_attrs]
-    #     rv = cls.from_netCDF(**dict_)
-    #     return rv
+    @classmethod
+    def new_from_dict(cls, dict_):
+        if 'filename' in dict_ and not 'node_lon' in dict_:
+            #Compatibility with older version of save file that did not save the grid data directly.
+            read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
+            [dict_.pop(n, None) for n in read_only_attrs]
+            return cls.from_netCDF(**dict_)
+        else:
+            return super(Grid_U, cls).new_from_dict(dict_)
 
     def get_cells(self):
         '''
@@ -824,10 +816,10 @@ class Variable(gridded.Variable, Environment):
     @classmethod
     @combine_signatures
     def new_from_dict(cls, dict_):
-        read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
+        if 'filename' in dict_ and 'data' not in dict_:
+            read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
 
-        [dict_.pop(n, None) for n in read_only_attrs]
-        if 'data' not in dict_:
+            [dict_.pop(n, None) for n in read_only_attrs]
             return cls.from_netCDF(**dict_)
 
         return super(Variable, cls).new_from_dict(dict_)

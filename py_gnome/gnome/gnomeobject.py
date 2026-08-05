@@ -22,7 +22,7 @@ log = logging.getLogger(__name__)
 
 allowzip64 = False
 
-SAVEFILE_VERSION = '5'
+SAVEFILE_VERSION = '6'
 
 
 

@@ -428,6 +428,19 @@ def v4tov5(messages, errors):
     return messages, errors
 
 
+def v5tov6(messages, errors):
+    '''Takes a zipfile containing version 5 and up-converts it
+    to 'version 6'.
+    Variable, Grid_U, and Grid_S have many new attributes in the save file. However, it's not
+    practical to recreate these attributes from this updater.
+    
+    The behavior for this step is implemented in the new_from_dict methods of the above classes.  
+    '''
+    messages.append('**Update from v5 to v6 successful**')
+    return messages, errors
+    
+
+
 def extract_zipfile(zip_file, to_folder='.'):
     def work(zf):
         folders = [name for name in zf.namelist()
@@ -493,4 +506,4 @@ def sanitize_filename(fname):
     # return re.sub(r'[\\\\/*?:"<>|]', "", fname).replace(" ", "_")
 
 
-all_update_steps = [v0tov1, v1tov2, v2tov3, v3tov4, v4tov5]
+all_update_steps = [v0tov1, v1tov2, v2tov3, v3tov4, v4tov5, v5tov6]
