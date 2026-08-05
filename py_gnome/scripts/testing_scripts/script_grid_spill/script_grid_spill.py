@@ -74,7 +74,7 @@ model.spills += gs.grid_spill(bounds=((-122.3, 37.0),
                               resolution=60,
                               release_time=rel_time,
                               windage_range=(WINDAGE, WINDAGE),
-                              windage_persist=(-1),
+                              windage_persist=float('inf'),
                               name='Whale Release Options',
                               )
 
