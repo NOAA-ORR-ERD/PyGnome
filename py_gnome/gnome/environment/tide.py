@@ -150,7 +150,8 @@ class Tide(Environment):
         """
         fh = open(filename, encoding='utf-8')
 
-        lines = [fh.readline() for i in range(4)]
+        # OSSM header can be 3 or 4 lines (Shio output has been updated to include time zone)
+        lines = [fh.readline() for i in range(5)]
 
         if len(lines[1]) == 0:  # should not be needed with Universal newlines, or on py3
             # look for \r for lines instead of \n
@@ -168,7 +169,7 @@ class Tide(Environment):
         if all([shio_file[i] == (lines[i])[:len(shio_file[i])]
                 for i in range(4)]):
             return CyShioTime(filename)
-        elif len(lines[3].split(',')) == 7:
+        elif len(lines[3].split(',')) == 7 or len(lines[4].split(',')) == 7:
             # maybe log / display a warning that v=0 for tide file and will be
             # ignored
             # if float((lines[3].split(',')[-1]) != 0.0:

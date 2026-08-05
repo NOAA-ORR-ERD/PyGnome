@@ -3,6 +3,7 @@ Test all operations for cats mover work
 '''
 
 import os
+from pathlib import Path
 
 import pytest
 from pytest import raises
@@ -16,6 +17,8 @@ from ..conftest import testdata
 
 shio_file = testdata['timeseries']['tide_shio']
 ossm_file = testdata['timeseries']['tide_ossm']
+#ossm_new_hdr_file = testdata['timeseries']['tide_ossm_new_hdr']
+ossm_new_hdr_file = Path(__file__).parent / "sample_data" / "shio_ossm_new_hdr.txt"
 
 
 def test_shio_data_limits():
@@ -45,7 +48,7 @@ def test_exceptions():
         Tide(shio_file, yeardata=bad_yeardata_path)
 
 
-@pytest.mark.parametrize('filename', [shio_file, ossm_file])
+@pytest.mark.parametrize('filename', [shio_file, ossm_file, ossm_new_hdr_file])
 def test_file(filename):
     """
     (WIP) simply tests that the file loads correctly
@@ -55,7 +58,7 @@ def test_file(filename):
 
 
 @pytest.mark.parametrize('filename',
-                         [shio_file, ossm_file])
+                         [shio_file, ossm_file, ossm_new_hdr_file])
 def test_serialize_deserialize(filename):
     '''
         create - it creates new object after serializing original object
