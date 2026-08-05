@@ -2,26 +2,26 @@
 Test evaporation module
 '''
 
-
-
-
-
 from datetime import timedelta, datetime
+from pathlib import Path
 
 import pytest
 import numpy as np
 
+import gnome.scripting as gs
 from gnome.model import Model
-from gnome.spills.spill import point_line_spill
+from gnome.spills.spill import point_line_spill, subsurface_spill
 from gnome.environment import constant_wind, Water, Wind
 from gnome.weatherers import Evaporation
-from gnome.outputters import WeatheringOutput
+from gnome.outputters import WeatheringOutput, OilBudgetOutput
 from gnome.basic_types import oil_status, datetime_value_2d
+from gnome.utilities.distributions import UniformDistribution
 
 from .conftest import weathering_data_arrays, test_oil
 from ..conftest import (# sample_model,
                         sample_model_weathering)
 
+HERE = Path(__file__).parent
 
 def test_evaporation_bad_wind():
     series = np.zeros((2, ), dtype=datetime_value_2d)
@@ -320,3 +320,47 @@ def test_serialize_deseriailize():
     e.update_from_dict(d_)
     assert e.wind is wind
     assert e.water is water
+
+
+def test_evaporation_subsurface_release():
+    """
+    Tests that evaporation works for a subsurface release,
+    when the droplets rise to the surface
+
+    Not quantitative, but it doesn't barf, and there is some evaporation
+    """
+    model = Model(name="evap_test",
+                  duration=gs.minutes(10),
+                  time_step=60
+                  )
+
+    spill = subsurface_spill(num_elements=5,
+                     start_position=(0,0,1), # 1 meter below surface
+                     release_time=model.start_time,
+                     distribution=UniformDistribution(low=0.002, high=0.004),
+                     distribution_type='rise_velocity',
+                     end_release_time=None,
+                     substance='oil_ans_mp',
+                     amount=10,
+                     units='kg',
+                     name='Subsurface release')
+    model.spills += spill
+    model.environment += [constant_wind(10, 10), Water()]
+    model.weatherers += Evaporation()
+    model.outputters += OilBudgetOutput(HERE / "output" / "subsurface_mass_balance.csv")
+
+    model.movers += gs.RiseVelocityMover()
+
+    evap_amount = []
+    for step in model:
+        print(f"{step['step_num']=}")
+        # print(f"positions: {model.get_spill_property('positions')}")
+        # print(f"areas: {model.get_spill_property('area')}")
+        evap = model.spills.items()[0].mass_balance['evaporated']
+        print("Evaporated amount:",  evap)
+        evap_amount.append(evap)
+    # non quantitative tests:
+    # first five timesteps, no evaporation
+    assert np.all(np.array(evap_amount[:5]) == 0.0)
+    assert evap_amount[-1] > 0.0
+    assert np.all(np.diff(evap_amount) >= 0.0)

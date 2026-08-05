@@ -66,6 +66,7 @@ sphinxcontrib-jquery = "*"
 
 [feature.dev.dependencies]
 ipython = "*"
+ipdb = "*"
 matplotlib = "*"
 ruff = "*"
 

@@ -6,6 +6,7 @@ Outputter for dumping the oil budget as a CSV file
 """
 
 import csv
+from pathlib import Path
 
 from .weathering import BaseMassBalanceOutputter
 from .outputter import OutputterFilenameMixin
@@ -30,7 +31,7 @@ class OilBudgetOutput(BaseMassBalanceOutputter, OutputterFilenameMixin):
     """
     Outputter for the oil budget table
     """
-    _valid_file_formats = {'csv'}
+    _valid_file_formats = {'csv': '.csv'}
 
     # These go in the oil budget table
     # note: these need to be kept in sync!
@@ -66,10 +67,13 @@ class OilBudgetOutput(BaseMassBalanceOutputter, OutputterFilenameMixin):
                  **kwargs):
 
         if file_format not in self._valid_file_formats:
-            raise ValueError("Invalid format: {}\n"
-                             "Formats allowed: {}".format(file_format,
-                                                          self._valid_file_formats))
+            raise ValueError(f"Invalid format: {file_format}\n"
+                             f"Formats allowed: {list(self._valid_file_formats.keys())}"
+                             )
         self.file_format = file_format
+
+        # add a csv if there's no extension
+        filename = Path(filename).with_suffix(self._valid_file_formats[file_format])
 
         super(OilBudgetOutput, self).__init__(filename=filename,
                                               cache=None,
@@ -96,8 +100,8 @@ class OilBudgetOutput(BaseMassBalanceOutputter, OutputterFilenameMixin):
                                                            spills,
                                                            **kwargs)
         self._check_is_dir(self.filename)
-        outfile = open(self.filename, 'w', newline='')
-        self.csv_writer = csv.writer(outfile)
+        self._outfile = open(self.filename, 'w', newline='', encoding="utf-8")
+        self.csv_writer = csv.writer(self._outfile)
         # write the header
         self.csv_writer.writerow(self.header_row)
 
@@ -141,6 +145,12 @@ class OilBudgetOutput(BaseMassBalanceOutputter, OutputterFilenameMixin):
         in the file being closed.
 
         """
+        try:
+            self._outfile.close()
+        # I don't like a bare exception but it this fails,
+        # it's either non-existent or already closed, so no harm done
+        except:
+            pass
         self.csv_writer = None
 
 
