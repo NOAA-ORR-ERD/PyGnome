@@ -141,8 +141,16 @@ class Evaporation(Weatherer):
 # term for Schmidt number
 
         # estimate puddle diameter from area
-        puddle_diameter = 2. * np.sqrt(data['area'] / data['vol_frac_le_st']) / np.sqrt(np.pi)
-        puddle_diameter = np.clip(puddle_diameter,a_min=1.,a_max=None)
+        # NEW CODE SCOTT SOCOLOFSKY
+        if 0.0 in data['vol_frac_le_st']:
+            # Prevent NaN error if vol_frac_le_st is zero
+            a_max = 1.e25
+            puddle_diameter = np.ones(data['area'].shape) * a_max
+        else:
+            # Original GNOME code
+            puddle_diameter = 2. * np.sqrt(data['area'] / \
+                data['vol_frac_le_st']) / np.sqrt(np.pi)
+            puddle_diameter = np.clip(puddle_diameter,a_min=1.,a_max=None)
         puddle_diameter = puddle_diameter ** (-1./9.)
         # d_numer = -1/rho * f_diff.reshape(-1, 1) * K * vp
         # d_denom = (data['thickness'] * constants.gas_constant *

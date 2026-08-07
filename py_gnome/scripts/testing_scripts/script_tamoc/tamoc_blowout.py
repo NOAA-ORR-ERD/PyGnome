@@ -143,7 +143,7 @@ def make_model():
                            depth_colors='turbo',
                            max_color_depth=100,
                            min_color_depth=0,
-                           point_size=
+                           #point_size=
                            )
     model.outputters += renderer
 

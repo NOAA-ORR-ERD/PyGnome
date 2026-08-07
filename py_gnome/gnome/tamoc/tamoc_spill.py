@@ -231,16 +231,32 @@ class TamocSpill(Spill):
                  name='TAMOC Blowout',
                  **kwargs):
         
+        # Make sure release_rate and gor are ndarrays
+        if not isinstance(release_rate, float):
+            if isinstance(release_rate, list):
+                release_rate = np.array(release_rate)
+        else:
+            release_rate = np.array([release_rate])
+        if not isinstance(gor, float):
+            if isinstance(gor, list):
+                gor = np.array(gor)
+        else:
+            gor = np.array([gor])
+                
         # Compute the total amount spilled from the release rate and duration
         duration = release_duration.total_seconds()
-        try:
-            amount = nucos.convert(release_units, 'm^3/s', release_rate) * \
-                        duration
-            units = 'm^3'
-        except uc.NotSupportedUnitError:
-            amount = nucos.convert(release_units, 'kg/s', release_rate) * \
-                        duration
-            units = 'kg'
+        amount = 0.
+        dt = duration / float(len(release_rate))
+        for i in range(len(release_rate)):        
+            try:
+                amount += nucos.convert(
+                    release_units, 'm^3/s', release_rate[i]) * dt
+                units = 'm^3'
+            except uc.NotSupportedUnitError:
+                amount += nucos.convert(
+                    release_units, 'kg/s', release_rate[i]) * dt
+                units = 'kg'
+        amount = float(amount.flatten()[0])
         
         # Compute the total number of elements to release
         frac_releases = float(release_duration.total_seconds() / \
@@ -286,7 +302,7 @@ class TamocSpill(Spill):
         total_time = (self.end_release_time - 
                       self.release_time).total_seconds()
         self.num_elements_per_second = float(self.num_elements) / total_time
-        
+            
         # Initialize a TAMOC model blowout simulation object
         self.spill_position = spill_position
         x0, y0, z0 = spill_position
@@ -422,13 +438,14 @@ class TamocSpill(Spill):
             grid_T = water[0]
             grid_S = water[1]
             
-            # Get the water depth at the release location
+            # Get the coordinates of the release location
             x0 = self.spill_position[0]
             y0 = self.spill_position[1]
             h = self.spill_position[2]
             
             # Create an array of depths to include in the profile
-            n_points = h // 2
+            n_points = int(h // 2)
+            n_points = max(50, n_points)
             z = np.linspace(0, h, num=n_points)
             points = np.zeros((len(z), 3))
             points[:,0] = x0
@@ -445,17 +462,17 @@ class TamocSpill(Spill):
             
             # Extract the data
             T_data = grid_T.at(points, t0)
-            T_data, T_units = ambient.convert_units(T_data, grid_T.units)
+            T_units = grid_T.units
             S_data = grid_S.at(points, t0)
-            S_data, S_units = ambient.convert_units(S_data, grid_S.units)
+            S_units = grid_S.units
             P_data = ambient.compute_pressure(z, T_data, S_data, 0)
             
             # Build the water data array for the ztsp-data
             self.tamoc_water = np.zeros((len(z), 4))
             self.tamoc_water[:,0] = z
-            self.tamoc_water[:,1] = T_data
-            self.tamoc_water[:,2] = S_data
-            self.tamoc_water[:,3] = P_data
+            self.tamoc_water[:,1] = T_data.flatten()
+            self.tamoc_water[:,2] = S_data.flatten()
+            self.tamoc_water[:,3] = P_data.flatten()
             
         else:
             self.tamoc_water = water
@@ -473,6 +490,7 @@ class TamocSpill(Spill):
             
             # Create an array of depths to include in the profile
             n_points = int(h // 2)
+            n_points = max(50, n_points)
             z = np.linspace(0, h, num=n_points)
             points = np.zeros((len(z), 3))
             points[:,0] = x0
@@ -488,12 +506,10 @@ class TamocSpill(Spill):
                 t0 = current_time
             
             # Extract the data
-            print('Points are:\n', points)
             U_data = grid_U.at(points, t0)
             U_units = [grid_U.units, grid_U.units, grid_U.units]
-            U_data, U_units = ambient.convert_units(U_data, U_units)
             
-            # Build the water data array for the ztsp-data
+            # Build the array of current data
             self.tamoc_current = np.zeros((len(z), 4))
             self.tamoc_current[:,0] = z
             self.tamoc_current[:,1] = U_data[:,0]
@@ -521,6 +537,7 @@ class TamocSpill(Spill):
         self.update_tamoc_profile(self.water, self.current, current_time)
         self.tamoc_sim.update_water_data(self.tamoc_water)
         self.tamoc_sim.update_current_data(self.tamoc_current)
+        self.tamoc_sim.update_simulation_time(current_time)
         
         # Update anything else to change about the TAMOC simulation
         # <nothing to do currently>
@@ -592,6 +609,7 @@ class TamocSpill(Spill):
         
         # Only perform action if the spill is active
         if not self.on or time_step == 0.:
+            print(' -> Exiting early.')
             return 0
         
         # Check whether TAMOC needs to be run
@@ -602,8 +620,8 @@ class TamocSpill(Spill):
             self.run_tamoc(start_time)
         
         # Release the LEs needed for this time step.
-        print('Releasing Elements for Simulation Time: ', start_time, '...')
-        print('   Time step = ', time_step)
+        print('\nReleasing Elements for Simulation Time: ', start_time, '...')
+        print(f'   Time step = {time_step:.0f} s')
         
         # Get the dictionary keyword for the present spill
         idx = sc.spills.index(self)
@@ -636,6 +654,9 @@ class TamocSpill(Spill):
         
         # Update the LE properties with output from TAMOC
         self.initialize_LEs(to_rel, sc, time_step)
+        
+        # Report size of spill container
+        print(f'Tracking {len(sc):04d} elements.')
         
         # Return the number of elements released
         return to_rel
@@ -872,6 +893,9 @@ class TamocSpill(Spill):
                 else:
                     # This particle was tracked in the intermediate field
                     x, y, z = particle.sbm.y[-1,0:3]
+                    if z <= 50.:
+                        # This particle is really on the surface
+                        z = 0.
                     tp['positions'].append(positions(x, y, z, self.project,
                         self.ref_pt))
                     
