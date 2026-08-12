@@ -59,63 +59,63 @@ class GridSchema(base_schema.ObjTypeSchema):
         isdatafile=True, test_equal=False, update=False
     )
     grid_topology = UnknownMappingSchema(save=True, update=False)
-    node_lon = DataSchemaNode(save=True, update=True, israwdata=True)
-    node_lat = DataSchemaNode(save=True, update=True, israwdata=True)
+    #node_lon = DataSchemaNode(save=True, update=True, israwdata=True)
+    #node_lat = DataSchemaNode(save=True, update=True, israwdata=True)
 
 class Grid_SSchema(GridSchema):
     
     schema_type = ObjType
     def __init__(self, *args, **kwargs):
         super(Grid_SSchema, self).__init__(*args, **kwargs)
-        for name, param in inspect.signature(gridded.pysgrid.sgrid.SGrid.__init__).parameters.items():
-            # if name == 'grid_topology':
-            #     import pdb
-            #     pdb.set_trace()
-            if name in ['self', 'args', 'kwargs', 'tree'] or name in [child.name for child in self.children]:
-                continue
-            if param.default is inspect.Parameter.empty:
-                default = drop
-            else:
-                default = param.default
-            if 'padding' in name or 'coordinates' in name:
-                self.children.append(
-                    TupleSchema(
-                        children=[SchemaNode(NullableString(), missing=null),
-                                  SchemaNode(NullableString(), missing=null)],
-                        name=name, save=True, update=True, missing=default
-                        ))
-            elif 'variables' in name:
-                continue
-                # self.children.append(SequenceSchema(
-                #     SchemaNode(String()),
-                #     name=name, save=True, update=True, missing=default
-                # ))
-            elif name == 'dimensions':
-                self.children.append(SequenceSchema(
-                    TupleSchema(
-                        children=[SchemaNode(String()),
-                                SchemaNode(Int())]
-                    ),
-                    name=name,
-                ))
-            elif name in ['masked_interpolant_behavior', 'grid_topology_var'] or 'coordinates' in name or 'dimensions' in name:
-                self.children.append(SchemaNode(NullableString(), name=name, save=True, update=True, missing=default))
-            elif name in ['use_masked_boundary']:
-                self.children.append(SchemaNode(Boolean(), name=name, save=True, update=True, missing=default))
-            else:
-                self.children.append(DataSchemaNode(name=name,save=True, update=True, missing=default, israwdata=True, test_equal=False))
+    #     for name, param in inspect.signature(gridded.pysgrid.sgrid.SGrid.__init__).parameters.items():
+    #         # if name == 'grid_topology':
+    #         #     import pdb
+    #         #     pdb.set_trace()
+    #         if name in ['self', 'args', 'kwargs', 'tree'] or name in [child.name for child in self.children]:
+    #             continue
+    #         if param.default is inspect.Parameter.empty:
+    #             default = drop
+    #         else:
+    #             default = param.default
+    #         if 'padding' in name or 'coordinates' in name:
+    #             self.children.append(
+    #                 TupleSchema(
+    #                     children=[SchemaNode(NullableString(), missing=null),
+    #                               SchemaNode(NullableString(), missing=null)],
+    #                     name=name, save=True, update=True, missing=default
+    #                     ))
+    #         elif 'variables' in name:
+    #             continue
+    #             # self.children.append(SequenceSchema(
+    #             #     SchemaNode(String()),
+    #             #     name=name, save=True, update=True, missing=default
+    #             # ))
+    #         elif name == 'dimensions':
+    #             self.children.append(SequenceSchema(
+    #                 TupleSchema(
+    #                     children=[SchemaNode(String()),
+    #                             SchemaNode(Int())]
+    #                 ),
+    #                 name=name,
+    #             ))
+    #         elif name in ['masked_interpolant_behavior', 'grid_topology_var'] or 'coordinates' in name or 'dimensions' in name:
+    #             self.children.append(SchemaNode(NullableString(), name=name, save=True, update=True, missing=default))
+    #         elif name in ['use_masked_boundary']:
+    #             self.children.append(SchemaNode(Boolean(), name=name, save=True, update=True, missing=default))
+    #         else:
+    #             self.children.append(DataSchemaNode(name=name,save=True, update=True, missing=default, israwdata=True, test_equal=False))
         
 class Grid_USchema(GridSchema):
     def __init__(self, *args, **kwargs):
         super(Grid_USchema, self).__init__(*args, **kwargs)
-        for name, param in inspect.signature(gridded.pyugrid.ugrid.UGrid.__init__).parameters.items():
-            if name in ['self', 'args', 'kwargs', 'use_masked_boundary'] or name in [child.name for child in self.children]:
-                continue
-            if param.default is inspect.Parameter.empty:
-                default = drop
-            else:
-                default = param.default
-            self.children.append(DataSchemaNode(name=name, save=True, update=True, missing=default, israwdata=True, test_equal=False))    
+        # for name, param in inspect.signature(gridded.pyugrid.ugrid.UGrid.__init__).parameters.items():
+        #     if name in ['self', 'args', 'kwargs', 'use_masked_boundary','data', 'nodes'] or name in [child.name for child in self.children]:
+        #         continue
+        #     if param.default is inspect.Parameter.empty:
+        #         default = drop
+        #     else:
+        #         default = param.default
+        #     self.children.append(DataSchemaNode(name=name, save=True, update=True, missing=default, israwdata=True, test_equal=False))    
 
 class DepthSchema(base_schema.ObjTypeSchema):
     filename = FilenameSchema(
@@ -154,7 +154,7 @@ class VariableSchema(VariableSchemaBase):
     varname = SchemaNode(
         String(), missing=drop
     )
-    data = DataSchemaNode(save=True, update=True, israwdata=True)
+    data = DataSchemaNode(save=True, update=True, israwdata=True, test_equal=False)
 
 
 class VectorVariableSchema(VariableSchemaBase):

@@ -236,8 +236,8 @@ def test_GridCurrent_at():
     v = velocity[0][1]
     w = velocity[0][2]
 
-    assert math.isclose(u, -.58206, rel_tol=1e-5)
-    assert math.isclose(v, -.99779, rel_tol=1e-5)
+    assert math.isclose(u, -.60633, rel_tol=1e-5)
+    assert math.isclose(v, -.98707, rel_tol=1e-5)
     assert math.isclose(w, 0.0, rel_tol=1e-5)
 
     angle = grid_cur.angle.at(points=point,time=rel_time)

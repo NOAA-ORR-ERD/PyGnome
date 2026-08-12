@@ -364,7 +364,7 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         layout.addWidget(NavigationToolbar(static_canvas, self)) #pan, zoom, save controls
         layout.addWidget(static_canvas)
         buttons = QtWidgets.QGroupBox()
-        buttons.sizePolicy().setHorizontalPolicy(QtWidgets.QSizePolicy.Minimum)
+        #buttons.sizePolicy().setHorizontalPolicy(QtWidgets.QSizePolicy.Minimum)
         buttons.setFixedHeight(50)
         hblayout = QtWidgets.QHBoxLayout(buttons)
         self.all_lines_checkbox = QtWidgets.QCheckBox('Draw All Lines')
