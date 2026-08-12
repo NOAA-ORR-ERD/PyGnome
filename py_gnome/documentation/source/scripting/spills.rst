@@ -75,8 +75,8 @@ A spill of 5000 bbls using a specific oil downloaded from the `ADIOS Oil Databas
 
     Floating objects experience a drift due to the wind. The default for substances is to have windage values set in the range 1-4% with a persistence (``windage_persist``) of 15 minutes (900 seconds).
     This means that each element gets a random value in the range specified, and that value gets reset to a new random value every 15 minutes.
-    If the ``windage_persist`` is set to a value of -1, then the value is persisted infinitely long, i.e. never reset.
-.. We should reference th new tech doc when it's published
+    If the ``windage_persist`` is set to a value of -1, or 'inf', then the value is persisted infinitely long, i.e. never reset. The ``windage_persist`` can be set to values less than 15 minutes but anything greater will be treated as infinite.
+.. We should reference the new tech doc when it's published
     .. More detail on the wind drift parametrization can be found in the |gnome_tech_manual|.
 
 
@@ -167,7 +167,7 @@ The oil type is specified using the sample oil file provided above with a spill 
                                         substance=gs.GnomeOil(filename='alaska-north-slope_AD00020.json'),
                                         units='bbl',
                                         windage_range=(0.01, 0.02),
-                                        windage_persist=-1,
+                                        windage_persist=float('inf'),
                                         name='polygon spill')
     model.spills += spill
 
@@ -210,7 +210,7 @@ In this case we specify a uniform distribution of droplets ranging from 10-300 m
                                       substance=gs.GnomeOil(filename='alaska-north-slope_AD00020.json'),
                                       units='bbl',
                                       windage_range=(0.01,0.02),
-                                      windage_persist=-1,
+                                      windage_persist=float('inf'),
                                       name='My spill')
 
     model.spills += spill

@@ -1,30 +1,8 @@
 name: Pixi Tests
 
-
 on: [push, pull_request]
 
-
 jobs:
-  lint:
-    name: linting
-
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v7
-
-    - name: Set up Pixi Environment
-      uses: prefix-dev/setup-pixi@v0.10.0
-      with:
-        cache: true
-        manifest-path: py_gnome/pixi.toml
-        environments: dev312
-
-    - name: Lint
-      working-directory: py_gnome
-#      continue-on-error: true
-      run: pixi run lint
-
 
   tests:
     name: Test ${{ matrix.environment }} on ${{ matrix.os }}

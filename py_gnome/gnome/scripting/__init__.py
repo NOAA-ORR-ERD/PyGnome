@@ -28,6 +28,7 @@ py_gnome scripts with, e.g.::
                                                                 0.0),
                                                 release_time="2018-04-12T12:30")
 """
+from gnome import initialize_console_log
 
 from gnome.model import Model
 

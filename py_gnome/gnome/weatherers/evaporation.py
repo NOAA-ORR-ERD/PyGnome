@@ -7,14 +7,11 @@ model evaporation process
 
 
 
-import copy
 
 import numpy as np
 
 from gnome import constants
-from gnome.basic_types import oil_status
 from gnome.array_types import gat
-from gnome.exceptions import ReferencedObjectNotSet
 
 from .core import WeathererSchema
 from gnome.weatherers import Weatherer

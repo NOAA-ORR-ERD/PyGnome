@@ -48,11 +48,11 @@ or at least possible, to install on a few different computing platforms:
  - Linux
 
 This package contains modules written in C/C++, and they must be
-compiled for this package to function, and we primarily use the conda ()
-system for installation.  Conda is built primarily for
-scientific, engineering, and math applications.
+compiled for this package to function, and we primarily use the conda
+pacakges and the pixi environment manager for working with PyGNOME.
+Conda pacakges are built primarily for scientific, engineering, and math applications.
 
 It is now the only supported way to get set up to use ``PyGNOME``,
 and it is used in our development and testing process.
 
-`Install using conda <./Installing.rst>`_
+`Install using conda pacakges <./Installing.rst>`_

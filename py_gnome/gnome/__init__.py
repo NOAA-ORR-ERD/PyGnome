@@ -144,6 +144,7 @@ def initialize_console_log(level='debug'):
                         format=format_str,
                         )
 
+initialize_console_log(level='warning')
 
 def _valid_units(unit_type):
     """

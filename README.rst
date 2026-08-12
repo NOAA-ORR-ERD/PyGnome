@@ -19,7 +19,7 @@ coastal environment, and is also a full featured, flexible particle tracking
 system, that can be used for other oceanographic transport applications,
 such as fish larvae, marine debris, etc.
 
-PyGNOME is a python package that encapsulates GNOME's functionality.
+PyGNOME is a Python package that encapsulates GNOME's functionality.
 
 Disclaimer:
 -----------
@@ -33,8 +33,6 @@ Documentation
 =============
 
 `Project Documentation <https://gnome.orr.noaa.gov/doc/pygnome/index.html>`_
-
-`FAQ <https://github.com/NOAA-ORR-ERD/GNOME2/wiki/FAQ---Troubleshoot>`_
 
 `PyGNOME README <py_gnome/README.rst>`_
 

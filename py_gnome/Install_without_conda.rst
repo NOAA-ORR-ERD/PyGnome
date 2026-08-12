@@ -1,14 +1,14 @@
-*************************************
-Installation without conda / Anaconda
-*************************************
+********************************************
+Installation without conda / Anaconda / pixi
+********************************************
 
-**WARNING:** These notes are out of date and not tested. All our development work is done using conda and conda-forge -- there are a few too many dependencies not well supported by "pure" pip / PyPi packages at this point.
+**WARNING:** These notes are out of date and not tested. All our development work is done using conda or pixi and packages from conda-forge -- there are a few too many dependencies not well supported by "pure" pip / PyPi packages at this point.
 
 
 Overview:
 =========
 
-PyGNOME has a lot of dependencies -- you can find the full list by looking at the ``conda_requirements_*.txt`` file.
+PyGNOME has a lot of dependencies -- you can find the full list by looking at the ``pixi.toml`` file.
 
 Most of them are well maintained 3rd party packages, that can be installed via pip, or by following the package author's instructions.
 
@@ -32,9 +32,9 @@ A virtual environment is *not required* to run PyGNOME.
 But you may be working in an environment (on a corporate network, for example) that restricts your access to the system files on your computer.
 In such a case, you may require a virtualenv in order to freely install python packages in python's site-packages dir. (site-packages is the standard place where python installers will put packages after building them)
 
-You may also want to consider using conda environments -- see above.
+You may also want to consider using conda or pixi environments -- see above.
 
-There is C++/Cython code that must be built - you will need the correct C/C++ compiler and recent setuptools, etc. See "Installing With Anaconda" for more detail (or online for docs on "building C extensions to Python")
+There is C++/Cython code that must be built - you will need the correct C/C++ compiler and scikit-build, etc. See "Installing With Anaconda" for more detail (or online for docs on "building C extensions to Python")
 
 Python
 ------
