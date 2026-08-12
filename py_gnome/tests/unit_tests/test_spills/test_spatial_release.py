@@ -21,6 +21,8 @@ data_dir = Path(__file__).parent / "data_for_tests"
 
 sample_nesdis_shapefile = data_dir / "NESDIS_files.zip"
 
+sample_nesdis_shapefile_new_time_format = data_dir / "NESDIS_new_format.zip"
+
 simplePolys = [shapely.geometry.Polygon([[0,0],[3,0],[3,3],[0,3]]),
                shapely.geometry.MultiPolygon(
                    [shapely.geometry.Polygon([[4,0],[5,0],[5,1],[4,1]]),
@@ -115,6 +117,12 @@ class TestNESDISRelease(object):
 
         assert nr.release_time == datetime.datetime.strptime('5/14/2020 15:20', '%m/%d/%Y %H:%M')
         assert nr.end_release_time == datetime.datetime.strptime('5/14/2020 15:20', '%m/%d/%Y %H:%M')
+
+    def test_release_time_new_format(self):
+        nr = NESDISRelease(filename=sample_nesdis_shapefile_new_time_format)
+
+        assert nr.release_time == datetime.datetime.strptime('8/8/2026 16:08', '%m/%d/%Y %H:%M')
+        assert nr.end_release_time == datetime.datetime.strptime('8/8/2026 16:08', '%m/%d/%Y %H:%M')
 
     def test_alter_release_time_and_save_load(self):
         nr = NESDISRelease(filename=sample_nesdis_shapefile)

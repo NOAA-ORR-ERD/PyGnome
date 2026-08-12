@@ -50,7 +50,6 @@ from gnome.constants import gravity
 from gnome.ops import default_constants
 
 from gnome.utilities.time_utils import TZOffset, TZOffsetSchema
-#from gnome.exceptions import ReferencedObjectNotSet
 from .initializers import (InitRiseVelFromDropletSizeFromDist,
                            InitRiseVelFromDist)
 
@@ -485,7 +484,6 @@ class Release(GnomeId):
               # temp_k=water.get('temperature')
            else:
               water = Water(default_constants.default_water_temperature)
-              #raise ReferencedObjectNotSet("water object not found in environment collection")
 
            spread = FayGravityViscous(water=water)
            spread.prepare_for_model_run(sc)
@@ -1275,8 +1273,8 @@ class NESDISRelease(PolygonRelease):
         fc = geo_routines.load_shapefile(filename)
         release_time = datetime.now() if release_time is None else release_time
         for i, feature in enumerate(fc.features):
-            im_date = feature.properties.get('DATE', None)
-            im_time = feature.properties.get('TIME', None)
+            im_date = feature.properties.get('DATE') or feature.properties.get('IMG_DATE') or None
+            im_time = feature.properties.get('TIME') or feature.properties.get('IMG_TIME') or None
             if im_date and im_time:
                 parsed_time = ''.join([d for d in im_time if d.isdigit()])
                 try:
