@@ -76,6 +76,27 @@ pytest-cov = "*"
 pytest-timeout = "*"
 testfixtures = "*"
 
+[feature.gridded-dev.dependencies]
+# needed for gridded
+cell_tree2d = ">=0.3"
+cftime = "*"
+# needed to build gridded
+pip = "*"
+python-build = "*"
+hatch = ">=1.16.5"
+hatch-vcs = "*"
+# needed for gridded tests
+pooch = ">=1.9.0,<2"
+
+# you can only overide a conda dep with a conda dep :-(
+# [feature.dev.override]
+# numpy = ">=2.0.0" # Forces numpy to 2.0+ when 'dev' is active
+
+# [feature.gridded-dev.pypi-dependencies]
+# this only works if everyone use the same path
+# On Chris' machine:
+# gridded = { path = "../../../ERD-PythonPackages/gridded", editable = true }
+
 
 # [feature.examples.dependencies]
 # matplotlib = "*"
@@ -95,6 +116,7 @@ default = { features = ["py312", "dev", "test", "build"], solve-group = "default
 # using the oldest supported version for development
 dev312 = ["py312", "dev", "test", "build"]
 dev313 = ["py313", "dev", "test", "build"]
+dev-gridded = ["gridded-dev", "py313", "dev", "test", "build"]
 build312 = ["py312", "build"]
 build313 = ["py313", "build"]
 test312 = [ "py312", "test", "build" ]
