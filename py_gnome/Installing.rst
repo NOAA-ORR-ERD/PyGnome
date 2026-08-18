@@ -70,6 +70,10 @@ test312: everything to build with python 3.12
 
 test313: everything to build with python 3.13
 
+dev-gridded: everything you need for developing PYGNOME and gridded together. gridded needs to be installed after running pixi shell, e.g.
+
+``pip install --no-build-isolation -e ../../../ERD-PythonPackages/gridded``
+
 
 Pixi tasks (commands)
 ,,,,,,,,,,,,,,,,,,,,,
