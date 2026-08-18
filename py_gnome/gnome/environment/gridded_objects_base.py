@@ -533,6 +533,7 @@ class Grid_R(gridded.grids.Grid_R, GnomeId):
 
 
 class PyGrid(gridded.grids.Grid):
+    _schema = GridSchema #not really a grid object, but this allows it to be loaded.
 
     @staticmethod
     def from_netCDF(*args, **kwargs):
