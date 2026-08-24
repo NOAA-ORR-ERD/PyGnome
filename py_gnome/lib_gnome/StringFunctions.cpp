@@ -1702,12 +1702,14 @@ void Secs2DateStringNetCDF(Seconds seconds, CHARPTR s)
 	strcat (s, str);
 }
 
-unsigned long DateString2Secs(CHARPTR s)
+Seconds DateString2Secs(CHARPTR s)
+//unsigned long DateString2Secs(CHARPTR s)
 #ifdef MAC
 {
 	DateTimeRec DTR;
-	unsigned long seconds;
-
+	//unsigned long seconds;
+	Seconds seconds;
+	
 	sscanf(s, "%hd/%hd/%hd", &DTR.month, &DTR.day, &DTR.year);
 	if(DTR.year < 40) DTR.year += 2000;// year 2000 solution, JLM 1/25/99
 	if (DTR.year < 200) DTR.year += 1900;
@@ -1747,7 +1749,8 @@ unsigned long DateString2Secs(CHARPTR s)
 	seconds += 2082816000L; // convert from seconds since 1970 to seconds since 1904
 #endif
 
-	return (unsigned long)seconds;
+	//return (unsigned long)seconds;
+	return (Seconds)seconds;
 }
 #endif
 

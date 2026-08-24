@@ -49,8 +49,10 @@ if int(np.__version__.split(".")[0]) < 2:
     seconds = int
     np_long = int
 else:
-    seconds = np.long
+    #seconds = np.long
     np_long = np.long
+    seconds = np.intp
+    #np_long = np.intp
 
 # this is a mapping of oil_status code to the meaningful name:
 oil_status_map = {num: name for name, num in oil_status.__members__.items()}

@@ -41,7 +41,8 @@ typedef short LandType;
 #ifdef _MSC_VER
 	#if _WIN64
 		// for now we will not change the type for windows64
-		typedef long Seconds; // duration in seconds, or seconds since 1904
+		//typedef long Seconds; // duration in seconds, or seconds since 1904
+		typedef long long Seconds; // duration in seconds, or seconds since 1904
 	#else
 		#ifndef pyGNOME
 			typedef unsigned long Seconds;
