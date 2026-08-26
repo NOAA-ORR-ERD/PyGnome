@@ -28,6 +28,7 @@ from gnome.array_types import gat
 
 from gnome.utilities.surface_concentration import compute_surface_concentration
 from gnome.gnomeobject import GnomeId
+from gnome.utilities.time_utils import TZOffset
 
 
 class BaseOutputterSchema(ObjTypeSchema):
@@ -139,6 +140,8 @@ class Outputter(GnomeId):
             self.output_start_time = output_start_time
         else:
             self.output_start_time = None
+        # Timezone offset is set in prepare_for_model_run
+        self.timezone_offset = TZOffset()
 
         self.sc_pair = None     # set in prepare_for_model_run
 
@@ -186,6 +189,7 @@ class Outputter(GnomeId):
                               model_time_step=None,
                               map=None,
                               model_name=None,
+                              timezone_offset=TZOffset(),
                               **kwargs):
         """
         This method gets called by the model at the beginning of a new run.
@@ -202,6 +206,15 @@ class Outputter(GnomeId):
         :param model_time_step: time step of the model
                                 -- used to set timespans for some outputters
         :type model_time_step: float seconds
+
+        :param map: Map object
+        :type map: GnomeMap object
+
+        :param model_name: Model name
+        :type model_name: string
+
+        :param timezone_offset: Model timezone offset
+        :type timezone_offset: TZOffset object
 
         Optional argument - in case cache needs to be updated
 
@@ -245,6 +258,7 @@ class Outputter(GnomeId):
                               "Output will only occur every model timestep.",
                               RuntimeWarning)
 
+        self.timezone_offset = timezone_offset
 
         cache = kwargs.pop('cache', None)
         if cache is not None:

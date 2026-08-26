@@ -1,6 +1,7 @@
 """ERMA Data Package outputter"""
 from colander import SchemaNode, Boolean, drop, String, Int, Float
 import copy
+from datetime import datetime, timedelta, timezone
 import geopandas as gpd
 import itertools
 import json
@@ -22,6 +23,7 @@ from gnome.utilities.shapefile_builder import BoundaryShapefileBuilder
 from gnome.utilities.shapefile_builder import ContourShapefileBuilder
 from gnome.utilities.hull import calculate_hull
 from gnome.utilities import convert_mass_to_mass_or_volume
+from gnome.utilities.time_utils import TZOffset, TZOffsetSchema
 from .outputter import Outputter, BaseOutputterSchema
 
 
@@ -117,12 +119,12 @@ class ERMADataPackageSchema(BaseOutputterSchema):
         Int(), missing=drop, save=True, update=True
     )
     time_unit_override = SchemaNode(String(), save=True, update=True)
-    # Currently we do not support timezone, but instead stick with static
-    # time offset.
-    # timezone = SchemaNode(String(), save=True, update=True)
-    timeoffset = SchemaNode(Float(), save=True, update=True)
     enable_each_timestep_as_layer = SchemaNode(
         Boolean(), save=True, update=True
+    )
+    # The individual layer interval comes as a Int of seconds
+    enable_each_timestep_as_layer_interval = SchemaNode(
+        Int(), save=True, update=True
     )
 
 class ERMADataPackageOutput(Outputter):
@@ -170,10 +172,8 @@ class ERMADataPackageOutput(Outputter):
                  disable_legend_collapse=False,
                  # Time settings
                  time_step_override=None, time_unit_override=None,
-                 # timezone='',
-                 # Default to None
-                 timeoffset=None,
                  enable_each_timestep_as_layer=False,
+                 enable_each_timestep_as_layer_interval=None,
                  # Other
                  surface_conc="kde", **kwargs):
         '''
@@ -257,8 +257,8 @@ class ERMADataPackageOutput(Outputter):
         # Time settings
         self.time_step_override = time_step_override
         self.time_unit_override = time_unit_override
-        self.timeoffset = timeoffset
         self.enable_each_timestep_as_layer = enable_each_timestep_as_layer
+        self.enable_each_timestep_as_layer_interval = enable_each_timestep_as_layer_interval
         # We will be building shapefiles, so come up with names in the temp dir
         # These are names without ext... as those get added when deciding to zip or not
         base_shapefile_name = os.path.join(self.tempdir.name, self.filenamestem)
@@ -267,17 +267,6 @@ class ERMADataPackageOutput(Outputter):
         self.shapefile_name_certain_contours = base_shapefile_name+'_certain_contours'
         self.shapefile_name_uncertain = base_shapefile_name+'_uncertain'
         self.shapefile_name_uncertain_boundary = base_shapefile_name+'_uncertain_boundary'
-        # Our shapefile builders
-        self.shapefile_builder_certain = ParticleShapefileBuilder(self.shapefile_name_certain,
-                                                                  timeoffset=self.timeoffset)
-        self.shapefile_builder_certain_boundary = BoundaryShapefileBuilder(self.shapefile_name_certain_boundary,
-                                                                           timeoffset=self.timeoffset)
-        self.shapefile_builder_certain_contours = ContourShapefileBuilder(self.shapefile_name_certain_contours,
-                                                                          timeoffset=self.timeoffset)
-        self.shapefile_builder_uncertain = ParticleShapefileBuilder(self.shapefile_name_uncertain,
-                                                                    timeoffset=self.timeoffset)
-        self.shapefile_builder_uncertain_boundary = BoundaryShapefileBuilder(self.shapefile_name_uncertain_boundary,
-                                                                             timeoffset=self.timeoffset)
 
         # Build some mappings for styling
         self.default_unit_map = {'Mass':{'column': 'mass',
@@ -289,10 +278,26 @@ class ERMADataPackageOutput(Outputter):
                                  'Viscosity': {'column': 'viscosity',
                                                'unit': 'm^2/s'}
                                  }
+        # This holds a list of all the timesteps that had particles written as the model runs
         self.output_timesteps = []
 
+        # We need to pre-load our templates from json files and then use them later
+        # to build our layers and mapfile definitions.
+        self._layer_template = self._load_json_template('layer_template.json')
+        self._contour_template = self._load_json_template('default_contour_template.json')
+        self._polygon_cartoline_template = self._load_json_template('default_polygon_cartoline_template.json')
+        self._polygon_template = self._load_json_template('default_polygon_template.json')
+        self._spill_location_template = self._load_json_template('default_spill_location_template.json')
+        self._floating_template = self._load_json_template('default_floating_template.json')
+        self._beached_template = self._load_json_template('default_beached_template.json')
+
+    def _load_json_template(self, filename):
+        with open(erma_data_package_data_dir / filename, 'r', encoding='utf-8') as f:
+            return json.load(f)
+
     def __del__(self):
-        self.tempdir.cleanup()
+        if getattr(self, 'tempdir', None):
+            self.tempdir.cleanup()
 
     def prepare_for_model_run(self,
                               model_start_time,
@@ -305,6 +310,17 @@ class ERMADataPackageOutput(Outputter):
         super(ERMADataPackageOutput, self).prepare_for_model_run(model_start_time,
                                                                  spills,
                                                                  **kwargs)
+
+        # ERMA always expects time fields to be with timezone.  In our case we are requiring
+        # that timezone_offset not have an offset of None.  In that case we error out to the
+        # user.  If there is a timezone_offset defined, we can count on the fact that the
+        # shapefiles containing time based data will be written out with both a time/Time and
+        # time_utc/Time_UTC fields.
+        # Note: For historical reasons the particle layers (certain and uncertain) are written
+        # with the Time/Time_UTC case, while the boundary/contours are written with all
+        # lower case fields.
+        if not isinstance(self.timezone_offset, (TZOffset,)) or self.timezone_offset.offset is None:
+            raise ValueError(f'Valid timezone_offset (TZOffset) is required for ERMA data packages.')
         self.model_start_time = model_start_time
         # By default we want to name the folder for the output based on the model
         # start time.  Since we are just finding that out now (if it was not
@@ -321,6 +337,22 @@ class ERMADataPackageOutput(Outputter):
         self.output_timesteps = []
         self.model_name_slug = slugify(self.model_name, separator='_') if self.model_name else ''
         self.filename_timestamp = self.model_start_time.strftime('%Y%m%d_%H%M%S')
+        # Our shapefile builders
+        self.shapefile_builder_certain = ParticleShapefileBuilder(
+            self.shapefile_name_certain,
+            timeoffset=self.timezone_offset.offset)
+        self.shapefile_builder_certain_boundary = BoundaryShapefileBuilder(
+            self.shapefile_name_certain_boundary,
+            timeoffset=self.timezone_offset.offset)
+        self.shapefile_builder_certain_contours = ContourShapefileBuilder(
+            self.shapefile_name_certain_contours,
+            timeoffset=self.timezone_offset.offset)
+        self.shapefile_builder_uncertain = ParticleShapefileBuilder(
+            self.shapefile_name_uncertain,
+            timeoffset=self.timezone_offset.offset)
+        self.shapefile_builder_uncertain_boundary = BoundaryShapefileBuilder(
+            self.shapefile_name_uncertain_boundary,
+            timeoffset=self.timezone_offset.offset)
 
     def write_output(self, step_num, islast_step=False):
         """Dump a timestep's data into the shapefile """
@@ -460,16 +492,32 @@ class ERMADataPackageOutput(Outputter):
                                                                        layer_name, 'Uncertainty Boundary',
                                                                        layer_color, layer_size))
         # If we need to also include per-step layers, do it here
-        strftime_format = '%Y-%m-%d %H:%M:%S'
-        if self.enable_each_timestep_as_layer:
-            for timestep in self.output_timesteps:
+        strftime_format = '%Y-%m-%dT%H:%M:%S'
+        if self.enable_each_timestep_as_layer and self.enable_each_timestep_as_layer_interval:
+            # enable_each_timestep_as_layer_interval arrives in seconds
+            # self.logger.debug(f'{self.enable_each_timestep_as_layer_interval=}')
+            td = timedelta(seconds=self.enable_each_timestep_as_layer_interval)
+            current = self.model_start_time
+            end = self.output_timesteps[-1]
+            layer_timesteps = []
+            # Always include first timestep if there are particles
+            if current in self.output_timesteps:
+                layer_timesteps.append(self.model_start_time)
+            while current < end:
+                current += td
+                if current in self.output_timesteps:
+                    layer_timesteps.append(current)
+            # self.logger.debug(f'{layer_timesteps=}')
+
+            for timestep in layer_timesteps:
+                timestep_str = timestep.strftime(strftime_format) + self.timezone_offset.as_iso_string()
                 if self.include_certain_particles:
-                    layer_name = f'Certain Particles - {timestep.strftime(strftime_format)}'
+                    layer_name = f'Certain Particles - {timestep_str}'
                     layer_json.append(self.make_particle_package_layer(next(id), layer_name, False,
                                                                        self.shapefile_builder_certain.filename,
                                                                        timestep))
                 if self.include_certain_boundary:
-                    layer_name = f'Certain Particles Boundary - {timestep.strftime(strftime_format)}'
+                    layer_name = f'Certain Particles Boundary - {timestep_str}'
                     layer_color = self.certain_boundary_color if self.certain_boundary_color else '#0000FF'
                     layer_size = self.certain_boundary_size if self.certain_boundary_size else 3
                     layer_json.append(self.make_boundary_polygon_package_layer(next(id), False,
@@ -477,19 +525,19 @@ class ERMADataPackageOutput(Outputter):
                                                                                layer_name, 'Best Estimate Boundary',
                                                                                layer_color, layer_size, timestep))
                 if self.include_certain_contours:
-                    layer_name = f'Certain Particles Contours - {timestep.strftime(strftime_format)}'
+                    layer_name = f'Certain Particles Contours - {timestep_str}'
                     layer_size = self.certain_contours_size if self.certain_contours_size else 3
                     layer_json.append(self.make_contour_polygon_package_layer(next(id),
                                                                               self.shapefile_builder_certain_contours.filename,
                                                                               layer_name, 'Best Estimate Contours',
                                                                               layer_size, timestep))
                 if self.include_uncertain_particles and self.uncertain:
-                    layer_name = f'Uncertain Particles - {timestep.strftime(strftime_format)}'
+                    layer_name = f'Uncertain Particles - {timestep_str}'
                     layer_json.append(self.make_particle_package_layer(next(id), layer_name, True,
                                                                        self.shapefile_builder_uncertain.filename,
                                                                        timestep))
                 if self.include_uncertain_boundary and self.uncertain:
-                    layer_name = f'Uncertain Particles Boundary - {timestep.strftime(strftime_format)}'
+                    layer_name = f'Uncertain Particles Boundary - {timestep_str}'
                     layer_color = self.uncertain_boundary_color if self.uncertain_boundary_color else '#FF0000'
                     layer_size = self.uncertain_boundary_size if self.uncertain_boundary_size else 3
                     layer_json.append(self.make_boundary_polygon_package_layer(next(id), True,
@@ -519,10 +567,57 @@ class ERMADataPackageOutput(Outputter):
                    arcname='support_files/fonts/SHAPES.TTF')
         zipf.close()
 
+    def erma_utc_timestamp(self, timestamp, offset):
+        """
+        Calculate timestamp format that ERMA expects.
+
+        When using the additional_params filters in ERMA we need to have
+        the format conform to YYYY-MM-DDTHH:MM:SSZ.
+
+        :param timestamp: The timestamp we are currently processing.
+        :type timestamp: datetime
+        :param offset: The timezone offset to apply.
+        :type offset: float
+        :return: The formatted string to use in ERMA.
+        :rtype: str
+        """
+        strftime_format = '%Y-%m-%dT%H:%M:%SZ'
+        erma_timestamp = None
+        # If we have an timezone_offset we need to calculate the right value to use
+        # against the time_utc column
+        if self.timezone_offset.offset is not None:
+            current_timezone_by_offset = timezone(
+                timedelta(minutes=int(offset*60)))
+            current_datetime_with_offset = timestamp.replace(tzinfo=current_timezone_by_offset)
+            erma_timestamp = current_datetime_with_offset.astimezone(timezone.utc).strftime(strftime_format)
+        else:
+            # Else we default back to assuming 0 offset
+            erma_timestamp = timestamp.strftime(strftime_format)
+        return erma_timestamp
+
+    def erma_time_expression(self, timestamp):
+        """
+        """
+        time_expression = ''
+        if timestamp is None:
+            return None
+        if self.timezone_offset.offset is not None:
+            erma_time = self.erma_utc_timestamp(timestamp, self.timezone_offset.offset)
+            time_expression = f'time_utc__exact={erma_time}'
+        else:
+            # Else we default back to using the Time column and 0 offset
+            erma_time = self.erma_utc_timestamp(timestamp, 0)
+            time_expression = f'time__exact={erma_time}'
+        # self.logger.debug(f'{time_expression=}')
+        return time_expression
+
     def make_contour_polygon_package_layer(self, id, shapefile_filename,
                                            layer_title, style_name,
                                            style_width, timestamp=None):
-        time_expression = f'time__in={timestamp.isoformat()}' if timestamp is not None else None
+        # If we have a timestamp, we need to calculate a time_expression to be used in
+        # the additional_parameters for the layer
+        time_expression = self.erma_time_expression(timestamp)
+
         dir, basefile = os.path.split(shapefile_filename)
         output_path = os.path.join(self.tempdir.name, str(id)+".json")
         generic_name = 'contour_certain'
@@ -531,16 +626,9 @@ class ERMADataPackageOutput(Outputter):
         # When ERMA allows more than 50 characters for the mapfile layer name
         # erma_mapfilelayer_name = self.model_name_slug + '_' + generic_name + '_' + self.filename_timestamp + '_mapfilelayer'
         erma_mapfilelayer_name = generic_name + '_' + self.filename_timestamp + '_mapfilelayer'
-        layer_template = None
 
-        layer_template_path = erma_data_package_data_dir / 'layer_template.json'
-        contour_template = None
-        contour_template_path = erma_data_package_data_dir / 'default_contour_template.json'
-
-        with open(layer_template_path) as f:
-            layer_template = json.load(f)
-        with open(contour_template_path) as f:
-            contour_template = json.load(f)
+        layer_template = copy.deepcopy(self._layer_template)
+        contour_template = copy.deepcopy(self._contour_template)
         if layer_template and contour_template:
             # Check the timestep and set the time override for ERMA time slider
             if self.time_step_override and self.time_unit_override:
@@ -586,14 +674,16 @@ class ERMADataPackageOutput(Outputter):
             layer_template['mapfile_layer']['shapefile']['name'] = erma_shapefile_name
             layer_template['mapfile_layer']['shapefile']['description'] = generic_description + ' Shapefile'
             layer_template['mapfile_layer']['shapefile']['file'] = "file://source_files/" + basefile
+            # If timestamp is not None we are looking at an individual layer and not a series
             if timestamp is not None:
-                layer_template['mapfile_layer']['shapefile']['timezone_fields'] = None
-                layer_template['mapfile_layer']['time_column'] = None
-            elif self.timeoffset is not None:
-                layer_template['mapfile_layer']['shapefile']['timezone_fields'] = {"time_utc": "UTC"}
+                layer_template['mapfile_layer']['time_column'] = ""
+            elif self.timezone_offset.offset is not None:
+                # If offset is not None we use time_utc
                 layer_template['mapfile_layer']['time_column'] = "time_utc"
             else:
-                layer_template['mapfile_layer']['shapefile']['timezone_fields'] = {"time": "UTC"}
+                # Else we default to time.  This should only happen if the package
+                # is created without a timezone offset defined.  In ERMA this will
+                # be interpreted as naive and defaults to UTC
                 layer_template['mapfile_layer']['time_column'] = "time"
             layer_template['mapfile_layer']['layer_name'] = erma_mapfilelayer_name
             layer_template['mapfile_layer']['layer_desc'] = generic_description
@@ -611,7 +701,7 @@ class ERMADataPackageOutput(Outputter):
                         thiscount = next(classcounter)
                         contour_template_solid = copy.deepcopy(contour_template)
                         contour_template_solid['name'] = style_name+f' {spill.name} {cutoff["label"]}'
-                        contour_template_solid['expression'] = f'[cutoff_id] = {cutoff["cutoff_id"]}'
+                        contour_template_solid['expression'] = f'[spill_num] = {spill_num} AND [cutoff_id] = {cutoff["cutoff_id"]}'
                         contour_template_solid['ordering'] = thiscount
                         contour_template_solid['styles'][0]['outlinesymbol'] = None
                         contour_template_solid['styles'][0]['color'] = cutoff['color']
@@ -621,7 +711,7 @@ class ERMADataPackageOutput(Outputter):
         else:
             raise ValueError("Can not write ERMA Data Package without template!!!")
 
-        with open(output_path, "w") as o:
+        with open(output_path, "w", encoding="utf-8") as o:
             json.dump(layer_template, o, indent=4)
         return {'shapefile_filename': shapefile_filename,
                 'json_filename': output_path}
@@ -629,7 +719,10 @@ class ERMADataPackageOutput(Outputter):
     def make_boundary_polygon_package_layer(self, id, uncertain, shapefile_filename,
                                             layer_title, style_name,
                                             color, style_width, timestamp=None):
-        time_expression = f'time__in={timestamp.isoformat()}' if timestamp is not None else None
+        # If we have a timestamp, we need to calculate a time_expression to be used in
+        # the additional_parameters for the layer
+        time_expression = self.erma_time_expression(timestamp)
+
         dir, basefile = os.path.split(shapefile_filename)
         output_path = os.path.join(self.tempdir.name, str(id)+".json")
         #shz_name = os.path.join(self.tempdir.name, shapefile_name+'.shz')
@@ -640,14 +733,9 @@ class ERMADataPackageOutput(Outputter):
         # When ERMA allows more than 50 characters for the mapfile layer name
         # erma_mapfilelayer_name = self.model_name_slug + '_' + generic_name + '_' + self.filename_timestamp + '_mapfilelayer'
         erma_mapfilelayer_name = generic_name + '_' + self.filename_timestamp + '_mapfilelayer'
-        layer_template = None
-        layer_template_path = erma_data_package_data_dir / 'layer_template.json'
-        polygon_template = None
-        polygon_template_path = erma_data_package_data_dir / 'default_polygon_cartoline_template.json'
-        with open(layer_template_path) as f:
-            layer_template = json.load(f)
-        with open(polygon_template_path) as f:
-            polygon_template = json.load(f)
+
+        layer_template = copy.deepcopy(self._layer_template)
+        polygon_template = copy.deepcopy(self._polygon_cartoline_template)
         if layer_template and polygon_template:
             # Check the timestep and set the time override for ERMA time slider
             if self.time_step_override and self.time_unit_override:
@@ -693,14 +781,16 @@ class ERMADataPackageOutput(Outputter):
             layer_template['mapfile_layer']['shapefile']['name'] = erma_shapefile_name
             layer_template['mapfile_layer']['shapefile']['description'] = generic_description + ' Shapefile'
             layer_template['mapfile_layer']['shapefile']['file'] = "file://source_files/" + basefile
+            # If timestamp is not None we are looking at an individual layer and not a series
             if timestamp is not None:
-                layer_template['mapfile_layer']['shapefile']['timezone_fields'] = None
-                layer_template['mapfile_layer']['time_column'] = None
-            elif self.timeoffset is not None:
-                layer_template['mapfile_layer']['shapefile']['timezone_fields'] = {"time_utc": "UTC"}
+                layer_template['mapfile_layer']['time_column'] = ""
+            elif self.timezone_offset.offset is not None:
+                # If offset is not None we use time_utc
                 layer_template['mapfile_layer']['time_column'] = "time_utc"
             else:
-                layer_template['mapfile_layer']['shapefile']['timezone_fields'] = {"time": "UTC"}
+                # Else we default to time.  This should only happen if the package
+                # is created without a timezone offset defined.  In ERMA this will
+                # be interpreted as naive and defaults to UTC
                 layer_template['mapfile_layer']['time_column'] = "time"
             layer_template['mapfile_layer']['layer_name'] = erma_mapfilelayer_name
             layer_template['mapfile_layer']['layer_desc'] = generic_description
@@ -717,7 +807,7 @@ class ERMADataPackageOutput(Outputter):
         else:
             raise ValueError("Can not write ERMA Data Package without template!!!")
 
-        with open(output_path, "w") as o:
+        with open(output_path, "w", encoding="utf-8") as o:
             json.dump(layer_template, o, indent=4)
         return {'shapefile_filename': shapefile_filename,
                 'json_filename': output_path}
@@ -733,15 +823,9 @@ class ERMADataPackageOutput(Outputter):
         # When ERMA allows more than 50 characters for the mapfile layer name
         # erma_mapfilelayer_name = self.model_name_slug + '_' + generic_name + '_' + self.filename_timestamp + '_mapfilelayer'
         erma_mapfilelayer_name = generic_name + '_' + self.filename_timestamp + '_mapfilelayer'
-        layer_template = None
-        layer_template_path = erma_data_package_data_dir / 'layer_template.json'
-        polygon_template = None
-        polygon_template_path = erma_data_package_data_dir / 'default_polygon_template.json'
 
-        with open(layer_template_path) as f:
-            layer_template = json.load(f)
-        with open(polygon_template_path) as f:
-            polygon_template = json.load(f)
+        layer_template = copy.deepcopy(self._layer_template)
+        polygon_template = copy.deepcopy(self._polygon_template)
         if layer_template and polygon_template:
             # Write the shapefile
             mp=self.map.get_polygons()
@@ -771,9 +855,8 @@ class ERMADataPackageOutput(Outputter):
             layer_template['mapfile_layer']['layer_name'] = erma_mapfilelayer_name
             layer_template['mapfile_layer']['layer_desc'] = 'Map Polygon'
             # Get rid of a few things we dont want
-            layer_template['mapfile_layer']['shapefile']['timezone_fields'] = None
             layer_template['mapfile_layer']['classitem'] = None
-            layer_template['mapfile_layer']['time_column'] = None
+            layer_template['mapfile_layer']['time_column'] = ""
             # Modify the style object
             polygon_template['name'] = style_name
             polygon_template['styles'][0]['outlinecolor'] = color
@@ -782,7 +865,7 @@ class ERMADataPackageOutput(Outputter):
         else:
             raise ValueError("Can not write ERMA Data Package without template!!!")
 
-        with open(output_path, "w") as o:
+        with open(output_path, "w", encoding="utf-8") as o:
             json.dump(layer_template, o, indent=4)
         return {'shapefile_filename': shapefile_pathlib_path.with_suffix('.zip'),
                 'json_filename': output_path}
@@ -797,15 +880,10 @@ class ERMADataPackageOutput(Outputter):
         # When ERMA allows more than 50 characters for the mapfile layer name
         # erma_mapfilelayer_name = self.model_name_slug + '_' + generic_name + '_' + self.filename_timestamp + '_mapfilelayer'
         erma_mapfilelayer_name = generic_name + '_' + self.filename_timestamp + '_mapfilelayer'
-        layer_template = None
-        layer_template_path = erma_data_package_data_dir / 'layer_template.json'
-        default_spill_location_template = None
-        default_spill_location_template_path = erma_data_package_data_dir / 'default_spill_location_template.json'
-        with open(layer_template_path) as f:
-            layer_template = json.load(f)
-        with open(default_spill_location_template_path) as f:
-            default_spill_location_template = json.load(f)
-        if layer_template and default_spill_location_template:
+
+        layer_template = copy.deepcopy(self._layer_template)
+        spill_location_template = copy.deepcopy(self._spill_location_template)
+        if layer_template and spill_location_template:
             # Make a quick shapefile of the spill location(s)
             spill_ids = []
             spill_locations = []
@@ -830,14 +908,13 @@ class ERMADataPackageOutput(Outputter):
             layer_template['mapfile_layer']['layer_name'] = erma_mapfilelayer_name
             layer_template['mapfile_layer']['layer_desc'] = 'Spill Location'
             # Get rid of a few things we dont want
-            layer_template['mapfile_layer']['shapefile']['timezone_fields'] = None
             layer_template['mapfile_layer']['classitem'] = None
-            layer_template['mapfile_layer']['time_column'] = None
-            layer_template['mapfile_layer']['layer_classes'].append(default_spill_location_template)
+            layer_template['mapfile_layer']['time_column'] = ""
+            layer_template['mapfile_layer']['layer_classes'].append(spill_location_template)
         else:
             raise ValueError("Can not write ERMA Data Package without template!!!")
 
-        with open(output_path, "w") as o:
+        with open(output_path, "w", encoding="utf-8") as o:
             json.dump(layer_template, o, indent=4)
         return {'shapefile_filename': shapefile_pathlib_path.with_suffix('.zip'),
                 'json_filename': output_path}
@@ -934,25 +1011,21 @@ class ERMADataPackageOutput(Outputter):
 
     def make_particle_package_layer(self, id, layer_name, uncertain, shapefile_filename, timestamp=None):
         dir, basefile = os.path.split(shapefile_filename)
-        output_path = dir+"/"+str(id)+".json"
-        layer_template_path = erma_data_package_data_dir / 'layer_template.json'
-        default_floating_template_path = erma_data_package_data_dir / 'default_floating_template.json'
-        default_beached_template_path = erma_data_package_data_dir / 'default_beached_template.json'
-        layer_template = None
-        default_floating_template = default_beached_template = None
+        output_path = os.path.join(self.tempdir.name, str(id) + ".json")
         generic_name = f'{"uncertain" if uncertain else "certain"}'
         erma_shapefile_name = self.model_name_slug + '_' + generic_name + '_' + self.filename_timestamp + '_shapefile'
         # When ERMA allows more than 50 characters for the mapfile layer name
         # erma_mapfilelayer_name = self.model_name_slug + '_' + generic_name + '_' + self.filename_timestamp + '_mapfilelayer'
         erma_mapfilelayer_name = generic_name + '_' + self.filename_timestamp + '_mapfilelayer'
-        time_expression = f'time__in={timestamp.isoformat()}' if timestamp is not None else None
-        with open(layer_template_path) as f:
-            layer_template = json.load(f)
-        with open(default_floating_template_path) as f:
-            default_floating_template = json.load(f)
-        with open(default_beached_template_path) as f:
-            default_beached_template = json.load(f)
 
+        # If we have a timestamp, we need to calculate a time_expression to be used in
+        # the additional_parameters for the layer
+        time_expression = self.erma_time_expression(timestamp)
+
+        layer_template = copy.deepcopy(self._layer_template)
+        # These are just used as a template and deep copied below
+        floating_template = self._floating_template
+        beached_template = self._beached_template
         if layer_template:
             # Folder name
             layer_template['folder_path'] = self.folder_name
@@ -965,15 +1038,17 @@ class ERMADataPackageOutput(Outputter):
             layer_template['mapfile_layer']['shapefile']['name'] = erma_shapefile_name
             layer_template['mapfile_layer']['shapefile']['description'] = basefile
             layer_template['mapfile_layer']['shapefile']['file'] = "file://source_files/" + basefile
+            # If timestamp is not None we are looking at an individual layer and not a series
             if timestamp is not None:
-                layer_template['mapfile_layer']['shapefile']['timezone_fields'] = None
-                layer_template['mapfile_layer']['time_column'] = None
-            elif self.timeoffset is not None:
-                layer_template['mapfile_layer']['shapefile']['timezone_fields'] = {"time_utc": "UTC"}
-                layer_template['mapfile_layer']['time_column'] = "time_utc"
+                layer_template['mapfile_layer']['time_column'] = ""
+            elif self.timezone_offset.offset is not None:
+                # If offset is not None we use Time_UTC
+                layer_template['mapfile_layer']['time_column'] = "Time_UTC"
             else:
-                layer_template['mapfile_layer']['shapefile']['timezone_fields'] = {"time": "UTC"}
-                layer_template['mapfile_layer']['time_column'] = "time"
+                # Else we default to Time.  This should only happen if the package
+                # is created without a timezone offset defined.  In ERMA this will
+                # be interpreted as naive and defaults to UTC
+                layer_template['mapfile_layer']['time_column'] = "Time"
             # Check the timestep and set the time override for ERMA time slider
             if self.time_step_override and self.time_unit_override:
                 layer_template['time_step_override'] = self.time_step_override
@@ -1063,8 +1138,8 @@ class ERMADataPackageOutput(Outputter):
                         if uncertain:
                             uncertain_color = '#FF0000'
                             # In the uncertain case, we just color everything red
-                            floating_class_template = copy.deepcopy(default_floating_template)
-                            beached_class_template = copy.deepcopy(default_beached_template)
+                            floating_class_template = copy.deepcopy(floating_template)
+                            beached_class_template = copy.deepcopy(beached_template)
                             floating_class_template['expression'] = ('[statuscode] = 2 AND '
                                                                      f'[spill_id] IN "{spill_group_string}"')
                             floating_class_template['styles'][0]['color'] = uncertain_color
@@ -1121,8 +1196,8 @@ class ERMADataPackageOutput(Outputter):
                                                                requested_display_unit,
                                                                max)
                                 # A mapserver class per color
-                                floating_class_template = copy.deepcopy(default_floating_template)
-                                beached_class_template = copy.deepcopy(default_beached_template)
+                                floating_class_template = copy.deepcopy(floating_template)
+                                beached_class_template = copy.deepcopy(beached_template)
                                 units = unit_map['unit']
                                 class_label = ''
                                 if idx == 0 and len(colormap['colorScaleRange']) == 1:
@@ -1179,8 +1254,8 @@ class ERMADataPackageOutput(Outputter):
                             ##     layer_class['ordering'] = idx
                     else:
                         # No appearance data... use a default
-                        floating_class_template = copy.deepcopy(default_floating_template)
-                        beached_class_template = copy.deepcopy(default_beached_template)
+                        floating_class_template = copy.deepcopy(floating_template)
+                        beached_class_template = copy.deepcopy(beached_template)
                         floating_class_template['expression'] = ('[statuscode] = 2 AND '
                                                                  f'[spill_id] IN "{spill_group_string}"')
                         beached_class_template['expression'] = ('[statuscode] = 3 AND '
@@ -1201,15 +1276,15 @@ class ERMADataPackageOutput(Outputter):
                 # Loop through the classes... and set "ordering" in reverse order
                 for idx, layer_class in enumerate(list(reversed(layer_template['mapfile_layer']['layer_classes']))):
                     layer_class['ordering'] = idx
-                with open(output_path, "w") as o:
+                with open(output_path, "w", encoding="utf-8") as o:
                     json.dump(layer_template, o, indent=4)
                 return {'shapefile_filename': shapefile_filename,
-                        'json_filename': dir+"/"+str(id)+".json"}
+                        'json_filename': output_path}
             else:
                 # Default styling was selected... collapse everything to simple styling
                 # No appearance data... use a default
-                floating_class_template = copy.deepcopy(default_floating_template)
-                beached_class_template = copy.deepcopy(default_beached_template)
+                floating_class_template = copy.deepcopy(floating_template)
+                beached_class_template = copy.deepcopy(beached_template)
                 floating_class_template['expression'] = '[statuscode] = 2'
                 beached_class_template['expression'] = '[statuscode] = 3'
                 if uncertain:
@@ -1227,10 +1302,10 @@ class ERMADataPackageOutput(Outputter):
                     beached_class_template['name'] = 'Beached'
                     layer_template['mapfile_layer']['layer_classes'].append(floating_class_template)
                     layer_template['mapfile_layer']['layer_classes'].append(beached_class_template)
-                with open(output_path, "w") as o:
+                with open(output_path, "w", encoding="utf-8") as o:
                     json.dump(layer_template, o, indent=4)
                 return {'shapefile_filename': shapefile_filename,
-                        'json_filename': dir+"/"+str(id)+".json"}
+                        'json_filename': output_path}
         else:
             raise ValueError("Can not write ERMA Data Package without template!!!")
 
@@ -1251,9 +1326,13 @@ class ERMADataPackageOutput(Outputter):
         here in case it needs to be called from elsewhere
         '''
         super(ERMADataPackageOutput, self).clean_output_files()
-
-        self.shapefile_builder_certain.rewind()
-        self.shapefile_builder_certain_boundary.rewind()
-        self.shapefile_builder_certain_contours.rewind()
-        self.shapefile_builder_uncertain.rewind()
-        self.shapefile_builder_uncertain_boundary.rewind()
+        if getattr(self, 'shapefile_builder_certain', None):
+            self.shapefile_builder_certain.rewind()
+        if getattr(self, 'shapefile_builder_certain_boundary', None):
+            self.shapefile_builder_certain_boundary.rewind()
+        if getattr(self, 'shapefile_builder_certain_contours', None):
+            self.shapefile_builder_certain_contours.rewind()
+        if getattr(self, 'shapefile_builder_uncertain', None):
+            self.shapefile_builder_uncertain.rewind()
+        if getattr(self, 'shapefile_builder_uncertain_boundary', None):
+            self.shapefile_builder_uncertain_boundary.rewind()

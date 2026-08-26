@@ -38,10 +38,6 @@ class ShapeSchema(BaseOutputterSchema):
     )
     uncertain_boundary_hull_ratio = SchemaNode(Float(), save=True, update=True)
     uncertain_boundary_hull_allow_holes = SchemaNode(Boolean(), save=True, update=True)
-    # Currently we do not support timezone, but instead stick with static
-    # time offset.
-    # timezone = SchemaNode(String(), save=True, update=True)
-    timeoffset = SchemaNode(Float(), save=True, update=True)
 
 
 class ShapeOutput(Outputter):
@@ -57,7 +53,6 @@ class ShapeOutput(Outputter):
                  include_certain_in_uncertain_boundary=True,
                  uncertain_boundary_separate_by_spill=True,
                  uncertain_boundary_hull_ratio=0.5, uncertain_boundary_hull_allow_holes=False,
-                 timeoffset=None,
                  surface_conc="kde", **kwargs):
         """
         :param filename: Full path and basename of the shape file.
@@ -67,6 +62,7 @@ class ShapeOutput(Outputter):
         """
         super(ShapeOutput, self).__init__(surface_conc=surface_conc, **kwargs)
         pathlib_path = pathlib.Path(filename)
+        self.zip_output = zip_output
         # If zip is requested... force .zip, else we return .shp.
         # Later we also check if uncertain is on... and if so we force .zip
         if zip_output or include_certain_boundary or include_uncertain_boundary:
@@ -85,7 +81,6 @@ class ShapeOutput(Outputter):
         self.shapefile_name_certain_boundary = base_shapefile_name+'_certain_boundary'
         self.shapefile_name_uncertain = base_shapefile_name+'_uncertain'
         self.shapefile_name_uncertain_boundary = base_shapefile_name+'_uncertain_boundary'
-        self.timeoffset = timeoffset
         # Should we be zipping the output
         self.zip_output = zip_output
         self.include_certain_boundary = include_certain_boundary
@@ -98,19 +93,6 @@ class ShapeOutput(Outputter):
         self.uncertain_boundary_hull_ratio = uncertain_boundary_hull_ratio
         self.uncertain_boundary_hull_allow_holes = uncertain_boundary_hull_allow_holes
 
-        # Our shapefile builders
-        self.shapefile_builder_certain = ParticleShapefileBuilder(self.shapefile_name_certain,
-                                                                  zip_output=zip_output,
-                                                                  timeoffset=self.timeoffset)
-        self.shapefile_builder_certain_boundary = BoundaryShapefileBuilder(self.shapefile_name_certain_boundary,
-                                                                           zip_output=zip_output,
-                                                                           timeoffset=self.timeoffset)
-        self.shapefile_builder_uncertain = ParticleShapefileBuilder(self.shapefile_name_uncertain,
-                                                                    zip_output=zip_output,
-                                                                    timeoffset=self.timeoffset)
-        self.shapefile_builder_uncertain_boundary = BoundaryShapefileBuilder(self.shapefile_name_uncertain_boundary,
-                                                                             zip_output=zip_output,
-                                                                             timeoffset=self.timeoffset)
 
 
     def __del__(self):
@@ -138,6 +120,23 @@ class ShapeOutput(Outputter):
         self.uncertain = uncertain
         if uncertain:
             self.filename = self.filename.with_suffix('.zip')
+        # Our shapefile builders
+        self.shapefile_builder_certain = ParticleShapefileBuilder(
+            self.shapefile_name_certain,
+            zip_output=self.zip_output,
+            timeoffset=self.timezone_offset.offset)
+        self.shapefile_builder_certain_boundary = BoundaryShapefileBuilder(
+            self.shapefile_name_certain_boundary,
+            zip_output=self.zip_output,
+            timeoffset=self.timezone_offset.offset)
+        self.shapefile_builder_uncertain = ParticleShapefileBuilder(
+            self.shapefile_name_uncertain,
+            zip_output=self.zip_output,
+            timeoffset=self.timezone_offset.offset)
+        self.shapefile_builder_uncertain_boundary = BoundaryShapefileBuilder(
+            self.shapefile_name_uncertain_boundary,
+            zip_output=self.zip_output,
+            timeoffset=self.timezone_offset.offset)
 
     def write_output(self, step_num, islast_step=False):
         """Dump a timestep's data into the shapefile"""
@@ -270,9 +269,13 @@ class ShapeOutput(Outputter):
         '''
         super(ShapeOutput, self).clean_output_files()
 
-        self.shapefile_builder_certain.rewind()
-        self.shapefile_builder_certain_boundary.rewind()
+        if getattr(self, 'shapefile_builder_certain', None):
+            self.shapefile_builder_certain.rewind()
+        if getattr(self, 'shapefile_builder_certain_boundary', None):
+            self.shapefile_builder_certain_boundary.rewind()
         #if self.uncertain:
-        self.shapefile_builder_uncertain.rewind()
-        self.shapefile_builder_uncertain_boundary.rewind()
+        if getattr(self, 'shapefile_builder_uncertain', None):
+            self.shapefile_builder_uncertain.rewind()
+        if getattr(self, 'shapefile_builder_uncertain_boundary', None):
+            self.shapefile_builder_uncertain_boundary.rewind()
         # pathlib.Path(self.filename).unlink(missing_ok=True)
