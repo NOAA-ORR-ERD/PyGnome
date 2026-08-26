@@ -368,6 +368,8 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         buttons.setFixedHeight(50)
         hblayout = QtWidgets.QHBoxLayout(buttons)
         self.all_lines_checkbox = QtWidgets.QCheckBox('Draw All Lines')
+        self.node_markers_water_checkbox = QtWidgets.QCheckBox('Node Markers (Water)')
+        self.node_markers_land_checkbox = QtWidgets.QCheckBox('Node Markers (Land)')
         self.center_markers_water_checkbox = QtWidgets.QCheckBox('Center Markers (Water)')
         self.center_markers_land_checkbox = QtWidgets.QCheckBox('Center Markers (Land)')
         self.edge1_markers_water_checkbox = QtWidgets.QCheckBox('Edge1 Markers (Water)')
@@ -375,6 +377,8 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         self.edge2_markers_water_checkbox = QtWidgets.QCheckBox('Edge2 Markers (Water)')
         self.edge2_markers_land_checkbox = QtWidgets.QCheckBox('Edge2 Markers (Land)')
         hblayout.addWidget(self.all_lines_checkbox)
+        hblayout.addWidget(self.node_markers_water_checkbox)
+        hblayout.addWidget(self.node_markers_land_checkbox)
         hblayout.addWidget(self.center_markers_land_checkbox)
         hblayout.addWidget(self.center_markers_water_checkbox)
         hblayout.addWidget(self.edge1_markers_land_checkbox)
@@ -420,8 +424,10 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         
         #add the node markers callbacks. Perhaps move markerscale to the appearances?
         self.markerscale = 60
-        self.unmasked_node_lines = self.center_markers_land = self.center_markers_water = self.edge1_markers_land = self.edge1_markers_water = self.edge2_markers_land = self.edge2_markers_water = None
+        self.unmasked_node_lines = self.node_markers_land = self.node_markers_water = self.center_markers_land = self.center_markers_water = self.edge1_markers_land = self.edge1_markers_water = self.edge2_markers_land = self.edge2_markers_water = None
         self.all_lines_checkbox.stateChanged.connect(self.callback_wrapper(self.toggle_unmasked_grid_lines, 'all', 'land'))
+        self.node_markers_land_checkbox.stateChanged.connect(self.callback_wrapper(self.toggle_markers, 'node', 'land'))
+        self.node_markers_water_checkbox.stateChanged.connect(self.callback_wrapper(self.toggle_markers, 'node', 'water'))
         self.center_markers_land_checkbox.stateChanged.connect(self.callback_wrapper(self.toggle_markers, 'center', 'land'))
         self.center_markers_water_checkbox.stateChanged.connect(self.callback_wrapper(self.toggle_markers, 'center', 'water'))
         self.edge1_markers_land_checkbox.stateChanged.connect(self.callback_wrapper(self.toggle_markers, 'edge1', 'land'))
