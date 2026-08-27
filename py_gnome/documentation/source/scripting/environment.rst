@@ -9,12 +9,23 @@ Transport and weathering of particles in GNOME depend on a variety of environmen
 
 Environment objects can represent a space-independent time series or gridded, time dependent data. Regardless of the structure of the underlying data, the interface to access the information is identical as illustrated in the examples below.
 
-For detailed documentation of the API and implemented objects see :mod:`gnome.environment.environment_objects`
+For documentation of the API see:
+:class:`gnome.environment.environment.Environment`.
+
+For implementation of various environment objects, see:
+:mod:`gnome.environment.environment_objects`.
+
+Most useful is that each environment object as an ``at()`` method, for querying it at a given location and time:
+
+``at(points, time)`` where ``points`` is a Nx3 array of (lon, lat, depth) points, and ``time`` is a datetime for when you want the value.
+
 
 .. note::
 
     An important note is that environment objects alone do not have any effect on the model simulation.
-    Once they are created, they can be explicitly passed to weatherers and movers. However, if a weatherer is added to the model without explicity specifying the required environment objects, then the first object of the correct type in the environment collection will be used for that weathering process.
+    Once they are created, they can be explicitly passed to weatherers and movers.
+    However, if a weatherer is added to the model without explicity specifying the required environment objects,
+    then the first object of the correct type in the environment collection will be used for that weathering process.
     For example, if multiple wind time series are created and added to
     ``model.environment`` then the first one added will be used
     for weathering processes unless explicitly specified.

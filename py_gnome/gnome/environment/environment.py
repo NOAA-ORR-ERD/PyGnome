@@ -18,6 +18,10 @@ from gnome.gnomeobject import GnomeObjMeta, GnomeId
 from .. import _valid_units
 
 class EnvironmentMeta(GnomeObjMeta):
+    """
+    metaclass used by Environment objects to auto-create the
+    _subclasses attribute.
+    """
     def __init__(self, _name, _bases, _dct):
         self._subclasses = []
         for c in self.__mro__:
@@ -31,6 +35,8 @@ class Environment(GnomeId):
     A base class for all classes in environment module.
     This is primarily to define a dtype such that the OrderedCollection
     defined in the Model object requires it.
+
+    It also should define the API -- thought that's not totally consitent.
     """
     _subclasses = []
 
@@ -44,15 +50,28 @@ class Environment(GnomeId):
     __metaclass__ = EnvironmentMeta
 
     # fixme: are there any **kwargs to be passed on?
+    #        Also -- name should be a standard parameter
+    #        but adding it broke some tests, so leaving
+    #        it out for now
     def __init__(self,
                  make_default_refs=True,
                  *,
+#                 name=None,
                  timezone_offset=TZOffset(),
                  **kwargs):
         '''
         base class for environment objects
 
+        base class ``__init__`` should be called by subclass ``__init__`` methods
+
+        :param make_default_refs=True: Whether to add to model environment
+                                       collection for out-discovery by movers
+                                       and weathereres.
+
+        :param timezone_offset=TZOffset(): Timezone offset, if there is one.
+
         :param name=None:
+
         '''
         self.make_default_refs = make_default_refs
         super().__init__(**kwargs)
@@ -61,6 +80,13 @@ class Environment(GnomeId):
 
     @property
     def timezone_offset(self):
+        """
+        The Timezone offset for this Environment object.
+
+        It can be an empty TZOffset object, in which case, it's "naive" time.
+        """
+        # done this way, as _get_timezone_offset is defined in some
+        # subclasses .. probably should be refactored
         return self._get_timezone_offset()
     
     def _get_timezone_offset(self):
@@ -97,7 +123,7 @@ class Environment(GnomeId):
         :param extrapolate=False: if True, extrapolation will be supported
         :type extrapolate: boolean (True or False)
 
-        :return: returns a Nx2 or Nx3 array of interpolated values
+        :return: returns a Nx1, Nx2 or Nx3 array of interpolated values
         :rtype: Nx2 or Nx3 numpy array of values
         """
         raise NotImplementedError("Environment subclasses must implement"
@@ -107,6 +133,9 @@ class Environment(GnomeId):
     # alternatively, we could use -InfTime and IntTime as defaults
     @property
     def data_start(self):
+        """
+        start of the underlying data -- datetime object
+        """
         raise NotImplementedError
 
     @data_start.setter
@@ -115,6 +144,9 @@ class Environment(GnomeId):
 
     @property
     def data_stop(self):
+        """
+        end of the underlying data -- datetime object
+        """
         raise NotImplementedError
 
     @data_stop.setter

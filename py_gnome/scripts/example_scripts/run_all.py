@@ -24,6 +24,7 @@ scripts_to_run = [
     "simple_script.py",
     "weathering_script.py",
     "polygon_release_script.py",
+    "run_backwards_script.py",
     "current_uncertainty/current_uncertainty_example.py",
 ]
 

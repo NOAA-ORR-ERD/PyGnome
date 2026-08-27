@@ -22,6 +22,7 @@ model = gs.Model(duration=gs.days(5))
 
 
 print('adding outputters')
+print(f'budget output in: {save_dir / 'GNOME_oil_budget.csv'}')
 # This will write the total oil budget to a CSV file
 model.outputters += gs.OilBudgetOutput(save_dir / 'GNOME_oil_budget.csv')
 
@@ -35,7 +36,11 @@ model.outputters += gs.NetCDFOutput(filename=save_dir / 'weathering_run.nc',
 
 print('adding a spill')
 # We need a spill at the very least
-oil_file = example_files / 'alaska-north-slope_AD00020.json'
+# this uses an Alaska North Slope Crude
+# https://adios.orr.noaa.gov/oils/EC02713
+
+oil_file = example_files / 'alaska-north-slope-2015_EC02713.json'
+
 spill = gs.point_line_spill(
     num_elements=10,  # no need for a lot of elements for a instantaneous release
     start_position=(0.0, 0.0),  # position isn't important for this.

@@ -12,6 +12,10 @@ There are two sets of scripts included with PyGNOME:
 
 * ``py_gnome/scripts/testing_scripts``: scripts set up to test particular aspects of PyGNOME
 
+If you do not already have the source code to PyGNOME, you can find these examples on GitHub:
+
+`PyGNOME GitHub project <https://github.com/NOAA-ORR-ERD/PyGnome/tree/main/py_gnome/scripts>`_
+
 
 Example Scripts
 ===============
@@ -54,6 +58,12 @@ A script that demonstrates how to create a spill from a shape file or list of po
 ------------------
 
 A script that demonstrates how to use ice information from netcdf files to create ice aware movers.
+
+``run_backwards_script.py``
+---------------------------
+
+A script that demonstrates how to run the model backwards
+
 
 
 Testing Scripts
