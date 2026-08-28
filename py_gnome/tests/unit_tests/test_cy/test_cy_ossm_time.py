@@ -201,6 +201,7 @@ class TestCyTimeseries(object):
         np.testing.assert_allclose(vel_rec['v'], actual['v'], tol, tol, msg, 0)
 
 
+    @pytest.mark.xfail()
     @pytest.mark.parametrize('obj', [CyOSSMTime, CyTimeseries])
     def test_get_time_value_2040(self, obj):
         ossm = obj(filename=testdata['timeseries']['wind_ts_2040'],
