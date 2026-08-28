@@ -39,6 +39,7 @@ test_pygnome_windows:
   stage: test
   allow_failure: false
   before_script: [] # so it won't try to install the linux stuff
+  image: $IMAGE_NAME
   tags:
     - windows-build-image-2026
   script:
@@ -64,20 +65,11 @@ build_wheels:
     - pixi run -e build312 build_wheel
     - pixi run -e build313 build_wheel
 
-test_pygnome_windows:
-  stage: test
-  allow_failure: false
-  before_script: [] # so it won't try to install the linux stuff
-  tags:
-    - windows-build-image-2026
-  script:
-    - cd py_gnome
-    - pixi run test
-
 build_wheels_windows:
   stage: build
   allow_failure: false
   before_script: [] # so it won't try to install the linux stuff
+  image: $IMAGE_NAME
   tags:
     - windows-build-image-2026
   script:
