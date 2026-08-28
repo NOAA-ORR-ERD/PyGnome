@@ -45,13 +45,25 @@ spill_type = cbt.spill_type
 # but now it maps to int64 everywhere (or all 32 bit platforms anyway)
 # recent numpy 1 doesn't have a long attribute -- but it matched int
 # numpy 2 has a long attribute, which seems to match the C long.
+is_64bit = sys.maxsize > 2**32
 if int(np.__version__.split(".")[0]) < 2:
     seconds = int
     np_long = int
 else:
     #seconds = np.long
     np_long = np.long
-    seconds = np.intp
+    if sys.platform == "win32":
+        if is_64bit:
+            seconds = np.longlong  # Maps to C 'long long' on 64-bit Windows
+        else:
+            seconds = np.intc      # Maps to C 'long' on 32-bit Windows
+    else:
+    # macOS and Linux
+#     if is_64bit:
+#         seconds = np.int_      # Maps to C 'long' on 64-bit macOS
+#     else:
+#         seconds = np.intc  	 # Maps to C 'long' on 32-bit macOS
+        seconds = np.long
     #np_long = np.intp
 
 # this is a mapping of oil_status code to the meaningful name:
