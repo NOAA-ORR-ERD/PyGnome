@@ -409,6 +409,56 @@ class TestPrepareForModelStep(object):
             assert np.all(self.sc['windages'][mask] != old_windages[mask])
 
 
+def test_variable_wind_with_2040_year_data():
+	'''
+		test to make sure the wind mover is behaving properly with
+		times past the 2038 unix 32 bit limit.
+	'''
+	time_step = 15 * 60  # yyyy/month/day/hr/min/sec
+	model_time = datetime(2040, 9, 7, 13)  # yyyy/month/day/hr/min/sec
+	sc = sample_sc_release(5, (3., 6., 0.), model_time)
+	wind_time = datetime(2040, 9, 7, 13)  # model time
+
+	time_series = (np.zeros((3, ), dtype=datetime_value_2d)
+				   .view(dtype=np.recarray))
+	time_series.time = [sec_to_date(date_to_sec(wind_time) +
+									time_step * i)
+						for i in range(3)]
+	time_series.value = np.array(((2., 25.), (2., 25.), (2., 25.)))
+
+	wind = Wind(timeseries=time_series.reshape(3),
+				units='meter per second')
+
+	wm = PointWindMover(wind)
+	wm.prepare_for_model_run()
+
+	for ix in range(2):
+		curr_time = sec_to_date(date_to_sec(model_time) +
+								time_step * ix)
+
+		wm.prepare_for_model_step(sc, time_step, curr_time)
+
+		delta = wm.get_move(sc, time_step, curr_time)
+		uv = r_theta_to_uv_wind(time_series['value'])
+		exp = np.zeros((sc.num_released, 3))
+		exp[:, 0] = sc['windages'] * uv[0, 0] * time_step
+		exp[:, 1] = sc['windages'] * uv[0, 1] * time_step
+
+		actual = FlatEarthProjection.meters_to_lonlat(exp, sc['positions'])
+
+		tol = 1e-8
+
+		msg = ('{0} is not within a tolerance of '
+			   '{1}'.format('PointWindMover.get_move()', tol))
+		np.testing.assert_allclose(delta, actual, tol, tol, msg, 0)
+		ts = date_to_sec(curr_time) - date_to_sec(model_time)
+		print(('\nTime step [sec]:\t{0}\n'
+			   'C++ delta-move:\n{1}\n'
+			   'Expected delta-move:\n{2}'
+			   ''.format(ts, delta, actual)))
+		wm.model_step_is_done()
+
+
 class TestWindMover(object):
     """
     gnome.PointWindMover() test
