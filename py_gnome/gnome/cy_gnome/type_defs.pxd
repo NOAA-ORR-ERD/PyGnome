@@ -19,11 +19,14 @@ cdef extern from "TypeDefs.h":
     ctypedef unsigned char Boolean
     ctypedef short OSErr
     ctypedef unsigned long LETYPE
-#ifdef _WIN64
-    ctypedef long long Seconds
-#else
+
+IF UNAME_SYSNAME == "Windows":
+    IF UNAME_MACHINE in ("AMD64", "x86_64", "ARM64"):
+        ctypedef long long Seconds
+    ELSE:
+        ctypedef long Seconds
+ELSE:
     ctypedef long Seconds
-#endif
 
 cdef extern from "GEOMETRY.H":
     ctypedef struct WorldPoint:
