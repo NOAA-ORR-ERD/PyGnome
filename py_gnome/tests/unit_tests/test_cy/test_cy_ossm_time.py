@@ -215,7 +215,7 @@ class TestCyTimeseries(object):
         time = np.array(self.tval_2040['time'], dtype=seconds)
 
         print("actual", actual)
-        print("ts = ", ossm.get_time_value(time), time)
+        print("ts = ", time)
         vel_rec, _err = ossm.get_time_value(time[1])
         print(vel_rec, _err)
 
