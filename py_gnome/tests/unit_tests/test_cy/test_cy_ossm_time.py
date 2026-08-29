@@ -211,8 +211,8 @@ class TestCyTimeseries(object):
     def test_get_time_value_2040(self, obj):
         ossm = obj(filename=testdata['timeseries']['wind_ts_2040'],
                     file_format=ts_format.magnitude_direction)
-        actual = np.array(self.tval_2020['value'], dtype=velocity_rec)
-        time = np.array(self.tval_2020['time'], dtype=seconds)
+        actual = np.array(self.tval_2040['value'], dtype=velocity_rec)
+        time = np.array(self.tval_2040['time'], dtype=seconds)
 
         print("actual", actual)
         print("ts = ", ossm.get_time_value(time), time)
