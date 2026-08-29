@@ -7,6 +7,7 @@ Unit tests for CyOSSMTime class
 
 
 import os
+from datetime import datetime
 
 from pytest import raises
 import pytest
@@ -16,6 +17,7 @@ import numpy as np
 # import basic_types and subsequently lib_gnome
 from gnome import basic_types
 from gnome.basic_types import ts_format, seconds, velocity_rec
+from gnome.utilities import time_utils
 
 from gnome.cy_gnome.cy_ossm_time import CyOSSMTime, CyTimeseries
 
@@ -164,15 +166,6 @@ class TestCyTimeseries(object):
     tval = np.array([(0, (1, 2)), (1, (2, 3))],
                     dtype=basic_types.time_value_pair)
 
-    tval_2040 = np.array([(2230649340, (3.0277e-12, 9.7736)), (2230670940, (3.0277e-12, 9.7736)),
-                    (2230692540, (-3.0277e-12, 9.7736)),(2230714140, (3.0277e-12, 9.7736))],
-                    dtype=basic_types.time_value_pair)
-
-    tval_2020 = np.array([(1599497340, (8.7448, -3.617e-12)), (1599518940, (3.027e-12, 9.7736)),
-                    (1599540540, (-1.183e+01, 2.4469e-12)),(1599562140, (3.14963, 7.603898))],
-                    dtype=basic_types.time_value_pair)
-
-
     def test_init_from_timeseries(self):
         """
         Sets the time series in OSSMTimeValue_c equal to the
@@ -205,26 +198,22 @@ class TestCyTimeseries(object):
         np.testing.assert_allclose(vel_rec['u'], actual['u'], tol, tol, msg, 0)
         np.testing.assert_allclose(vel_rec['v'], actual['v'], tol, tol, msg, 0)
 
-
-    #@pytest.mark.xfail()
     @pytest.mark.parametrize('obj', [CyOSSMTime, CyTimeseries])
     def test_get_time_value_2040(self, obj):
         ossm = obj(filename=testdata['timeseries']['wind_ts_2040'],
                     file_format=ts_format.magnitude_direction)
-        actual = np.array(self.tval_2040['value'], dtype=velocity_rec)
-        time = np.array(self.tval_2040['time'], dtype=seconds)
+        actual = np.array((3.0277e-12, 9.7736), dtype=velocity_rec)
+        t = time_utils.date_to_sec(datetime(2040, 9, 7, 14, 49))
 
-        print("actual", actual)
-        print("ts = ", time)
-        vel_rec, _err = ossm.get_time_value(time[1])
-        print(vel_rec, _err)
+        vel_rec, _err = ossm.get_time_value(t)
+        print(vel_rec)
 
         tol = 1e-6
         msg = ('{0} is not within a tolerance of '
                '{1}'.format('get_time_value', tol))
 
-        np.testing.assert_allclose(vel_rec['u'], actual['u'][1], tol, tol, msg, 0)
-        np.testing.assert_allclose(vel_rec['v'], actual['v'][1], tol, tol, msg, 0)
+        np.testing.assert_allclose(vel_rec['u'], actual['u'], tol, tol, msg, 0)
+        np.testing.assert_allclose(vel_rec['v'], actual['v'], tol, tol, msg, 0)
 
     def test_get_time_out_of_bounds(self):
         time_values = np.array([(1, (1, 2)), (2, (2, 3))],
