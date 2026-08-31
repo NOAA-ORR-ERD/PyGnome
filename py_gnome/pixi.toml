@@ -126,6 +126,8 @@ test313 = [ "py313", "test", "build" ]
 
 [tasks]
 # build = {cmd = "python -m build ./", default-environment = "build"}
+install_edit = { cmd = "pip install --root-user-action=ignore --force-reinstall -e ./"}
+
 build_wheel = {cmd = "python -m build --skip-dependency-check --no-isolation ./", default-environment = "build"}
 
 install = { cmd = "pip install --root-user-action=ignore --force-reinstall --no-index --find-links=./dist/  gnome", depends-on = ["build_wheel"]}

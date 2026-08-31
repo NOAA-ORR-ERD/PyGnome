@@ -39,32 +39,36 @@ spill_type = cbt.spill_type
 # NOTE: This is all so we can create numpy arrays that are compatible
 #       with the structs in the C++ code -- most of which
 #       use the old-style C types, e.g. int, short, long.
-# it turns out that with numpy1 `int` mapped to long on the
-# platform you were running on: int32 on *nix32, windows 32 and 64 and
-# int64 on *nix64
-# but now it maps to int64 everywhere (or all 32 bit platforms anyway)
-# recent numpy 1 doesn't have a long attribute -- but it matched int
-# numpy 2 has a long attribute, which seems to match the C long.
+
+# This is all a lot less complicated than it used to be
+# I *think* we can use the sized types in most (all?) places.
+
 is_64bit = sys.maxsize > 2**32
+# dont' need to support 32 bit platforms anymore
+
+if not is_64bit:
+    raise RuntimeError("pygnome is not longer supported on 32 bit systems")
+
+# don't need to support numpy < 2 either.
 if int(np.__version__.split(".")[0]) < 2:
-    seconds = int
-    np_long = int
+    raise RuntimeError("gnome does not support numpy < 2")
 else:
-    #seconds = np.long
+    seconds = np.int64
+#     #seconds = np.long
     np_long = np.long
-    if sys.platform == "win32":
-        if is_64bit:
-            seconds = np.longlong  # Maps to C 'long long' on 64-bit Windows
-        else:
-            seconds = np.intc      # Maps to C 'long' on 32-bit Windows
-    else:
-    # macOS and Linux
-#     if is_64bit:
-#         seconds = np.int_      # Maps to C 'long' on 64-bit macOS
+#     if sys.platform == "win32":
+#         if is_64bit:
+#             seconds = np.longlong  # Maps to C 'long long' on 64-bit Windows
+#         else:
+#             seconds = np.intc      # Maps to C 'long' on 32-bit Windows
 #     else:
-#         seconds = np.intc  	 # Maps to C 'long' on 32-bit macOS
-        seconds = np.long
-    #np_long = np.intp
+#     # macOS and Linux
+# #     if is_64bit:
+# #         seconds = np.int_      # Maps to C 'long' on 64-bit macOS
+# #     else:
+# #         seconds = np.intc  	 # Maps to C 'long' on 32-bit macOS
+#         seconds = np.long
+#     #np_long = np.intp
 
 # this is a mapping of oil_status code to the meaningful name:
 oil_status_map = {num: name for name, num in oil_status.__members__.items()}
