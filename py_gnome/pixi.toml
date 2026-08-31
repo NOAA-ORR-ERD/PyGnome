@@ -111,6 +111,7 @@ python = "~=3.12.0"
 [feature.py313.dependencies]
 python = "~=3.13.0"
 
+
 [environments]
 default = { features = ["py312", "dev", "test", "build"], solve-group = "default" }
 # using the oldest supported version for development
@@ -137,7 +138,7 @@ test_wheel = { cmd = "pytest --runslow tests/unit_tests/", depends-on = ["instal
 
 lint = { cmd = "ruff check gnome", default-environment = "dev"}
 
-build_docs = { cmd = "cd documentation/ && make html", depends-on = ["install"], default-environment = "build" }
+build_docs = { cmd = "cd documentation/ && make html", depends-on = ["install_wheel"], default-environment = "build" }
 
 run_testing_scripts = {cmd = "python run_all.py", cwd = "scripts/testing_scripts", depends-on = ["install_edit"]}
 
