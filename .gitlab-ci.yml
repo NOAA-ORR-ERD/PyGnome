@@ -8,8 +8,8 @@ variables:
   GIT_DEPTH: 2
 
 stages:
-  - lint
-  - test
+  - test_code
+  - test_wheels
   - build
 
 default:
@@ -18,25 +18,48 @@ default:
     - apt-get upgrade -y
     - apt-get install git g++ make libxext-dev libsm-dev libxrender-dev -y
 
-lint_pygnome:
-  stage: lint
-  allow_failure: true
-  image: $IMAGE_NAME
-  script:
-    - cd py_gnome
-    - pixi run lint
-
-test_pygnome:
-  stage: test
+test_dev:
+  stage: test_code
   allow_failure: false
   image: $IMAGE_NAME
   script:
     - cd py_gnome
     - pixi run test
 
+lint_pygnome:
+  stage: test_code
+  allow_failure: true
+  image: $IMAGE_NAME
+  script:
+    - cd py_gnome
+    - pixi run lint
+
+run_example_scripts:
+  stage: test_code
+  allow_failure: true
+  image: $IMAGE_NAME
+  script:
+    - cd py_gnome
+    - pixi run run_example_scripts
+
+run_testing_scripts:
+  stage: test_code
+  allow_failure: true
+  image: $IMAGE_NAME
+  script:
+    - cd py_gnome
+    - pixi run run_testing_scripts
+
+run_input_file_examples:
+  stage: test_code
+  allow_failure: true
+  image: $IMAGE_NAME
+  script:
+    - cd py_gnome
+    - pixi run run_input_file_examples
 
 test_pygnome_windows:
-  stage: test
+  stage: test_code
   allow_failure: false
   before_script: [] # so it won't try to install the linux stuff
   tags:
@@ -45,30 +68,14 @@ test_pygnome_windows:
     - cd py_gnome
     - pixi run test
 
-run_example_scripts:
-  stage: test
-  allow_failure: true
-  image: $IMAGE_NAME
-  script:
-    - cd py_gnome
-    - pixi run run_example_scripts
-
-run_testing_scripts:
-  stage: test
-  allow_failure: true
-  image: $IMAGE_NAME
-  script:
-    - cd py_gnome
-    - pixi run run_testing_scripts
-
-test_multi_py:
-  stage: test
+test_wheels_multi_py:
+  stage: test_wheels
   allow_failure: false
   image: $IMAGE_NAME
   script:
     - cd py_gnome
-    - pixi run -e test312 test
-    - pixi run -e test313 test
+    - pixi run -e test312 test_wheel
+    - pixi run -e test313 test_wheel
 
 build_wheels:
   stage: build
@@ -98,27 +105,3 @@ build_docs:
   script:
     - cd py_gnome
     - pixi run build_docs
-
-# Old setup -- way more complicated!
-
-# # All the scripts in "input_file_examples" should run without errors,
-# # But once in a while we refactor something that breaks something.
-# test_pygnome_input_file_examples:
-#   stage: test
-#   tags:
-#     - docker
-#   allow_failure: true
-#   image: $CI_REGISTRY$IMAGE_NAME$PYTHON_VER
-#   script:
-#     - cd ./py_gnome/scripts/input_file_examples && python run_all.py 2<&1
-
-# # make sure the example scripts run without error
-# # this can fail, but we want to be warned ...
-# test_pygnome_example_scripts:
-#   stage: test
-#   tags:
-#     - docker
-#   allow_failure: true
-#   image: $CI_REGISTRY$IMAGE_NAME$PYTHON_VER
-#   script:
-#     - cd ./py_gnome/scripts/example_scripts && python run_all.py 2<&1

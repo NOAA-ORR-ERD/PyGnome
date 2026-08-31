@@ -125,19 +125,23 @@ test313 = [ "py313", "test", "build" ]
 
 
 [tasks]
-install_edit = { cmd = "pip install --root-user-action=ignore --force-reinstall -e ./"}
+install_edit = { cmd = "pip install --no-deps --no-build-isolation -e ."}
+
+test = { cmd = "pytest --runslow tests/unit_tests/", depends-on = ["install_edit"]}
 
 build_wheel = {cmd = "python -m build --skip-dependency-check --no-isolation ./", default-environment = "build"}
 
-install = { cmd = "pip install --root-user-action=ignore --force-reinstall --no-index --find-links=./dist/  gnome", depends-on = ["build_wheel"]}
+install_wheel = { cmd = "pip install --root-user-action=ignore --force-reinstall --no-index --find-links=./dist/  gnome", depends-on = ["build_wheel"]}
 
-test = { cmd = "pytest --runslow tests/unit_tests/", depends-on = ["install"]}
+test_wheel = { cmd = "pytest --runslow tests/unit_tests/", depends-on = ["install_wheel"]}
 
 lint = { cmd = "ruff check gnome", default-environment = "dev"}
 
 build_docs = { cmd = "cd documentation/ && make html", depends-on = ["install"], default-environment = "build" }
 
-run_testing_scripts = {cmd = "python run_all.py", cwd = "scripts/testing_scripts"}
+run_testing_scripts = {cmd = "python run_all.py", cwd = "scripts/testing_scripts", depends-on = ["install_edit"]}
 
-run_example_scripts = {cmd = "python run_all.py", cwd = "scripts/example_scripts"}
+run_example_scripts = {cmd = "python run_all.py", cwd = "scripts/example_scripts", depends-on = ["install_edit"]}
+
+run_input_file_examples = {cmd = "python run_all.py", cwd = "scripts/input_file_examples", depends-on = ["install_edit"]}
 
