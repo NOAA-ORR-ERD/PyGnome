@@ -45,6 +45,21 @@ test_pygnome_windows:
     - cd py_gnome
     - pixi run test
 
+run_example_scripts:
+  stage: test
+  allow_failure: true
+  image: $IMAGE_NAME
+  script:
+    - cd py_gnome
+    - pixi run run_example_scripts
+
+run_testing_scripts:
+  stage: test
+  allow_failure: true
+  image: $IMAGE_NAME
+  script:
+    - cd py_gnome
+    - pixi run run_testing_scripts
 
 test_multi_py:
   stage: test
