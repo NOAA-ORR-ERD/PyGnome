@@ -62,6 +62,9 @@ test_pygnome_windows:
   stage: test_code
   allow_failure: false
   before_script: [] # so it won't try to install the linux stuff
+  resource_group: windows # ensures a job is mutually exclusive
+  variables:
+    GIT_CLEAN_FLAGS: "-ffdx -e py_gnome/.pixi/"
   tags:
     - windows-build-image-2026
   script:
