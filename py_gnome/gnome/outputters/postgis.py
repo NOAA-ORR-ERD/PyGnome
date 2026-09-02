@@ -1,6 +1,7 @@
 # gnome/outputters/postgis.py
 
 import logging
+
 from gnome.outputters.geo_json import TrajectoryGeoJsonOutput
 
 log = logging.getLogger(__name__)
@@ -77,7 +78,7 @@ class PostGISOutput(TrajectoryGeoJsonOutput):
         super().write_output(step_num, islast_step)
 
         if not self._write_step:
-            return None
+            return
 
         rows = []
         for sc in self.cache.load_timestep(step_num).items():
@@ -111,5 +112,3 @@ class PostGISOutput(TrajectoryGeoJsonOutput):
                 self._persist(rows)
             except Exception:
                 log.exception("persist failed at step %d", step_num)
-
-        return None
