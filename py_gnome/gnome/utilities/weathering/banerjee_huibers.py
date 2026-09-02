@@ -1,7 +1,6 @@
 
 import numpy as np
 
-
 # class Toluene(object):
 #     '''
 #         The measured values of the known aromatic, toluene
@@ -11,7 +10,7 @@ import numpy as np
 #     k_ow = 1000.0
 #
 
-class BanerjeeHuibers(object):
+class BanerjeeHuibers:
     '''
         The combination of correlations by Huibers and Katritzky (1998)
         and Banerjee et al (1980) to estimate the correlation between

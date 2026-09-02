@@ -11,7 +11,6 @@ Define general purpose functions that can used as validators
 import time
 
 import numpy as np
-
 from colander import Invalid
 
 from gnome.utilities.inf_datetime import InfTime, MinusInfTime
@@ -24,7 +23,7 @@ def positive(node, value):
 
 def convertible_to_seconds(node, value):
     """ validate only datetime objects """
-    if isinstance(value, MinusInfTime) or isinstance(value, InfTime):
+    if isinstance(value, (MinusInfTime, InfTime)):
         return
 
     try:
@@ -49,7 +48,7 @@ def no_duplicate_datetime(node, values):
     if num_dups:
         raise Invalid(node,
                       'Duplicate time entries are not allowed. '
-                      'Found {0} duplicates.'.format(num_dups))
+                      f'Found {num_dups} duplicates.')
 
 
 def ascending_datetime(node, values):

@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 generates a text file with the base64encoded contentes of the icons
 """

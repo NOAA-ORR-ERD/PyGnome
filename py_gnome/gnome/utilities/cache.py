@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 
 """
 cache system for caching element data on disk for
@@ -6,18 +5,16 @@ accessing again for output, etc.
 
 """
 
-import os
-import warnings
-import tempfile
-import shutil
 import copy
+import os
+import shutil
+import tempfile
+import warnings
 from multiprocessing import Lock
-import atexit
 
 import numpy as np
 
-from gnome.spill_container import (SpillContainerData,
-                                   SpillContainerPairData)
+from gnome.spill_container import SpillContainerData, SpillContainerPairData
 
 # create a temp dir for this python instance
 # this should happen once, on first import
@@ -33,7 +30,6 @@ global_cache_dir = _CacheDirObject.name
 
 class CacheError(Exception):
     'Here so we can be sure the user knows the error is coming from here'
-    pass
 
 # No longer needed -- tempfile.TemporaryDirectory takes care of this for us
 # but it's used in a test, so ...
@@ -61,7 +57,7 @@ def clean_up_cache(dir_name=global_cache_dir):
 # atexit.register(clean_up_cache)
 
 
-class ElementCache():
+class ElementCache:
     """
     Cache for element data -- i.e. the data associated with the particles.
     This caches UncertainSpillContainerPair
@@ -110,10 +106,10 @@ class ElementCache():
         """
         if uncertain:
             return os.path.join(self._cache_dir,
-                                'step_%06i_uncert.npz' % step_num)
+                                f'step_{step_num:06d}_uncert.npz')
         else:
             return os.path.join(self._cache_dir,
-                                'step_%06i.npz' % step_num)
+                                f'step_{step_num:06d}.npz')
 
     def _create_new_dir(self, cache_dir=None):
         if cache_dir is None:
@@ -182,15 +178,15 @@ class ElementCache():
             try:
                 data_arrays = dict(np.load(self._make_filename(step_num),
                                            allow_pickle=True))
-            except IOError:
-                raise CacheError('step: {0} is not in the cache'
-                                 .format(step_num))
+            except OSError:
+                raise CacheError(f'step: {step_num} is not in the cache'
+                                 )
 
             try:
                 u_data_arrays = dict(np.load(self._make_filename(step_num,
                                                                  True),
                                              allow_pickle=True))
-            except IOError:
+            except OSError:
                 u_data_arrays = None
 
         # HOWEVER, loading numpy arrays

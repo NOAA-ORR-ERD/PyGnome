@@ -2,22 +2,18 @@
 NetCDF outputter - write the nc_particles netcdf file format
 '''
 import os
-from datetime import datetime
 import zipfile
+from datetime import datetime
 
 import netCDF4 as nc
-
 import numpy as np
-
-from colander import SchemaNode, String, Boolean, drop, Int, Bool
+from colander import Bool, Boolean, SchemaNode, String, drop
 
 from gnome._version import __version__
 from gnome.basic_types import oil_status, world_point_type
 from gnome.persist.extend_colander import FilenameSchema
 
-
-from .outputter import Outputter, BaseOutputterSchema, OutputterFilenameMixin
-
+from .outputter import BaseOutputterSchema, Outputter, OutputterFilenameMixin
 
 # Big dict that stores the attributes for the standard data arrays
 # in the output - these are constants. The instance var_attributes are stored
@@ -35,7 +31,6 @@ var_attributes = {
     'time': {'long_name': 'time since the beginning of the simulation',
              'standard_name': 'time',
              'calendar': 'gregorian',
-             'standard_name': 'time',
              'comment': 'unspecified time zone',
              # units will get set based on data
              },
@@ -224,7 +219,7 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
     compress_lu = {True, False}
 
     cf_attributes = {'comment': 'Particle output from the NOAA PyGnome model',
-                     'source': 'PyGnome version {0}'.format(__version__),
+                     'source': f'PyGnome version {__version__}',
                      'references': 'TBD',
                      'feature_type': 'particle_trajectory',
                      'institution': 'NOAA Emergency Response Division',
@@ -249,10 +244,10 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
                        ]
 
     # these are being handled specially -- i.e. pulled from the positions array
-    special_arrays = set(('latitude',
+    special_arrays = {'latitude',
                           'longitude',
                           'depth',
-                          ))
+                          }
 
     # the list of arrays that we usually don't want -- i.e. for internal use
     # these will get skipped if "most" is asked for
@@ -331,15 +326,15 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
 
         # uncertain file is only written out if model is uncertain
 
-        super(NetCDFOutput, self).__init__(filename=filename,
+        super().__init__(filename=filename,
                                            surface_conc=surface_conc,
                                            # _middle_of_run,
                                            **kwargs)
 
         name, ext = os.path.splitext(self.filename)
-        self._u_filename = '{0}_uncertain{1}'.format(name, ext)
+        self._u_filename = f'{name}_uncertain{ext}'
         self.forecast_filename = self.filename
-        self.zip_filename = '{0}.{1}'.format(name, 'zip')
+        self.zip_filename = '{}.{}'.format(name, 'zip')
 
         # fixme: move to base class?
         self.name = os.path.split(filename)[1]
@@ -450,11 +445,11 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
         '''
         update instance specific self._var_attributes
         '''
-        names = " ".join(["{0}: {1}, ".format(ix, spill.name)
+        names = " ".join([f"{ix}: {spill.name}, "
                           for ix, spill in enumerate(spills)])
         self._var_attributes['spill_num']['spills_map'] = names
 
-        self._var_attributes['time']['units'] = ('seconds since {0}'
+        self._var_attributes['time']['units'] = ('seconds since {}'
                                                  .format(self._model_start_time
                                                          .isoformat()))
 
@@ -562,7 +557,7 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
         if not self.on:
             return
 
-        super(NetCDFOutput, self).prepare_for_model_run(model_start_time,
+        super().prepare_for_model_run(model_start_time,
                                                         spills, **kwargs)
 
         # this should have been called by the super class version
@@ -690,18 +685,17 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
 #                                          zlib=self._compress)
         except RuntimeError as err:
             msg = ("\narguments are:\n"
-                   "\tvar_name: {}\n"
-                   "\tdtype: {}\n"
-                   "\tshape: {}\n"
-                   "\tdims: {}\n"
-                   "\tzlib: {}\n"
-                   "\tchunksizes: {}\n"
-                   .format(var_name, dtype, shape, grp.dimensions,
-                           self._compress, chunksz))
+                   f"\tvar_name: {var_name}\n"
+                   f"\tdtype: {dtype}\n"
+                   f"\tshape: {shape}\n"
+                   f"\tdims: {grp.dimensions}\n"
+                   f"\tzlib: {self._compress}\n"
+                   f"\tchunksizes: {chunksz}\n"
+                   )
 
             err.args = (err.args[0] + msg,)
 
-            raise err
+            raise
 
         if var_name in var_attributes:
             var.setncatts(var_attributes[var_name])
@@ -724,7 +718,7 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
 
         Use super to call base class write_output method
         """
-        super(NetCDFOutput, self).write_output(step_num, islast_step)
+        super().write_output(step_num, islast_step)
 
         # if self.on is False or not self._write_step:
         if self.on is False:
@@ -806,9 +800,8 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
 
         # Guard against being called twice
         # shouldn't be necessary, but the model is buggy in this regard ...
-        if not self.cleaned_up:
-            if self.zip_output is True:
-                self._zip_output_files()
+        if not self.cleaned_up and self.zip_output is True:
+            self._zip_output_files()
         self.cleaned_up = True
 
     def _zip_output_files(self):
@@ -822,7 +815,7 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
         os.remove(forcst_file)
         if self.uncertain is True:
             uncrtn_file = self._u_filename
-            dir, file_to_zip = os.path.split(uncrtn_file)
+            _dir, file_to_zip = os.path.split(uncrtn_file)
             zipf.write(uncrtn_file,
                        arcname=file_to_zip)
             os.remove(uncrtn_file)
@@ -854,7 +847,7 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
         internal variables.
 
         '''
-        super(NetCDFOutput, self).rewind()
+        super().rewind()
 
         self._start_idx = 0
         self._start_idx_u = 0
@@ -925,7 +918,7 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
         """
 
         if not os.path.exists(netcdf_file):
-            raise IOError('File not found: {0}'.format(netcdf_file))
+            raise OSError(f'File not found: {netcdf_file}')
 
         arrays_dict = {}
         with nc.Dataset(netcdf_file) as data:
@@ -1024,7 +1017,7 @@ class NetCDFOutput(Outputter, OutputterFilenameMixin):
         return (arrays_dict, weathering_data)
 
     def to_dict(self, json_=None):
-        dict_ = super(NetCDFOutput, self).to_dict(json_)
+        dict_ = super().to_dict(json_)
         if json_ == 'save':
             dict_['filename'] = os.path.join('./', dict_['filename'])
         return dict_

@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# coding=utf8
 """
 Module to hold classes and suporting code for the map canvas for GNOME:
 
@@ -13,19 +11,17 @@ GNOME-specific.
 """
 import bisect
 
+import nucos as uc
 import numpy as np
-
 import py_gd
 import py_gd.color_ramp
 from py_gd.colors import colorscheme_names
-
-import nucos as uc
 
 from gnome.utilities.projections import FlatEarthProjection
 
 AVAILABLE_COLORAMPS = [name[0] for name in colorscheme_names if name[1] == 'continuous']
 
-class MapCanvas(object):
+class MapCanvas:
     """
     A class to draw maps, etc.
 
@@ -103,7 +99,7 @@ class MapCanvas(object):
 
         self.projection.set_scale(self.viewport, self.image_size)
         self.graticule = GridLines(self._viewport, self.projection)
-        super(MapCanvas, self).__init__()
+        super().__init__()
 
     def viewport_to_dict(self):
         '''
@@ -476,7 +472,7 @@ class MapCanvas(object):
                              self.back_image.size)
 
 
-class GridLines(object):
+class GridLines:
     """
     class to hold logic for determining where the gridlines should be
     for the graticule
@@ -508,7 +504,6 @@ class GridLines(object):
                  DEGREE * 40)
     DMS_COUNT = len(DMS_STEPS)
 
-    DEGREE = np.float64(1.0)
     TENTH = DEGREE / 10.0
     HUNDREDTH = DEGREE / 100.0
     THOUSANDTH = DEGREE / 1000.0
@@ -607,10 +602,10 @@ class GridLines(object):
 
         vertical_lines = np.array([((x * self.current_interval, 0),
                                     (x * self.current_interval, top))
-                                   for x in range(0, self.lon_lines + 4)])
+                                   for x in range(self.lon_lines + 4)])
         horizontal_lines = np.array([((0, y * self.current_interval),
                                       (right, y * self.current_interval))
-                                     for y in range(0, self.lat_lines + 4)])
+                                     for y in range(self.lat_lines + 4)])
 
         # shift lines into position
         delta = ((minlon // self.current_interval - 1) * self.current_interval,
@@ -646,10 +641,10 @@ class GridLines(object):
         self.lat_lines = self.max_lines if self.ref_dim == 'h' else None
 
         if self.lon_lines is None:
-            self.lon_lines = int(round(self.lat_lines * ratio))
+            self.lon_lines = round(self.lat_lines * ratio)
 
         if self.lat_lines is None:
-            self.lat_lines = int(round(self.lon_lines / ratio))
+            self.lat_lines = round(self.lon_lines / ratio)
 
     def set_max_lines(self, max_lines=None):
         """
@@ -708,25 +703,25 @@ class GridLines(object):
             else:
                 value = line[0][1]
                 hemi = 'N' if value > 0 else 'S'
-            tag = ("{0:.2f}".format(value)
+            tag = (f"{value:.2f}"
                    if not self.DMS
                    else uc.LatLongConverter.ToDegMinSec(value, ustring=False))
 
             if self.DMS:
                 degrees = int(abs(tag[0]))
                 minutes = int(tag[1])
-                seconds = int(round(tag[2]))
+                seconds = round(tag[2])
 
                 if seconds == 60:
                     minutes += 1
                     seconds = 0
 
                 if seconds != 0:
-                    tag = "%id%i'%i\"%c" % (degrees, minutes, seconds, hemi)
+                    tag = f"{degrees}d{minutes}'{seconds}\"{hemi}"
                 elif minutes != 0:
-                    tag = "%id%i'%c" % (degrees, minutes, hemi)
+                    tag = f"{degrees}d{minutes}'{hemi}"
                 else:
-                    tag = "%id%c" % (degrees, hemi)
+                    tag = f"{degrees}d{hemi}"
 
             top = self.projection.image_box[1][1]
             left = self.projection.image_box[0][0]
@@ -739,7 +734,7 @@ class GridLines(object):
         return tags
 
 
-class Viewport(object):
+class Viewport:
     """
     Viewport
 

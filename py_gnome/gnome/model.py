@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 
 """
 module with the core Model class, and various supporting classes
@@ -33,65 +32,64 @@ model run and in subsequent steps the model moves and weathers elements.
 
 """
 
-import os
-from datetime import datetime, timedelta
-import zipfile
-from pprint import pformat
 import copy
+import itertools
+import os
 import warnings
+import zipfile
+from datetime import datetime, timedelta
+from pprint import pformat
 
 import numpy as np
+from colander import Bool, Float, Int, List, OneOf, SchemaNode, String, drop
 
-from colander import (SchemaNode,
-                      String, Float, Int, Bool, List,
-                      drop, OneOf)
-
-from gnome.utilities.time_utils import round_time, asdatetime, TZOffset, TZOffsetSchema
 import gnome.utilities.rand
+from gnome.array_types import gat
+from gnome.basic_types import fate, oil_status
+from gnome.environment import Environment, Wind
+from gnome.environment import schemas as env_schemas
+from gnome.exceptions import GnomeRuntimeError, ReferencedObjectNotSet
+from gnome.gnomeobject import GnomeId, Refs, allowzip64
+from gnome.maps.map import (
+    GnomeMap,
+    GnomeMapSchema,
+    MapFromBNASchema,
+    MapFromUGridSchema,
+    ParamMapSchema,
+)
+from gnome.movers import Mover, mover_schemas
+from gnome.ops import (
+    aggregated_data,
+    non_weathering_array_types,
+    weathering_array_types,
+)
+from gnome.ops.density import recalc_density
+from gnome.ops.viscosity import recalc_viscosity
+from gnome.outputters import NetCDFOutput, Outputter, WeatheringOutput
+from gnome.outputters import schemas as out_schemas
+from gnome.persist import extend_colander, validators
+from gnome.persist.base_schema import (
+    GeneralGnomeObjectSchema,
+    ObjTypeSchema,
+)
+from gnome.persist.extend_colander import OrderedCollectionSchema
+from gnome.spill_container import SpillContainerPair
+from gnome.spills.spill import SpillSchema
+from gnome.spills.substance import NonWeatheringSubstance
+from gnome.utilities.appearance import AppearanceSchema
 from gnome.utilities.cache import ElementCache
 from gnome.utilities.orderedcollection import OrderedCollection
-from gnome.spill_container import SpillContainerPair
-from gnome.basic_types import oil_status, fate
-
-from gnome.maps.map import (GnomeMapSchema,
-                            MapFromBNASchema,
-                            ParamMapSchema,
-                            MapFromUGridSchema,
-                            GnomeMap)
-
-from gnome.environment import Environment, Wind
-from gnome.environment.water import Water
-from gnome.array_types import gat
-from gnome.environment import schemas as env_schemas
-
-from gnome.movers import Mover, mover_schemas
-from gnome.weatherers import (weatherer_sort,
-                              Weatherer,
-                              FayGravityViscous,
-                              Langmuir,
-                              weatherer_schemas,
-                              weatherers_by_name,
-                              standard_weatherering_sets,
-                              response_weatherers,
-                              )
-from gnome.outputters import Outputter, NetCDFOutput, WeatheringOutput
-from gnome.outputters import schemas as out_schemas
-from gnome.persist import (extend_colander,
-                           validators,
-                           References)
-from gnome.persist.base_schema import (ObjTypeSchema,
-                                       CollectionItemsList,
-                                       GeneralGnomeObjectSchema)
-from gnome.exceptions import ReferencedObjectNotSet, GnomeRuntimeError
-from gnome.spills.spill import SpillSchema
-from gnome.gnomeobject import GnomeId, allowzip64, Refs
-from gnome.persist.extend_colander import OrderedCollectionSchema
-from gnome.spills.substance import NonWeatheringSubstance
-
-from gnome.ops import aggregated_data, weathering_array_types, non_weathering_array_types
-from gnome.ops.viscosity import recalc_viscosity
-from gnome.ops.density import recalc_density
-from gnome.utilities.appearance import AppearanceSchema
+from gnome.utilities.time_utils import TZOffset, TZOffsetSchema, asdatetime, round_time
+from gnome.weatherers import (
+    FayGravityViscous,
+    Langmuir,
+    Weatherer,
+    response_weatherers,
+    standard_weatherering_sets,
+    weatherer_schemas,
+    weatherer_sort,
+    weatherers_by_name,
+)
 
 
 class ModelSchema(ObjTypeSchema):
@@ -190,8 +188,8 @@ class Model(GnomeId):
         if not isinstance(model, cls):
             raise ValueError('This does not appear to be a save file '
                              'for a model\n'
-                             'loaded a {} instead'
-                             .format(type(model)))
+                             f'loaded a {type(model)} instead'
+                             )
         else:
             return model
 
@@ -206,13 +204,13 @@ class Model(GnomeId):
                  cache_enabled=False,
                  mode=None,
                  make_default_refs=True,
-                 location=[],
-                 environment=[],
-                 outputters=[],
-                 movers=[],
-                 weatherers=[],
-                 spills=[],
-                 uncertain_spills=[],
+                 location=None,
+                 environment=None,
+                 outputters=None,
+                 movers=None,
+                 weatherers=None,
+                 spills=None,
+                 uncertain_spills=None,
                  #manual_weathering=False,
                  weathering_activated=False,
                  run_backwards=False,
@@ -253,7 +251,21 @@ class Model(GnomeId):
                              decide which UI views it should present.
         '''
         # making sure basic stuff is in place before properties are set
-        super(Model, self).__init__(name=name, **kwargs)
+        if uncertain_spills is None:
+            uncertain_spills = []
+        if spills is None:
+            spills = []
+        if weatherers is None:
+            weatherers = []
+        if movers is None:
+            movers = []
+        if outputters is None:
+            outputters = []
+        if environment is None:
+            environment = []
+        if location is None:
+            location = []
+        super().__init__(name=name, **kwargs)
         self.environment = OrderedCollection(dtype=Environment)
         self.movers = OrderedCollection(dtype=Mover)
         self.weatherers = OrderedCollection(dtype=Weatherer)
@@ -284,14 +296,14 @@ class Model(GnomeId):
         if weathering_substeps != 1:
             if weathering_substeps > 1:
                 msg = ('Setting weathering_subteps > 1 has not been well tested. '
-                       'Use at your own risk: weathering_substeps = {0}'
-                       .format(weathering_substeps))
+                       f'Use at your own risk: weathering_substeps = {weathering_substeps}'
+                       )
                 #self.logger.warning(msg)
                 warnings.warn('warning: ' + msg)
             else:
-                raise ValueError('Weathering_substeps = {} is invalid, '
+                raise ValueError(f'Weathering_substeps = {weathering_substeps} is invalid, '
                                  'should be >= 1'
-                                 .format(weathering_substeps))
+                                 )
 
         self.weathering_substeps = weathering_substeps
 
@@ -384,10 +396,9 @@ class Model(GnomeId):
             try:
                 self.weatherers += weatherers_by_name[wx_name.lower()]()
             except KeyError:
-                raise ValueError("{} is not a valid weatherer. \n"
+                raise ValueError(f"{wx_name} is not a valid weatherer. \n"
                                  "The options are:"
-                                 " {}".format(wx_name,
-                                              list(weatherers_by_name.keys())))
+                                 f" {list(weatherers_by_name.keys())}")
 
     def reset(self, **kwargs):
         '''
@@ -479,8 +490,8 @@ class Model(GnomeId):
                 try:
                     setattr(self, k, attrs[k])
                 except AttributeError:
-                    self.logger.error('Failed to set {} on {} to {}'
-                                         .format(k, self, v))
+                    self.logger.error(f'Failed to set {k} on {self} to {v}'
+                                         )
                     raise
                 attrs.pop(k)
 
@@ -493,8 +504,8 @@ class Model(GnomeId):
                 try:
                     setattr(self, k, v)
                 except AttributeError:
-                    self.logger.error('Failed to set {} on {} to {}'
-                                         .format(k, self, v))
+                    self.logger.error(f'Failed to set {k} on {self} to {v}'
+                                         )
                     raise
 
         return updated
@@ -559,18 +570,18 @@ class Model(GnomeId):
 
     @property
     def has_weathering_uncertainty(self):
-        return (any([w.on for w in self.weatherers]) and
+        return (any(w.on for w in self.weatherers) and
                 len([o for o in self.outputters
                      if isinstance(o, WeatheringOutput)]) > 0 and
-                (any([s.amount_uncertainty_scale > 0.0
-                     for s in self.spills]) or
-                 any([w.speed_uncertainty_scale > 0.0
+                (any(s.amount_uncertainty_scale > 0.0
+                     for s in self.spills) or
+                 any(w.speed_uncertainty_scale > 0.0
                      for w in self.environment
-                     if isinstance(w, Wind)])))
+                     if isinstance(w, Wind))))
 
     @property
     def has_weathering(self):
-        return any([w.on for w in self.weatherers])
+        return any(w.on for w in self.weatherers)
 
     @property
     def has_response_options(self):
@@ -744,7 +755,7 @@ class Model(GnomeId):
         for item in collection:
             try:
                 if not isinstance(getattr(item, attr), str):
-                    if any([value == v for v in getattr(item, attr)]):
+                    if any(value == v for v in getattr(item, attr)):
                         if allitems:
                             items.append(item)
                         else:
@@ -777,7 +788,7 @@ class Model(GnomeId):
         #Begin by attaching references to self. Model doesn't need any special
         #behavior, so just call super. If special behavior is necessary beyond
         #simply going for the first-in-line, it is defined here.
-        super(Model, self)._attach_default_refs(ref_dict)
+        super()._attach_default_refs(ref_dict)
 
         # gathering references IS OPTIONAL. If you are expecting relevant refs
         # to have already been collected by a parent, this may be skipped.
@@ -820,7 +831,7 @@ class Model(GnomeId):
         '''
 
         # Step 1: Set up special objects
-        weather_data = dict()
+        weather_data = {}
 
         # FIXME: this should not be handled explicitly by the model
         spread = None
@@ -863,7 +874,7 @@ class Model(GnomeId):
         self._order_weatherers()
 
         # Step 3: Compile array_types and run setup on spills
-        array_types = dict()
+        array_types = {}
 
         # setup basic array types. non_weathering is subset of weathering
         array_types.update(non_weathering_array_types)
@@ -945,8 +956,8 @@ class Model(GnomeId):
                                             map=self.map,
                                             model_name=self.name,
                                             timezone_offset=self.timezone_offset)
-        self.logger.debug("{0._pid} setup_model_run complete for: "
-                          "{0.name}".format(self))
+        self.logger.debug(f"{self._pid} setup_model_run complete for: "
+                          f"{self.name}")
 
     def post_model_run(self):
         '''
@@ -1100,7 +1111,7 @@ class Model(GnomeId):
 
         indexes = [idx for idx in range(0, time_step + 1, sub_step)]
         res = [(idx, next_idx - idx)
-               for idx, next_idx in zip(indexes, indexes[1:])]
+               for idx, next_idx in itertools.pairwise(indexes)]
 
         if sum(res[-1]) < time_step:
             # collect the remaining slice
@@ -1204,7 +1215,7 @@ class Model(GnomeId):
             # initializes it. Thus, do StopIteration check after
             # setup_model_run() is invoked
             self.post_model_run()
-            raise StopIteration("Run complete for {0}".format(self.name))
+            raise StopIteration(f"Run complete for {self.name}")
 
         else:
             # catch mid run errors so outputters can still write files
@@ -1225,7 +1236,7 @@ class Model(GnomeId):
                                       self.model_time)
                 output_info = self.output_step(isValid)
                 return output_info
-            except Exception as ex:
+            except Exception:
                 self.post_model_run()
                 # might only want to write files for out of time errors
                 #if "not within the bounds" in str(ex):
@@ -1237,9 +1248,9 @@ class Model(GnomeId):
         self._cache.save_timestep(self.current_time_step, self.spills)
         output_info = self.write_output(isvalid)
 
-        self.logger.debug('{0._pid} '
-                          'Completed step: {0.current_time_step} for {0.name}'
-                          .format(self))
+        self.logger.debug(f'{self._pid} '
+                          f'Completed step: {self.current_time_step} for {self.name}'
+                          )
         return output_info
 
     def release_elements(self, start_time, end_time):
@@ -1272,9 +1283,8 @@ class Model(GnomeId):
 
             aggregated_data.aggregate(sc, num_released)
 
-            self.logger.debug("{1._pid} released {0} new elements for step:"
-                              " {1.current_time_step} for {1.name}".
-                              format(num_released, self))
+            self.logger.debug(f"{self._pid} released {num_released} new elements for step:"
+                              f" {self.current_time_step} for {self.name}")
 
         return num_released
 
@@ -1332,7 +1342,7 @@ class Model(GnomeId):
         while True:
             try:
                 results = self.step()
-                self.logger.info("ran step: {}".format(self._current_time_step))
+                self.logger.info(f"ran step: {self._current_time_step}")
                 self.logger.debug(pformat(results))
                 output_data.append(results)
             except StopIteration:
@@ -1355,29 +1365,24 @@ class Model(GnomeId):
 
              perhaps all objects could have a "need_env_objects" attribute?
         '''
-        if hasattr(obj_added, 'wind') and obj_added.wind is not None:
-            if obj_added.wind not in self.environment:
-                self.logger.info(f'adding wind {obj_added.wind.name}, id:{obj_added.wind.id}')
-                self.environment += obj_added.wind
+        if hasattr(obj_added, 'wind') and obj_added.wind is not None and obj_added.wind not in self.environment:
+            self.logger.info(f'adding wind {obj_added.wind.name}, id:{obj_added.wind.id}')
+            self.environment += obj_added.wind
 
-        if hasattr(obj_added, 'tide') and obj_added.tide is not None:
-            if obj_added.tide not in self.environment:
-                self.logger.info(f'adding tide {obj_added.tide.name}, id:{obj_added.tide.id}')
-                self.environment += obj_added.tide
+        if hasattr(obj_added, 'tide') and obj_added.tide is not None and obj_added.tide not in self.environment:
+            self.logger.info(f'adding tide {obj_added.tide.name}, id:{obj_added.tide.id}')
+            self.environment += obj_added.tide
 
-        if hasattr(obj_added, 'waves') and obj_added.waves is not None:
-            if obj_added.waves not in self.environment:
-                self.logger.info(f'adding waves {obj_added.waves.name}, id:{obj_added.waves.id}')
-                self.environment += obj_added.waves
+        if hasattr(obj_added, 'waves') and obj_added.waves is not None and obj_added.waves not in self.environment:
+            self.logger.info(f'adding waves {obj_added.waves.name}, id:{obj_added.waves.id}')
+            self.environment += obj_added.waves
 
-        if hasattr(obj_added, 'water') and obj_added.water is not None:
-            if obj_added.water not in self.environment:
-                self.logger.info(f'adding water {obj_added.water.name}, id:{obj_added.water.id}')
-                self.environment += obj_added.water
-        if hasattr(obj_added, 'current') and obj_added.current is not None:
-            if obj_added.current not in self.environment:
-                self.logger.info(f'adding current {obj_added.current.name}, id:{obj_added.current.id}')
-                self.environment += obj_added.current
+        if hasattr(obj_added, 'water') and obj_added.water is not None and obj_added.water not in self.environment:
+            self.logger.info(f'adding water {obj_added.water.name}, id:{obj_added.water.id}')
+            self.environment += obj_added.water
+        if hasattr(obj_added, 'current') and obj_added.current is not None and obj_added.current not in self.environment:
+            self.logger.info(f'adding current {obj_added.current.name}, id:{obj_added.current.id}')
+            self.environment += obj_added.current
 
     def _callback_add_mover(self, obj_added):
         'Callback after mover has been added'
@@ -1403,7 +1408,7 @@ class Model(GnomeId):
         self.rewind()
 
     def __eq__(self, other):
-        check = super(Model, self).__eq__(other)
+        check = super().__eq__(other)
         if check:
             # also check the data in ordered collections
             if not isinstance(self.spills, other.spills.__class__):
@@ -1479,7 +1484,7 @@ class Model(GnomeId):
         save the data in the SpillContainer's if it is a mid-run save.
 
         '''
-        json_, saveloc, refs = super(Model, self).save(saveloc=saveloc,
+        json_, saveloc, refs = super().save(saveloc=saveloc,
                                                        refs=refs,
                                                        overwrite=overwrite)
 
@@ -1550,7 +1555,7 @@ class Model(GnomeId):
             # it's not a path, could be an open zip file, or ...
             pass
 
-        new_model = super(Model, cls).load(saveloc=saveloc,
+        new_model = super().load(saveloc=saveloc,
                                            filename=filename,
                                            refs=refs)
         # Since the model may have saved mid-run, need to try and load
@@ -1573,21 +1578,20 @@ class Model(GnomeId):
             spill_data = saveloc.extract(nc_file)
             if self.uncertain:
                 spill_data_fname, ext = os.path.splitext(nc_file)
-                ufname = '{0}_uncertain{1}'.format(spill_data_fname, ext)
+                ufname = f'{spill_data_fname}_uncertain{ext}'
                 u_spill_data = saveloc.extract(ufname)
         else:
-            if os.path.isdir(saveloc):
-                if filename:
-                    saveloc = os.path.join(saveloc, filename)
-                    with zipfile.ZipFile(saveloc, 'r') as z:
-                        if nc_file not in z.namelist():
-                            return
-                        spill_data = z.extract(nc_file)
-                        if self.uncertain:
-                            spill_data_fname, ext = os.path.splitext(nc_file)
-                            fname = ('{0}_uncertain{1}'
-                                     .format(spill_data_fname, ext))
-                            u_spill_data = z.extract(fname)
+            if os.path.isdir(saveloc) and filename:
+                saveloc = os.path.join(saveloc, filename)
+                with zipfile.ZipFile(saveloc, 'r') as z:
+                    if nc_file not in z.namelist():
+                        return
+                    spill_data = z.extract(nc_file)
+                    if self.uncertain:
+                        spill_data_fname, ext = os.path.splitext(nc_file)
+                        fname = (f'{spill_data_fname}_uncertain{ext}'
+                                 )
+                        u_spill_data = z.extract(fname)
 
         if spill_data is None:
             return
@@ -1659,7 +1663,7 @@ class Model(GnomeId):
         isWeatherable = False
         num_spills = len(self.spills)
         if num_spills == 0:
-            msg = '{0} contains no spills'.format(self.name)
+            msg = f'{self.name} contains no spills'
             self.logger.warning(msg)
             msgs.append(self._warn_pre + msg)
 
@@ -1671,15 +1675,13 @@ class Model(GnomeId):
 
                 start_pos = copy.deepcopy(spill.start_position)
                 if not start_pos[2] >= 0:
-                    msg = ('Depth of spill is negative, spill is above the surface: {0}'.
-                           format(start_pos))
+                    msg = (f'Depth of spill is negative, spill is above the surface: {start_pos}')
                     self.logger.warning(msg)
                     msgs.append(self._warn_pre + msg)
                     warnings.warn('warning: ' + msg)
 
                 if not np.all(self.map.on_map(start_pos)) :
-                    msg = ('{0} has start position outside of map bounds'.
-                           format(spill.name))
+                    msg = (f'{spill.name} has start position outside of map bounds')
                     self.logger.warning(msg)
 
                     msgs.append(self._warn_pre + msg)
@@ -1687,16 +1689,14 @@ class Model(GnomeId):
                 elif hasattr(spill, 'end_position') and not np.all(spill.end_position == spill.start_position):
                     end_pos = copy.deepcopy(spill.end_position)
                     if not np.all(self.map.on_map(end_pos)):
-                        msg = ('{0} has start position outside of map bounds'.
-                               format(spill.name))
+                        msg = (f'{spill.name} has start position outside of map bounds')
                         self.logger.warning(msg)
 
                         msgs.append(self._warn_pre + msg)
 
                 # land check needs to be updated for Spatial Release
                 if np.any(self.map.on_land(start_pos)):
-                    msg = ('{0} has start position on land'.
-                           format(spill.name))
+                    msg = (f'{spill.name} has start position on land')
                     self.logger.warning(msg)
 
                     msgs.append(self._warn_pre + msg)
@@ -1705,8 +1705,7 @@ class Model(GnomeId):
                       and not np.all(spill.end_position == spill.start_position)):
                     end_pos = copy.deepcopy(spill.end_position)
                     if np.any(self.map.on_land(end_pos)):
-                        msg = ('{0} has start position on land'.
-                               format(spill.name))
+                        msg = (f'{spill.name} has start position on land')
                         self.logger.warning(msg)
 
                         msgs.append(self._warn_pre + msg)
@@ -1722,20 +1721,19 @@ class Model(GnomeId):
 
                 if ((spill.release_time > self.start_time and self.time_step > 0)
                       or (spill.release_time < self.start_time and self.time_step < 0)):
-                    msg = ('{0} has release time after model start time'.
-                           format(spill.name))
+                    msg = (f'{spill.name} has release time after model start time')
                     self.logger.warning(msg)
 
                     msgs.append(self._warn_pre + msg)
 
                 elif ((spill.release_time < self.start_time and self.time_step > 0)
                       or (spill.release_time > self.start_time and self.time_step < 0)):
-                    msg = ('{0} has release time before model start time: rt = {1}, st = {2}'
-                           .format(spill.name, spill.release_time, self.start_time))
+                    msg = (f'{spill.name} has release time before model start time: rt = {spill.release_time}, st = {self.start_time}'
+                           )
                     self.logger.error(msg)
 
-                    msgs.append('error: {}: {}'
-                                .format(self.__class__.__name__, msg))
+                    msgs.append(f'error: {self.__class__.__name__}: {msg}'
+                                )
                     isValid = False
 
                 # note this is never triggered because end_rt < start_rt causes error on init
@@ -1754,11 +1752,11 @@ class Model(GnomeId):
                         water_temp = spill.substance.water.get('temperature')
 
                         if water_temp < pour_point:
-                            msg = ('The water temperature, {0} K, '
+                            msg = (f'The water temperature, {water_temp} K, '
                                    'is less than the minimum pour point '
-                                   'of the selected oil, {1} K.  '
+                                   f'of the selected oil, {pour_point} K.  '
                                    'The results may be unreliable.'
-                                   .format(water_temp, pour_point))
+                                   )
 
                             self.logger.warning(msg)
                             msgs.append(self._warn_pre + msg)
@@ -1802,9 +1800,9 @@ class Model(GnomeId):
             # note: there is a BoundingBox class in utilities.geometry with an "overlaps" method.
             if (bounds[1][0] < map_bounding_box[0][0] or bounds[0][0] > map_bounding_box[1][0] or
                 bounds[1][1] < map_bounding_box[0][1] or bounds[0][1] > map_bounding_box[1][1]):
-                msg = ('One of the movers - {0} - does not overlap with the map bounds. '
+                msg = (f'One of the movers - {mover.name} - does not overlap with the map bounds. '
                        'Check that they are in the same longitude coordinate system'
-                        .format(mover.name))
+                        )
                 self.logger.warning(msg)  # for now make this a warning
                 msgs.append('warning: ' + self.__class__.__name__ + ': ' + msg)
                 warnings.warn('warning: ' + msg)
@@ -1812,15 +1810,15 @@ class Model(GnomeId):
         # check if backwards run has weathering on
         if self.time_step < 0:
             if self.duration.total_seconds() > 0:
-                msg = ('Time step and duration must have the same sign: time step = {0} duration = {1} '
+                msg = (f'Time step and duration must have the same sign: time step = {self.time_step} duration = {self.duration.total_seconds()} '
                        'To run backwards they must both be negative.'
-                        .format(self.time_step,self.duration.total_seconds()))
+                        )
                 isValid = False
                 raise GnomeRuntimeError(msg)
             if self.duration.total_seconds() > 0:
-                msg = ('Time step and duration must have the same sign: time step = {0} duration = {1} '
+                msg = (f'Time step and duration must have the same sign: time step = {self.time_step} duration = {self.duration.total_seconds()} '
                        'To run backwards they must both be negative.'
-                        .format(self.time_step,self.duration.total_seconds()))
+                        )
                 isValid = False
             if self.has_weathering and isWeatherable:
             #if self.weathering_activated: # might have a better check for weathering
@@ -1892,8 +1890,7 @@ class Model(GnomeId):
         for ref in refs:
             obj = self.find_by_attr('_ref_as', ref, self.environment)
             if obj is None:
-                msg = ("{0} not found in environment collection".
-                       format(ref))
+                msg = (f"{ref} not found in environment collection")
                 if raise_exc:
                     raise ReferencedObjectNotSet(msg)
                 else:
@@ -1921,7 +1918,7 @@ class Model(GnomeId):
         :return: list of spill simulation attributes
         '''
 
-        return list(self.spills.items())[0].data_arrays.keys()
+        return next(iter(self.spills.items())).data_arrays.keys()
 
     def get_spill_property(self, prop_name, ucert=False):
         """
@@ -2004,7 +2001,7 @@ class Model(GnomeId):
         for t in target_properties:
             result[t] = []
 
-        for i in range(0, len(sc)):
+        for i in range(len(sc)):
             test_result = True
 
             for phrase in conditions:
@@ -2013,9 +2010,9 @@ class Model(GnomeId):
                     break
 
             if test_result:
-                for k in result.keys():
+                for k, v in result.items():
                     n = elem_val(k, i)
-                    result[k].append(n)
+                    v.append(n)
 
         return result
 

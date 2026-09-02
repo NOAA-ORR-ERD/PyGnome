@@ -5,10 +5,11 @@ Contains functions for adding randomness - not to
 confuse with standard python random functions
 """
 
+import random
+
 import numpy as np
 
 from gnome.cy_gnome import cy_helpers
-import random
 
 
 def random_with_persistance(low, high,

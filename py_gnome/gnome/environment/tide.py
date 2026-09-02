@@ -2,24 +2,21 @@
 Tide environment objects for OSSM or Shio tides.
 """
 
-import string
-import os
 import glob
+import os
 from datetime import datetime
 
-from colander import SchemaNode, Float, drop, Boolean
+from colander import Boolean, Float, SchemaNode, drop
 
 import gnome
-from gnome.utilities.time_utils import sec_to_datetime
-from gnome.persist.extend_colander import LocalDateTime
-
-from .environment import Environment
-from gnome.persist import base_schema
-from gnome.persist.extend_colander import FilenameSchema
-
-from gnome.utilities.convert import tsformat
 from gnome.cy_gnome.cy_ossm_time import CyTimeseries
 from gnome.cy_gnome.cy_shio_time import CyShioTime
+from gnome.persist import base_schema
+from gnome.persist.extend_colander import FilenameSchema, LocalDateTime
+from gnome.utilities.convert import tsformat
+from gnome.utilities.time_utils import sec_to_datetime
+
+from .environment import Environment
 
 
 def _get_shio_yeardata_limits():
@@ -90,7 +87,7 @@ class Tide(Environment):
         """
         # define locally so it is available even for OSSM files,
         # though not used by OSSM files
-        super(Tide, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self._yeardata = None
         self.filename=filename
         self.cy_obj = self._obj_to_create(filename)
@@ -130,8 +127,8 @@ class Tide(Environment):
         only relevant if underlying cy_obj is CyShioTime
         """
         if not os.path.exists(value):
-            raise IOError('Path to yeardata files does not exist: '
-                          '{0}'.format(value))
+            raise OSError('Path to yeardata files does not exist: '
+                          f'{value}')
 
         # set private variable and also shio object's yeardata path
         self._yeardata = value
@@ -148,10 +145,9 @@ class Tide(Environment):
         open file, read a few lines to determine if it is an ossm file
         or a shio file
         """
-        fh = open(filename, encoding='utf-8')
-
-        # OSSM header can be 3 or 4 lines (Shio output has been updated to include time zone)
-        lines = [fh.readline() for i in range(5)]
+        with open(filename, encoding='utf-8') as fh:
+            # OSSM header can be 3 or 4 lines (Shio output has been updated to include time zone)
+            lines = [fh.readline() for i in range(5)]
 
         if len(lines[1]) == 0:  # should not be needed with Universal newlines, or on py3
             # look for \r for lines instead of \n
@@ -166,8 +162,8 @@ class Tide(Environment):
         # look for following keywords to determine if it is a Shio or OSSM file
         shio_file = ['[StationInfo]', 'Type=', 'Name=', 'Latitude=']
 
-        if all([shio_file[i] == (lines[i])[:len(shio_file[i])]
-                for i in range(4)]):
+        if all(shio_file[i] == (lines[i])[:len(shio_file[i])]
+                for i in range(4)):
             return CyShioTime(filename)
         elif len(lines[3].split(',')) == 7 or len(lines[4].split(',')) == 7:
             # maybe log / display a warning that v=0 for tide file and will be

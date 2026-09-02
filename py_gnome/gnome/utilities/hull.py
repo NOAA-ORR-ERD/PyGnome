@@ -1,9 +1,10 @@
+import logging
+
 import geopandas as gpd
 import numpy as np
-from shapely.geometry import Polygon, MultiPolygon, Point, MultiPoint, LineString
 from shapely import concave_hull, union_all
+from shapely.geometry import LineString, MultiPoint, MultiPolygon, Point, Polygon
 
-import logging
 logger = logging.getLogger(__name__)
 
 
@@ -54,11 +55,9 @@ def calculate_hull(spill_container, ratio=0.5, union_results=True,
                                    for point in this_spill['positions']])
             this_hull = concave_hull(this_mpt, ratio=ratio,
                                      allow_holes=allow_holes)
-            if (isinstance(this_hull, Point) or
-                    isinstance(this_hull, LineString)):
+            if (isinstance(this_hull, (Point, LineString))):
                 this_hull = buffer_hull(this_hull)
-            if (isinstance(this_hull, Polygon) or
-                    isinstance(this_hull, MultiPolygon)):
+            if (isinstance(this_hull, (Polygon, MultiPolygon))):
                 hulls_found['hulls'].append(this_hull)
                 hulls_found['spill_num'].append(spill_num)
     else:
@@ -70,10 +69,9 @@ def calculate_hull(spill_container, ratio=0.5, union_results=True,
                                for point in sc_positions])
         this_hull = concave_hull(this_mpt, ratio=ratio,
                                  allow_holes=allow_holes)
-        if (isinstance(this_hull, Point) or isinstance(this_hull, LineString)):
+        if (isinstance(this_hull, (Point, LineString))):
             this_hull = buffer_hull(this_hull)
-        if (isinstance(this_hull, Polygon) or
-                isinstance(this_hull, MultiPolygon)):
+        if (isinstance(this_hull, (Polygon, MultiPolygon))):
             hulls_found['hulls'].append(this_hull)
             hulls_found['spill_num'].append(None)
     if union_results:
@@ -151,11 +149,9 @@ def calculate_contours(spill_container, cutoff_struct=None,
                                                this_contour_set['positions']])
                 this_hull = concave_hull(this_contour_mpt, ratio=ratio,
                                          allow_holes=allow_holes)
-                if (isinstance(this_hull, Point)
-                        or isinstance(this_hull, LineString)):
+                if (isinstance(this_hull, (Point, LineString))):
                     this_hull = buffer_hull(this_hull)
-                if (isinstance(this_hull, Polygon) or
-                        isinstance(this_hull, MultiPolygon)):
+                if (isinstance(this_hull, (Polygon, MultiPolygon))):
                     contours_found.append({'spill_num': spill_num,
                                            'cutoff': cutoff['cutoff'],
                                            'cutoff_id': cutoff['cutoff_id'],

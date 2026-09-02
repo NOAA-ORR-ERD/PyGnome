@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 A MatPlotLib graphing class.
 Here we encapsulate the built-in API of MatPlotLib and pyplot into a class
@@ -25,18 +24,19 @@ But it is also intended to be easily customizable through sub-classing.
 """
 
 import numpy
+
 from gnome.gnomeobject import GnomeId
+
 np = numpy
 
 import matplotlib
+
 mpl = matplotlib
 from matplotlib import pyplot
 
 plt = pyplot
 
-from colander import (SchemaNode, SequenceSchema,
-                      Float, String,
-                      drop)
+from colander import Float, SchemaNode, SequenceSchema, String, drop
 
 from gnome.persist.base_schema import ObjTypeSchema
 

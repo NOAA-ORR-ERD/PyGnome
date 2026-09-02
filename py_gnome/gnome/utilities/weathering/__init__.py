@@ -4,19 +4,17 @@
     This is where we keep a reasonably organized assortment of algorithms
     for calculating behavior due to weathering.
 '''
-from .lee_huibers import LeeHuibers
+from .adios2 import Adios2
 from .banerjee_huibers import BanerjeeHuibers
-from .huibers_lehr import HuibersLehr
-from .riazi import Riazi
-from .stokes import Stokes
-from .pierson_moskowitz import PiersonMoskowitz
 from .delvigne_sweeney import DelvigneSweeney
 from .ding_farmer import DingFarmer
-from .zhao_toba import ZhaoToba
-
-from .adios2 import Adios2
+from .huibers_lehr import HuibersLehr
+from .lee_huibers import LeeHuibers
 from .lehr_simecek import LehrSimecek
-
+from .pierson_moskowitz import PiersonMoskowitz
+from .riazi import Riazi
+from .stokes import Stokes
+from .zhao_toba import ZhaoToba
 
 __all__ = [
     LeeHuibers,

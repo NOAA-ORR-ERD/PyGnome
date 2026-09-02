@@ -5,32 +5,22 @@ Movers using wind as the forcing function
 import os
 
 import numpy as np
+from colander import Bool, Float, SchemaNode, drop
 
-from colander import (SchemaNode, Bool, String, Float, drop)
-
-from gnome.exceptions import ReferencedObjectNotSet
-
-from gnome.basic_types import (world_point,
-                               world_point_type,
-                               velocity_rec)
 from gnome.array_types import gat
-
-from gnome.cy_gnome.cy_wind_mover import CyWindMover
+from gnome.basic_types import velocity_rec, world_point, world_point_type
 from gnome.cy_gnome.cy_gridwind_mover import CyGridWindMover
 from gnome.cy_gnome.cy_ice_wind_mover import CyIceWindMover
-
-from gnome.utilities.time_utils import sec_to_datetime
-from gnome.utilities.rand import random_with_persistance
-
-
+from gnome.cy_gnome.cy_wind_mover import CyWindMover
 from gnome.environment import Wind, WindSchema
 from gnome.environment.wind import constant_wind
+from gnome.exceptions import ReferencedObjectNotSet
 from gnome.movers import CyMover, ProcessSchema
 from gnome.persist.base_schema import GeneralGnomeObjectSchema
-from gnome.persist.extend_colander import FilenameSchema
+from gnome.persist.extend_colander import FilenameSchema, LocalDateTime
 from gnome.persist.validators import convertible_to_seconds
-from gnome.persist.extend_colander import LocalDateTime
-from gnome.utilities.inf_datetime import InfTime, MinusInfTime
+from gnome.utilities.rand import random_with_persistance
+from gnome.utilities.time_utils import sec_to_datetime
 
 
 class WindMoversBaseSchema(ProcessSchema):
@@ -80,7 +70,7 @@ class WindMoversBase(CyMover):
         It calls super in the __init__ method and passes in the optional
         parameters (kwargs)
         """
-        super(WindMoversBase, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         self.uncertain_duration = uncertain_duration
         self.uncertain_time_delay = uncertain_time_delay
@@ -135,7 +125,7 @@ class WindMoversBase(CyMover):
         :param time_step: time step in seconds
         :param model_time_datetime: current time of model as a date time object
         """
-        super(WindMoversBase, self).prepare_for_model_step(sc, time_step,
+        super().prepare_for_model_step(sc, time_step,
                                                            model_time_datetime)
 
         # if no particles released, then no need for windage
@@ -241,16 +231,16 @@ class PointWindMover(WindMoversBase):
             kwargs['name'] = kwargs.pop('name', wind.name)
 
         # set optional attributes
-        super(PointWindMover, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def __repr__(self):
-        return ('{0.__class__.__module__}.{0.__class__.__name__}(\n{1})'
-                .format(self, self._state_as_str()))
+        return (f'{self.__class__.__module__}.{self.__class__.__name__}(\n{self._state_as_str()})'
+                )
 
     def __str__(self):
         return ('WindMover - current _state. '
-                'See "wind" object for wind conditions:\n{0}'
-                .format(self._state_as_str()))
+                f'See "wind" object for wind conditions:\n{self._state_as_str()}'
+                )
 
     @property
     def wind(self):
@@ -277,7 +267,7 @@ class PointWindMover(WindMoversBase):
         '''
         if wind attribute is not set, raise ReferencedObjectNotSet exception
         '''
-        super(PointWindMover, self).prepare_for_model_run()
+        super().prepare_for_model_run()
 
         if self.on and self.wind is None:
             msg = "wind object not defined for WindMover"
@@ -363,13 +353,12 @@ class c_GridWindMover(WindMoversBase):
         uses super: ``super(c_GridWindMover,self).__init__(**kwargs)``
         """
         if not os.path.exists(filename):
-            raise ValueError('Path for wind file does not exist: {0}'
-                             .format(filename))
+            raise ValueError(f'Path for wind file does not exist: {filename}'
+                             )
 
-        if topology_file is not None:
-            if not os.path.exists(topology_file):
-                raise ValueError('Path for Topology file does not exist: {0}'
-                                 .format(topology_file))
+        if topology_file is not None and not os.path.exists(topology_file):
+            raise ValueError(f'Path for Topology file does not exist: {topology_file}'
+                             )
 
         self.mover = CyGridWindMover(wind_scale=kwargs.pop('wind_scale', 1))
         self.mover.text_read(filename, topology_file)
@@ -377,7 +366,7 @@ class c_GridWindMover(WindMoversBase):
         # Ideally, we would be able to run the base class initialization first
         # because we designed the Movers well.  As it is, we inherit from the
         # CyMover, and the CyMover needs to have a self.mover attribute.
-        super(c_GridWindMover, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         # is wind_file and topology_file is stored with cy_gridwind_mover?
         self.name = os.path.split(filename)[1]
@@ -400,11 +389,11 @@ class c_GridWindMover(WindMoversBase):
         .. todo::
             We probably want to include more information.
         """
-        return 'c_GridWindMover(\n{0})'.format(self._state_as_str())
+        return f'c_GridWindMover(\n{self._state_as_str()})'
 
     def __str__(self):
-        return ('c_GridWindMover - current _state.\n{0}'
-                .format(self._state_as_str()))
+        return (f'c_GridWindMover - current _state.\n{self._state_as_str()}'
+                )
 
     wind_scale = property(lambda self: self.mover.wind_scale,
                           lambda self, val: setattr(self.mover, 'wind_scale',
@@ -482,8 +471,7 @@ class c_GridWindMover(WindMoversBase):
                                    file will be written.
         """
         if topology_file is None:
-            raise ValueError('Topology file path required: {0}'.
-                             format(topology_file))
+            raise ValueError(f'Topology file path required: {topology_file}')
 
         self.mover.export_topology(topology_file)
 
@@ -553,13 +541,12 @@ class IceWindMover(WindMoversBase):
             self.mover = CyIceWindMover()
 
         if not os.path.exists(filename):
-            raise ValueError('Path for current file does not exist: {0}'
-                             .format(filename))
+            raise ValueError(f'Path for current file does not exist: {filename}'
+                             )
 
-        if topology_file is not None:
-            if not os.path.exists(topology_file):
-                raise ValueError('Path for Topology file does not exist: {0}'
-                                 .format(topology_file))
+        if topology_file is not None and not os.path.exists(topology_file):
+            raise ValueError(f'Path for Topology file does not exist: {topology_file}'
+                             )
 
         # check if this is stored with cy_ice_wind_mover?
         self.name = os.path.split(filename)[1]
@@ -574,19 +561,19 @@ class IceWindMover(WindMoversBase):
         self.mover.extrapolate_in_time(extrapolate)
         self.mover.offset_time(time_offset * 3600.)
 
-        super(IceWindMover, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def __repr__(self):
         return ('IceWindMover('
-                'active_range={1.active_range}, '
-                'on={1.on})'
-                .format(self.mover, self))
+                f'active_range={self.active_range}, '
+                f'on={self.on})'
+                )
 
     def __str__(self):
         return ('IceWindMover - current _state.\n'
-                '  active_range time={1.active_range}\n'
-                '  current on/off status={1.on}'
-                .format(self.mover, self))
+                f'  active_range time={self.active_range}\n'
+                f'  current on/off status={self.on}'
+                )
 
     def get_grid_data(self):
         if self.mover._is_triangle_grid():
@@ -658,8 +645,8 @@ class IceWindMover(WindMoversBase):
                                    topology file will be written.
         """
         if topology_file is None:
-            raise ValueError('Topology file path required: {0}'
-                             .format(topology_file))
+            raise ValueError(f'Topology file path required: {topology_file}'
+                             )
 
         self.mover.export_topology(topology_file)
 

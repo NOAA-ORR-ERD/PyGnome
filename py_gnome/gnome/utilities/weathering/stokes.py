@@ -1,5 +1,5 @@
 
-class Stokes(object):
+class Stokes:
     @staticmethod
     def water_phase_xfer_velocity(oil_water_rho_delta, diameter):
         '''

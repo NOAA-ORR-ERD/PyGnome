@@ -7,24 +7,26 @@ Temperature, Salinity, etc.
 NOTE: this is simple, constant water conditions -- at some point, we will make it a proper Environment object
 '''
 
-from functools import lru_cache
 import warnings
-
-import numpy as np
+from functools import lru_cache
 
 import gsw
-
 import nucos as uc
+import numpy as np
 
 from gnome import constants
+from gnome.persist import (
+    Float,
+    MappingSchema,
+    OneOf,
+    SchemaNode,
+    String,
+    base_schema,
+)
 from gnome.utilities.inf_datetime import InfTime, MinusInfTime
 
-from gnome.persist import (base_schema, SchemaNode, MappingSchema, Float,
-                           String, drop, OneOf, required)
-
-from .environment import Environment
-
 from .. import _valid_units
+from .environment import Environment
 
 # define valid units at module scope because the Schema and Object both use it
 _valid_temp_units = _valid_units('Temperature')
@@ -241,7 +243,7 @@ class Water(Environment):
         if units is not None:
             # self.units is a property, so this is non-destructive
             self.units = units
-        super(Water, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.Temperature = Temperature(self)
         self.Salinity = Salinity(self)
         self.Sediment = Sediment(self)
@@ -255,9 +257,9 @@ class Water(Environment):
 
 
     def __repr__(self):
-        info = ("{0.__class__.__module__}.{0.__class__.__name__}"
-                "(temperature={0.temperature},"
-                " salinity={0.salinity})").format(self)
+        info = (f"{self.__class__.__module__}.{self.__class__.__name__}"
+                f"(temperature={self.temperature},"
+                f" salinity={self.salinity})")
         return info
 
     __str__ = __repr__
@@ -363,13 +365,11 @@ class Water(Environment):
             self._units = {}
 
         for prop, unit in u_dict.items():
-            if prop in self._units_type:
-                if unit not in self._units_type[prop][1]:
-                    msg = ("{0} are invalid units for {1}.  Ignore it.".format(
-                        unit, prop))
-                    self.logger.error(msg)
-                    # should we raise error?
-                    raise uc.InvalidUnitError(msg)
+            if prop in self._units_type and unit not in self._units_type[prop][1]:
+                msg = (f"{unit} are invalid units for {prop}.  Ignore it.")
+                self.logger.error(msg)
+                # should we raise error?
+                raise uc.InvalidUnitError(msg)
 
             # allow user to add new keys to units dict.
             # also update prop if unit is valid

@@ -4,28 +4,24 @@ generic time series
 """
 
 import datetime
-import copy
 
 import numpy as np
+from colander import Float, SchemaNode, drop
 
-from colander import (SchemaNode, drop, Float)
-
-from gnome.cy_gnome.cy_ossm_time import CyTimeseries
 from gnome import basic_types
-from gnome.utilities.time_utils import (zero_time,
-                                        date_to_sec,
-                                        sec_to_date)
-from gnome.utilities.convert import (to_time_value_pair,
-                                     to_datetime_value_2d)
-from gnome.persist.extend_colander import (DefaultTupleSchema,
-                                           LocalDateTime,
-                                           DatetimeValue2dArraySchema)
-from gnome.persist import validators, base_schema
-
-from .environment import Environment
+from gnome.cy_gnome.cy_ossm_time import CyTimeseries
 from gnome.environment import Wind, WindSchema
 from gnome.exceptions import ReferencedObjectNotSet
-from gnome.gnomeobject import GnomeId
+from gnome.persist import base_schema, validators
+from gnome.persist.extend_colander import (
+    DatetimeValue2dArraySchema,
+    DefaultTupleSchema,
+    LocalDateTime,
+)
+from gnome.utilities.convert import to_datetime_value_2d, to_time_value_pair
+from gnome.utilities.time_utils import date_to_sec, sec_to_date, zero_time
+
+from .environment import Environment
 
 
 class UVTuple(DefaultTupleSchema):
@@ -116,13 +112,13 @@ class RunningAverage(Environment):
 
         self.ossm = CyTimeseries(timeseries=moving_ts)
 
-        super(RunningAverage, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def __repr__(self):
         self_ts = self.timeseries.__repr__()
-        return ('{0.__class__.__module__}.{0.__class__.__name__}('
-                'timeseries={1})'
-                .format(self, self_ts))
+        return (f'{self.__class__.__module__}.{self.__class__.__name__}('
+                f'timeseries={self_ts})'
+                )
 
     def __str__(self):
         return ("Running Average ( "

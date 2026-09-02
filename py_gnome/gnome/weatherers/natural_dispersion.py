@@ -9,15 +9,13 @@ model dispersion process
 import numpy as np
 
 from gnome import constants
-from gnome.cy_gnome.cy_weatherers import disperse_oil
 from gnome.array_types import gat
-
-
-from .core import WeathererSchema
-from gnome.weatherers import Weatherer
 from gnome.environment.water import WaterSchema
 from gnome.environment.waves import WavesSchema
-from gnome.persist import String, SchemaNode
+from gnome.persist import SchemaNode, String
+from gnome.weatherers import Weatherer
+
+from .core import WeathererSchema
 
 g = constants.gravity  # the gravitational constant.
 
@@ -52,7 +50,7 @@ class NaturalDispersion(Weatherer):
            raise ValueError(f'{algorithm} not valid, must be one of:{self._algorithm_opts}')
         self.algorithm = algorithm
 
-        super(NaturalDispersion, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.array_types.update({'viscosity': gat('viscosity'),
                                  'mass': gat('mass'),
                                  'density': gat('density'),
@@ -71,7 +69,7 @@ class NaturalDispersion(Weatherer):
         # if they doesn't exist
         # let's only define this the first time
         if self.on:
-            super(NaturalDispersion, self).prepare_for_model_run(sc)
+            super().prepare_for_model_run(sc)
             sc.mass_balance['natural_dispersion'] = 0.0
             sc.mass_balance['sedimentation'] = 0.0
 
@@ -80,7 +78,7 @@ class NaturalDispersion(Weatherer):
         Set/update arrays used by dispersion module for this timestep:
 
         '''
-        super(NaturalDispersion, self).prepare_for_model_step(sc,
+        super().prepare_for_model_step(sc,
                                                               time_step,
                                                               model_time)
 
@@ -153,8 +151,7 @@ class NaturalDispersion(Weatherer):
             if data['mass'].sum() > 0:
                 disp_mass_frac = np.sum(disp[:]) / data['mass'].sum()
 
-                if disp_mass_frac > 1:
-                    disp_mass_frac = 1
+                disp_mass_frac = min(disp_mass_frac, 1)
             else:
                 disp_mass_frac = 0
 
@@ -167,8 +164,7 @@ class NaturalDispersion(Weatherer):
             if data['mass'].sum() > 0:
                 sed_mass_frac = np.sum(sed[:]) / data['mass'].sum()
 
-                if sed_mass_frac > 1:
-                    sed_mass_frac = 1
+                sed_mass_frac = min(sed_mass_frac, 1)
             else:
                 sed_mass_frac = 0
 
@@ -176,7 +172,7 @@ class NaturalDispersion(Weatherer):
                                        data['mass_components'])
             data['mass'] = data['mass_components'].sum(1)
 
-            self.logger.debug('{0} Amount Dispersed for {1}: {2}'
+            self.logger.debug('{} Amount Dispersed for {}: {}'
                               .format(self._pid,
                                       substance.name,
                                       sc.mass_balance['natural_dispersion']))
@@ -337,8 +333,7 @@ class NaturalDispersion(Weatherer):
 
                # vol of refloat oil/wave p
                V_refloat = 0.588 * (np.power(thickness, 1.7) - 5.0e-8)
-               if V_refloat < 0.0:
-                  V_refloat = 0.0;
+               V_refloat = max(V_refloat, 0.0);
 
                # (kg/m2-sec) mass rate of emulsion
                q_refloat = C_Roy[i] * C_disp[i] * V_refloat * A

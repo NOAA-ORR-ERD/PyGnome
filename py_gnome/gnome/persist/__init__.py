@@ -6,27 +6,63 @@ Put all the common Schema nodes in one namespace
 '''
 
 from . import monkey_patch_colander
+
 monkey_patch_colander.apply()
 del monkey_patch_colander
 
-from .save_load import (Savable, References, load, is_savezip_valid)
-
 # import everything, so it can all be in one place
-from colander import (Schema, Int, Float, DateTime, Sequence, Tuple, List,
-                      TupleSchema, SequenceSchema, null, SchemaNode, String,
-                      Invalid, Boolean, drop, Range, MappingSchema, OneOf,
-                      required)
+from colander import (
+                      Boolean,
+                      DateTime,
+                      Float,
+                      Int,
+                      Invalid,
+                      List,
+                      MappingSchema,
+                      OneOf,
+                      Range,
+                      Schema,
+                      SchemaNode,
+                      Sequence,
+                      SequenceSchema,
+                      String,
+                      Tuple,
+                      TupleSchema,
+                      drop,
+                      null,
+                      required,
+)
 
-from .extend_colander import (TupleSchema, SequenceSchema, SchemaNode,
-                              NumpyFixedLenSchema, FilenameSchema,
-                              NumpyArraySchema, OrderedCollectionSchema,
-                              DefaultTupleSchema, DatetimeValue2dArraySchema,
-                              DatetimeValue1dArraySchema, TimeDelta,
-                              LocalDateTime)
-
-from .validators import (convertible_to_seconds, ascending_datetime,
-                         no_duplicate_datetime, positive)
-
-from .base_schema import (ObjType, ObjTypeSchema, GeneralGnomeObjectSchema, LongLatBounds, PolygonSetSchema,
-                          WorldPoint, ImageSize, now, StringListSchema)
+from .base_schema import (
+                      GeneralGnomeObjectSchema,
+                      ImageSize,
+                      LongLatBounds,
+                      ObjType,
+                      ObjTypeSchema,
+                      PolygonSetSchema,
+                      StringListSchema,
+                      WorldPoint,
+                      now,
+)
+from .extend_colander import (
+                      DatetimeValue1dArraySchema,
+                      DatetimeValue2dArraySchema,
+                      DefaultTupleSchema,
+                      FilenameSchema,
+                      LocalDateTime,
+                      NumpyArraySchema,
+                      NumpyFixedLenSchema,
+                      OrderedCollectionSchema,
+                      SchemaNode,
+                      SequenceSchema,
+                      TimeDelta,
+                      TupleSchema,
+)
+from .save_load import References, Savable, is_savezip_valid, load
+from .validators import (
+                      ascending_datetime,
+                      convertible_to_seconds,
+                      no_duplicate_datetime,
+                      positive,
+)
 

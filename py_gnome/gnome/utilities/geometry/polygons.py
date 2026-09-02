@@ -92,22 +92,21 @@ class Polygon(np.ndarray):
                     (self.metadata == other.metadata))
 
     def __ne__(self, other):
-        return False if self == other else True
+        return not self == other
 
     def __str__(self):
-        return ("Polygon with %i points.\nmetadata: %s" %
-                (self.shape[0], self.metadata))
+        return f"Polygon with {self.shape[0]} points.\nmetadata: {self.metadata}"
 
     def __repr__(self):
         msg = ["Polygon( [", ]
         pstr = []
         for point in self:
             try:
-                pstr.append("[%s, %s]" % (point[0], point[1]))
+                pstr.append(f"[{point[0]}, {point[1]}]")
             except IndexError:
                 pass
         msg.append(",\n          ".join(pstr))
-        msg.append("],\n         metadata=%s\n       )" % repr(self.metadata))
+        msg.append(f"],\n         metadata={self.metadata!r}\n       )")
         return "".join(msg)
 
     @property
@@ -175,7 +174,7 @@ class Polygon(np.ndarray):
             return Polygon((), metadata=orig_poly.metadata)
 
 
-class PolygonSet(object):
+class PolygonSet:
     # version that uses an Accumulator, rather than all that concatenating
     """
     A set of polygons (or polylines) stored as a single array of vertex data,
@@ -306,7 +305,7 @@ class PolygonSet(object):
 
         return cp
 
-    def TransformData(self, TransformFunction, args=(), kwargs={}):
+    def TransformData(self, TransformFunction, args=(), kwargs=None):
         # fixme: if this was a ndarray subclass, it would "just work"
         """
 
@@ -323,6 +322,8 @@ class PolygonSet(object):
         ``NewPoints = TransformFunction(OldPoints, *args, **kwargs)``
 
         """
+        if kwargs is None:
+            kwargs = {}
         self._PointsArray = TransformFunction(self._PointsArray, *args,
                                               **kwargs)
 
@@ -331,7 +332,7 @@ class PolygonSet(object):
         return len(self._IndexArray) - 1
 
     def __iter__(self):
-        for i in range(0, len(self._IndexArray) - 1):
+        for i in range(len(self._IndexArray) - 1):
             yield self[i]
 
     def __bool__(self):
@@ -356,8 +357,7 @@ class PolygonSet(object):
         return poly
 
     def __str__(self):
-        return ("PolygonSet instance with %i polygons, %i total points"
-                % (len(self), len(self._PointsArray)))
+        return f"PolygonSet instance with {len(self)} polygons, {len(self._PointsArray)} total points"
 
     def __repr__(self):
         """ same as __str__ -- not good but more informative than nothing"""
@@ -372,7 +372,7 @@ class PolygonSet(object):
                     self._MetaDataList == other._MetaDataList)
 
     def __ne__(self, other):
-        return False if self == other else True
+        return not self == other
 
     def thin(self, scale):
         """

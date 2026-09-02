@@ -2,7 +2,7 @@
 import numpy as np
 
 
-class Riazi(object):
+class Riazi:
     '''
         Using Riazi (2005), aromatic properties are approximated
         from distillation cut temperature (degrees Kelvin)

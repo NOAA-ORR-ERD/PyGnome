@@ -3,55 +3,39 @@ release objects that define how elements are released. A Spill() objects
 is composed of a release object and a substance
 '''
 
-import copy
-import functools
 import math
 import warnings
-import numpy as np
+from datetime import datetime, timedelta
+from math import ceil
+
 # import trimesh # making this optional
 import geojson
-import zipfile
+import numpy as np
 import shapely
+from colander import Float, Int, SchemaNode, SequenceSchema, String, drop
 
-from math import ceil
-from datetime import datetime, timedelta
-
-from shapely.geometry import Polygon, Point, MultiPoint
-import shapely.ops as ops
-
-from pyproj import Proj, transform
-import pyproj
-
-from gnome.utilities.time_utils import asdatetime
-import gnome.utilities.geometry.geo_routines as geo_routines
-
-
-from colander import (String, SchemaNode, SequenceSchema, drop, Int, Float,
-                      Boolean)
-
-from gnome.persist.base_schema import (ObjTypeSchema, WorldPoint, FeatureCollectionSchema,
-                                       LongLatBounds, IntPair)
-from gnome.persist.extend_colander import LocalDateTime, FilenameSchema
-
-from gnome.basic_types import world_point_type
 from gnome.array_types import gat
-from gnome.utilities.plume import Plume, PlumeGenerator
-
-
-from gnome.outputters import NetCDFOutput
-from gnome.gnomeobject import GnomeId
-from gnome.environment.timeseries_objects_base import (TimeseriesData,
-                                                       TimeseriesVector)
-from gnome.environment.gridded_objects_base import Time
-
-from gnome.weatherers.spreading import FayGravityViscous
+from gnome.basic_types import world_point_type
 from gnome.environment import Water
-from gnome.constants import gravity
+from gnome.environment.gridded_objects_base import Time
+from gnome.environment.timeseries_objects_base import TimeseriesData, TimeseriesVector
+from gnome.gnomeobject import GnomeId
 from gnome.ops import default_constants
+from gnome.outputters import NetCDFOutput
+from gnome.persist.base_schema import (
+    FeatureCollectionSchema,
+    IntPair,
+    LongLatBounds,
+    ObjTypeSchema,
+    WorldPoint,
+)
+from gnome.persist.extend_colander import FilenameSchema, LocalDateTime
+from gnome.utilities.geometry import geo_routines
+from gnome.utilities.plume import Plume, PlumeGenerator
+from gnome.utilities.time_utils import TZOffset, TZOffsetSchema, asdatetime
+from gnome.weatherers.spreading import FayGravityViscous
 
-from gnome.utilities.time_utils import TZOffset, TZOffsetSchema
-from .initializers import (InitRiseVelFromDropletSizeFromDist,
-                           InitRiseVelFromDist)
+from .initializers import InitRiseVelFromDist, InitRiseVelFromDropletSizeFromDist
 
 SPREADING_CUMULATIVE_TIME_SCALE = timedelta(hours=12.)
 
@@ -195,7 +179,7 @@ class Release(GnomeId):
         self.custom_positions = custom_positions
         self.retain_initial_positions = retain_initial_positions
         self.rewind()
-        super(Release, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self._timezone_offset=timezone_offset
         self.array_types.update({'positions': gat('positions'),
                                  'mass': gat('mass'),
@@ -231,20 +215,18 @@ class Release(GnomeId):
     def _set_timezone_offset(self, tzo):
         if tzo is None:
             tzo = TZOffset(offset=None, title="No Timezone Specified")
-        if self._timezone_offset is not None and self._timezone_offset.offset is not None:
-            #original offset is non-None value, so we need to adjust the release time
-            if tzo.offset is not None:
-                #but only if the new value is not None
-                off =  timedelta(hours=tzo.offset) - timedelta(hours=self._timezone_offset.offset)
-                self.release_time = self.release_time + off
-                self.end_release_time = self.end_release_time + off
+        if (self._timezone_offset is not None and self._timezone_offset.offset is not None
+                and tzo.offset is not None):
+            off = timedelta(hours=tzo.offset) - timedelta(hours=self._timezone_offset.offset)
+            self.release_time = self.release_time + off
+            self.end_release_time = self.end_release_time + off
         self._timezone_offset = tzo
 
     def __repr__(self):
-        return ('{0.__class__.__module__}.{0.__class__.__name__}('
-                'release_time={0.release_time!r}, '
-                'num_elements={0.num_elements}'
-                ')'.format(self))
+        return (f'{self.__class__.__module__}.{self.__class__.__name__}('
+                f'release_time={self.release_time!r}, '
+                f'num_elements={self.num_elements}'
+                ')')
 
     def rewind(self):
         self._prepared = False
@@ -366,7 +348,7 @@ class Release(GnomeId):
         '''
         Calculates how many time steps it takes to complete the release duration
         '''
-        rts = int(ceil(self.release_duration / ts))
+        rts = ceil(self.release_duration / ts)
         if rts == 0:
             rts = 1
         return rts
@@ -388,7 +370,7 @@ class Release(GnomeId):
                 t = Time(data=[self.release_time, self.end_release_time])
         else:
             t = Time(data=[self.release_time + timedelta(seconds=ts * step)
-                      for step in range(0, num_ts + 1)])
+                      for step in range(num_ts + 1)])
             t.data[-1] = self.end_release_time
 
         if self.release_duration == 0:
@@ -414,7 +396,7 @@ class Release(GnomeId):
         if ((current_time < self.release_time and time_delta.total_seconds() >= 0)
                 or (current_time > self.release_time and time_delta.total_seconds() <= 0)):
             return 0
-        return int(math.ceil(self._release_ts.at(None, current_time, extrapolate=True)))
+        return math.ceil(self._release_ts.at(None, current_time, extrapolate=True))
 
     def prepare_for_model_run(self, ts):
         '''
@@ -455,7 +437,7 @@ class Release(GnomeId):
             raise ValueError('No positions to release particles from')
         num_locs = len(self.custom_positions)
         if to_rel < num_locs:
-            warnings.warn("{0} is releasing fewer LEs than number of start positions at time: {1}".format(self, end_time))
+            warnings.warn(f"{self} is releasing fewer LEs than number of start positions at time: {end_time}")
 
         sl = slice(-to_rel, None, 1)
         c_p = np.asarray(self.custom_positions)
@@ -569,7 +551,7 @@ class PointLineRelease(Release):
         :type release_mass: integer
         """
 
-        super(PointLineRelease, self).__init__(release_time=release_time,
+        super().__init__(release_time=release_time,
                                                end_release_time=end_release_time,
                                                num_elements=num_elements,
                                                release_mass = release_mass,
@@ -581,13 +563,13 @@ class PointLineRelease(Release):
         self.end_position = end_position
 
     def __repr__(self):
-        return ('{0.__class__.__module__}.{0.__class__.__name__}('
-                'release_time={0.release_time!r}, '
-                'num_elements={0.num_elements}, '
-                'start_position={0.start_position!r}, '
-                'end_position={0.end_position!r}, '
-                'end_release_time={0.end_release_time!r}'
-                ')'.format(self))
+        return (f'{self.__class__.__module__}.{self.__class__.__name__}('
+                f'release_time={self.release_time!r}, '
+                f'num_elements={self.num_elements}, '
+                f'start_position={self.start_position!r}, '
+                f'end_position={self.end_position!r}, '
+                f'end_release_time={self.end_release_time!r}'
+                ')')
 
     @property
     def is_pointsource(self):
@@ -600,10 +582,7 @@ class PointLineRelease(Release):
         if self.end_position is None:
             return True
 
-        if np.all(self.end_position == self.start_position):
-            return True
-
-        return False
+        return bool(np.all(self.end_position == self.start_position))
 
     @property
     def centroid(self):
@@ -653,7 +632,7 @@ class PointLineRelease(Release):
         _pos_ts describes the spill position at time T
         All use TimeseriesData objects.
         '''
-        super(PointLineRelease, self).generate_release_timeseries(num_ts, max_release, ts)
+        super().generate_release_timeseries(num_ts, max_release, ts)
         t = self._release_ts.time
         lon_ts = TimeseriesData(name=self.name+'_lon_ts',
                                 time=t,
@@ -675,7 +654,7 @@ class PointLineRelease(Release):
         self._pos_ts = None
 
     def prepare_for_model_run(self, ts):
-        super(PointLineRelease, self).prepare_for_model_run(ts)
+        super().prepare_for_model_run(ts)
         self._prepared = True
 
     def initialize_elements(self, to_rel, sc, start_time, end_time):
@@ -800,7 +779,7 @@ class PolygonRelease(Release):
                 if 'feature_index' not in feature.properties:
                     feature.properties['feature_index'] = i
 
-        super(PolygonRelease, self).__init__(
+        super().__init__(
             **kwargs
         )
 
@@ -851,13 +830,13 @@ class PolygonRelease(Release):
     @polygons.setter
     def polygons(self, polys):
         #polygons must be list of shapely or geojson (Multi)Polygon
-        for feat, poly in zip(self.features[:], poly):
-            feat.geometry = geojson.loads(geojson.dumps(poly.__geo_interface__))
+        for feat, p in zip(self.features[:], polys):
+            feat.geometry = geojson.loads(geojson.dumps(p.__geo_interface__))
 
     @property
     def thicknesses(self):
         rv = [feat.properties.get('thickness', None) for feat in self.features[:]]
-        return None if all([r == None for r in rv]) else rv
+        return None if all(r == None for r in rv) else rv
 
     @thicknesses.setter
     def thicknesses(self, vals):
@@ -866,14 +845,14 @@ class PolygonRelease(Release):
                 del feat.properties['thickness']
             return
         if self.weights is not None:
-            raise ValueError('Cannot assign thicknesses to {} due to previously assigned weights'.format(self.name))
+            raise ValueError(f'Cannot assign thicknesses to {self.name} due to previously assigned weights')
         for feat, t in zip(self.features[:], vals):
             feat.properties['thickness'] = t
 
     @property
     def weights(self):
         rv = [feat.properties.get('weight', None) for feat in self.features[:]]
-        return None if all([r == None for r in rv]) else rv
+        return None if all(r == None for r in rv) else rv
 
     @weights.setter
     def weights(self, vals):
@@ -882,7 +861,7 @@ class PolygonRelease(Release):
                 del feat.properties['weight']
             return
         if self.thicknesses is not None:
-            raise ValueError('Cannot assign weights to {} due to previously assigned thicknesses'.format(self.name))
+            raise ValueError(f'Cannot assign weights to {self.name} due to previously assigned thicknesses')
         for feat, w in zip(self.features[:], vals):
             feat.properties['weight'] = w
 
@@ -905,8 +884,8 @@ class PolygonRelease(Release):
         if weights is not None:
             #user provided custom per-(multi)polygon weighting
             if len(weights) != len(polys):
-                raise(ValueError('{0}:{1} Number of weights and polygons are not equal {2} vs {3}'
-                .format(self.obj_type, self.name, len(weights), len(polys))))
+                raise(ValueError(f'{self.obj_type}:{self.name} Number of weights and polygons are not equal {len(weights)} vs {len(polys)}'
+                ))
             for p, w in zip(polys, weights):
                 tris = geo_routines.triangulate_poly(p)
 
@@ -930,7 +909,7 @@ class PolygonRelease(Release):
         #it is possible for the areas computed above to be nans, if the polygons
         #are invalid somehow. If this is the case, raise an error
         if any(np.isnan(areas)):
-            raise ValueError('Invalid polygon in {}. Area computed is NaN'.format(self.name))
+            raise ValueError(f'Invalid polygon in {self.name}. Area computed is NaN')
 
         volumes = [a * t for a, t in zip(areas, self.thicknesses)]
         total_vol = sum(volumes)
@@ -942,7 +921,7 @@ class PolygonRelease(Release):
         '''
         :param ts: timestep as integer seconds
         '''
-        super(PolygonRelease, self).prepare_for_model_run(ts)
+        super().prepare_for_model_run(ts)
         #first a sanity check. The release only makes sense if using wgs84 (lon, lat).
         #for example nesdis files come in pseudo-mercator coordinates.
 
@@ -1013,7 +992,7 @@ class PolygonRelease(Release):
     def new_from_dict(cls, dict_):
         if 'filename' in dict_ and 'features' in dict_:
             dict_.pop('filename')
-        return super(PolygonRelease, cls).new_from_dict(dict_)
+        return super().new_from_dict(dict_)
 
 # PolygonRelease = SpatialRelease
 
@@ -1083,7 +1062,6 @@ class GridRelease(Release):
         """
         Hack to allow this to use the Release init!
         """
-        pass
 
     def num_elements_after_time(self, current_time, time_delta):
         '''
@@ -1117,7 +1095,7 @@ class GridRelease(Release):
         num_locs = len(positions)
 
         if to_rel < num_locs:
-            warnings.warn("{0} is releasing fewer LEs than number of start positions at time: {1}".format(self, end_time))
+            warnings.warn(f"{self} is releasing fewer LEs than number of start positions at time: {end_time}")
 
         # c_p = np.asarray(positions)
 
@@ -1238,7 +1216,7 @@ class NESDISRelease(PolygonRelease):
 
         for kw in ('thicknesses', 'weights', 'polygons'):
             if kwargs.get(kw):
-                warnings.warn('{} passed to NESDISRelease init are ignored'.format(kw))
+                warnings.warn(f'{kw} passed to NESDISRelease init are ignored')
 
         if filename is not None and features is not None:
             raise ValueError('Cannot pass both a filename and FeatureCollection to NESDISRelease')
@@ -1254,7 +1232,7 @@ class NESDISRelease(PolygonRelease):
         if features and 'release_time' not in kwargs:
             kwargs['release_time'] = datetime.fromisoformat(features[0].properties['release_time'])
 
-        super(NESDISRelease, self).__init__(
+        super().__init__(
             features=features,
             timezone_offset=timezone_offset,
             **kwargs
@@ -1309,7 +1287,7 @@ class NESDISRelease(PolygonRelease):
             feat.properties['OILTYPE'] = o
 
     def to_dict(self, json_=None):
-        dct = super(NESDISRelease, self).to_dict(json_=json_)
+        dct = super().to_dict(json_=json_)
         if json_ == 'save':
             #stick the geojson in the file for now
             fc = geojson.FeatureCollection(self.polygons)
@@ -1454,7 +1432,7 @@ class SubsurfaceRelease(PointLineRelease):
         released as PointLinearRelease with additional features
         """
 
-        super(SubsurfaceRelease, self).__init__(release_time=release_time,
+        super().__init__(release_time=release_time,
                                                end_release_time=end_release_time,
                                                num_elements=num_elements,
                                                release_mass = release_mass,
@@ -1476,7 +1454,7 @@ class SubsurfaceRelease(PointLineRelease):
         self.array_types.update(self._init_rise_vel.array_types)
 
     def initialize_elements_post_substance(self, to_rel, sc, start_time, end_time, environment):
-        sl = slice(-to_rel, None, 1)
+        slice(-to_rel, None, 1)
 
         Release.initialize_elements_post_substance(self, to_rel, sc, start_time, end_time, environment)
         self._init_rise_vel.initialize(to_rel, sc, sc.substance)
@@ -1509,7 +1487,7 @@ class VerticalPlumeRelease(Release):
         :type start_positions: (num_elements, 3) numpy array of float64
             -- (long, lat, z)
         '''
-        super(VerticalPlumeRelease, self).__init__(release_time=release_time, **kwargs)
+        super().__init__(release_time=release_time, **kwargs)
 
         self.start_position = np.array(start_position,
                                        dtype=world_point_type).reshape((3, ))
@@ -1598,8 +1576,7 @@ class InitElemsFromFile(Release):
         if release_time is None:
             release_time = self._init_data.pop('current_time_stamp').item()
 
-        super(InitElemsFromFile,
-              self).__init__(release_time, len(self._init_data['positions']))
+        super().__init__(release_time, len(self._init_data['positions']))
 
         self.set_newparticle_positions = self._set_data_arrays
 
@@ -1623,7 +1600,7 @@ class InitElemsFromFile(Release):
         is invalid. Start time is invalid if it is after the Spill's
         releasetime
         '''
-        super(InitElemsFromFile, self).num_elements_to_release(current_time,
+        super().num_elements_to_release(current_time,
                                                                time_step)
         if self.start_time_invalid:
             return 0

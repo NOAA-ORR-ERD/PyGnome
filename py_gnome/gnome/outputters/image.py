@@ -7,23 +7,20 @@ NOTE: doesn't seem to be tested -- and may not be used anyway.
 
 """
 
+import base64
 import os
 import tempfile
-import base64
-
 from collections.abc import Iterable
 
-from colander import SequenceSchema
-from gnome.persist.base_schema import GeneralGnomeObjectSchema
-
 import numpy as np
+from colander import SequenceSchema
 
+from gnome.movers.c_current_movers import IceMoverSchema
+from gnome.persist.base_schema import GeneralGnomeObjectSchema
+from gnome.utilities.map_canvas import MapCanvas
 from gnome.utilities.time_utils import date_to_sec
 
-from gnome.utilities.map_canvas import MapCanvas
-
-from . import Outputter, BaseOutputterSchema
-from gnome.movers.c_current_movers import IceMoverSchema
+from . import BaseOutputterSchema, Outputter
 
 
 class IceImageSchema(BaseOutputterSchema):
@@ -82,7 +79,7 @@ class IceImageOutput(Outputter):
                                  scale=(0.0, 1.0),
                                  num_colors=64)
 
-        super(IceImageOutput, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         if (isinstance(ice_movers, Iterable)
             and not isinstance(ice_movers, str)):
@@ -90,7 +87,7 @@ class IceImageOutput(Outputter):
         elif ice_movers is not None:
             self.ice_movers = (ice_movers,)
         else:
-            self.ice_movers = tuple()
+            self.ice_movers = ()
 
     def set_gradient_colors(self, gradient_name,
                             color_range=((0, 0, 0x7f),  # dark blue
@@ -148,7 +145,7 @@ class IceImageOutput(Outputter):
         b_grad = np.interp(color_space, color_range_idx,
                            [c[2] for c in color_range])
 
-        if all([len(c) >= 4 for c in color_range]):
+        if all(len(c) >= 4 for c in color_range):
             a_grad = np.interp(color_space, color_range_idx,
                                [c[3] for c in color_range])
         else:
@@ -156,7 +153,7 @@ class IceImageOutput(Outputter):
 
         new_colors = []
         for i, (r, g, b, a) in enumerate(zip(r_grad, g_grad, b_grad, a_grad)):
-            new_colors.append(('{}{}'.format(color_prefix, i), (r, g, b, a)))
+            new_colors.append((f'{color_prefix}{i}', (r, g, b, a)))
 
         self.map_canvas.add_colors(new_colors)
 
@@ -182,7 +179,7 @@ class IceImageOutput(Outputter):
         """
         # I don't think we need this for this outputter:
         #   - it does stuff with cache initialization
-        super(IceImageOutput, self).write_output(step_num, islast_step)
+        super().write_output(step_num, islast_step)
 
         if (self.on is False or
                 not self._write_step or
@@ -280,16 +277,18 @@ class IceImageOutput(Outputter):
         tempfilename = os.path.join(tempdir, "gnome_temp_image_file.png")
 
         canvas.save_foreground(tempfilename)
-        thickness_image = base64.b64encode(open(tempfilename, 'rb').read())
+        with open(tempfilename, 'rb') as f:
+            thickness_image = base64.b64encode(f.read())
 
         canvas.save_background(tempfilename)
-        coverage_image = base64.b64encode(open(tempfilename, 'rb').read())
+        with open(tempfilename, 'rb') as f:
+            coverage_image = base64.b64encode(f.read())
 
         os.remove(tempfilename)
         os.rmdir(tempdir)
 
-        return ("data:image/png;base64,{}".format(thickness_image),
-                "data:image/png;base64,{}".format(coverage_image),
+        return (f"data:image/png;base64,{thickness_image}",
+                f"data:image/png;base64,{coverage_image}",
                 mover_grid_bb)
 
     def ice_movers_to_dict(self):

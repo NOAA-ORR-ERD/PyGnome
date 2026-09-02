@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 
 """
 outputters.py
@@ -10,24 +9,21 @@ module to define classes for GNOME output:
 
 """
 import os
-
+import warnings
 from datetime import timedelta
 
-import warnings
-
-from gnome.persist import (
-    SchemaNode,
-    Boolean,
-    drop,
-    String,
-    ObjTypeSchema,
-    TimeDelta,
-    LocalDateTime,
-)
 from gnome.array_types import gat
-
-from gnome.utilities.surface_concentration import compute_surface_concentration
 from gnome.gnomeobject import GnomeId
+from gnome.persist import (
+    Boolean,
+    LocalDateTime,
+    ObjTypeSchema,
+    SchemaNode,
+    String,
+    TimeDelta,
+    drop,
+)
+from gnome.utilities.surface_concentration import compute_surface_concentration
 from gnome.utilities.time_utils import TZOffset
 
 
@@ -126,7 +122,7 @@ class Outputter(GnomeId):
 
         self._middle_of_run = False
 
-        super(Outputter, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         self.cache = cache
         self.on = on
@@ -155,7 +151,7 @@ class Outputter(GnomeId):
         self.output_dir = output_dir
 
         self.surface_conc = surface_conc
-        self.array_types = dict()
+        self.array_types = {}
 
         # reset internally used variables
         self.rewind()
@@ -245,18 +241,12 @@ class Outputter(GnomeId):
         self.model_timestep = model_time_step
         self.sc_pair = spills
 
-        if self._output_timestep is not None:
-#             if self._output_timestep < 0 and model_time_step > 0:
-#                 warnings.warn(f"Outputter output timestep {self.output_timestep} is less than "
-#                               f"zero.", RuntimeWarning)
-#             if self._output_timestep > 0 and model_time_step < 0:
-#                 warnings.warn(f"Outputter output timestep {self.output_timestep} is greater than "
-#                               f"zero.", RuntimeWarning)
-            if abs(self._output_timestep) < abs(model_time_step):
-                warnings.warn(f"Outputter output timestep {self.output_timestep} is less than "
-                              f"model time step: {model_time_step} seconds. "
-                              "Output will only occur every model timestep.",
-                              RuntimeWarning)
+        if (self._output_timestep is not None
+                and abs(self._output_timestep) < abs(model_time_step)):
+            warnings.warn(f"Outputter output timestep {self.output_timestep} is less than "
+                          f"model time step: {model_time_step} seconds. "
+                          "Output will only occur every model timestep.",
+                          RuntimeWarning)
 
         self.timezone_offset = timezone_offset
 
@@ -307,23 +297,22 @@ class Outputter(GnomeId):
         self._surf_conc_computed = False
 
         d = timedelta(seconds=time_step)
-        if self.output_start_time is not None:
-            if self.output_start_time != self._model_start_time:
-                if model_time + d < self.output_start_time:
-                    self._write_step = False
-                    return
+        if self.output_start_time is not None and self.output_start_time != self._model_start_time:
+            if model_time + d < self.output_start_time:
+                self._write_step = False
+                return
 
-                if model_time + d == self.output_start_time:
-                    self._write_step = True
-                    self._is_first_output = False
-                    return
+            if model_time + d == self.output_start_time:
+                self._write_step = True
+                self._is_first_output = False
+                return
 
-                if ((model_time + d > self.output_start_time and time_step > 0) or
-                    (model_time + d < self.output_start_time and time_step < 0)):
-                    if self._is_first_output:
-                        self._write_step = True
-                        self._is_first_output = False
-                        return
+            if (((model_time + d > self.output_start_time and time_step > 0) or
+                    (model_time + d < self.output_start_time and time_step < 0))
+                    and self._is_first_output):
+                self._write_step = True
+                self._is_first_output = False
+                return
 
         if self.output_single_step:
             self._write_step = False
@@ -344,14 +333,12 @@ class Outputter(GnomeId):
         in a time step. Put any code need for clean-up, etc.
         The write_output method is called by Model after all processing.
         '''
-        pass
 
     def post_model_run(self):
         """
         Override this method if a derived class needs to perform
         any actions after a model run is complete (StopIteration triggered)
         """
-        pass
 
     def write_output(self, step_num, islast_step=False):
         """
@@ -412,7 +399,6 @@ class Outputter(GnomeId):
         See the OutputterFilenameMixin for a simple example.
 
         '''
-        pass
 
     def rewind(self):
         '''
@@ -508,8 +494,8 @@ class Outputter(GnomeId):
             #raise ValueError('filename must be a file not a directory.')
 
         if not os.path.exists(os.path.realpath(os.path.dirname(filename))):
-            raise ValueError('{0} does not appear to be a valid path'
-                             .format(os.path.dirname(filename)))
+            raise ValueError(f'{os.path.dirname(filename)} does not appear to be a valid path'
+                             )
 
     def _check_is_dir(self, filename):
         'split this out - causes problems for shape and most outputters dont need it'
@@ -527,17 +513,17 @@ class Outputter(GnomeId):
         and raise an error if file exists
         """
         if os.path.exists(file_):
-            raise ValueError('{0} file exists. Enter a filename that '
+            raise ValueError(f'{file_} file exists. Enter a filename that '
                              'does not exist in which to save data.'
-                             .format(file_))
+                             )
 
 
-class OutputterFilenameMixin(object):
+class OutputterFilenameMixin:
     """
     mixin for outputter that output to a single file
     """
     def __init__(self, filename, *args, **kwargs):
-        super(OutputterFilenameMixin, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.filename = filename
 
     @property

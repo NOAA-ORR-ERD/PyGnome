@@ -12,13 +12,12 @@ import numpy as np
 
 from gnome import constants
 from gnome.array_types import gat
+from gnome.environment import WaterSchema, WindSchema
+from gnome.environment.gridded_objects_base import VectorVariableSchema
+from gnome.persist.base_schema import GeneralGnomeObjectSchema
+from gnome.weatherers import Weatherer
 
 from .core import WeathererSchema
-from gnome.weatherers import Weatherer
-from gnome.environment import (WindSchema,
-                               WaterSchema)
-from gnome.persist.base_schema import GeneralGnomeObjectSchema
-from gnome.environment.gridded_objects_base import VectorVariableSchema
 
 
 class EvaporationSchema(WeathererSchema):
@@ -53,7 +52,7 @@ class Evaporation(Weatherer):
         else:
             make_default_refs = True
 
-        super(Evaporation, self).__init__(make_default_refs=make_default_refs, **kwargs)
+        super().__init__(make_default_refs=make_default_refs, **kwargs)
         self.array_types.update({'positions': gat('positions'),
                                  'area': gat('area'),
                                  'vol_frac_le_st': gat('vol_frac_le_st'),
@@ -72,10 +71,10 @@ class Evaporation(Weatherer):
         # create 'evaporated' key if it doesn't exist
         # let's only define this the first time
         if self.on:
-            super(Evaporation, self).prepare_for_model_run(sc)
+            super().prepare_for_model_run(sc)
 
             sc.mass_balance['evaporated'] = 0.0
-            msg = ("{0._pid} init 'evaporated' key to 0.0").format(self)
+            msg = (f"{self._pid} init 'evaporated' key to 0.0")
             self.logger.debug(msg)
 
     def _mass_transport_coeff(self, points, model_time):
@@ -154,7 +153,7 @@ class Evaporation(Weatherer):
 
         data['evap_decay_constant'][:, :len(vp)] = edc
 
-        self.logger.debug(self._pid + 'max decay: {0}, min decay: {1}'.
+        self.logger.debug(self._pid + 'max decay: {}, min decay: {}'.
                           format(np.max(data['evap_decay_constant']),
                                  np.min(data['evap_decay_constant'])))
         if np.any(data['evap_decay_constant'] > 0.0):
@@ -225,7 +224,7 @@ class Evaporation(Weatherer):
                 np.sum(data['mass_components'][:, :] - mass_remain[:, :])
 
             # log amount evaporated at each step
-            self.logger.debug(self._pid + 'amount evaporated for {0}: {1}'.
+            self.logger.debug(self._pid + 'amount evaporated for {}: {}'.
                               format(substance.name,
                                      np.sum(data['mass_components'][:, :] -
                                             mass_remain[:, :])))
@@ -288,6 +287,6 @@ class BlobEvaporation(Evaporation):
                         ((t + time_step)**(3./2)/np.sqrt(t) - t))
         data['evap_decay_constant'][:, :] = const * int_area
 
-        self.logger.debug(self._pid + 'max decay: {0}, min decay: {1}'.
+        self.logger.debug(self._pid + 'max decay: {}, min decay: {}'.
                           format(np.max(data['evap_decay_constant']),
                                  np.min(data['evap_decay_constant'])))

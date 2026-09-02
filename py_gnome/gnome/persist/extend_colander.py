@@ -5,23 +5,31 @@ of gnome specific types
 
 import datetime
 import os
-import ujson
 import zipfile
+from collections import namedtuple
 
+import netCDF4
 import numpy as np
-
-from colander import (Float, DateTime, Sequence, Tuple, List, SchemaType,
-                      TupleSchema, SequenceSchema, null, SchemaNode, String, Invalid, MappingSchema, Mapping)
+import ujson
+import xarray
+from colander import (
+    DateTime,
+    Float,
+    Invalid,
+    List,
+    Mapping,
+    MappingSchema,
+    SchemaNode,
+    Sequence,
+    SequenceSchema,
+    String,
+    Tuple,
+    TupleSchema,
+    null,
+)
 
 import gnome.basic_types
 from gnome.utilities import inf_datetime, round_sf_array
-
-import pdb
-
-import xarray
-import netCDF4
-
-from collections import namedtuple
 
 LoadSpec = namedtuple('LoadSpec', ['typ', 'pth', 'varname'])
 
@@ -106,7 +114,7 @@ class DataSchemaNode(SchemaNode):
             if fn == '??':
                 raise NotImplementedError("In-memory netCDF/Xarray deserialization is not implemented. Please save to a file first.")
             if not os.path.exists(fn):
-                raise NotImplementedError("Invalid file path ({1}) provided for deserialization in node {0}. Please provide a valid file path.".format(self.name, fn))
+                raise NotImplementedError(f"Invalid file path ({fn}) provided for deserialization in node {self.name}. Please provide a valid file path.")
             lookup = {
                 'ndarray': lambda: np.load(fn, allow_pickle=False)[vname],
                 'maskedarray': lambda: np.ma.MaskedArray(data=np.load(fn, allow_pickle=False)[vname], mask=np.load(fn, allow_pickle=False)[vname + '_mask']),
@@ -133,10 +141,8 @@ class DataSchemaNode(SchemaNode):
                 #append typ because theoretically the same file could be referenced
                 #by different types (nc.Dataset, xr.Dataset) in different places.
                 ds_obj = refs[typ+':'+temp_fn]
-                print ('found ref for {0} in refs'.format(typ+':'+temp_fn))
-            elif typ == 'ndarray':
-                ds_obj = np.load(temp_fn, allow_pickle=False)
-            elif typ == 'maskedarray':
+                print ('found ref for {} in refs'.format(typ+':'+temp_fn))
+            elif typ == 'ndarray' or typ == 'maskedarray':
                 ds_obj = np.load(temp_fn, allow_pickle=False)
             elif typ == 'xarray':
                 ds_obj = xarray.open_dataset(temp_fn)
@@ -213,7 +219,7 @@ class UnknownMappingSchema(MappingSchema):
 class LocalDateTime(DateTime):
     def __init__(self, *args, **kwargs):
         kwargs['default_tzinfo'] = kwargs.get('default_tzinfo', None)
-        super(LocalDateTime, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def strip_timezone(self, _datetime):
         if (_datetime and isinstance(_datetime, (datetime.datetime,
@@ -231,7 +237,7 @@ class LocalDateTime(DateTime):
         if isinstance(appstruct, datetime.datetime):
             appstruct = self.strip_timezone(appstruct)
 
-            return super(LocalDateTime, self).serialize(node, appstruct)
+            return super().serialize(node, appstruct)
         elif isinstance(appstruct, (inf_datetime.InfTime,
                                     inf_datetime.MinusInfTime)):
             return appstruct.isoformat()
@@ -240,7 +246,7 @@ class LocalDateTime(DateTime):
         if cstruct in ('inf', '-inf'):
             return inf_datetime.InfDateTime(cstruct)
         else:
-            dt = super(LocalDateTime, self).deserialize(node, cstruct)
+            dt = super().deserialize(node, cstruct)
 
             return self.strip_timezone(dt)
 
@@ -254,7 +260,7 @@ class DefaultTuple(Tuple):
     default values.
     """
     def serialize(self, node, appstruct):
-        items = super(DefaultTuple, self).serialize(node, appstruct)
+        items = super().serialize(node, appstruct)
 
         if items is null and node.children:
             items = tuple([field.default for field in node.children])
@@ -275,7 +281,7 @@ class NumpyFixedLen(Tuple):
         if appstruct is null:  # colander.null
             return null
 
-        return super(NumpyFixedLen, self).serialize(node, appstruct.tolist())
+        return super().serialize(node, appstruct.tolist())
 
     def deserialize(self, node, cstruct):
         if cstruct is null:
@@ -296,7 +302,7 @@ class NumpyArray(List):
         if appstruct is null:  # colander.null
             return null
 
-        return super(NumpyArray, self).serialize(node, np.array(appstruct).tolist())
+        return super().serialize(node, np.array(appstruct).tolist())
 
     def deserialize(self, node, cstruct):
         if cstruct is null:
@@ -339,13 +345,13 @@ class DatetimeValue2dArray(Sequence):
         series = list(zip(appstruct['time'].astype(object),
                      appstruct['value'].tolist()))
 
-        return super(DatetimeValue2dArray, self).serialize(node, series)
+        return super().serialize(node, series)
 
     def deserialize(self, node, cstruct):
         if cstruct is null:
             return null
 
-        items = (super(DatetimeValue2dArray, self)
+        items = (super()
                  .deserialize(node, cstruct, accept_scalar=False))
         timeseries = np.array(items, dtype=gnome.basic_types.datetime_value_2d)
 
@@ -363,13 +369,13 @@ class DatetimeValue1dArray(Sequence):
 
         appstruct = list(zip(appstruct['time'].astype(object), appstruct['value']))
 
-        return super(DatetimeValue1dArray, self).serialize(node, appstruct)
+        return super().serialize(node, appstruct)
 
     def deserialize(self, node, cstruct):
         if cstruct is null:
             return null
 
-        items = (super(DatetimeValue1dArray, self)
+        items = (super()
                  .deserialize(node, cstruct, accept_scalar=False))
 
         timeseries = np.array(items, dtype=gnome.basic_types.datetime_value_1d)
@@ -380,12 +386,12 @@ class NullableString(String):
     def serialize(self, node, appstruct):
         if appstruct is None:
             return str(None)
-        return super(NullableString, self).serialize(node, appstruct)
+        return super().serialize(node, appstruct)
 
     def deserialize(self, node, cstruct):
         if cstruct == str(None):
             return None
-        return super(NullableString, self).deserialize(node, cstruct)
+        return super().deserialize(node, cstruct)
 
 
 class TimeDelta(Float):
@@ -394,13 +400,13 @@ class TimeDelta(Float):
     """
     def serialize(self, node, appstruct):
         if appstruct is not null:
-            return super(TimeDelta, self).serialize(node,
+            return super().serialize(node,
                                                     appstruct.total_seconds())
         else:
-            return super(TimeDelta, self).serialize(node, null)
+            return super().serialize(node, null)
 
     def deserialize(self, *args, **kwargs):
-        sec = super(TimeDelta, self).deserialize(*args, **kwargs)
+        sec = super().deserialize(*args, **kwargs)
 
         if sec is not null:
             return datetime.timedelta(seconds=sec)
@@ -417,7 +423,7 @@ class OrderedCollectionType(Sequence):
         if accept_scalar:
             return [value]
         else:
-            raise Invalid(node, '{0} is not iterable'.format(value))
+            raise Invalid(node, f'{value} is not iterable')
 
 
 """
@@ -430,14 +436,13 @@ Specifically a new DefaultTypeSchema and a DatetimeValue2dArraySchema
 class FilenameSchema(SequenceSchema):
     def __init__(self, *args, **kwargs):
         kwargs['typ'] = Sequence(accept_scalar=True)
-        super(FilenameSchema, self).__init__(SchemaNode(String()), *args, **kwargs)
+        super().__init__(SchemaNode(String()), *args, **kwargs)
 
     def serialize(self, appstruct, options=None):
-        rv = super(FilenameSchema, self).serialize(appstruct)
-        if rv and options is not None:
-            if not options.get('raw_paths', True):
-                for i, filename in enumerate(rv):
-                    rv[i] = os.path.split(filename)[1]
+        rv = super().serialize(appstruct)
+        if rv and options is not None and not options.get('raw_paths', True):
+            for i, filename in enumerate(rv):
+                rv[i] = os.path.split(filename)[1]
         if rv and len(rv) == 1:
             return rv[0]
         return rv
@@ -448,7 +453,7 @@ class FilenameSchema(SequenceSchema):
         """
         if cstruct is None or cstruct is null:
             return None
-        rv = super(FilenameSchema, self).deserialize(cstruct)
+        rv = super().deserialize(cstruct)
         if len(rv) == 1:
             return rv[0]
         else:
@@ -489,7 +494,7 @@ class NumpyArraySchema(SchemaNode):
         returns data as a list
         """
         if not isinstance(appstruct, (np.ndarray, list, tuple)):
-            raise ValueError('Cannot serialize: {0} is not a numpy array, list, or tuple'.format(appstruct))
+            raise ValueError(f'Cannot serialize: {appstruct} is not a numpy array, list, or tuple')
 
         return round_sf_array(appstruct, self.precision).astype(self.dtype, copy=False).tolist()
 

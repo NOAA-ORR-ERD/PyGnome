@@ -4,13 +4,13 @@ maps for GNOME.
 imports to have it all in one namespace
 """
 
-from .map import (GnomeMap,
-                  MapFromBNA,
+from .map import (
                   GnomeMap,
-                  RasterMap,
-                  ParamMap,
                   GnomeMapSchema,
+                  MapFromBNA,
                   MapFromBNASchema,
-                  ParamMapSchema,
                   MapFromUGridSchema,
-                  )
+                  ParamMap,
+                  ParamMapSchema,
+                  RasterMap,
+)

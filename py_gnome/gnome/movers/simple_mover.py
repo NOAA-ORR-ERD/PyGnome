@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 
 """
 simple_mover.py
@@ -10,21 +9,15 @@ It's a steady, uniform current -- one velocity and direction for everywhere
 at all time.
 """
 
-import copy
 
 import numpy as np
-
+from colander import Float, SchemaNode
 from numpy import random
 
-from colander import (SchemaNode, Float)
-
-from gnome.basic_types import oil_status, mover_type
-from gnome.utilities.projections import FlatEarthProjection as proj
-
+from gnome.basic_types import mover_type, oil_status
 from gnome.movers import Mover, ProcessSchema
-
-from gnome.persist.base_schema import ObjTypeSchema
 from gnome.persist.extend_colander import NumpyFixedLenSchema
+from gnome.utilities.projections import FlatEarthProjection as proj
 
 
 class SimpleMoverVelocitySchema(NumpyFixedLenSchema):
@@ -79,11 +72,10 @@ class SimpleMover(Mover):
         self.velocity = np.asarray(velocity, dtype=mover_type).reshape((3,))
 
         self.uncertainty_scale = uncertainty_scale
-        super(SimpleMover, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def __repr__(self):
-        return "SimpleMover(velocity={!r}, uncertainty_scale={!r})".format(self.velocity,
-                                                                          self.uncertainty_scale)
+        return f"SimpleMover(velocity={self.velocity!r}, uncertainty_scale={self.uncertainty_scale!r})"
 
     def get_move(self, spill,
                  time_step, model_time):
@@ -107,7 +99,7 @@ class SimpleMover(Mover):
             status_codes = spill['status_codes']
         except KeyError as err:
             raise ValueError("The spill doesn't have the required "
-                             "data arrays\n{}".format(err))
+                             f"data arrays\n{err}")
 
         # which ones should we move?
 

@@ -3,13 +3,11 @@ Download data from remote server
 '''
 
 import os
-
+from urllib.error import HTTPError
 from urllib.parse import urljoin
 from urllib.request import urlopen
-from urllib.error import HTTPError
 
-from progressbar import (ProgressBar, Percentage, FileTransferSpeed,
-                         ETA, Bar)
+from progressbar import ETA, Bar, FileTransferSpeed, Percentage, ProgressBar
 
 DATA_SERVER = 'https://gnome.orr.noaa.gov/py_gnome_testdata/'
 
@@ -65,9 +63,9 @@ def get_datafile(filename, subdir=""):
         try:
             resp = urlopen(urljoin(data_server, fname))
         except HTTPError as ex:
-            ex.msg = ("{0}. '{1}' not found on server or server is down"
-                      .format(ex.msg, fname))
-            raise ex
+            ex.msg = (f"{ex.msg}. '{fname}' not found on server or server is down"
+                      )
+            raise
 
         # progress bar
         widgets = [fname + ':      ',

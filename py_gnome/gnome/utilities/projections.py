@@ -15,9 +15,10 @@ NOTE: all coordinates are takes as (lon, lat, depth)
       even though depth is always ignored
 """
 import numpy as np
+from colander import Float, Int, SchemaNode, TupleSchema, drop
+
 from gnome.gnomeobject import GnomeId
 from gnome.persist.base_schema import ObjTypeSchema
-from colander import drop, TupleSchema, Float, SchemaNode, Int
 
 
 def to_2d_coords(coords):
@@ -75,7 +76,6 @@ class NoProjection(GnomeId):
         """
         Does nothing
         """
-        pass
 
     @property
     def bounding_box(self):
@@ -149,7 +149,7 @@ class GeoProjection(GnomeId):
         :type image_size: Struct of the form (width, height)
 
         """
-        super(GeoProjection, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.center = None
         self.offset = None
         self.scale = None
@@ -172,18 +172,7 @@ class GeoProjection(GnomeId):
         provide an equality check for checking
         saved state of renderers, etc
         """
-        if type(self) is not type(other):
-            return False
-        elif not np.allclose(self.center, other.center, rtol=1e-4, atol=1e-4):
-            return False
-        elif not np.array_equal(self.offset, other.offset):
-            return False
-        elif not np.allclose(self.scale, other.scale, rtol=1e-4, atol=1e-4):
-            return False
-        elif not np.array_equal(self.image_size, other.image_size):
-            return False
-        else:
-            return True
+        return not (type(self) is not type(other) or not np.allclose(self.center, other.center, rtol=0.0001, atol=0.0001) or not np.array_equal(self.offset, other.offset) or not np.allclose(self.scale, other.scale, rtol=0.0001, atol=0.0001) or not np.array_equal(self.image_size, other.image_size))
 
     def __ne__(self, other):
         return not self == other

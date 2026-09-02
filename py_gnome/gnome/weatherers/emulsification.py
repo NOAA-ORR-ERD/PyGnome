@@ -4,13 +4,13 @@ model emulsification process
 
 import numpy as np
 
-from gnome.array_types import gat
-
 from gnome import constants
-from .core import WeathererSchema
-from gnome.weatherers import Weatherer
+from gnome.array_types import gat
 from gnome.cy_gnome.cy_weatherers import emulsify_oil
 from gnome.environment.waves import WavesSchema
+from gnome.weatherers import Weatherer
+
+from .core import WeathererSchema
 
 
 class EmulsificationSchema(WeathererSchema):
@@ -40,7 +40,7 @@ class Emulsification(Weatherer):
             kwargs['make_default_refs'] = \
                 kwargs.pop('make_default_refs', False)
 
-        super(Emulsification, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.array_types.update({'age': gat('age'),
                                  'bulltime': gat('bulltime'),
                                  'frac_water': gat('frac_water'),
@@ -61,7 +61,7 @@ class Emulsification(Weatherer):
         # create 'water_content' key if it doesn't exist
         # let's only define this the first time
         if self.on:
-            super(Emulsification, self).prepare_for_model_run(sc)
+            super().prepare_for_model_run(sc)
             sc.mass_balance['water_content'] = 0.0
             self._bw = 0
 
@@ -72,7 +72,7 @@ class Emulsification(Weatherer):
         '''
 
         # do we need this?
-        super(Emulsification, self).prepare_for_model_step(sc,
+        super().prepare_for_model_step(sc,
                                                            time_step,
                                                            model_time)
         if not self.active:
@@ -104,21 +104,21 @@ class Emulsification(Weatherer):
             # compute energy dissipation rate (m^2/s^3) based on wave height
             wave_height = self.waves.get_value(model_time)[0]
             if wave_height > 0:
-                eps = (.0355 * wave_height ** .215) / ((np.log(6.31 / wave_height ** 1.45)) ** 3)
+                (.0355 * wave_height ** .215) / ((np.log(6.31 / wave_height ** 1.45)) ** 3)
             else:
                 #eps = 0.
                 return
 
             water_temp = self.waves.water.get('temperature', 'K')
-            rho_oil = substance.density_at_temp(water_temp)
-            dens_emul = data['density']
-            visc_emul = data['viscosity']
+            substance.density_at_temp(water_temp)
+            data['density']
+            data['viscosity']
             dens_oil = data['oil_density']
             visc_oil = data['oil_viscosity']
             sigma_ow = substance.oil_water_surface_tension() # does this vary in time?
             print("sigma_ow")
             print(sigma_ow[0])
-            v0 = substance.kvis_at_temp(water_temp)	#viscosity is calculated in weathering_data
+            substance.kvis_at_temp(water_temp)	#viscosity is calculated in weathering_data
             if wave_height > 0:
                 delta_T_emul = 1630 + 450 / wave_height ** (1.5)
             else:
@@ -130,33 +130,29 @@ class Emulsification(Weatherer):
             # new suggestion .03 <= f_asph <= .2
             # latest update, min only .03 <= f_asph
             f_min = .03
-            f_max = .2
             r_min = .2
             r_max = 1.4
-            rho_min = 600	#kg/m^3
-            drop_min = .000008	# 8 microns
 
             #k_emul2 = 2.3 / delta_T_emul
             k_emul2 = 1. / delta_T_emul
-            k_emul = self._water_uptake_coeff(model_time, substance)
+            self._water_uptake_coeff(model_time, substance)
 
-            emul_time = substance.bullwinkle_time
 
             resin_mask = substance._sara['type'] == 'Resins'
             asphaltene_mask = substance._sara['type'] == 'Asphaltenes'
             saturates_mask = substance._sara['type'] == 'Saturates'
             aromatics_mask = substance._sara['type'] == 'Aromatics'
 
-            f_sat = (saturates_mask * data['mass_components']).sum(axis=1) / data['mass'].sum()
-            f_arom = (aromatics_mask * data['mass_components']).sum(axis=1) / data['mass'].sum()
+            (saturates_mask * data['mass_components']).sum(axis=1) / data['mass'].sum()
+            (aromatics_mask * data['mass_components']).sum(axis=1) / data['mass'].sum()
 
             # will want to use mass_components to update over time
-            f_res1 = resin_mask * substance._sara['fraction']
+            resin_mask * substance._sara['fraction']
             f_res = np.sum(resin_mask * substance._sara['fraction'])
             f_asph = np.sum(asphaltene_mask * substance._sara['fraction'])
-            rho_asph = np.sum(asphaltene_mask * substance._sara['density']) # 1100 kg/m^3
+            np.sum(asphaltene_mask * substance._sara['density']) # 1100 kg/m^3
 
-            f_res2 = resin_mask * data['mass_components']
+            resin_mask * data['mass_components']
             if data['mass'].sum() == 0:
                 return
             f_res3 = (resin_mask * data['mass_components']).sum(axis=1) / data['mass'].sum()
@@ -169,12 +165,11 @@ class Emulsification(Weatherer):
                 return
             if f_asph <= 0:
                 return
-            r_oil3 = np.where(f_res3 > 0, f_asph3 / f_res3, 0)	# check if limits are just for S_b calculation
+            np.where(f_res3 > 0, f_asph3 / f_res3, 0)	# check if limits are just for S_b calculation
 
             Y_max = .61 + .5 * r_oil - .28 * r_oil **2
             # limit on r_oil3 values or just final Y_max or set Y_max = 0 if out of bounds?
-            if Y_max > .9:
-                Y_max = .9
+            Y_max = min(Y_max, .9)
 
             m = .5 * (visc_max + visc_min)
             x_visc = (visc_oil - m) / (visc_max - visc_min)
@@ -222,7 +217,6 @@ class Emulsification(Weatherer):
             # get from database bullwinkle (could be overridden by user)
             #emul_constant = substance.get('bullwinkle_fraction')
             # will want to check if user set a value, and change the interface since there is no longer a bullwinkle
-            emul_constant = substance.bullwinkle
 
             # max water content fraction - get from database
             Y_max = substance.get('emulsion_water_fraction_max')
@@ -230,7 +224,7 @@ class Emulsification(Weatherer):
             # doesn't emulsify, avoid the nans
             if Y_max <= 0:
                 return
-            S_max = (6. / constants.drop_min) * (Y_max / (1.0 - Y_max))
+            (6. / constants.drop_min) * (Y_max / (1.0 - Y_max))
 
             #sc.mass_balance['water_content'] += \
                 #np.sum(data['frac_water'][:]) / sc.num_released
@@ -241,7 +235,7 @@ class Emulsification(Weatherer):
                 sc.mass_balance['water_content'] = \
                     np.sum(data['mass']/data['mass'].sum() * data['frac_water'])
 
-            self.logger.debug(self._pid + 'water_content for {0}: {1}'.
+            self.logger.debug(self._pid + 'water_content for {}: {}'.
                               format(substance.name,
                                      sc.mass_balance['water_content']))
         sc.update_from_fatedataview()
@@ -298,7 +292,7 @@ class Emulsification(Weatherer):
                 sc.mass_balance['water_content'] = \
                     np.sum(data['mass']/data['mass'].sum() * data['frac_water'])
 
-            self.logger.debug(self._pid + 'water_content for {0}: {1}'.
+            self.logger.debug(self._pid + 'water_content for {}: {}'.
                               format(substance.name,
                                      sc.mass_balance['water_content']))
         sc.update_from_fatedataview()
@@ -312,7 +306,6 @@ class Emulsification(Weatherer):
         if not self.active or sc.num_released == 0 or not sc.substance.is_weatherable:
             return
 
-        use_new_algorithm = False
         # only use new algorithm if all substances have measured SARA totals
 #         for substance in sc.get_substances():
 #             if substance.record.imported is not None:
@@ -349,14 +342,8 @@ class Emulsification(Weatherer):
     def _Bw(self, x_visc, x_sig_min, x_fasph, x_r, x_s):
         '''
         '''
-        k_v = 4
-        k_sig = 4
-        k_fasph = 3
-        k_r = 2
-        k_s = 1.5
 
         # for now, I think P_min will be determined elsewhere
-        U = 0
         P_min = .03
         #P_min = P_min - U*P_min
         #P_min = P_min + U*(1 - P_min)

@@ -4,18 +4,19 @@ Environment objects
 
 import copy
 from functools import lru_cache
-
-from colander import SchemaNode, MappingSchema, Float, String, drop, OneOf
+from typing import ClassVar
 
 import gsw
 import nucos as uc
+from colander import Float, MappingSchema, OneOf, SchemaNode, String, drop
 
 from gnome import constants
-from gnome.utilities.time_utils import TZOffset
+from gnome.gnomeobject import GnomeId, GnomeObjMeta
 from gnome.persist import base_schema
-from gnome.gnomeobject import GnomeObjMeta, GnomeId
+from gnome.utilities.time_utils import TZOffset
 
 from .. import _valid_units
+
 
 class EnvironmentMeta(GnomeObjMeta):
     """
@@ -27,7 +28,7 @@ class EnvironmentMeta(GnomeObjMeta):
         for c in self.__mro__:
             if hasattr(c, '_subclasses') and c is not self:
                 c._subclasses.append(self)
-        super(EnvironmentMeta, self).__init__(_name, _bases, _dct)
+        super().__init__(_name, _bases, _dct)
 
 
 class Environment(GnomeId):
@@ -38,7 +39,7 @@ class Environment(GnomeId):
 
     It also should define the API -- thought that's not totally consitent.
     """
-    _subclasses = []
+    _subclasses: ClassVar[list] = []
 
     # env objects referenced by others using this attribute name
     # eg: For Wind objects, set to 'wind', for Water object set to 'water'
@@ -57,7 +58,7 @@ class Environment(GnomeId):
                  make_default_refs=True,
                  *,
 #                 name=None,
-                 timezone_offset=TZOffset(),
+                 timezone_offset=None,
                  **kwargs):
         '''
         base class for environment objects
@@ -75,7 +76,9 @@ class Environment(GnomeId):
         '''
         self.make_default_refs = make_default_refs
         super().__init__(**kwargs)
-        self._timezone_offset=timezone_offset
+        if timezone_offset is None:
+            timezone_offset = TZOffset()
+        self._timezone_offset = timezone_offset
         self.array_types = {}
 
     @property
@@ -158,21 +161,18 @@ class Environment(GnomeId):
         Override this method if a derived environment class needs to perform
         any actions prior to a model run
         """
-        pass
 
     def prepare_for_model_step(self, model_time):
         """
         Override this method if a derived environment class needs to perform
         any actions prior to a model step
         """
-        pass
 
     def post_model_run(self):
         """
         Override this method if a derived environment class needs to perform
         any actions after a model run is complete (StopIteration triggered)
         """
-        pass
 
 
 
@@ -198,13 +198,15 @@ def env_from_netCDF(filename=None, dataset=None,
             obj = c.from_netCDF(**klskwargs)
         except Exception as e:
             import logging
-            logging.warn('''Class {0} could not be constituted from netCDF file
-                                    Exception: {1}'''.format(c.__name__, e))
+            logging.getLogger(__name__).warning(
+                f'Class {c.__name__} could not be constituted from netCDF file\n'
+                f'Exception: {e}')
         return obj
 
-    from gnome.environment.gridded_objects_base import Variable, VectorVariable
     from gridded.utilities import get_dataset
-    from gnome.environment import PyGrid, Environment
+
+    from gnome.environment import Environment, PyGrid
+    from gnome.environment.gridded_objects_base import Variable, VectorVariable
 
     new_env = []
 
@@ -240,7 +242,7 @@ def env_from_netCDF(filename=None, dataset=None,
 
     for c in scs:
         if (issubclass(c, (Variable, VectorVariable)) and
-                not any([isinstance(o, c) for o in new_env])):
+                not any(isinstance(o, c) for o in new_env)):
             clskwargs = copy.copy(kwargs)
             obj = None
 
@@ -255,7 +257,7 @@ def env_from_netCDF(filename=None, dataset=None,
                         if isinstance(o, klass):
                             clskwargs[ref] = o
 
-                    if ref in clskwargs.keys():
+                    if ref in clskwargs:
                         continue
                     else:
                         obj = attempt_from_netCDF(c,
@@ -301,9 +303,8 @@ def get_file_analysis(filename):
     # classes = copy.copy(Environment._subclasses)
 
     if len(env) > 0:
-        report = ['Can create {0} types of environment objects'
-                  .format(len([env.__class__ for e in env]))]
-        report.append('Types are: {0}'.format(str([e.__class__ for e in env])))
+        report = [f'Can create {len([env.__class__ for e in env])} types of environment objects']
+        report.append(f'Types are: {[e.__class__ for e in env]!s}')
 
     report = report + grid_detection_report(filename)
 
@@ -320,8 +321,7 @@ def grid_detection_report(filename):
         report.append('    A standard grid topology was not found in the file')
         report.append('    topology breakdown future feature')
     else:
-        report.append('    A grid topology was found in the file: {0}'
-                      .format(topo))
+        report.append(f'    A grid topology was found in the file: {topo}')
 
     return report
 
@@ -389,27 +389,27 @@ class Water(Environment):
     _ref_as = 'water'
     _schema = WaterSchema
 
-    _units_type = {'temperature': ('temperature', _valid_temp_units),
-                   'salinity': ('salinity', _valid_salinity_units),
-                   'sediment': ('concentration in water',
-                                _valid_sediment_units),
-                   'wave_height': ('length', _valid_dist_units),
-                   'fetch': ('length', _valid_dist_units),
-                   'kinematic_viscosity': ('kinematic viscosity',
-                                           _valid_kvis_units),
-                   'density': ('density', _valid_density_units),
-                   }
+    _units_type: ClassVar[dict] = {'temperature': ('temperature', _valid_temp_units),
+                                   'salinity': ('salinity', _valid_salinity_units),
+                                   'sediment': ('concentration in water',
+                                                _valid_sediment_units),
+                                   'wave_height': ('length', _valid_dist_units),
+                                   'fetch': ('length', _valid_dist_units),
+                                   'kinematic_viscosity': ('kinematic viscosity',
+                                                           _valid_kvis_units),
+                                   'density': ('density', _valid_density_units),
+                                   }
 
     # keep track of valid SI units for properties - these are used for
     # conversion since internal code uses SI units. Don't expect to change
     # these so make it a class level attribute
-    _si_units = {'temperature': 'K',
-                 'salinity': 'psu',
-                 'sediment': 'kg/m^3',
-                 'wave_height': 'm',
-                 'fetch': 'm',
-                 'density': 'kg/m^3',
-                 'kinematic_viscosity': 'm^2/s'}
+    _si_units: ClassVar[dict] = {'temperature': 'K',
+                                 'salinity': 'psu',
+                                 'sediment': 'kg/m^3',
+                                 'wave_height': 'm',
+                                 'fetch': 'm',
+                                 'density': 'kg/m^3',
+                                 'kinematic_viscosity': 'm^2/s'}
 
     def __init__(self,
                  temperature=300.0,
@@ -439,9 +439,9 @@ class Water(Environment):
             self.units = units
 
     def __repr__(self):
-        info = ("{0.__class__.__module__}.{0.__class__.__name__}"
-                "(temperature={0.temperature},"
-                " salinity={0.salinity})").format(self)
+        info = (f"{self.__class__.__module__}.{self.__class__.__name__}"
+                f"(temperature={self.temperature},"
+                f" salinity={self.salinity})")
         return info
 
     __str__ = __repr__
@@ -521,13 +521,11 @@ class Water(Environment):
             self._units = {}
 
         for prop, unit in u_dict.iteritems():
-            if prop in self._units_type:
-                if unit not in self._units_type[prop][1]:
-                    msg = ("{0} are invalid units for {1}.  Ignore it."
-                           .format(unit, prop))
-                    self.logger.error(msg)
-                    # should we raise error?
-                    raise uc.InvalidUnitError(msg)
+            if prop in self._units_type and unit not in self._units_type[prop][1]:
+                msg = f"{unit} are invalid units for {prop}.  Ignore it."
+                self.logger.error(msg)
+                # should we raise error?
+                raise uc.InvalidUnitError(msg)
 
             # allow user to add new keys to units dict.
             # also update prop if unit is valid

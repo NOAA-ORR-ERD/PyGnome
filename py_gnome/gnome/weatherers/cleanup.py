@@ -5,28 +5,31 @@ add these as weatherers
 
 from datetime import timedelta
 
+import nucos as uc
 import numpy as np
 
-from gnome.basic_types import oil_status, fate as bt_fate
 from gnome.array_types import gat
-from gnome.weatherers import Weatherer
-from gnome.environment.wind import WindSchema
-
-from .core import WeathererSchema
-from .. import _valid_units
-
-import nucos as uc
-from gnome.persist import (SchemaNode, Float, String, drop, Range,
-                           GeneralGnomeObjectSchema, SchemaNode, Float, String,
-                           drop, Range, LocalDateTime)
-from gnome.environment.water import WaterSchema
+from gnome.basic_types import fate as bt_fate
 from gnome.environment.gridded_objects_base import VectorVariableSchema
+from gnome.environment.water import WaterSchema
 from gnome.environment.waves import WavesSchema
-
+from gnome.environment.wind import WindSchema
+from gnome.persist import (
+    Float,
+    GeneralGnomeObjectSchema,
+    Range,
+    SchemaNode,
+    String,
+    drop,
+)
 from gnome.utilities.inf_datetime import InfDateTime
+from gnome.weatherers import Weatherer
+
+from .. import _valid_units
+from .core import WeathererSchema
 
 
-class RemoveMass(object):
+class RemoveMass:
     '''
     create a mixin for mass removal. These methods are used by CleanUpBase and
     also by manual_beaching.
@@ -100,7 +103,7 @@ class CleanUpBase(RemoveMass, Weatherer):
         self._efficiency = None
         self.efficiency = efficiency
 
-        super(CleanUpBase, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         self.array_types.update({'frac_water': gat('frac_water')})
 
@@ -168,7 +171,7 @@ class CleanUpBase(RemoveMass, Weatherer):
         '''
         arrays = {'fate_status', 'mass', 'frac_water'}
 
-        for substance, data in sc.itersubstancedata(arrays, fate_status='surface_weather'):
+        for _substance, data in sc.itersubstancedata(arrays, fate_status='surface_weather'):
             curr_mass = data['mass']
 
             if oilwater_mix:
@@ -180,9 +183,9 @@ class CleanUpBase(RemoveMass, Weatherer):
             if mass_to_remove >= curr_mass.sum():
                 data['fate_status'][:] = new_status
 
-                self.logger.warning('{0} insufficient mass released for cleanup'
-                                    .format(self._pid))
-                self.logger.debug('{0} marked ALL ({1}) LEs, total mass: {2}'
+                self.logger.warning(f'{self._pid} insufficient mass released for cleanup'
+                                    )
+                self.logger.debug('{} marked ALL ({}) LEs, total mass: {}'
                                     .format(self._pid,
                                             len(data['fate_status']),
                                             data['mass'].sum()))
@@ -193,7 +196,7 @@ class CleanUpBase(RemoveMass, Weatherer):
                 # change status for elements upto and including 'ix'
                 data['fate_status'][:ix + 1] = new_status
 
-                self.logger.debug('{0} marked {1} LEs with mass: {2}'
+                self.logger.debug('{} marked {} LEs with mass: {}'
                                   .format(self._pid, ix, data['mass'][:ix].sum()))
 
         sc.update_from_fatedataview(fate_status='surface_weather')
@@ -208,8 +211,8 @@ class CleanUpBase(RemoveMass, Weatherer):
                               sum())/data['mass'].sum()
         else:
             avg_frac_water = 0
-            self.logger.warning('{0} set avg_frac_water = ({1}), '
-                                'total mass: {2}'
+            self.logger.warning('{} set avg_frac_water = ({}), '
+                                'total mass: {}'
                                 .format(self._pid,
                                         avg_frac_water,
                                         data['mass'].sum()))
@@ -254,9 +257,9 @@ class Skimmer(CleanUpBase):
 
         self.water = water
 
-        super(Skimmer, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
-        if any([isinstance(dt, InfDateTime) for dt in self.active_range]):
+        if any(isinstance(dt, InfDateTime) for dt in self.active_range):
             raise TypeError('cleanup operations must have a valid datetime.  '
                             ' - cannot use -inf and inf')
         self._units = None
@@ -274,9 +277,7 @@ class Skimmer(CleanUpBase):
 
     def _validunits(self, value):
         'checks if units are either valid_vol_units or valid_mass_units'
-        if value in self.valid_vol_units or value in self.valid_mass_units:
-            return True
-        return False
+        return bool(value in self.valid_vol_units or value in self.valid_mass_units)
 
     @property
     def units(self):
@@ -288,9 +289,9 @@ class Skimmer(CleanUpBase):
         if self._validunits(value):
             self._units = value
         else:
-            self.logger.warning('{0} are not valid volume or mass units. '
+            self.logger.warning(f'{value} are not valid volume or mass units. '
                              'Not updated'
-                             .format(value))
+                             )
 
     def prepare_for_model_run(self, sc):
         '''
@@ -315,7 +316,7 @@ class Skimmer(CleanUpBase):
         code checks to see if any LEs are marked for skimming and if
         none are found, it marks them.
         '''
-        super(Skimmer, self).prepare_for_model_step(sc, time_step, model_time)
+        super().prepare_for_model_step(sc, time_step, model_time)
         if not self.active:
             return
 
@@ -373,8 +374,8 @@ class Skimmer(CleanUpBase):
             data['mass'] = data['mass_components'].sum(1)
 
             sc.mass_balance['skimmed'] += rm_mass
-            self.logger.debug('{0} amount skimmed for {1}: {2}'
-                              .format(self._pid, substance.name, rm_mass))
+            self.logger.debug(f'{self._pid} amount skimmed for {substance.name}: {rm_mass}'
+                              )
 
         sc.update_from_fatedataview(fate_status='skim')
 
@@ -447,7 +448,7 @@ class Burn(CleanUpBase):
         :param bool on: whether object is on or not for the run
 
         '''
-        super(Burn, self).__init__(active_range=active_range,
+        super().__init__(active_range=active_range,
                                    efficiency=efficiency,
                                    **kwargs)
 
@@ -534,11 +535,9 @@ class Burn(CleanUpBase):
         '''
         if (uc.convert('Length', self.thickness_units, 'm',
                        self.thickness) <= self._min_thickness):
-            msg = ("thickness of {0} {1}, is less than min required {2} m."
+            msg = (f"thickness of {self.thickness} {self.thickness_units}, is less than min required {self._min_thickness} m."
                    " Burn will not occur"
-                   .format(self.thickness,
-                           self.thickness_units,
-                           self._min_thickness))
+                   )
             self.logger.warning(msg)
 
     @property
@@ -583,7 +582,7 @@ class Burn(CleanUpBase):
            burned. The LEs marked for Burning are marked only once -
            during the very first step that the object becomes active
         '''
-        super(Burn, self).prepare_for_model_step(sc, time_step, model_time)
+        super().prepare_for_model_step(sc, time_step, model_time)
         if not self.active:
             return
 
@@ -708,8 +707,7 @@ class Burn(CleanUpBase):
             burn_mass = data['mass'].sum()
 
             rm_mass = self._get_mass(substance, vol_oil_burned, 'm^3')
-            if rm_mass > burn_mass:
-                rm_mass = burn_mass
+            rm_mass = min(rm_mass, burn_mass)
 
             rm_mass_frac = rm_mass / burn_mass
 
@@ -723,8 +721,8 @@ class Burn(CleanUpBase):
             #                              self._timestep)
 
             sc.mass_balance['burned'] += rm_mass
-            self.logger.debug('{0} amount burned for {1}: {2}'
-                              .format(self._pid, substance.name, rm_mass))
+            self.logger.debug(f'{self._pid} amount burned for {substance.name}: {rm_mass}'
+                              )
 
         sc.update_from_fatedataview(fate_status='burn')
 
@@ -777,7 +775,7 @@ class ChemicalDispersion(CleanUpBase):
         remaining kwargs include 'on' and 'name' and these are passed to base
         class via super
         '''
-        super(ChemicalDispersion, self).__init__(active_range=active_range,
+        super().__init__(active_range=active_range,
                                                  efficiency=efficiency,
                                                  **kwargs)
 
@@ -794,7 +792,7 @@ class ChemicalDispersion(CleanUpBase):
         # default-refs but the current code sets the efficiency attribute
         # from waves.. maybe a static_efficiency property -- if it is not None,
         # then it is used, rather than any computation being made.
-        self.make_default_refs = False if efficiency else True
+        self.make_default_refs = not efficiency
 
     def prepare_for_model_run(self, sc):
         '''
@@ -810,7 +808,7 @@ class ChemicalDispersion(CleanUpBase):
         2. mark LEs for removal
         3. set internal _rate attribute for mass removal [kg/sec]
         '''
-        super(ChemicalDispersion, self).prepare_for_model_step(sc,
+        super().prepare_for_model_step(sc,
                                                                time_step,
                                                                model_time)
         if not self.active:
@@ -879,8 +877,8 @@ class ChemicalDispersion(CleanUpBase):
             data['mass'] = data['mass_components'].sum(1)
 
             sc.mass_balance['chem_dispersed'] += rm_mass
-            self.logger.debug('{0} amount chemically dispersed for '
-                              '{1}: {2}'
-                              .format(self._pid, substance.name, rm_mass))
+            self.logger.debug(f'{self._pid} amount chemically dispersed for '
+                              f'{substance.name}: {rm_mass}'
+                              )
 
         sc.update_from_fatedataview(fate_status='disperse')

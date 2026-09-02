@@ -74,4 +74,33 @@ testpaths = [
 ]
 addopts = "--ignore=tests/profiling"
 
+[tool.ruff.lint]
+ignore = [
+    "RUF012",  # mutable class attributes -- would need ClassVar across the whole codebase
+    "DTZ001",  # datetime() without timezone
+    "DTZ005",  # datetime.now() without timezone
+    "DTZ006",  # datetime.fromtimestamp() without timezone
+    "DTZ007",  # strptime() without timezone
+    "BLE001",  # blind exceptions -- many are intentional catch-alls
+    "B008",    # function calls in default args -- would break existing APIs
+    "B019",    # lru_cache on methods
+    "F821",    # undefined names -- false positives in .pyi stubs
+    "F811",    # redefinition of unused name -- intentional in some modules
+    "TRY002",  # create your own exception class
+    "TRY003",  # long messages in exceptions
+    "TRY004",  # type check without isinstance
+    "S110",    # try/except/pass
+    "E722",    # bare except
+    "D419",    # empty docstring section
+    "PLE0604", # invalid __all__ entry
+    "RUF059",  # unused unpacking target
+    "B026",    # star-arg after keyword
+    "F524",    # missing format argument
+]
+
+[tool.ruff.lint.per-file-ignores]
+"**/__init__.py" = ["F401"]  # re-exports are intentional in package __init__ files
+"gnome/utilities/geometry/BBox.py" = ["N999"]  # legacy uppercase filename
+"gnome/utilities/geometry/PinP.py" = ["N999"]  # legacy uppercase filename
+
 # [project.optional-dependencies]

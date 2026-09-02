@@ -1,17 +1,16 @@
-
-from .core import Weatherer, HalfLifeWeatherer
-from .cleanup import Skimmer, Burn, ChemicalDispersion
+# ruff: noqa: I001  -- core.py must load first; all other weatherers import Weatherer from gnome.weatherers
+from .core import HalfLifeWeatherer, Weatherer
+from .cleanup import Burn, ChemicalDispersion, Skimmer
 from .manual_beaching import Beaching
 from .evaporation import Evaporation
 from .natural_dispersion import NaturalDispersion
 from .dissolution import Dissolution
 from .emulsification import Emulsification
 from .bio_degradation import Biodegradation
-from .spreading import Langmuir, FayGravityViscous, ConstantArea
+from .spreading import ConstantArea, FayGravityViscous, Langmuir
 from .roc import Burn as ROC_Burn
 from .roc import Disperse as ROC_Disperse
 from .roc import Skim as ROC_Skim
-
 
 """
 Weatherers are to be ordered as follows:
@@ -66,7 +65,7 @@ sort_order = [ChemicalDispersion,
 
 weatherer_schemas = list({cls._schema for cls in sort_order if hasattr(cls, '_schema')})
 
-weatherers_idx = dict([(v, i) for i, v in enumerate(sort_order)])
+weatherers_idx = {v: i for i, v in enumerate(sort_order)}
 
 response_weatherers = (Burn, Skimmer, ChemicalDispersion, Beaching)
 

@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 
 """
 computing fraction of oil in a given droplet size from rosin-rammler
