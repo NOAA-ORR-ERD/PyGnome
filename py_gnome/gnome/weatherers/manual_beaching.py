@@ -211,7 +211,7 @@ class Beaching(RemoveMass, Weatherer):
                     volume = uc.convert('volume', self.units, 'm^3', dv)
                     dm = volume * substance.standard_density
                 except uc.InvalidUnitError:  # not volume either
-                    raise ValueError(f"{self.unit} is not a valid unit for beached oil")
+                    raise ValueError(f"{self.units} is not a valid unit for beached oil")
             # if unit_type == 'mass':
             #     dm = uc.convert('mass', self.units, 'kg', dv)
             # elif unit_type == 'volume':
