@@ -4,11 +4,11 @@ model bio degradation process
 
 import numpy as np
 
-from gnome.weatherers import Weatherer
 from gnome.array_types import gat
+from gnome.environment.waves import WavesSchema
+from gnome.weatherers import Weatherer
 
 from .core import WeathererSchema
-from gnome.environment.waves import WavesSchema
 
 
 # FIXME: this shouldn't need waves -- though we may want to
@@ -34,7 +34,7 @@ class Biodegradation(Weatherer):
 
         self.waves = waves
 
-        super(Biodegradation, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         self.array_types.update({'mass':  gat('mass'),
                                  'mass_components': gat('mass_components'),
@@ -91,7 +91,7 @@ class Biodegradation(Weatherer):
 
         '''
         if self.on:
-            super(Biodegradation, self).prepare_for_model_run(sc)
+            super().prepare_for_model_run(sc)
             sc.mass_balance['bio_degradation'] = 0.0
 
             self.prev_yield_factor = 0.0
@@ -231,7 +231,7 @@ class Biodegradation(Weatherer):
             data['mass'] = data['mass_components'].sum(1)
 
             # log bio degradated amount
-            self.logger.debug('{0} Amount bio degradated for {1}: {2}'
+            self.logger.debug('{} Amount bio degradated for {}: {}'
                               .format(self._pid,
                                       substance.name,
                                       sc.mass_balance['bio_degradation']))

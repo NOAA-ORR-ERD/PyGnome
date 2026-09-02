@@ -1,21 +1,19 @@
-#!/usr/bin/env python
 
-import os
 import copy
-import logging
 import glob
 import json
-import zipfile
+import logging
+import os
 import tempfile
-
+import zipfile
+from functools import reduce
 from uuid import uuid1
 
-import numpy as np
 import colander
+import numpy as np
 
 import gnome
 from gnome.utilities.orderedcollection import OrderedCollection
-from functools import reduce
 from gnome.utilities.save_updater import extract_zipfile, update_savefile
 
 log = logging.getLogger(__name__)
@@ -38,7 +36,7 @@ def class_from_objtype(obj_type):
         # call getattr recursively
         return reduce(getattr, obj_type.split('.')[1:], gnome)
     except AttributeError:
-        log.warning("{0} is not part of gnome namespace".format(obj_type))
+        log.warning(f"{obj_type} is not part of gnome namespace")
         raise
 
 
@@ -51,15 +49,15 @@ def init_obj_log(obj, setLevel=logging.INFO):
     By default adds a NullHandler() so we don't get errors if application
     using PyGnome hasn't configured a logging.
     '''
-    logger = logging.getLogger("{0.__class__.__module__}."
-                               "{0.__class__.__name__}".format(obj))
+    logger = logging.getLogger(f"{obj.__class__.__module__}."
+                               f"{obj.__class__.__name__}")
     logger.propagate = True
     logger.setLevel = setLevel
     logger.addHandler(logging.NullHandler())
     return logger
 
 
-class AddLogger(object):
+class AddLogger:
     '''
     Mixin for including a logger
     '''
@@ -69,14 +67,14 @@ class AddLogger(object):
         # because old save files
         kwargs.pop('json_', None)
         try:
-            super(AddLogger, self).__init__(**kwargs)
+            super().__init__(**kwargs)
         # Due to super magic, the object __init__ does not always get
         #   called here but if it does, and there are kwargs, you get a
         #   TypeError trapping that allows a more meaningful message
         except TypeError:
             if kwargs:  # could it fail for some other reason? maybe???
-                msg = ("{} are invalid keyword arguments for:\n"
-                       "{}".format(list(kwargs.keys()), self.__class__))
+                msg = (f"{list(kwargs.keys())} are invalid keyword arguments for:\n"
+                       f"{self.__class__}")
                 raise TypeError(msg)
 
     @property
@@ -101,7 +99,7 @@ class AddLogger(object):
         just returns a string that the gnome object can append to - don't
         want to keep typing this everywhere.
         '''
-        return "{0} - ".format(os.getpid())
+        return f"{os.getpid()} - "
 
 
 class Refs(dict):
@@ -153,7 +151,7 @@ def create_signatures(cls, dct):
     Uses the MRO to find ancestor functions and merges the signatures.
     '''
     worklist = []
-    for k in dct.keys():
+    for k in dct:
         f = getattr(cls, k)
 
         if hasattr(f, '__wrapped__'):
@@ -187,7 +185,7 @@ def create_signatures(cls, dct):
         if item is cls:
             t = lambda c: c
         else:
-            t = lambda c: getattr(c, item.__name__) if hasattr(c, item.__name__) else None
+            t = lambda c, _item=item: getattr(c, _item.__name__) if hasattr(c, _item.__name__) else None
 
         pruned_func_mro = [i for i in map(t, cls.__mro__) if i is not None]
         sigs = [inspect.signature(e) for e in pruned_func_mro]
@@ -195,7 +193,7 @@ def create_signatures(cls, dct):
         paramlist = []
         # 0-5 is the enum values of the parameter kind
         # https://docs.python.org/3/library/inspect.html#inspect.Parameter.kind
-        for k in range(0, 5):
+        for k in range(5):
             for sig in sigs:
                 params = [s for s in sig.parameters.values()]
                 for p in params:
@@ -213,7 +211,7 @@ class GnomeObjMeta(type):
         if '_instance_count' not in dct:
             dct['_instance_count'] = 0
 
-        newclass = super(GnomeObjMeta, cls).__new__(cls, name, parents, dct)
+        newclass = super().__new__(cls, name, parents, dct)
         create_signatures(newclass, newclass.__dict__)
 
         if hasattr(newclass.__init__, '__signature__'):
@@ -242,8 +240,8 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
         if name:
             self.name = name
         self._appearance = _appearance
-        self.array_types = dict()
-        super(GnomeId, self).__init__(*args, **kwargs)
+        self.array_types = {}
+        super().__init__(*args, **kwargs)
 
     @property
     def all_array_types(self):
@@ -281,9 +279,9 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
     @property
     def obj_type(self):
         try:
-            obj_type = ('{0.__module__}.{0.__class__.__name__}'.format(self))
+            obj_type = (f'{self.__module__}.{self.__class__.__name__}')
         except AttributeError:
-            obj_type = '{0.__class__.__name__}'.format(self)
+            obj_type = f'{self.__class__.__name__}'
 
         return obj_type
 
@@ -390,19 +388,21 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
                 if len(reflist) > 0 and getattr(self, refname) is None:
                     setattr(self, refname, reflist[0])
 
-    def validate_refs(self, refs=['wind', 'water', 'waves']):
+    def validate_refs(self, refs=None):
         '''
         level is the logging level to use for messages. Default is 'warning'
         but if called from prepare_for_model_run, we want to use error and
         raise exception.
         '''
+        if refs is None:
+            refs = ['wind', 'water', 'waves']
         isvalid = True
         msgs = []
         prepend = self._warn_pre
 
         for attr in refs:
             if hasattr(self, attr) and getattr(self, attr) is None:
-                msg = 'no {0} object defined'.format(attr)
+                msg = f'no {attr} object defined'
 
                 self.logger.warning(msg)
                 msgs.append(prepend + msg)
@@ -449,7 +449,7 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
         used by validate to prepend to message since it also returns a list
         of messages that were logged
         '''
-        return 'warning: {}: '.format(self.__class__.__name__)
+        return f'warning: {self.__class__.__name__}: '
 
     @classmethod
     def new_from_dict(cls, dict_):
@@ -465,7 +465,7 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
 
         new_obj = cls(**dict_)
 
-        msg = "constructed object {0}".format(new_obj.__class__.__name__)
+        msg = f"constructed object {new_obj.__class__.__name__}"
         new_obj.logger.debug(new_obj._pid + msg)
 
         return new_obj
@@ -528,8 +528,8 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
                     try:
                         setattr(self, k, attrs[k])
                     except AttributeError:
-                        self.logger.error('Failed to set {} on {} to {}'
-                                        .format(k, self, attrs[k]))
+                        self.logger.error(f'Failed to set {k} on {self} to {attrs[k]}'
+                                        )
                         raise
                 attrs.pop(k)
 
@@ -543,8 +543,8 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
                 try:
                     setattr(self, k, v)
                 except AttributeError:
-                    self.logger.error('Failed to set {} on {} to {}'
-                                      .format(k, self, v))
+                    self.logger.error(f'Failed to set {k} on {self} to {v}'
+                                      )
                     raise
 
         return updated
@@ -758,10 +758,12 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
     def __ne__(self, other):
         return not self == other
 
-    def serialize(self, options={}):
+    def serialize(self, options=None):
         """
         Returns a json serialization of this object ("webapi" mode only)
         """
+        if options is None:
+            options = {}
         if 'raw_paths' not in options:
             options['raw_paths'] = True
 
@@ -848,7 +850,7 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
             #        And why not use a StringIO object instead, and keep
             #        it totally in memory?
             zipfile_ = zipfile.ZipFile(
-                tempfile.SpooledTemporaryFile(prefix='gnome.', mode='w+b'),
+                tempfile.SpooledTemporaryFile(prefix='gnome.', mode='w+b'),  # noqa: SIM115
                 'a',
                 compression=zipfile.ZIP_DEFLATED,
                 allowZip64=allowzip64
@@ -861,17 +863,16 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
             n = gnome.utilities.save_updater.sanitize_filename(self.name)
             saveloc = os.path.join(saveloc, n + '.gnome')
 
-            if os.path.exists(saveloc):
-                if not overwrite:
-                    raise ValueError('{} already exists and overwrite is False'
-                                     .format(saveloc))
+            if os.path.exists(saveloc) and not overwrite:
+                raise ValueError(f'{saveloc} already exists and overwrite is False'
+                                 )
 
             zipfile_ = zipfile.ZipFile(saveloc, 'w',
                                        compression=zipfile.ZIP_DEFLATED,
                                        allowZip64=allowzip64)
         else:
             # saveloc is file path
-            if not (saveloc.endswith(".zip") or saveloc.endswith(".gnome")):
+            if not (saveloc.endswith((".zip", ".gnome"))):
                 saveloc = saveloc + ".gnome"
             if not overwrite:
                 if zipfile.is_zipfile(saveloc):
@@ -881,8 +882,8 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
                         allowZip64=allowzip64
                     )
                 else:
-                    raise ValueError('{} already exists and overwrite is False'
-                                     .format(saveloc))
+                    raise ValueError(f'{saveloc} already exists and overwrite is False'
+                                     )
             else:
                 zipfile_ = zipfile.ZipFile(saveloc, 'w',
                                            compression=zipfile.ZIP_DEFLATED,
@@ -954,9 +955,9 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
                                                               saveloc=saveloc,
                                                               refs=refs)
 
-                    raise ValueError('No .json file containing a {} '
-                                     'found in folder {}'
-                                     .format(cls.__name__, saveloc))
+                    raise ValueError(f'No .json file containing a {cls.__name__} '
+                                     f'found in folder {saveloc}'
+                                     )
             elif zipfile.is_zipfile(saveloc):
                 # saveloc is a zip archive
                 # extract to a temporary file and retry load
@@ -970,8 +971,8 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
 
                 if 'obj_type' in json:
                     if class_from_objtype(json_['obj_type']) is not cls:
-                        raise ValueError("{} does not contain a {}"
-                                         .format(saveloc, cls.__name__))
+                        raise ValueError(f"{saveloc} does not contain a {cls.__name__}"
+                                         )
                     else:
                         folder = os.path.dirname(saveloc)
 

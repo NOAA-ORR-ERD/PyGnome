@@ -1,15 +1,20 @@
 """Shapefile Outputter"""
 
-from colander import SchemaNode, Boolean, drop, Float, Int
 import os
 import pathlib
 import shutil
 import tempfile
 import zipfile
 
+from colander import Boolean, Float, SchemaNode, drop
+
 from gnome.persist.extend_colander import FilenameSchema
-from gnome.utilities.shapefile_builder import ParticleShapefileBuilder, BoundaryShapefileBuilder
-from .outputter import Outputter, BaseOutputterSchema
+from gnome.utilities.shapefile_builder import (
+    BoundaryShapefileBuilder,
+    ParticleShapefileBuilder,
+)
+
+from .outputter import BaseOutputterSchema, Outputter
 
 
 class ShapeSchema(BaseOutputterSchema):
@@ -60,7 +65,7 @@ class ShapeOutput(Outputter):
         :param surface_conc="kde": Method to use to compute surface concentration
                                    current options are: 'kde' and None
         """
-        super(ShapeOutput, self).__init__(surface_conc=surface_conc, **kwargs)
+        super().__init__(surface_conc=surface_conc, **kwargs)
         pathlib_path = pathlib.Path(filename)
         self.zip_output = zip_output
         # If zip is requested... force .zip, else we return .shp.
@@ -110,7 +115,7 @@ class ShapeOutput(Outputter):
         arrays. If uncertain, then data arrays for uncertain spill container
         are written.
         """
-        super(ShapeOutput, self).prepare_for_model_run(model_start_time,
+        super().prepare_for_model_run(model_start_time,
                                                        spills,
                                                        **kwargs)
         if not self.on:
@@ -141,7 +146,7 @@ class ShapeOutput(Outputter):
     def write_output(self, step_num, islast_step=False):
         """Dump a timestep's data into the shapefile"""
 
-        super(ShapeOutput, self).write_output(step_num, islast_step)
+        super().write_output(step_num, islast_step)
         if not self.on:
             return None
 
@@ -246,7 +251,7 @@ class ShapeOutput(Outputter):
             zipf.write(self.shapefile_builder_uncertain.filename,
                        arcname=file_to_zip)
             if self.include_uncertain_boundary:
-                dir, file_to_zip = os.path.split(self.shapefile_builder_uncertain_boundary.filename)
+                _dir, file_to_zip = os.path.split(self.shapefile_builder_uncertain_boundary.filename)
                 zipf.write(self.shapefile_builder_uncertain_boundary.filename,
                            arcname=file_to_zip)
         zipf.close()
@@ -257,7 +262,7 @@ class ShapeOutput(Outputter):
         reset a few parameter and call base class rewind to reset
         internal variables.
         '''
-        super(ShapeOutput, self).rewind()
+        super().rewind()
         self._middle_of_run = False
         self._start_idx = 0
 
@@ -267,7 +272,7 @@ class ShapeOutput(Outputter):
         called by prepare_for_model_run
         here in case it needs to be called from elsewhere
         '''
-        super(ShapeOutput, self).clean_output_files()
+        super().clean_output_files()
 
         if getattr(self, 'shapefile_builder_certain', None):
             self.shapefile_builder_certain.rewind()

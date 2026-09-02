@@ -1,25 +1,35 @@
 import datetime
-import pdb
-import zipfile
-import logging
-from collections import abc
-import os
 import json
-import tempfile
-import geojson
+import logging
+import os
 import re
-import numpy as np
-from collections import namedtuple
+import tempfile
+import zipfile
+from collections import abc
 from tempfile import NamedTemporaryFile as NTF
 
-from colander import (SchemaNode, SequenceSchema, TupleSchema, MappingSchema,
-                      String, Float, Int, SchemaType, Sequence, Tuple, Mapping,
-                      Positional, Invalid, UnsupportedFields,
-                      deferred, drop, required, null)
-
+import geojson
+import numpy as np
+from colander import (
+    Float,
+    Int,
+    MappingSchema,
+    SchemaNode,
+    SchemaType,
+    Sequence,
+    SequenceSchema,
+    String,
+    Tuple,
+    TupleSchema,
+    UnsupportedFields,
+    deferred,
+    drop,
+    null,
+    required,
+)
 
 from gnome.gnomeobject import Refs, class_from_objtype
-from gnome.persist.extend_colander import OrderedCollectionType, LoadSpec
+from gnome.persist.extend_colander import LoadSpec, OrderedCollectionType
 from gnome.utilities.geometry.polygons import PolygonSet
 
 log = logging.getLogger(__name__)
@@ -110,13 +120,10 @@ class ObjType(SchemaType):
 
     def _ser(self, node, value, options=None):
         dict_ = None
-        try:
-            if hasattr(value, 'to_dict'):
-                dict_ = value.to_dict('webapi')
-            else:
-                raise TypeError('Object does not have a to_dict function')
-        except Exception as e:
-            raise e
+        if hasattr(value, 'to_dict'):
+            dict_ = value.to_dict('webapi')
+        else:
+            raise TypeError('Object does not have a to_dict function')
         return dict_
 
     def serialize(self, node, appstruct, options=None):
@@ -141,7 +148,7 @@ class ObjType(SchemaType):
                     if 'unexpected keyword argument' in str(e):
                         return subnode.serialize(subappstruct)
                     else:
-                        raise e
+                        raise
 
         value = self._ser(node, appstruct, options=options)
 
@@ -215,7 +222,7 @@ class ObjType(SchemaType):
                 log.warning('Could not log object name: ' + e.msg)
             updated = refs[id_].update_from_dict(cstruct)
             if updated:
-                log.info('Updated object {0} from json'.format(refs[id_].name))
+                log.info(f'Updated object {refs[id_].name} from json')
             return refs[id_]
         else:
             result = self._impl(node, cstruct, callback)
@@ -228,7 +235,7 @@ class ObjType(SchemaType):
             selfprefix = prefix
         else:
             if node.name:
-                selfprefix = '{}{}.'.format(prefix, node.name)
+                selfprefix = f'{prefix}{node.name}.'
             else:
                 selfprefix = prefix
 
@@ -241,7 +248,7 @@ class ObjType(SchemaType):
         return result
 
     def unflatten(self, node, paths, fstruct):
-        return super(ObjType, self).unflatten(node, paths, fstruct)
+        return super().unflatten(node, paths, fstruct)
 
     def set_value(self, node, appstruct, path, value):
         if '.' in path:
@@ -270,7 +277,7 @@ class ObjType(SchemaType):
             # Passing the 'save' in case a class wants to do some special stuff
             # on saving specifically.
             dict_ = raw_object.to_dict('save')
-            for k in dict_.keys():
+            for k in dict_:
                 if dict_[k] is None:
                     dict_[k] = null
             return dict_
@@ -419,7 +426,7 @@ class ObjType(SchemaType):
                                          zipfile_=zipfile_,
                                          refs=refs)
                 else:
-                    logging.info('skipped {0}'.format(subnode))
+                    logging.getLogger(__name__).info(f'skipped {subnode}')
 
         # gets the dictionary representation of the object, 'save' is passed
         dict_ = self._prepare_save(node, appstruct, zipfile_, refs)
@@ -501,7 +508,7 @@ class ObjType(SchemaType):
                             cstruct[r][i] = (self
                                              ._load_json_from_file(fn, saveloc)
                                              )
-                            log.info('Loaded json from {0}'.format(fn))
+                            log.info(f'Loaded json from {fn}')
                             cstruct[r][i]['id'] = fn
                         else:
                             # old-style obj-in-list (spill.initializers)
@@ -509,7 +516,7 @@ class ObjType(SchemaType):
                             pass
                     else:
                         cstruct[r][i] = self._load_json_from_file(fn, saveloc)
-                        log.info('Loaded json from {0}'.format(fn))
+                        log.info(f'Loaded json from {fn}')
                         cstruct[r][i]['id'] = fn
             else:
                 fn = cstruct[r]
@@ -526,7 +533,7 @@ class ObjType(SchemaType):
                                              .format(cstruct.get('json_'), r)))
                 elif fn is not None:
                     cstruct[r] = self._load_json_from_file(fn, saveloc)
-                    log.info('Loaded json from {0}'.format(fn))
+                    log.info(f'Loaded json from {fn}')
 
                     cstruct[r]['id'] = fn
 
@@ -547,7 +554,7 @@ class ObjType(SchemaType):
             if isinstance(cstruct[d], str):
                 cstruct[d] = self._load_supporting_file(cstruct[d],
                                                         saveloc, tmpdir)
-                log.info('Extracted file {0}'.format(cstruct[d]))
+                log.info(f'Extracted file {cstruct[d]}')
             elif isinstance(cstruct[d], abc.Iterable):
                 # List, tuple, etc
                 for i, filename in enumerate(cstruct[d]):
@@ -597,11 +604,11 @@ class ObjType(SchemaType):
             return
         fp = None
         if isinstance(saveloc, zipfile.ZipFile):
-            fp = saveloc.open(fname)
+            return json.load(saveloc.open(fname))
         else:
             fname = os.path.join(saveloc, fname)
-            fp = open(fname)
-        return json.load(fp)
+            with open(fname) as fp:
+                return json.load(fp)
 
 
 class ObjTypeSchema(MappingSchema):
@@ -661,7 +668,7 @@ class ObjTypeSchema(MappingSchema):
     # _appearance is to allow the client to persist visualization information.
 
     def __init__(self, *args, **kwargs):
-        super(ObjTypeSchema, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         for c in self.children:
             for k, v in self._colander_defaults.items():
                 if not hasattr(c, k):
@@ -675,8 +682,10 @@ class ObjTypeSchema(MappingSchema):
             if c.read_only and c.update:
                 c.update = False
 
-    def serialize(self, appstruct=None, options={}):
+    def serialize(self, appstruct=None, options=None):
 
+        if options is None:
+            options = {}
         return self.typ.serialize(self, appstruct, options=options)
 
     def deserialize(self, cstruct=None, refs=None):
@@ -850,7 +859,7 @@ class GeneralGnomeObjectSchema(ObjTypeSchema):
                              'valid schema')
 
         self.acceptable_schemas = acceptable_schemas
-        super(GeneralGnomeObjectSchema, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def validate_input_schema(self, obj_or_json):
         '''
@@ -871,9 +880,9 @@ class GeneralGnomeObjectSchema(ObjTypeSchema):
             if schema is s or issubclass(schema, s):
                 return schema()
 
-        raise TypeError('This type of object {} is not supported. '
-                        'Schema: {}'
-                        .format(obj_type, schema))
+        raise TypeError(f'This type of object {obj_type} is not supported. '
+                        f'Schema: {schema}'
+                        )
 
     def serialize(self, appstruct=None, options=None):
         substitute_schema = self.validate_input_schema(appstruct)
@@ -991,13 +1000,13 @@ class PolygonSetSchema(SequenceSchema):
 
     def serialize(self, appstruct):
         appstruct = [poly.tolist() for poly in appstruct]
-        return super(PolygonSetSchema, self).serialize(appstruct)
+        return super().serialize(appstruct)
 
     def deserialize(self, cstruct):
         if cstruct is None:
             return None
         else:
-            appstruct = super(PolygonSetSchema, self).deserialize(cstruct)
+            appstruct = super().deserialize(cstruct)
             if len(appstruct) == 0:
                 # empty --should be None
                 return None

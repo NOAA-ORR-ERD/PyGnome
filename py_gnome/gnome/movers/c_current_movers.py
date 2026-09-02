@@ -3,32 +3,26 @@ Movers using currents and tides as forcing functions
 '''
 
 import os
-
-import numpy as np
 import warnings
 
-from colander import (SchemaNode, Bool, String, Float, Int, drop)
+import numpy as np
+from colander import Bool, Float, Int, SchemaNode, drop
 
 from gnome import basic_types
-
-from gnome.cy_gnome.cy_shio_time import CyShioTime
-from gnome.cy_gnome.cy_ossm_time import CyOSSMTime
 from gnome.cy_gnome.cy_cats_mover import CyCatsMover
+from gnome.cy_gnome.cy_component_mover import CyComponentMover
+from gnome.cy_gnome.cy_currentcycle_mover import CyCurrentCycleMover
 from gnome.cy_gnome.cy_gridcurrent_mover import CyGridCurrentMover
 from gnome.cy_gnome.cy_ice_mover import CyIceMover
-from gnome.cy_gnome.cy_currentcycle_mover import CyCurrentCycleMover
-from gnome.cy_gnome.cy_component_mover import CyComponentMover
-
-from gnome.utilities.time_utils import sec_to_datetime
-from gnome.utilities.inf_datetime import InfTime, MinusInfTime
-
-from gnome.persist.validators import convertible_to_seconds
-from gnome.persist.extend_colander import LocalDateTime, FilenameSchema
-
+from gnome.cy_gnome.cy_ossm_time import CyOSSMTime
+from gnome.cy_gnome.cy_shio_time import CyShioTime
 from gnome.environment import Tide, TideSchema, Wind, WindSchema
 from gnome.movers import CyMover, ProcessSchema
-
 from gnome.persist.base_schema import WorldPoint
+from gnome.persist.extend_colander import FilenameSchema, LocalDateTime
+from gnome.persist.validators import convertible_to_seconds
+from gnome.utilities.inf_datetime import InfTime, MinusInfTime
+from gnome.utilities.time_utils import sec_to_datetime
 
 
 class CurrentMoversBaseSchema(ProcessSchema):
@@ -59,7 +53,7 @@ class CurrentMoversBase(CyMover):
         self.uncertain_duration = uncertain_duration
         self.uncertain_time_delay = uncertain_time_delay
 
-        super(CurrentMoversBase, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     uncertain_duration = property(lambda self:
                                   self.mover.uncertain_duration / 3600.,
@@ -228,17 +222,16 @@ class CatsMover(CurrentMoversBase):
         """
 
         if not os.path.exists(filename):
-            raise ValueError('Path for Cats filename does not exist: {0}'
-                             .format(filename))
+            raise ValueError(f'Path for Cats filename does not exist: {filename}'
+                             )
 
-        f = open(filename)
-        header = f.readline()
-        f.close()
+        with open(filename) as f:
+            header = f.readline()
         header.strip()
         fields = header.split(' ')
         if fields[0]!='DAG':
-            raise ValueError('File has incorrect header line for Cats format: {0}'
-                             .format(header))
+            raise ValueError(f'File has incorrect header line for Cats format: {header}'
+                             )
 
         self._filename = filename
 
@@ -266,7 +259,7 @@ class CatsMover(CurrentMoversBase):
             self.scale_refpoint = kwargs.pop('scale_refpoint')
             #self.mover.compute_velocity_scale()
 
-        super(CatsMover, self).__init__(uncertain_duration=uncertain_duration,
+        super().__init__(uncertain_duration=uncertain_duration,
                                         **kwargs)
 
         self._tide = None
@@ -281,7 +274,7 @@ class CatsMover(CurrentMoversBase):
         #self.mover.compute_velocity_scale()
 
     def __repr__(self):
-        return 'CatsMover(filename={0})'.format(self.filename)
+        return f'CatsMover(filename={self.filename})'
 
     # Properties
     filename = property(lambda self: self._filename,
@@ -352,7 +345,7 @@ class CatsMover(CurrentMoversBase):
 
         err = self.mover.compute_velocity_scale()  # make sure ref_scale is up to date
         if err:
-            msg = ('CATS reference point not valid: {0}'.format(self.mover.ref_point))
+            msg = (f'CATS reference point not valid: {self.mover.ref_point}')
             self.logger.warning(msg)
             warnings.warn(msg, UserWarning)
 
@@ -508,15 +501,14 @@ class c_GridCurrentMover(CurrentMoversBase):
             self.mover = CyGridCurrentMover()
 
         if not os.path.exists(filename):
-            raise ValueError('Path for current file does not exist: {0}'
-                             .format(filename))
+            raise ValueError(f'Path for current file does not exist: {filename}'
+                             )
 
-        if topology_file is not None:
-            if not os.path.exists(topology_file):
-                raise ValueError('Path for Topology file does not exist: {0}'
-                                 .format(topology_file))
+        if topology_file is not None and not os.path.exists(topology_file):
+            raise ValueError(f'Path for Topology file does not exist: {topology_file}'
+                             )
 
-        super(c_GridCurrentMover, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         # check if this is stored with cy_gridcurrent_mover?
         self.filename = filename
@@ -546,23 +538,23 @@ class c_GridCurrentMover(CurrentMoversBase):
 
     def __repr__(self):
         return ('c_GridCurrentMover('
-                'uncertain_duration={0.uncertain_duration},'
-                'uncertain_time_delay={0.uncertain_time_delay}, '
-                'uncertain_cross={0.uncertain_cross}, '
-                'uncertain_along={0.uncertain_along}, '
-                'active_range={1.active_range}, '
-                'on={1.on})'
-                .format(self.mover, self))
+                f'uncertain_duration={self.mover.uncertain_duration},'
+                f'uncertain_time_delay={self.mover.uncertain_time_delay}, '
+                f'uncertain_cross={self.mover.uncertain_cross}, '
+                f'uncertain_along={self.mover.uncertain_along}, '
+                f'active_range={self.active_range}, '
+                f'on={self.on})'
+                )
 
     def __str__(self):
         return ('c_GridCurrentMover - current _state.\n'
-                '  uncertain_duration={0.uncertain_duration}\n'
-                '  uncertain_time_delay={0.uncertain_time_delay}\n'
-                '  uncertain_cross={0.uncertain_cross}\n'
-                '  uncertain_along={0.uncertain_along}\n'
-                '  active_range time={1.active_range}\n'
-                '  current on/off status={1.on}'
-                .format(self.mover, self))
+                f'  uncertain_duration={self.mover.uncertain_duration}\n'
+                f'  uncertain_time_delay={self.mover.uncertain_time_delay}\n'
+                f'  uncertain_cross={self.mover.uncertain_cross}\n'
+                f'  uncertain_along={self.mover.uncertain_along}\n'
+                f'  active_range time={self.active_range}\n'
+                f'  current on/off status={self.on}'
+                )
 
     # Define properties using lambda functions: uses lambda function, which are
     # accessible via fget/fset as follows:
@@ -660,8 +652,8 @@ class c_GridCurrentMover(CurrentMoversBase):
                                    topology file will be written.
         """
         if topology_file is None:
-            raise ValueError('Topology file path required: {0}'
-                             .format(topology_file))
+            raise ValueError(f'Topology file path required: {topology_file}'
+                             )
 
         self.mover.export_topology(topology_file)
 
@@ -773,13 +765,12 @@ class IceMover(CurrentMoversBase):
             self.mover = CyIceMover()
 
         if not os.path.exists(filename):
-            raise ValueError('Path for current file does not exist: {0}'
-                             .format(filename))
+            raise ValueError(f'Path for current file does not exist: {filename}'
+                             )
 
-        if topology_file is not None:
-            if not os.path.exists(topology_file):
-                raise ValueError('Path for Topology file does not exist: {0}'
-                                 .format(topology_file))
+        if topology_file is not None and not os.path.exists(topology_file):
+            raise ValueError(f'Path for Topology file does not exist: {topology_file}'
+                             )
 
         # check if this is stored with cy_ice_mover?
         self.filename = filename
@@ -797,27 +788,27 @@ class IceMover(CurrentMoversBase):
         self.uncertain_cross = uncertain_cross
         self.current_scale = current_scale
 
-        super(IceMover, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def __repr__(self):
         return ('IceMover('
-                'uncertain_duration={0.uncertain_duration}, '
-                'uncertain_time_delay={0.uncertain_time_delay}, '
-                'uncertain_cross={0.uncertain_cross}, '
-                'uncertain_along={0.uncertain_along}, '
-                'active_range={1.active_range}, '
-                'on={1.on})'
-                .format(self.mover, self))
+                f'uncertain_duration={self.mover.uncertain_duration}, '
+                f'uncertain_time_delay={self.mover.uncertain_time_delay}, '
+                f'uncertain_cross={self.mover.uncertain_cross}, '
+                f'uncertain_along={self.mover.uncertain_along}, '
+                f'active_range={self.active_range}, '
+                f'on={self.on})'
+                )
 
     def __str__(self):
         return ('IceMover - current _state.\n'
-                '  uncertain_duration={0.uncertain_duration}\n'
-                '  uncertain_time_delay={0.uncertain_time_delay}\n'
-                '  uncertain_cross={0.uncertain_cross}\n'
-                '  uncertain_along={0.uncertain_along}\n'
-                '  active_range time={1.active_range}\n'
-                '  current on/off status={1.on}'
-                .format(self.mover, self))
+                f'  uncertain_duration={self.mover.uncertain_duration}\n'
+                f'  uncertain_time_delay={self.mover.uncertain_time_delay}\n'
+                f'  uncertain_cross={self.mover.uncertain_cross}\n'
+                f'  uncertain_along={self.mover.uncertain_along}\n'
+                f'  active_range time={self.active_range}\n'
+                f'  current on/off status={self.on}'
+                )
 
     # Define properties using lambda functions: uses lambda function, which are
     # accessible via fget/fset as follows:
@@ -889,17 +880,13 @@ class IceMover(CurrentMoversBase):
         if (box_to_merge is not None and
                 len(box_to_merge) == 2 and
                 [len(p) for p in box_to_merge] == [2, 2]):
-            if left > box_to_merge[0][0]:
-                left = box_to_merge[0][0]
+            left = min(left, box_to_merge[0][0])
 
-            if right < box_to_merge[1][0]:
-                right = box_to_merge[1][0]
+            right = max(right, box_to_merge[1][0])
 
-            if bottom > box_to_merge[0][1]:
-                bottom = box_to_merge[0][1]
+            bottom = min(bottom, box_to_merge[0][1])
 
-            if top < box_to_merge[1][1]:
-                top = box_to_merge[1][1]
+            top = max(top, box_to_merge[1][1])
 
         return ((left, bottom), (right, top))
 
@@ -967,8 +954,8 @@ class IceMover(CurrentMoversBase):
                                    topology file will be written.
         """
         if topology_file is None:
-            raise ValueError('Topology file path required: {0}'
-                             .format(topology_file))
+            raise ValueError(f'Topology file path required: {topology_file}'
+                             )
 
         self.mover.export_topology(topology_file)
 
@@ -1058,28 +1045,28 @@ class CurrentCycleMover(c_GridCurrentMover):
         if tide:
             self.tide = tide
 
-        super(CurrentCycleMover, self).__init__(filename=filename,
+        super().__init__(filename=filename,
                                                 topology_file=topology_file,
                                                 **kwargs)
 
     def __repr__(self):
-        return ('CurrentCycletMover(uncertain_duration={0.uncertain_duration}, '
-                'uncertain_time_delay={0.uncertain_time_delay}, '
-                'uncertain_cross={0.uncertain_cross}, '
-                'uncertain_along={0.uncertain_along}, '
-                'active_range={1.active_range}, '
-                'on={1.on})'
-                .format(self.mover, self))
+        return (f'CurrentCycletMover(uncertain_duration={self.mover.uncertain_duration}, '
+                f'uncertain_time_delay={self.mover.uncertain_time_delay}, '
+                f'uncertain_cross={self.mover.uncertain_cross}, '
+                f'uncertain_along={self.mover.uncertain_along}, '
+                f'active_range={self.active_range}, '
+                f'on={self.on})'
+                )
 
     def __str__(self):
         return ('CurrentCycleMover - current _state.\n'
-                '  uncertain_duration={0.uncertain_duration}\n'
-                '  uncertain_time_delay={0.uncertain_time_delay}\n'
-                '  uncertain_cross={0.uncertain_cross}\n'
-                '  uncertain_along={0.uncertain_along}'
-                '  active_range time={1.active_range}'
-                '  current on/off status={1.on}'
-                .format(self.mover, self))
+                f'  uncertain_duration={self.mover.uncertain_duration}\n'
+                f'  uncertain_time_delay={self.mover.uncertain_time_delay}\n'
+                f'  uncertain_cross={self.mover.uncertain_cross}\n'
+                f'  uncertain_along={self.mover.uncertain_along}'
+                f'  active_range time={self.active_range}'
+                f'  current on/off status={self.on}'
+                )
 
     @property
     def tide(self):
@@ -1251,20 +1238,19 @@ class ComponentMover(CurrentMoversBase):
         """
 
         if filename1 and not os.path.exists(filename1):
-            raise ValueError('Path for Cats filename1 does not exist: {0}'
-                             .format(filename1))
+            raise ValueError(f'Path for Cats filename1 does not exist: {filename1}'
+                             )
 
-        if filename2 is not None:
-            if not os.path.exists(filename2):
-                raise ValueError('Path for Cats filename2 does not exist: {0}'
-                                 .format(filename2))
+        if filename2 is not None and not os.path.exists(filename2):
+            raise ValueError(f'Path for Cats filename2 does not exist: {filename2}'
+                             )
 
         self.filename1 = filename1
         self.filename2 = filename2
 
         self.mover = CyComponentMover()
         self.mover.text_read(filename1, filename2)
-        super(ComponentMover, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
 
         self._wind = None
@@ -1285,7 +1271,7 @@ class ComponentMover(CurrentMoversBase):
         """
         unambiguous representation of object
         """
-        return 'ComponentMover(filename={0})'.format(self.filename1)
+        return f'ComponentMover(filename={self.filename1})'
 
     # Properties
     pat1_angle = property(lambda self: self.mover.pat1_angle,

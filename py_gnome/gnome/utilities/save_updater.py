@@ -3,13 +3,13 @@ Updates a save loaded using pygnome.Model to the latest version
 !!!!Update the version number in gnome.gnomeobject to be consistent
 with versioning here
 """
-import os
-import sys
-import re
-import glob
-import logging
 import contextlib
+import glob
 import json
+import logging
+import os
+import re
+import sys
 import zipfile
 from pathlib import Path
 
@@ -212,29 +212,28 @@ def v1tov2(messages, errors):
     for fname in jsonfiles:
         with open(fname, 'r', encoding='utf-8') as fn:
             json_ = json.load(fn)
-            if 'obj_type' in json_:
-                if json_['obj_type'] == "gnome.spill.substance.GnomeOil":
-                    oils.append(fname)
-                    # See if it can be used with the current GnomeOil
-                    try:
-                        # I don't know if this is absolutely necessary,
-                        # but we import this locally so as to not have a
-                        # global dependency on any external oil packages.
-                        from gnome.spills.gnome_oil import GnomeOil
-                        GnomeOil(**json_)
-                    except Exception:
-                        # Can't be used with GnomeOIl: replace with
-                        # NonWeathering
-                        log.info(f"Oil: {json_['name']} is not longer valid\n"
-                                 "You will need re-load an oil, which can be "
-                                 "obtained from The ADIOS Oil Database:\n"
-                                 "https://adios.orr.noaa.gov/")
-                        nws = NON_WEATHERING_DICT
-                        # this will catch the windages info
-                        nws['initializers'] = json_['initializers']
-                        # write out the new file
-                        with open(fname, 'w', encoding='utf-8') as fn:
-                            json.dump(nws, fn, indent=4)
+            if 'obj_type' in json_ and json_['obj_type'] == "gnome.spill.substance.GnomeOil":
+                oils.append(fname)
+                # See if it can be used with the current GnomeOil
+                try:
+                    # I don't know if this is absolutely necessary,
+                    # but we import this locally so as to not have a
+                    # global dependency on any external oil packages.
+                    from gnome.spills.gnome_oil import GnomeOil
+                    GnomeOil(**json_)
+                except Exception:
+                    # Can't be used with GnomeOIl: replace with
+                    # NonWeathering
+                    log.info(f"Oil: {json_['name']} is not longer valid\n"
+                             "You will need re-load an oil, which can be "
+                             "obtained from The ADIOS Oil Database:\n"
+                             "https://adios.orr.noaa.gov/")
+                    nws = NON_WEATHERING_DICT
+                    # this will catch the windages info
+                    nws['initializers'] = json_['initializers']
+                    # write out the new file
+                    with open(fname, 'w', encoding='utf-8') as fn:
+                        json.dump(nws, fn, indent=4)
 
     # remove InitWindages
     for fname in jsonfiles:
@@ -243,12 +242,13 @@ def v1tov2(messages, errors):
             if 'obj_type' in json_ and 'initializers' in json_:
                 # this is assuming only one
                 for wind_init in json_.pop('initializers'):
-                    init_js = json.load(open(wind_init, 'r', encoding='utf-8'))
+                    with open(wind_init, 'r', encoding='utf-8') as wf:
+                        init_js = json.load(wf)
                     if "InitWindages" in init_js["obj_type"]:
                         json_['windage_range'] = init_js['windage_range']
                         json_['windage_persist'] = init_js['windage_persist']
-                        json.dump(json_, open(fname, 'w', encoding='utf-8'),
-                                  indent=4)
+                        with open(fname, 'w', encoding='utf-8') as jf:
+                            json.dump(json_, jf, indent=4)
                         files_to_remove.append(wind_init)
 
     with open('version.txt', 'w', encoding='utf-8') as vers_file:
@@ -349,9 +349,9 @@ def v3tov4(messages, errors):
     for fname in jsonfiles:
             with open(fname, 'r', encoding='utf-8') as fn:
                 json_ = json.load(fn)
-                if 'obj_type' in json_:
-                    if json_['obj_type'] == "gnome.weatherers.weathering_data.WeatheringData":
-                        files_to_remove.append(fname)
+                if ('obj_type' in json_
+                        and json_['obj_type'] == "gnome.weatherers.weathering_data.WeatheringData"):
+                    files_to_remove.append(fname)
 
     # remove weathering_data reference from model file
     for fname in jsonfiles:
@@ -362,7 +362,8 @@ def v3tov4(messages, errors):
                     for item in json_['weatherers']:
                         if item in files_to_remove:
                             json_['weatherers'].remove(item)
-                json.dump(json_, open(fname, 'w', encoding='utf-8'), indent=4)
+                with open(fname, 'w', encoding='utf-8') as jf:
+                    json.dump(json_, jf, indent=4)
 
     # remove targeted files
     for fname in files_to_remove:
@@ -459,7 +460,7 @@ def extract_zipfile(zip_file, to_folder='.'):
                 orig = os.path.basename(name)
                 fn = sanitize_filename(orig)
                 if orig != fn:
-                    log.info('Invalid filename found: {0}'.format(orig))
+                    log.info(f'Invalid filename found: {orig}')
                     fn_edits[orig] = fn
 
                 target = os.path.join(to_folder, fn)

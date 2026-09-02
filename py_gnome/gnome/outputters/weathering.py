@@ -5,10 +5,10 @@ Weathering Outputter
 import os
 from glob import glob
 
-from geojson import dump
 from colander import SchemaNode, String, drop
+from geojson import dump
 
-from .outputter import Outputter, BaseOutputterSchema
+from .outputter import BaseOutputterSchema, Outputter
 
 
 class BaseMassBalanceOutputter(Outputter):
@@ -29,10 +29,10 @@ class BaseMassBalanceOutputter(Outputter):
         output_info = {'model_time': sc.current_time_stamp}
         output_info.update(sc.mass_balance)
 
-        self.logger.debug(self._pid + 'step_num: {0}'.format(step_num))
+        self.logger.debug(self._pid + f'step_num: {step_num}')
 
         for name, val in output_info.items():
-            msg = ('\t{0}: {1}'.format(name, val))
+            msg = (f'\t{name}: {val}')
             self.logger.debug(msg)
 
         return output_info
@@ -72,7 +72,7 @@ class WeatheringOutput(BaseMassBalanceOutputter):
 
         other arguments as defined in the Outputter class
         '''
-        super(WeatheringOutput, self).__init__(output_dir=output_dir,
+        super().__init__(output_dir=output_dir,
                                                **kwargs)
 
     def write_output(self, step_num, islast_step=False):
@@ -83,7 +83,7 @@ class WeatheringOutput(BaseMassBalanceOutputter):
         cloned models that are modeling weathering uncertainty do not include
         the uncertain spill container.
         '''
-        super(WeatheringOutput, self).write_output(step_num, islast_step)
+        super().write_output(step_num, islast_step)
 
         if not self._write_step:
             return None

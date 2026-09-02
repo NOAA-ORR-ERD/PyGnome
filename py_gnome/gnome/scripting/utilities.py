@@ -10,9 +10,9 @@ remember to add anyting new you want imported to "__all__"
 """
 
 import os
+import shutil
 import sys
 import traceback
-import shutil
 
 import gnome
 
@@ -43,12 +43,12 @@ def remove_netcdf(netcdf_file):
     """
     if os.path.exists(netcdf_file):
         os.remove(netcdf_file)
-        print('removed {0}'.format(netcdf_file))
+        print(f'removed {netcdf_file}')
 
     (file_, ext) = os.path.splitext(netcdf_file)
     if os.path.exists(file_ + '_uncertain' + ext):
         os.remove(file_ + '_uncertain' + ext)
-        print('removed {0}'.format(netcdf_file))
+        print(f'removed {netcdf_file}')
 
 
 def set_verbose(log_level='info'):
@@ -67,7 +67,7 @@ def set_verbose(log_level='info'):
     gnome.initialize_console_log(log_level)
 
 
-class PrintFinder(object):
+class PrintFinder:
     """
     class to capture stdout so that you can find print statements
 

@@ -3,25 +3,22 @@ objects used to model the spreading of oil
 Include the Langmuir process here as well
 '''
 
-import numpy as np
-import os
 from functools import lru_cache
 
-from colander import SchemaNode, Float, drop
+import numpy as np
+from colander import Float, SchemaNode, drop
 
+from gnome import constants
 from gnome.array_types import gat
-
-from gnome.environment import WindSchema, WaterSchema
 from gnome.constants import gravity
 from gnome.constants import water_kinematic_viscosity as water_kvis
-from gnome import constants
-from .core import Weatherer
-from gnome.exceptions import GnomeRuntimeError
-
-from .core import WeathererSchema
-from gnome.persist.base_schema import GeneralGnomeObjectSchema
+from gnome.environment import WaterSchema, WindSchema
 from gnome.environment.gridded_objects_base import VectorVariableSchema
+from gnome.exceptions import GnomeRuntimeError
 from gnome.ops import default_constants
+from gnome.persist.base_schema import GeneralGnomeObjectSchema
+
+from .core import Weatherer, WeathererSchema
 
 PI = np.pi
 PISQUARED = np.pi ** 2
@@ -50,7 +47,7 @@ class FayGravityViscous(Weatherer):
         '''
         initialize object - invoke super, add required data_arrays.
         '''
-        super(FayGravityViscous, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.spreading_const = (1.53, 1.21, 1.45)
 
         # need water temp to get initial viscosity of oil so thickness_limit
@@ -553,7 +550,7 @@ class FayGravityViscous(Weatherer):
         '''
         if vo >= 1e-4:
             thickness_limit = 1e-4
-        elif 1e-4 > vo and vo >= 1e-6:
+        elif 1e-4 > vo >= 1e-6:
             thickness_limit = 1e-5 + 0.9091 * (vo - 1e-6)
         elif vo < 1e-6:
             thickness_limit = 1e-5
@@ -696,7 +693,7 @@ class ConstantArea(Weatherer):
 
     def __init__(self, area, **kwargs):
         self.area = area
-        super(ConstantArea, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         self.array_types.update({'area': gat('area'),
                                  'fay_area': gat('fay_area')})
@@ -764,7 +761,7 @@ class Langmuir(Weatherer):
         # need water object to find relative buoyancy
         self.water = water
 
-        super(Langmuir, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.array_types.update({'fay_area': gat('fay_area'),
                                  'area': gat('area'),
                                  'bulk_init_volume': gat('bulk_init_volume'),

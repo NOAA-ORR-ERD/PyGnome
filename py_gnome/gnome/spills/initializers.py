@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 
 """
 Utilities for initializing data arrays associated with the elements
@@ -9,24 +8,21 @@ for various release and substance types.
 """
 
 import numpy as np
+from colander import Float, Int, Range, SchemaNode, TupleSchema
 
-from colander import SchemaNode, Int, Float, Range, TupleSchema
-
-from gnome.utilities.rand import random_with_persistance
 from gnome.array_types import gat
-
 from gnome.cy_gnome.cy_rise_velocity_mover import rise_velocity_from_drop_size
-
-from gnome.persist import base_schema
 from gnome.gnomeobject import GnomeId
+from gnome.persist import base_schema
 from gnome.persist.base_schema import GeneralGnomeObjectSchema
 from gnome.utilities.distributions import (
+    LogNormalDistributionSchema,
     # DistributionBase,
     NormalDistributionSchema,
+    UniformDistributionSchema,
     WeibullDistributionSchema,
-    LogNormalDistributionSchema,
-    UniformDistributionSchema
 )
+from gnome.utilities.rand import random_with_persistance
 
 
 class InitBaseClass(GnomeId):
@@ -47,7 +43,7 @@ class InitBaseClass(GnomeId):
         # knows about these array_types and can include them.
         # Make it a set since ElementType does a membership check in
         # set_newparticle_values()
-        super(InitBaseClass, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def initialize(self, num_new_particles, spill, data_arrays, substance):
         """
@@ -59,7 +55,6 @@ class InitBaseClass(GnomeId):
 
         See subclasses for examples.
         """
-        pass
 
 
 class WindageRangeSchema(TupleSchema):
@@ -102,7 +97,7 @@ class InitWindages(InitBaseClass):
             only set at the beginning of the run.
         :type windage_persist: integer seconds
         """
-        super(InitWindages, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.windage_persist = windage_persist
         self.windage_range = windage_range
         self.array_types.update({'windages': gat('windages'),
@@ -110,10 +105,10 @@ class InitWindages(InitBaseClass):
                                  'windage_persist': gat('windage_persist')})
 
     def __repr__(self):
-        return ('{0.__class__.__module__}.{0.__class__.__name__}('
-                'windage_range={0.windage_range}, '
-                'windage_persist={0.windage_persist}'
-                ')'.format(self))
+        return (f'{self.__class__.__module__}.{self.__class__.__name__}('
+                f'windage_range={self.windage_range}, '
+                f'windage_persist={self.windage_persist}'
+                ')')
 
     def to_dict(self, json_=None):
         return InitBaseClass.to_dict(self, json_=json_)
@@ -123,7 +118,7 @@ class InitWindages(InitBaseClass):
         Since windages exists in data_arrays, so must windage_range and
         windage_persist if this initializer is used/called
         """
-        if any([k not in data_arrays for k in self.array_types.keys()]):
+        if any(k not in data_arrays for k in self.array_types):
             return
 
         sl = slice(-num_new_particles, None, 1)
@@ -150,12 +145,12 @@ class InitMassFromPlume(InitBaseClass):
         """
         update array_types
         """
-        super(InitMassFromPlume, self).__init__()
+        super().__init__()
         self.array_types['mass'] = gat('mass')
         self.name = 'mass'
 
     def initialize(self, num_new_particles, data_arrays, substance):
-        if any([k not in data_arrays for k in self.array_types.keys()]):
+        if any(k not in data_arrays for k in self.array_types):
             return
         if substance.plume_gen is None:
             raise ValueError('plume_gen attribute of spill is None - cannot'
@@ -212,7 +207,7 @@ class InitRiseVelFromDist(DistributionBase):
         (presumably, this function will also modify
         the array in some way)
         """
-        super(InitRiseVelFromDist, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         if distribution and hasattr(distribution, "set_values"):
             self.distribution = distribution
@@ -224,7 +219,7 @@ class InitRiseVelFromDist(DistributionBase):
         self.name = 'rise_vel'
 
     def initialize(self, num_new_particles, data_arrays, substance):
-        if any([k not in data_arrays for k in self.array_types.keys()]):
+        if any(k not in data_arrays for k in self.array_types):
             return
         'Update values of "rise_vel" data array for new particles'
         self.distribution.set_values(
@@ -266,7 +261,7 @@ class InitRiseVelFromDropletSizeFromDist(DistributionBase):
         :param water_viscosity: 1.0e-6 [m^2/s]
         :type water_viscosity: float
         """
-        super(InitRiseVelFromDropletSizeFromDist, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         if distribution:
             self.distribution = distribution
@@ -289,7 +284,7 @@ class InitRiseVelFromDropletSizeFromDist(DistributionBase):
         water density and water_viscosity:
         gnome.cy_gnome.cy_rise_velocity_mover.rise_velocity_from_drop_size()
         """
-        if any([k not in data_arrays for k in self.array_types.keys()]):
+        if any(k not in data_arrays for k in self.array_types):
             return
         drop_size = np.zeros((num_new_particles, ), dtype=np.float64)
         le_density = np.zeros((num_new_particles, ), dtype=np.float64)

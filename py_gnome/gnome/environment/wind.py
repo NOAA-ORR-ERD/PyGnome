@@ -4,38 +4,48 @@ the Wind object defines the Wind conditions for the spill
 """
 
 import datetime
-import os
+
 # import copy
 import io
-# import zipfile
-
-import numpy as np
-
-import nucos as uc
 
 import gridded
+import nucos as uc
 
-from gnome.basic_types import datetime_value_2d
-from gnome.basic_types import ts_format
-from gnome.basic_types import wind_datasources
+# import zipfile
+import numpy as np
 
+from gnome.basic_types import datetime_value_2d, ts_format, wind_datasources
 from gnome.cy_gnome.cy_ossm_time import ossm_wind_units
-
-from gnome.utilities.time_utils import (sec_to_datetime, zero_time, sec_to_date)
-from gnome.utilities.timeseries import Timeseries
-from gnome.utilities.inf_datetime import InfDateTime
-from gnome.utilities.distributions import RayleighDistribution as rayleigh
-
-from gnome.persist import (SchemaNode, drop, OneOf, Float, String, Range, Boolean,
-                           DefaultTupleSchema, LocalDateTime, DatetimeValue2dArraySchema,
-                           FilenameSchema, validators, base_schema)
-from gnome.utilities.convert import (to_time_value_pair, tsformat, to_datetime_value_2d)
-from gnome.persist.validators import convertible_to_seconds
-
-from .environment import Environment
 from gnome.environment.gridded_objects_base import Time, TimeSchema
-from gnome.utilities.time_utils import TZOffset, TZOffsetSchema
+from gnome.persist import (
+    Boolean,
+    DatetimeValue2dArraySchema,
+    DefaultTupleSchema,
+    FilenameSchema,
+    Float,
+    LocalDateTime,
+    OneOf,
+    Range,
+    SchemaNode,
+    String,
+    base_schema,
+    drop,
+    validators,
+)
+from gnome.persist.validators import convertible_to_seconds
+from gnome.utilities.convert import to_time_value_pair
+from gnome.utilities.distributions import RayleighDistribution as rayleigh
+from gnome.utilities.time_utils import (
+    TZOffset,
+    TZOffsetSchema,
+    sec_to_date,
+    sec_to_datetime,
+    zero_time,
+)
+from gnome.utilities.timeseries import Timeseries
+
 from .. import _valid_units
+from .environment import Environment
 
 
 class MagnitudeDirectionTuple(DefaultTupleSchema):
@@ -198,7 +208,7 @@ class Wind(Timeseries, Environment):
             self.source_type = kwargs.pop('source_type', 'file')
 
             # create this as an empty default object
-            super(Wind, self).__init__(**kwargs)
+            super().__init__(**kwargs)
 
             # Assume it's an OSSM file
             name, coords, units, timezone_offset, timezone_name, times, speeds, directions = \
@@ -225,13 +235,13 @@ class Wind(Timeseries, Environment):
             self.timezone_offset = TZOffset(timezone_offset, timezone_name)
 
         else:
-            if kwargs.get('source_type') in wind_datasources.__members__.keys():
+            if kwargs.get('source_type') in wind_datasources.__members__:
                 self.source_type = kwargs.pop('source_type')
             else:
                 self.source_type = 'undefined'
 
             # create an empty default object
-            super(Wind, self).__init__(coord_sys=coord_sys, **kwargs)
+            super().__init__(coord_sys=coord_sys, **kwargs)
 
             self.units = 'mps'  # units for default object
 
@@ -265,7 +275,6 @@ class Wind(Timeseries, Environment):
         if format not in {'ossm'}:
             raise ValueError(f"format: {format} not supported -- only 'ossm'")
 
-        source_type = 'file'  # need this??
 
         # Assume it's an OSSM file
         name, coords, units, timezone_offset, timezone_name, times, speeds, directions = \
@@ -303,7 +312,7 @@ class Wind(Timeseries, Environment):
             self.units = dict_.pop('units')
         if 'timeseries' in dict_:
             self.timeseries = WindTimeSeriesSchema().deserialize(dict_.pop('timeseries'))
-        super(Wind, self).update_from_dict(dict_, refs=refs)
+        super().update_from_dict(dict_, refs=refs)
 
     def _check_units(self, units):
         '''
@@ -314,13 +323,13 @@ class Wind(Timeseries, Environment):
 
     def __repr__(self):
         self_ts = self.timeseries.__repr__()
-        return ('{0.__class__.__module__}.{0.__class__.__name__}('
-                'description="{0.description}", '
-                'source_id="{0.source_id}", '
-                'source_type="{0.source_type}", '
-                'units="{0.units}", '
-                'updated_at="{0.updated_at}", '
-                'timeseries={1})'.format(self, self_ts))
+        return (f'{self.__class__.__module__}.{self.__class__.__name__}('
+                f'description="{self.description}", '
+                f'source_id="{self.source_id}", '
+                f'source_type="{self.source_type}", '
+                f'units="{self.units}", '
+                f'updated_at="{self.updated_at}", '
+                f'timeseries={self_ts})')
 
     @property
     def time(self):
@@ -376,7 +385,7 @@ class Wind(Timeseries, Environment):
             wind_data['value'] = self._convert_units(wind_data['value'], coord_sys, units,
                                                      'meter per second')
 
-            datetime_value_2d = self._xform_input_timeseries(wind_data)
+            self._xform_input_timeseries(wind_data)
             timeval = to_time_value_pair(wind_data, coord_sys)
             self.ossm.timeseries = timeval
             if not hasattr(self, '_time') or self._time is None:
@@ -388,14 +397,14 @@ class Wind(Timeseries, Environment):
     def _set_timezone_offset(self, tzo):
         if tzo is None:
             tzo = TZOffset(offset=None, title="No Timezone Specified")
-        if self._timezone_offset and self._timezone_offset.offset is not None:
-            if tzo.offset is not None:
-                off = int((tzo.offset - self._timezone_offset.offset) * 3600)
-                off = np.timedelta64(off, 's')
-                new_ts = np.zeros((len(self.timeseries), ), dtype=datetime_value_2d)
-                new_ts['time'] = self.timeseries['time'] + off
-                new_ts['value'] = self.timeseries['value']
-                self.new_set_timeseries(new_ts, 'r-theta')
+        if (self._timezone_offset and self._timezone_offset.offset is not None
+                and tzo.offset is not None):
+            off = int((tzo.offset - self._timezone_offset.offset) * 3600)
+            off = np.timedelta64(off, 's')
+            new_ts = np.zeros((len(self.timeseries), ), dtype=datetime_value_2d)
+            new_ts['time'] = self.timeseries['time'] + off
+            new_ts['value'] = self.timeseries['value']
+            self.new_set_timeseries(new_ts, 'r-theta')
 
         self._timezone_offset = tzo
 
@@ -492,9 +501,9 @@ class Wind(Timeseries, Environment):
 
         header = ('Station Name\n'
                   'Position\n'
-                  '{0}\n'
+                  f'{data_units}\n'
                   'LTime\n'
-                  '0,0,0,0,0,0,0,0\n').format(data_units)
+                  '0,0,0,0,0,0,0,0\n')
 
         data = self.get_wind_data(units=data_units)
         val = data['value']
@@ -503,13 +512,12 @@ class Wind(Timeseries, Environment):
         fd.write(header)
 
         for i, idt in enumerate(dt):
-            fd.write('{0.day:02}, '
-                     '{0.month:02}, '
-                     '{0.year:04}, '
-                     '{0.hour:02}, '
-                     '{0.minute:02}, '
-                     '{1:02.2f}, {2:02.2f}\n'.format(idt, round(val[i, 0], 4),
-                                                     round(val[i, 1], 4)))
+            fd.write(f'{idt.day:02}, '
+                     f'{idt.month:02}, '
+                     f'{idt.year:04}, '
+                     f'{idt.hour:02}, '
+                     f'{idt.minute:02}, '
+                     f'{round(val[i, 0], 4):02.2f}, {round(val[i, 1], 4):02.2f}\n')
 
     def get_wind_data(self, datetime=None, units=None, coord_sys='r-theta'):
         """
@@ -545,7 +553,7 @@ class Wind(Timeseries, Environment):
 
         todo: return data in appropriate significant digits
         """
-        datetimeval = super(Wind, self).get_timeseries(datetime, coord_sys)
+        datetimeval = super().get_timeseries(datetime, coord_sys)
         units = (units, self._user_units)[units is None]
 
         datetimeval['value'] = self._convert_units(datetimeval['value'], coord_sys,
@@ -581,7 +589,7 @@ class Wind(Timeseries, Environment):
             wind_data['value'] = self._convert_units(wind_data['value'], coord_sys, units,
                                                      'meter per second')
 
-            super(Wind, self).set_timeseries(wind_data, coord_sys)
+            super().set_timeseries(wind_data, coord_sys)
             self._timeseries = wind_data
         else:
             raise ValueError('Bad timeseries as input')
@@ -653,7 +661,7 @@ class Wind(Timeseries, Environment):
             cs = 'r-theta'
             idx = 1
         else:
-            raise ValueError('invalid coordinate system {0}'.format(coord_sys))
+            raise ValueError(f'invalid coordinate system {coord_sys}')
 
         # since extrapolation_is_allowed is not passed into the C code we need
         # to temporarily set it if extrapolate is passed in, and then change it back
@@ -735,13 +743,10 @@ class Wind(Timeseries, Environment):
         __eq__ for Timeseries object to check equality of timeseries. Super
         is not used in any of the __eq__ methods
         '''
-        if not super(Wind, self).__eq__(other):
+        if not super().__eq__(other):
             return False
 
-        if not Timeseries.__eq__(self, other):
-            return False
-
-        return True
+        return Timeseries.__eq__(self, other)
 
     def validate(self):
         '''

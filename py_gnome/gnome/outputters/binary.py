@@ -4,20 +4,17 @@ For use in Gnome Analyst
 '''
 
 import os
-import copy
-from glob import glob
 import zipfile
+from datetime import datetime
+from glob import glob
 
 import numpy as np
+from colander import Boolean, SchemaNode, String, drop
 
-from colander import SchemaNode, Boolean, String, drop
-
-from gnome.utilities.time_utils import date_to_sec
-from datetime import datetime
 from gnome.basic_types import oil_status
+from gnome.utilities.time_utils import date_to_sec
 
-from .outputter import Outputter, OutputterFilenameMixin, BaseOutputterSchema
-
+from .outputter import BaseOutputterSchema, Outputter, OutputterFilenameMixin
 
 le_dtype = (np.dtype(np.dtype([('Lat', np.float32),
                                ('Lon', np.float32),
@@ -70,10 +67,10 @@ class BinaryOutput(OutputterFilenameMixin,Outputter):
 
         other arguments as defined in the Outputter class
         '''
-        super(BinaryOutput, self).__init__(filename=filename,
+        super().__init__(filename=filename,
                                                     **kwargs)
 
-        name, ext = os.path.splitext(self.filename)
+        name, _ext = os.path.splitext(self.filename)
         self.name = name
         dirname, filename = os.path.split(self.filename)
         self.output_dir = dirname
@@ -124,7 +121,7 @@ class BinaryOutput(OutputterFilenameMixin,Outputter):
         if not self.on:
             return
 
-        super(BinaryOutput, self).prepare_for_model_run(model_start_time,
+        super().prepare_for_model_run(model_start_time,
                                                         spills,
                                                         **kwargs)
         self.file_num = 0
@@ -135,7 +132,7 @@ class BinaryOutput(OutputterFilenameMixin,Outputter):
         '''
         Write data from time step to binary file
         '''
-        super(BinaryOutput, self).write_output(step_num, islast_step)
+        super().write_output(step_num, islast_step)
 
         # if not self._write_step:
         if self.on is False:
@@ -147,14 +144,14 @@ class BinaryOutput(OutputterFilenameMixin,Outputter):
                 # extract the data
                 if sc.uncertain:
                     #self._u_filename = '{0}UNCRTN.{1:03d}'.format(self.name,self.file_num)
-                    filename = '{0}UNCRTN.{1:03d}'.format(self.name,self.file_num)
+                    filename = f'{self.name}UNCRTN.{self.file_num:03d}'
                 else:
                     #self._c_filename = '{0}FORCST.{1:03d}'.format(self.name,self.file_num)
-                    filename = '{0}FORCST.{1:03d}'.format(self.name,self.file_num)
+                    filename = f'{self.name}FORCST.{self.file_num:03d}'
 
                 self._file_exists_error(filename)
 
-                output_filename = self.output_to_file(filename, sc)
+                self.output_to_file(filename, sc)
 
 
         if islast_step:
@@ -182,7 +179,6 @@ class BinaryOutput(OutputterFilenameMixin,Outputter):
         year = time_stamp.year
         hour = time_stamp.hour
         minute = time_stamp.minute
-        second = time_stamp.second
         name = 'L.E. FILE'
         num_LE = len(sc['positions'])
 
@@ -213,7 +209,7 @@ class BinaryOutput(OutputterFilenameMixin,Outputter):
         LE_header['num_LE'] = num_LE
 
         LEs = np.zeros((num_LE,), dtype=le_dtype)
-        positions = sc['positions']
+        sc['positions']
         longitude = -1 * sc['positions'][:, 0]
         latitude = sc['positions'][:, 1]
 
@@ -243,15 +239,15 @@ class BinaryOutput(OutputterFilenameMixin,Outputter):
             zfilename = self.name + '.zip'
             zipf = zipfile.ZipFile(zfilename, 'w')
 
-            for file_num in range(0, num_files):
-                forcst_file = '{0}FORCST.{1:03d}'.format(self.name,file_num)
+            for file_num in range(num_files):
+                forcst_file = f'{self.name}FORCST.{file_num:03d}'
                 dir, file_to_zip = os.path.split(forcst_file)
                 zipf.write(forcst_file,
                            arcname=file_to_zip)
                 os.remove(forcst_file)
                 if self.uncertain is True:
-                    uncrtn_file = '{0}UNCRTN.{1:03d}'.format(self.name,file_num)
-                    dir, file_to_zip = os.path.split(uncrtn_file)
+                    uncrtn_file = f'{self.name}UNCRTN.{file_num:03d}'
+                    _dir, file_to_zip = os.path.split(uncrtn_file)
                     zipf.write(uncrtn_file,
                                arcname=file_to_zip)
                     os.remove(uncrtn_file)

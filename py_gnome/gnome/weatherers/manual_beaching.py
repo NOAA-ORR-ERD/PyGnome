@@ -8,21 +8,28 @@
 
 from datetime import datetime
 
+import nucos as uc
 import numpy as np
 
-import nucos as uc
-
 from gnome.basic_types import datetime_value_1d
-from gnome.weatherers import Weatherer
-from gnome.utilities.inf_datetime import InfDateTime
-
-from gnome.persist import (validators, base_schema, DefaultTupleSchema,
-                           LocalDateTime, DatetimeValue1dArraySchema,
-                           SchemaNode, drop, Float, String, Range)
-
-from .core import WeathererSchema
-from .cleanup import RemoveMass
 from gnome.environment.environment import WaterSchema
+from gnome.persist import (
+    DatetimeValue1dArraySchema,
+    DefaultTupleSchema,
+    Float,
+    LocalDateTime,
+    Range,
+    SchemaNode,
+    String,
+    base_schema,
+    drop,
+    validators,
+)
+from gnome.utilities.inf_datetime import InfDateTime
+from gnome.weatherers import Weatherer
+
+from .cleanup import RemoveMass
+from .core import WeathererSchema
 
 
 class BeachingTupleSchema(DefaultTupleSchema):
@@ -91,7 +98,7 @@ class Beaching(RemoveMass, Weatherer):
 
         fixme: water is never used -- it should be removed.
         '''
-        super(Beaching, self).__init__(active_range=active_range, **kwargs)
+        super().__init__(active_range=active_range, **kwargs)
 
         self.water = water
 
@@ -141,8 +148,8 @@ class Beaching(RemoveMass, Weatherer):
         if value in self.valid_vol_units or value in self.valid_mass_units:
             self._units = value
         else:
-            msg = ('{0} are not valid volume or mass units.'
-                   ' Not updated').format(value)
+            msg = (f'{value} are not valid volume or mass units.'
+                   ' Not updated')
             raise ValueError(msg)
 #            self.logger.warning(msg)
 
@@ -200,10 +207,11 @@ class Beaching(RemoveMass, Weatherer):
             try:
                 dm = uc.convert('mass', self.units, 'kg', dv)
             except uc.InvalidUnitError:  # not mass
-                volume = uc.convert('volume', self.units, 'm^3', dv)
-                dm = volume * substance.standard_density
-            except uc.InvalidUnitError:  # not volume either
-                raise ValueError(f"{self.unit} is not a valid unit for beached oil")
+                try:
+                    volume = uc.convert('volume', self.units, 'm^3', dv)
+                    dm = volume * substance.standard_density
+                except uc.InvalidUnitError:  # not volume either
+                    raise ValueError(f"{self.unit} is not a valid unit for beached oil")
             # if unit_type == 'mass':
             #     dm = uc.convert('mass', self.units, 'kg', dv)
             # elif unit_type == 'volume':
@@ -276,8 +284,7 @@ class Beaching(RemoveMass, Weatherer):
             if rm_mass_frac > 1.0:
                 rm_mass_frac = 1.0
                 rm_mass = data['mass'].sum()
-                msg = ("Beaching() removing more mass than available at {0}".
-                       format(model_time))
+                msg = (f"Beaching() removing more mass than available at {model_time}")
                 self.logger.warning(msg)
 
             data['mass_components'] = ((1 - rm_mass_frac) *
@@ -285,7 +292,7 @@ class Beaching(RemoveMass, Weatherer):
             data['mass'] = data['mass_components'].sum(1)
 
             sc.mass_balance['observed_beached'] += rm_mass
-            self.logger.debug('{0} amount observed_beached for {1}: {2}'
-                              .format(self._pid, substance.name, rm_mass))
+            self.logger.debug(f'{self._pid} amount observed_beached for {substance.name}: {rm_mass}'
+                              )
 
         sc.update_from_fatedataview()

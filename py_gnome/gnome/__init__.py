@@ -20,7 +20,8 @@ import nucos
 from ._version import __version__ as __version__
 
 # just so it will be in the namespace.
-from .gnomeobject import AddLogger as AddLogger, GnomeId as GnomeId
+from .gnomeobject import AddLogger as AddLogger
+from .gnomeobject import GnomeId as GnomeId
 
 # set up to show DeprecationWarnings that come from PyGNOME
 warnings.filterwarnings("default",
@@ -168,9 +169,17 @@ check_dependency_versions()
 
 from . import (
     environment as environment,
+)
+from . import (
     model as model,
+)
+from . import (
     movers as movers,
+)
+from . import (
     outputters as outputters,
+)
+from . import (
     # multi_model_broadcast,
     spills as spills,
 )

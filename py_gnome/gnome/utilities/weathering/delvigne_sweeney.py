@@ -1,7 +1,7 @@
 import numpy as np
 
 
-class DelvigneSweeney(object):
+class DelvigneSweeney:
     '''
         Delvigne and Sweeney (1988) computes the fraction of
         breaking waves f_bw.  DS assumes no breaking waves for winds

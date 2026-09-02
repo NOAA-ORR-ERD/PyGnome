@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Code to compute surface surface_concentration from particles
 
@@ -6,6 +5,7 @@ Ultimatley, there may be multiple versions of this
 -- with Cython optimizationas and all that.
 """
 import warnings
+
 import numpy as np
 from scipy.stats import gaussian_kde
 
@@ -59,7 +59,7 @@ def surface_conc_kde(sc):
 
         while t <= max_age:
             # we use all particles < t + bin_length for kernel
-            id = np.where((age < t + bin_length))[0]
+            id = np.where(age < t + bin_length)[0]
 
             lon_for_kernel = lon[id]
             lat_for_kernel = lat[id]

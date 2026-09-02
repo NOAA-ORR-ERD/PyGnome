@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 
 """
 tideflat_map.py
@@ -15,12 +14,12 @@ is no longer a tide flat.
 
 import numpy as np
 
-from gnome.gnomeobject import GnomeId
 from gnome.basic_types import oil_status
+from gnome.gnomeobject import GnomeId
+from gnome.utilities.geometry import (
+    points_in_poly,
+)
 from gnome.utilities.time_utils import asdatetime
-
-from gnome.utilities.geometry import (points_in_poly,
-                                      )
 
 
 class TideflatMap(GnomeId):
@@ -110,7 +109,6 @@ class TideflatBase(GnomeId):
 
     Subclasses should override the ``is_dry()`` method.
     """
-    pass
 
     def is_dry(self, points, time):
         """

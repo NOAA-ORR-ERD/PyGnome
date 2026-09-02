@@ -1,20 +1,16 @@
 
-from .outputter import Outputter, BaseOutputterSchema
-from .netcdf import NetCDFOutput, NetCDFOutputSchema
-from .renderer import Renderer, RendererSchema
-from .weathering import WeatheringOutput
 from .binary import BinaryOutput
-from .geo_json import (TrajectoryGeoJsonOutput,
-                       IceGeoJsonOutput)
-from .json import (IceJsonOutput,
-                   CurrentJsonOutput,
-                   SpillJsonOutput)
-
-from .kmz import KMZOutput
-from .image import IceImageOutput
-from .shape import ShapeOutput
-from .oil_budget import OilBudgetOutput
 from .erma_data_package import ERMADataPackageOutput
+from .geo_json import IceGeoJsonOutput, TrajectoryGeoJsonOutput
+from .image import IceImageOutput
+from .json import CurrentJsonOutput, IceJsonOutput, SpillJsonOutput
+from .kmz import KMZOutput
+from .netcdf import NetCDFOutput, NetCDFOutputSchema
+from .oil_budget import OilBudgetOutput
+from .outputter import BaseOutputterSchema, Outputter
+from .renderer import Renderer, RendererSchema
+from .shape import ShapeOutput
+from .weathering import WeatheringOutput
 
 # NOTE: no need for __all__ if you want export everything!
 outputters = [Outputter,

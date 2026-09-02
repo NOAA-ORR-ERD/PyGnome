@@ -2,23 +2,21 @@
 from datetime import datetime, timedelta
 
 import numpy as np
+from colander import Bool, Float, SchemaNode, String, TupleSchema, drop
 
-from colander import (SchemaNode, TupleSchema, Bool, drop, String, Float)
-
-from gnome.basic_types import (world_point,
-                               world_point_type,
-                               spill_type,
-                               status_code_type)
-
-from gnome.utilities import time_utils
-from gnome.persist.base_schema import ObjTypeSchema
-from gnome.cy_gnome.cy_rise_velocity_mover import CyRiseVelocityMover
 from gnome import GnomeId
-from gnome.utilities.projections import FlatEarthProjection
-from gnome.utilities.inf_datetime import InfDateTime, InfTime, MinusInfTime
-
-from gnome.persist.validators import convertible_to_seconds
+from gnome.basic_types import (
+    spill_type,
+    status_code_type,
+    world_point,
+    world_point_type,
+)
+from gnome.persist.base_schema import ObjTypeSchema
 from gnome.persist.extend_colander import LocalDateTime
+from gnome.persist.validators import convertible_to_seconds
+from gnome.utilities import time_utils
+from gnome.utilities.inf_datetime import InfDateTime, InfTime, MinusInfTime
+from gnome.utilities.projections import FlatEarthProjection
 
 
 class TimeRangeSchema(TupleSchema):
@@ -72,7 +70,7 @@ class Process(GnomeId):
                              active
         :type active_range: 2-tuple of datetimes
         """
-        super(Process, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         self.on = on
         self._active = self.on
@@ -93,14 +91,14 @@ class Process(GnomeId):
         if (isinstance(active_start, datetime) and
                 isinstance(active_stop, (InfTime, MinusInfTime))):
             if active_stop <= active_start:
-                raise ValueError('active start time {0} should be smaller '
-                                 'than the active stop time {1}'
-                                 .format(active_start, active_stop))
+                raise ValueError(f'active start time {active_start} should be smaller '
+                                 f'than the active stop time {active_stop}'
+                                 )
         else:
             if active_start >= active_stop:
-                raise ValueError('active start time {0} should be smaller '
-                                 'than the active stop time {1}'
-                                 .format(active_start, active_stop))
+                raise ValueError(f'active start time {active_start} should be smaller '
+                                 f'than the active stop time {active_stop}'
+                                 )
 
         return True
 
@@ -130,7 +128,6 @@ class Process(GnomeId):
         Override this method if a derived mover class needs to perform any
         actions prior to a model run
         """
-        pass
 
     def prepare_for_model_step(self, sc, time_step, model_time_datetime):
         """
@@ -162,14 +159,12 @@ class Process(GnomeId):
         in a time step. Put any code needed for clean-up, etc in here in
         subclassed movers.
         """
-        pass
 
     def post_model_run(self):
         """
         Override this method if a derived class needs to perform
         any actions after a model run is complete (StopIteration triggered)
         """
-        pass
 
     @property
     def data_start(self):
@@ -238,19 +233,18 @@ class PyMover(Mover):
 
         All kwargs passed on to super class
         """
-        super(PyMover, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         self.num_methods = {'RK4': self.get_delta_RK4,
                             'Euler': self.get_delta_Euler,
                             'RK2': self.get_delta_RK2}
         self.default_num_method = default_num_method
 
-        if 'env' in kwargs:
-            if hasattr(self, '_req_refs'):
-                for k, in self._req_refs:
-                    for o in kwargs['env']:
-                        if k in o._ref_as:
-                            setattr(self, k, o)
+        if 'env' in kwargs and hasattr(self, '_req_refs'):
+            for k, in self._req_refs:
+                for o in kwargs['env']:
+                    if k in o._ref_as:
+                        setattr(self, k, o)
 
     def delta_method(self, method_name=None):
         '''
@@ -332,7 +326,7 @@ class CyMover(Mover):
 
         All kwargs passed on to super class
         """
-        super(CyMover, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         # initialize variables here for readability, though self.mover = None
         # produces errors, so that is not initialized here
@@ -365,7 +359,7 @@ class CyMover(Mover):
         Uses super to invoke Mover class prepare_for_model_step and does a
         couple more things specific to CyMover.
         """
-        super(CyMover, self).prepare_for_model_step(sc, time_step,
+        super().prepare_for_model_step(sc, time_step,
                                                     model_time_datetime)
 
         if self.active:
@@ -387,21 +381,17 @@ class CyMover(Mover):
             except OSError as e:
                 if "reference point" in str(e):
                     msg = ('Reference point not valid '
-                           '\tMover: {} of type {}\n'
-                           '\tError: {}'
-                           .format(self.name, self.__class__,
-                                   str(e)))
+                           f'\tMover: {self.name} of type {self.__class__}\n'
+                           f'\tError: {e!s}'
+                           )
                 else:
                     msg = ('No available data in the time interval '
                            'that is being modeled\n'
-                           '\tModel time: {}\n'
-                           '\tData available from {} to {}\n'
-                           '\tMover: {} of type {}\n'
-                           '\tError: {}'
-                           .format(model_time_datetime,
-                                   self.data_start, self.data_stop,
-                                   self.name, self.__class__,
-                                   str(e)))
+                           f'\tModel time: {model_time_datetime}\n'
+                           f'\tData available from {self.data_start} to {self.data_stop}\n'
+                           f'\tMover: {self.name} of type {self.__class__}\n'
+                           f'\tError: {e!s}'
+                           )
 
                 self.logger.error(msg)
                 raise RuntimeError(msg)
@@ -471,8 +461,8 @@ class CyMover(Mover):
                         self.status_codes = sc['status_codes']
                     except KeyError as err:
                         raise ValueError('The spill container does not have'
-                                         ' the required data array\n{}'
-                                         .format(err))
+                                         f' the required data array\n{err}'
+                                         )
 
                     self.mover.model_step_is_done(self.status_codes)
             else:

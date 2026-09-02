@@ -9,16 +9,12 @@ run the simulation in a seemless integration with GNOME.
 from datetime import datetime, timedelta
 
 import nucos as uc
-
-from gnome.spills.release import Release
-from gnome.spills.spill import SpillSchema, Spill
-from gnome.spills.substance import Substance
-from gnome.spills.gnome_oil import GnomeOil
-from gnome.utilities.time_utils import asdatetime
-from gnome.gnomeobject import GnomeId
-from gnome import _valid_units
-
 import numpy as np
+
+from gnome.spills.gnome_oil import GnomeOil
+from gnome.spills.spill import Spill
+from gnome.spills.substance import Substance
+from gnome.utilities.time_utils import asdatetime
 
 
 class TamocSpill(Spill):
@@ -80,7 +76,7 @@ class TamocSpill(Spill):
         self.release_mass = amount
 
 
-        super(TamocSpill, self).__init__(num_elements=num_elements,
+        super().__init__(num_elements=num_elements,
                                          amount=amount,  # could be volume or mass
                                          units='kg',
                                          substance=self.substance,
@@ -145,8 +141,8 @@ class TamocSpill(Spill):
             if isinstance(val, str):
                 raise
 
-            self.logger.info('Failed to get_oil_props for {0}. Use as is '
-                             'assuming has OilProps interface'.format(val))
+            self.logger.info(f'Failed to get_oil_props for {val}. Use as is '
+                             'assuming has OilProps interface')
             self._substance = val
 
 

@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 spill_container.py
 
@@ -11,14 +10,13 @@ import os
 
 import numpy as np
 
+import gnome.spills.spill
+from gnome import AddLogger
+from gnome.array_types import default_array_types
 from gnome.basic_types import fate as bt_fate
 from gnome.basic_types import oil_status
-from gnome.array_types import (default_array_types)
-
-from gnome.utilities.orderedcollection import OrderedCollection
-from gnome import AddLogger
-import gnome.spills.spill
 from gnome.spills.substance import NonWeatheringSubstance
+from gnome.utilities.orderedcollection import OrderedCollection
 
 
 class FateDataView(AddLogger):
@@ -159,7 +157,7 @@ class FateDataView(AddLogger):
                                    fate)
 
 
-class SpillContainerData(object):
+class SpillContainerData:
     """
     A really simple SpillContainer -- holds the data arrays,
     but doesn't manage spills, etc.
@@ -285,7 +283,6 @@ class SpillContainerData(object):
                 this is just another view of the data - no need to write extra
                 code to check equality for this
                 '''
-                pass
             elif val != other.__dict__[key]:
                 return False
 
@@ -369,7 +366,7 @@ class SpillContainer(AddLogger, SpillContainerData):
     world_point_types
     """
     def __init__(self, uncertain=False):
-        super(SpillContainer, self).__init__(uncertain=uncertain)
+        super().__init__(uncertain=uncertain)
         self.spills = OrderedCollection(dtype=gnome.spills.spill.Spill)
         self.spills.register_callback(self._spills_changed,
                                       ('add', 'replace', 'remove'))
@@ -445,9 +442,9 @@ class SpillContainer(AddLogger, SpillContainerData):
                 if spill.substance != substance:
                     subs = [spill.substance for spill in self.spills if spill.on]
                     raise ValueError("A spill container can only hold one substance at a time\n"
-                                     "trying to add :{}\n"
+                                     f"trying to add :{substance}\n"
                                      "These are the substances in the on spills:\n"
-                                     "{}".format(substance, subs))
+                                     f"{subs}")
 
         # set the number of oil components
         # fixme: with only one substance this could be determined elsewhere
@@ -528,8 +525,8 @@ class SpillContainer(AddLogger, SpillContainerData):
             ix = self._substances_spills.substances.index(substance)
         except ValueError:
             'substance is not in list'
-            self.logger.debug('{0} - Substance named: {1}, not found in data '
-                              'structure'.format(os.getpid(), substance.name))
+            self.logger.debug(f'{os.getpid()} - Substance named: {substance.name}, not found in data '
+                              'structure')
             return None
 
         return self._substances_spills.s_id[ix]
@@ -953,7 +950,7 @@ class SpillContainer(AddLogger, SpillContainerData):
         try:
             idx = np.where(self['id'] == ix)[0][0]
         except IndexError:
-            msg = "no element with id = {0} found".format(ix)
+            msg = f"no element with id = {ix} found"
             self.logger.warning(msg)
             raise
 
@@ -989,13 +986,13 @@ class SpillContainer(AddLogger, SpillContainerData):
 
     def __str__(self):
         return ('gnome.spill_container.SpillContainer\n'
-                'spill LE attributes: {0}'
-                .format(sorted(self._data_arrays.keys())))
+                f'spill LE attributes: {sorted(self._data_arrays.keys())}'
+                )
 
     __repr__ = __str__
 
 
-class SpillContainerPairData(object):
+class SpillContainerPairData:
     """
     A really simple SpillContainerPair
       - holds SpillContainerPairData objects,
@@ -1023,8 +1020,8 @@ class SpillContainerPairData(object):
             self._u_spill_container = u_sc
 
     def __repr__(self):
-        return ('{0.__class__.__name__},\n'
-                '  uncertain={0.uncertain}\n '.format(self))
+        return (f'{self.__class__.__name__},\n'
+                f'  uncertain={self.uncertain}\n ')
 
     @property
     def uncertain(self):
@@ -1115,7 +1112,7 @@ class SpillContainerPair(SpillContainerPairData):
         else:
             u_sc = None
 
-        super(SpillContainerPair, self).__init__(sc, u_sc)
+        super().__init__(sc, u_sc)
 
     def rewind(self):
         'rewind spills in spill_container'
@@ -1129,9 +1126,9 @@ class SpillContainerPair(SpillContainerPairData):
 
     def __repr__(self):
         'unambiguous repr'
-        return ('{0.__class__.__name__},\n'
-                '  uncertain={0.uncertain}\n'
-                '  Spills: {1}'.format(self, self._spill_container.spills))
+        return (f'{self.__class__.__name__},\n'
+                f'  uncertain={self.uncertain}\n'
+                f'  Spills: {self._spill_container.spills}')
 
     @property
     def uncertain(self):

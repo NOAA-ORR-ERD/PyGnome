@@ -3,17 +3,16 @@ kmz  outputter
 """
 
 # import os
-from pathlib import Path
-from datetime import timedelta, datetime
-import zipfile
 import base64
+import zipfile
+from datetime import datetime, timedelta
+from pathlib import Path
 
 from gnome.basic_types import oil_status
-
-from .outputter import Outputter, OutputterFilenameMixin, BaseOutputterSchema
-from gnome.persist import drop, FilenameSchema
+from gnome.persist import FilenameSchema, drop
 
 from . import kmz_templates
+from .outputter import BaseOutputterSchema, Outputter, OutputterFilenameMixin
 
 
 class KMZSchema(BaseOutputterSchema):
@@ -49,7 +48,7 @@ class KMZOutput(OutputterFilenameMixin, Outputter):
         self.kml_name = filename.with_suffix(".kml").parts[-1]
         self.cleaned_up = False  # so that we can guard against post_model_run being called twice.
 
-        super(KMZOutput, self).__init__(filename=filename,
+        super().__init__(filename=filename,
                                         **kwargs)
 
     def prepare_for_model_run(self,
@@ -90,7 +89,7 @@ class KMZOutput(OutputterFilenameMixin, Outputter):
         if not self.on:
             return
 
-        super(KMZOutput, self).prepare_for_model_run(model_start_time,
+        super().prepare_for_model_run(model_start_time,
                                                      spills,
                                                      **kwargs)
 
@@ -112,7 +111,7 @@ class KMZOutput(OutputterFilenameMixin, Outputter):
     def write_output(self, step_num, islast_step=False):
         """dump a timestep's data into the kmz file"""
 
-        super(KMZOutput, self).write_output(step_num, islast_step)
+        super().write_output(step_num, islast_step)
 
         #if not self.on or not self._write_step:
         if not self.on:
@@ -187,7 +186,7 @@ class KMZOutput(OutputterFilenameMixin, Outputter):
         reset a few parameter and call base class rewind to reset
         internal variables.
         '''
-        super(KMZOutput, self).rewind()
+        super().rewind()
 
         self._start_idx = 0
 

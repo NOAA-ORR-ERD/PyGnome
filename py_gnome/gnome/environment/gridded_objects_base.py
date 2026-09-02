@@ -1,29 +1,46 @@
 
-import os
-import datetime
 import copy
-import numpy as np
+import datetime
+import os
+
 # import logging
 import warnings
-import inspect
 from functools import wraps
 
-from colander import (SchemaNode, SequenceSchema,
-                      String, Boolean, DateTime, Tuple,TupleSchema,
-                      drop, Int, Float, null)
-
 import gridded
-from gridded.utilities import get_dataset
 import nucos as uc
+import numpy as np
+from colander import (
+    Boolean,
+    DateTime,
+    Float,
+    Int,
+    SchemaNode,
+    SequenceSchema,
+    String,
+    drop,
+)
+from gridded.utilities import get_dataset
 
-from gnome.gnomeobject import combine_signatures
-from gnome.persist import base_schema, ObjType
-from gnome.gnomeobject import GnomeId
 from gnome.environment.environment import Environment
-from gnome.persist import (GeneralGnomeObjectSchema, SchemaNode, SequenceSchema,
-                           String, Boolean, DateTime, TimeDelta, drop, FilenameSchema)
-from gnome.persist.extend_colander import LocalDateTime, UnknownMappingSchema, DataSchemaNode, NullableString
-from gnome.utilities.inf_datetime import InfDateTime
+from gnome.gnomeobject import GnomeId, combine_signatures
+from gnome.persist import (
+    Boolean,
+    DateTime,
+    FilenameSchema,
+    GeneralGnomeObjectSchema,
+    ObjType,
+    SchemaNode,
+    SequenceSchema,
+    String,
+    base_schema,
+    drop,
+)
+from gnome.persist.extend_colander import (
+    DataSchemaNode,
+    LocalDateTime,
+    UnknownMappingSchema,
+)
 from gnome.utilities.time_utils import TZOffset, TZOffsetSchema
 
 
@@ -66,7 +83,7 @@ class Grid_SSchema(GridSchema):
     
     schema_type = ObjType
     def __init__(self, *args, **kwargs):
-        super(Grid_SSchema, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
     #     for name, param in inspect.signature(gridded.pysgrid.sgrid.SGrid.__init__).parameters.items():
     #         # if name == 'grid_topology':
     #         #     import pdb
@@ -107,7 +124,7 @@ class Grid_SSchema(GridSchema):
         
 class Grid_USchema(GridSchema):
     def __init__(self, *args, **kwargs):
-        super(Grid_USchema, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         # for name, param in inspect.signature(gridded.pyugrid.ugrid.UGrid.__init__).parameters.items():
         #     if name in ['self', 'args', 'kwargs', 'use_masked_boundary','data', 'nodes'] or name in [child.name for child in self.children]:
         #         continue
@@ -184,7 +201,7 @@ class Time(gridded.time.Time, GnomeId):
     @combine_signatures
     @classmethod
     def from_netCDF(cls, *args, **kwargs):
-        return super(Time, cls).from_netCDF(*args, **kwargs)
+        return super().from_netCDF(*args, **kwargs)
 
     @classmethod
     def from_file(cls, filename=None, **kwargs):
@@ -218,7 +235,7 @@ class Grid_U(gridded.grids.Grid_U, GnomeId):
         It is not recommended to use the __init__ directly, use .from_netCDF instead
         See gridded.pyugrid.ugrid.UGrid for full __init__ documentation
         '''
-        super(Grid_U, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     @combine_signatures
     @classmethod
@@ -245,7 +262,7 @@ class Grid_U(gridded.grids.Grid_U, GnomeId):
 
         :returns: Instance of Grid_U
         '''
-        return super(Grid_U, cls).from_netCDF(filename=filename,
+        return super().from_netCDF(filename=filename,
                                         dataset=dataset,
                                         data_file=data_file,
                                         grid_file=grid_file,
@@ -283,7 +300,7 @@ class Grid_U(gridded.grids.Grid_U, GnomeId):
             [dict_.pop(n, None) for n in read_only_attrs]
             return cls.from_netCDF(**dict_)
         else:
-            return super(Grid_U, cls).new_from_dict(dict_)
+            return super().new_from_dict(dict_)
 
     def get_cells(self):
         '''
@@ -342,12 +359,12 @@ class Grid_S(gridded.grids.Grid_S, GnomeId):
         See gridded.pyugrid.sgrid.SGrid for full __init__ documentation
         '''
         #set use_masked_boundary to True by default (gridded is False)
-        super(Grid_S, self).__init__(*args, use_masked_boundary=use_masked_boundary, *args, **kwargs)
+        super().__init__(*args, use_masked_boundary=use_masked_boundary, *args, **kwargs)
  
     @combine_signatures
     @classmethod
     def from_netCDF(cls, *args, **kwargs):
-        return super(Grid_S, cls).from_netCDF(*args, **kwargs)   
+        return super().from_netCDF(*args, **kwargs)   
     
     @property
     def non_grid_variables(self):
@@ -367,7 +384,7 @@ class Grid_S(gridded.grids.Grid_S, GnomeId):
         st = def_style.copy()
 
         if style is not None:
-            for k in style.keys():
+            for k in style:
                 st[k].update(style[k])
 
         for f in features:
@@ -488,7 +505,7 @@ class Grid_R(gridded.grids.Grid_R, GnomeId):
         See gridded.pyugrid.sgrid.SGrid for full __init__ documentation
         '''
         #set use_masked_boundary to True by default (gridded is False)
-        super(Grid_R, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         
     @classmethod
     def new_from_dict(cls, dict_):
@@ -722,20 +739,18 @@ class Variable(gridded.Variable, Environment):
                             origin=time_origin)
         if isinstance(depth_index, int):
             depth = DepthBase(surface_index=depth_index)
-        if depth is None:
-            if (isinstance(grid, (Grid_S, Grid_R)) and len(data.shape) == 4 or
-                    isinstance(grid, Grid_U) and len(data.shape) == 3):
-                depth = Depth.from_netCDF(data_file=data_file,
-                                          grid_file=grid_file,
-                                          grid=grid,
-                                          time=time,
-                                          grid_topology=grid_topology,
-                                          )
+        if depth is None and (isinstance(grid, (Grid_S, Grid_R)) and len(data.shape) == 4 or
+                isinstance(grid, Grid_U) and len(data.shape) == 3):
+            depth = Depth.from_netCDF(data_file=data_file,
+                                      grid_file=grid_file,
+                                      grid=grid,
+                                      time=time,
+                                      grid_topology=grid_topology,
+                                      )
         if depth_index == 'surface':
             depth = DepthBase(surface_index=depth.surface_index, bottom_index = depth.bottom_index)
-        if location is None:
-            if hasattr(data, 'location'):
-                location = data.location
+        if location is None and hasattr(data, 'location'):
+            location = data.location
 #             if len(data.shape) == 4 or (len(data.shape) == 3 and time is None):
 #                 from gnome.environment.environment_objects import S_Depth
 #                 depth = S_Depth.from_netCDF(grid=grid,
@@ -792,7 +807,7 @@ class Variable(gridded.Variable, Environment):
         if extrapolate is None:
             extrapolate = self.extrapolation_is_allowed
 
-        value = super(Variable, self).at(points, time,
+        value = super().at(points, time,
                                          units=units,
                                          extrapolate=extrapolate,
                                          unmask=unmask,
@@ -805,11 +820,11 @@ class Variable(gridded.Variable, Environment):
                 value = uc.convert(data_units, req_units, value)
             except uc.NotSupportedUnitError:
                 if (not uc.is_supported(data_units)):
-                    warnings.warn("{0} units is not supported: {1} "
-                                  "Using them unconverted as {2}"
-                                  .format(self.name, data_units, req_units))
+                    warnings.warn(f"{self.name} units is not supported: {data_units} "
+                                  f"Using them unconverted as {req_units}"
+                                  )
                 elif (not uc.is_supported(req_units)):
-                    warnings.warn("Requested unit is not supported: {1}".format(req_units))
+                    warnings.warn("Requested unit is not supported: {1}".format())
                 else:
                     raise
         return value
@@ -823,7 +838,7 @@ class Variable(gridded.Variable, Environment):
             [dict_.pop(n, None) for n in read_only_attrs]
             return cls.from_netCDF(**dict_)
 
-        return super(Variable, cls).new_from_dict(dict_)
+        return super().new_from_dict(dict_)
 
     @classmethod
     def constant(cls, value, **kwargs):
@@ -962,7 +977,7 @@ class VectorVariable(gridded.VectorVariable, Environment):
                  *args,
                  **kwargs):
         
-        super(VectorVariable, self).__init__(
+        super().__init__(
             *args,
             surface_boundary_condition=surface_boundary_condition,
             bottom_boundary_condition=bottom_boundary_condition,
@@ -977,7 +992,7 @@ class VectorVariable(gridded.VectorVariable, Environment):
             if hasattr(self, '_gnome_unit'):
                 if hasattr(var, '_gnome_unit') and var._gnome_unit is not None:
                     if self._gnome_unit != var._gnome_unit:
-                        warnings.warn("Variable {0} has units {1} which are not the same as the VectorVariable {2} units {3}.".format(var.name, var._gnome_unit, self.name, self._gnome_unit))
+                        warnings.warn(f"Variable {var.name} has units {var._gnome_unit} which are not the same as the VectorVariable {self.name} units {self._gnome_unit}.")
                 else:
                     var._gnome_unit = self._gnome_unit
 
@@ -1076,7 +1091,7 @@ class VectorVariable(gridded.VectorVariable, Environment):
         if varnames is None:
             varnames = self._gen_varnames(data_file,
                                           dataset=ds)
-            if all([v is None for v in varnames]):
+            if all(v is None for v in varnames):
                 raise ValueError('No compatible variable names found!')
         data = ds[varnames[0]]
         if time is None:
@@ -1085,14 +1100,13 @@ class VectorVariable(gridded.VectorVariable, Environment):
                                     datavar=data)
             if time_origin is not None:
                 time = Time(data=time.data, filename=data_file, varname=time.varname, origin=time_origin)
-        if depth is None:
-            if (isinstance(grid, (Grid_S, Grid_R)) and len(data.shape) == 4 or
-                    isinstance(grid, Grid_U) and len(data.shape) == 3):
-                depth = Depth.from_netCDF(data_file=data_file,
-                                          grid_file=grid_file,
-                                          grid=grid,
-                                          dataset=dg,
-                                          )
+        if depth is None and (isinstance(grid, (Grid_S, Grid_R)) and len(data.shape) == 4 or
+                isinstance(grid, Grid_U) and len(data.shape) == 3):
+            depth = Depth.from_netCDF(data_file=data_file,
+                                      grid_file=grid_file,
+                                      grid=grid,
+                                      dataset=dg,
+                                      )
 
 #         if depth is None:
 #             if (isinstance(grid, Grid_S) and len(data.shape) == 4 or
@@ -1196,9 +1210,9 @@ class VectorVariable(gridded.VectorVariable, Environment):
 
         [dict_.pop(n, None) for n in read_only_attrs]
         if not dict_.get('variables', False):
-            return super(VectorVariable, cls).new_from_dict(cls.from_netCDF(**dict_).to_dict(), **kwargs)
+            return super().new_from_dict(cls.from_netCDF(**dict_).to_dict(), **kwargs)
         else:
-            return super(VectorVariable, cls).new_from_dict(dict_, **kwargs)
+            return super().new_from_dict(dict_, **kwargs)
 
 
     @classmethod
@@ -1247,7 +1261,7 @@ class VectorVariable(gridded.VectorVariable, Environment):
         units = units if units else self._gnome_unit #no need to convert here, its handled in the subcomponents
         if extrapolate is None:
             extrapolate = self.extrapolation_is_allowed
-        value = super(VectorVariable, self).at(points, time,
+        value = super().at(points, time,
                                                units=units,
                                                extrapolate=extrapolate,
                                                unmask=unmask,
@@ -1260,11 +1274,11 @@ class VectorVariable(gridded.VectorVariable, Environment):
                 value = uc.convert(data_units, req_units, value)
             except uc.NotSupportedUnitError:
                 if (not uc.is_supported(data_units)):
-                    warnings.warn("{0} units is not supported: {1}"
-                                  "Using them unconverted as {2}"
-                                  .format(self.name, data_units, req_units))
+                    warnings.warn(f"{self.name} units is not supported: {data_units}"
+                                  f"Using them unconverted as {req_units}"
+                                  )
                 elif (not uc.is_supported(req_units)):
-                    warnings.warn("Requested unit is not supported: {1}".format(req_units))
+                    warnings.warn("Requested unit is not supported: {1}".format())
                 else:
                     raise
         return value
@@ -1404,7 +1418,7 @@ class VectorVariable(gridded.VectorVariable, Environment):
                     gt = kws.get('grid_topology', None)
                     kws['grid'] = PyGrid.from_netCDF(kws['filename'], dataset=dg, grid_topology=gt)
                 if kws.get('varnames', None) is None:
-                    varnames = cls._gen_varnames(kws['data_file'],
+                    cls._gen_varnames(kws['data_file'],
                                                  dataset=ds)
 #                 if _mod('time'):
 #                     time = Time.from_netCDF(filename=kws['data_file'],

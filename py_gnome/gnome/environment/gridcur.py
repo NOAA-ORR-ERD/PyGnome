@@ -38,7 +38,6 @@ import numpy as np
 
 from .gridded_objects_base import Grid_R, Time, Variable
 
-
 data_types = {"GRIDCURTIME": "currents",
               "GRIDWINDTIME": "winds",
               }
@@ -49,7 +48,6 @@ class GridCurReadError(Exception):
     custom class so that we can know what the error was in reading GridCur
     file
     """
-    pass
 
 
 
@@ -107,7 +105,7 @@ def init_from_gridcur(gc,
     time = Time(data=times)
 
     U = Variable(
-        name=f"eastward surface velocity",
+        name="eastward surface velocity",
         units=units,
         time=time,
         data=data_u,
@@ -118,7 +116,7 @@ def init_from_gridcur(gc,
     )
 
     V = Variable(
-        name=f"northward surface velocity",
+        name="northward surface velocity",
         units=units,
         time=time,
         data=data_v,
@@ -227,9 +225,8 @@ def write_gridcur(filename, data_type, units, times, lon, lat, data_u, data_v):
             outfile.write(f"[TIME] {time.day} {time.month} {time.year} "
                           f"{time.hour} {time.minute}\n")
             for row in range(U.shape[0]):
-                for col in range(U.shape[1]):
-                    outfile.write(f"{row+1:4d} {col+1:4d} "
-                                  f"{U[row, col]:10.6f} {V[row, col]:10.6f}\n")
+                outfile.writelines(f"{row+1:4d} {col+1:4d} "
+                                  f"{U[row, col]:10.6f} {V[row, col]:10.6f}\n" for col in range(U.shape[1]))
 
 def make_grid_arrays(grid_info):
     """

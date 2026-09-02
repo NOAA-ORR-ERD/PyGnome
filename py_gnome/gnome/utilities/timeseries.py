@@ -3,23 +3,17 @@ import datetime
 
 import numpy as np
 
+from gnome import GnomeId, basic_types
 from gnome.cy_gnome.cy_ossm_time import CyTimeseries
-
-from gnome import basic_types, GnomeId
-from gnome.utilities.time_utils import (zero_time,
-                                        date_to_sec,
-                                        sec_to_date)
-from gnome.utilities.convert import (to_time_value_pair,
-                                     tsformat,
-                                     to_datetime_value_2d)
 from gnome.persist.base_schema import ObjTypeSchema
+from gnome.utilities.convert import to_datetime_value_2d, to_time_value_pair, tsformat
+from gnome.utilities.time_utils import date_to_sec, sec_to_date, zero_time
 
 
 class TimeseriesError(Exception):
     """
     Error class for a problem with the timeseries check
     """
-    pass
 
 
 class Timeseries(GnomeId):
@@ -86,7 +80,7 @@ class Timeseries(GnomeId):
             Converts string to integer defined by
             gnome.basic_types.ts_format.*
         """
-        super(Timeseries, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         if (timeseries is None and filename is None):
             timeseries = np.array([(sec_to_date(zero_time()), [0.0, 0.0])],
                                   dtype=basic_types.datetime_value_2d)
@@ -127,16 +121,16 @@ class Timeseries(GnomeId):
             else:
                 for i in timeseries:
                     if not self._is_timeseries_value(i):
-                        raise TimeseriesError('value: {} '
+                        raise TimeseriesError(f'value: {i} '
                                               'is not a timeseries value'
-                                              .format(i))
+                                              )
                 return True
 
         if not self._timeseries_is_ascending(timeseries):
-            self.logger.error('{0} - timeseries are not in ascending order. '
+            self.logger.error(f'{self._pid} - timeseries are not in ascending order. '
                               'The datetime values in the array must be in '
                               'ascending order'
-                              .format(self._pid))
+                              )
             raise TimeseriesError("timeseries is not in ascending order")
 
         return True
@@ -150,7 +144,7 @@ class Timeseries(GnomeId):
     def __eq__(self, o):
         """
         """
-        t1 = super(Timeseries, self).__eq__(o)
+        t1 = super().__eq__(o)
         return t1 and hasattr(self, 'ossm') and np.all(self.ossm.timeseries == o.ossm.timeseries)
 
     def get_start_time(self):
@@ -175,10 +169,7 @@ class Timeseries(GnomeId):
         if not isinstance(value[0], (datetime.datetime, np.datetime64)):
             return False
 
-        if len(value[1]) not in (1, 2):
-            return False
-
-        return True
+        return len(value[1]) in (1, 2)
 
     def _timeseries_is_ascending(self, timeseries):
         """
@@ -192,10 +183,7 @@ class Timeseries(GnomeId):
             # scalar or single value -- must be OK
             return True
 
-        if np.any(np.diff(timeseries['time']) <= np.timedelta64(0, 's')):
-            return False
-        else:
-            return True
+        return not np.any(np.diff(timeseries['time']) <= np.timedelta64(0, 's'))
 
     def _xform_input_timeseries(self, timeseries):
         '''
@@ -216,7 +204,7 @@ class Timeseries(GnomeId):
         return timeseries
 
     def __str__(self):
-        return '{0.__module__}.{0.__class__.__name__}'.format(self)
+        return f'{self.__module__}.{self.__class__.__name__}'
 
     @property
     def filename(self):
@@ -266,9 +254,9 @@ class Timeseries(GnomeId):
             if err != 0:
                 msg = ('No available data in the time interval that is being '
                        'modeled\n'
-                       '\tModel time: {}\n'
-                       '\tMover: {} of type {}\n'
-                       .format(datetime, self.name, self.__class__))
+                       f'\tModel time: {datetime}\n'
+                       f'\tMover: {self.name} of type {self.__class__}\n'
+                       )
 
                 self.logger.error(msg)
                 raise RuntimeError(msg)

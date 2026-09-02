@@ -1,12 +1,11 @@
-#!/usr/bin/env python
 '''
 Classes that generate various types of probability distributions
 '''
 
 import numpy as np
-from gnome.gnomeobject import GnomeId
 from colander import Float, SchemaNode, drop
 
+from gnome.gnomeobject import GnomeId
 from gnome.persist.base_schema import ObjTypeSchema
 from gnome.utilities.compute_fraction import fraction_below_d
 
@@ -79,7 +78,6 @@ class LogNormalDistributionSchema(NormalDistributionSchema):
         keep in its own class since serialize/deserialize automatically
         looks for this class name. Helps keep things consistent.
     '''
-    pass
 
 
 class WeibullDistributionSchema(ObjTypeSchema):
@@ -115,7 +113,7 @@ class UniformDistribution(DistributionBase):
         :param low: For the Uniform distribution, it is lower bound.
         :param high: For the Uniform distribution, it is upper bound.
         '''
-        super(UniformDistribution, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         self.low = low
         self.high = high
@@ -142,7 +140,7 @@ class NormalDistribution(DistributionBase):
         :param mean: The mean of the normal distribution
         :param sigma: The standard deviation of normal distribution
         '''
-        super(NormalDistribution, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.mean = mean
         self.sigma = sigma
         self._check_normal_args()
@@ -168,7 +166,7 @@ class LogNormalDistribution(DistributionBase):
         :param mean: The mean of the normal distribution
         :param sigma: The standard deviation of normal distribution
         '''
-        super(LogNormalDistribution, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.mean = mean
         self.sigma = sigma
         self._check_lognormal_args()
@@ -260,7 +258,7 @@ class WeibullDistribution(DistributionBase):
         self._weibull(np_array)
 
 
-class RayleighDistribution():
+class RayleighDistribution:
     @classmethod
     def sigma_from_wind(cls, avg_speed):
         return np.sqrt(2.0 / np.pi) * avg_speed

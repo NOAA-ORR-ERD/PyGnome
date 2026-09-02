@@ -172,7 +172,7 @@ def capitalize_name_mapping(name_map):
 
     NOTE: the name_map is changed in place.
     """
-    for variable, data in name_map.items():
+    for data in name_map.values():
         def_names = data['default_names']
         try:
             for sub_var in def_names.values():
@@ -259,8 +259,8 @@ if __name__ == "__main__":
     """
 
     import os
-    import sys
     import shutil
+    import sys
 
     if "rebuild" in sys.argv:
         print("rebuilding docstring")

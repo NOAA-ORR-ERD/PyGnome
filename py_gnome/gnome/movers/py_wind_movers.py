@@ -3,30 +3,23 @@ Wind Movers and associated helper functions.
 This module has no compiled C dependency
 '''
 
-from . import movers
-
-import numpy as np
 import os
 import warnings
 
-from colander import (SchemaNode,
-                      Bool, Float, String, Sequence, drop)
+import numpy as np
+from colander import Float, SchemaNode, drop
 
-from gnome.basic_types import oil_status
 from gnome.array_types import gat
-
+from gnome.basic_types import oil_status
+from gnome.environment import GridWind
+from gnome.environment.gridded_objects_base import VectorVariableSchema
+from gnome.environment.wind import Wind
+from gnome.movers.movers import PyMoverSchema
+from gnome.persist.base_schema import GeneralGnomeObjectSchema
 from gnome.utilities import rand
 from gnome.utilities.projections import FlatEarthProjection
-from gnome.utilities.time_utils import TZOffset
 
-from gnome.environment import GridWind
-
-from gnome.movers.movers import TimeRangeSchema, PyMoverSchema
-
-from gnome.persist.extend_colander import LocalDateTime, FilenameSchema
-from gnome.persist.base_schema import GeneralGnomeObjectSchema
-from gnome.environment.gridded_objects_base import Grid_U, VectorVariableSchema
-from gnome.environment.wind import Wind
+from . import movers
 
 
 class WindMoverSchema(PyMoverSchema):
@@ -114,7 +107,7 @@ class WindMover(movers.PyMover):
         self.shape = (2,)
         self.uncertainty_list = np.zeros((0,)+self.shape, dtype=np.float64)
 
-        (super(WindMover, self).__init__(default_num_method=default_num_method, **kwargs))
+        (super().__init__(default_num_method=default_num_method, **kwargs))
         self.array_types.update({'windages': gat('windages'),
                                  'windage_range': gat('windage_range'),
                                  'windage_persist': gat('windage_persist')})
@@ -155,7 +148,6 @@ class WindMover(movers.PyMover):
         self.uncertainty_list = np.zeros((0,) + self.shape, dtype=np.float64)
         self.time_uncertainty_was_set = 0
 
-        return
 
     def prepare_for_model_step(self, sc, time_step, model_time_datetime):
         """
@@ -166,7 +158,7 @@ class WindMover(movers.PyMover):
         :param time_step: time step in seconds
         :param model_time_datetime: current time of model as a date time object
         """
-        super(WindMover, self).prepare_for_model_step(sc, time_step,
+        super().prepare_for_model_step(sc, time_step,
                                                         model_time_datetime)
 
         if self.active:
@@ -221,7 +213,7 @@ class WindMover(movers.PyMover):
         if hasattr(self.wind, 'get_bounds'):
             return self.wind.get_bounds()
         else:
-            return super(WindMover, self).get_bounds()
+            return super().get_bounds()
 
     def update_uncertainty(self, num_les, elapsed_time):
         """
@@ -350,7 +342,6 @@ class WindMover(movers.PyMover):
         shape = (2,)
         self.uncertainty_list = np.zeros((num_les,)+shape, dtype=np.float64)
 
-        return
 
 
     def add_uncertainty(self, deltas, time_step):
@@ -397,7 +388,7 @@ class WindMover(movers.PyMover):
             deltas[:,0] = (u * cos_theta - v * sin_theta) * time_step
             deltas[:,1] = (v * cos_theta + u * sin_theta) * time_step
 
-            for i in range(0,num_les):
+            for i in range(num_les):
                 if norm[i] < 1:
                     rand1 = np.random.uniform(-1., 1.)
                     rand2 = np.random.uniform(-1., 1.)

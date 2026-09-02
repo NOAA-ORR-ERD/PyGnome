@@ -4,7 +4,7 @@ import numpy as np
 from gnome.constants import gravity as g
 
 
-class PiersonMoskowitz(object):
+class PiersonMoskowitz:
     '''
         Pierson-Moskowitz spectrum for fully developed, wind induced,
         surface waves.

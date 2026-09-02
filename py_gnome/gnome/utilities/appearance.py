@@ -2,14 +2,15 @@
 Models to hold web client appearance state information.
 '''
 
-from gnome.persist.base_schema import ObjTypeSchema, ObjType
-from gnome.gnomeobject import GnomeId
 from colander import drop
+
+from gnome.gnomeobject import GnomeId
+from gnome.persist.base_schema import ObjType, ObjTypeSchema
 
 
 class AppearanceSchema(ObjTypeSchema):
     def __init__(self, unknown='preserve', *args, **kwargs):
-        super(AppearanceSchema, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.typ = ObjType(unknown)
 
 
@@ -97,17 +98,17 @@ class Appearance(GnomeId):
 
     def __init__(self, **kwargs):
         keys = Appearance._schema().get_nodes_by_attr('all')
-        k2 = dict([(key, kwargs.get(key)) for key in keys])
+        k2 = {key: kwargs.get(key) for key in keys}
         read_only_attrs = Appearance._schema().get_nodes_by_attr('read_only')
         for n in read_only_attrs:
             k2.pop(n, None)
-        super(Appearance, self).__init__(**k2)
+        super().__init__(**k2)
         for k, v in kwargs.items():
             setattr(self, k, v)
         self.appearance_keys = list(kwargs.keys())
 
     def update_from_dict(self, dict_, refs=None):
-        super(Appearance, self).update_from_dict(dict_, refs=refs)
+        super().update_from_dict(dict_, refs=refs)
         updatable = self._schema().get_nodes_by_attr('update')
         read_only_attrs = self._schema().get_nodes_by_attr('read_only')
         for name in updatable + read_only_attrs:
@@ -118,7 +119,7 @@ class Appearance(GnomeId):
                 self.appearance_keys.append(k)
 
     def to_dict(self, json_=None):
-        data = super(Appearance, self).to_dict(json_=json_)
+        data = super().to_dict(json_=json_)
         for k in self.appearance_keys:
             data[k] = getattr(self, k)
         return data
@@ -130,7 +131,7 @@ class Appearance(GnomeId):
         this will always return None, so that old save files
         won't barf out if they don't include something
         """
-        return None
+        return
 
 
 class Colormap(Appearance):
@@ -142,7 +143,7 @@ class SpillAppearance(Appearance):
 
     def __init__(self, colormap=None, **kwargs):
         self.colormap = colormap
-        super(SpillAppearance, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
 
 class MapAppearance(Appearance):

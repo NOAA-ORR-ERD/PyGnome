@@ -8,9 +8,8 @@ import operator
 import sys
 import warnings
 
-import numpy as np
-
 import nucos
+import numpy as np
 
 # from .sig_fig_rounding import RoundToSigFigs_fp as round_sf
 
@@ -112,8 +111,8 @@ if sys.platform.startswith('win'):
                                    ctypes.sizeof(counters))
         if not ret:
             raise ctypes.WinError()
-        info = dict((name, getattr(counters, name))
-                    for name, _ in counters._fields_)
+        info = {name: getattr(counters, name)
+                    for name, _ in counters._fields_}
         return info
 
     def get_mem_use(units='MB'):
@@ -184,7 +183,7 @@ def _round_sf_float(x, sigfigs):
     #     result = float(f"{x:}")round(x, sigfigs - int(math.floor(math.log10(abs(x)))) - 1)
 
     # using "old style formatting for the curly bracket"
-    formatter = "{x:.%d}" % sigfigs
+    formatter = f"{{x:.{sigfigs}}}"
     result = float(formatter.format(x=x))
     return result
 
@@ -245,9 +244,6 @@ def convert_mass_to_mass_or_volume(in_unit, out_unit, density, value):
         mass = nucos.convert('mass', in_unit, 'kg', value)
         vol = mass / density
         result = nucos.convert('volume', 'm^3', out_unit, vol)
-    except nucos.InvalidUnitError as err:
-        # add an additional message
-        raise err
     return result
 
     # try:

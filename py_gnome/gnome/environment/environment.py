@@ -6,10 +6,9 @@ import copy
 from functools import lru_cache
 from typing import ClassVar
 
-from colander import Float, MappingSchema, OneOf, SchemaNode, String, drop
-
 import gsw
 import nucos as uc
+from colander import Float, MappingSchema, OneOf, SchemaNode, String, drop
 
 from gnome import constants
 from gnome.gnomeobject import GnomeId, GnomeObjMeta
@@ -17,6 +16,7 @@ from gnome.persist import base_schema
 from gnome.utilities.time_utils import TZOffset
 
 from .. import _valid_units
+
 
 class EnvironmentMeta(GnomeObjMeta):
     """
@@ -196,7 +196,7 @@ def env_from_netCDF(filename=None, dataset=None,
         obj = None
         try:
             obj = c.from_netCDF(**klskwargs)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             import logging
             logging.getLogger(__name__).warning(
                 f'Class {c.__name__} could not be constituted from netCDF file\n'
@@ -204,6 +204,7 @@ def env_from_netCDF(filename=None, dataset=None,
         return obj
 
     from gridded.utilities import get_dataset
+
     from gnome.environment import Environment, PyGrid
     from gnome.environment.gridded_objects_base import Variable, VectorVariable
 
@@ -303,7 +304,7 @@ def get_file_analysis(filename):
 
     if len(env) > 0:
         report = [f'Can create {len([env.__class__ for e in env])} types of environment objects']
-        report.append(f'Types are: {str([e.__class__ for e in env])}')
+        report.append(f'Types are: {[e.__class__ for e in env]!s}')
 
     report = report + grid_detection_report(filename)
 
@@ -484,7 +485,7 @@ class Water(Environment):
         setattr(self, attr, value)
         self.units[attr] = unit
 
-    @lru_cache(2)  # noqa: B019
+    @lru_cache(2)
     def _get_density(self, salinity, temp):
         '''
         use lru cache so we don't recompute if temp is not changing
