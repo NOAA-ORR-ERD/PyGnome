@@ -33,10 +33,10 @@ Two by two grid, values on the nodes: ::
 """
 
 from datetime import datetime
+
 import numpy as np
 
-
-from .gridded_objects_base import (Time, Variable, VectorVariable, Grid_R)
+from .gridded_objects_base import Grid_R, Time, Variable
 
 
 data_types = {"GRIDCURTIME": "currents",

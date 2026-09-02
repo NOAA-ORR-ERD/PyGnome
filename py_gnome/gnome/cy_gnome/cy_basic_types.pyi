@@ -4,6 +4,7 @@
 Definitions in cy_basic_types.pyx
 
 """
+from enum import IntEnum
 
 
 class oil_status(IntEnum):

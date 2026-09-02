@@ -7,22 +7,20 @@ initialize_console_log(level='debug')
 
 set up the logger to dump to console.
 """
-import sys
+import importlib
+import json
+import logging
 import os
 import pathlib
-
-import logging
-import json
+import sys
 import warnings
-
-import importlib
 
 import nucos
 
-# just so it will be in the namespace.
-from .gnomeobject import GnomeId, AddLogger
+from ._version import __version__ as __version__
 
-from ._version import __version__
+# just so it will be in the namespace.
+from .gnomeobject import AddLogger as AddLogger, GnomeId as GnomeId
 
 # set up to show DeprecationWarnings that come from PyGNOME
 warnings.filterwarnings("default",
@@ -67,16 +65,13 @@ def check_dependency_versions():
             installed = tuple(int(part) for part in installed.split(".")[:3])
         except ValueError: # something is odd -- dev version, or ??
             return False
-        if installed < required:
-            return False
-        else:
-            return True
+        return not installed < required
 
     libs = [('gridded', '0.8.0', ''),
             ('nucos', '3.4.1', ''),
             ('py_gd', '2.3.3', ''),
-            ('adios_db', '1.2.7', 'Only required to use the ADIOS Database '
-                                  'JSON format for oil data.')
+            ('adios_db', '1.2.7', ('Only required to use the ADIOS Database '
+                                   'JSON format for oil data.'))
             ]
 
     for name, version, note in libs:
@@ -84,15 +79,14 @@ def check_dependency_versions():
         try:
             module = importlib.import_module(name)
         except ImportError:
-            msg = ("ERROR: The {} package, version >= {} "
-                   "needs to be installed: {}".format(name, version, note))
+            msg = (f"ERROR: The {name} package, version >= {version} "
+                   f"needs to be installed: {note}")
             warnings.warn(msg)
         else:
             if not ver_check(version, module.__version__):
-                msg = ('Version {0} of {1} package is required, '
-                       'but actual version in module is {2}:'
-                       '{3}'
-                       .format(version, name, module.__version__, note))
+                msg = (f'Version {version} of {name} package is required, '
+                       f'but actual version in module is {module.__version__}:'
+                       f'{note}')
                 warnings.warn(msg)
 
 
@@ -110,7 +104,8 @@ def initialize_log(config, logfile=None):
 
     '''
     if isinstance(config, str):
-        config = json.load(open(config, 'r'))
+        with open(config, 'r') as f:
+            config = json.load(f)
 
     if logfile is not None:
         config['handlers']['file']['filename'] = logfile
@@ -171,11 +166,12 @@ def _valid_units(unit_type):
 # to avoid this
 check_dependency_versions()
 
-from . import (environment,
-               model,
-               # multi_model_broadcast,
-               spills,
-               movers,
-               outputters)
-
-from .maps import map
+from . import (
+    environment as environment,
+    model as model,
+    movers as movers,
+    outputters as outputters,
+    # multi_model_broadcast,
+    spills as spills,
+)
+from .maps import map as map

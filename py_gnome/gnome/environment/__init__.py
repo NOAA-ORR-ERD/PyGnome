@@ -2,40 +2,40 @@
 environment module
 '''
 
-from .environment import Environment, env_from_netCDF, ice_env_from_netCDF
-from .environment_objects import (WindTS,
-                                  GridCurrent,
-                                  GridWind,
-                                  IceVelocity,
-                                  IceConcentration,
-                                  GridTemperature,
-                                  IceAwareCurrent,
-                                  IceAwareWind,
-                                  TemperatureTS,
-                                  FileGridCurrent,
-                                  SteadyUniformCurrent,
-                                  )
-
-from .gridcur import from_gridcur
-from .water import Water, WaterSchema
-from .waves import Waves, WavesSchema
-from .tide import Tide, TideSchema
-from .wind import Wind, WindSchema, constant_wind, wind_from_values
-
-from .running_average import RunningAverage, RunningAverageSchema
-from .timeseries_objects_base import (TimeseriesData,
-                                     TimeseriesDataSchema,
-                                     TimeseriesVector,
-                                     TimeseriesVectorSchema
-                                     )
-from .gridded_objects_base import (PyGrid,
-                                  GridSchema,
-                                  VectorVariable,
-                                  Variable)
-
-from .grid import Grid
-
 from . import timeseries_objects_base
+from .environment import Environment, env_from_netCDF, ice_env_from_netCDF
+from .environment_objects import (
+    FileGridCurrent as FileGridCurrent,
+    GridCurrent,
+    GridTemperature as GridTemperature,
+    GridWind,
+    IceAwareCurrent,
+    IceAwareWind,
+    IceConcentration,
+    IceVelocity as IceVelocity,
+    SteadyUniformCurrent,
+    TemperatureTS as TemperatureTS,
+    WindTS as WindTS,
+)
+from .grid import Grid as Grid
+from .gridcur import from_gridcur as from_gridcur
+from .gridded_objects_base import (
+    GridSchema as GridSchema,
+    PyGrid,
+    Variable,
+    VectorVariable,
+)
+from .running_average import RunningAverage, RunningAverageSchema as RunningAverageSchema
+from .tide import Tide, TideSchema as TideSchema
+from .timeseries_objects_base import (
+    TimeseriesData,
+    TimeseriesDataSchema as TimeseriesDataSchema,
+    TimeseriesVector,
+    TimeseriesVectorSchema as TimeseriesVectorSchema,
+)
+from .water import Water, WaterSchema as WaterSchema
+from .waves import Waves, WavesSchema as WavesSchema
+from .wind import Wind, WindSchema as WindSchema, constant_wind, wind_from_values
 
 # from gnome.environment.environment_objects import IceAwareCurrentSchema
 
@@ -75,6 +75,7 @@ schemas = list({cls._schema for cls in env_objs if hasattr(cls, '_schema')})
 # This hack is for backwards compat on save files...should probably
 # remove at some point
 import sys
+
 if ('gnome.environment.ts_property' not in sys.modules):
     sys.modules['gnome.environment.ts_property'] = timeseries_objects_base
 ts_property = timeseries_objects_base
