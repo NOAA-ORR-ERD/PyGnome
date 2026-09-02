@@ -1,16 +1,16 @@
-
-from .bio_degradation import Biodegradation
-from .cleanup import Burn, ChemicalDispersion, Skimmer
+# ruff: noqa: I001  -- core.py must load first; all other weatherers import Weatherer from gnome.weatherers
 from .core import HalfLifeWeatherer, Weatherer
+from .cleanup import Burn, ChemicalDispersion, Skimmer
+from .manual_beaching import Beaching
+from .evaporation import Evaporation
+from .natural_dispersion import NaturalDispersion
 from .dissolution import Dissolution
 from .emulsification import Emulsification
-from .evaporation import Evaporation
-from .manual_beaching import Beaching
-from .natural_dispersion import NaturalDispersion
+from .bio_degradation import Biodegradation
+from .spreading import ConstantArea, FayGravityViscous, Langmuir
 from .roc import Burn as ROC_Burn
 from .roc import Disperse as ROC_Disperse
 from .roc import Skim as ROC_Skim
-from .spreading import ConstantArea, FayGravityViscous, Langmuir
 
 """
 Weatherers are to be ordered as follows:
