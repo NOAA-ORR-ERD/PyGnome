@@ -1,46 +1,32 @@
 '''
 environment module
 '''
-
-from . import timeseries_objects_base
+# ruff: noqa: I001  -- import order is load-order constrained: running_average imports Wind from this module
 from .environment import Environment, env_from_netCDF, ice_env_from_netCDF
 from .environment_objects import (
     FileGridCurrent as FileGridCurrent,
-)
-from .environment_objects import (
     GridCurrent,
+    GridTemperature as GridTemperature,
     GridWind,
     IceAwareCurrent,
     IceAwareWind,
     IceConcentration,
-    SteadyUniformCurrent,
-)
-from .environment_objects import (
-    GridTemperature as GridTemperature,
-)
-from .environment_objects import (
     IceVelocity as IceVelocity,
-)
-from .environment_objects import (
+    SteadyUniformCurrent,
     TemperatureTS as TemperatureTS,
-)
-from .environment_objects import (
     WindTS as WindTS,
 )
-from .grid import Grid as Grid
 from .gridcur import from_gridcur as from_gridcur
-from .gridded_objects_base import (
-    GridSchema as GridSchema,
-)
-from .gridded_objects_base import (
-    PyGrid,
-    Variable,
-    VectorVariable,
-)
-from .running_average import RunningAverage
-from .running_average import RunningAverageSchema as RunningAverageSchema
+from .water import Water
+from .water import WaterSchema as WaterSchema
+from .waves import Waves
+from .waves import WavesSchema as WavesSchema
 from .tide import Tide
 from .tide import TideSchema as TideSchema
+from .wind import Wind, constant_wind, wind_from_values
+from .wind import WindSchema as WindSchema
+from .running_average import RunningAverage
+from .running_average import RunningAverageSchema as RunningAverageSchema
 from .timeseries_objects_base import (
     TimeseriesData,
     TimeseriesVector,
@@ -51,12 +37,16 @@ from .timeseries_objects_base import (
 from .timeseries_objects_base import (
     TimeseriesVectorSchema as TimeseriesVectorSchema,
 )
-from .water import Water
-from .water import WaterSchema as WaterSchema
-from .waves import Waves
-from .waves import WavesSchema as WavesSchema
-from .wind import Wind, constant_wind, wind_from_values
-from .wind import WindSchema as WindSchema
+from .gridded_objects_base import (
+    PyGrid,
+    Variable,
+    VectorVariable,
+)
+from .gridded_objects_base import (
+    GridSchema as GridSchema,
+)
+from .grid import Grid as Grid
+from . import timeseries_objects_base
 
 # from gnome.environment.environment_objects import IceAwareCurrentSchema
 
@@ -107,7 +97,3 @@ ts_property = timeseries_objects_base
 __all__ = []
 # __all__ = [cls.__name__ for cls in base_classes]
 # __all__.extend([cls.__name__ for cls in env_objs])
-
-
-
-
