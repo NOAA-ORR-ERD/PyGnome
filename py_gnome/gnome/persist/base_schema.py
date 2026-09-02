@@ -13,6 +13,7 @@ import numpy as np
 from colander import (
     Float,
     Int,
+    Invalid,  # noqa: F401 -- re-exported: imported directly by tests
     MappingSchema,
     SchemaNode,
     SchemaType,
