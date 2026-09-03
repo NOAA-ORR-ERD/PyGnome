@@ -40,7 +40,6 @@ def simple_model():
         duration=timedelta(hours=1),
         map=map_,
         uncertain=False,
-        cache_enabled=True,
     )
     model.movers += SimpleMover(velocity=(1.0, -1.0, 0.0))
     spill = point_line_spill(
