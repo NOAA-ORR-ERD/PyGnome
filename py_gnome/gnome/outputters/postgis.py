@@ -1,13 +1,16 @@
 # gnome/outputters/postgis.py
 
 import logging
+from datetime import timezone
 
-from gnome.outputters.geo_json import TrajectoryGeoJsonOutput
+import numpy as np
+
+from gnome.outputters.outputter import Outputter
 
 log = logging.getLogger(__name__)
 
 
-class PostGISOutput(TrajectoryGeoJsonOutput):
+class PostGISOutput(Outputter):
     """
     Writes spill element data (position, status, mass) to a PostGIS-enabled
     PostgreSQL database at each model timestep.
@@ -48,9 +51,6 @@ class PostGISOutput(TrajectoryGeoJsonOutput):
 
     round_to : int
         Decimal places for rounding. Default 4.
-
-    output_dir : str, optional
-        Only needed if you also want file output from the parent class.
     """
 
     def __init__(self,
@@ -60,9 +60,8 @@ class PostGISOutput(TrajectoryGeoJsonOutput):
                  metadata=None,
                  round_data=True,
                  round_to=4,
-                 output_dir=None,
                  **kwargs):
-        super().__init__(round_data, round_to, output_dir, **kwargs)
+        super().__init__(**kwargs)
 
         if not callable(persist):
             raise TypeError("persist must be a callable: persist(rows) -> None")
@@ -73,6 +72,18 @@ class PostGISOutput(TrajectoryGeoJsonOutput):
         self._row_factory = row_factory or (lambda x: x)
         self.run_id = run_id
         self.metadata = metadata or {}
+        self.round_data = round_data
+        self.round_to = round_to
+
+    def _dataarray_p_types(self, data_array):
+        if issubclass(data_array.dtype.type, float):
+            return data_array.round(self.round_to).astype(float).tolist()
+        elif issubclass(data_array.dtype.type, np.integer):
+            return data_array.astype(int).tolist()
+        else:
+            raise TypeError(
+                "PostGISOutput can only handle float or integer array types"
+            )
 
     def write_output(self, step_num, islast_step=False):
         super().write_output(step_num, islast_step)
@@ -80,24 +91,26 @@ class PostGISOutput(TrajectoryGeoJsonOutput):
         if not self._write_step:
             return
 
+        tz = timezone(self.timezone_offset.as_timedelta())
+
         rows = []
         for sc in self.cache.load_timestep(step_num).items():
-            positions   = self._dataarray_p_types(sc['positions'])
+            positions = self._dataarray_p_types(sc['positions'])
             status_codes = self._dataarray_p_types(sc['status_codes'])
-            masses      = self._dataarray_p_types(sc['mass'])
-            timestamp   = sc.current_time_stamp.isoformat()
+            masses = self._dataarray_p_types(sc['mass'])
+            timestamp = sc.current_time_stamp.replace(tzinfo=tz).isoformat()
 
             for ix, pos in enumerate(positions):
                 element = {
-                    'run_id':       self.run_id,
-                    'step':         step_num,
+                    'run_id': self.run_id,
+                    'step': step_num,
                     'element_index': ix,
-                    'time':         timestamp,
-                    'lon':          pos[0],
-                    'lat':          pos[1],
-                    'depth':        pos[2],
+                    'time': timestamp,
+                    'lon': pos[0],
+                    'lat': pos[1],
+                    'depth': pos[2],
                     'status_code':  status_codes[ix],
-                    'mass':         masses[ix],
+                    'mass': masses[ix],
                 }
                 element.update(self.metadata)
 

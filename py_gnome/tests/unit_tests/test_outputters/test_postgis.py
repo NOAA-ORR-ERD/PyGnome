@@ -7,14 +7,13 @@ No real database is used; persist/row_factory are plain callables.
 import pytest
 from datetime import datetime, timedelta
 
-import numpy as np
-
 from gnome.model import Model
 from gnome.maps import MapFromBNA
 from gnome.movers import SimpleMover
 from gnome.spills.spill import point_line_spill
 from gnome.spills.substance import NonWeatheringSubstance
 from gnome.outputters.postgis import PostGISOutput
+from gnome.utilities.time_utils import TZOffset
 
 import os
 
@@ -171,6 +170,30 @@ class TestModelRun:
 
         steps_seen = [rows[0]["step"] for rows in calls if rows]
         assert steps_seen == sorted(steps_seen)
+
+    def test_timestamp_is_timezone_aware(self, simple_model):
+        received = []
+        out = PostGISOutput(persist=lambda rows: received.extend(rows))
+        simple_model.outputters += out
+        simple_model.full_run()
+
+        assert len(received) > 0
+        for row in received:
+            assert "+" in row["time"] or row["time"].endswith("Z"), (
+                f"Expected tz-aware timestamp, got: {row['time']}"
+            )
+
+    def test_timezone_offset_reflected_in_timestamp(self, simple_model):
+        received = []
+        out = PostGISOutput(
+            persist=lambda rows: received.extend(rows),
+            timezone_offset=TZOffset(offset=-5, title="EST"),
+        )
+        simple_model.outputters += out
+        simple_model.full_run()
+
+        assert len(received) > 0
+        assert all("-05:00" in row["time"] for row in received)
 
 
 # ---------------------------------------------------------------------------
