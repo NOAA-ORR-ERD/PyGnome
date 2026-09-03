@@ -1702,14 +1702,16 @@ void Secs2DateStringNetCDF(Seconds seconds, CHARPTR s)
 	strcat (s, str);
 }
 
-unsigned long DateString2Secs(CHARPTR s)
+Seconds DateString2Secs(CHARPTR s)
+//unsigned long DateString2Secs(CHARPTR s)
 #ifdef MAC
 {
 	DateTimeRec DTR;
-	unsigned long seconds;
-
+	//unsigned long seconds;
+	Seconds seconds;
+	
 	sscanf(s, "%hd/%hd/%hd", &DTR.month, &DTR.day, &DTR.year);
-	if(DTR.year < 40) DTR.year += 2000;// year 2000 solution, JLM 1/25/99
+	if(DTR.year < 50) DTR.year += 2000;// year 2000 solution, JLM 1/25/99
 	if (DTR.year < 200) DTR.year += 1900;
 	DTR.hour = DTR.minute = DTR.second = 0;
 
@@ -1728,7 +1730,7 @@ unsigned long DateString2Secs(CHARPTR s)
 	newTime.tm_mday = day;
 	newTime.tm_mon = month - 1;
 
-	if (year < 40)
+	if (year < 50)
 		year+= 100; // year 2000 solution, JLM 1/25/99
 
 	newTime.tm_year = (year < 200) ? year : year - 1900;
@@ -1747,7 +1749,8 @@ unsigned long DateString2Secs(CHARPTR s)
 	seconds += 2082816000L; // convert from seconds since 1970 to seconds since 1904
 #endif
 
-	return (unsigned long)seconds;
+	//return (unsigned long)seconds;
+	return (Seconds)seconds;
 }
 #endif
 
@@ -1999,7 +2002,8 @@ void SecondsToDate (Seconds seconds, DateTimeRec *date)
 void DateToSeconds (DateTimeRec *date, Seconds *seconds)
 {
 	char s[100];
-	unsigned long secs;
+	//unsigned long secs;
+	Seconds secs;
 
 	snprintf(s, sizeof(s), "%02hd/%02hd/%02hd", date->month, date->day, date->year);
 
