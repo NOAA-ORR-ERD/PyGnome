@@ -1,4 +1,3 @@
-
 import os
 import datetime
 import copy
@@ -1134,19 +1133,19 @@ class VectorVariable(gridded.VectorVariable, Environment):
                 units = units[0]
 
         self.__init__(name=name,
-                    filename=filename,
-                    varnames=varnames,
-                    grid_topology=grid_topology,
-                    units=units,
-                    time=time,
-                    grid=grid,
-                    depth=depth,
-                    variables=variables,
-                    data_file=data_file,
-                    grid_file=grid_file,
-                    dataset=ds,
-                    load_all=load_all,
-                    **kwargs)
+                      filename=filename,
+                      varnames=varnames,
+                      grid_topology=grid_topology,
+                      units=units,
+                      time=time,
+                      grid=grid,
+                      depth=depth,
+                      variables=variables,
+                      data_file=data_file,
+                      grid_file=grid_file,
+                      dataset=ds,
+                      load_all=load_all,
+                      **kwargs)
 
     @combine_signatures
     @classmethod

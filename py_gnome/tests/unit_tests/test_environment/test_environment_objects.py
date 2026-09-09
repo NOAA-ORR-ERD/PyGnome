@@ -5,7 +5,6 @@ import math
 from datetime import datetime, timedelta
 from pathlib import Path
 
-import pprint
 
 import numpy as np
 import pytest
@@ -191,14 +190,15 @@ def test_GridCurrent_timezone_offset():
     roms_file_degrees = TEST_DATA_DIR / "example_roms_degrees.nc"
     grid_cur_degrees = GridCurrent.from_netCDF(filename=roms_file_degrees)
     
-    assert grid_cur_degrees.timezone_offset.offset == 0.0
+    assert grid_cur_degrees.timezone_offset == TZOffset(offset=0.0, title='UTC')
     assert grid_cur_degrees.angle.time is not None
     assert grid_cur_degrees.angle.time.tz_offset is None # angle gets a constant time object with no timezone offset by default
-    grid_cur_degrees.timezone_offset = TZOffset(offset=5.0, title="Eastern")
+
+    grid_cur_degrees.timezone_offset = TZOffset(offset=5.0, title="Eastern Standard Time")
     assert grid_cur_degrees.timezone_offset.offset == 5.0
     assert grid_cur_degrees.angle.timezone_offset.offset == 5.0
     assert grid_cur_degrees.angle.time.tz_offset == 5.0
-    
+
 
 
 def test_GridCurrent_single_time():

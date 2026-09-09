@@ -214,7 +214,8 @@ def round_sf_array(x, sigfigs):
     shape = x.shape
     result = np.fromiter((_round_sf_float(val, sigfigs) for val in x.flat),
                          dtype=np.float64)
-    result.shape = shape
+    #result.shape = shape
+    result = result.reshape(shape)
     return result
 
 

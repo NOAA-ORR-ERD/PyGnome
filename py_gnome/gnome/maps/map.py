@@ -192,7 +192,8 @@ class GnomeMap(GnomeId):
     def map_bounds(self, mb):
         try:
             bounds = np.array(mb, dtype=np.float64)
-            bounds.shape = (-1, 2)
+            #bounds.shape = (-1, 2)	# deprecated
+            bounds = bounds.reshape(-1, 2)
         except ValueError as exp:
             if mb is None or mb == 'global':
                 bounds = np.array(((-360, -90), (-360, 90),
