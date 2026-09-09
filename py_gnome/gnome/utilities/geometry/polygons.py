@@ -33,7 +33,8 @@ class Polygon(np.ndarray):
         """
         # convert to array, copying data unless not requested.
         arr = np.array(points, dtype, copy=copy)
-        arr.shape = (-1, 2)     # assure it's the right shape
+        #arr.shape = (-1, 2)     # deprecated
+        arr = arr.reshape(-1, 2)   # assure it's the right shape
         # Transform to a Polygon
         arr = arr.view(Polygon)
         # add the attribute

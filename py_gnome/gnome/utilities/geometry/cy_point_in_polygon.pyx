@@ -76,7 +76,9 @@ def points_in_poly(cnp.ndarray[double, ndim=2, mode="c"] pgon, points):
 
     cdef double [:, :] a_points
     a_points = np_points
-    np_points.shape = orig_shape
+    #np_points.shape = orig_shape
+    np_points = np_points.reshape(orig_shape)
+
 
     ## fixme -- proper way to get np.bool?
     cdef cnp.ndarray[char, ndim = 1, mode = "c"] result = np.zeros((a_points.shape[0],), dtype=np.uint8)
