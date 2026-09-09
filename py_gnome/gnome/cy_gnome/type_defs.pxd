@@ -19,7 +19,7 @@ cdef extern from "TypeDefs.h":
     ctypedef unsigned char Boolean
     ctypedef short OSErr
     ctypedef unsigned long LETYPE
-    ctypedef long Seconds
+    ctypedef long long Seconds
 
 # IF UNAME_SYSNAME == "Windows":
 #     IF UNAME_MACHINE in ("AMD64", "x86_64", "ARM64"):
