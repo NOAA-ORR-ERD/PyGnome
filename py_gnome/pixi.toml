@@ -2,7 +2,8 @@
 [workspace]
 authors = ["Chris Barker <Chris.Barker@noaa.gov>",
            "NOAA GNOME team <orr.gnome@noaa.gov>"]
-channels = ["https://prefix.dev/conda-forge"]
+channels = ["conda-forge"]
+# channels = ["https://prefix.dev/conda-forge"]
 name = "PyGnome"
 platforms = ["linux-64", "osx-arm64", "osx-64", "win-64"]
 
@@ -22,7 +23,7 @@ geopandas = "*"
 gsw = "*"
 htmlmin = "*"
 jsmin = "*"
-mapbox_earcut = "*"
+mapbox_earcut = ">=2.0,<3"
 netCDF4 = "*"
 numpy = ">=2.5,<3"  #  works with numpy 1 and 2
 pandas = "*"

@@ -170,32 +170,6 @@ class GnomeMap(GnomeId):
         return polys
 
 
-    # def _polygon_set_from_points(self, poly):
-    #     # hmm -- this doesn't seem to be used at all
-    #     # fixme: is this not in the geometry module??
-    #     #.       but maybe should get rid of the PolygonSet object anyway
-    #     '''
-    #     create PolygonSet() object from list of polygons which in turn is a
-    #     list of points
-    #     :returns: PolygonSet() object
-    #     '''
-    #     x = PolygonSet()
-    #     for p in poly:
-    #         x.append(p)
-    #     return x
-
-    # does not seem to be used anywhere
-    # def _attr_array_to_dict(self, np_array):
-    #     '''
-    #     convert np_array to list of tuples, used for map_bounds,
-    #     spillable_area
-
-    #     Fixme: why is this needed? numpy arrays are already a
-    #            sequence of sequences.
-    #            And why is this called _to_dict ???
-    #     '''
-    #     return list(map(tuple, np_array.tolist()))
-
     def _attr_from_list_to_array(self, l_):
         '''
         dict returned as list of tuples to be converted to numpy array.
@@ -208,7 +182,9 @@ class GnomeMap(GnomeId):
         """
         Bounds of the map -- an NX2 array of float describing a polygon.
 
-        [(lon, lat), (lon, lat), ...]
+        ``[(lon, lat), (lon, lat), ...]``
+
+        ``None`` or "global" will set it to the whole world.
         """
         return self._map_bounds
 
@@ -221,7 +197,7 @@ class GnomeMap(GnomeId):
         except ValueError as exp:
             if mb is None or mb == 'global':
                 bounds = np.array(((-360, -90), (-360, 90),
-                               (360, 90), (360, -90)),
+                                  (360, 90), (360, -90)),
                               dtype=np.float64)
             else:
                 raise ValueError(f"{mb} is not a valid value for map_bounds") from exp
