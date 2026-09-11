@@ -70,6 +70,10 @@ ipython = "*"
 ipdb = "*"
 matplotlib = "*"
 ruff = "*"
+# for grid plotting code
+pyside6 = "*"
+cartopy = "*"
+
 
 [feature.test.dependencies]
 pytest = "*"

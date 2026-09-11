@@ -11,63 +11,46 @@ They all should be available on conda-forge
 
 pygnome
 matplotlib
-pyqt
+pyqt (or pyside6)
 cartopy
 shapely
 geopandas
 """
 
-import sys
-import time
-import pathlib
 import argparse
+import pathlib
+import sys
 
 try:
-    import numpy as np
-
-    from matplotlib.backends.backend_qtagg import FigureCanvas
-    from matplotlib.backends.backend_qtagg import \
-        NavigationToolbar2QT as NavigationToolbar
-    from matplotlib.backends.qt_compat import QtWidgets
-    from matplotlib.figure import Figure
-    from matplotlib.collections import LineCollection
     import matplotlib.style as mplstyle
+    import numpy as np
+    from matplotlib.backends.backend_qtagg import FigureCanvas
+    from matplotlib.backends.backend_qtagg import (
+        NavigationToolbar2QT as NavigationToolbar,
+    )
+    from matplotlib.backends.qt_compat import QtWidgets
+    from matplotlib.collections import LineCollection
+    from matplotlib.figure import Figure
     mplstyle.use('fast')
-
-    import matplotlib.pyplot as plt
 
     import cartopy.crs as ccrs
     import cartopy.feature as cfeature
-    import shapely.geometry as sgeom
     import geopandas as gpd
-
-    from gnome.environment.environment_objects import GridCurrent
-    from gnome.environment.gridded_objects_base import Grid_U, Grid_R, Grid_S
-
+    import matplotlib.pyplot as plt
+    import shapely.geometry as sgeom
     from gridded.utilities import convert_mask_to_numpy_mask
     from pyproj import Transformer
 
-except ImportError as err:
+    from gnome.environment.environment_objects import GridCurrent
+    from gnome.environment.gridded_objects_base import Grid_R, Grid_S, Grid_U
+
+except ImportError:
     print(IMPORT_ERROR)
     raise
 
 
-# test_filename = 'C:\\Users\\jahen\\Downloads\\CIOFS.nc'
-# test_filename = 'C:\\Users\\jahen\\Downloads\\wcofs.t03z.20241003.fields.f060.nc'
-# spill_location = (-123.96, 45.6)
-
-
-parser=argparse.ArgumentParser(
-    description='''Small QT/MPL app to draw grids, examine masks, and query grid cells.'''
-    )
-parser.add_argument('filename', type=pathlib.Path, help='Path to file')
-parser.add_argument('-spill', nargs=2, help='Spill location in lon lat')
-args=parser.parse_args()
-
-test_filename = args.filename
-spill_location = args.spill
-class GridGeoGenerator(object):
-    #Class to facilitate interaction with the gridded objects
+class GridGeoGenerator:
+    # Class to facilitate interaction with the gridded objects
     
     node_line_appearance = {
         'color': 'black',
@@ -282,8 +265,8 @@ class GridGeoGenerator(object):
         l0_lat = np.linspace(node_lats[0], node_lats[1], subsample)
         l2_lon = np.linspace(node_lons[3], node_lons[2], subsample)
         l2_lat = np.linspace(node_lats[3], node_lats[2], subsample)
-        mesh_lons = np.stack([np.linspace(l0_lon[i], l2_lon[i], subsample) for i in range(0,subsample)], axis=1)
-        mesh_lats = np.stack([np.linspace(l0_lat[i], l2_lat[i], subsample) for i in range(0,subsample)], axis=1)
+        mesh_lons = np.stack([np.linspace(l0_lon[i], l2_lon[i], subsample) for i in range(subsample)], axis=1)
+        mesh_lats = np.stack([np.linspace(l0_lat[i], l2_lat[i], subsample) for i in range(subsample)], axis=1)
         mesh_pts = np.stack((mesh_lons, mesh_lats), axis=-1)
         return mesh_pts
         
@@ -349,7 +332,7 @@ class GridGeoGenerator(object):
        
 
 class ApplicationWindow(QtWidgets.QMainWindow):
-    def __init__(self):
+    def __init__(self, infilename, spill_location):
         super().__init__()
         
         #Setup the main window
@@ -364,7 +347,7 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         layout.addWidget(NavigationToolbar(static_canvas, self)) #pan, zoom, save controls
         layout.addWidget(static_canvas)
         buttons = QtWidgets.QGroupBox()
-        #buttons.sizePolicy().setHorizontalPolicy(QtWidgets.QSizePolicy.Minimum)
+        # buttons.sizePolicy().setHorizontalPolicy(QtWidgets.QSizePolicy.Minimum)
         buttons.setFixedHeight(50)
         hblayout = QtWidgets.QHBoxLayout(buttons)
         self.all_lines_checkbox = QtWidgets.QCheckBox('Draw All Lines')
@@ -387,13 +370,13 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         hblayout.addWidget(self.edge2_markers_water_checkbox)
         layout.addWidget(buttons)
         
-        #Define the projections in use
-        #TODO Make these args
+        # Define the projections in use
+        # TODO Make these args (or not bother :-) )
         self.plot_crs_class = ccrs.Orthographic
         self.g3_crs_class = ccrs.PlateCarree
         
-        #Open the file and get the grid
-        self.g3 = g3 = GridGeoGenerator(crs = self.g3_crs_class(), filename=test_filename)
+        # Open the file and get the grid
+        self.g3 = g3 = GridGeoGenerator(crs = self.g3_crs_class(), filename=infilename)
         self.gc = g3.gc
         self.grid_obj = grid_obj = self.gc.grid
         
@@ -445,14 +428,10 @@ class ApplicationWindow(QtWidgets.QMainWindow):
     @staticmethod
     def toggle_markers(state, self, location, land_or_water):
         markers = getattr(self, location+'_markers_' + land_or_water)
-        print(markers)
-        print(self)
-        print(location)
         g3 = self.g3
         grid_obj = self.grid_obj
         if state:
             if markers is None:
-                print("Drawing cell centers")
                 markers = g3.gen_grid_points(grid_obj, location).to_crs(self.plot_crs)
                 mask_raw = appearance = None
                 if land_or_water == 'water':
@@ -476,16 +455,15 @@ class ApplicationWindow(QtWidgets.QMainWindow):
                   event.x, event.y, event.xdata, event.ydata))
             coord = sgeom.Point(self.ctrans.transform(event.xdata, event.ydata, direction='INVERSE'))
             print(coord)
-            print(dir(event))
             if (event.button == 1 and event.dblclick):
                 query_result = self.g3.index_query(self.grid_obj, (coord.x, coord.y))
                 print(query_result)
                 self.draw_query_result(query_result)
-                #Double click to query a position.
+                # Double click to query a position.
 
     def draw_query_result(self, query_result):
-        #query result is a dict with the following keys:
-        #cell_index, edge1_interp_idx, edge1_u0_pos, edge1_u1_pos, edge2_interp_idx, edge2_v0_pos, edge2_v1_pos, node_lons, node_lats
+        # query result is a dict with the following keys:
+        # cell_index, edge1_interp_idx, edge1_u0_pos, edge1_u1_pos, edge2_interp_idx, edge2_v0_pos, edge2_v1_pos, node_lons, node_lats
         node_coords = self.ctrans.transform(query_result['node_lons'], query_result['node_lats'])
         print(node_coords)
         self.map_ax.scatter(*node_coords, s=100, color='green', marker='s')
@@ -523,7 +501,7 @@ class ApplicationWindow(QtWidgets.QMainWindow):
                     "ec": "white",
                 },
         )
-        #plot v stuff
+        # plot v stuff
         v_coords = zip(self.ctrans.transform(*query_result['edge2_v0_pos']), self.ctrans.transform(*query_result['edge2_v1_pos']))
         self.map_ax.scatter(*v_coords, s=100, color='red', marker='^')
         self.map_ax.annotate(
@@ -559,26 +537,24 @@ class ApplicationWindow(QtWidgets.QMainWindow):
                 },
         )
         
-        #plot the subsampled grid
+        # plot the subsampled grid
         subsample_mesh = query_result['subsample_mesh'].reshape(-1,2)
         subsample_mesh_coords = self.ctrans.transform(*subsample_mesh.T)
         self.map_ax.scatter(*subsample_mesh_coords, s=1, color='purple', marker='.')
         
-        #plot the subsampled uv
+        # plot the subsampled uv
         self.map_ax.quiver(*subsample_mesh_coords, *query_result['subsample_uv'].T, scale=10, color='purple')
         
         self.fig.canvas.draw()
-        pass
     
     def draw_spill(self, spill_location):
-        #Draws the spill location on the map
+        # Draws the spill location on the map
         spill_pos = sgeom.Point(self.ctrans.transform(*spill_location))
         self.map_ax.scatter(spill_pos.x, spill_pos.y, s=100, color='red', marker='*')
-        pass
     
     @staticmethod
     def toggle_unmasked_grid_lines(state, self, *args):
-        #Draws all the grid lines
+        # Draws all the grid lines
         if state:
             if self.unmasked_node_lines is None:
                 self.unmasked_node_lines = self.g3.draw_grid_lines(self.map_ax, self.grid_obj, location='node', use_mask=False, appearance=self.g3.node_line_masked_appearance, plot_crs=self.plot_crs)
@@ -591,13 +567,23 @@ class ApplicationWindow(QtWidgets.QMainWindow):
 
 def main():
 
+    parser=argparse.ArgumentParser(
+    description='''Small QT/MPL app to draw grids, examine masks, and query grid cells.'''
+    )
+    parser.add_argument('filename', type=pathlib.Path, help='Path to file')
+    parser.add_argument('-spill', nargs=2, help='Spill location in lon lat')
+    args=parser.parse_args()
+
+    infilename = args.filename
+    spill_location = args.spill
+
     # Check whether there is already a running QApplication (e.g., if running
     # from an IDE).
     qapp = QtWidgets.QApplication.instance()
     if not qapp:
         qapp = QtWidgets.QApplication(sys.argv)
 
-    app = ApplicationWindow()
+    app = ApplicationWindow(infilename, spill_location)
     app.show()
     app.activateWindow()
     app.raise_()
