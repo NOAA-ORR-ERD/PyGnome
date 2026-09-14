@@ -6,7 +6,7 @@ from gnome import constants
 g = constants.gravity  # the gravitational constant.
 
 
-class Adios2(object):
+class Adios2:
     '''
         This is for any Adios 2 algorithms for which a scientific reference
         is not documented.

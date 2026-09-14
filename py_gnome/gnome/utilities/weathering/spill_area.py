@@ -1,6 +1,7 @@
 import numpy as np
-from scipy.spatial import ConvexHull
 import pyproj
+from scipy.spatial import ConvexHull
+
 
 def hull_area(particles):
     """

@@ -3,26 +3,29 @@ JSON outputter
 Does not contain a schema for persistence yet
 '''
 
-import copy
-import numpy as np
 import json
-import geopandas as gpd
-import shapely
 import time
 from collections.abc import Iterable
+
+import geopandas as gpd
+import numpy as np
+import shapely
 from colander import Boolean, SchemaNode, SequenceSchema, String, drop
 
+from gnome.movers import PyMover
+from gnome.movers.c_current_movers import (
+    CatsMoverSchema,
+    ComponentMoverSchema,
+    CurrentCycleMoverSchema,
+    IceMoverSchema,
+    c_GridCurrentMoverSchema,
+)
+from gnome.movers.c_wind_movers import PointWindMoverSchema
+from gnome.persist.base_schema import GeneralGnomeObjectSchema
+from gnome.utilities.hull import calculate_contours, calculate_hull
 from gnome.utilities.time_utils import date_to_sec
 
-from gnome.movers import PyMover
-
-from .outputter import Outputter, BaseOutputterSchema
-from gnome.persist.base_schema import GeneralGnomeObjectSchema
-from gnome.movers.c_current_movers import CatsMoverSchema,\
-    ComponentMoverSchema, c_GridCurrentMoverSchema, CurrentCycleMoverSchema,\
-    IceMoverSchema
-from gnome.movers.c_wind_movers import PointWindMoverSchema
-from gnome.utilities.hull import calculate_hull, calculate_contours
+from .outputter import BaseOutputterSchema, Outputter
 
 
 class SpillJsonSchema(BaseOutputterSchema):
@@ -78,7 +81,7 @@ class SpillJsonOutput(Outputter):
         '''
         self._additional_data =_additional_data if _additional_data else []
         self.include_uncertain_bounds = include_uncertain_bounds
-        super(SpillJsonOutput, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         # Build some mappings for styling
         self.default_unit_map = {'Mass':{'column': 'mass',
@@ -103,7 +106,7 @@ class SpillJsonOutput(Outputter):
         """ Setup before we run the model. """
         if not self.on:
             return
-        super(SpillJsonOutput, self).prepare_for_model_run(model_start_time,
+        super().prepare_for_model_run(model_start_time,
                                                            spills,
                                                            **kwargs)
         self.model_start_time = model_start_time
@@ -121,7 +124,7 @@ class SpillJsonOutput(Outputter):
                 # self.logger.debug(f'appearance: {appearance}')
                 colormap = spill._appearance.colormap.to_dict()
                 requested_display_param = appearance['data']
-                requested_display_unit = appearance['units']
+                appearance['units']
                 unit_map = {}
                 if requested_display_param in self.default_unit_map:
                     unit_map = self.default_unit_map[requested_display_param]
@@ -146,7 +149,7 @@ class SpillJsonOutput(Outputter):
 
     def write_output(self, step_num, islast_step=False):
         'dump data in geojson format'
-        super(SpillJsonOutput, self).write_output(step_num, islast_step)
+        super().write_output(step_num, islast_step)
 
         if not self._write_step:
             return None
@@ -201,11 +204,11 @@ class SpillJsonOutput(Outputter):
                     separate_by_spill = True
                     hull_ratio = 0.8
                     hull_allow_holes = False
-                    start = time.time()
+                    time.time()
                     hull = calculate_hull(sp, separate_by_spill=separate_by_spill,
                                           ratio=hull_ratio, union_results=True,
                                           allow_holes=hull_allow_holes)
-                    end = time.time()
+                    time.time()
                     # self.logger.debug(f'calculate_hull: {end-start}')
                     json_geoms = []
                     spill_num = []
@@ -226,17 +229,17 @@ class SpillJsonOutput(Outputter):
                 # Calculate the contours
                 hull_ratio = 0.8
                 hull_allow_holes = False
-                start = time.time()
+                time.time()
                 # self.logger.debug(f'cutoff_struct: {self.cutoff_struct}')
                 contours = calculate_contours(sc, cutoff_struct=self.cutoff_struct,
                                               ratio=hull_ratio,
                                               allow_holes=hull_allow_holes)
-                end = time.time()
+                time.time()
                 # self.logger.debug(f'calculate_contours: {end-start}')
                 json_geoms = []
                 spill_num = []
                 # Unique spill ids
-                spill_ids = list(set([item['spill_num'] for item in contours]))
+                spill_ids = list({item['spill_num'] for item in contours})
                 contour_list = []
                 for id in spill_ids:
                     # Make our list to convert to json
@@ -330,11 +333,11 @@ class CurrentJsonOutput(Outputter):
         '''
         self.current_movers = current_movers
 
-        super(CurrentJsonOutput, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def write_output(self, step_num, islast_step=False):
         'dump data in geojson format'
-        super(CurrentJsonOutput, self).write_output(step_num, islast_step)
+        super().write_output(step_num, islast_step)
 
         if self.on is False or not self._write_step:
             return None
@@ -454,9 +457,9 @@ class IceJsonOutput(Outputter):
         elif ice_movers is not None:
             self.ice_movers = (ice_movers,)
         else:
-            self.ice_movers = tuple()
+            self.ice_movers = ()
 
-        super(IceJsonOutput, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def clean_output_files(self):
         """
@@ -464,11 +467,10 @@ class IceJsonOutput(Outputter):
 
         but this method needs to be here
         """
-        pass
 
     def write_output(self, step_num, islast_step=False):
         'dump data in geojson format'
-        super(IceJsonOutput, self).write_output(step_num, islast_step)
+        super().write_output(step_num, islast_step)
 
         if self.on is False or not self._write_step:
             return None
@@ -496,7 +498,7 @@ class IceJsonOutput(Outputter):
 
     def rewind(self):
         'remove previously written files'
-        super(IceJsonOutput, self).rewind()
+        super().rewind()
 
 
 

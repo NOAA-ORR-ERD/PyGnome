@@ -1,8 +1,9 @@
-from .monahan import Monahan
 import numpy as np
 
+from .monahan import Monahan
 
-class LehrSimecek(object):
+
+class LehrSimecek:
     '''
         This based on formulas by:
         Lehr and Simecek-Beatty

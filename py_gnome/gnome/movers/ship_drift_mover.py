@@ -5,21 +5,19 @@ Ship drift mover
 import os
 
 import numpy as np
+from colander import Float, SchemaNode, String, drop
 
-from colander import (SchemaNode, String, Float, drop)
-
-from gnome.basic_types import (velocity_rec,
-                               world_point,
-                               world_point_type,
-                               status_code_type,
-                               oil_status)
 from gnome.array_types import gat
-
-from gnome.utilities import projections
-from gnome.utilities import rand
-
+from gnome.basic_types import (
+    oil_status,
+    status_code_type,
+    velocity_rec,
+    world_point,
+    world_point_type,
+)
 from gnome.environment import Grid
 from gnome.movers import Mover, ProcessSchema
+from gnome.utilities import projections, rand
 
 
 class ShipDriftMoverSchema(ProcessSchema):
@@ -59,13 +57,12 @@ class ShipDriftMover(Mover):
         uses super: ``super(ShipDriftMover,self).__init__(**kwargs)``
         """
         if not os.path.exists(wind_file):
-            raise ValueError('Path for wind file does not exist: {0}'
-                             .format(wind_file))
+            raise ValueError(f'Path for wind file does not exist: {wind_file}'
+                             )
 
-        if topology_file is not None:
-            if not os.path.exists(topology_file):
-                raise ValueError('Path for Topology file does not exist: {0}'
-                                 .format(topology_file))
+        if topology_file is not None and not os.path.exists(topology_file):
+            raise ValueError(f'Path for Topology file does not exist: {topology_file}'
+                             )
 
         # is wind_file and topology_file is stored with cy_gridwind_mover?
         self.wind_file = wind_file
@@ -80,7 +77,7 @@ class ShipDriftMover(Mover):
 
         self.mover = Mover()
 
-        super(ShipDriftMover, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         # have to override any uncertainty
         # self.grid.load_data(wind_file, topology_file)
@@ -101,14 +98,14 @@ class ShipDriftMover(Mover):
             We probably want to include more information.
         """
         return ('ShipDriftMover('
-                'active_range={0.active_range}, '
-                'on={0.on})'.format(self, self.mover))
+                f'active_range={self.active_range}, '
+                f'on={self.on})')
 
     def __str__(self):
         return ('ShipDriftMover - current _state.\n'
-                '  active_range time={1.active_range}\n'
-                '  current on/off status={1.on}'
-                .format(self, self.mover))
+                f'  active_range time={self.mover.active_range}\n'
+                f'  current on/off status={self.mover.on}'
+                )
 
     wind_scale = property(lambda self: self._wind_scale,
                           lambda self, val: setattr(self, 'wind_scale', val))
@@ -128,8 +125,7 @@ class ShipDriftMover(Mover):
                                    file will be written.
         """
         if topology_file is None:
-            raise ValueError('Topology file path required: {0}'.
-                             format(topology_file))
+            raise ValueError(f'Topology file path required: {topology_file}')
 
         self.grid.export_topology(topology_file)
 
@@ -139,7 +135,6 @@ class ShipDriftMover(Mover):
         actions prior to a model run
         """
         # May not need this function
-        pass
 
     def prepare_for_model_step(self, sc, time_step, model_time_datetime):
         """
@@ -151,7 +146,7 @@ class ShipDriftMover(Mover):
         :param model_time_datetime: current time of model as a date time object
         """
         # not sure if we need to redefine this or what we want to do here
-        super(ShipDriftMover, self).prepare_for_model_step(sc, time_step,
+        super().prepare_for_model_step(sc, time_step,
                                                            model_time_datetime)
 
         # if no particles released, then no need for windage
@@ -236,4 +231,3 @@ class ShipDriftMover(Mover):
         operations. Subclassed movers can override this method.
         """
         # Probably don't need this function
-        pass

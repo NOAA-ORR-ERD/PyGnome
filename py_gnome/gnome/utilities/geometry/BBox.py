@@ -69,11 +69,7 @@ class BBox(np.ndarray):
 
         if np.isinf(self).all() or np.isinf(BB).all():
             return True
-        if ((self[1, 0] >= BB[0, 0]) and (self[0, 0] <= BB[1, 0]) and
-                (self[1, 1] >= BB[0, 1]) and (self[0, 1] <= BB[1, 1])):
-            return True
-        else:
-            return False
+        return bool(self[1, 0] >= BB[0, 0] and self[0, 0] <= BB[1, 0] and self[1, 1] >= BB[0, 1] and self[0, 1] <= BB[1, 1])
 
     def Inside(self, BB):
         """
@@ -86,11 +82,7 @@ class BBox(np.ndarray):
 
         Returns False otherwise
         """
-        if ((BB[0, 0] >= self[0, 0]) and (BB[1, 0] <= self[1, 0]) and
-                (BB[0, 1] >= self[0, 1]) and (BB[1, 1] <= self[1, 1])):
-            return True
-        else:
-            return False
+        return bool(BB[0, 0] >= self[0, 0] and BB[1, 0] <= self[1, 0] and BB[0, 1] >= self[0, 1] and BB[1, 1] <= self[1, 1])
 
     def PointInside(self, Point):
         """
@@ -105,13 +97,7 @@ class BBox(np.ndarray):
 
         Point is any length-2 sequence (tuple, list, array) or two numbers
         """
-        if (Point[0] >= self[0, 0] and
-                Point[0] <= self[1, 0] and
-                Point[1] <= self[1, 1] and
-                Point[1] >= self[0, 1]):
-            return True
-        else:
-            return False
+        return bool(Point[0] >= self[0, 0] and Point[0] <= self[1, 0] and Point[1] <= self[1, 1] and Point[1] >= self[0, 1])
 
     def Merge(self, BB):
         """
@@ -124,16 +110,11 @@ class BBox(np.ndarray):
             # BB may be a regular array, so I can't use IsNull
             pass
         else:
-            if BB[0, 0] < self[0, 0]:
-                self[0, 0] = BB[0, 0]
-            if BB[0, 1] < self[0, 1]:
-                self[0, 1] = BB[0, 1]
-            if BB[1, 0] > self[1, 0]:
-                self[1, 0] = BB[1, 0]
-            if BB[1, 1] > self[1, 1]:
-                self[1, 1] = BB[1, 1]
+            self[0, 0] = min(self[0, 0], BB[0, 0])
+            self[0, 1] = min(self[0, 1], BB[0, 1])
+            self[1, 0] = max(self[1, 0], BB[1, 0])
+            self[1, 1] = max(self[1, 1], BB[1, 1])
 
-        return None
 
     def AsPoly(self):
         """

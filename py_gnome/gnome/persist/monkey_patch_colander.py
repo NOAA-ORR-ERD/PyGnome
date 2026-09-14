@@ -19,9 +19,8 @@ import colander
 
 
 def apply():
-    pass
     # Recover boolean values which were coerced into strings.
-    serialize_boolean = getattr(colander.Boolean, 'serialize')
+    serialize_boolean = colander.Boolean.serialize
 
     def patched_boolean_serialization(*args, **kwds):
         result = serialize_boolean(*args, **kwds)
@@ -31,10 +30,10 @@ def apply():
 
         return result
 
-    setattr(colander.Boolean, 'serialize', patched_boolean_serialization)
+    colander.Boolean.serialize = patched_boolean_serialization
 
     # Recover float values which were coerced into strings.
-    serialize_float = getattr(colander.Float, 'serialize')
+    serialize_float = colander.Float.serialize
 
     def patched_float_serialization(*args, **kwds):
         result = serialize_float(*args, **kwds)
@@ -44,10 +43,10 @@ def apply():
 
         return result
 
-    setattr(colander.Float, 'serialize', patched_float_serialization)
+    colander.Float.serialize = patched_float_serialization
 
     # Recover integer values which were coerced into strings.
-    serialize_int = getattr(colander.Int, 'serialize')
+    serialize_int = colander.Int.serialize
 
     def patched_int_serialization(*args, **kwds):
         result = serialize_int(*args, **kwds)
@@ -57,7 +56,7 @@ def apply():
 
         return result
 
-    setattr(colander.Int, 'serialize', patched_int_serialization)
+    colander.Int.serialize = patched_int_serialization
 #
 #     # Remove optional mapping keys which were associated with 'colander.null'.
 #     serialize_mapping = getattr(colander.MappingSchema, 'serialize')

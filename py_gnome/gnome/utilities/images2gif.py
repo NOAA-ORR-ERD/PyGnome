@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 
 """
 MODULE images2gif
@@ -25,8 +24,8 @@ This code is provided as is, and is free to use for all.
 
 try:
     import PIL
-    from PIL import Image, ImageChops
-    from PIL.GifImagePlugin import getheader, getdata
+    from PIL import Image, ImageChops  # noqa: F401
+    from PIL.GifImagePlugin import getdata, getheader
 except ImportError:
     PIL = None
 
@@ -241,7 +240,7 @@ def writeGif(
 
     # open file
 
-    fp = open(filename, 'wb')
+    fp = open(filename, 'wb')  # noqa: SIM115
 
     # write
 

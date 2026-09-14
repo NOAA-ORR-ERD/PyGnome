@@ -1,31 +1,33 @@
 """ERMA Data Package outputter"""
-from colander import SchemaNode, Boolean, drop, String, Int, Float
 import copy
-from datetime import datetime, timedelta, timezone
-import geopandas as gpd
 import itertools
 import json
-import nucos as uc
-import numpy as np
 import os
-import pandas as pd
 import pathlib
-from shapely.geometry import Point, Polygon, MultiPoint, MultiPolygon
 import shutil
-from slugify import slugify
 import tempfile
 import zipfile
+from datetime import UTC, timedelta, timezone
+
+import geopandas as gpd
+import nucos as uc
+import numpy as np
+import pandas as pd
+from colander import Boolean, Float, Int, SchemaNode, String, drop
+from shapely.geometry import Point, Polygon
+from slugify import slugify
 
 from gnome.persist.extend_colander import FilenameSchema
-from gnome.utilities.geometry.polygons import PolygonSet
-from gnome.utilities.shapefile_builder import ParticleShapefileBuilder
-from gnome.utilities.shapefile_builder import BoundaryShapefileBuilder
-from gnome.utilities.shapefile_builder import ContourShapefileBuilder
-from gnome.utilities.hull import calculate_hull
 from gnome.utilities import convert_mass_to_mass_or_volume
-from gnome.utilities.time_utils import TZOffset, TZOffsetSchema
-from .outputter import Outputter, BaseOutputterSchema
+from gnome.utilities.geometry.polygons import PolygonSet
+from gnome.utilities.shapefile_builder import (
+    BoundaryShapefileBuilder,
+    ContourShapefileBuilder,
+    ParticleShapefileBuilder,
+)
+from gnome.utilities.time_utils import TZOffset
 
+from .outputter import BaseOutputterSchema, Outputter
 
 erma_data_package_data_dir = pathlib.Path(__file__).parent / "erma_data_package_data"
 
@@ -181,7 +183,7 @@ class ERMADataPackageOutput(Outputter):
         :param surface_conc="kde": method to use to compute surface concentration
                                    current options are: 'kde' and None
         '''
-        super(ERMADataPackageOutput, self).__init__(surface_conc=surface_conc, **kwargs)
+        super().__init__(surface_conc=surface_conc, **kwargs)
         pathlib_path = pathlib.Path(filename)
         # ERMA data packages are always zip files... so force that
         self.test_var = True
@@ -307,7 +309,7 @@ class ERMADataPackageOutput(Outputter):
         """ Setup before we run the model. """
         if not self.on:
             return
-        super(ERMADataPackageOutput, self).prepare_for_model_run(model_start_time,
+        super().prepare_for_model_run(model_start_time,
                                                                  spills,
                                                                  **kwargs)
 
@@ -320,7 +322,7 @@ class ERMADataPackageOutput(Outputter):
         # with the Time/Time_UTC case, while the boundary/contours are written with all
         # lower case fields.
         if not isinstance(self.timezone_offset, (TZOffset,)) or self.timezone_offset.offset is None:
-            raise ValueError(f'Valid timezone_offset (TZOffset) is required for ERMA data packages.')
+            raise ValueError('Valid timezone_offset (TZOffset) is required for ERMA data packages.')
         self.model_start_time = model_start_time
         # By default we want to name the folder for the output based on the model
         # start time.  Since we are just finding that out now (if it was not
@@ -358,7 +360,7 @@ class ERMADataPackageOutput(Outputter):
         """Dump a timestep's data into the shapefile """
         if not self.on:
             return None
-        super(ERMADataPackageOutput, self).write_output(step_num, islast_step)
+        super().write_output(step_num, islast_step)
         self.logger.debug(f'erma_data_package step_num: {step_num}')
         sp = self.cache.load_timestep(step_num).items()
         for sc in sp:
@@ -554,7 +556,7 @@ class ERMADataPackageOutput(Outputter):
                 zipf.write(layer['shapefile_filename'],
                            arcname='source_files/'+file_to_zip)
                 already_written_shapefiles.append(layer['shapefile_filename'])
-            dir, file_to_zip = os.path.split(layer['json_filename'])
+            _dir, file_to_zip = os.path.split(layer['json_filename'])
             zipf.write(layer['json_filename'],
                        arcname='layers/'+file_to_zip)
         # Write a readme with the basics of the output
@@ -589,7 +591,7 @@ class ERMADataPackageOutput(Outputter):
             current_timezone_by_offset = timezone(
                 timedelta(minutes=int(offset*60)))
             current_datetime_with_offset = timestamp.replace(tzinfo=current_timezone_by_offset)
-            erma_timestamp = current_datetime_with_offset.astimezone(timezone.utc).strftime(strftime_format)
+            erma_timestamp = current_datetime_with_offset.astimezone(UTC).strftime(strftime_format)
         else:
             # Else we default back to assuming 0 offset
             erma_timestamp = timestamp.strftime(strftime_format)
@@ -618,7 +620,7 @@ class ERMADataPackageOutput(Outputter):
         # the additional_parameters for the layer
         time_expression = self.erma_time_expression(timestamp)
 
-        dir, basefile = os.path.split(shapefile_filename)
+        _dir, basefile = os.path.split(shapefile_filename)
         output_path = os.path.join(self.tempdir.name, str(id)+".json")
         generic_name = 'contour_certain'
         generic_description = 'Contour Certain'
@@ -696,7 +698,7 @@ class ERMADataPackageOutput(Outputter):
             for spill_num, spill in reversed(list(enumerate(self.spills))):
                 if spill_num in self.cutoff_struct:
                     cutoff_element = self.cutoff_struct[spill_num]
-                    param = cutoff_element['param']
+                    cutoff_element['param']
                     for cutoff in reversed(cutoff_element['cutoffs']):
                         thiscount = next(classcounter)
                         contour_template_solid = copy.deepcopy(contour_template)
@@ -723,7 +725,7 @@ class ERMADataPackageOutput(Outputter):
         # the additional_parameters for the layer
         time_expression = self.erma_time_expression(timestamp)
 
-        dir, basefile = os.path.split(shapefile_filename)
+        _dir, basefile = os.path.split(shapefile_filename)
         output_path = os.path.join(self.tempdir.name, str(id)+".json")
         #shz_name = os.path.join(self.tempdir.name, shapefile_name+'.shz')
         #shapefile_pathlib_path = pathlib.Path(shz_name)
@@ -940,15 +942,7 @@ class ERMADataPackageOutput(Outputter):
             return True
         # Now we know we have appearance and colormap for both
         # spills, we can compare the important bits
-        if ((appearance1['data'] == appearance2['data']) and
-            (appearance1['units'] == appearance2['units']) and
-            (colormap1['numberScaleDomain'] == colormap2['numberScaleDomain']) and
-            (colormap1['colorScaleDomain'] == colormap2['colorScaleDomain']) and
-            (colormap1['colorBlockLabels'] == colormap2['colorBlockLabels']) and
-            (appearance1['scale'] == appearance2['scale'])):
-            return True
-        else:
-            return False
+        return bool(appearance1['data'] == appearance2['data'] and appearance1['units'] == appearance2['units'] and colormap1['numberScaleDomain'] == colormap2['numberScaleDomain'] and colormap1['colorScaleDomain'] == colormap2['colorScaleDomain'] and colormap1['colorBlockLabels'] == colormap2['colorBlockLabels'] and appearance1['scale'] == appearance2['scale'])
 
 
     # Return a list of grouped ids
@@ -958,8 +952,8 @@ class ERMADataPackageOutput(Outputter):
         for spill_id, spill in enumerate(self.spills):
             # If we have an appearance, we use that
             if spill._appearance and spill._appearance.colormap:
-                appearance = spill._appearance.to_dict()
-                colormap = spill._appearance.colormap.to_dict()
+                spill._appearance.to_dict()
+                spill._appearance.colormap.to_dict()
                 found = False
                 for group in spills_grouped_by_style:
                     # Look to see if it matches the first element in
@@ -986,7 +980,7 @@ class ERMADataPackageOutput(Outputter):
                 appearance = spill._appearance.to_dict()
                 colormap = spill._appearance.colormap.to_dict()
                 requested_display_param = appearance['data']
-                requested_display_unit = appearance['units']
+                appearance['units']
                 unit_map = {}
                 if requested_display_param in self.default_unit_map:
                     unit_map = self.default_unit_map[requested_display_param]
@@ -1010,7 +1004,7 @@ class ERMADataPackageOutput(Outputter):
         return cutoff_struct
 
     def make_particle_package_layer(self, id, layer_name, uncertain, shapefile_filename, timestamp=None):
-        dir, basefile = os.path.split(shapefile_filename)
+        _dir, basefile = os.path.split(shapefile_filename)
         output_path = os.path.join(self.tempdir.name, str(id) + ".json")
         generic_name = f'{"uncertain" if uncertain else "certain"}'
         erma_shapefile_name = self.model_name_slug + '_' + generic_name + '_' + self.filename_timestamp + '_shapefile'
@@ -1198,7 +1192,7 @@ class ERMADataPackageOutput(Outputter):
                                 # A mapserver class per color
                                 floating_class_template = copy.deepcopy(floating_template)
                                 beached_class_template = copy.deepcopy(beached_template)
-                                units = unit_map['unit']
+                                unit_map['unit']
                                 class_label = ''
                                 if idx == 0 and len(colormap['colorScaleRange']) == 1:
                                     # Special case that we only have one range... so we show ALL
@@ -1314,7 +1308,7 @@ class ERMADataPackageOutput(Outputter):
         reset a few parameter and call base class rewind to reset
         internal variables.
         '''
-        super(ERMADataPackageOutput, self).rewind()
+        super().rewind()
 
         self._middle_of_run = False
         self._start_idx = 0
@@ -1325,7 +1319,7 @@ class ERMADataPackageOutput(Outputter):
         called by prepare_for_model_run
         here in case it needs to be called from elsewhere
         '''
-        super(ERMADataPackageOutput, self).clean_output_files()
+        super().clean_output_files()
         if getattr(self, 'shapefile_builder_certain', None):
             self.shapefile_builder_certain.rewind()
         if getattr(self, 'shapefile_builder_certain_boundary', None):

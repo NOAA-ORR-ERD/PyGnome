@@ -3,9 +3,10 @@ Helper classes to do common tasks in pyGnome like;
 - convert_formats to convert datetime_value to time_value_pair
 """
 
-from gnome.utilities import time_utils, transforms
-from gnome import basic_types
 import numpy as np
+
+from gnome import basic_types
+from gnome.utilities import time_utils, transforms
 
 
 # fixme: in_ts_format should not be optional!
@@ -142,10 +143,9 @@ def tsformat(format_obj):
     into appropriate enum in basic_types.ts_format
     """
     names = list(basic_types.ts_format.__members__.keys())
-    val_error = ("timeseries format can only be one of {}"
-                 "Format entered is not recognized: {}"
-                 .format(names,
-                         format_obj))
+    val_error = (f"timeseries format can only be one of {names}"
+                 f"Format entered is not recognized: {format_obj}"
+                 )
 
     if format_obj in basic_types.ts_format.__members__.values():
         # it's already in the Enum

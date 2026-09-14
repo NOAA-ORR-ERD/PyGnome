@@ -2,13 +2,14 @@
 Save/load gnome objects
 '''
 
+import json
+import logging
 import os
 import shutil
-import json
 import zipfile
-import logging
 
 import colander
+
 from gnome.gnomeobject import class_from_objtype
 
 # as long as loggers are configured before module is loaded, module scope
@@ -41,7 +42,7 @@ class Refs(dict):
         return base_name + num_of_same_type + 1
 
 
-class References(object):
+class References:
     '''
     PyGnome objects like the PointWindMover contain other objects, eg Wind
     object.  When persisting a Model, the Wind object is not created by the
@@ -53,10 +54,7 @@ class References(object):
         self._refs = {}
 
     def __contains__(self, obj):
-        if self.get_reference(obj):
-            return True
-        else:
-            return False
+        return bool(self.get_reference(obj))
 
     @property
     def files(self):
@@ -79,13 +77,13 @@ class References(object):
         '''
         if self.retrieve(name):
             if self.retrieve(name) is not obj:
-                raise ValueError('a different object is referenced by {}'
-                                 .format(name))
+                raise ValueError(f'a different object is referenced by {name}'
+                                 )
         else:
             # make sure object doesn't already exist
             if self.get_reference(obj):
-                raise ValueError('this object is already referenced by {}'
-                                 .format(self.get_reference(obj)))
+                raise ValueError(f'this object is already referenced by {self.get_reference(obj)}'
+                                 )
             else:
                 self._refs[name] = obj
 
@@ -106,7 +104,7 @@ class References(object):
         if key is not None:
             return key
 
-        key = "{0}_{1}.json".format(obj.__class__.__name__, len(self._refs))
+        key = f"{obj.__class__.__name__}_{len(self._refs)}.json"
         self._refs[key] = obj
 
         return key
@@ -162,9 +160,9 @@ def load(saveloc, fname='Model.json', references=None):
 
     if os.path.isdir(saveloc):
         # is a directory, look for our fname in directory
-        fd = open(os.path.join(saveloc, fname), 'r', encoding='utf-8')
+        fd = open(os.path.join(saveloc, fname), 'r', encoding='utf-8')  # noqa: SIM115
     elif os.path.isfile(saveloc):
-        fd = open(saveloc, 'r', encoding='utf-8')
+        fd = open(saveloc, 'r', encoding='utf-8')  # noqa: SIM115
         saveloc, fname = os.path.split(saveloc)
     else:
         # nothing to do, saveloc is not a file or a directory
@@ -194,7 +192,7 @@ Define general purpose functions for checking and rejecting bad zipfiles
 '''
 
 
-class Savable(object):
+class Savable:
     '''
     Create a mixin for save/load options for saving and loading serialized
     gnome objects. Mix this in with the Serializable class so all gnome objects
@@ -208,10 +206,7 @@ class Savable(object):
         '''
         if zipfile.is_zipfile(saveloc):
             with zipfile.ZipFile(saveloc, 'r') as z:
-                if ref in z.namelist():
-                    return True
-                else:
-                    return False
+                return ref in z.namelist()
         else:
             return os.path.exists(os.path.join(saveloc, ref))
 
@@ -263,7 +258,7 @@ class Savable(object):
             references = References()
 
         if name is None:
-            name = '{0}.json'.format(self.__class__.__name__)
+            name = f'{self.__class__.__name__}.json'
 
         json_ = self._update_and_save_refs(json_, saveloc, references)
 
@@ -453,9 +448,9 @@ class Savable(object):
         # deserialize after removing references
         try:
             _to_dict = cls.deserialize(json_data)
-        except colander.Invalid as e:
-            print(('Class {0} failed to deserialize.'.format(cls.__name__)))
-            raise e
+        except colander.Invalid:
+            print(f'Class {cls.__name__} failed to deserialize.')
+            raise
 
         if ref_dict:
             _to_dict.update(ref_dict)
@@ -484,7 +479,7 @@ class Savable(object):
             if obj_ref is None:
                 # try following name - if 'fname' already exists in references,
                 # then obj.save() assigns a different name to file
-                fname = '{0.__class__.__name__}_{1}.json'.format(obj, count)
+                fname = f'{obj.__class__.__name__}_{count}.json'
 
                 obj.save(saveloc, refs, fname)
 
@@ -533,7 +528,7 @@ def is_savezip_valid(savezip,
     .. note:: can change _max_json_filesize, _max_compress_ratio if required.
     '''
     if not zipfile.is_zipfile(savezip):
-        log.warning("{0} is not a valid zipfile".format(savezip))
+        log.warning(f"{savezip} is not a valid zipfile")
         return False
 
     with zipfile.ZipFile(savezip, 'r') as z:
@@ -541,24 +536,23 @@ def is_savezip_valid(savezip,
         try:
             badfile = z.testzip()
         except Exception:
-            log.warning("Failed to open or run testzip() on {0}"
-                        .format(savezip))
+            log.warning(f"Failed to open or run testzip() on {savezip}"
+                        )
             return False
 
         # 2) CRC failed for a file in the archive - rejecting zip
         if badfile is not None:
             # log the bad zipfile and return False
-            log.warning("{0} is corrupt. rejecting zipfile".format(badfile))
+            log.warning(f"{badfile} is corrupt. rejecting zipfile")
             return False
 
         for zi in z.filelist:
             if (os.path.splitext(zi.filename)[1] == '.json' and
                     zi.file_size > max_json_filesize):
                 # 3) Found a *.json with size > _max_json_filesize. Rejecting.
-                log.warning('Filesize of {0} is {1}. It must be less than {2}.'
+                log.warning(f'Filesize of {zi.filename} is {zi.file_size}. It must be less than {max_json_filesize}.'
                             ' Rejecting zipfile.'
-                            .format(zi.filename, zi.file_size,
-                                    max_json_filesize))
+                            )
                 return False
 
             # integer division - it will floor
@@ -567,11 +561,10 @@ def is_savezip_valid(savezip,
                 # 4) Found a file with
                 #    uncompressed_size/compressed_size > _max_compress_ratio.
                 #    Rejecting.
-                log.warning('file compression ratio is {0}. '
-                            'maximum must be less than {1}. '
+                log.warning(f'file compression ratio is {zi.file_size / zi.compress_size}. '
+                            f'maximum must be less than {max_compress_ratio}. '
                             'Rejecting zipfile'
-                            .format((zi.file_size / zi.compress_size),
-                                    max_compress_ratio))
+                            )
                 return False
 
             if '..' in zi.filename:
@@ -579,8 +572,8 @@ def is_savezip_valid(savezip,
                 #    currently, all datafiles stored at same level in saveloc,
                 #    no subdirectories. Even if we start using subdirectories,
                 #    there should never be a need to do '..'
-                log.warning('Found ".." in {0}. Rejecting zipfile'
-                            .format(zi.filename))
+                log.warning(f'Found ".." in {zi.filename}. Rejecting zipfile'
+                            )
                 return False
 
     # all checks pass - so we can load zipfile

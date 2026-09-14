@@ -1,17 +1,17 @@
 """Shapefile Builder"""
 
+import datetime
+import logging
 import pathlib
 import shutil
 import warnings
-import datetime
 
 import geopandas as gpd
 import pandas as pd
 from shapely.geometry import Point
 
-from gnome.utilities.hull import calculate_hull, calculate_contours
+from gnome.utilities.hull import calculate_contours, calculate_hull
 
-import logging
 logger = logging.getLogger(__name__)
 
 # Ignore a pyogrio warning that we dont care about
@@ -19,7 +19,7 @@ warnings.filterwarnings('ignore', message='.*Possibly due to too larger',
                         category=RuntimeWarning, module='pyogrio')
 
 
-class ShapefileBuilder(object):
+class ShapefileBuilder:
     def __init__(self, filename, zip_output=True, timeoffset=None, **kwargs):
         '''
         :param filename: Full path and basename of the shape file.
@@ -81,7 +81,7 @@ class ParticleShapefileBuilder(ShapefileBuilder):
         :param filename: Full path and basename of the shape file.
         :param zip: If we should zip the final shapefile results.
         '''
-        super(ParticleShapefileBuilder, self).__init__(filename, zip_output,
+        super().__init__(filename, zip_output,
                                                        timeoffset, **kwargs)
 
     def append(self, sc):
@@ -89,12 +89,12 @@ class ParticleShapefileBuilder(ShapefileBuilder):
         Given a spill container, write out the current particle data to a
         data frame
         """
-        super(ParticleShapefileBuilder, self).append(sc)
+        super().append(sc)
         current_datetime_utc = None
         if self.timeoffset is not None:
             current_timezone_by_offset = datetime.timezone(datetime.timedelta(minutes=int(self.timeoffset*60)))
             current_datetime_with_offset = sc.current_time_stamp.replace(tzinfo=current_timezone_by_offset)
-            current_datetime_utc = current_datetime_with_offset.astimezone(datetime.timezone.utc).isoformat()
+            current_datetime_utc = current_datetime_with_offset.astimezone(datetime.UTC).isoformat()
         frame_data = {
             'LE_id': sc['id'],
             'Spill_id': sc['spill_num'],
@@ -132,7 +132,7 @@ class ParticleShapefileBuilder(ShapefileBuilder):
         # polygon for boundary.
         if not self.data_frames:
             self.geometry_type = 'Point'
-        super(ParticleShapefileBuilder, self).write()
+        super().write()
 
 
 def area_in_meters(this_hull):
@@ -149,7 +149,7 @@ class BoundaryShapefileBuilder(ShapefileBuilder):
         :param filename: Full path and basename of the shape file.
         :param zip: If we should zip the final shapefile results.
         '''
-        super(BoundaryShapefileBuilder, self).__init__(filename, zip_output,
+        super().__init__(filename, zip_output,
                                                        timeoffset, **kwargs)
 
     def append(self, sc, separate_by_spill=True, hull_ratio=0.5,
@@ -158,7 +158,7 @@ class BoundaryShapefileBuilder(ShapefileBuilder):
         Given a spill container, write out the current boundary data to a
         data frame
         """
-        super(BoundaryShapefileBuilder, self).append(sc)
+        super().append(sc)
         # If we have a tuple or list for sc, we need to grab the timestep
         # out of the first
         current_time_stamp = None
@@ -170,7 +170,7 @@ class BoundaryShapefileBuilder(ShapefileBuilder):
         if self.timeoffset is not None:
             current_timezone_by_offset = datetime.timezone(datetime.timedelta(minutes=int(self.timeoffset*60)))
             current_datetime_with_offset = current_time_stamp.replace(tzinfo=current_timezone_by_offset)
-            current_datetime_utc = current_datetime_with_offset.astimezone(datetime.timezone.utc).isoformat()
+            current_datetime_utc = current_datetime_with_offset.astimezone(datetime.UTC).isoformat()
 
         #TODO - Need to make this a variable
         union_results = True
@@ -213,7 +213,7 @@ class BoundaryShapefileBuilder(ShapefileBuilder):
         # polygon for boundary.
         if not self.data_frames:
             self.geometry_type = 'Polygon'
-        super(BoundaryShapefileBuilder, self).write()
+        super().write()
 
 
 class ContourShapefileBuilder(ShapefileBuilder):
@@ -222,7 +222,7 @@ class ContourShapefileBuilder(ShapefileBuilder):
         :param filename: Full path and basename of the shape file.
         :param zip: If we should zip the final shapefile results.
         '''
-        super(ContourShapefileBuilder, self).__init__(filename, zip_output,
+        super().__init__(filename, zip_output,
                                                       timeoffset, **kwargs)
 
     def append(self, sc, cutoff_struct=None, hull_ratio=0.5,
@@ -253,7 +253,7 @@ class ContourShapefileBuilder(ShapefileBuilder):
         # Middle bins are cutoffs[previous] < [data] < cutoffs[current]
         # Last "high" bin is always cutoffs[previous] < [data]
 
-        super(ContourShapefileBuilder, self).append(sc)
+        super().append(sc)
         # Look in the spill container and get a list of spills
         # Make sure they are defined in the cutoffs_per_spill
         # If they are, we loop through each spill
@@ -274,7 +274,7 @@ class ContourShapefileBuilder(ShapefileBuilder):
         if self.timeoffset is not None:
             current_timezone_by_offset = datetime.timezone(datetime.timedelta(minutes=int(self.timeoffset*60)))
             current_datetime_with_offset = current_time_stamp.replace(tzinfo=current_timezone_by_offset)
-            current_datetime_utc = current_datetime_with_offset.astimezone(datetime.timezone.utc).isoformat()
+            current_datetime_utc = current_datetime_with_offset.astimezone(datetime.UTC).isoformat()
 
         # Calculate the contours
         contours = calculate_contours(sc, cutoff_struct=cutoff_struct,
@@ -304,4 +304,4 @@ class ContourShapefileBuilder(ShapefileBuilder):
         # polygon for boundary.
         if not self.data_frames:
             self.geometry_type = 'Polygon'
-        super(ContourShapefileBuilder, self).write()
+        super().write()

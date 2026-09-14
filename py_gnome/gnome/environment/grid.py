@@ -2,12 +2,12 @@
 grid for wind or current data
 """
 
-from colander import (SchemaNode, drop, Float)
+from colander import Float, SchemaNode, drop
 
-from gnome.utilities.time_utils import date_to_sec
-from gnome.persist import base_schema
 from gnome.cy_gnome.cy_grid_curv import CyTimeGridWindCurv
 from gnome.cy_gnome.cy_grid_rect import CyTimeGridWindRect
+from gnome.persist import base_schema
+from gnome.utilities.time_utils import date_to_sec
 
 from .environment import Environment
 
@@ -47,17 +47,17 @@ class Grid(Environment):
         elif self._grid_type == 2:
             self.grid = CyTimeGridWindCurv(filename, topology_file)
         else:
-            raise Exception('grid_type not implemented ')
+            raise NotImplementedError('grid_type not implemented ')
 
         self.grid.load_data(filename, topology_file)
 
-        super(Grid, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def __repr__(self):
         self_ts = None
-        return ('{0.__class__.__module__}.{0.__class__.__name__}('
-                'timeseries={1})'
-                .format(self, self_ts))
+        return (f'{self.__class__.__module__}.{self.__class__.__name__}('
+                f'timeseries={self_ts})'
+                )
 
     def __str__(self):
         return ("Grid ( "
@@ -89,7 +89,6 @@ class Grid(Environment):
         """
         Not sure we need to do anything here
         """
-        pass
 
     def prepare_for_model_step(self, model_time):
         """

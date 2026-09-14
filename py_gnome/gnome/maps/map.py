@@ -20,42 +20,43 @@ As well as a few implementations of actual maps
 #  - Perhaps we just use non-projected coordinates for the raster map?
 #    It makes for a little less computation at every step.
 
-import os
 import math
+import os
 import warnings
 
-import py_gd
-import numpy as np
-
-from geojson import FeatureCollection, Feature, MultiPolygon
-
 import nucos as uc
-
-from gnome.gnomeobject import GnomeId
-
-from gnome.environment.gridded_objects_base import PyGrid
-
+import numpy as np
+import py_gd
+from geojson import Feature, FeatureCollection, MultiPolygon
 
 from gnome import _valid_units
 from gnome.basic_types import oil_status, world_point_type
-
-from gnome.utilities.projections import (FlatEarthProjection,
-                                         RectangularGridProjection,
-                                         RegularGridProjection)
-from gnome.utilities.map_canvas import MapCanvas
+from gnome.cy_gnome.cy_land_check import check_land_layers, move_particles
+from gnome.environment.gridded_objects_base import PyGrid
+from gnome.gnomeobject import GnomeId
+from gnome.persist import (
+    FilenameSchema,
+    Float,
+    Int,
+    SchemaNode,
+    String,
+    base_schema,
+    drop,
+)
+from gnome.utilities.appearance import AppearanceSchema
 from gnome.utilities.file_tools import haz_files
+from gnome.utilities.geometry import point_in_poly, points_in_poly
+
 # from gnome.utilities.file_tools.osgeo_helpers import (ogr_layers)
 # from gnome.utilities.file_tools.osgeo_helpers import (ogr_features)
 # from gnome.utilities.file_tools.osgeo_helpers import (ogr_open_file)
-
 from gnome.utilities.geometry.polygons import PolygonSet
-from gnome.utilities.geometry import points_in_poly, point_in_poly
-from gnome.utilities.appearance import AppearanceSchema
-
-from gnome.cy_gnome.cy_land_check import check_land_layers, move_particles
-
-from gnome.persist import (base_schema, SchemaNode, String, Float, Int,
-                           FilenameSchema, drop)
+from gnome.utilities.map_canvas import MapCanvas
+from gnome.utilities.projections import (
+    FlatEarthProjection,
+    RectangularGridProjection,
+    RegularGridProjection,
+)
 
 
 class GnomeMapSchema(base_schema.ObjTypeSchema):
@@ -142,7 +143,7 @@ class GnomeMap(GnomeId):
             An NX2 array of points that describe a polygon
             if no map bounds is provided -- the whole world is valid
         """
-        super(GnomeMap, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         self.map_bounds = map_bounds
         self.spillable_area = spillable_area
@@ -269,7 +270,7 @@ class GnomeMap(GnomeId):
             # fixme: this should be in the geometry package
             #        -- or stop using PolygonSet
             ps = PolygonSet()
-            try:  #
+            try:
                 sa[0][0][0]
             except TypeError:
                 # probably a single polygon -- put it in a list
@@ -444,7 +445,6 @@ class GnomeMap(GnomeId):
         .. note::
             This map class has no land, and so is a no-op.
         """
-        pass
 
     def resurface_airborne_elements(self, spill_container):
         """
@@ -463,7 +463,6 @@ class GnomeMap(GnomeId):
         next_positions = spill_container['next_positions']
 
         np.maximum(next_positions[:, 2], 0.0, out=next_positions[:, 2])
-        return None
 
     def to_geojson(self):
         return FeatureCollection([])
@@ -552,7 +551,7 @@ class ParamMap(GnomeMap):
             return True
         else:
             ex = uc.InvalidUnitError((units, 'Length'))
-            self.logger.exception(ex, exc_info=True)
+            self.logger.exception(ex)
             # this should be raised since run will fail otherwise
             raise ex
 
@@ -619,12 +618,8 @@ class ParamMap(GnomeMap):
         .. note:: it could be either off the map, or in a location that
                   spills aren't allowed
         """
-        if (coord == self.center):
-            return True
-        else:
-            # Only allowable location for spill is the center
-            # that this map was built with
-            return False
+        # Only allowable location for spill is the center that this map was built with
+        return coord == self.center
 
     # This was re-defined from the base class
     # def _set_off_map_status(self, spill):
@@ -735,7 +730,7 @@ class ParamMap(GnomeMap):
         else:
             # for the case when instantiating a param map using new_from_dict,
             # since new_from_dict will call update_from_dict
-            super(ParamMap, self).update_from_dict(data)
+            super().update_from_dict(data)
 
     def to_geojson(self):
         shoreline_geo = [p.points.tolist() for p in self.land_polys]
@@ -813,7 +808,7 @@ class RasterMap(GnomeMap):
 
         :type id: string
         """
-        super(RasterMap, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self._refloat_halflife = refloat_halflife * self.seconds_in_hour
 
         if raster is None:
@@ -852,12 +847,12 @@ class RasterMap(GnomeMap):
         base_h = self.raster.shape[1]
 
         for ratio in self.ratios[:-1]:
-            genned_layer = np.zeros((int(math.ceil(float(base_w) / ratio)),
-                                     int(math.ceil(float(base_h) / ratio))),
+            genned_layer = np.zeros((math.ceil(float(base_w) / ratio),
+                                     math.ceil(float(base_h) / ratio)),
                                     dtype=np.uint8, order='C')
 
-            for j in range(0, genned_layer.shape[1]):
-                for i in range(0, genned_layer.shape[0]):
+            for j in range(genned_layer.shape[1]):
+                for i in range(genned_layer.shape[0]):
                     genned_layer[i, j] = np.any(self.raster[
                                                 i * ratio:(i + 1) * ratio,
                                                 j * ratio:(j + 1) * ratio
@@ -1179,7 +1174,7 @@ class RasterMap(GnomeMap):
         """
         if self.on_map(coord):
             if not self.on_land(coord):
-                return (super(RasterMap, self).allowable_spill_position(coord))
+                return (super().allowable_spill_position(coord))
             else:
                 return False
         else:
@@ -1309,7 +1304,7 @@ class MapFromBNA(RasterMap):
                     land_polys.append(p)
                 else:
                     self.logger.debug("invalid polygon ignored:"
-                                      "{} points: {}, ".format(len(p), p.metadata))
+                                      f"{len(p)} points: {p.metadata}, ")
 
 
         # Draw the raster map with a map_canvas:
@@ -1343,7 +1338,6 @@ class MapFromBNA(RasterMap):
             spillable_area=spillable_area,
             land_polys=land_polys,
             **kwargs)
-        return None
 
 
     def build_raster(self, land_polys=None, BB=None):
@@ -1505,7 +1499,7 @@ class MapFromUGrid(RasterMap):
         """
         self.filename = filename
 
-        grid = PyGrid.from_netCDF(filename)
+        PyGrid.from_netCDF(filename)
 
         polygons = haz_files.ReadBNA(filename, 'PolygonSet')
         map_bounds = None
@@ -1597,7 +1591,6 @@ class MapFromUGrid(RasterMap):
                            land_polys=land_polys,
                            ** kwargs)
 
-        return None
 
 
 def map_from_rectangular_grid(mask, lon, lat, refine=1, **kwargs):
@@ -1626,7 +1619,7 @@ def map_from_rectangular_grid(mask, lon, lat, refine=1, **kwargs):
     lon = refine_axis(lon, refine)
     lat = refine_axis(lat, refine)
 
-    nlon, nlat = grid.shape
+    _nlon, _nlat = grid.shape
 
     map_bounds = np.array(((lon[0], lat[0]), (lon[-1], lat[0]),
                            (lon[-1], lat[-1]), (lon[0], lat[-1])),
@@ -1659,11 +1652,11 @@ def grid_from_nc(filename):
     # all rows should be same:
     for r in range(nx):
         if not np.array_equal(lon_var[r, :], lon_var[0, :]):
-            raise ValueError("Row: %i isn't equal!" % r)
+            raise ValueError(f"Row: {r} isn't equal!")
 
     for c in range(ny):
         if not np.array_equal(lat_var[:, c], lat_var[:, 0]):
-            raise ValueError("column: %i isn't equal!" % c)
+            raise ValueError(f"column: {c} isn't equal!")
 
     mask = nc.variables['mask'][:]
 

@@ -1,11 +1,10 @@
-from dataclasses import dataclass, field
 import json
-import logging
 import tempfile
 import zipfile
+from dataclasses import dataclass, field
 from pathlib import Path
+
 import geopandas as gpd
-import os
 
 
 # ------------------------------------------------------------------
@@ -52,8 +51,6 @@ def _parse_layer_json(zf, json_filename):
         data = json.load(f)
     # Grab the mapfile_layer if its there
     mapfile_layer = data.get("mapfile_layer", [])
-    if isinstance(mapfile_layer, dict):
-        mapfile_layer = mapfile_layer
     # Make our LayerJSONData wrapper.  Start with no shapefile and parse
     # and add it later.
     return LayerJSONData(
@@ -111,10 +108,10 @@ def parse_zip_to_package_data(zip_path: Path | str, extract_dir: Path | str) -> 
                 pkg.shapefiles[shp_file.name] = _parse_shapefile(shp_file)
         # Now loop through the layers and link up thier shapefiles if they exist
         # Note multiple layers can point to the same shapefile, so be aware
-        for json_name, json_value in pkg.layer_jsons.items():
+        for json_value in pkg.layer_jsons.values():
             # Try to match the shapefile associated with the layer we are looking at
             if json_value.mapfile_layer and json_value.mapfile_layer['shapefile']:
-                for shape_name, shape_val in pkg.shapefiles.items():
+                for shape_val in pkg.shapefiles.values():
                     if Path(shape_val.filename).stem == Path(json_value.mapfile_layer['shapefile']['file']).stem:
                         json_value.shapefile = shape_val
 

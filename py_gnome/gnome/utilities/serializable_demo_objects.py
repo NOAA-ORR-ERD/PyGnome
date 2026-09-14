@@ -12,18 +12,19 @@ allow Gnome objects to do the following tasks:
 '''
 import datetime as dt
 
-import numpy as np
 import colander
-
-from gnome.persist import base_schema
-from gnome.persist.extend_colander import FilenameSchema
+import numpy as np
 
 from gnome.environment.gridded_objects_base import Time
-from gnome.environment.timeseries_objects_base import (TimeseriesDataSchema,
-                                                       TimeseriesVectorSchema,
-                                                       TimeseriesVector,
-                                                       TimeseriesData)
+from gnome.environment.timeseries_objects_base import (
+    TimeseriesData,
+    TimeseriesDataSchema,
+    TimeseriesVector,
+    TimeseriesVectorSchema,
+)
 from gnome.gnomeobject import GnomeId
+from gnome.persist import base_schema
+from gnome.persist.extend_colander import FilenameSchema
 
 
 def dates():
@@ -90,7 +91,7 @@ class DemoObj(GnomeId):
         self.foo_float_array = [42.0, 84.0]
         self.variable = variable
         self.variables = variables
-        super(DemoObj, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     @property
     def timeseries(self):
@@ -109,10 +110,11 @@ class DemoObj(GnomeId):
         return DemoObj(variable=tsv, variables=[tsv, tsv.variables[0]])
     
 from gnome.persist.extend_colander import DataSchemaNode
+
+
 class GnomeID_Schema2(base_schema.ObjTypeSchema):
     raw_numpy = DataSchemaNode(israwdata=True, save=True)
     raw_scalar = DataSchemaNode(israwdata=True, save=True)
-    pass
 class GnomeID_Schema1(base_schema.ObjTypeSchema):
     raw_numpy = DataSchemaNode(israwdata=True, save=True)
     raw_masked = DataSchemaNode(israwdata=True, save=True)

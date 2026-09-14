@@ -17,37 +17,34 @@ shapely
 geopandas
 """
 
-import sys
-import time
-import pathlib
 import argparse
+import pathlib
+import sys
 
 try:
-    import numpy as np
-
-    from matplotlib.backends.backend_qtagg import FigureCanvas
-    from matplotlib.backends.backend_qtagg import \
-        NavigationToolbar2QT as NavigationToolbar
-    from matplotlib.backends.qt_compat import QtWidgets
-    from matplotlib.figure import Figure
-    from matplotlib.collections import LineCollection
     import matplotlib.style as mplstyle
+    import numpy as np
+    from matplotlib.backends.backend_qtagg import FigureCanvas
+    from matplotlib.backends.backend_qtagg import (
+        NavigationToolbar2QT as NavigationToolbar,
+    )
+    from matplotlib.backends.qt_compat import QtWidgets
+    from matplotlib.collections import LineCollection
+    from matplotlib.figure import Figure
     mplstyle.use('fast')
-
-    import matplotlib.pyplot as plt
 
     import cartopy.crs as ccrs
     import cartopy.feature as cfeature
-    import shapely.geometry as sgeom
     import geopandas as gpd
-
-    from gnome.environment.environment_objects import GridCurrent
-    from gnome.environment.gridded_objects_base import Grid_U, Grid_R, Grid_S
-
+    import matplotlib.pyplot as plt  # noqa: F401
+    import shapely.geometry as sgeom
     from gridded.utilities import convert_mask_to_numpy_mask
     from pyproj import Transformer
 
-except ImportError as err:
+    from gnome.environment.environment_objects import GridCurrent
+    from gnome.environment.gridded_objects_base import Grid_R, Grid_S, Grid_U
+
+except ImportError:
     print(IMPORT_ERROR)
     raise
 
@@ -66,7 +63,7 @@ args=parser.parse_args()
 
 test_filename = args.filename
 spill_location = args.spill
-class GridGeoGenerator(object):
+class GridGeoGenerator:
     #Class to facilitate interaction with the gridded objects
     
     node_line_appearance = {
@@ -183,10 +180,7 @@ class GridGeoGenerator(object):
     def check_for_mask(self, grid_obj, location_name):
         #Check if the grid object has a mask for the given location
         mask_var_name = location_name+'_mask'
-        if hasattr(grid_obj, mask_var_name) and getattr(grid_obj, mask_var_name) is not None:
-            return True
-        else:
-            return False
+        return bool(hasattr(grid_obj, mask_var_name) and getattr(grid_obj, mask_var_name) is not None)
 
     def get_mask_raw(self, grid_obj, location_name, scale=30):
         mask_var_name = location_name+'_mask'
@@ -237,7 +231,7 @@ class GridGeoGenerator(object):
 
     def gen_grid_lines_S_masked(self, grid_obj, location='node'):
         #Returns a GeoSeries object representing the grid lines of a Grid_S object (with masking)
-        lens, all_lines = self.grid_obj.get_lines()
+        _lens, all_lines = self.grid_obj.get_lines()
         if isinstance(all_lines, list):
             all_lines = np.concatenate(all_lines, axis=0)
         lines = []
@@ -282,8 +276,8 @@ class GridGeoGenerator(object):
         l0_lat = np.linspace(node_lats[0], node_lats[1], subsample)
         l2_lon = np.linspace(node_lons[3], node_lons[2], subsample)
         l2_lat = np.linspace(node_lats[3], node_lats[2], subsample)
-        mesh_lons = np.stack([np.linspace(l0_lon[i], l2_lon[i], subsample) for i in range(0,subsample)], axis=1)
-        mesh_lats = np.stack([np.linspace(l0_lat[i], l2_lat[i], subsample) for i in range(0,subsample)], axis=1)
+        mesh_lons = np.stack([np.linspace(l0_lon[i], l2_lon[i], subsample) for i in range(subsample)], axis=1)
+        mesh_lats = np.stack([np.linspace(l0_lat[i], l2_lat[i], subsample) for i in range(subsample)], axis=1)
         mesh_pts = np.stack((mesh_lons, mesh_lats), axis=-1)
         return mesh_pts
         
@@ -403,8 +397,8 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         self.plot_crs = plot_crs = self.plot_crs_class(extent[0] + (extent[1] - extent[0])/2, extent[2] + (extent[3] - extent[2])/2)
         
         self.ctrans = ctrans = Transformer.from_proj(g3.crs, plot_crs)
-        ws = ctrans.transform(extent[0], extent[2])
-        en = ctrans.transform(extent[1], extent[3])
+        ctrans.transform(extent[0], extent[2])
+        ctrans.transform(extent[1], extent[3])
         
         self.map_ax = ax = fig.add_subplot(1, 1, 1, projection=plot_crs)
         ax.set_extent(extent, crs=g3.crs)
@@ -413,7 +407,7 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         ax.add_feature(cfeature.OCEAN.with_scale('50m'), zorder=0)
         ax.add_feature(cfeature.LAND.with_scale('50m'), zorder=0, edgecolor='black')
 
-        cid = fig.canvas.mpl_connect('button_press_event', self.cell_index_lookup)
+        fig.canvas.mpl_connect('button_press_event', self.cell_index_lookup)
         
         #add the node lines
         print("Drawing node lines")
@@ -471,9 +465,9 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         self.fig.canvas.draw()
 
     def cell_index_lookup(self, event):
-            print('%s click: button=%d, x=%d, y=%d, xdata=%f, ydata=%f' %
-                 ('double' if event.dblclick else 'single', event.button,
-                  event.x, event.y, event.xdata, event.ydata))
+            print(f"{'double' if event.dblclick else 'single'} click: "
+                  f"button={event.button}, x={event.x}, y={event.y}, "
+                  f"xdata={event.xdata:f}, ydata={event.ydata:f}")
             coord = sgeom.Point(self.ctrans.transform(event.xdata, event.ydata, direction='INVERSE'))
             print(coord)
             print(dir(event))
@@ -568,13 +562,11 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         self.map_ax.quiver(*subsample_mesh_coords, *query_result['subsample_uv'].T, scale=10, color='purple')
         
         self.fig.canvas.draw()
-        pass
     
     def draw_spill(self, spill_location):
         #Draws the spill location on the map
         spill_pos = sgeom.Point(self.ctrans.transform(*spill_location))
         self.map_ax.scatter(spill_pos.x, spill_pos.y, s=100, color='red', marker='*')
-        pass
     
     @staticmethod
     def toggle_unmasked_grid_lines(state, self, *args):

@@ -2,16 +2,12 @@
 
 
 
-import copy
 
-from colander import (SchemaNode, Float)
 
-from gnome.basic_types import world_point, world_point_type
 from gnome.array_types import gat
+from gnome.basic_types import world_point, world_point_type
 from gnome.cy_gnome.cy_rise_velocity_mover import CyRiseVelocityMover
-
 from gnome.movers import CyMover, ProcessSchema
-from gnome.persist.base_schema import ObjTypeSchema
 
 
 class RiseVelocityMoverSchema(ProcessSchema):
@@ -43,7 +39,7 @@ class RiseVelocityMover(CyMover):
         """
         self.mover = CyRiseVelocityMover()
 
-        super(RiseVelocityMover, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         self.array_types['rise_vel'] = gat('rise_vel')
 
@@ -52,8 +48,8 @@ class RiseVelocityMover(CyMover):
         .. todo::
             We probably want to include more information.
         """
-        return ('RiseVelocityMover(active_range={0}, on={1})'
-                .format(self.active_range, self.on))
+        return (f'RiseVelocityMover(active_range={self.active_range}, on={self.on})'
+                )
 
     def get_move(self, sc, time_step, model_time_datetime):
         """
@@ -87,7 +83,7 @@ class TamocRiseVelocityMover(RiseVelocityMover):
     are droplet_diameter and density array types
     """
     def __init__(self, *args, **kwargs):
-        super(TamocRiseVelocityMover, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         self.array_types.update({'density': gat('density'),
                                  'droplet_diameter': gat('droplet_diameter')})

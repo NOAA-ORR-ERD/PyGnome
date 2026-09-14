@@ -11,12 +11,10 @@ See the docs for gnome.cy_gnome.cy_basic_types for a bit more detail
 
 """
 
-import sys
-
-import numpy as np
-
 # using the Py3 enum type
 from enum import IntEnum
+
+import numpy as np
 
 # pull everything from the cython code
 try:

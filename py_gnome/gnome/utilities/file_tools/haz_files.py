@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 A module that did contain various functions for reading and writing
 assorted HAZMAT file formats.
@@ -8,8 +7,8 @@ Now it's just BNA format
 Other stuff is now maintained in either the ood_utils package and/or libgoods
 """
 
-import os
 import numpy as np
+
 from ..geometry import polygons
 
 
@@ -51,8 +50,8 @@ def GetNextBNAPolygon(f, dtype=np.float64):
         sname = fields[3]
         num_points = int(fields[4].strip()[1:])
     except (ValueError, IndexError):
-        raise ValueError('File has incorrect header for BNA format: {0}'
-                         .format(header))
+        raise ValueError(f'File has incorrect header for BNA format: {header}'
+                         )
 
     if num_points < 0 or num_points == 2:
         poly_type = 'polyline'
@@ -62,8 +61,8 @@ def GetNextBNAPolygon(f, dtype=np.float64):
     elif num_points > 2:
         poly_type = 'polygon'
     else:
-        raise ValueError("polygon {0} does not have a valid number of points"
-                       .format(name))
+        raise ValueError(f"polygon {name} does not have a valid number of points"
+                       )
 
     if True:  # to keep the indentation for now
         points = np.zeros((num_points, 2), dtype)
@@ -78,12 +77,11 @@ def GetNextBNAPolygon(f, dtype=np.float64):
                 raise ValueError(f"incorrect coords in line: {line} "
                                  f"in poly: {header}") from err
 
-    if poly_type == 'polygon':
-        # first and last points are the same in BNA,
-        # but we don't want the duplicate point.
-        if (points[0, 0] == points[-1, 0] and
-                points[0, 1] == points[-1, 1]):
-            points = points[0:-1]
+    # first and last points are the same in BNA, but we don't want the duplicate point.
+    if (poly_type == 'polygon'
+            and points[0, 0] == points[-1, 0]
+            and points[0, 1] == points[-1, 1]):
+        points = points[0:-1]
 
     return (points, poly_type, name, sname)
 
@@ -129,7 +127,7 @@ def ReadBNA(filename, polytype="list", dtype=np.float64):
     The dtype parameter specifies what numpy data type you want the points
     data in -- it defaults to float (C double)
     """
-    fd = open(filename, 'r')
+    fd = open(filename, 'r')  # noqa: SIM115
 
     if polytype == 'list':
         Output = []

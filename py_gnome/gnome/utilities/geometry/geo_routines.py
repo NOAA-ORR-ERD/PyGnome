@@ -1,16 +1,15 @@
-import functools
+import random
 import warnings
 import zipfile
-import trimesh
+
+import geojson
+import geopandas as gpd
+import numpy as np
 
 # Spatial libs
 import pyproj
-import geojson
-from shapely.geometry import Polygon, MultiPolygon, shape
-import geopandas as gpd
-
-import numpy as np
-import random
+import trimesh
+from shapely.geometry import MultiPolygon, Polygon, shape
 
 geod = pyproj.Geod(ellps='WGS84')
 
@@ -73,8 +72,7 @@ def mixed_polys_to_polygon(polys):
     for p in polys:
         p = shape(p)  # to handle geojson.(Multi)Polygon objects
         if isinstance(p, MultiPolygon):
-            for subp in p.geoms:
-                rv.append(subp)
+            rv.extend(p.geoms)
         else:
             rv.append(p)
     return rv
@@ -142,7 +140,7 @@ def load_shapefile(filename, transform_crs=True):
             warnings.warn(f'More than one shapefile found in zip {filename}! '
                           f'Using {shapefiles[0]}')
         # Use GeoPandas to read the shapefile out of the zip
-        shapefile = gpd.read_file(f'zip://{str(filename)}!{shapefiles[0]}',
+        shapefile = gpd.read_file(f'zip://{filename!s}!{shapefiles[0]}',
                                   engine="pyogrio")
         # Force convert to 4326 if requested.
         # This will be a Noop if already in 4326

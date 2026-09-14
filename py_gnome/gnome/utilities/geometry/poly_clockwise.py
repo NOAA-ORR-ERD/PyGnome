@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 code for checking if a polygon is cockwise or counter-clockwise
 
@@ -34,10 +33,7 @@ def is_clockwise(poly):
     for i in range(len(poly) - 1):
         total += poly[i][0] * poly[i + 1][1] - poly[i + 1][0] * poly[i][1]
 
-    if total <= 0:
-        return True
-    else:
-        return False
+    return total <= 0
 
 
 def is_clockwise_convex(poly):
@@ -60,7 +56,4 @@ def is_clockwise_convex(poly):
     y2 = poly[2][1]
 
     cp = (x1 - x0) * (y2 - y1) - (y1 - y0) * (x2 - x1)
-    if cp <= 0:
-        return True
-    else:
-        return False
+    return cp <= 0

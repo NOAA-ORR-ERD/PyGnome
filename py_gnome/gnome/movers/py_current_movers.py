@@ -1,26 +1,20 @@
-from . import movers
-
-import numpy as np
 import os
 import warnings
 
-from colander import (SchemaNode, Bool, Float, drop)
+import numpy as np
+from colander import Float, SchemaNode, drop
 
 from gnome.basic_types import oil_status
+from gnome.environment import GridCurrent
+from gnome.environment.gridded_objects_base import VectorVariableSchema
+from gnome.movers.movers import PyMoverSchema
+from gnome.persist.base_schema import GeneralGnomeObjectSchema
+
 # from gnome.basic_types import (world_point_type,
 #                                status_code_type)
-
 from gnome.utilities.projections import FlatEarthProjection
-from gnome.utilities.time_utils import TZOffset
 
-
-from gnome.environment import GridCurrent
-from gnome.environment.gridded_objects_base import Grid_U, VectorVariableSchema
-
-from gnome.movers.movers import TimeRangeSchema, PyMoverSchema
-
-from gnome.persist.extend_colander import LocalDateTime, FilenameSchema
-from gnome.persist.base_schema import GeneralGnomeObjectSchema
+from . import movers
 
 
 class CurrentMoverSchema(PyMoverSchema):
@@ -115,7 +109,7 @@ class CurrentMover(movers.PyMover):
         self.shape = (2,)
         self._uncertainty_list = np.zeros((0,)+self.shape, dtype=np.float64)
         
-        (super(CurrentMover, self).__init__(default_num_method=default_num_method, **kwargs))
+        (super().__init__(default_num_method=default_num_method, **kwargs))
 
     #fixme: we have the defaults on the from_netCDF init -- they should be lower down!
     @classmethod
@@ -174,7 +168,7 @@ class CurrentMover(movers.PyMover):
         if hasattr(self.current, 'get_bounds'):
             return self.current.get_bounds()
         else:
-            return super(CurrentMover, self).get_bounds()
+            return super().get_bounds()
 
     def get_move(self, sc, time_step, model_time_datetime, num_method=None):
         """
@@ -305,7 +299,6 @@ class CurrentMover(movers.PyMover):
         shape = (2,)
         self._uncertainty_list = np.zeros((num_les, ) + shape, dtype=np.float64)
 
-        return
 
 
     def _add_uncertainty(self, deltas):
@@ -323,7 +316,7 @@ class CurrentMover(movers.PyMover):
             unrec = self._uncertainty_list
             u = new_deltas[:, 0]
             v = new_deltas[:, 1]
-            lengthS = np.hypot(u, v)
+            np.hypot(u, v)
 
             #alpha = unrec.downStream
             #beta = unrec.crossStream
@@ -348,7 +341,6 @@ class CurrentMover(movers.PyMover):
         self._uncertainty_list = np.zeros((0,)+self.shape, dtype=np.float64)
         self.time_uncertainty_was_set = 0
 
-        return
 
     def prepare_for_model_step(self, sc, time_step, model_time_datetime):
         """
@@ -359,7 +351,7 @@ class CurrentMover(movers.PyMover):
         :param model_time_datetime: the current model time as a datetime object
 
         """
-        super(CurrentMover, self).prepare_for_model_step(sc, time_step,
+        super().prepare_for_model_step(sc, time_step,
                                                            model_time_datetime)
 
         if not self.active:

@@ -1,6 +1,9 @@
 import logging
+
 import numpy as np
+
 from gnome.ops import default_constants
+
 from .aggregated_data import aggregate as agg_func
 
 logger = logging.getLogger(__name__)
@@ -17,14 +20,13 @@ def init_viscosity(sc, num_released, water=None, aggregate=True):
     :param aggregate: Flag for whether to trigger mass balance updates in spill container
     '''
     substance = sc.substance
-    water_temp = water_density = None
+    water_temp = None
     if substance.is_weatherable:
         if water is None:
             water_temp = default_constants.default_water_temperature
-            water_density = default_constants.default_water_density
         else:
             water_temp = water.get('temperature', 'K')
-            water_density = water.get('density')
+            water.get('density')
 
         # Only the new elements need to be initialized
         sl = slice(-num_released, None, 1)
@@ -42,14 +44,13 @@ def recalc_viscosity(sc, water=None, aggregate=True):
     '''
 
     substance = sc.substance
-    water_temp = water_rho = None
+    water_temp = None
     if substance.is_weatherable:
         if water is None:
             water_temp = default_constants.default_water_temperature
-            water_rho = default_constants.default_water_density
         else:
             water_temp = water.get('temperature', 'K')
-            water_rho = water.get('density')
+            water.get('density')
 
         if not substance.is_weatherable or len(sc['density']) == 0:
             #substance isn't weatherable or no elements are present

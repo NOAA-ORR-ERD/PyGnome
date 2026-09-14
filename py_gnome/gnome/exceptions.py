@@ -8,7 +8,7 @@ class GnomeRuntimeError(Exception):
         '''
         *args can contain a message, and other arguments
         '''
-        super(GnomeRuntimeError, self).__init__(*args)
+        super().__init__(*args)
 
 
 class ReferencedObjectNotSet(Exception):
@@ -16,4 +16,4 @@ class ReferencedObjectNotSet(Exception):
     *args can contain a message, and other arguments
     '''
     def __init__(self, *args):
-        super(ReferencedObjectNotSet, self).__init__(*args)
+        super().__init__(*args)

@@ -3,17 +3,13 @@ Movers using diffusion as the forcing function
 '''
 
 import numpy as np
-
-from colander import (SchemaNode, Float, Boolean, drop)
+from colander import Boolean, Float, SchemaNode, drop
 
 from gnome.basic_types import oil_status
 from gnome.cy_gnome.cy_random_mover import CyRandomMover
 from gnome.cy_gnome.cy_random_mover_3d import CyRandomMover3D
-
 from gnome.environment import IceConcentration
-from gnome.environment.gridded_objects_base import PyGrid
-from gnome.environment.gridded_objects_base import VariableSchema
-
+from gnome.environment.gridded_objects_base import PyGrid, VariableSchema
 from gnome.movers import CyMover, ProcessSchema
 from gnome.persist.extend_colander import LocalDateTime
 from gnome.utilities.inf_datetime import InfTime, MinusInfTime
@@ -62,7 +58,7 @@ class RandomMover(CyMover):
         self.mover = CyRandomMover(diffusion_coef=diffusion_coef,
                                    uncertain_factor=uncertain_factor)
 
-        super(RandomMover, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     @property
     def data_start(self):
@@ -89,10 +85,9 @@ class RandomMover(CyMover):
         self.mover.uncertain_factor = value
 
     def __repr__(self):
-        return ('RandomMover(diffusion_coef={0}, uncertain_factor={1}, '
-                'active_range={2}, on={3})'
-                .format(self.diffusion_coef, self.uncertain_factor,
-                        self.active_range, self.on))
+        return (f'RandomMover(diffusion_coef={self.diffusion_coef}, uncertain_factor={self.uncertain_factor}, '
+                f'active_range={self.active_range}, on={self.on})'
+                )
 
 
 class IceAwareRandomMoverSchema(RandomMoverSchema):
@@ -115,7 +110,7 @@ class IceAwareRandomMover(RandomMover):
 
     def __init__(self, ice_concentration=None, **kwargs):
         self.ice_concentration = ice_concentration
-        super(IceAwareRandomMover, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     @classmethod
     def from_netCDF(cls, filename=None,
@@ -166,7 +161,7 @@ class IceAwareRandomMover(RandomMover):
             ice_vel_factor[water_mask] = 1
             ice_vel_factor[interp_mask] = 1 - ((ice_vel_factor[interp_mask] - 0.2) * 10) / 6
 
-            deltas = (super(IceAwareRandomMover, self)
+            deltas = (super()
                       .get_move(sc, time_step, model_time_datetime))
 
             #deltas *= ice_vel_factor[:,None]
@@ -175,7 +170,7 @@ class IceAwareRandomMover(RandomMover):
 
             return deltas
         else:
-            return (super(IceAwareRandomMover, self)
+            return (super()
                       .get_move(sc, time_step, model_time_datetime))
 
 
@@ -293,16 +288,10 @@ class RandomMover3D(CyMover):
         self.mover.surface_is_allowed = value
 
     def __repr__(self):
-        return ('RandomMover3D(vertical_diffusion_coef_above_ml={0}, '
-                'vertical_diffusion_coef_below_ml={1}, mixed_layer_depth={2}, '
-                'horizontal_diffusion_coef_above_ml={3}, '
-                'horizontal_diffusion_coef_below_ml={4}, '
-                'surface_is_allowed={5}, '
-                'active_range={6}, on={7})'
-                .format(self.vertical_diffusion_coef_above_ml,
-                        self.vertical_diffusion_coef_below_ml,
-                        self.mixed_layer_depth,
-                        self.horizontal_diffusion_coef_above_ml,
-                        self.horizontal_diffusion_coef_below_ml,
-                        self.surface_is_allowed,
-                        self.active_range, self.on))
+        return (f'RandomMover3D(vertical_diffusion_coef_above_ml={self.vertical_diffusion_coef_above_ml}, '
+                f'vertical_diffusion_coef_below_ml={self.vertical_diffusion_coef_below_ml}, mixed_layer_depth={self.mixed_layer_depth}, '
+                f'horizontal_diffusion_coef_above_ml={self.horizontal_diffusion_coef_above_ml}, '
+                f'horizontal_diffusion_coef_below_ml={self.horizontal_diffusion_coef_below_ml}, '
+                f'surface_is_allowed={self.surface_is_allowed}, '
+                f'active_range={self.active_range}, on={self.on})'
+                )

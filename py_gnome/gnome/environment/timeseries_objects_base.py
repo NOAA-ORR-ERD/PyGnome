@@ -1,21 +1,23 @@
-import warnings
 import copy
-from numbers import Number
+import warnings
 from collections import abc
-
-import numpy as np
-
-import nucos as uc
+from numbers import Number
 
 import gridded
-
-from gnome.persist import (ObjTypeSchema, SchemaNode, String, drop,
-                           SequenceSchema,NumpyArraySchema)
+import nucos as uc
+import numpy as np
+from gridded.utilities import _align_results_to_spatial_data, _reorganize_spatial_data
 
 from gnome.environment.gridded_objects_base import Time, TimeSchema
 from gnome.gnomeobject import GnomeId
-
-from gridded.utilities import _align_results_to_spatial_data, _reorganize_spatial_data
+from gnome.persist import (
+    NumpyArraySchema,
+    ObjTypeSchema,
+    SchemaNode,
+    SequenceSchema,
+    String,
+    drop,
+)
 
 
 class TimeseriesDataSchema(ObjTypeSchema):
@@ -73,7 +75,7 @@ class TimeseriesData(GnomeId):
         self.data = data
         self.time = time
         self.extrapolate = extrapolate
-        super(TimeseriesData, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     #
     # Subclasses should override\add any attribute property function
@@ -89,7 +91,7 @@ class TimeseriesData(GnomeId):
             raise ValueError("name, data, or units may not be None")
 
         if not isinstance(data, Number):
-            raise TypeError('{0} data must be a number'.format(name))
+            raise TypeError(f'{name} data must be a number')
 
         t = Time.constant_time()
 
@@ -177,9 +179,9 @@ class TimeseriesData(GnomeId):
                 value = uc.convert(data_units, req_units, value)
             except uc.NotSupportedUnitError:
                 if (not uc.is_supported(data_units)):
-                    warnings.warn("{0} units is not supported: {1}".format(self.name, data_units))
+                    warnings.warn(f"{self.name} units is not supported: {data_units}")
                 elif (not uc.is_supported(req_units)):
-                    warnings.warn("Requested unit is not supported: {1}".format(req_units))
+                    warnings.warn("Requested unit is not supported: {1}".format())
                 else:
                     raise
 
@@ -267,9 +269,8 @@ class TimeseriesVector(GnomeId):
 
         self._units = self._time = self._variables = None
 
-        if all([isinstance(v, TimeseriesData) for v in variables]):
-            if time is not None and not isinstance(time, Time):
-                time = Time(time)
+        if all(isinstance(v, TimeseriesData) for v in variables) and time is not None and not isinstance(time, Time):
+            time = Time(time)
 
         units = variables[0].units if units is None else units
         time = variables[0].time if time is None else time
@@ -284,7 +285,7 @@ class TimeseriesVector(GnomeId):
         self.units = units
         self.time = time
 
-        super(TimeseriesVector, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     @property
     def time(self):
@@ -335,9 +336,8 @@ class TimeseriesVector(GnomeId):
 
     @units.setter
     def units(self, unit):
-        if unit is not None:
-            if not uc.is_supported(unit):
-                raise ValueError('Units of {0} are not supported'.format(unit))
+        if unit is not None and not uc.is_supported(unit):
+            raise ValueError(f'Units of {unit} are not supported')
 
         self._units = unit
 

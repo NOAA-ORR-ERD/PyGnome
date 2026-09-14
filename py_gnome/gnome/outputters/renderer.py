@@ -6,28 +6,22 @@ module to hold all the map rendering code.
 This one used the new map_canvas, which uses the gd rendering lib.
 
 """
-import os
-
 import glob
+import os
 
 import numpy as np
 import py_gd
-
 from colander import SchemaNode, String, drop
 
 from gnome.basic_types import oil_status
-
+from gnome.environment.gridded_objects_base import Grid_S
+from gnome.persist import FilenameSchema, StringListSchema, base_schema
+from gnome.utilities import projections
 from gnome.utilities.file_tools import haz_files
 from gnome.utilities.map_canvas import MapCanvas
-
-from gnome.utilities import projections
 from gnome.utilities.projections import ProjectionSchema
 
-from gnome.environment.gridded_objects_base import Grid_S
-
-from gnome.persist import base_schema, FilenameSchema, StringListSchema, List
-
-from . import Outputter, BaseOutputterSchema
+from . import BaseOutputterSchema, Outputter
 
 
 class RendererSchema(BaseOutputterSchema):
@@ -91,7 +85,7 @@ class Renderer(Outputter, MapCanvas):
                  draw_back_to_fore=True,
                  draw_map_bounds=False,
                  draw_spillable_area=False,
-                 formats=['png', 'gif'],
+                 formats=None,
                  draw_ontop='forecast',
                  cache=None,
                  output_timestep=None,
@@ -100,7 +94,7 @@ class Renderer(Outputter, MapCanvas):
                  output_single_step=False,
                  output_start_time=None,
                  on=True,
-                 timestamp_attrib={},
+                 timestamp_attrib=None,
                  point_size=2,
                  depth_colors=None,
                  min_color_depth=0,
@@ -184,6 +178,10 @@ class Renderer(Outputter, MapCanvas):
         Remaining kwargs are passed onto Outputter.__init__(...)
 
         """
+        if timestamp_attrib is None:
+            timestamp_attrib = {}
+        if formats is None:
+            formats = ['png', 'gif']
         projection = (projections.FlatEarthProjection()
                       if projection is None
                       else projection)
@@ -256,7 +254,7 @@ class Renderer(Outputter, MapCanvas):
         else:
             file_prefix = sep = ''
 
-        fn = '{}{}anim.gif'.format(file_prefix, sep)
+        fn = f'{file_prefix}{sep}anim.gif'
         self.anim_filename = os.path.join(output_dir, fn)
 
         self.formats = formats
@@ -303,7 +301,7 @@ class Renderer(Outputter, MapCanvas):
     def draw_ontop(self, val):
         if val not in ['forecast', 'uncertain']:
             raise ValueError("'draw_ontop' must be either 'forecast' or"
-                             "'uncertain'. {0} is invalid.".format(val))
+                             f"'uncertain'. {val} is invalid.")
 
         self._draw_ontop = val
 
@@ -341,7 +339,7 @@ class Renderer(Outputter, MapCanvas):
         images. If you want to save the previous images, a new output dir
         should be set.
         """
-        super(Renderer, self).prepare_for_model_run(*args, **kwargs)
+        super().prepare_for_model_run(*args, **kwargs)
 
         self.clean_output_files()
         self.draw_background()
@@ -399,7 +397,7 @@ class Renderer(Outputter, MapCanvas):
         :type time: datetime
         """
         d = self.timestamp_attribs
-        on = d['on'] if 'on' in d else True
+        on = d.get('on', True)
 
         if not on:
             return
@@ -413,7 +411,7 @@ class Renderer(Outputter, MapCanvas):
         size = d.get('size', 'small')
 
         default_position = (self.fore_image.width / 2, self.fore_image.height)
-        position = d['position'] if 'position' in d else default_position
+        position = d.get('position', default_position)
 
         align = d.get('alignment', 'cb')
 
@@ -520,7 +518,6 @@ class Renderer(Outputter, MapCanvas):
                 except ValueError:
                     pass  # py_gd can't handle 2pt polygons
 
-        return None
 
     def draw_elements(self, sc):
         """
@@ -629,7 +626,7 @@ class Renderer(Outputter, MapCanvas):
         prepare_for_model_step determines whether to write the output for
         this step based on output_timestep
         """
-        super(Renderer, self).write_output(step_num, islast_step)
+        super().write_output(step_num, islast_step)
 
         if not self._write_step:
             return None
@@ -709,8 +706,7 @@ class Renderer(Outputter, MapCanvas):
         simple for now so we don't have to make the projection classes
         serializable
         """
-        return '{0}.{1}'.format(self.projection.__module__,
-                                self.projection.__class__.__name__)
+        return f'{self.projection.__module__}.{self.projection.__class__.__name__}'
 
     def to_dict(self, json_=None):
         dict_ = Outputter.to_dict(self, json_=json_)
@@ -720,7 +716,7 @@ class Renderer(Outputter, MapCanvas):
         return dict_
 
 
-class GridVisLayer(object):
+class GridVisLayer:
     def __init__(self, grid, projection, on=True,
                  color='grid_1', width=1):
         self.grid = grid
@@ -765,7 +761,7 @@ class GridVisLayer(object):
                                   line_width=self.width)
 
 
-class GridPropVisLayer(object):
+class GridPropVisLayer:
 
     def __init__(self, prop, projection, on=True,
                  color='LE', mask_color='uncert_LE',
@@ -850,7 +846,7 @@ class GridPropVisLayer(object):
 
         line = np.array([[0., 0.], [0., 0.]])
 
-        for i in range(0, len(start)):
+        for i in range(len(start)):
             line[0] = start[i]
             line[1] = end[i]
             img.draw_polyline(line,

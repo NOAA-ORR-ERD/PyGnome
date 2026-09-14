@@ -1,15 +1,11 @@
-
-from .outputter import Outputter, BaseOutputterSchema
+# ruff: noqa: I001  -- outputter.py must load first; image, oil_budget, renderer import BaseOutputterSchema/Outputter from gnome.outputters
+from .outputter import BaseOutputterSchema, Outputter
 from .netcdf import NetCDFOutput, NetCDFOutputSchema
 from .renderer import Renderer, RendererSchema
 from .weathering import WeatheringOutput
 from .binary import BinaryOutput
-from .geo_json import (TrajectoryGeoJsonOutput,
-                       IceGeoJsonOutput)
-from .json import (IceJsonOutput,
-                   CurrentJsonOutput,
-                   SpillJsonOutput)
-
+from .geo_json import IceGeoJsonOutput, TrajectoryGeoJsonOutput
+from .json import CurrentJsonOutput, IceJsonOutput, SpillJsonOutput
 from .kmz import KMZOutput
 from .image import IceImageOutput
 from .shape import ShapeOutput
@@ -34,4 +30,3 @@ outputters = [Outputter,
 
 # any reason for this to be a list rather than a set?
 schemas = {cls._schema for cls in outputters if hasattr(cls, '_schema')}
-

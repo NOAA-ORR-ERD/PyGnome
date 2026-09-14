@@ -5,6 +5,7 @@ import py_gd
 
 from . import Renderer
 
+
 class Animation(Renderer):
     def __init__(self, *args, **kwargs):
         '''
@@ -34,8 +35,8 @@ class Animation(Renderer):
         if 'filename' in kwargs:
             self.anim_filename = kwargs['filename']
         else:
-            self.anim_filename = ('{}_anim.gif'
-                                  .format(os.path.splitext(self._filename)[0]))
+            self.anim_filename = (f'{os.path.splitext(self._filename)[0]}_anim.gif'
+                                  )
 
     def clean_output_files(self):
         # clear out the output dir:
@@ -122,7 +123,7 @@ class Animation(Renderer):
         super(Renderer, self).write_output(step_num, islast_step)
 
         if not self._write_step:
-            return None
+            return
 
         self.clear_foreground()
 

@@ -2,7 +2,7 @@
 from gnome.utilities.weathering import PiersonMoskowitz
 
 
-class ZhaoToba(object):
+class ZhaoToba:
     '''
         Zhao and Toba (2001) percent whitecap coverage formula
         They use a Reynolds-like dimensionless number rather than an

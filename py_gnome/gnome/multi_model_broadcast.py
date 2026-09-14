@@ -1,25 +1,21 @@
 
-import sys
-import os
-import psutil
-import time
 import logging
-import traceback
-
-from pickle import loads, dumps
-import uuid
-
 import multiprocessing as mp
+import os
+import sys
+import time
+import traceback
+import uuid
+from pickle import dumps, loads
+
+import psutil
 import tblib.pickling_support
-
-
 import zmq
 from zmq.eventloop import ioloop, zmqstream
 
 from gnome import GnomeId
 from gnome.environment import Wind
 from gnome.outputters import WeatheringOutput
-
 
 # allows us to pickle exception traceback info
 tblib.pickling_support.install()
@@ -74,7 +70,7 @@ class ModelConsumer(mp.Process):
         self.loop = ioloop.IOLoop.instance()
 
         sock = context.socket(zmq.REP)
-        sock.bind('ipc://{0}/Task-{1}'.format(self.ipc_folder, self.task_port))
+        sock.bind(f'ipc://{self.ipc_folder}/Task-{self.task_port}')
 
         # We need to create a stream from our socket and
         # register a callback for recv events.
@@ -310,8 +306,8 @@ class ModelBroadcaster(GnomeId):
                     self.stop()
                     out = None
                 except Exception as e:
-                    self.logger.warning('Broadcaster caught exception {}'
-                                        .format(e))
+                    self.logger.warning(f'Broadcaster caught exception {e}'
+                                        )
                     self.stop()
                     out = None
             else:
@@ -346,7 +342,7 @@ class ModelBroadcaster(GnomeId):
                 [t.send(dumps(None)) for t in self.tasks]
             except zmq.ZMQError as e:
                 self.logger.warning('exception sending shutdown command: '
-                                    '{}'.format(e))
+                                    f'{e}')
             finally:
                 [t.close() for t in self.tasks]
 
@@ -398,9 +394,9 @@ class ModelBroadcaster(GnomeId):
 
         for p in self.task_ports:
             task = self.context.socket(zmq.REQ)
-            task_file = '{}/Task-{}'.format(self.ipc_folder, p)
+            task_file = f'{self.ipc_folder}/Task-{p}'
 
-            task.connect('ipc://{}'.format(task_file))
+            task.connect(f'ipc://{task_file}')
 
             task.setsockopt(zmq.RCVTIMEO, 10 * 1000)
             task.setsockopt(zmq.LINGER, 5)
@@ -416,19 +412,19 @@ class ModelBroadcaster(GnomeId):
         idx = self.lookup[(wind_speed_uncertainty, spill_amount_uncertainty)]
 
         self.cmd('set_spill_container_uncertainty',
-                 dict(uncertain=False), idx=idx)
+                 {'uncertain': False}, idx=idx)
 
         self.cmd('set_wind_speed_uncertainty',
-                 dict(up_or_down=wind_speed_uncertainty), idx=idx)
+                 {'up_or_down': wind_speed_uncertainty}, idx=idx)
 
         self.cmd('set_spill_amount_uncertainty',
-                 dict(up_or_down=spill_amount_uncertainty), idx=idx)
+                 {'up_or_down': spill_amount_uncertainty}, idx=idx)
 
     def _set_new_cache_dir(self, idx):
         self.cmd('set_cache_dir', {}, idx=idx)
 
     def _disable_cache(self, idx):
-        self.cmd('set_cache_enabled', dict(enabled=False), idx=idx)
+        self.cmd('set_cache_enabled', {'enabled': False}, idx=idx)
 
     def _set_weathering_output_only(self, idx):
         self.cmd('set_weathering_output_only', {}, idx=idx)

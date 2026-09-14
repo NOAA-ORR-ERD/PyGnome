@@ -8,16 +8,21 @@ from collections.abc import Iterable
 from glob import glob
 
 import numpy as np
+from geojson import Feature, FeatureCollection, MultiPolygon, Point, dump
 
-from geojson import (Feature, FeatureCollection, dump,
-                     Point, MultiPolygon)
-from gnome.persist import (SchemaNode, String, drop, Int, Boolean,
-                           SequenceSchema, GeneralGnomeObjectSchema)
-
+from gnome.movers.c_current_movers import IceMoverSchema
+from gnome.persist import (
+    Boolean,
+    GeneralGnomeObjectSchema,
+    Int,
+    SchemaNode,
+    SequenceSchema,
+    String,
+    drop,
+)
 from gnome.utilities.time_utils import date_to_sec
 
-from .outputter import Outputter, BaseOutputterSchema
-from gnome.movers.c_current_movers import IceMoverSchema
+from .outputter import BaseOutputterSchema, Outputter
 
 
 class TrajectoryGeoJsonSchema(BaseOutputterSchema):
@@ -92,7 +97,7 @@ class TrajectoryGeoJsonOutput(Outputter):
         self.round_to = round_to
         self.output_dir = output_dir
 
-        super(TrajectoryGeoJsonOutput, self).__init__(output_dir=output_dir,
+        super().__init__(output_dir=output_dir,
                                                       **kwargs)
 
     # def prepare_for_model_run(self, *args, **kwargs):
@@ -113,7 +118,7 @@ class TrajectoryGeoJsonOutput(Outputter):
 
     def write_output(self, step_num, islast_step=False):
         'dump data in geojson format'
-        super(TrajectoryGeoJsonOutput, self).write_output(step_num,
+        super().write_output(step_num,
                                                           islast_step)
 
         if not self._write_step:
@@ -279,14 +284,14 @@ class IceGeoJsonOutput(Outputter):
         else:
             self.ice_movers = []
 
-        super(IceGeoJsonOutput, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def clean_output_files(self):
         pass
 
     def write_output(self, step_num, islast_step=False):
         'dump data in geojson format'
-        super(IceGeoJsonOutput, self).write_output(step_num, islast_step)
+        super().write_output(step_num, islast_step)
 
         if self.on is False or not self._write_step:
             return None
@@ -340,8 +345,8 @@ class IceGeoJsonOutput(Outputter):
             coordinates = (matching_triangles.view(dtype='<f8')
                            .reshape(shape).tolist())
 
-            prop_fmt = '{{:.{}f}}'.format(decimals)
-            properties = {'{}'.format(property_name): prop_fmt.format(u)}
+            prop_fmt = f'{{:.{decimals}f}}'
+            properties = {f'{property_name}': prop_fmt.format(u)}
 
             feature = Feature(id="1",
                               properties=properties,
@@ -374,4 +379,4 @@ class IceGeoJsonOutput(Outputter):
 
     def rewind(self):
         'remove previously written files'
-        super(IceGeoJsonOutput, self).rewind()
+        super().rewind()

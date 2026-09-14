@@ -9,7 +9,7 @@ NOTE: not complete!
 from gnome.outputters.outputter import Outputter
 
 
-class DataBuffer(object):
+class DataBuffer:
     def __init__(self):
         self.certain = []
         self.uncertain = []
@@ -20,7 +20,7 @@ class MemoryOutputter(Outputter):
     arrays_to_output = ["mass", "positions", "age", "status_codes"]
 
     def prepare_for_model_run(self, *args, **kwargs):
-        super(MemoryOutputter, self).prepare_for_model_run(*args, **kwargs)
+        super().prepare_for_model_run(*args, **kwargs)
 
         self.data_buffer = DataBuffer()
 
@@ -37,7 +37,7 @@ class MemoryOutputter(Outputter):
 
         Use super to call base class write_output method
         """
-        super(MemoryOutputter, self).write_output(step_num, islast_step)
+        super().write_output(step_num, islast_step)
 
         if self.on is False or not self._write_step:
             return None

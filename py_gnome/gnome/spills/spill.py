@@ -10,38 +10,32 @@ Substance -- what the types of the elements are.
 (currently there are only two substances: GnomeOIl and NonWeatheringSubstance)
 """
 
-from datetime import datetime
 import copy
+import warnings
+from datetime import datetime
 
 import nucos
-from gnome.utilities.time_utils import asdatetime
-from gnome.utilities.appearance import SpillAppearanceSchema
-
-from colander import (SchemaNode, Bool, String, Float, drop)
-import warnings
-
-from gnome.gnomeobject import GnomeId
-from gnome.persist.base_schema import ObjTypeSchema, GeneralGnomeObjectSchema
+from colander import Bool, Float, SchemaNode, String, drop
 
 from gnome import _valid_units
-
 from gnome.environment.water import WaterSchema
+from gnome.gnomeobject import GnomeId
+from gnome.persist.base_schema import GeneralGnomeObjectSchema, ObjTypeSchema
+from gnome.utilities.appearance import SpillAppearanceSchema
+from gnome.utilities.time_utils import asdatetime
 
-
-from .release import (Release,
-                      PointLineRelease,
-                      GridRelease,
-                      PolygonRelease,
-                      SubsurfaceRelease,
-                      BaseReleaseSchema,
-                      PointLineReleaseSchema,
-                      PolygonReleaseSchema,
-                      )
-
-from .substance import (NonWeatheringSubstance,
-                        NonWeatheringSubstanceSchema
-                        )
-from .gnome_oil import (GnomeOil, GnomeOilSchema)
+from .gnome_oil import GnomeOil, GnomeOilSchema
+from .release import (
+    BaseReleaseSchema,
+    GridRelease,
+    PointLineRelease,
+    PointLineReleaseSchema,
+    PolygonRelease,
+    PolygonReleaseSchema,
+    Release,
+    SubsurfaceRelease,
+)
+from .substance import NonWeatheringSubstance, NonWeatheringSubstanceSchema
 
 # from .initializers import plume_initializers
 
@@ -97,7 +91,6 @@ class BaseSpill(GnomeId):
     for now, the real base is specified by Spill, but this gives us something to derive
     from to make a whole new one, and still be able to add it to the model.
     """
-    pass
 
 
 class Spill(BaseSpill):
@@ -162,7 +155,7 @@ class Spill(BaseSpill):
             Define either volume or mass in 'amount' attribute and provide
             appropriate 'units'.
         """
-        super(Spill, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.on = on
         self.substance = substance
         if release is None:
@@ -218,10 +211,7 @@ class Spill(BaseSpill):
         if val is None:
             self._substance = NonWeatheringSubstance()
             return
-        elif isinstance(val, NonWeatheringSubstance):
-            self._substance = val
-            return
-        elif isinstance(val, GnomeOil):
+        elif isinstance(val, (NonWeatheringSubstance, GnomeOil)):
             self._substance = val
             return
         try:
@@ -230,8 +220,8 @@ class Spill(BaseSpill):
             if isinstance(val, str):
                 raise
 
-            self.logger.info('Failed to make a GnomeOil for {0}. Use as is '
-                             'assuming it has a Substance interface'.format(val))
+            self.logger.info(f'Failed to make a GnomeOil for {val}. Use as is '
+                             'assuming it has a Substance interface')
             self._substance = val
 
     @property
@@ -307,12 +297,12 @@ class Spill(BaseSpill):
         self.release.release_mass = rel_mass
 
     def __repr__(self):
-        return ('{0.__class__.__module__}.{0.__class__.__name__}('
-                'release={0.release!r}, '
-                'on={0.on}, '
-                'amount={0.amount}, '
-                'units="{0.units}", '
-                ')'.format(self))
+        return (f'{self.__class__.__module__}.{self.__class__.__name__}('
+                f'release={self.release!r}, '
+                f'on={self.on}, '
+                f'amount={self.amount}, '
+                f'units="{self.units}", '
+                ')')
 
     def _check_units(self, units):
         """
@@ -327,7 +317,7 @@ class Spill(BaseSpill):
                    f"{units} was provided."
                    f"Recommended units are:{WEBGNOME_UNITS_FOR_RELEASE}")
             ex = ValueError(msg)
-            self.logger.exception(ex, exc_info=True)
+            self.logger.exception(ex)
             raise ex  # this should be raised since run will fail otherwise
 
     @property
@@ -382,7 +372,7 @@ class Spill(BaseSpill):
         spill is added to the spill container pair(?)
         '''
         u_copy = copy.deepcopy(self)
-        self.logger.debug(self._pid + "deepcopied spill {0}".format(self.id))
+        self.logger.debug(self._pid + f"deepcopied spill {self.id}")
 
         return u_copy
 

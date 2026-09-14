@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 
 """
 special datetime objects with -inf and inf times
@@ -21,7 +20,7 @@ min_datetime = datetime.datetime(1970, 0o1, 0o1)
 max_datetime = datetime.datetime(2038, 0o1, 19)
 
 
-class InfTime(object):
+class InfTime:
     """
     class representing time into infinity
 
@@ -32,8 +31,8 @@ class InfTime(object):
         return 'Infinite time object'
 
     def __repr__(self):
-        return ('{0.__class__.__module__}.{0.__class__.__name__}'
-                '()'.format(self))
+        return (f'{self.__class__.__module__}.{self.__class__.__name__}'
+                '()')
 
     def isoformat(self):
         return 'inf'
@@ -48,34 +47,22 @@ class InfTime(object):
             other object otehr than itself.
         """
 
-        if isinstance(other, InfTime):
-            return True
-        else:
-            return False
+        return bool(isinstance(other, InfTime))
 
     def __eq__(self, other):
         'an InfTime object is only equal to itself'
-        if isinstance(other, InfTime):
-            return True
-        else:
-            return False
+        return bool(isinstance(other, InfTime))
 
     def __ne__(self, other):
         'an InfTime object is only equal to itself'
-        if isinstance(other, InfTime):
-            return False
-        else:
-            return True
+        return not isinstance(other, InfTime)
 
     def __gt__(self, other):
         '''
            an InfTime object is greater than eveything except another
            InfTime object
         '''
-        if isinstance(other, InfTime):
-            return False
-        else:
-            return True
+        return not isinstance(other, InfTime)
 
     def __ge__(self, other):
         'an InfTime object is greater or equal to anything'
@@ -88,7 +75,7 @@ class InfTime(object):
         return MinusInfTime()
 
 
-class MinusInfTime(object):
+class MinusInfTime:
     """
     class representing time from infinity in the past
 
@@ -98,8 +85,8 @@ class MinusInfTime(object):
         return 'Minus infinite time object'
 
     def __repr__(self):
-        return ('{0.__class__.__module__}.{0.__class__.__name__}'
-                '()'.format(self))
+        return (f'{self.__class__.__module__}.{self.__class__.__name__}'
+                '()')
 
     def isoformat(self):
         return '-inf'
@@ -109,10 +96,7 @@ class MinusInfTime(object):
            an MinusInfTime object is always less than any other object
            except itself
         '''
-        if isinstance(other, MinusInfTime):
-            return False
-        else:
-            return True
+        return not isinstance(other, MinusInfTime)
 
     def __le__(self, other):
         '''
@@ -125,17 +109,11 @@ class MinusInfTime(object):
     def __eq__(self, other):
         'A MinusInfTime object is only equal to itself'
 
-        if isinstance(other, MinusInfTime):
-            return True
-        else:
-            return False
+        return bool(isinstance(other, MinusInfTime))
 
     def __ne__(self, other):
         'A MinusInfTime object is only equal to itself'
-        if isinstance(other, MinusInfTime):
-            return False
-        else:
-            return True
+        return not isinstance(other, MinusInfTime)
 
     def __gt__(self, other):
         'A MinusInfTime object is not greater than anything'
@@ -146,10 +124,7 @@ class MinusInfTime(object):
            A Minus InfTime object is not greater than or equal
            to anything other than itself
         '''
-        if isinstance(other, MinusInfTime):
-            return True
-        else:
-            return False
+        return bool(isinstance(other, MinusInfTime))
 
     def __pos__(self):
         return self
@@ -208,15 +183,15 @@ class InfDateTime(datetime.datetime):
             if day is None:
                 raise TypeError("Required argument 'day' (pos 3) not found")
 
-            inst = super(InfDateTime, cls).__new__(cls,
+            inst = super().__new__(cls,
                                                    year, month, day,
                                                    hour, minute, second,
                                                    microsecond, tzinfo)
 
             if inst > max_datetime:
                 raise ValueError("InfDateTime can't be created that is after:"
-                                 " {0}".format(max_datetime.isoformat()))
+                                 f" {max_datetime.isoformat()}")
             elif inst < min_datetime:
                 raise ValueError("InfDateTime can't be created that is before:"
-                                 " {0}".format(min_datetime.isoformat()))
+                                 f" {min_datetime.isoformat()}")
             return inst

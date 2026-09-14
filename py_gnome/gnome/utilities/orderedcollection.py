@@ -1,7 +1,6 @@
-#!/usr/bin/env python
 
 
-class OrderedCollection(object):
+class OrderedCollection:
     '''
     Generalized Container for a set of objects of a particular type which
     preserves the order of insertion and supports replacement of not only
@@ -28,7 +27,7 @@ class OrderedCollection(object):
         else:
             self.dtype = dtype
 
-        if not all([isinstance(e, self.dtype) for e in elems]):
+        if not all(isinstance(e, self.dtype) for e in elems):
             raise TypeError(f'{self.__class__.__name__}: '
                             f'needs a list of {self.dtype}')
 
@@ -79,7 +78,7 @@ class OrderedCollection(object):
         if isinstance(elem, self.dtype):
             l__id = self._s_id(elem)
 
-            if l__id not in self._d_index.keys():
+            if l__id not in self._d_index:
                 self._d_index[l__id] = len(self._elems)
                 self._elems.append(elem)
 
@@ -238,7 +237,7 @@ class OrderedCollection(object):
         for __str__, don't show the keys
         """
         # order by position in list
-        itemlist = sorted(list(self._d_index.items()), key=lambda x: x[1])
+        itemlist = sorted(self._d_index.items(), key=lambda x: x[1])
 
         # reference the value in list
         itemlist = [self._elems[v] for (_, v) in itemlist]
@@ -251,21 +250,21 @@ class OrderedCollection(object):
         else:
             strlist = [formatter % i for i in itemlist]
 
-        return ('{0}({{\n'
-                '{1}\n'
+        return ('{}({{\n'
+                '{}\n'
                 '}})'.format(self.__class__.__name__, '\n'.join(strlist)))
 
     def __repr__(self):
         # order by position in list
-        itemlist = sorted(list(self._d_index.items()), key=lambda x: x[1])
+        itemlist = sorted(self._d_index.items(), key=lambda x: x[1])
 
         # reference the value in list
         itemlist = [(k, self._elems[v]) for (k, v) in itemlist]
 
-        strlist = ['    %s:\n        %r,' % i for i in itemlist]
+        strlist = ['    {}:\n        {!r},'.format(*i) for i in itemlist]
 
-        return ('{0}({{\n'
-                '{1}\n'
+        return ('{}({{\n'
+                '{}\n'
                 '}})'.format(self.__class__.__name__, '\n'.join(strlist)))
 
     def __eq__(self, other):
@@ -335,7 +334,7 @@ class OrderedCollection(object):
             try:
                 obj_type = f'{obj.__module__}.{obj.__class__.__name__}'
             except AttributeError:
-                obj_type = '{0.__class__.__name__}'.format(obj)
+                obj_type = f'{obj.__class__.__name__}'
             item = {'obj_type': obj_type, 'id': self._s_id(obj)}
             items.append(item)
 

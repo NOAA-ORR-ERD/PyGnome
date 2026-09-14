@@ -29,82 +29,75 @@ py_gnome scripts with, e.g.::
                                                 release_time="2018-04-12T12:30")
 """
 from gnome import initialize_console_log
-
-from gnome.model import Model
-
 from gnome.basic_types import oil_status_map
-
-from .utilities import (make_images_dir,
-                        remove_netcdf,
-                        set_verbose,
-                        PrintFinder,
-                        )
+from gnome.environment import (
+    FileGridCurrent,
+    GridCurrent,
+    GridWind,
+    IceAwareCurrent,
+    IceAwareWind,
+    SteadyUniformCurrent,
+    Tide,
+    Water,
+    Waves,
+)
+from gnome.environment.environment_objects import IceConcentration, IceVelocity
+from gnome.environment.wind import PointWind, Wind, constant_wind, wind_from_values
+from gnome.maps.map import GnomeMap, MapFromBNA
+from gnome.model import Model
+from gnome.movers import (
+    CatsMover,
+    ComponentMover,
+    CurrentMover,
+    IceAwareRandomMover,
+    PointWindMover,
+    RandomMover,
+    RandomMover3D,
+    RiseVelocityMover,
+    WindMover,
+)
+from gnome.movers.c_wind_movers import (
+    constant_point_wind_mover,
+    point_wind_mover_from_file,
+)
+from gnome.outputters import (
+    KMZOutput,
+    NetCDFOutput,
+    OilBudgetOutput,
+    Renderer,
+    ShapeOutput,
+    WeatheringOutput,
+)
+from gnome.spills.gnome_oil import GnomeOil
+from gnome.spills.release import PointLineRelease, PolygonRelease
+from gnome.spills.spill import (
+    Spill,
+    grid_spill,
+    point_line_spill,
+    polygon_release_spill,
+    spatial_release_spill,
+    subsurface_spill,
+)
+from gnome.spills.substance import NonWeatheringSubstance
 from gnome.utilities import convert_longitude
-
+from gnome.utilities.inf_datetime import InfTime, MinusInfTime
+from gnome.utilities.remote_data import get_datafile
 from gnome.utilities.time_utils import asdatetime
 
-from .time_utils import (seconds,
-                         minutes,
-                         hours,
-                         days,
-                         weeks,
-                         now,
-                         )
-from gnome.utilities.inf_datetime import MinusInfTime, InfTime
-
-from gnome.spills.spill import Spill
-from gnome.spills.release import PointLineRelease, PolygonRelease
-
-from gnome.spills.spill import (point_line_spill,
-                                subsurface_spill,
-                                grid_spill,
-                                spatial_release_spill,
-                                polygon_release_spill
-                                )
-
-from gnome.spills.substance import NonWeatheringSubstance
-from gnome.spills.gnome_oil import GnomeOil
-
-from gnome.environment.wind import PointWind, Wind, constant_wind, wind_from_values
-from gnome.movers.c_wind_movers import (constant_point_wind_mover,
-                                        point_wind_mover_from_file,
-                                        )
-
-from gnome.outputters import (Renderer,
-                              NetCDFOutput,
-                              KMZOutput,
-                              OilBudgetOutput,
-                              ShapeOutput,
-                              WeatheringOutput,
-                              )
-
-from gnome.maps.map import MapFromBNA, GnomeMap
-
-from gnome.environment import (FileGridCurrent,
-                               GridCurrent,
-                               SteadyUniformCurrent,
-                               GridWind,
-                               IceAwareCurrent,
-                               IceAwareWind,
-                               Tide,
-                               Water,
-                               Waves,
-                               )
-
-from gnome.environment.environment_objects import IceVelocity,IceConcentration
-
-from gnome.movers import (RandomMover,
-                          RandomMover3D,
-                          PointWindMover,
-                          CatsMover,
-                          ComponentMover,
-                          RiseVelocityMover,
-                          WindMover,
-                          CurrentMover,
-                          IceAwareRandomMover,
-                          )
-
-from gnome.utilities.remote_data import get_datafile
+from .time_utils import (
+    days,
+    hours,
+    minutes,
+    now,
+    seconds,
+    weeks,
+)
+from .utilities import (
+    PrintFinder,
+    make_images_dir,
+    remove_netcdf,
+    set_verbose,
+)
 
 
 def load_model(filename):

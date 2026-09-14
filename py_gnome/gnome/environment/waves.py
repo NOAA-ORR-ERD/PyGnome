@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 The waves environment object.
 
@@ -14,24 +13,18 @@ Uses the same approach as ADIOS 2
 
 
 
-import copy
-from colander import Schema, SchemaNode, Boolean
 import numpy as np
+from colander import Boolean, SchemaNode
 
 from gnome import constants
-from gnome.utilities.weathering import Adios2, LehrSimecek, PiersonMoskowitz
-from gnome.utilities.inf_datetime import InfTime, MinusInfTime
-
+from gnome.environment.gridded_objects_base import VectorVariableSchema
 from gnome.persist import base_schema
-from gnome.exceptions import ReferencedObjectNotSet
+from gnome.utilities.inf_datetime import InfTime, MinusInfTime
+from gnome.utilities.weathering import Adios2, LehrSimecek, PiersonMoskowitz
 
 from .environment import Environment
 from .water import WaterSchema
-
 from .wind import WindSchema
-from gnome.environment.gridded_objects_base import VectorVariableSchema
-from gnome.environment.wind import Wind
-from gnome.environment.water import Water
 
 g = constants.gravity  # the gravitational constant.
 
@@ -87,7 +80,7 @@ class Waves(Environment):
             kwargs['make_default_refs'] = \
                 kwargs.pop('make_default_refs', False)
 
-        super(Waves, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def validate(self):
         #Waves object may be present in the model with no refs attached. Requirement by the web client...

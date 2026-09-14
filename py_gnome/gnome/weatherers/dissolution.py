@@ -2,26 +2,27 @@
 model dissolution process
 '''
 
-import copy
 import contextlib
+from pprint import PrettyPrinter
 
 import numpy as np
 
-
-from gnome.utilities.weathering import (BanerjeeHuibers, Stokes,
-                                        DingFarmer, DelvigneSweeney,
-                                        PiersonMoskowitz)
-
 from gnome.array_types import gat
-
-from .core import WeathererSchema
+from gnome.environment.gridded_objects_base import VectorVariableSchema
+from gnome.environment.waves import WavesSchema
+from gnome.environment.wind import WindSchema
+from gnome.persist.base_schema import GeneralGnomeObjectSchema
+from gnome.utilities.weathering import (
+    BanerjeeHuibers,
+    DelvigneSweeney,
+    DingFarmer,
+    PiersonMoskowitz,
+    Stokes,
+)
 from gnome.weatherers import Weatherer
 
-from pprint import PrettyPrinter
-from gnome.environment.waves import WavesSchema
-from gnome.persist.base_schema import GeneralGnomeObjectSchema
-from gnome.environment.wind import WindSchema
-from gnome.environment.gridded_objects_base import VectorVariableSchema
+from .core import WeathererSchema
+
 pp = PrettyPrinter(indent=2, width=120)
 
 
@@ -66,7 +67,7 @@ class Dissolution(Weatherer):
         else:
             make_default_refs = True
 
-        super(Dissolution, self).__init__(make_default_refs=make_default_refs, **kwargs)
+        super().__init__(make_default_refs=make_default_refs, **kwargs)
 
         self.array_types.update({'area': gat('area'),
                                  'mass': gat('mass'),
@@ -84,14 +85,14 @@ class Dissolution(Weatherer):
             - let's only define this the first time
         '''
         if self.on:
-            super(Dissolution, self).prepare_for_model_run(sc)
+            super().prepare_for_model_run(sc)
             sc.mass_balance['dissolution'] = 0.0
 
     def prepare_for_model_step(self, sc, time_step, model_time):
         '''
             Set/update arrays used by dispersion module for this timestep
         '''
-        super(Dissolution, self).prepare_for_model_step(sc,
+        super().prepare_for_model_step(sc,
                                                         time_step,
                                                         model_time)
 
@@ -117,7 +118,6 @@ class Dissolution(Weatherer):
             Actually, there is nothing to do to initialize our partition
             coefficient, as it is recalculated in dissolve_oil()
         '''
-        pass
 
     # this will have to be updated; SARA is being refactored out of gnome_oil
     def dissolve_oil(self, data, substance, **kwargs):
@@ -477,7 +477,7 @@ class Dissolution(Weatherer):
             N_s = N_s_a * slick_area
         else:
             # multiple LE mass components in a 2D array
-            N_s_a = (0.01 * np.prod((U_10 / 3600.0))
+            N_s_a = (0.01 * np.prod(U_10 / 3600.0)
                       *
                      (c_oil / k_ow))
 
@@ -517,7 +517,7 @@ class Dissolution(Weatherer):
 
             data['mass'] = data['mass_components'].sum(1)
 
-            self.logger.debug('{0} Amount dissolved for {1}: {2}'
+            self.logger.debug('{} Amount dissolved for {}: {}'
                               .format(self._pid,
                                       substance.name,
                                       sc.mass_balance['dissolution']))

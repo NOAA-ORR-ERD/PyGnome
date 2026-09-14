@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 '''
 Module contains array types that a mover may need based on the data
 movers needs
@@ -34,17 +33,17 @@ movers needs
 
 
 
-import sys
-
 import numpy as np
 
-from gnome.basic_types import (world_point_type,
-                               windage_type,
-                               status_code_type,
-                               oil_status,
-                               id_type,
-                               fate)
 from gnome import AddLogger
+from gnome.basic_types import (
+    fate,
+    id_type,
+    oil_status,
+    status_code_type,
+    windage_type,
+    world_point_type,
+)
 
 
 class ArrayType(AddLogger):
@@ -69,7 +68,7 @@ class ArrayType(AddLogger):
         self.name = name
 
     def __repr__(self):
-        return "ArrayType(name={0}, initial_value={1}, shape={2}, dtype={3}".format(self.name, self.initial_value, self.shape, self.dtype)
+        return f"ArrayType(name={self.name}, initial_value={self.initial_value}, shape={self.shape}, dtype={self.dtype}"
 
     def initialize_null(self, shape=None):
         """

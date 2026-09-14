@@ -1,7 +1,7 @@
 import numpy as np
 
 
-class Overstreet(object):
+class Overstreet:
     '''
         This based on formulas by Roy Overstreet, one of the founding members
         of ERD.

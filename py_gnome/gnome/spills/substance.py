@@ -16,19 +16,24 @@ The role of a substance is to:
 
 import numpy as np
 
-from gnome.gnomeobject import GnomeId
 from gnome.array_types import gat
-from gnome.basic_types import fate, oil_status
+from gnome.basic_types import fate
 from gnome.environment.water import Water
+from gnome.gnomeobject import GnomeId
 from gnome.ops.density import init_density
-
-from gnome.persist import (Float, Int, SchemaNode,
-                           Boolean, ObjTypeSchema, GeneralGnomeObjectSchema,
-                           TupleSchema, Range)
-
-from gnome.spills.initializers import (InitWindages,
-                                       InitRiseVelFromDropletSizeFromDist,
-                                       )
+from gnome.persist import (
+    Boolean,
+    Float,
+    Int,
+    ObjTypeSchema,
+    Range,
+    SchemaNode,
+    TupleSchema,
+)
+from gnome.spills.initializers import (
+    InitRiseVelFromDropletSizeFromDist,
+    InitWindages,
+)
 
 
 class WindageRangeSchema(TupleSchema):
@@ -86,7 +91,7 @@ class Substance(GnomeId):
         :type standard_density: float in units of kg/m^3
 
         """
-        super(Substance, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         # use defaults if set to None
         self._windage_init = InitWindages()  # value will be set by setters
@@ -136,7 +141,7 @@ class Substance(GnomeId):
 
     @is_weatherable.setter
     def is_weatherable(self, val):
-        self._is_weatherable = True if val else False
+        self._is_weatherable = bool(val)
     '''
     Windage range/persist are important enough to receive properties on the
     Substance.
@@ -277,7 +282,7 @@ class NonWeatheringSubstance(Substance):
         sl = slice(-to_rel, None, 1)
         if ('fate_status' in arrs):
             arrs['fate_status'][sl] = fate.non_weather
-        super(NonWeatheringSubstance, self).initialize_elements(to_rel, arrs, environment=environment)
+        super().initialize_elements(to_rel, arrs, environment=environment)
 
 
 
@@ -312,6 +317,5 @@ class SubsurfaceSubstance(NonWeatheringSubstance):
 
 # so old save files will work
 # this should be removed eventually ...
-from .gnome_oil import GnomeOil
 
 

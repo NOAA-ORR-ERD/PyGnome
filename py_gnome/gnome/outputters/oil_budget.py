@@ -8,10 +8,11 @@ Outputter for dumping the oil budget as a CSV file
 import csv
 from pathlib import Path
 
-from .weathering import BaseMassBalanceOutputter
-from .outputter import OutputterFilenameMixin
-from . import BaseOutputterSchema
 from gnome.persist import Boolean, SchemaNode
+
+from . import BaseOutputterSchema
+from .outputter import OutputterFilenameMixin
+from .weathering import BaseMassBalanceOutputter
 
 
 class OilBudgetOutputSchema(BaseOutputterSchema):
@@ -75,7 +76,7 @@ class OilBudgetOutput(BaseMassBalanceOutputter, OutputterFilenameMixin):
         # add a csv if there's no extension
         filename = Path(filename).with_suffix(self._valid_file_formats[file_format])
 
-        super(OilBudgetOutput, self).__init__(filename=filename,
+        super().__init__(filename=filename,
                                               cache=None,
                                               on=True,
                                               output_timestep=output_timestep,
@@ -96,11 +97,11 @@ class OilBudgetOutput(BaseMassBalanceOutputter, OutputterFilenameMixin):
         """
         start the csv file
         """
-        super(OilBudgetOutput, self).prepare_for_model_run(model_start_time,
+        super().prepare_for_model_run(model_start_time,
                                                            spills,
                                                            **kwargs)
         self._check_is_dir(self.filename)
-        self._outfile = open(self.filename, 'w', newline='', encoding="utf-8")
+        self._outfile = open(self.filename, 'w', newline='', encoding="utf-8")  # noqa: SIM115
         self.csv_writer = csv.writer(self._outfile)
         # write the header
         self.csv_writer.writerow(self.header_row)
@@ -114,12 +115,12 @@ class OilBudgetOutput(BaseMassBalanceOutputter, OutputterFilenameMixin):
         the uncertain spill container.
         """
 
-        super(OilBudgetOutput, self).write_output(step_num, islast_step)
+        super().write_output(step_num, islast_step)
 
         # print "self._model_start_time:", self._model_start_time
 
         if self.on is False or not self._write_step:
-            return None
+            return
 
         mass_balance_data = self.gather_mass_balance_data(step_num)
 

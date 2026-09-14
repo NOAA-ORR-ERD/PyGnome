@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 
 """
 setup.py for geometry package
@@ -9,12 +8,10 @@ Only useful now for "develop" mode
 """
 
 # from distutils.core import setup
-from setuptools import setup  # to support "develop" mode
-from distutils.extension import Extension
-from Cython.Distutils import build_ext
-
 import numpy  # for the includes for the Cython code
-
+from Cython.Distutils import build_ext
+from distutils.extension import Extension
+from setuptools import setup  # to support "develop" mode
 
 ext_modules = [Extension("cy_point_in_polygon",
                          sources=["cy_point_in_polygon.pyx",

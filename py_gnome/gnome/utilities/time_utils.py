@@ -1,20 +1,24 @@
-#!/usr/bin/env python
 """
 time_utils
 
 assorted utilities for working with time and datetime
 """
 
-from datetime import datetime, timedelta, tzinfo
-from dataclasses import dataclass
-import cftime
-from dateutil.parser import parse as parsetime
 import time
+from dataclasses import dataclass
+from datetime import datetime, timedelta, tzinfo
 
+import cftime
 import numpy as np
+from dateutil.parser import parse as parsetime
 
-from gnome.persist import (ObjTypeSchema, SchemaNode, String, Float, MappingSchema, null, drop)
-from gnome.gnomeobject import GnomeId
+from gnome.persist import (
+    Float,
+    MappingSchema,
+    SchemaNode,
+    String,
+    null,
+)
 
 
 class TZOffsetSchema(MappingSchema):
@@ -106,8 +110,8 @@ class FixedOffset(tzinfo):
         self.__name = name
 
     def __repr__(self):
-        return ("FixedOffset({}, '{}')"
-                .format(self.__offset.total_seconds() / 60, self.__name))
+        return (f"FixedOffset({self.__offset.total_seconds() / 60}, '{self.__name}')"
+                )
 
     def utcoffset(self, dt):
         return self.__offset
@@ -144,7 +148,7 @@ def timezone_offset_seconds():
 def zero_time():
     offset = timezone_offset_seconds()
 
-    return offset if offset >= 0 else 0
+    return max(offset, 0)
 
 
 def date_to_sec(date_times):
@@ -180,7 +184,7 @@ def date_to_sec(date_times):
 
     if not isinstance(date_times[0], (datetime, cftime.datetime)):
         raise TypeError('date_to_sec only works on datetime and datetime64 '
-                        'objects. Got a: {}'.format(type(date_times[0])))
+                        f'objects. Got a: {type(date_times[0])}')
 
     t_list = []
     for dt in date_times:

@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 
 """
 This module contains an assortment of colormap objects.
@@ -54,7 +53,7 @@ class ColorMap:
             try:
                 self.map_list = np.asarray(NamedColorMaps[MapName], np.uint8)
             except KeyError:
-                raise Exception('MapName: "%s" is not defined' % MapName)
+                raise Exception(f'MapName: "{MapName}" is not defined')
 
         elif map_list is not None:
             self.map_list = np.asarray(map_list, np.uint8)

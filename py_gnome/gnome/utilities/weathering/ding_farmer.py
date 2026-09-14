@@ -1,7 +1,7 @@
 import numpy as np
 
 
-class DingFarmer(object):
+class DingFarmer:
     @classmethod
     def calm_between_wave_breaks(cls, breaking_waves_frac,
                                  peak_wave_period):

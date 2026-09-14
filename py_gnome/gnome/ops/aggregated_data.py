@@ -1,7 +1,8 @@
 import logging
+
 import numpy as np
 
-from gnome.basic_types import oil_status, fate
+from gnome.basic_types import fate, oil_status
 
 logger = logging.getLogger(__name__)
 

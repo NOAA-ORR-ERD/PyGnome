@@ -1,25 +1,19 @@
+import warnings
 from functools import lru_cache
 
 import numpy as np
-import warnings
 
-from gnome.basic_types import fate, oil_status
 from gnome.array_types import gat
+from gnome.basic_types import fate, oil_status
+from gnome.environment.water import WaterSchema
 from gnome.ops.viscosity import init_viscosity
+from gnome.persist import Float, Int, NumpyArraySchema, SchemaNode, String, drop
+
 from .sample_oils import _sample_oils
 from .substance import Substance, SubstanceSchema
 
-from gnome.persist import (NumpyArraySchema,
-                           Int,
-                           String,
-                           Float,
-                           SchemaNode,
-                           drop)
 
-from gnome.environment.water import WaterSchema
-
-
-class Density(object):
+class Density:
 
     def __init__(self, kg_m_3, ref_temp_k, weathering=0):
         self.kg_m_3 = kg_m_3
@@ -27,9 +21,9 @@ class Density(object):
         self.weathering = weathering
 
     def __repr__(self):
-        return ('<Density({0.kg_m_3} kg/m^3 at {0.ref_temp_k}K), '
-                'w={0.weathering}>'
-                .format(self))
+        return (f'<Density({self.kg_m_3} kg/m^3 at {self.ref_temp_k}K), '
+                f'w={self.weathering}>'
+                )
 
 
 def density_at_temp(ref_density, ref_temp_k, temp_k, k_rho_t=0.0008):
@@ -185,7 +179,7 @@ class GnomeOil(Substance):
 
             super_kwargs = self._init_from_json(**kwargs)
 
-        super(GnomeOil, self).__init__(**super_kwargs)
+        super().__init__(**super_kwargs)
 
         self.filename = filename
         self.oil_name = oil_name
@@ -195,10 +189,9 @@ class GnomeOil(Substance):
 
     def from_adiosdb_file(self, filename, kwargs):
         try:
-            import adios_db
-
-            from adios_db.models.oil.oil import Oil as Oil_db
+            import adios_db  # noqa: F401
             from adios_db.computation.gnome_oil import make_gnome_oil
+            from adios_db.models.oil.oil import Oil as Oil_db
         except ImportError as err:
             msg = ("the adios_db package must be installed to use its "
                    "json format")
@@ -327,7 +320,7 @@ class GnomeOil(Substance):
         return GnomeOil(oil_info)
 
     def to_dict(self, json_=None):
-        json_ = super(GnomeOil, self).to_dict(json_=json_)
+        json_ = super().to_dict(json_=json_)
 
         return json_
 
@@ -359,7 +352,7 @@ class GnomeOil(Substance):
         # initialize mass_components
         arrs['mass_components'][sl] = (np.asarray(self.mass_fraction, dtype=np.float64) * (arrs['mass'][sl].reshape(len(arrs['mass'][sl]), -1)))
 
-        super(GnomeOil, self).initialize_elements(to_rel, arrs)
+        super().initialize_elements(to_rel, arrs)
 
     def _set_pc_values(self, prop, values):
         """
@@ -368,8 +361,8 @@ class GnomeOil(Substance):
         checks that it's the right size, and converts to an array
         """
         if len(values) != self.num_components:
-            raise ValueError("must be the same number of {} as there "
-                             "are pseudo components".format(prop))
+            raise ValueError(f"must be the same number of {prop} as there "
+                             "are pseudo components")
         setattr(self, prop, np.array(values, dtype=np.float64))
 
     @lru_cache(2)
@@ -463,7 +456,7 @@ class GnomeOil(Substance):
 
         new_densities = []
 
-        for x in range(0, len(densities)):
+        for x in range(len(densities)):
             if weathering[x] == 0:  # also check None
                 new_densities.append(Density(kg_m_3=densities[x],
                                              ref_temp_k=density_ref_temps[x],
@@ -521,7 +514,7 @@ class GnomeOil(Substance):
             shape = temperature.shape
             temperature = temperature.reshape(-1)
         else:
-            temperature = min_temp if temperature < min_temp else temperature
+            temperature = max(temperature, min_temp)
 
         ref_density, ref_temp_k = self._get_reference_densities(densities,
                                                                 temperature)
@@ -729,7 +722,6 @@ class GnomeOil(Substance):
             x, _, _, _ = np.linalg.lstsq(A, b, rcond=None)
             self._k_v2 = x[1]
             self._visc_A = np.exp(x[0])
-        return
 
     def get(self, prop):
         'get oil props'

@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 
 
 
@@ -6,16 +5,13 @@
 
 
 import numpy as np
-
 from colander import SchemaNode
 
-from gnome.persist.extend_colander import NumpyArray
-from gnome.persist.base_schema import ObjTypeSchema
 from gnome.array_types import gat
-
-from gnome.utilities.time_utils import date_to_sec, sec_to_datetime
 from gnome.exceptions import ReferencedObjectNotSet
 from gnome.movers.movers import Process, ProcessSchema
+from gnome.persist.extend_colander import NumpyArray
+from gnome.utilities.time_utils import date_to_sec, sec_to_datetime
 
 
 class WeathererSchema(ProcessSchema):
@@ -40,7 +36,7 @@ class Weatherer(Process):
         adds 'mass_components', 'mass' to array_types since all weatherers
         need these.
         '''
-        super(Weatherer, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         # arrays that all weatherers will update - use this to ask
         self.array_types.update({'mass_components': gat('mass_components'),
@@ -49,11 +45,11 @@ class Weatherer(Process):
                                  'init_mass': gat('init_mass')})
 
     def __repr__(self):
-        return ('{0.__class__.__module__}.{0.__class__.__name__}('
-                'active_range={0.active_range!r}, '
-                'on={0.on}, '
-                'active={0.active})'
-                .format(self))
+        return (f'{self.__class__.__module__}.{self.__class__.__name__}('
+                f'active_range={self.active_range!r}, '
+                f'on={self.on}, '
+                f'active={self.active})'
+                )
 
     def initialize_data(self, sc, num_released):
         '''
@@ -62,7 +58,6 @@ class Weatherer(Process):
         initialization of data arrays. If movers also move towards this
         implementation, then move to 'Process' base class.
         '''
-        pass
 
     def prepare_for_model_run(self, sc):
         """
@@ -87,7 +82,6 @@ class Weatherer(Process):
         Some objects do not implement this since they update arrays like 'area'
         in model_step_is_done()
         '''
-        pass
 
     def _halflife(self, M_0, factors, time):
         'Assumes our factors are half-life values'
@@ -179,7 +173,7 @@ class HalfLifeWeatherer(Weatherer):
         a function of time (not implemented yet). Not storing 'half_lives' in
         data_arrays since they are neither time-varying nor varying per LE.
         '''
-        super(HalfLifeWeatherer, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.half_lives = half_lives
 
     @property

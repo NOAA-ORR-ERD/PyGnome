@@ -1,17 +1,18 @@
 
-import numpy as np
-from collections.abc import MutableMapping
 import warnings
+from collections.abc import MutableMapping
 
-from gnome.gnomeobject import AddLogger
+import numpy as np
+
 from gnome.array_types import default_array_types
+from gnome.gnomeobject import AddLogger
 
 
 class LEData(MutableMapping, AddLogger, dict):
     # Fixme: we need a docstring here!
 
     def __init__(self, name=None, *args, **kwargs):
-        super(LEData, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.mass_balance = {}
         self._array_types = {}
         self._array_types.update(default_array_types)
@@ -37,7 +38,7 @@ class LEData(MutableMapping, AddLogger, dict):
         'Compare equality of two LEData objects'
         # check key/val that are not dicts
         t1 = self._array_types == other._array_types
-        t2 = super(LEData, self).__eq__(other)
+        t2 = super().__eq__(other)
         return t1 and t2
 
     def __ne__(self, other):
@@ -103,7 +104,7 @@ class LEData(MutableMapping, AddLogger, dict):
         arrays.
         """
         if self._initialized:
-            warnings.warn('{0} is already initialized.'.format(self))
+            warnings.warn(f'{self} is already initialized.')
         for name, atype in self._array_types.items():
             if atype.shape is None:
                 shape = (self.num_oil_components, )

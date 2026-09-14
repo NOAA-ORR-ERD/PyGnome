@@ -1,8 +1,10 @@
 import logging
+
 import numpy as np
+
 from gnome.ops import default_constants
+
 from .aggregated_data import aggregate as agg_func
-from gnome.array_types import gat
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +34,7 @@ def init_density(sc, num_released, water=None, substance=None, aggregate=True):
     density = substance.density_at_temp(water_temp)
 
     if density > water_density:
-        msg = ("{0} will sink at given water temperature: {1:.1f} {2}. "
+        msg = ("{} will sink at given water temperature: {:.1f} {}. "
                 "Setting density to water density"
                 .format(substance.name,
                         water_temp,

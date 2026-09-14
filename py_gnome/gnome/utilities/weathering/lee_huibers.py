@@ -2,7 +2,7 @@
 import numpy as np
 
 
-class Toluene(object):
+class Toluene:
     '''
     The measured values of the known aromatic, toluene
     '''
@@ -11,7 +11,7 @@ class Toluene(object):
     k_ow = 1000.0
 
 
-class LeeHuibers(object):
+class LeeHuibers:
     '''
     The combination of correlations by Huibers and Katritzky (1998)
     and Lee et al (1992) to estimate the correlation between

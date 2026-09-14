@@ -1,5 +1,5 @@
 
-class Monahan(object):
+class Monahan:
     '''
         This based on formulas by:
         Monahan (JPO, 1971)

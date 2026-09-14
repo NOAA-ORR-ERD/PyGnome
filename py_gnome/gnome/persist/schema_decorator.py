@@ -9,6 +9,7 @@ NOTE: maybe it would be better to do with a metaclass
 """
 
 import colander
+
 from gnome.persist import base_schema
 
 
@@ -31,7 +32,7 @@ def serializable(cls):
     # remove the nodes from the class
     for name in nodes:
         delattr(cls, name)
-    name = cls.__name__ + str("Schema")
+    name = cls.__name__ + "Schema"
     schema = type(name, (base_schema.ObjTypeSchema,), nodes) # str hack to support py2
 
     cls._schema = schema

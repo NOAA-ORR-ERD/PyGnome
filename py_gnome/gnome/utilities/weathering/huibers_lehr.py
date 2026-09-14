@@ -1,5 +1,4 @@
 
-import numpy as np
 
 
 # class Toluene(object):
@@ -11,7 +10,7 @@ import numpy as np
 #     k_ow = 1000.0
 # 
 
-class HuibersLehr(object):
+class HuibersLehr:
     '''
         Using Huibers & Katrisky for solubility.
         Using EPA report (2012), and tweaking by Bill so that results
