@@ -66,7 +66,7 @@
     "single_tile": true,
     "transpose": false,
     "ephemeral": false,
-    "additional_metainfo": "<div>Model metadata:</div>",
+    "additional_metainfo": "",
     "legend_annotation": null,
     "tilecache": false,
     "proxy": false,
