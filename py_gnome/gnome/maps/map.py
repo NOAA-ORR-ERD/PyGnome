@@ -472,6 +472,8 @@ class ParamMap(GnomeMap):
                         from the center.
         """
         warnings.warn("ParamMap is deprecated. Code is no longer being updated", DeprecationWarning)
+        # Fixme: we should use Pyton keyword arguments, rather than
+        #        fudging it by hand with kwargs.pop
         refloat_halflife = kwargs.pop('refloat_halflife', 1)
         self._refloat_halflife = refloat_halflife * 3600
         self.build(center, distance, bearing, units)
@@ -683,9 +685,6 @@ class ParamMap(GnomeMap):
             rnd = np.random.uniform(0, 1, len(r_idx))
 
             # subset of indices that will refloat
-            # maybe we should rename refloat_probability since
-            # rnd <= refloat_probability to
-            # refloat, maybe call it stay_on_land_probability
             r_idx = r_idx[np.where(rnd <= refloat_probability)[0]]
         elif self._refloat_halflife < 0.0:
             # fake for nothing gets refloated.
@@ -775,7 +774,7 @@ class RasterMap(GnomeMap):
         :param refloat_halflife: The halflife for refloating off land
                                  -- assumed to be the same for all land.
                                  0.0 means all refloat every time step
-                                 < 0.0 means never re-float.
+                                 < 0.0 or Inf means never re-float.
         :type refloat_halflife: float. Units are hours
 
         :param map_bounds: The polygon bounding the map -- could be larger
@@ -1228,7 +1227,11 @@ class MapFromBNA(RasterMap):
                            Accepted values:
                            0: do nothing. 180: shift to -180--180. 360: shift to 0--360
 
-        :param refloat_halflife: the half-life (in hours) for the re-floating.
+        :param refloat_halflife=1: The halflife for refloating off land
+                                 -- assumed to be the same for all land.
+                                 0.0 means all refloat every time step
+                                 < 0.0 or Inf means never re-float.
+        :type refloat_halflife: float. Units are hours
 
         :param map_bounds: The polygon bounding the map. If any elements are
                            outside the map bounds, they are removed from the simulation.
