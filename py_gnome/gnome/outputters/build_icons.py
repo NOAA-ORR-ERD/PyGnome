@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-generates a text file with the base64encoded contentes of the icons
+generates a text file with the base64encoded contents of the icons
 """
 
 
@@ -11,7 +11,7 @@ import glob
 
 icon_files = glob.glob("*.png")
 
-with open('icons.b64', 'w') as outfile:
+with open('icons.b64', 'w', encoding="utf-8") as outfile:
 
     for png in icon_files:
         icon_name = png[:-4].upper()

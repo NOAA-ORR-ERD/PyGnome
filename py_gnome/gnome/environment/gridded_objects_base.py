@@ -192,7 +192,7 @@ class Time(gridded.time.Time, GnomeId):
 
         t = []
 
-        with open(filename, 'r') as fd:
+        with open(filename, 'r', encoding="utf-8") as fd:
             for line in fd:
                 line = line.rstrip()
                 if line is not None:

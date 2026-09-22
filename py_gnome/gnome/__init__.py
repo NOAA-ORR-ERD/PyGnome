@@ -110,7 +110,7 @@ def initialize_log(config, logfile=None):
 
     '''
     if isinstance(config, str):
-        config = json.load(open(config, 'r'))
+        config = json.load(open(config, 'r', encoding="utf-8"))
 
     if logfile is not None:
         config['handlers']['file']['filename'] = logfile

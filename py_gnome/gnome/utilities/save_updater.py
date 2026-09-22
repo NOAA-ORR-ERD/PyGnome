@@ -69,7 +69,7 @@ def update_savefile(save_directory):
         # get current save file version
         allfiles = glob.glob('*')
         if 'version.txt' in allfiles:
-            with open('version.txt') as fp:
+            with open('version.txt', encoding="utf-8") as fp:
                 v = int(fp.readline())
         else:
             v = 0

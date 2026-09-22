@@ -196,11 +196,11 @@ def insert_names_table(table_text):
     """
     this = __file__
     tempfile = "names.temp.py"
-    with open(this) as infile:
+    with open(this, encoding="utf-8") as infile:
         contents = iter(infile.readlines())
 
 
-    with open(tempfile, 'w') as outfile:
+    with open(tempfile, 'w', encoding="utf-8") as outfile:
         for line in contents:
             outfile.write(line)
             if "**Name Mapping:**" in line:

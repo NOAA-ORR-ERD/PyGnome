@@ -129,7 +129,7 @@ def ReadBNA(filename, polytype="list", dtype=np.float64):
     The dtype parameter specifies what numpy data type you want the points
     data in -- it defaults to float (C double)
     """
-    fd = open(filename, 'r')
+    fd = open(filename, 'r', encoding="utf-8")
 
     if polytype == 'list':
         Output = []

@@ -485,7 +485,7 @@ class Wind(Timeseries, Environment):
 
     def _write_timeseries_to_file(self, datafile):
         '''write timeseries data to file '''
-        with open(datafile, 'w') as fd:
+        with open(datafile, 'w', encoding="utf-8") as fd:
             self._write_timeseries_to_fd(fd)
 
     def _write_timeseries_to_fd(self, fd):
