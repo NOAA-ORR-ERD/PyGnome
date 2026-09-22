@@ -4,62 +4,98 @@
 # and hopefully conda pacakges before too long
 
 variables:
-  IMAGE_NAME: 'registry.orr.noaa.gov/erd/environments/ubuntu-pixi:latest'
+  IMAGE_NAME: 'registry.orr.noaa.gov/erd/environments/ubuntu-pixi-build:latest'
   GIT_DEPTH: 2
 
 stages:
-  - test_code
-  - test_wheels
   - build
+  - test
 
-default:
-  before_script:
-    - apt-get update
-    - apt-get upgrade -y
-    - apt-get install git g++ make libxext-dev libsm-dev libxrender-dev -y
-
-test_dev:
-  stage: test_code
+build_wheels:
+  stage: build
   allow_failure: false
   image: $IMAGE_NAME
+  # before_script:
+  #   - apt-get update
+  #   - apt-get upgrade -y
+  #   - apt-get install git g++ make libxext-dev libsm-dev libxrender-dev -y
   script:
     - cd py_gnome
-    - pixi run test
+    - pixi run -e build312 build_wheel
+    - pixi run -e build313 build_wheel
+  artifacts:
+    paths:
+      - py_gnome/dist/
+
+build_wheels_windows:
+  stage: build
+  allow_failure: false
+  # before_script: [] # so it won't try to install the linux stuff
+  tags:
+    - windows-build-image-2026
+  script:
+    - cd py_gnome
+    - pixi run -e build312 build_wheel
+    - pixi run -e build313 build_wheel
+  artifacts:
+    paths:
+      - py_gnome/dist/
+
+build_docs:
+  stage: test
+  allow_failure: true
+  image: $IMAGE_NAME
+  # before_script:
+  #   - apt-get install make
+
+  script:
+    - cd py_gnome
+    - pixi run build_docs
 
 lint_pygnome:
-  stage: test_code
+  stage: build
   allow_failure: true
   image: $IMAGE_NAME
   script:
     - cd py_gnome
     - pixi run lint
 
+
+test_code:
+  stage: test
+  allow_failure: false
+  image: $IMAGE_NAME
+  script:
+    - cd py_gnome
+    - pixi run -e test312 test_wheel
+    - pixi run -e test313 test_wheel
+
 run_example_scripts:
-  stage: test_code
+  stage: test
   allow_failure: true
   image: $IMAGE_NAME
   script:
     - cd py_gnome
-    - pixi run run_example_scripts
+    - pixi run -e test313 run_example_scripts
 
 run_testing_scripts:
-  stage: test_code
+  stage: test
   allow_failure: true
   image: $IMAGE_NAME
   script:
     - cd py_gnome
-    - pixi run run_testing_scripts
+    - pixi run -e test313 run_testing_scripts
 
 run_input_file_examples:
-  stage: test_code
+  stage: test
   allow_failure: true
   image: $IMAGE_NAME
   script:
     - cd py_gnome
-    - pixi run run_input_file_examples
+    - pixi run -e test313 run_input_file_examples
 
-test_pygnome_windows:
-  stage: test_code
+test_windows:
+  stage: test
   allow_failure: true
   before_script: [] # so it won't try to install the linux stuff
   resource_group: windows # ensures a job is mutually exclusive
@@ -69,42 +105,8 @@ test_pygnome_windows:
     - windows-build-image-2026
   script:
     - cd py_gnome
-    - pixi run test
-
-test_wheels_multi_py:
-  stage: test_wheels
-  allow_failure: false
-  image: $IMAGE_NAME
-  script:
-    - cd py_gnome
-    - pixi run -e test312 test_wheel
-    - pixi run -e test313 test_wheel
-
-build_wheels:
-  stage: build
-  allow_failure: false
-  image: $IMAGE_NAME
-  script:
-    - cd py_gnome
-    - pixi run -e build312 build_wheel
-    - pixi run -e build313 build_wheel
-
-build_wheels_windows:
-  stage: build
-  allow_failure: false
-  before_script: [] # so it won't try to install the linux stuff
-  tags:
-    - windows-build-image-2026
-  script:
-    - cd py_gnome
-    - pixi run -e build312 build_wheel
-    - pixi run -e build313 build_wheel
+    - pixi run -e test312 test
+    - pixi run -e test313 test
 
 
-build_docs:
-  stage: build
-  allow_failure: true
-  image: $IMAGE_NAME
-  script:
-    - cd py_gnome
-    - pixi run build_docs
+
