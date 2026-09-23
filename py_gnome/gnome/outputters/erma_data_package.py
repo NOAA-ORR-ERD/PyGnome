@@ -16,7 +16,7 @@ from slugify import slugify
 import tempfile
 import zipfile
 
-from gnome._version import __version__
+from gnome import __version__
 from gnome.persist.extend_colander import FilenameSchema
 from gnome.utilities.geometry.polygons import PolygonSet
 from gnome.utilities.shapefile_builder import ParticleShapefileBuilder

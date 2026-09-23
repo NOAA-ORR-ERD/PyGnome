@@ -8,6 +8,7 @@ from datetime import timedelta, datetime
 import zipfile
 import base64
 
+from gnome import __version__
 from gnome.basic_types import oil_status
 
 from .outputter import Outputter, OutputterFilenameMixin, BaseOutputterSchema
@@ -103,6 +104,7 @@ class KMZOutput(OutputterFilenameMixin, Outputter):
                             kml_name=self.kml_name,
                             valid_timestring=model_start_time.strftime(self.time_formatter),
                             issued_timestring=datetime.now().strftime(self.time_formatter),
+                            version=__version__,
                             )
                     ]
 

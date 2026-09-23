@@ -21,7 +21,7 @@ project = 'PyGNOME'
 copyright = 'Public Domain'
 author = 'NOAA Emergency Response Division'
 
-from gnome._version import __version__ as release
+from gnome import __version__ as release
 
 version = ".".join(release.split(".")[:2])
 
