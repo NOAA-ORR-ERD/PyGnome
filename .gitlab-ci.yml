@@ -30,6 +30,8 @@ build_wheels:
 build_wheels_windows:
   stage: build
   allow_failure: false
+  variables:
+    GIT_STRATEGY: clone
   # before_script: [] # so it won't try to install the linux stuff
   tags:
     - windows-build-image-2026
@@ -59,7 +61,6 @@ lint_pygnome:
   script:
     - cd py_gnome
     - pixi run lint
-
 
 test_code:
   stage: test
@@ -96,7 +97,9 @@ run_input_file_examples:
 
 test_windows:
   stage: test
-  allow_failure: true
+  allow_failure: false
+#  variables:
+#    GIT_STRATEGY: clone
   before_script: [] # so it won't try to install the linux stuff
   resource_group: windows # ensures a job is mutually exclusive
   variables:
