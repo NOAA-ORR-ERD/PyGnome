@@ -65,7 +65,7 @@ from gnome.spills.spill import (point_line_spill,
 from gnome.spills.substance import NonWeatheringSubstance
 from gnome.spills.gnome_oil import GnomeOil
 
-from gnome.environment.wind import PointWind, Wind, constant_wind, wind_from_values
+from gnome.environment.wind import PointWind, constant_wind, wind_from_values
 from gnome.movers.c_wind_movers import (constant_point_wind_mover,
                                         point_wind_mover_from_file,
                                         )
