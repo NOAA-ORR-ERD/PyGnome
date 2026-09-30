@@ -472,7 +472,7 @@ class ParamMap(GnomeMap):
                         from the center.
         """
         warnings.warn("ParamMap is deprecated. Code is no longer being updated", DeprecationWarning)
-        # Fixme: we should use Pyton keyword arguments, rather than
+        # Fixme: we should use Python keyword arguments, rather than
         #        fudging it by hand with kwargs.pop
         refloat_halflife = kwargs.pop('refloat_halflife', 1)
         self._refloat_halflife = refloat_halflife * 3600
@@ -1201,6 +1201,7 @@ class MapFromBNA(RasterMap):
                  filename,
                  raster_size=4096 * 4096,
                  map_bounds=None,
+                 refloat_halflife=1,
                  spillable_area=None,
                  land_polys=None,
                  shift_lons=0,

@@ -78,7 +78,7 @@ class SpillSchema(ObjTypeSchema):
     )
     amount = SchemaNode(
         Float(),
-        missing=0, save=True, update=True
+        missing=1, save=True, update=True
     )
 #     amount_uncertainty_scale = SchemaNode(
 #         Float(), missing=drop, save=True, update=True
@@ -117,7 +117,7 @@ class Spill(BaseSpill):
     def __init__(self,
                  on=True,  # fixme: this shouldn't be the first parameter!
                  num_elements=1000,
-                 amount=0,  # could be volume or mass
+                 amount=1,  # could be volume or mass
                  units='kg',
                  substance=None,
                  release=None,
@@ -131,11 +131,11 @@ class Spill(BaseSpill):
 
         :param num_elements=1000: number of elements to use
 
-        :param amount=0: Amount of the release -- can be volume or mass.
+        :param amount=1: Amount of the release -- can be volume or mass.
                          which is determined by the units
         :type amount: float (volume or mass)
 
-        :param units: units of the amount: can be volume or mass, any units
+        :param units='kg': units of the amount: can be volume or mass, any units
                       supported by nucos. (e.g. tonnes, kg, bbl, gal, )
         :type units: str
 
@@ -527,7 +527,7 @@ def point_line_spill(num_elements,
                      end_position=None,
                      end_release_time=None,
                      substance=None,
-                     amount=0,
+                     amount=1,
                      units='kg',
                      water=None,
                      on=True,
@@ -561,10 +561,10 @@ def point_line_spill(num_elements,
     :param substance=None: Type of oil spilled.
     :type substance: Substance object
 
-    :param amount=None: mass or volume of oil spilled
+    :param amount=1: mass or volume of oil spilled
     :type amount: float
 
-    :param units=None: units for amount spilled
+    :param units='kg': units for amount spilled
     :type units: str
 
     :param windage_range: Percentage range for windage.
@@ -613,7 +613,7 @@ def surface_point_line_spill(num_elements,
                              end_position=None,
                              end_release_time=None,
                              substance=None,
-                             amount=0,
+                             amount=1,
                              units='kg',
                              water=None,
                              on=True,
@@ -645,10 +645,10 @@ def surface_point_line_spill(num_elements,
     :param substance=None: Type of oil spilled.
     :type substance: Substance object
 
-    :param amount: mass or volume of oil spilled, defaults to None
+    :param amount=1: mass or volume of oil spilled, defaults to None
     :type amount: float
 
-    :param units: units for amount spilled, defaults to None
+    :param units='kg': units for amount spilled, defaults to None
     :type units: str
 
     :param windage_range: Percentage range for windage.
@@ -726,9 +726,9 @@ def grid_spill(bounds,
     :param substance=None: Substance spilled.
     :type substance: Substance object
 
-    :param float amount=None: mass or volume of oil spilled
+    :param float amount=1: mass or volume of oil spilled
 
-    :param str units=None: units for amount spilled
+    :param str units='kg': units for amount spilled
 
     :param release_time: time the LEs are released (datetime object)
     :type release_time: iso datetime string or datetime.datetime
@@ -772,7 +772,7 @@ def subsurface_spill(num_elements,
                      distribution_type='droplet_size',
                      end_release_time=None,
                      substance=None,
-                     amount=0,
+                     amount=1,
                      units='kg',
                      water=None,
                      on=True,
@@ -820,9 +820,9 @@ def subsurface_spill(num_elements,
 
     :param str density_units='kg/m^3':
 
-    :param float amount=None: mass or volume of oil spilled.
+    :param float amount=1: mass or volume of oil spilled.
 
-    :param str units=None: must provide units for amount spilled.
+    :param str units='kg': must provide units for amount spilled.
 
     :param windage_range: Percentage range for windage.
                           Active only for surface particles
@@ -898,7 +898,7 @@ def spatial_release_spill(start_positions,
                           substance=None,
                           water=None,
                           on=True,
-                          amount=0,
+                          amount=1,
                           units='kg',
                           windage_range=None,
                           windage_persist=None,
@@ -929,7 +929,7 @@ def polygon_release_spill(filename,
                           substance=None,
                           water=None,
                           on=True,
-                          amount=0,
+                          amount=1,
                           units='kg',
                           windage_range=None,
                           windage_persist=None,

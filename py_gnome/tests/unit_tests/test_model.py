@@ -1790,7 +1790,8 @@ def test_get_spill_property():
     model.step()
     prop = model.get_spill_property('mass', ucert=True)
     print(repr(prop))
-    assert np.array_equal(prop, [0., 0., 0., 0., 0., 0., 0., 0., 0., 0.])
+    #assert np.array_equal(prop, [0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]) # default mass is now 1
+    assert np.array_equal(prop, [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1])
 
 def test_step_output():
     """

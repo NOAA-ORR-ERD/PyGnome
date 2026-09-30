@@ -159,7 +159,7 @@ class TestPointLineRelease():
         assert r2._release_ts.at(None, r2.release_time + timedelta(seconds=1)) == 1000
         assert r2._release_ts.at(None, r2.release_time + timedelta(seconds=2)) == 1000
         assert np.all(r2._release_ts.data == np.linspace(1000,1000, len(r2._release_ts.data)))
-        assert r2._mass_per_le == 0
+        assert r2._mass_per_le == 0.001		# default mass is now 1
         assert len(r2._pos_ts.time) == 2
 
 
@@ -450,7 +450,7 @@ class TestPolygonRelease:
         assert sr2._release_ts.at(None, sr2.release_time + timedelta(seconds=1)) == 1000
         assert sr2._release_ts.at(None, sr2.release_time + timedelta(seconds=2)) == 1000
         assert np.all(sr2._release_ts.data == np.linspace(1000,1000, len(sr2._release_ts.data)))
-        assert sr2._mass_per_le == 0
+        assert sr2._mass_per_le == 0.001	# default mass is now 1
 
     def test_rewind(self, sr1):
         sr1.prepare_for_model_run(900)
