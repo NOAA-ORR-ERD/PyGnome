@@ -16,6 +16,8 @@ HERE = Path(__file__).parent
 cur_file = gs.get_datafile((HERE / '3D_ROMS_example_Honolulu.nc'), 'gridded_test_files')
 
 curr = gs.GridCurrent.from_netCDF(HERE / cur_file)
+curr.depth.num_layers = 1
+curr.depth.num_levels = 1
 
 # some grid info
 min_lat = curr.grid.node_lat.min()
@@ -37,7 +39,7 @@ model = gs.Model(start_time=curr.data_start,
 model.map = gs.MapFromBNA(HERE / "oahu_coast.bna")
 model.movers += gs.CurrentMover(curr)
 model.movers += gs.RandomMover()
-model.spills += gs.point_line_spill(num_elements=100,
+model.spills += gs.point_line_spill(num_elements=100, 
                                     start_position=spill_location,
                                     release_time=model.start_time
                                     )
