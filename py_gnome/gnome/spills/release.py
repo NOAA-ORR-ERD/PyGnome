@@ -139,7 +139,7 @@ class Release(GnomeId):
                  num_per_timestep=None,
                  end_release_time=None,
                  custom_positions=None,
-                 release_mass=0,
+                 release_mass=1,
                  retain_initial_positions=False,
                  timezone_offset=TZOffset(),
                  **kwargs):
@@ -169,7 +169,7 @@ class Release(GnomeId):
             the end release time. If None, then release is instantaneous
         :type end_release_time: datetime.datetime
 
-        :param release_mass=0: optional. This is the mass released in kilograms.
+        :param release_mass=1: optional. This is the mass released in kilograms.
         :type release_mass: integer
 
         :param retain_initial_positions: Optional. If True, each LE will retain
@@ -266,7 +266,7 @@ class Release(GnomeId):
     @release_mass.setter
     def release_mass(self, val):
         if val is None or val < 0:
-            val = 0
+            val = 1
         self._release_mass = val
 
     @property
@@ -533,7 +533,7 @@ class PointLineRelease(Release):
                  num_per_timestep=None,
                  end_release_time=None,
                  end_position=None,
-                 release_mass=0,
+                 release_mass=1,
                  **kwargs):
         """
         Required Arguments:
@@ -565,7 +565,7 @@ class PointLineRelease(Release):
             If None, then release from a point source
         :type end_position: 3-tuple of floats (long, lat, z)
 
-        :param release_mass=0: optional. This is the mass released in kilograms.
+        :param release_mass=1: optional. This is the mass released in kilograms.
         :type release_mass: integer
         """
 
@@ -768,7 +768,7 @@ class PolygonRelease(Release):
         :param end_release_time=None: for a time varying release, the end release time. If None, then release is instantaneous
         :type end_release_time: datetime.datetime
 
-        :param release_mass=0: This is the mass released in kilograms.
+        :param release_mass=1: This is the mass released in kilograms.
         :type release_mass: integer
         """
         if filename is not None and features is not None:
@@ -1033,7 +1033,7 @@ class GridRelease(Release):
 
     _schema = GridReleaseSchema
 
-    def __init__(self, release_time, bounds, resolution, release_mass=0):
+    def __init__(self, release_time, bounds, resolution, release_mass=1):
         """
         Release from a 2-D grid of points.
 
@@ -1054,7 +1054,7 @@ class GridRelease(Release):
         :type resolution: length-2 tuple of integers: `(longitude_res, latitude_res)`
                           or single integer.
 
-        :param release_mass=0: optional. This is the mass released in kilograms.
+        :param release_mass=1: optional. This is the mass released in kilograms.
         :type release_mass: integer
 
         """
@@ -1448,7 +1448,7 @@ class SubsurfaceRelease(PointLineRelease):
                  num_per_timestep=None,
                  end_release_time=None,
                  end_position=None,
-                 release_mass=0,
+                 release_mass=1,
                  **kwargs):
         """
         released as PointLinearRelease with additional features
