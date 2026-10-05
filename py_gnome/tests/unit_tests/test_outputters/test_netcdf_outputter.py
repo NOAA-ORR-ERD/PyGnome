@@ -862,6 +862,17 @@ def test_surface_concentration_output(model):
             # FIXME -- maybe should test something more robust...
             assert not np.all(surface_conc[:] == 0.0)
 
+    # test that subsurface spill doesn't calculate the concentration
+    model.rewind()
+    model.spills[0].release.start_position[2] = 5
+    _run_model(model)
+    with nc.Dataset(file_) as data:
+        dv = data.variables
+        for _step in range(model.num_time_steps):
+            surface_conc = dv['surface_concentration']
+            # FIXME -- maybe should test something more robust...
+            assert np.all(surface_conc[:] == 0.0)
+
 
 def test_model_stops_in_middle(model):
     """
