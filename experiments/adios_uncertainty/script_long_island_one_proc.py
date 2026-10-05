@@ -72,7 +72,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     series[3] = (start_time + timedelta(hours=42), (10, 180))
     series[4] = (start_time + timedelta(hours=54), (10, 225))
 
-    wind = Wind(timeseries=series, units='m/s')
+    wind = PointWind(timeseries=series, units='m/s')
     model.movers += PointWindMover(wind)
 
     print 'adding a cats mover:'

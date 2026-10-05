@@ -5,25 +5,29 @@ Environment objects
 import copy
 from functools import lru_cache
 
-from colander import SchemaNode, MappingSchema, Float, String, drop, OneOf
-
 import gsw
 import nucos as uc
+from colander import Float, MappingSchema, OneOf, SchemaNode, String, drop
 
 from gnome import constants
-from gnome.utilities.time_utils import TZOffset
+from gnome.gnomeobject import GnomeId, GnomeObjMeta
 from gnome.persist import base_schema
-from gnome.gnomeobject import GnomeObjMeta, GnomeId
+from gnome.utilities.time_utils import TZOffset
 
 from .. import _valid_units
 
+
 class EnvironmentMeta(GnomeObjMeta):
+    """
+    metaclass used by Environment objects to auto-create the
+    _subclasses attribute.
+    """
     def __init__(self, _name, _bases, _dct):
         self._subclasses = []
         for c in self.__mro__:
             if hasattr(c, '_subclasses') and c is not self:
                 c._subclasses.append(self)
-        super(EnvironmentMeta, self).__init__(_name, _bases, _dct)
+        super().__init__(_name, _bases, _dct)
 
 
 class Environment(GnomeId):
@@ -31,6 +35,8 @@ class Environment(GnomeId):
     A base class for all classes in environment module.
     This is primarily to define a dtype such that the OrderedCollection
     defined in the Model object requires it.
+
+    It also should define the API -- thought that's not totally consitent.
     """
     _subclasses = []
 
@@ -44,6 +50,9 @@ class Environment(GnomeId):
     __metaclass__ = EnvironmentMeta
 
     # fixme: are there any **kwargs to be passed on?
+    #        Also -- name should be a standard parameter
+    #        but adding it broke some tests, so leaving
+    #        it out for now
     def __init__(self,
                  make_default_refs=True,
                  *,
@@ -52,15 +61,36 @@ class Environment(GnomeId):
         '''
         base class for environment objects
 
+        base class ``__init__`` should be called by subclass ``__init__`` methods
+
+        :param make_default_refs=True: Whether to add to model environment
+                                       collection for out-discovery by movers
+                                       and weathereres.
+
+        :param timezone_offset=TZOffset(): Timezone offset, if there is one.
+
         :param name=None:
+
         '''
         self.make_default_refs = make_default_refs
         super().__init__(**kwargs)
-        self._timezone_offset=timezone_offset
+        self._timezone_offset = timezone_offset
+#        self.timezone_offset = timezone_offset
+        # Fixme: this *should* be calling the property
+        #        but gridded_objects_base setter is broken
+        #        or maybe it's the gridded Time object
+        #        but either way, it doesn't work correctly
         self.array_types = {}
 
     @property
     def timezone_offset(self):
+        """
+        The Timezone offset for this Environment object.
+
+        It can be an empty TZOffset object, in which case, it's "naive" time.
+        """
+        # done this way, as _get_timezone_offset is defined in some
+        # subclasses .. probably should be refactored
         return self._get_timezone_offset()
     
     def _get_timezone_offset(self):
@@ -68,8 +98,9 @@ class Environment(GnomeId):
     
     @timezone_offset.setter
     def timezone_offset(self, value):
-        #Due to the possibility of multiple time objects, we need to check for and set the offset
-        #for all of them. Subclasses should re-implement this as necessary to maintain consistency
+        # Due to the possibility of multiple time objects, we need to check for and set
+        # the offset for all of them.
+        # Subclasses should re-implement _set_timezone_offset to do the right thing.
         if value is None or isinstance(value, TZOffset):
             self._set_timezone_offset(value)
         else:
@@ -97,7 +128,7 @@ class Environment(GnomeId):
         :param extrapolate=False: if True, extrapolation will be supported
         :type extrapolate: boolean (True or False)
 
-        :return: returns a Nx2 or Nx3 array of interpolated values
+        :return: returns a Nx1, Nx2 or Nx3 array of interpolated values
         :rtype: Nx2 or Nx3 numpy array of values
         """
         raise NotImplementedError("Environment subclasses must implement"
@@ -107,6 +138,9 @@ class Environment(GnomeId):
     # alternatively, we could use -InfTime and IntTime as defaults
     @property
     def data_start(self):
+        """
+        start of the underlying data -- datetime object
+        """
         raise NotImplementedError
 
     @data_start.setter
@@ -115,6 +149,9 @@ class Environment(GnomeId):
 
     @property
     def data_stop(self):
+        """
+        end of the underlying data -- datetime object
+        """
         raise NotImplementedError
 
     @data_stop.setter
@@ -126,21 +163,18 @@ class Environment(GnomeId):
         Override this method if a derived environment class needs to perform
         any actions prior to a model run
         """
-        pass
 
     def prepare_for_model_step(self, model_time):
         """
         Override this method if a derived environment class needs to perform
         any actions prior to a model step
         """
-        pass
 
     def post_model_run(self):
         """
         Override this method if a derived environment class needs to perform
         any actions after a model run is complete (StopIteration triggered)
         """
-        pass
 
 
 
@@ -166,13 +200,14 @@ def env_from_netCDF(filename=None, dataset=None,
             obj = c.from_netCDF(**klskwargs)
         except Exception as e:
             import logging
-            logging.warn('''Class {0} could not be constituted from netCDF file
-                                    Exception: {1}'''.format(c.__name__, e))
+            logging.warning(f'''Class {c.__name__} could not be constituted from netCDF file
+                                    Exception: {e}''')
         return obj
 
-    from gnome.environment.gridded_objects_base import Variable, VectorVariable
     from gridded.utilities import get_dataset
-    from gnome.environment import PyGrid, Environment
+
+    from gnome.environment import Environment, PyGrid
+    from gnome.environment.gridded_objects_base import Variable, VectorVariable
 
     new_env = []
 
@@ -269,9 +304,9 @@ def get_file_analysis(filename):
     # classes = copy.copy(Environment._subclasses)
 
     if len(env) > 0:
-        report = ['Can create {0} types of environment objects'
-                  .format(len([env.__class__ for e in env]))]
-        report.append('Types are: {0}'.format(str([e.__class__ for e in env])))
+        report = [f'Can create {len([env.__class__ for e in env])} types of environment objects'
+                  ]
+        report.append(f'Types are: {[e.__class__ for e in env]!s}')
 
     report = report + grid_detection_report(filename)
 
@@ -288,8 +323,8 @@ def grid_detection_report(filename):
         report.append('    A standard grid topology was not found in the file')
         report.append('    topology breakdown future feature')
     else:
-        report.append('    A grid topology was found in the file: {0}'
-                      .format(topo))
+        report.append(f'    A grid topology was found in the file: {topo}'
+                      )
 
     return report
 
@@ -407,9 +442,9 @@ class Water(Environment):
             self.units = units
 
     def __repr__(self):
-        info = ("{0.__class__.__module__}.{0.__class__.__name__}"
-                "(temperature={0.temperature},"
-                " salinity={0.salinity})").format(self)
+        info = (f"{self.__class__.__module__}.{self.__class__.__name__}"
+                f"(temperature={self.temperature},"
+                f" salinity={self.salinity})")
         return info
 
     __str__ = __repr__
@@ -491,8 +526,8 @@ class Water(Environment):
         for prop, unit in u_dict.iteritems():
             if prop in self._units_type:
                 if unit not in self._units_type[prop][1]:
-                    msg = ("{0} are invalid units for {1}.  Ignore it."
-                           .format(unit, prop))
+                    msg = (f"{unit} are invalid units for {prop}.  Ignore it."
+                           )
                     self.logger.error(msg)
                     # should we raise error?
                     raise uc.InvalidUnitError(msg)

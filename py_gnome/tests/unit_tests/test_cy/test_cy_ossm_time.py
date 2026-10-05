@@ -7,6 +7,7 @@ Unit tests for CyOSSMTime class
 
 
 import os
+from datetime import datetime
 
 from pytest import raises
 import pytest
@@ -16,6 +17,7 @@ import numpy as np
 # import basic_types and subsequently lib_gnome
 from gnome import basic_types
 from gnome.basic_types import ts_format, seconds, velocity_rec
+from gnome.utilities import time_utils
 
 from gnome.cy_gnome.cy_ossm_time import CyOSSMTime, CyTimeseries
 
@@ -187,6 +189,23 @@ class TestCyTimeseries(object):
         actual = np.array(self.tval['value'], dtype=velocity_rec)
         time = np.array(self.tval['time'], dtype=seconds)
         vel_rec, _err = ossm.get_time_value(time)
+        print(vel_rec)
+
+        tol = 1e-6
+        msg = ('{0} is not within a tolerance of '
+               '{1}'.format('get_time_value', tol))
+
+        np.testing.assert_allclose(vel_rec['u'], actual['u'], tol, tol, msg, 0)
+        np.testing.assert_allclose(vel_rec['v'], actual['v'], tol, tol, msg, 0)
+
+    @pytest.mark.parametrize('obj', [CyOSSMTime, CyTimeseries])
+    def test_get_time_value_2040(self, obj):
+        ossm = obj(filename=testdata['timeseries']['wind_ts_2040'],
+                    file_format=ts_format.magnitude_direction)
+        actual = np.array((3.0277e-12, 9.7736), dtype=velocity_rec)
+        t = time_utils.date_to_sec(datetime(2040, 9, 7, 14, 49))
+
+        vel_rec, _err = ossm.get_time_value(t)
         print(vel_rec)
 
         tol = 1e-6

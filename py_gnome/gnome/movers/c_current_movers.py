@@ -231,7 +231,7 @@ class CatsMover(CurrentMoversBase):
             raise ValueError('Path for Cats filename does not exist: {0}'
                              .format(filename))
 
-        f = open(filename)
+        f = open(filename, encoding="utf-8")
         header = f.readline()
         f.close()
         header.strip()

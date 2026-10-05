@@ -15,6 +15,7 @@ import numpy as np
 
 from gnome.persist import (ObjTypeSchema, SchemaNode, String, Float, MappingSchema, null, drop)
 from gnome.gnomeobject import GnomeId
+from gnome import basic_types
 
 
 class TZOffsetSchema(MappingSchema):
@@ -192,7 +193,8 @@ def date_to_sec(date_times):
         timetuple = dt.timetuple()[:-1] + (0,)
         t_list.append(time.mktime(tuple(timetuple)))
 
-    return np.array(t_list, dtype=np.uint32) if not scalar else t_list[0]
+    #return np.array(t_list, dtype=np.uint32) if not scalar else t_list[0]
+    return np.array(t_list, dtype=basic_types.seconds) if not scalar else t_list[0]
 
 
 def sec_to_date(seconds):
@@ -211,7 +213,8 @@ def sec_to_date(seconds):
 
     FIXME: this may be broken there!!!!!
     """
-    t_array = np.asarray(seconds, dtype=np.uint32).reshape(-1)
+    #t_array = np.asarray(seconds, dtype=np.uint32).reshape(-1)
+    t_array = np.asarray(seconds, dtype=basic_types.seconds).reshape(-1)
     d_list = [sec_to_datetime(sec) for sec in t_array]
 
     if len(d_list) == 1:

@@ -136,7 +136,8 @@ void Secs2DateStrings(unsigned long seconds, CHARPTR dateLong, CHARPTR dateShort
 void Secs2DateString(unsigned long seconds, CHARPTR s);
 void Secs2DateString2(unsigned long seconds, CHARPTR s);
 void Secs2DateStringNetCDF(unsigned long seconds, CHARPTR s);
-unsigned long DateString2Secs(CHARPTR s);
+Seconds DateString2Secs(CHARPTR s);
+//unsigned long DateString2Secs(CHARPTR s);
 char *Date2String(DateTimeRec *time, char *s);
 char *Date2KmlString(DateTimeRec *time, char *s);
 void SplitPathFile(CHARPTR fullPath, CHARPTR fileName);

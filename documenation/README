@@ -6,7 +6,7 @@ For API documenation specifically for 'gnome' project, look in
 Contents:
 ==========
 
-*. script_splots/. - python script and ipython notebook containing example model
+*. script_splots/. - python script containing example model
    that sets up a spill from a splots datafile
 
 *. weathering/. - documentation of weathering algorithms

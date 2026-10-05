@@ -91,9 +91,9 @@ series from a file called "mywind.txt" (this file format is described in the :do
 
     from gnome.model import Model
     from gnome.weatherers import Evaporation
-    from gnome.environment import Water, Wind
+    from gnome.scripting import Water, PointWind
     model = Model()
-    wind = Wind(filename="path_2_file/mywind.txt")
+    wind = PointWind(filename="path_2_file/mywind.txt")
     water = Water(temperature=300.0, salinity=35.0) #temperature in Kelvin, salinity in psu
     model.weatherers += Evaporation(wind=wind,water=water)
 
@@ -107,9 +107,9 @@ Note that the wind is not explicitly required but is needed by the Waves object.
 
     from gnome.model import Model
     from gnome.weatherers import Evaporation, NaturalDispersion
-    from gnome.environment import Water, Wind, Waves
+    from gnome.scripting import Water, PointWind, Waves
     model = Model()
-    wind = Wind(filename="path_2_file/mywind.txt")
+    wind = PointWind(filename="path_2_file/mywind.txt")
     waves = Waves(wind)
     water = Water(temperature=300.0, salinity=35.0) #temperature in Kelvin, salinity in psu
     model.weatherers += Evaporation(wind=wind,water=water)
@@ -124,9 +124,9 @@ Note that the wind is not explicitly required but is needed by the Waves object.
 
     from gnome.model import Model
     from gnome.weatherers import Evaporation, NaturalDispersion
-    from gnome.environment import Water, Wind, Waves
+    from gnome.environment import Water, PointWind, Waves
     model = Model()
-    wind = Wind(filename="path_2_file/mywind.txt")
+    wind = PointWind(filename="path_2_file/mywind.txt")
     waves = Waves(wind)
     water = Water(temperature=300.0, salinity=35.0) #temperature in Kelvin, salinity in psu
     model.weatherers += Evaporation(wind=wind,water=water)

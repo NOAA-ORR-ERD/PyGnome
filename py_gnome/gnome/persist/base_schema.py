@@ -600,7 +600,7 @@ class ObjType(SchemaType):
             fp = saveloc.open(fname)
         else:
             fname = os.path.join(saveloc, fname)
-            fp = open(fname)
+            fp = open(fname, encoding="utf-8")
         return json.load(fp)
 
 

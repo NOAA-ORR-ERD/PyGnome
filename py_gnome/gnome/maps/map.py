@@ -170,32 +170,6 @@ class GnomeMap(GnomeId):
         return polys
 
 
-    # def _polygon_set_from_points(self, poly):
-    #     # hmm -- this doesn't seem to be used at all
-    #     # fixme: is this not in the geometry module??
-    #     #.       but maybe should get rid of the PolygonSet object anyway
-    #     '''
-    #     create PolygonSet() object from list of polygons which in turn is a
-    #     list of points
-    #     :returns: PolygonSet() object
-    #     '''
-    #     x = PolygonSet()
-    #     for p in poly:
-    #         x.append(p)
-    #     return x
-
-    # does not seem to be used anywhere
-    # def _attr_array_to_dict(self, np_array):
-    #     '''
-    #     convert np_array to list of tuples, used for map_bounds,
-    #     spillable_area
-
-    #     Fixme: why is this needed? numpy arrays are already a
-    #            sequence of sequences.
-    #            And why is this called _to_dict ???
-    #     '''
-    #     return list(map(tuple, np_array.tolist()))
-
     def _attr_from_list_to_array(self, l_):
         '''
         dict returned as list of tuples to be converted to numpy array.
@@ -208,7 +182,9 @@ class GnomeMap(GnomeId):
         """
         Bounds of the map -- an NX2 array of float describing a polygon.
 
-        [(lon, lat), (lon, lat), ...]
+        ``[(lon, lat), (lon, lat), ...]``
+
+        ``None`` or "global" will set it to the whole world.
         """
         return self._map_bounds
 
@@ -216,11 +192,12 @@ class GnomeMap(GnomeId):
     def map_bounds(self, mb):
         try:
             bounds = np.array(mb, dtype=np.float64)
-            bounds.shape = (-1, 2)
+            #bounds.shape = (-1, 2)	# deprecated
+            bounds = bounds.reshape(-1, 2)
         except ValueError as exp:
             if mb is None or mb == 'global':
                 bounds = np.array(((-360, -90), (-360, 90),
-                               (360, 90), (360, -90)),
+                                  (360, 90), (360, -90)),
                               dtype=np.float64)
             else:
                 raise ValueError(f"{mb} is not a valid value for map_bounds") from exp
@@ -495,6 +472,8 @@ class ParamMap(GnomeMap):
                         from the center.
         """
         warnings.warn("ParamMap is deprecated. Code is no longer being updated", DeprecationWarning)
+        # Fixme: we should use Python keyword arguments, rather than
+        #        fudging it by hand with kwargs.pop
         refloat_halflife = kwargs.pop('refloat_halflife', 1)
         self._refloat_halflife = refloat_halflife * 3600
         self.build(center, distance, bearing, units)
@@ -706,9 +685,6 @@ class ParamMap(GnomeMap):
             rnd = np.random.uniform(0, 1, len(r_idx))
 
             # subset of indices that will refloat
-            # maybe we should rename refloat_probability since
-            # rnd <= refloat_probability to
-            # refloat, maybe call it stay_on_land_probability
             r_idx = r_idx[np.where(rnd <= refloat_probability)[0]]
         elif self._refloat_halflife < 0.0:
             # fake for nothing gets refloated.
@@ -798,7 +774,7 @@ class RasterMap(GnomeMap):
         :param refloat_halflife: The halflife for refloating off land
                                  -- assumed to be the same for all land.
                                  0.0 means all refloat every time step
-                                 < 0.0 means never re-float.
+                                 < 0.0 or Inf means never re-float.
         :type refloat_halflife: float. Units are hours
 
         :param map_bounds: The polygon bounding the map -- could be larger
@@ -1225,6 +1201,7 @@ class MapFromBNA(RasterMap):
                  filename,
                  raster_size=4096 * 4096,
                  map_bounds=None,
+                 refloat_halflife=1,
                  spillable_area=None,
                  land_polys=None,
                  shift_lons=0,
@@ -1251,7 +1228,11 @@ class MapFromBNA(RasterMap):
                            Accepted values:
                            0: do nothing. 180: shift to -180--180. 360: shift to 0--360
 
-        :param refloat_halflife: the half-life (in hours) for the re-floating.
+        :param refloat_halflife=1: The halflife for refloating off land
+                                 -- assumed to be the same for all land.
+                                 0.0 means all refloat every time step
+                                 < 0.0 or Inf means never re-float.
+        :type refloat_halflife: float. Units are hours
 
         :param map_bounds: The polygon bounding the map. If any elements are
                            outside the map bounds, they are removed from the simulation.

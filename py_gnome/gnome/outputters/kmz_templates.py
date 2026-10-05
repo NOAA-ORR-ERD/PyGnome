@@ -22,7 +22,8 @@ header_template = """<?xml version="1.0" encoding="UTF-8"?>
     <open>1</open>
     <description><![CDATA[<b>Valid for:</b> {valid_timestring}<br>
                           <b>Issued:</b>{issued_timestring} <br>
-                          {caveat}]]>
+                          {caveat} <br>
+                          Produced with PyGnome version: {version}]]>
     </description>
 
     <Style id="RedDotIcon">

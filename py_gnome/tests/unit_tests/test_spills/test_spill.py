@@ -94,8 +94,8 @@ class TestSpill:
                 assert to_rel == 0
 
     def test_amount(self, sp):
-        assert sp.amount == 0
-        assert sp.release.release_mass == 0
+        assert sp.amount == 1
+        assert sp.release.release_mass == 1
         sp.units = 'm^3'
         sp.amount = 10
         assert sp.release.release_mass == 10 * sp.substance.standard_density

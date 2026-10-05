@@ -893,7 +893,7 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
         obj_json = self._schema()._save(self, zipfile_=zipfile_, refs=refs)
 
         zipfile_.writestr('version.txt', SAVEFILE_VERSION)
-        zipfile_.writestr('pygnome_version.txt', gnome._version.__version__)
+        zipfile_.writestr('pygnome_version.txt', gnome.__version__)
 
         if saveloc is None:
             log.info('Returning open zipfile in memory')
@@ -936,7 +936,7 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
                 if filename:
                     fn = os.path.join(saveloc, filename)
 
-                    with open(fn) as fp:
+                    with open(fn, encoding="utf-8") as fp:
                         json_ = json.load(fp)
 
                     return cls._schema().load(json_, saveloc=saveloc,
@@ -945,7 +945,7 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
                     search = os.path.join(saveloc, '*.json')
 
                     for fn in glob.glob(search):
-                        with open(fn) as fp:
+                        with open(fn, encoding="utf-8") as fp:
                             json_ = json.load(fp)
                             if 'obj_type' in json_:
                                 obj_cls = class_from_objtype(json_['obj_type'])
@@ -965,7 +965,7 @@ class GnomeId(AddLogger, metaclass=GnomeObjMeta):
                 return cls.load(saveloc=tempdir, filename=filename, refs=refs)
             else:
                 # saveloc is .json file
-                with open(saveloc, 'r') as fp:
+                with open(saveloc, 'r', encoding="utf-8") as fp:
                     json_ = json.load(fp)
 
                 if 'obj_type' in json:

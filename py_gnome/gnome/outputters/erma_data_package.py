@@ -16,6 +16,7 @@ from slugify import slugify
 import tempfile
 import zipfile
 
+from gnome import __version__
 from gnome.persist.extend_colander import FilenameSchema
 from gnome.utilities.geometry.polygons import PolygonSet
 from gnome.utilities.shapefile_builder import ParticleShapefileBuilder
@@ -284,6 +285,8 @@ class ERMADataPackageOutput(Outputter):
         # We need to pre-load our templates from json files and then use them later
         # to build our layers and mapfile definitions.
         self._layer_template = self._load_json_template('layer_template.json')
+        # We add the pygnome version to the layer template that is used
+        self._layer_template['additional_metainfo'] = f'Model outputs generated with PyGnome Version: {__version__}'
         self._contour_template = self._load_json_template('default_contour_template.json')
         self._polygon_cartoline_template = self._load_json_template('default_polygon_cartoline_template.json')
         self._polygon_template = self._load_json_template('default_polygon_template.json')

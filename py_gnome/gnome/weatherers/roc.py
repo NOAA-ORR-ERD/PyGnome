@@ -309,7 +309,7 @@ class Platform(GnomeId):
 
     base_dir = os.path.dirname(__file__)
 
-    with open(os.path.join(base_dir, 'platforms.json'), 'r') as f:
+    with open(os.path.join(base_dir, 'platforms.json'), 'r', encoding="utf-8") as f:
         js = json.load(f)
         plat_types = dict(zip([t['name'] for t in js['vessel']],
                               js['vessel']))
