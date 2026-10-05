@@ -438,6 +438,9 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         #add the spill position
         if spill_location is not None:
             self.draw_spill(spill_location)
+            
+        #artist containers
+        self.artist_containers = {}
         
     def callback_wrapper(self, func, location, land_or_water, *args, **kwargs):
         return lambda state: func(state, self, location, land_or_water, *args, **kwargs)
@@ -480,7 +483,25 @@ class ApplicationWindow(QtWidgets.QMainWindow):
             if (event.button == 1 and event.dblclick):
                 query_result = self.g3.index_query(self.grid_obj, (coord.x, coord.y))
                 print(query_result)
-                self.draw_query_result(query_result)
+                cell_idx = query_result['cell_index']
+                if -1 in cell_idx:
+                    return
+                else:
+                    cell_idx = cell_idx.tolist().__repr__()
+                if self.artist_containers.get(cell_idx) is not None:
+                    try:
+                        for artist in self.artist_containers[cell_idx]:
+                            try:
+                                artist.remove()
+                            except Exception as e:
+                                print(f"Error removing artist: {e}")
+                    except Exception as e:
+                        print(f"Error removing artist: {e}")
+                        self.artist_containers[cell_idx].remove()
+                    del self.artist_containers[cell_idx]
+                    
+                else:
+                    self.artist_containers[cell_idx] = self.draw_query_result(query_result)
                 #Double click to query a position.
 
     def draw_query_result(self, query_result):
@@ -488,10 +509,10 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         #cell_index, edge1_interp_idx, edge1_u0_pos, edge1_u1_pos, edge2_interp_idx, edge2_v0_pos, edge2_v1_pos, node_lons, node_lats
         node_coords = self.ctrans.transform(query_result['node_lons'], query_result['node_lats'])
         print(node_coords)
-        self.map_ax.scatter(*node_coords, s=100, color='green', marker='s')
+        node_markers = self.map_ax.scatter(*node_coords, s=100, color='green', marker='s')
         u_coords = zip(self.ctrans.transform(*query_result['edge1_u0_pos']), self.ctrans.transform(*query_result['edge1_u1_pos']))
-        self.map_ax.scatter(*u_coords, s=100, color='blue', marker='^')
-        self.map_ax.annotate(
+        u_markers = self.map_ax.scatter(*u_coords, s=100, color='blue', marker='^')
+        boxes_u0 = self.map_ax.annotate(
                 f"{query_result['edge1_interp_idx']}\n" +
                 "{:.3f},{:.3f}\n".format(*query_result['edge1_u0_pos']) +
                 "u = {:.3f}".format(query_result['edge1_u0_value']),
@@ -507,7 +528,7 @@ class ApplicationWindow(QtWidgets.QMainWindow):
                     "ec": "white",
                 },
         )
-        self.map_ax.annotate(
+        boxes_u1 = self.map_ax.annotate(
                 f"{query_result['edge1_interp_idx'] + [0,1]}\n" +
                 "{:.3f},{:.3f}\n".format(*query_result['edge1_u1_pos']) +
                 "u = {:.3f}".format(query_result['edge1_u1_value']),
@@ -525,8 +546,8 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         )
         #plot v stuff
         v_coords = zip(self.ctrans.transform(*query_result['edge2_v0_pos']), self.ctrans.transform(*query_result['edge2_v1_pos']))
-        self.map_ax.scatter(*v_coords, s=100, color='red', marker='^')
-        self.map_ax.annotate(
+        v_markers = self.map_ax.scatter(*v_coords, s=100, color='red', marker='^')
+        boxes_v0 = self.map_ax.annotate(
                 f"{query_result['edge2_interp_idx']}\n" +
                 "{:.3f},{:.3f}\n".format(*query_result['edge2_v0_pos']) +
                 "v = {:.3f}".format(query_result['edge2_v0_value']),
@@ -542,7 +563,7 @@ class ApplicationWindow(QtWidgets.QMainWindow):
                     "ec": "white",
                 },
         )
-        self.map_ax.annotate(
+        boxes_v1 = self.map_ax.annotate(
                 f"{query_result['edge2_interp_idx'] + [0,1]}\n" +
                 "{:.3f},{:.3f}\n".format(*query_result['edge2_v1_pos']) +
                 "v = {:.3f}".format(query_result['edge2_v1_value']),
@@ -562,13 +583,23 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         #plot the subsampled grid
         subsample_mesh = query_result['subsample_mesh'].reshape(-1,2)
         subsample_mesh_coords = self.ctrans.transform(*subsample_mesh.T)
-        self.map_ax.scatter(*subsample_mesh_coords, s=1, color='purple', marker='.')
+        subsample_mesh_markers = self.map_ax.scatter(*subsample_mesh_coords, s=1, color='purple', marker='.')
         
         #plot the subsampled uv
-        self.map_ax.quiver(*subsample_mesh_coords, *query_result['subsample_uv'].T, scale=10, color='purple')
+        subsample_uv_quiver = self.map_ax.quiver(*subsample_mesh_coords, *query_result['subsample_uv'].T, scale=10, color='purple')
         
         self.fig.canvas.draw()
-        pass
+        return [
+            node_markers,
+            u_markers,
+            boxes_u0,
+            boxes_u1,
+            v_markers,
+            boxes_v0,
+            boxes_v1,
+            subsample_mesh_markers,
+            subsample_uv_quiver,
+        ]
     
     def draw_spill(self, spill_location):
         #Draws the spill location on the map
