@@ -287,7 +287,7 @@ class ObjType(SchemaType):
         if json_['id'] in refs:
             fname = refs[json_['id']]
         else:
-            fname = str(json_['name']) + '.json'
+            fname = sanitize_string(json_['name']) + '.json'
             fname = gen_unique_filename(fname, zipfile_)
 
             refs[json_['id']] = fname
@@ -1035,7 +1035,13 @@ def get_file_name_ext(filename_in):
 
 def sanitize_string(s):
     # basic HTML string sanitization
-    return re.sub(r'[/\\<>:"|?*$]', '_', s)
+    s = re.sub(r'[/\\<>:"|?*$]', '_', s)
+    # remove trailing dots
+    s = re.sub(r"\.+$", "", s)
+    if s == "":
+        # cases like "." or ".."
+        s = "_"
+    return s
 
 
 def gen_unique_filename(filename_in, zipfile_):

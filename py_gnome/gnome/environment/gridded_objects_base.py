@@ -276,7 +276,7 @@ class Grid_U(gridded.grids.Grid_U, GnomeId):
 
     @classmethod
     def new_from_dict(cls, dict_):
-        if 'filename' in dict_ and not 'node_lon' in dict_:
+        if ('filename' in dict_ or 'grid_file' in dict_) and not 'node_lon' in dict_:
             #Compatibility with older version of save file that did not save the grid data directly.
             read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
             [dict_.pop(n, None) for n in read_only_attrs]
@@ -387,7 +387,7 @@ class Grid_S(gridded.grids.Grid_S, GnomeId):
 
     @classmethod
     def new_from_dict(cls, dict_):
-        if 'filename' in dict_ and not 'node_lon' in dict_:
+        if ('filename' in dict_ or 'grid_file' in dict_) and not 'node_lon' in dict_:
             #Compatibility with older version of save file that did not save the grid data directly.
             read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
             [dict_.pop(n, None) for n in read_only_attrs]
@@ -816,7 +816,7 @@ class Variable(gridded.Variable, Environment):
     @classmethod
     @combine_signatures
     def new_from_dict(cls, dict_):
-        if 'filename' in dict_ and 'data' not in dict_:
+        if ('filename' in dict_ or 'data_file' in dict_) and 'data' not in dict_:
             read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
 
             [dict_.pop(n, None) for n in read_only_attrs]
