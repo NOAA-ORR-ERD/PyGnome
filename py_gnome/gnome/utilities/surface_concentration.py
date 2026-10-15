@@ -43,10 +43,19 @@ def surface_conc_kde(sc):
     spill_num = sc['spill_num']
     sc['surface_concentration'] = np.zeros(spill_num.shape[0],)
     for s in np.unique(spill_num):
-        sid = np.where(spill_num == s)
-        positions = sc['positions'][sid]
-        mass = sc['mass'][sid]
-        age = sc['age'][sid]
+        sid = np.where(spill_num == s)[0]
+        positions_all = sc['positions'][sid]
+        depth = positions_all[:,2]
+
+        # use only surface particles where depth = 0
+        surface_mask = np.where(depth == 0)[0]
+        if len(surface_mask) == 0:
+            continue  # Safely skip to the next spill if no surface particles exist
+
+        positions = positions_all[surface_mask]
+
+        mass = sc['mass'][sid][surface_mask]
+        age = sc['age'][sid][surface_mask]
         c = np.zeros(positions.shape[0],)
         lon = positions[:, 0]
         lat = positions[:, 1]
@@ -94,4 +103,5 @@ def surface_conc_kde(sc):
                                   'This is usually do to all (or many) elements being at the same location')
             t = t + bin_length
 
-        sc['surface_concentration'][sid] = c
+        global_surface_indices = sid[surface_mask]
+        sc['surface_concentration'][global_surface_indices] = c
