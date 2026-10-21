@@ -144,6 +144,6 @@ def test_v5_to_v6():
         assert len(errs) == 0
 
         def checker(js):
-            return ('Variable' not in js['obj_type'] or ('Variable' in js['obj_type'] and 'data' in js and js['data'][0] == 'netCDF4'))
+            return ('Variable' not in js['obj_type'] or ('Variable' in js['obj_type'] and 'data' in js and js['data'][0] == 'netCDF4.Dataset'))
 
         assert check_files(checker)

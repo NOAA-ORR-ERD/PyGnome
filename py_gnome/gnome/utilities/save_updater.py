@@ -447,7 +447,7 @@ def v5tov6(messages, errors):
             json_ = json.load(fn)
             if 'obj_type' in json_:
                 if 'Variable' in json_['obj_type'] and 'data' not in json_ and 'data_file' in json_ and 'varname' in json_:
-                    json_['data'] = ['netCDF4', json_['data_file'], json_['varname']]
+                    json_['data'] = ['netCDF4.Dataset', json_['data_file'], json_['varname']]
                     with open(fname, 'w', encoding='utf-8') as fp:
                         json.dump(json_, fp, indent=4)
     messages.append('**Update from v5 to v6 successful**')
