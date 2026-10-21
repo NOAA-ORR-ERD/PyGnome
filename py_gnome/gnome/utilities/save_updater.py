@@ -431,11 +431,25 @@ def v4tov5(messages, errors):
 def v5tov6(messages, errors):
     '''Takes a zipfile containing version 5 and up-converts it
     to 'version 6'.
-    Variable, Grid_U, and Grid_S have many new attributes in the save file. However, it's not
-    practical to recreate these attributes from this updater.
-    
-    The behavior for this step is implemented in the new_from_dict methods of the above classes.  
     '''
+
+    # loading json files
+    log.debug('updating save file from v5 to v6')
+
+    jsonfiles = glob.glob('*.json')
+
+    # updating the name of spills
+    movers = []  # PyCurrentMover --> CurrentMover
+    wind_movers = []  # PyWindMover --> WindMover
+    point_wind_movers = []  # WindMover  --> PointWindMover
+    for fname in jsonfiles:
+        with open(fname, 'r', encoding='utf-8') as fn:
+            json_ = json.load(fn)
+            if 'obj_type' in json_:
+                if 'Variable' in json_['obj_type'] and 'data' not in json_ and 'data_file' in json_ and 'varname' in json_:
+                    json_['data'] = ['netCDF4', json_['data_file'], json_['varname']]
+                    with open(fname, 'w', encoding='utf-8') as fp:
+                        json.dump(json_, fp, indent=4)
     messages.append('**Update from v5 to v6 successful**')
     return messages, errors
     

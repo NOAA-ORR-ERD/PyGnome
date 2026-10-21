@@ -11,7 +11,7 @@ from gnome.utilities.save_updater import (extract_zipfile,
                                           remember_cwd,
                                           v0tov1,
                                           v1tov2,
-                                          v3tov4,
+                                          v3tov4, v5tov6,
                                           )
 
 '''
@@ -131,5 +131,19 @@ def test_v3_to_v4():
 
         def checker(js):
             return ('gnome.weatherers.weathering_data.WeatheringData' not in js['obj_type'])
+
+        assert check_files(checker)
+
+def test_v5_to_v6():
+    with setup_workspace('v5.gnome'):
+        errs = []
+        msgs = []
+        # fixme: we should probably have some v1 data to use for tests!
+        # have to run v0tov1 first for this old data
+        v5tov6(msgs, errs)
+        assert len(errs) == 0
+
+        def checker(js):
+            return ('Variable' not in js['obj_type'] or ('Variable' in js['obj_type'] and 'data' in js and js['data'][0] == 'netCDF4'))
 
         assert check_files(checker)

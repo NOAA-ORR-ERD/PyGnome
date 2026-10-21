@@ -816,12 +816,6 @@ class Variable(gridded.Variable, Environment):
     @classmethod
     @combine_signatures
     def new_from_dict(cls, dict_):
-        if ('filename' in dict_ or 'data_file' in dict_) and 'data' not in dict_:
-            read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
-
-            [dict_.pop(n, None) for n in read_only_attrs]
-            return cls.from_netCDF(**dict_)
-
         return super(Variable, cls).new_from_dict(dict_)
 
     @classmethod
