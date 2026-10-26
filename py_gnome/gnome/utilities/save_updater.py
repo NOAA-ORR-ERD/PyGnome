@@ -450,6 +450,30 @@ def v5tov6(messages, errors):
                     json_['data'] = ['netCDF4.Dataset', json_['data_file'], json_['varname']]
                     with open(fname, 'w', encoding='utf-8') as fp:
                         json.dump(json_, fp, indent=4)
+                    if json_.get('grid', None) is not None:
+                        #need to go into the grid object, and update the filename if it is None.
+                        #because it will be a reference to another object, we need to load that json
+                        grid_ref = json_['grid']
+                        if os.path.exists(grid_ref):
+                            with open(grid_ref, 'r', encoding='utf-8') as gf:
+                                grid_json = json.load(gf)
+                                if 'filename' in grid_json and grid_json['filename'] is None:
+                                    grid_json['filename'] = json_['grid_file']
+                            with open(grid_ref, 'w', encoding='utf-8') as gf:
+                                json.dump(grid_json, gf, indent=4)
+                    if json_.get('depth', None) is not None:
+                        #same thing with depth
+                        depth_ref = json_['depth']
+                        if os.path.exists(depth_ref):
+                            with open(depth_ref, 'r', encoding='utf-8') as df:
+                                depth_json = json.load(df)
+                                depth_json['filename'] = json_['data_file']
+                                depth_json['data_file'] = json_['data_file']
+                                depth_json['grid_file'] = json_['grid_file']
+                                depth_json['grid'] = json_['grid']
+                                depth_json['time'] = json_['time']
+                            with open(depth_ref, 'w', encoding='utf-8') as df:
+                                json.dump(depth_json, df, indent=4)
     messages.append('**Update from v5 to v6 successful**')
     return messages, errors
     

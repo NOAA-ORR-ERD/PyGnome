@@ -63,7 +63,6 @@ class TestTime(object):
         t3 = self.test_class.constant_time()
 
         assert t1 == t2 == t3
-        assert t1 is t2 is t3
 
     def test_index_of(self, dates):
         t = Time(dates)

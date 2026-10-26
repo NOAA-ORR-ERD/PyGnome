@@ -13,6 +13,7 @@ from gnome.utilities.save_updater import (extract_zipfile,
                                           v1tov2,
                                           v3tov4, v5tov6,
                                           )
+from gnome.scripting import Model
 
 '''
 Tests the save file update system.
@@ -147,3 +148,8 @@ def test_v5_to_v6():
             return ('Variable' not in js['obj_type'] or ('Variable' in js['obj_type'] and 'data' in js and js['data'][0] == 'netCDF4.Dataset'))
 
         assert check_files(checker)
+        
+        #assert the load completes successfully
+        #This check may be problematic in future. I'm not sure we should do this here.
+        m = Model.load('.')
+        

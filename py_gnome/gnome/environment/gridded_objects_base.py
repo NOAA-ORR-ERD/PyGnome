@@ -120,6 +120,19 @@ class DepthSchema(base_schema.ObjTypeSchema):
     filename = FilenameSchema(
         isdatafile=True, test_equal=False, update=False
     )
+    data_file = FilenameSchema(
+        isdatafile=True, test_equal=False, update=False
+    )
+    grid_file = FilenameSchema(
+        isdatafile=True, test_equal=False, update=False
+    )
+    time = TimeSchema(
+        save_reference=True
+    )
+    grid = GeneralGnomeObjectSchema(
+        acceptable_schemas=[GridSchema, Grid_SSchema, Grid_USchema],
+        save_reference=True
+    )
 
 class S_DepthSchema(DepthSchema):
     vtransform = SchemaNode(Int())
@@ -147,6 +160,10 @@ class VariableSchemaBase(base_schema.ObjTypeSchema):
     extrapolation_is_allowed = SchemaNode(Boolean())
     data_start = SchemaNode(LocalDateTime(), read_only=True)
     data_stop = SchemaNode(LocalDateTime(), read_only=True)
+    depth = GeneralGnomeObjectSchema(
+        acceptable_schemas=[DepthSchema, S_DepthSchema],
+        save_reference=True
+    )
 
 
 class VariableSchema(VariableSchemaBase):
@@ -864,13 +881,13 @@ class DepthBase(gridded.depth.DepthBase, GnomeId):
                                      'grid': PyGrid,
                                      'variable': Variable})
 
-    # @classmethod
-    # def new_from_dict(cls, dict_):
-    #     read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
+    @classmethod
+    def new_from_dict(cls, dict_):
+        read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
 
-    #     [dict_.pop(n, None) for n in read_only_attrs]
-    #     rv = cls.from_netCDF(**dict_)
-    #     return rv
+        [dict_.pop(n, None) for n in read_only_attrs]
+        rv = cls.from_netCDF(**dict_)
+        return rv
 
 
 class L_Depth(gridded.depth.L_Depth, GnomeId):
@@ -882,13 +899,13 @@ class L_Depth(gridded.depth.L_Depth, GnomeId):
                                      'grid': PyGrid,
                                      'variable': Variable})
 
-    # @classmethod
-    # def new_from_dict(cls, dict_):
-    #     read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
+    @classmethod
+    def new_from_dict(cls, dict_):
+        read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
 
-    #     [dict_.pop(n, None) for n in read_only_attrs]
-    #     rv = cls.from_netCDF(**dict_)
-    #     return rv
+        [dict_.pop(n, None) for n in read_only_attrs]
+        rv = cls.from_netCDF(**dict_)
+        return rv
 
 
 class ROMS_Depth(gridded.depth.ROMS_Depth, GnomeId):
@@ -901,13 +918,13 @@ class ROMS_Depth(gridded.depth.ROMS_Depth, GnomeId):
                                      'grid': PyGrid,
                                      'variable': Variable})
 
-    # @classmethod
-    # def new_from_dict(cls, dict_):
-    #     read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
+    @classmethod
+    def new_from_dict(cls, dict_):
+        read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
 
-    #     [dict_.pop(n, None) for n in read_only_attrs]
-    #     rv = cls.from_netCDF(**dict_)
-    #     return rv
+        [dict_.pop(n, None) for n in read_only_attrs]
+        rv = cls.from_netCDF(**dict_)
+        return rv
 
 class FVCOM_Depth(gridded.depth.FVCOM_Depth, GnomeId):
 
@@ -920,13 +937,13 @@ class FVCOM_Depth(gridded.depth.FVCOM_Depth, GnomeId):
                                      'bathymetry': Variable,
                                      'zeta': Variable})
 
-    # @classmethod
-    # def new_from_dict(cls, dict_):
-    #     read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
+    @classmethod
+    def new_from_dict(cls, dict_):
+        read_only_attrs = cls._schema().get_nodes_by_attr('read_only')
 
-    #     [dict_.pop(n, None) for n in read_only_attrs]
-    #     rv = cls.from_netCDF(**dict_)
-    #     return rv
+        [dict_.pop(n, None) for n in read_only_attrs]
+        rv = cls.from_netCDF(**dict_)
+        return rv
 
 class Depth(gridded.depth.Depth):
     ld_types = [L_Depth]
