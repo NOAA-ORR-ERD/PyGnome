@@ -41,7 +41,7 @@ trimesh = "*"
 ujson = "*"
 
 # NOAA maintained packages
-gridded = ">=0.8.1,<0.9"
+gridded = ">=0.8.2,<0.9"
 pynucos = ">=3.4.1"
 cell_tree2d = ">=0.3.0"
 py_gd = ">=2.3.3"
