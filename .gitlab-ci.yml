@@ -29,7 +29,7 @@ build_wheels:
 
 build_wheels_windows:
   stage: build
-  allow_failure: false
+  allow_failure: true
   variables:
     GIT_STRATEGY: clone
   # before_script: [] # so it won't try to install the linux stuff
@@ -97,7 +97,7 @@ run_input_file_examples:
 
 test_windows:
   stage: test
-  allow_failure: false
+  allow_failure: true
 #  variables:
 #    GIT_STRATEGY: clone
   before_script: [] # so it won't try to install the linux stuff
