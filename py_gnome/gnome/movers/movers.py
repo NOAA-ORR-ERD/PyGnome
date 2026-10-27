@@ -149,8 +149,10 @@ class Process(GnomeId):
         """
         half_timestep = model_time_datetime + timedelta(seconds=time_step / 2)
 
-        if (self.active_range[0] <= half_timestep and
-                self.active_range[1] >= half_timestep and
+        #if (self.active_range[0] <= half_timestep and
+                #self.active_range[1] >= half_timestep and
+        if (self.active_range[0] <= model_time_datetime and
+                self.active_range[1] >= model_time_datetime and
                 self.on):
             self._active = True
         else:

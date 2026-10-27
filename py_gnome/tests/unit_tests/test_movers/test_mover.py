@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 
 import numpy as np
 
-from pytest import raises
+from pytest import raises, mark
 from ..conftest import sample_sc_release
 
 from gnome.utilities.inf_datetime import InfDateTime
@@ -62,6 +62,7 @@ class TestActive(object):
 
         assert mv.active is False
 
+    @mark.xfail(reason="got rid of half timestep buffer")
     def test_active_start_after_half_timestep(self):
         self.mv.active_range = ((self.model_time +
                                  timedelta(seconds=self.time_step / 2)),
@@ -93,6 +94,7 @@ class TestActive(object):
 
         assert self.mv.active is True
 
+    @mark.xfail(reason="got rid of half timestep buffer")
     def test_active_stop_less_than_half_timestep(self):
         self.mv.active_range = (self.model_time,
                                 (self.model_time +
