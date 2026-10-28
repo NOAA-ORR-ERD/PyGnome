@@ -52,7 +52,7 @@ build_docs:
 
   script:
     - cd py_gnome
-    - pixi run build_docs
+    - pixi run -e build312 build_docs
 
 lint_pygnome:
   stage: build
