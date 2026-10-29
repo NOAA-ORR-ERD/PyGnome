@@ -15,7 +15,7 @@ from gnome.utilities.remote_data import get_datafile
 
 from gnome.model import Model
 from gnome.maps import MapFromBNA
-from gnome.environment import Wind
+from gnome.environment import PointWind
 from gnome.spills import point_line_spill
 from gnome.movers import RandomMover, PointWindMover, CatsMover
 
@@ -59,7 +59,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     series[3] = (start_time + timedelta(hours=42), (2, 180))
     series[4] = (start_time + timedelta(hours=54), (2, 225))
 
-    w_mover = PointWindMover(Wind(timeseries=series, units='m/s'))
+    w_mover = PointWindMover(PointWind(timeseries=series, units='m/s'))
     model.movers += w_mover
 
     print('adding a cats mover:')

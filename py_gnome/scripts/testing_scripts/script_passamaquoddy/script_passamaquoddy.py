@@ -15,7 +15,7 @@ from gnome.utilities.remote_data import get_datafile
 from gnome.model import Model
 
 from gnome.maps import MapFromBNA
-from gnome.environment import Wind, Tide
+from gnome.environment import PointWind, Tide
 from gnome.movers import RandomMover, PointWindMover, CurrentCycleMover
 
 from gnome.outputters import (Renderer,
@@ -73,7 +73,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     series[3] = (start_time + timedelta(hours=42), (5, 180))
     series[4] = (start_time + timedelta(hours=54), (5, 225))
 
-    wind = Wind(timeseries=series, units='m/s')
+    wind = PointWind(timeseries=series, units='m/s')
     model.movers += PointWindMover(wind)
 
     print('adding a current mover:')

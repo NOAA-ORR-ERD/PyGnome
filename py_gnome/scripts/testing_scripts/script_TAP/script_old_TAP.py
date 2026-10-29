@@ -16,11 +16,9 @@ from gnome.utilities.remote_data import get_datafile
 from gnome.model import Model
 
 from gnome.maps import MapFromBNA, GnomeMap
-from gnome.environment import Wind
 from gnome.spills import point_line_spill
 from gnome.movers import RandomMover, constant_point_wind_mover, c_GridCurrentMover
 
-from gnome.movers.py_wind_movers import WindMover
 #from gnome.environment.property_classes import WindTS, IceAwareCurrent, IceAwareWind
 from gnome.movers.py_current_movers import CurrentMover
 

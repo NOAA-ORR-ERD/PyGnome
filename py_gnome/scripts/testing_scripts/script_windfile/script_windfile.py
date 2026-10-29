@@ -18,7 +18,7 @@ from gnome.basic_types import datetime_value_2d
 
 from gnome.utilities.remote_data import get_datafile
 
-from gnome.environment import Wind
+from gnome.environment import PointWind
 # from gnome.environment import Tide
 from gnome.maps import MapFromBNA
 
@@ -78,7 +78,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     series = np.zeros((2, ), dtype=datetime_value_2d)
     series[0] = (start_time, (5, 180))
     series[1] = (start_time + timedelta(hours=18), (5, 180))
-    w = Wind(filename=os.path.join(base_dir, '22NM_WNW_PortAngelesWA.nws'))
+    w = PointWind(filename=os.path.join(base_dir, '22NM_WNW_PortAngelesWA.nws'))
     w_mover = PointWindMover(w)
     model.movers += w_mover
     model.environment += w_mover.wind

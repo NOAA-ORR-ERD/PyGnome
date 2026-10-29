@@ -29,7 +29,7 @@ import gnome.scripting as gs
 from gnome.utilities.projections import GeoProjection
 # from gnome.utilities.remote_data import get_datafile
 
-# from gnome.environment import Wind, Tide
+# from gnome.environment import PointWind, Tide
 # from gnome.maps import MapFromBNA
 
 # from gnome.model import Model
@@ -92,7 +92,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # series[1] = (start_time + timedelta(hours=25), (5, 180))
 
 
-    # w_mover = PointWindMover(Wind(timeseries=series, units='m/s'))
+    # w_mover = PointWindMover(PointWind(timeseries=series, units='m/s'))
     # model.movers += w_mover
     # model.environment += w_mover.wind
 
@@ -163,7 +163,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     # todo: callback did not work correctly below - fix!
     # comp_mover = ComponentMover(component_file1,
     #                             component_file2,
-    #                             Wind(timeseries=series, units='m/s'))
+    #                             PointWind(timeseries=series, units='m/s'))
 
     comp_mover.scale_refpoint = (-70.855, 42.275)
     comp_mover.pat1_angle = 315

@@ -23,7 +23,7 @@ from gnome.basic_types import datetime_value_2d
 from gnome.utilities.projections import GeoProjection
 from gnome.utilities.remote_data import get_datafile
 
-from gnome.environment import Wind, Tide
+from gnome.environment import PointWind, Tide
 from gnome.maps import MapFromBNA
 
 from gnome.model import Model
@@ -72,15 +72,15 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     print('adding a wind mover:')
 
     # wind_file = get_datafile(os.path.join(base_dir, 'ConstantWind.WND'))
-    # wind = Wind(filename=wind_file)
+    # wind = PointWind(filename=wind_file)
 
     series = np.zeros((2, ), dtype=datetime_value_2d)
     series[0] = (start_time, (5, 270))
     series[1] = (start_time + timedelta(hours=25), (5, 270))
 
-    wind = Wind(timeseries=series, units='m/s')
+    wind = PointWind(timeseries=series, units='m/s')
 
-    # w_mover = PointWindMover(Wind(timeseries=series, units='knots'))
+    # w_mover = PointWindMover(PointWind(timeseries=series, units='knots'))
     w_mover = PointWindMover(wind)
     model.movers += w_mover
 
@@ -130,9 +130,9 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     #
     # todo: following is not working when model is saved out - fix
     # comp_mover = ComponentMover(curr_file1, curr_file2,
-    #                             Wind(timeseries=series, units='m/s'))
+    #                             PointWind(timeseries=series, units='m/s'))
     # comp_mover = ComponentMover(curr_file1, curr_file2,
-    #                             wind=Wind(filename=wind_file))
+    #                             wind=PointWind(filename=wind_file))
 
     curr_file1 = get_datafile(os.path.join(base_dir, 'NW30ktwinds.cur'))
     curr_file2 = get_datafile(os.path.join(base_dir, 'SW30ktwinds.cur'))

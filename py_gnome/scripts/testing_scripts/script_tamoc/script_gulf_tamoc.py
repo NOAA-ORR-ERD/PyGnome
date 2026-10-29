@@ -24,7 +24,7 @@ from datetime import datetime, timedelta
 from gnome import scripting
 from gnome.environment.gridded_objects_base import Variable, Time, Grid_S
 from gnome.environment import GridCurrent
-from gnome.environment import Wind
+#from gnome.environment import PointWind
 
 from gnome.model import Model
 from gnome.maps.map import GnomeMap
@@ -124,7 +124,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     model.movers += constant_point_wind_mover(10, 315, units='knots')
 
     # Wind from a buoy
-    #w = Wind(filename='KIKT.osm')
+    #w = PointWind(filename='KIKT.osm')
     #model.movers += PointWindMover(w)
 
 

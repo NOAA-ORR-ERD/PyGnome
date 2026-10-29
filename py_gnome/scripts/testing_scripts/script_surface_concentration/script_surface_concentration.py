@@ -18,7 +18,7 @@ from gnome.basic_types import datetime_value_2d
 
 from gnome.utilities.projections import GeoProjection
 
-from gnome.environment import Wind
+from gnome.environment import PointWind
 
 from gnome.model import Model
 from gnome.spills import point_line_spill
@@ -79,7 +79,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     series[0] = (start_time, (5, 270))
     series[1] = (start_time + timedelta(hours=25), (5, 270))
 
-    w_mover = PointWindMover(Wind(timeseries=series, units='m/s'))
+    w_mover = PointWindMover(PointWind(timeseries=series, units='m/s'))
     model.movers += w_mover
     model.environment += w_mover.wind
 

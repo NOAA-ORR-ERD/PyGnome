@@ -20,7 +20,6 @@ from gnome.utilities.remote_data import get_datafile
 from gnome.model import Model
 
 from gnome.maps import MapFromBNA
-from gnome.environment import Wind
 from gnome.spills import point_line_spill
 from gnome.movers import RandomMover, constant_point_wind_mover, c_GridCurrentMover
 

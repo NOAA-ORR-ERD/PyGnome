@@ -20,7 +20,7 @@ from .gridcur import from_gridcur
 from .water import Water, WaterSchema
 from .waves import Waves, WavesSchema
 from .tide import Tide, TideSchema
-from .wind import Wind, WindSchema, constant_wind, wind_from_values
+from .wind import Wind, WindSchema, PointWind, constant_wind, wind_from_values
 
 from .running_average import RunningAverage, RunningAverageSchema
 from .timeseries_objects_base import (TimeseriesData,

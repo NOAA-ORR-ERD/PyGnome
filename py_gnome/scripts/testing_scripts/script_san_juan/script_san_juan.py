@@ -21,7 +21,7 @@ from gnome.basic_types import datetime_value_2d
 from gnome.utilities.projections import GeoProjection
 from gnome.utilities.remote_data import get_datafile
 
-from gnome.environment import Wind, Tide
+from gnome.environment import PointWind, Tide
 from gnome.maps import MapFromBNA
 
 from gnome.model import Model
@@ -77,7 +77,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     series[0] = (start_time, (0, 270))
     series[1] = (start_time + timedelta(hours=18), (0, 270))
 
-    wind = Wind(timeseries=series, units='m/s')
+    wind = PointWind(timeseries=series, units='m/s')
     w_mover = PointWindMover(wind)
     wind.extrapolation_is_allowed=True
     model.movers += w_mover
