@@ -63,7 +63,7 @@ def make_model(images_dir=base_dir /'images'):
     series[3] = (start_time + gs.hours(42), (10, 180))
     series[4] = (start_time + gs.hours(54), (10, 225))
 
-    wind = gs.Wind(timeseries=series, units='m/s')
+    wind = gs.PointWind(timeseries=series, units='m/s')
     model.movers += gs.PointWindMover(wind)
 
     print('adding a cats mover:')

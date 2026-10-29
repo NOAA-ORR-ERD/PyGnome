@@ -83,7 +83,7 @@ def make_model(images_dir=os.path.join(base_dir, 'images')):
     series[0] = (start_time, (30, 0))
     series[1] = (start_time + gs.hours(23), (30, 0))
 
-    wind = gs.Wind(timeseries=series, units='knot')
+    wind = gs.PointWind(timeseries=series, units='knot')
 
     # default is .4 radians
     w_mover = gs.PointWindMover(wind, uncertain_angle_scale=0)
