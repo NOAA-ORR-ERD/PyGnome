@@ -132,6 +132,8 @@ test313 = [ "py313", "test", "build" ]
 [tasks]
 install_edit = { cmd = "pip install --no-deps --no-build-isolation -e ."}
 
+bump_version = { cmd = "python -m setuptools_scm --force-write-version-files"}
+
 # ideally, there would be no default for build_wheel -- but pixi doesn't have a way to do that.
 build_wheel = {cmd = "python -m build --skip-dependency-check --no-isolation ./", default-environment = "build312"}
 

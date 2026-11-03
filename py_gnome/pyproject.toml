@@ -49,6 +49,7 @@ sdist.exclude = ["scripts",
 
 [tool.setuptools_scm]
 root = ".."
+write_to_source = true
 version_file = "gnome/_version.py"
 
 [tool.setuptools]
